@@ -1,0 +1,192 @@
+import SwiftUI
+import SwiftData
+
+struct WorkoutView: View {
+    @Bindable var workout: Workout
+    @State private var activeExercise: WorkoutExercise?
+    @State private var showCancelConfirmation: Bool = false
+    @State private var showExerciseListView: Bool = false
+    @State private var showAddExerciseSheet: Bool = false
+    
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @Namespace private var animation
+    
+    var body: some View {
+        NavigationStack {
+            Group {
+                if showExerciseListView {
+                    exerciseListView
+                } else {
+                    exerciseTabView
+                }
+            }
+            .navigationTitle(workout.title)
+            .navigationSubtitle(Text(workout.startTime, style: .date))
+            .toolbarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Timer", systemImage: "timer") {
+                        
+                    }
+                }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    toolBarMenu
+                    
+                    Button("Add Exercise", systemImage: "plus") {
+                        showAddExerciseSheet = true
+                    }
+                    .matchedTransitionSource(id: "addExercise", in: animation)
+                }
+            }
+            .animation(.smooth, value: showExerciseListView)
+            .sheet(isPresented: $showAddExerciseSheet) {
+                AddExerciseView(workout: workout)
+                    .navigationTransition(.zoom(sourceID: "addExercise", in: animation))
+                    .interactiveDismissDisabled()
+                    .presentationBackground(Color(.systemBackground))
+            }
+        }
+    }
+    
+    var exerciseTabView: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                HStack(spacing: 0) {
+                    if workout.exercises.isEmpty {
+                        ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Click the '\(Image(systemName: "plus"))' icon to add some exercises."))
+                            .containerRelativeFrame(.horizontal)
+                    } else {
+                        ForEach(workout.sortedExercises) { exercise in
+                            ExerciseView(exercise: exercise)
+                                .containerRelativeFrame(.horizontal)
+                                .id(exercise)
+                        }
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $activeExercise)
+            .onAppear {
+                if let activeExercise {
+                    proxy.scrollTo(activeExercise)
+                }
+            }
+        }
+    }
+    
+    var exerciseListView: some View {
+        List {
+            ForEach(workout.sortedExercises) { exercise in
+                Button {
+                    activeExercise = exercise
+                    showExerciseListView = false
+                } label: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(exercise.name)
+                            .font(.title3)
+                            .bold()
+                        Text(exercise.displayMuscle)
+                            .foregroundStyle(.secondary)
+                            .fontWeight(.semibold)
+                            .font(.headline)
+                        ForEach(exercise.sortedSets) { set in
+                            Text("\(set.reps)x\(Int(set.weight)) lbs")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .listRowBackground(Color.clear)
+                .buttonStyle(.glass)
+                .buttonBorderShape(.roundedRectangle)
+                .listRowSeparator(.hidden)
+            }
+            .onDelete(perform: deleteExercise)
+            .onMove(perform: moveExercise)
+        }
+        .scrollIndicators(.hidden)
+        .listStyle(.plain)
+    }
+
+    var toolBarMenu: some View {
+        Menu("Workout Settings", systemImage: "ellipsis") {
+            if workout.exercises.isEmpty {
+                Button("Cancel Workout", systemImage: "xmark") {
+                    deleteWorkout()
+                }
+            } else {
+                ControlGroup {
+                    Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in showExerciseListView = true })) {
+                        Label("List View", systemImage: "list.dash")
+                    }
+                    Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in showExerciseListView = false })) {
+                        Label("Exercise View", systemImage: "list.clipboard")
+                    }
+                }
+                Divider()
+                Button("Save Workout", systemImage: "checkmark") {
+                    workout.completed = true
+                    saveContext(context: context)
+                    dismiss()
+                }
+                .tint(.green)
+                Button("Delete Workout", systemImage: "trash", role: .destructive) {
+                    if !workout.exercises.isEmpty {
+                        showCancelConfirmation = true
+                    } else {
+                        deleteWorkout()
+                    }
+                }
+            }
+        }
+        .confirmationDialog("Delete Workout", isPresented: $showCancelConfirmation) {
+            Button("Delete", role: .destructive) {
+                deleteWorkout()
+            }
+            Button("Cancel") {
+                showCancelConfirmation = false
+            }
+        } message: {
+            Text("Are you sure you want to delete this workout? This cannot be undone.")
+        }
+    }
+    
+    private func deleteWorkout() {
+        context.delete(workout)
+        saveContext(context: context)
+        dismiss()
+    }
+    
+    private func deleteExercise(offsets: IndexSet) {
+        let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
+        
+        for exercise in exercisesToDelete {
+            workout.removeExercise(exercise)
+            context.delete(exercise)
+        }
+        saveContext(context: context)
+        
+        if let active = activeExercise, exercisesToDelete.contains(active) {
+            activeExercise = workout.sortedExercises.first
+        }
+        
+        if workout.exercises.isEmpty {
+            showExerciseListView = false
+        }
+    }
+    
+    private func moveExercise(from source: IndexSet, to destination: Int) {
+        workout.moveExercise(from: source, to: destination)
+        saveContext(context: context)
+    }
+}
+
+#Preview {
+    WorkoutView(workout: Workout.sampleData.first!)
+        .sampleDataConainer()
+}

@@ -1,17 +1,12 @@
-//
-//  VillainArcApp.swift
-//  VillainArc
-//
-//  Created by Fernando Caudillo Tafoya on 1/13/26.
-//
-
 import SwiftUI
+import SwiftData
 
 @main
 struct VillainArcApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .modelContainer(for: [Workout.self, WorkoutExercise.self, ExerciseSet.self, Exercise.self])
         }
     }
 }
