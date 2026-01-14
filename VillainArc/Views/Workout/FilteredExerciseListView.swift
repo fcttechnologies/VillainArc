@@ -4,23 +4,23 @@ import SwiftData
 struct FilteredExerciseListView: View {
     @Query(sort: \Exercise.name) private var allExercises: [Exercise]
     @Binding var selectedExercises: [Exercise]
-
+    
     let searchText: String
     let muscleFilters: [Muscle]
-
+    
     var filteredExercises: [Exercise] {
         let cleanText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
+        
         let filtered = allExercises.filter { exercise in
             let matchesSearch = cleanText.isEmpty ||
-                               exercise.name.localizedStandardContains(cleanText) ||
-                               exercise.musclesTargeted.contains(where: { $0.rawValue.localizedStandardContains(cleanText) })
-
+            exercise.name.localizedStandardContains(cleanText) ||
+            exercise.musclesTargeted.contains(where: { $0.rawValue.localizedStandardContains(cleanText) })
+            
             let matchesMuscleFilter = muscleFilters.isEmpty || exercise.musclesTargeted.contains(where: { muscleFilters.contains($0) })
-
+            
             return matchesSearch && matchesMuscleFilter
         }
-
+        
         return filtered.sorted { first, second in
             let firstSelected = selectedExercises.contains(first)
             let secondSelected = selectedExercises.contains(second)
@@ -46,47 +46,37 @@ struct FilteredExerciseListView: View {
     }
     
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(filteredExercises) { exercise in
-                    Group {
-                        if selectedExercises.contains(exercise) {
-                            Button {
-                                selectedExercises.removeAll { $0 == exercise }
-                            } label: {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    Text(exercise.name)
-                                        .font(.headline)
-                                    Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.leading)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(5)
-                            }
-                            .buttonStyle(.glassProminent)
-                            .tint(.blue.opacity(0.7))
-                        } else {
-                            Button {
-                                selectedExercises.append(exercise)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    Text(exercise.name)
-                                        .font(.headline)
-                                    Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.leading)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(5)
-                            }
-                            .buttonStyle(.glass)
+        List {
+            ForEach(filteredExercises) { exercise in
+                if selectedExercises.contains(exercise) {
+                    Button {
+                        selectedExercises.removeAll { $0 == exercise }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(exercise.name)
+                                .font(.headline)
+                            Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
                         }
                     }
-                    .buttonBorderShape(.roundedRectangle)
-                    .padding(.horizontal, 10)
+                    .tint(.primary)
+                    .listRowBackground(Color.blue.opacity(0.45))
+                } else {
+                    Button {
+                        selectedExercises.append(exercise)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(exercise.name)
+                                .font(.headline)
+                            Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
+                    .tint(.primary)
                 }
             }
         }

@@ -6,6 +6,7 @@ struct ExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
     @State private var isNotesExpanded = false
+    @State private var showRepRangeEditor = false
     
     init(exercise: WorkoutExercise) {
         self.exercise = exercise
@@ -88,8 +89,13 @@ struct ExerciseView: View {
                     Text(exercise.displayMuscle)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
-                    Text("Rep Range: \(exercise.repRange.displayText)")
-                        .fontWeight(.semibold)
+                    Button {
+                        showRepRangeEditor = true
+                    } label: {
+                        Text("Rep Range: \(exercise.repRange.displayText)")
+                            .fontWeight(.semibold)
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
                 Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
@@ -109,6 +115,11 @@ struct ExerciseView: View {
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .sheet(isPresented: $showRepRangeEditor) {
+            RepRangeEditorView(repRange: $exercise.repRange)
+                .interactiveDismissDisabled()
+                .presentationDetents([.medium])
+        }
     }
     
     private func addSet() {
