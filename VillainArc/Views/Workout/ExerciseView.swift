@@ -7,6 +7,7 @@ struct ExerciseView: View {
     @Bindable var exercise: WorkoutExercise
     @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
+    @State private var showRestTimeEditor = false
     
     init(exercise: WorkoutExercise) {
         self.exercise = exercise
@@ -100,15 +101,25 @@ struct ExerciseView: View {
                     .buttonStyle(.plain)
                 }
                 Spacer()
-                Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
-                    Haptics.selection()
-                    withAnimation {
-                        isNotesExpanded.toggle()
+                HStack(spacing: 12) {
+                    Button("Rest Times", systemImage: "timer") {
+                        Haptics.selection()
+                        showRestTimeEditor = true
                     }
+                    .labelStyle(.iconOnly)
+                    .font(.title2)
+                    .tint(.primary)
+                    
+                    Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
+                        Haptics.selection()
+                        withAnimation {
+                            isNotesExpanded.toggle()
+                        }
+                    }
+                    .labelStyle(.iconOnly)
+                    .font(.title)
+                    .tint(.primary)
                 }
-                .labelStyle(.iconOnly)
-                .font(.title)
-                .tint(.primary)
             }
             
             if isNotesExpanded {
@@ -122,6 +133,11 @@ struct ExerciseView: View {
             RepRangeEditorView(repRange: $exercise.repRange)
                 .interactiveDismissDisabled()
                 .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showRestTimeEditor) {
+            RestTimeEditorView(exercise: exercise)
+                .interactiveDismissDisabled()
+                .presentationDetents([.fraction(0.75), .large])
         }
     }
     

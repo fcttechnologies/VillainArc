@@ -2,14 +2,13 @@ import SwiftUI
 
 struct RepRangeEditorView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @Binding var repRange: RepRange
     
     @State private var mode: RepRangeMode = .notSet
     @State private var target: Int = 8
     @State private var lower: Int = 8
     @State private var upper: Int = 12
-    @State private var showCancelConfirmation = false
-    @State private var initialSnapshot = RepRangeSnapshot(mode: .notSet, target: 8, lower: 8, upper: 12)
     
     var body: some View {
         NavigationStack {
@@ -41,30 +40,10 @@ struct RepRangeEditorView: View {
             .navigationTitle("Rep Range")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .close) {
-                        if hasChanges {
-                            showCancelConfirmation = true
-                        } else {
-                            dismiss()
-                        }
-                    }
-                    .confirmationDialog("Discard rep range changes?", isPresented: $showCancelConfirmation) {
-                        Button("Discard Changes", role: .destructive) {
-                            Haptics.warning()
-                            dismiss()
-                        }
-                        Button("Cancel") {
-                            showCancelConfirmation = false
-                        }
-                    } message: {
-                        Text("Your edits will not be saved.")
-                    }
-                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
                         Haptics.success()
-                        repRange = buildRepRange()
+                        applyChanges()
                         dismiss()
                     }
                 }
@@ -72,20 +51,15 @@ struct RepRangeEditorView: View {
             .onAppear {
                 loadFromRepRange()
             }
+            .onChange(of: mode) { _, _ in
+                Haptics.selection()
+            }
             .onChange(of: lower) { _, newValue in
                 if newValue > upper {
                     upper = newValue
                 }
             }
         }
-    }
-    
-    private var currentSnapshot: RepRangeSnapshot {
-        RepRangeSnapshot(mode: mode, target: target, lower: lower, upper: upper)
-    }
-    
-    private var hasChanges: Bool {
-        currentSnapshot != initialSnapshot
     }
     
     private var modeFooterText: String {
@@ -125,8 +99,6 @@ struct RepRangeEditorView: View {
             self.lower = lower
             self.upper = max(upper, lower)
         }
-        
-        initialSnapshot = currentSnapshot
     }
     
     private func buildRepRange() -> RepRange {
@@ -140,6 +112,11 @@ struct RepRangeEditorView: View {
         case .range:
             return .range(lower: lower, upper: max(upper, lower))
         }
+    }
+    
+    private func applyChanges() {
+        repRange = buildRepRange()
+        saveContext(context: context)
     }
 }
 
@@ -163,13 +140,6 @@ private enum RepRangeMode: String, CaseIterable, Identifiable {
             return "Until Failure"
         }
     }
-}
-
-private struct RepRangeSnapshot: Equatable {
-    let mode: RepRangeMode
-    let target: Int
-    let lower: Int
-    let upper: Int
 }
 
 #Preview {
