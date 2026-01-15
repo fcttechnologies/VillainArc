@@ -92,7 +92,7 @@ struct ExerciseView: View {
                     Button {
                         showRepRangeEditor = true
                     } label: {
-                        Text("Rep Range: \(exercise.repRange.displayText)")
+                        Text("\(exercise.repRange.labelText): \(exercise.repRange.displayText)")
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.plain)

@@ -47,4 +47,4 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 
 ## Data & AI Usage Notes
 - When adding exercises, update `ExerciseDetails` and ensure `DataManager` seeding still covers new items.
-- Log AI help in `Data/AI_USAGE.md` for catalog/schema work.
+- Log AI help in `Data/AI_USAGE.md` only when the user approves.
