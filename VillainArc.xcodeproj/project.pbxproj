@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		FDA193A12F16F90000CA57C5 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		FDA193902F16D14500CA57C5 /* VillainArc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VillainArc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -32,6 +33,7 @@
 		FDA193872F16D14500CA57C5 = {
 			isa = PBXGroup;
 			children = (
+				FDA193A12F16F90000CA57C5 /* .gitignore */,
 				FDA193922F16D14500CA57C5 /* VillainArc */,
 				FDA193912F16D14500CA57C5 /* Products */,
 			);
