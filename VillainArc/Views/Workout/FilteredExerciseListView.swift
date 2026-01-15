@@ -50,6 +50,7 @@ struct FilteredExerciseListView: View {
             ForEach(filteredExercises) { exercise in
                 if selectedExercises.contains(exercise) {
                     Button {
+                        Haptics.selection()
                         selectedExercises.removeAll { $0 == exercise }
                     } label: {
                         VStack(alignment: .leading, spacing: 0) {
@@ -65,6 +66,7 @@ struct FilteredExerciseListView: View {
                     .listRowBackground(Color.blue.opacity(0.45))
                 } else {
                     Button {
+                        Haptics.selection()
                         selectedExercises.append(exercise)
                     } label: {
                         VStack(alignment: .leading, spacing: 0) {

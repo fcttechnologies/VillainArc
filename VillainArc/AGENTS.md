@@ -30,6 +30,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
 - `Data/Assets.xcassets`: app icons and accent color.
+- `Haptics.swift`: reusable UIKit haptics helper for impact/selection/notifications.
 
 ## Build, Test, and Development Commands
 - Xcode: open `../VillainArc.xcodeproj`, Product > Run/Test.

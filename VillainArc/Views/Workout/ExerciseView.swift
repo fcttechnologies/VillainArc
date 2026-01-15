@@ -61,6 +61,7 @@ struct ExerciseView: View {
                 }
                 
                 Button {
+                    Haptics.impact(.light)
                     addSet()
                 } label: {
                     Label("Add Set", systemImage: "plus")
@@ -90,6 +91,7 @@ struct ExerciseView: View {
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
                     Button {
+                        Haptics.selection()
                         showRepRangeEditor = true
                     } label: {
                         Text("\(exercise.repRange.labelText): \(exercise.repRange.displayText)")
@@ -99,6 +101,7 @@ struct ExerciseView: View {
                 }
                 Spacer()
                 Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
+                    Haptics.selection()
                     withAnimation {
                         isNotesExpanded.toggle()
                     }

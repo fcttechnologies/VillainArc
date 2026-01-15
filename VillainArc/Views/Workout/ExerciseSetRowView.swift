@@ -11,7 +11,13 @@ struct ExerciseSetRowView: View {
     
     var body: some View {
         Menu {
-            Picker("", selection: $set.type) {
+            Picker("", selection: Binding(get: { set.type }, set: { newValue in
+                let oldValue = set.type
+                set.type = newValue
+                if newValue != oldValue {
+                    Haptics.selection()
+                }
+            })) {
                 ForEach(ExerciseSetType.allCases, id: \.self) { type in
                     Text(type.rawValue)
                         .tag(type)
@@ -40,6 +46,7 @@ struct ExerciseSetRowView: View {
         
         if set.complete {
             Button {
+                Haptics.selection()
                 set.complete = false
             } label: {
                 Image(systemName: "checkmark")
@@ -50,6 +57,7 @@ struct ExerciseSetRowView: View {
             .tint(.green)
         } else {
             Button {
+                Haptics.success()
                 set.complete = true
             } label: {
                 Image(systemName: "checkmark")
@@ -62,6 +70,7 @@ struct ExerciseSetRowView: View {
     }
     
     private func deleteSet() {
+        Haptics.warning()
         exercise.removeSet(set)
         context.delete(set)
     }

@@ -34,6 +34,7 @@ struct WorkoutView: View {
                     toolBarMenu
                     
                     Button("Add Exercise", systemImage: "plus") {
+                        Haptics.impact(.light)
                         showAddExerciseSheet = true
                     }
                     .matchedTransitionSource(id: "addExercise", in: animation)
@@ -81,6 +82,7 @@ struct WorkoutView: View {
         List {
             ForEach(workout.sortedExercises) { exercise in
                 Button {
+                    Haptics.selection()
                     activeExercise = exercise
                     showExerciseListView = false
                 } label: {
@@ -121,15 +123,22 @@ struct WorkoutView: View {
                 }
             } else {
                 ControlGroup {
-                    Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in showExerciseListView = true })) {
+                    Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in
+                        showExerciseListView = true
+                        Haptics.selection()
+                    })) {
                         Label("List View", systemImage: "list.dash")
                     }
-                    Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in showExerciseListView = false })) {
+                    Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in
+                        showExerciseListView = false
+                        Haptics.selection()
+                    })) {
                         Label("Exercise View", systemImage: "list.clipboard")
                     }
                 }
                 Divider()
                 Button("Save Workout", systemImage: "checkmark") {
+                    Haptics.success()
                     workout.completed = true
                     saveContext(context: context)
                     dismiss()
@@ -157,12 +166,15 @@ struct WorkoutView: View {
     }
     
     private func deleteWorkout() {
+        Haptics.warning()
         context.delete(workout)
         saveContext(context: context)
         dismiss()
     }
     
     private func deleteExercise(offsets: IndexSet) {
+        guard !offsets.isEmpty else { return }
+        Haptics.warning()
         let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
         
         for exercise in exercisesToDelete {
@@ -181,6 +193,7 @@ struct WorkoutView: View {
     }
     
     private func moveExercise(from source: IndexSet, to destination: Int) {
+        Haptics.impact(.light)
         workout.moveExercise(from: source, to: destination)
         saveContext(context: context)
     }

@@ -10,6 +10,8 @@ struct ContentView: View {
     @State private var workout: Workout?
     
     private func deleteWorkout(offsets: IndexSet) {
+        guard !offsets.isEmpty else { return }
+        Haptics.warning()
         for index in offsets {
             let workout = workouts[index]
             context.delete(workout)
@@ -50,6 +52,7 @@ struct ContentView: View {
     }
     
     private func startNewWorkout() {
+        Haptics.impact(.medium)
         let newWorkout = Workout(title: "New Workout")
         context.insert(newWorkout)
         saveContext(context: context)

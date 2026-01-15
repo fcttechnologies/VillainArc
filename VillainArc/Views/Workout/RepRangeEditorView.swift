@@ -51,6 +51,7 @@ struct RepRangeEditorView: View {
                     }
                     .confirmationDialog("Discard rep range changes?", isPresented: $showCancelConfirmation) {
                         Button("Discard Changes", role: .destructive) {
+                            Haptics.warning()
                             dismiss()
                         }
                         Button("Cancel") {
@@ -62,6 +63,7 @@ struct RepRangeEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
+                        Haptics.success()
                         repRange = buildRepRange()
                         dismiss()
                     }

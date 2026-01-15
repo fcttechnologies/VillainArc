@@ -29,6 +29,7 @@ struct AddExerciseView: View {
                         }
                         .confirmationDialog("Discard selected exercises?", isPresented: $showCancelConfirmation) {
                             Button("Discard Selections", role: .destructive) {
+                                Haptics.warning()
                                 dismiss()
                             }
                             Button("Cancel") {
@@ -40,6 +41,7 @@ struct AddExerciseView: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(role: .confirm) {
+                            Haptics.success()
                             addSelectedExercises()
                         }
                     }
@@ -52,6 +54,7 @@ struct AddExerciseView: View {
                             Divider()
                             Button("Select All") {
                                 selectedMuscles = Muscle.allMajor
+                                Haptics.selection()
                             }
                         }
                         .labelStyle(.iconOnly)
@@ -80,6 +83,7 @@ struct AddExerciseView: View {
         } else {
             selectedMuscles.append(muscle)
         }
+        Haptics.selection()
     }
 }
 
