@@ -28,6 +28,7 @@ class WorkoutExercise {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         self.workout = workout
+        addSet()
     }
     
     func addSet() {

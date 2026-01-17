@@ -16,7 +16,7 @@
 
 ### RepRange Data Type Design
 - **Used for**: Brainstorming different approaches for modeling rep ranges in workout exercises
-- **Why**: Needed to evaluate pros and cons of various implementations (enum vs struct vs string) to make an informed decision
+- **Why**: Needed to evaluate pros and cons of various implementations (class vs enum vs struct vs string) to make an informed decision
 
 ### Exercise Catalog Architecture
 - **Used for**: Brainstorming and researching different design patterns for exercise database management

@@ -25,8 +25,10 @@ struct ExerciseSetRowView: View {
                 }
             }
             Divider()
-            Button("Delete Set", systemImage: "trash", role: .destructive) {
-                deleteSet()
+            if exercise.sets.count > 1 {
+                Button("Delete Set", systemImage: "trash", role: .destructive) {
+                    deleteSet()
+                }
             }
         } label: {
             Text(set.type == .regular ? String(set.index + 1) : set.type.shortLabel)

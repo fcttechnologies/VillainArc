@@ -25,7 +25,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/Models/Exercise.swift`: catalog exercise, `lastUsed` tracking.
 - `Data/Models/ExerciseSetType.swift`: set type labels, short codes, tint colors.
 - `Data/Models/RestTimePolicy.swift`: rest timing policy and per-type defaults.
-- `Data/Models/RepRange.swift`: rep target enum and display text.
+- `Data/Models/RepRangePolicy.swift`: rep target class and display text, rep range mode.
 - `Data/Models/Muscle.swift`: muscle enum, `isMajor`, `allMajor`.
 - `Data/Models/ExerciseDetails.swift`: catalog entries and muscle-target mapping.
 - `Data/DataManager.swift`: seeds catalog using `UserDefaults` versioning.

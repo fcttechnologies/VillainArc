@@ -24,7 +24,7 @@ struct RepRangeEditorView: View {
                         Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
                     } else if repRange.activeMode == .range {
                         Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
-                        Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: repRange.lowerRange...200)
+                        Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: (repRange.lowerRange + 1)...200)
                     }
                 } footer: {
                     if repRange.activeMode == .target || repRange.activeMode == .range {
