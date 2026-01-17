@@ -34,9 +34,9 @@ class WorkoutExercise {
     func addSet() {
         let restSeconds = defaultRestSeconds(for: .regular)
         if let previous = sortedSets.last {
-            sets.append(ExerciseSet(index: sets.count, weight: previous.weight, reps: previous.reps, restSeconds: restSeconds))
+            sets.append(ExerciseSet(index: sets.count, weight: previous.weight, reps: previous.reps, restSeconds: restSeconds, exercise: self))
         } else {
-            sets.append(ExerciseSet(index: sets.count, restSeconds: restSeconds))
+            sets.append(ExerciseSet(index: sets.count, restSeconds: restSeconds, exercise: self))
         }
     }
     
@@ -130,7 +130,7 @@ class WorkoutExercise {
     }
     
     // Testing
-    init(index: Int, name: String, notes: String = "", repRange: RepRangePolicy = RepRangePolicy(), musclesTargeted: [Muscle], workout: Workout?, sets: [ExerciseSet], restTimePolicy: RestTimePolicy = RestTimePolicy.defaultPolicy) {
+    init(index: Int, name: String, notes: String = "", repRange: RepRangePolicy = RepRangePolicy(), musclesTargeted: [Muscle], workout: Workout?, restTimePolicy: RestTimePolicy = RestTimePolicy.defaultPolicy) {
         self.index = index
         self.name = name
         self.notes = notes
@@ -138,7 +138,6 @@ class WorkoutExercise {
         self.musclesTargeted = musclesTargeted
         self.workout = workout
         self.restTimePolicy = restTimePolicy
-        self.sets = sets
         
         syncSetRestSeconds(using: restTimePolicy)
     }
