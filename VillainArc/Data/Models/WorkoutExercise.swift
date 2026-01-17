@@ -6,7 +6,8 @@ class WorkoutExercise {
     var index: Int
     var name: String = ""
     var notes: String = ""
-    var repRange: RepRange = RepRange.notSet
+    @Relationship(deleteRule: .cascade)
+    var repRange: RepRangePolicy = RepRangePolicy()
     var date: Date = Date.now
     var musclesTargeted: [Muscle] = []
     var restTimePolicy: RestTimePolicy = RestTimePolicy.defaultPolicy
@@ -128,7 +129,7 @@ class WorkoutExercise {
     }
     
     // Testing
-    init(index: Int, name: String, notes: String = "", repRange: RepRange = .notSet, musclesTargeted: [Muscle], workout: Workout?, sets: [ExerciseSet], restTimePolicy: RestTimePolicy = RestTimePolicy.defaultPolicy) {
+    init(index: Int, name: String, notes: String = "", repRange: RepRangePolicy = RepRangePolicy(), musclesTargeted: [Muscle], workout: Workout?, sets: [ExerciseSet], restTimePolicy: RestTimePolicy = RestTimePolicy.defaultPolicy) {
         self.index = index
         self.name = name
         self.notes = notes

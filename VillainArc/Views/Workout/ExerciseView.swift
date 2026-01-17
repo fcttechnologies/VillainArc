@@ -95,7 +95,7 @@ struct ExerciseView: View {
                         Haptics.selection()
                         showRepRangeEditor = true
                     } label: {
-                        Text("\(exercise.repRange.labelText): \(exercise.repRange.displayText)")
+                        Text(exercise.repRange.displayText)
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.plain)
@@ -130,7 +130,7 @@ struct ExerciseView: View {
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .sheet(isPresented: $showRepRangeEditor) {
-            RepRangeEditorView(repRange: $exercise.repRange)
+            RepRangeEditorView(repRange: exercise.repRange)
                 .interactiveDismissDisabled()
                 .presentationDetents([.medium])
         }

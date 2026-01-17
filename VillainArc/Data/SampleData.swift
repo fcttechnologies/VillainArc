@@ -10,7 +10,7 @@ class SampleDataContainer {
     }
     
     init() {
-        let schema = Schema([Workout.self, WorkoutExercise.self, ExerciseSet.self, Exercise.self,])
+        let schema = Schema([Workout.self, WorkoutExercise.self, ExerciseSet.self, Exercise.self, RepRangePolicy.self])
 
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])
@@ -97,35 +97,35 @@ extension WorkoutExercise {
     static func chestDay(for workout: Workout) -> [WorkoutExercise] {
         let e1 = WorkoutExercise(index: 0, name: "Barbell Bench Press", notes: "Warm-up + 3x5 @ RPE 8", musclesTargeted: [.chest, .midChest, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet1())
         
-        let e2 = WorkoutExercise(index: 1, name: "Incline Dumbbell Press", repRange: .range(lower: 8, upper: 10), musclesTargeted: [.upperChest, .chest, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet2())
+        let e2 = WorkoutExercise(index: 1, name: "Incline Dumbbell Press", repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10), musclesTargeted: [.upperChest, .chest, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet2())
         
-        let e3 = WorkoutExercise(index: 2, name: "Cable Chest Fly", notes: "slow eccentric", repRange: .range(lower: 12, upper: 15), musclesTargeted: [.chest, .midChest, .frontDelt], workout: workout, sets: ExerciseSet.sampleSet3())
+        let e3 = WorkoutExercise(index: 2, name: "Cable Chest Fly", notes: "slow eccentric", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15), musclesTargeted: [.chest, .midChest, .frontDelt], workout: workout, sets: ExerciseSet.sampleSet3())
         
-        let e4 = WorkoutExercise(index: 3, name: "Push-ups", notes: "2xAMRAP", repRange: .untilFailure, musclesTargeted: [.chest, .midChest, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet4())
+        let e4 = WorkoutExercise(index: 3, name: "Push-ups", notes: "2xAMRAP", repRange: RepRangePolicy(activeMode: .untilFailure), musclesTargeted: [.chest, .midChest, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet4())
         
         return [e1, e2, e3, e4]
     }
     
     static func backDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = WorkoutExercise(index: 0, name: "Deadlift", notes: "Warm-up + 3x3 @ RPE 8", repRange: .target(3), musclesTargeted: [.hamstrings, .glutes, .lowerBack, .back], workout: workout, sets: ExerciseSet.sampleSet1())
+        let e1 = WorkoutExercise(index: 0, name: "Deadlift", notes: "Warm-up + 3x3 @ RPE 8", repRange: RepRangePolicy(activeMode: .target, targetReps: 3), musclesTargeted: [.hamstrings, .glutes, .lowerBack, .back], workout: workout, sets: ExerciseSet.sampleSet1())
         
         let e2 = WorkoutExercise(index: 1, name: "Bent-Over Row", notes: "straps optional", musclesTargeted: [.back, .lats, .rhomboids, .rearDelt], workout: workout, sets: ExerciseSet.sampleSet2())
         
-        let e3 = WorkoutExercise(index: 2, name: "Lat Pulldown", repRange: .range(lower: 10, upper: 12), musclesTargeted: [.lats, .back, .biceps], workout: workout, sets: ExerciseSet.sampleSet3())
+        let e3 = WorkoutExercise(index: 2, name: "Lat Pulldown", repRange: RepRangePolicy(activeMode: .range, lowerRange: 10, upperRange: 12), musclesTargeted: [.lats, .back, .biceps], workout: workout, sets: ExerciseSet.sampleSet3())
         
-        let e4 = WorkoutExercise(index: 3, name: "Face Pull", notes: "focus on scapular movement", repRange: .target(15), musclesTargeted: [.rearDelt, .rhomboids, .shoulders], workout: workout, sets: ExerciseSet.sampleSet4())
+        let e4 = WorkoutExercise(index: 3, name: "Face Pull", notes: "focus on scapular movement", repRange: RepRangePolicy(activeMode: .target, targetReps: 15), musclesTargeted: [.rearDelt, .rhomboids, .shoulders], workout: workout, sets: ExerciseSet.sampleSet4())
         
         return [e1, e2, e3, e4]
     }
     
     static func shoulderDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = WorkoutExercise(index: 0, name: "Overhead Press", notes: "5x5, full ROM", repRange: .target(5), musclesTargeted: [.shoulders, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet1())
+        let e1 = WorkoutExercise(index: 0, name: "Overhead Press", notes: "5x5, full ROM", repRange: RepRangePolicy(activeMode: .target, targetReps: 5), musclesTargeted: [.shoulders, .frontDelt, .triceps], workout: workout, sets: ExerciseSet.sampleSet1())
         
         let e2 = WorkoutExercise(index: 1, name: "Lateral Raise", notes: "4x12–15, controlled tempo", musclesTargeted: [.sideDelt, .shoulders], workout: workout, sets: ExerciseSet.sampleSet2())
         
-        let e3 = WorkoutExercise(index: 2, name: "Rear Delt Fly", notes: "3x12–15", repRange: .range(lower: 12, upper: 15), musclesTargeted: [.rearDelt, .shoulders, .rhomboids], workout: workout, sets: ExerciseSet.sampleSet3())
+        let e3 = WorkoutExercise(index: 2, name: "Rear Delt Fly", notes: "3x12–15", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15), musclesTargeted: [.rearDelt, .shoulders, .rhomboids], workout: workout, sets: ExerciseSet.sampleSet3())
         
-        let e4 = WorkoutExercise(index: 3, name: "Upright Row", notes: "3x10", repRange: .target(10), musclesTargeted: [.upperTraps, .sideDelt, .shoulders, .biceps], workout: workout, sets: ExerciseSet.sampleSet4())
+        let e4 = WorkoutExercise(index: 3, name: "Upright Row", notes: "3x10", repRange: RepRangePolicy(activeMode: .target, targetReps: 10), musclesTargeted: [.upperTraps, .sideDelt, .shoulders, .biceps], workout: workout, sets: ExerciseSet.sampleSet4())
         
         return [e1, e2, e3, e4]
     }
@@ -133,23 +133,23 @@ extension WorkoutExercise {
     static func legDay(for workout: Workout) -> [WorkoutExercise] {
         let e1 = WorkoutExercise(index: 0, name: "Back Squat", notes: "5x5, belt as needed", musclesTargeted: [.quads, .glutes, .hamstrings], workout: workout, sets: ExerciseSet.sampleSet1())
         
-        let e2 = WorkoutExercise(index: 1, name: "Romanian Deadlift", notes: "3x8–10", repRange: .range(lower: 8, upper: 10), musclesTargeted: [.hamstrings, .glutes, .lowerBack], workout: workout, sets: ExerciseSet.sampleSet2())
+        let e2 = WorkoutExercise(index: 1, name: "Romanian Deadlift", notes: "3x8–10", repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10), musclesTargeted: [.hamstrings, .glutes, .lowerBack], workout: workout, sets: ExerciseSet.sampleSet2())
         
-        let e3 = WorkoutExercise(index: 2, name: "Leg Press", notes: "3x12, full lockout optional", repRange: .target(12), musclesTargeted: [.quads, .glutes], workout: workout, sets: ExerciseSet.sampleSet3())
+        let e3 = WorkoutExercise(index: 2, name: "Leg Press", notes: "3x12, full lockout optional", repRange: RepRangePolicy(activeMode: .target, targetReps: 12), musclesTargeted: [.quads, .glutes], workout: workout, sets: ExerciseSet.sampleSet3())
         
-        let e4 = WorkoutExercise(index: 3, name: "Standing Calf Raise", notes: "4x12–15, pause at top", repRange: .range(lower: 12, upper: 15), musclesTargeted: [.calves], workout: workout, sets: ExerciseSet.sampleSet4())
+        let e4 = WorkoutExercise(index: 3, name: "Standing Calf Raise", notes: "4x12–15, pause at top", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15), musclesTargeted: [.calves], workout: workout, sets: ExerciseSet.sampleSet4())
         
         return [e1, e2, e3, e4]
     }
     
     static func armDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = WorkoutExercise(index: 0, name: "Barbell Curl", notes: "4x10, strict form", repRange: .target(10), musclesTargeted: [.biceps, .brachialis, .forearms], workout: workout, sets: ExerciseSet.sampleSet1())
+        let e1 = WorkoutExercise(index: 0, name: "Barbell Curl", notes: "4x10, strict form", repRange: RepRangePolicy(activeMode: .target, targetReps: 10), musclesTargeted: [.biceps, .brachialis, .forearms], workout: workout, sets: ExerciseSet.sampleSet1())
         
-        let e2 = WorkoutExercise(index: 1, name: "Triceps Pushdown", notes: "4x10–12", repRange: .range(lower: 10, upper: 12), musclesTargeted: [.triceps, .lateralHeadTriceps], workout: workout, sets: ExerciseSet.sampleSet2())
+        let e2 = WorkoutExercise(index: 1, name: "Triceps Pushdown", notes: "4x10–12", repRange: RepRangePolicy(activeMode: .range, lowerRange: 10, upperRange: 12), musclesTargeted: [.triceps, .lateralHeadTriceps], workout: workout, sets: ExerciseSet.sampleSet2())
         
         let e3 = WorkoutExercise(index: 2, name: "Hammer Curl", notes: "3x12", musclesTargeted: [.brachialis, .biceps, .forearms], workout: workout, sets: ExerciseSet.sampleSet3())
         
-        let e4 = WorkoutExercise(index: 3, name: "Skull Crushers", notes: "3x10", repRange: .target(10), musclesTargeted: [.triceps, .longHeadTriceps], workout: workout, sets: ExerciseSet.sampleSet4())
+        let e4 = WorkoutExercise(index: 3, name: "Skull Crushers", notes: "3x10", repRange: RepRangePolicy(activeMode: .target, targetReps: 10), musclesTargeted: [.triceps, .longHeadTriceps], workout: workout, sets: ExerciseSet.sampleSet4())
         
         return [e1, e2, e3, e4]
     }

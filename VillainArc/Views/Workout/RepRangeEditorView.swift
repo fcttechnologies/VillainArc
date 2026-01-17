@@ -3,19 +3,14 @@ import SwiftUI
 struct RepRangeEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @Binding var repRange: RepRange
-    
-    @State private var mode: RepRangeMode = .notSet
-    @State private var target: Int = 8
-    @State private var lower: Int = 8
-    @State private var upper: Int = 12
+    @Bindable var repRange: RepRangePolicy
     
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("Type", selection: $mode) {
-                        ForEach(RepRangeMode.allCases) { mode in
+                    Picker("Type", selection: $repRange.activeMode) {
+                        ForEach(RepRangeMode.allCases, id: \.self) { mode in
                             Text(mode.displayName)
                                 .tag(mode)
                         }
@@ -25,14 +20,14 @@ struct RepRangeEditorView: View {
                 }
                 
                 Section {
-                    if mode == .target {
-                        Stepper("Target: \(target)", value: $target, in: 1...200)
-                    } else if mode == .range {
-                        Stepper("Lower: \(lower)", value: $lower, in: 1...200)
-                        Stepper("Upper: \(upper)", value: $upper, in: lower...200)
+                    if repRange.activeMode == .target {
+                        Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
+                    } else if repRange.activeMode == .range {
+                        Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
+                        Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: repRange.lowerRange...200)
                     }
                 } footer: {
-                    if mode == .target || mode == .range {
+                    if repRange.activeMode == .target || repRange.activeMode == .range {
                         Text(repGuidanceFooterText)
                     }
                 }
@@ -43,27 +38,24 @@ struct RepRangeEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
                         Haptics.success()
-                        applyChanges()
+                        saveContext(context: context)
                         dismiss()
                     }
                 }
             }
-            .onAppear {
-                loadFromRepRange()
-            }
-            .onChange(of: mode) { _, _ in
+            .onChange(of: repRange.activeMode) { _, _ in
                 Haptics.selection()
             }
-            .onChange(of: lower) { _, newValue in
-                if newValue > upper {
-                    upper = newValue
+            .onChange(of: repRange.lowerRange) { _, newValue in
+                if newValue > repRange.upperRange {
+                    repRange.upperRange = newValue
                 }
             }
         }
     }
     
     private var modeFooterText: String {
-        switch mode {
+        switch repRange.activeMode {
         case .notSet:
             return "No rep goal is stored for this exercise."
         case .target:
@@ -83,62 +75,6 @@ struct RepRangeEditorView: View {
         Hypertrophy 6-12 reps
         Endurance 12-20+ reps
         """
-    }
-    
-    private func loadFromRepRange() {
-        switch repRange {
-        case .notSet:
-            mode = .notSet
-        case .untilFailure:
-            mode = .untilFailure
-        case .target(let reps):
-            mode = .target
-            target = reps
-        case .range(let lower, let upper):
-            mode = .range
-            self.lower = lower
-            self.upper = max(upper, lower)
-        }
-    }
-    
-    private func buildRepRange() -> RepRange {
-        switch mode {
-        case .notSet:
-            return .notSet
-        case .untilFailure:
-            return .untilFailure
-        case .target:
-            return .target(target)
-        case .range:
-            return .range(lower: lower, upper: max(upper, lower))
-        }
-    }
-    
-    private func applyChanges() {
-        repRange = buildRepRange()
-        saveContext(context: context)
-    }
-}
-
-private enum RepRangeMode: String, CaseIterable, Identifiable {
-    case notSet
-    case target
-    case range
-    case untilFailure
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .notSet:
-            return "Not Set"
-        case .target:
-            return "Target"
-        case .range:
-            return "Range"
-        case .untilFailure:
-            return "Until Failure"
-        }
     }
 }
 
