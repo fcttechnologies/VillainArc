@@ -59,6 +59,19 @@ class SampleDataContainer {
 
 private let sampleContainer = SampleDataContainer()
 
+@MainActor
+func sampleWorkout(at index: Int = 0) -> Workout {
+    let descriptor = FetchDescriptor<Workout>(sortBy: [SortDescriptor(\.title)])
+    let workouts = (try? sampleContainer.context.fetch(descriptor)) ?? []
+    if workouts.indices.contains(index) {
+        return workouts[index]
+    }
+
+    let fallback = Workout(title: "Sample Workout")
+    sampleContainer.context.insert(fallback)
+    return fallback
+}
+
 extension View {
     func sampleDataConainer() -> some View {
         self

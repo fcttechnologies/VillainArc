@@ -181,4 +181,5 @@ struct RestTimerView: View {
 #Preview {
     RestTimerView()
         .environment(RestTimerState())
+        .sampleDataConainer()
 }

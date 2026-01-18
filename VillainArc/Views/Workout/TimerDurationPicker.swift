@@ -183,17 +183,8 @@ struct TimerDurationPickerDemo: View {
                 .font(.system(size: 56, weight: .bold))
                 .contentTransition(.numericText())
 
-            Text("duration")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
-
             TimerDurationPicker(seconds: $seconds, showZero: showZero)
                 .frame(height: 50)
-
-            Button("Start \(seconds)s") {
-                // start your timer here
-            }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
     }

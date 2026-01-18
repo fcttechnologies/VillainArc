@@ -83,5 +83,7 @@ struct RepRangeEditorView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: Workout.sampleData.first!.exercises.first!)
+    ExerciseView(exercise: sampleWorkout().sortedExercises.first!)
+        .sampleDataConainer()
+        .environment(RestTimerState())
 }

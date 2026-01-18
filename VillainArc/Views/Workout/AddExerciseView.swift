@@ -88,6 +88,6 @@ struct AddExerciseView: View {
 }
 
 #Preview {
-    AddExerciseView(workout: Workout.sampleData.first!)
+    AddExerciseView(workout: Workout())
         .sampleDataConainer()
 }

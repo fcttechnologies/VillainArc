@@ -71,6 +71,6 @@ struct ContentView: View {
         .sampleDataConainer()
 }
 
-#Preview("Empty Workouts") {
+#Preview("No Workouts") {
     ContentView()
 }
