@@ -4,10 +4,10 @@ import SwiftData
 struct WorkoutView: View {
     @Bindable var workout: Workout
     @State private var activeExercise: WorkoutExercise?
-    @State private var showCancelConfirmation: Bool = false
     @State private var showExerciseListView: Bool = false
     @State private var showAddExerciseSheet: Bool = false
     @State private var showRestTimerSheet: Bool = false
+    @State private var showWorkoutSettingsSheet: Bool = false
     @State private var restTimer = RestTimerState()
     
     @Environment(\.modelContext) private var context
@@ -35,9 +35,11 @@ struct WorkoutView: View {
                         timerToolbarLabel
                     }
                 }
-                ToolbarItemGroup(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     toolBarMenu
-                    
+                }
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
                     Button("Add Exercise", systemImage: "plus") {
                         Haptics.impact(.light)
                         showAddExerciseSheet = true
@@ -57,12 +59,18 @@ struct WorkoutView: View {
                     .presentationDetents([.medium, .large])
                     .presentationBackground(Color(.systemBackground))
             }
+            .sheet(isPresented: $showWorkoutSettingsSheet) {
+                WorkoutSettingsView(workout: workout, onFinish: finishWorkout, onDelete: deleteWorkout)
+            }
             .onAppear {
                 restTimer.refreshIfExpired()
             }
             .onChange(of: scenePhase) {
                 if scenePhase == .active {
                     restTimer.refreshIfExpired()
+                    Task {
+                        await restTimer.scheduleStopIfNeeded()
+                    }
                 }
             }
             .task(id: restTimer.endDate) {
@@ -138,7 +146,7 @@ struct WorkoutView: View {
     }
 
     var toolBarMenu: some View {
-        Menu("Workout Settings", systemImage: "ellipsis") {
+        Menu("Options", systemImage: "ellipsis") {
             if workout.exercises.isEmpty {
                 Button("Cancel Workout", systemImage: "xmark") {
                     deleteWorkout()
@@ -159,37 +167,29 @@ struct WorkoutView: View {
                     }
                 }
                 Divider()
-                Button("Save Workout", systemImage: "checkmark") {
-                    Haptics.success()
-                    workout.completed = true
-                    restTimer.stop()
-                    saveContext(context: context)
-                    dismiss()
-                }
-                .tint(.green)
-                Button("Delete Workout", systemImage: "trash", role: .destructive) {
-                    if !workout.exercises.isEmpty {
-                        showCancelConfirmation = true
-                    } else {
-                        deleteWorkout()
-                    }
+                Button("Settings", systemImage: "gearshape") {
+                    Haptics.selection()
+                    showWorkoutSettingsSheet = true
                 }
             }
         }
-        .confirmationDialog("Delete Workout", isPresented: $showCancelConfirmation) {
-            Button("Delete", role: .destructive) {
-                deleteWorkout()
-            }
-            Button("Cancel") {
-                showCancelConfirmation = false
-            }
-        } message: {
-            Text("Are you sure you want to delete this workout? This cannot be undone.")
+    }
+    
+    private func finishWorkout() {
+        Haptics.success()
+        showWorkoutSettingsSheet = false
+        workout.completed = true
+        if workout.endTime == nil {
+            workout.endTime = Date.now
         }
+        restTimer.stop()
+        saveContext(context: context)
+        dismiss()
     }
     
     private func deleteWorkout() {
         Haptics.warning()
+        showWorkoutSettingsSheet = false
         restTimer.stop()
         context.delete(workout)
         saveContext(context: context)
@@ -230,7 +230,7 @@ struct WorkoutView: View {
                 .monospacedDigit()
                 .contentTransition(.numericText())
         } else if restTimer.isPaused {
-            Text(format(seconds: restTimer.remainingSeconds))
+            Text(secondsToTime(restTimer.pausedRemainingSeconds))
                 .fontWeight(.semibold)
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -239,14 +239,10 @@ struct WorkoutView: View {
         }
     }
     
-    private func format(seconds: Int) -> String {
-        let minutes = max(0, seconds / 60)
-        let remainingSeconds = max(0, seconds % 60)
-        return "\(minutes):" + String(format: "%02d", remainingSeconds)
-    }
 }
 
 #Preview {
     WorkoutView(workout: sampleWorkout())
         .sampleDataConainer()
+        .environment(RestTimerState())
 }

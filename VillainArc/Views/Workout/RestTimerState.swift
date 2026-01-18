@@ -11,7 +11,7 @@ final class RestTimerState {
     }
     
     var endDate: Date?
-    var remainingSeconds: Int
+    var pausedRemainingSeconds: Int
     var isPaused: Bool
     
     init() {
@@ -19,8 +19,8 @@ final class RestTimerState {
         let storedEndDate = defaults.double(forKey: StorageKey.endDate)
         let storedRemaining = defaults.integer(forKey: StorageKey.remainingSeconds)
         let storedPaused = defaults.bool(forKey: StorageKey.isPaused)
-
-        remainingSeconds = max(0, storedRemaining)
+        
+        pausedRemainingSeconds = max(0, storedRemaining)
         isPaused = storedPaused
         
         if storedEndDate > 0 {
@@ -28,16 +28,16 @@ final class RestTimerState {
             if date > Date.now {
                 endDate = date
                 isPaused = false
-                remainingSeconds = 0
+                pausedRemainingSeconds = 0
             } else {
                 endDate = nil
                 isPaused = false
-                remainingSeconds = 0
+                pausedRemainingSeconds = 0
                 persist()
             }
         } else {
             endDate = nil
-            if isPaused && remainingSeconds == 0 {
+            if isPaused && pausedRemainingSeconds == 0 {
                 isPaused = false
             }
         }
@@ -48,7 +48,7 @@ final class RestTimerState {
     }
     
     var isActive: Bool {
-        isRunning || (isPaused && remainingSeconds > 0)
+        isRunning || (isPaused && pausedRemainingSeconds > 0)
     }
     
     var displayRemainingSeconds: Int {
@@ -56,7 +56,7 @@ final class RestTimerState {
             return max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
         }
         
-        return max(0, remainingSeconds)
+        return max(0, pausedRemainingSeconds)
     }
     
     func start(seconds: Int) {
@@ -67,37 +67,37 @@ final class RestTimerState {
         }
         
         endDate = Date.now.addingTimeInterval(TimeInterval(clamped))
-        remainingSeconds = 0
+        pausedRemainingSeconds = 0
         isPaused = false
         persist()
     }
     
     func pause() {
         guard isRunning, let endDate else { return }
-        let remaining = max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
+        let remaining = max(0, Int(endDate.timeIntervalSinceNow.rounded(.down)))
         
         if remaining == 0 {
             stop()
             return
         }
         
-        remainingSeconds = remaining
+        pausedRemainingSeconds = remaining
         self.endDate = nil
         isPaused = true
         persist()
     }
     
     func resume() {
-        guard isPaused, remainingSeconds > 0 else { return }
-        endDate = Date.now.addingTimeInterval(TimeInterval(remainingSeconds))
-        remainingSeconds = 0
+        guard isPaused, pausedRemainingSeconds > 0 else { return }
+        endDate = Date.now.addingTimeInterval(TimeInterval(pausedRemainingSeconds))
+        pausedRemainingSeconds = 0
         isPaused = false
         persist()
     }
     
     func stop() {
         endDate = nil
-        remainingSeconds = 0
+        pausedRemainingSeconds = 0
         isPaused = false
         persist()
     }
@@ -117,7 +117,17 @@ final class RestTimerState {
             return
         }
         
-        try? await Task.sleep(for: .seconds(Int(seconds.rounded(.up))))
+        do {
+            try await Task.sleep(for: .seconds(Int(seconds.rounded(.up))))
+        } catch is CancellationError {
+            return
+        } catch {
+            return
+        }
+        
+        if Task.isCancelled {
+            return
+        }
         
         if self.endDate == endDate {
             stop()
@@ -131,7 +141,7 @@ final class RestTimerState {
         } else {
             defaults.set(0, forKey: StorageKey.endDate)
         }
-        defaults.set(remainingSeconds, forKey: StorageKey.remainingSeconds)
+        defaults.set(pausedRemainingSeconds, forKey: StorageKey.remainingSeconds)
         defaults.set(isPaused, forKey: StorageKey.isPaused)
     }
 }

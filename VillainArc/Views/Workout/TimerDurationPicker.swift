@@ -179,7 +179,7 @@ struct TimerDurationPickerDemo: View {
             Toggle("Allow 0:00", isOn: $showZero)
                 .padding(.horizontal)
 
-            Text(format(seconds: seconds))
+            Text(secondsToTime(seconds))
                 .font(.system(size: 56, weight: .bold))
                 .contentTransition(.numericText())
 
@@ -189,11 +189,6 @@ struct TimerDurationPickerDemo: View {
         .padding()
     }
 
-    private func format(seconds: Int) -> String {
-        let minutes = seconds / 60
-        let remainingSeconds = seconds % 60
-        return "\(minutes):" + String(format: "%02d", remainingSeconds)
-    }
 }
 
 #Preview {

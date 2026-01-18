@@ -22,7 +22,7 @@ struct RestTimerView: View {
                                 .font(.system(size: 80, weight: .bold))
                         }
                     } else {
-                        Text(format(seconds: restTimer.isPaused ? restTimer.remainingSeconds : selectedSeconds))
+                        Text(secondsToTime(restTimer.isPaused ? restTimer.pausedRemainingSeconds : selectedSeconds))
                             .font(.system(size: 80, weight: .bold))
                             .contentTransition(.numericText())
                     }
@@ -47,7 +47,7 @@ struct RestTimerView: View {
                         .font(.title3)
                     ForEach(recentTimes) { history in
                         HStack {
-                            Text(format(seconds: history.seconds))
+                            Text(secondsToTime(history.seconds))
                                 .font(.title)
                                 .fontWeight(.semibold)
                                 .monospacedDigit()
@@ -58,6 +58,7 @@ struct RestTimerView: View {
                                 Haptics.success()
                                 restTimer.start(seconds: history.seconds)
                                 RestTimeHistory.record(seconds: history.seconds, context: context)
+                                saveContext(context: context)
                             } label: {
                                 Image(systemName: "play.fill")
                                     .padding()
@@ -149,6 +150,7 @@ struct RestTimerView: View {
                 Haptics.success()
                 restTimer.start(seconds: selectedSeconds)
                 RestTimeHistory.record(seconds: selectedSeconds, context: context)
+                saveContext(context: context)
             } label: {
                 Text("Start")
                     .padding(.vertical, 8)
@@ -158,12 +160,6 @@ struct RestTimerView: View {
             .buttonStyle(.glassProminent)
             .tint(.green)
         }
-    }
-    
-    private func format(seconds: Int) -> String {
-        let minutes = max(0, seconds / 60)
-        let remainingSeconds = max(0, seconds % 60)
-        return "\(minutes):" + String(format: "%02d", remainingSeconds)
     }
     
     private func deleteRecentTimes(at offsets: IndexSet) {

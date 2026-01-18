@@ -129,6 +129,9 @@ struct ExerciseView: View {
                 TextField("Notes", text: $exercise.notes, axis: .vertical)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                     .padding(.top, 8)
+                    .onChange(of: exercise.notes) {
+                        saveContext(context: context)
+                    }
             }
         }
         .padding()

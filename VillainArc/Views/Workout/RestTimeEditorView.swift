@@ -93,12 +93,6 @@ struct RestTimeEditorView: View {
         }
     }
     
-    private func format(seconds: Int) -> String {
-        let minutes = max(0, seconds / 60)
-        let remainingSeconds = max(0, seconds % 60)
-        return "\(minutes):" + String(format: "%02d", remainingSeconds)
-    }
-    
     private func policyBinding(_ keyPath: ReferenceWritableKeyPath<RestTimePolicy, Int>) -> Binding<Int> {
         Binding(
             get: { restTimePolicy[keyPath: keyPath] },
@@ -138,7 +132,7 @@ struct RestTimeEditorView: View {
                 Button {
                     toggle()
                 } label: {
-                    Text(format(seconds: seconds.wrappedValue))
+                    Text(secondsToTime(seconds.wrappedValue))
                         .fontWeight(.semibold)
                         .contentTransition(.numericText())
                         .sensoryFeedback(.selection, trigger: seconds.wrappedValue)

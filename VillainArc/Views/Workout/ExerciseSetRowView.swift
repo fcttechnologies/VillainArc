@@ -20,6 +20,7 @@ struct ExerciseSetRowView: View {
                     set.type = newValue
                     if newValue != oldValue {
                         Haptics.selection()
+                        saveContext(context: context)
                     }
                 })) {
                     ForEach(ExerciseSetType.allCases, id: \.self) { type in
@@ -54,6 +55,7 @@ struct ExerciseSetRowView: View {
                 Button {
                     Haptics.selection()
                     set.complete = false
+                    saveContext(context: context)
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -66,6 +68,7 @@ struct ExerciseSetRowView: View {
                     Haptics.success()
                     set.complete = true
                     handleAutoStartTimer()
+                    saveContext(context: context)
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -81,11 +84,12 @@ struct ExerciseSetRowView: View {
                 if restSeconds > 0 {
                     restTimer.start(seconds: restSeconds)
                     RestTimeHistory.record(seconds: restSeconds, context: context)
+                    saveContext(context: context)
                 }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Start a new timer for \(format(seconds: set.effectiveRestSeconds))?")
+            Text("Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
         }
     }
     
@@ -93,6 +97,7 @@ struct ExerciseSetRowView: View {
         Haptics.warning()
         exercise.removeSet(set)
         context.delete(set)
+        saveContext(context: context)
     }
     
     private func handleAutoStartTimer() {
@@ -105,14 +110,10 @@ struct ExerciseSetRowView: View {
         } else {
             restTimer.start(seconds: restSeconds)
             RestTimeHistory.record(seconds: restSeconds, context: context)
+            saveContext(context: context)
         }
     }
 
-    private func format(seconds: Int) -> String {
-        let minutes = max(0, seconds / 60)
-        let remainingSeconds = max(0, seconds % 60)
-        return "\(minutes):" + String(format: "%02d", remainingSeconds)
-    }
 }
 
 #Preview {

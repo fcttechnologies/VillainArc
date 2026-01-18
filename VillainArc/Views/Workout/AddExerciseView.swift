@@ -32,9 +32,6 @@ struct AddExerciseView: View {
                                 Haptics.warning()
                                 dismiss()
                             }
-                            Button("Cancel") {
-                                showCancelConfirmation = false
-                            }
                         } message: {
                             Text("If you leave now, the selected exercises will not be added to your workout.")
                         }
