@@ -17,7 +17,10 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion.
 - `Views/Workout/RepRangeEditorView.swift`: rep range editor sheet with confirm/cancel actions.
 - `Views/Workout/RestTimeEditorView.swift`: rest time editor sheet, mode selection, and duration slider rows.
+- `Views/Workout/RestTimerState.swift`: observable rest timer state with persistence.
+- `Views/Workout/RestTimerView.swift`: rest timer sheet for start/pause/stop and countdown display.
 - `Views/Workout/TimerDurationPicker.swift`: tick-based duration slider for rest time picking.
+- `Helpers/KeyboardDismiss.swift`: shared keyboard dismissal helper.
 - `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters.
 - `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI.
 - `Data/Models/Workout.swift`: workout model, ordering helpers.
@@ -25,6 +28,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/Models/ExerciseSet.swift`: set data (type, reps, weight, complete).
 - `Data/Models/Exercise.swift`: catalog exercise, `lastUsed` tracking.
 - `Data/Models/ExerciseSetType.swift`: set type labels, short codes, tint colors.
+- `Data/Models/RestTimeHistory.swift`: global rest time history entries with last-used tracking.
 - `Data/Models/RestTimePolicy.swift`: rest timing policy and per-type defaults.
 - `Data/Models/RepRangePolicy.swift`: rep target class and display text, rep range mode.
 - `Data/Models/Muscle.swift`: muscle enum, `isMajor`, `allMajor`.
@@ -33,7 +37,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
 - `Data/Assets.xcassets`: app icons and accent color.
-- `Haptics.swift`: reusable UIKit haptics helper for impact/selection/notifications.
+- `Helpers/Haptics.swift`: reusable UIKit haptics helper for impact/selection/notifications.
 
 ## Build, Test, and Development Commands
 - Xcode: open `../VillainArc.xcodeproj`, Product > Run/Test.

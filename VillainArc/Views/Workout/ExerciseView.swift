@@ -78,16 +78,22 @@ struct ExerciseView: View {
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)
             .dynamicTypeSize(...DynamicTypeSize.large)
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    dismissKeyboard()
+                }
+            )
         }
     }
     
     var headerView: some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .center) {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(exercise.name)
+                .font(.title3)
+                .bold()
+                .lineLimit(1)
+            HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(exercise.name)
-                        .font(.title3)
-                        .bold()
                     Text(exercise.displayMuscle)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
@@ -102,29 +108,27 @@ struct ExerciseView: View {
                 }
                 Spacer()
                 HStack(spacing: 12) {
-                    Button("Rest Times", systemImage: "timer") {
-                        Haptics.selection()
-                        showRestTimeEditor = true
-                    }
-                    .labelStyle(.iconOnly)
-                    .font(.title2)
-                    .tint(.primary)
-                    
                     Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
                         Haptics.selection()
                         withAnimation {
                             isNotesExpanded.toggle()
                         }
                     }
-                    .labelStyle(.iconOnly)
-                    .font(.title)
-                    .tint(.primary)
+                    
+                    Button("Rest Times", systemImage: "timer") {
+                        Haptics.selection()
+                        showRestTimeEditor = true
+                    }
                 }
+                .labelStyle(.iconOnly)
+                .font(.title)
+                .tint(.primary)
             }
             
             if isNotesExpanded {
                 TextField("Notes", text: $exercise.notes, axis: .vertical)
                     .transition(.opacity.combined(with: .move(edge: .top)))
+                    .padding(.top, 8)
             }
         }
         .padding()
@@ -145,8 +149,11 @@ struct ExerciseView: View {
         exercise.addSet()
         saveContext(context: context)
     }
+
 }
 
 #Preview {
     ExerciseView(exercise: Workout.sampleData.first!.exercises.first!)
+        .sampleDataConainer()
+        .environment(RestTimerState())
 }

@@ -182,7 +182,6 @@ struct TimerDurationPickerDemo: View {
             Text(format(seconds: seconds))
                 .font(.system(size: 56, weight: .bold))
                 .contentTransition(.numericText())
-                .sensoryFeedback(.selection, trigger: seconds)
 
             Text("duration")
                 .font(.system(size: 16, weight: .medium))
