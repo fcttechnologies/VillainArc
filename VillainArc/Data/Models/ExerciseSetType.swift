@@ -5,7 +5,7 @@ enum ExerciseSetType: String, Codable, CaseIterable {
     case regular = "Regular Set"
     case superSet = "Super Set"
     case dropSet = "Drop Set"
-    case failure = "Until Failure"
+    case failure = "Failure Set"
     
     var shortLabel: String {
         switch self {

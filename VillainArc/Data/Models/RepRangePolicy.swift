@@ -6,7 +6,7 @@ class RepRangePolicy {
     var activeMode: RepRangeMode = RepRangeMode.notSet
     var lowerRange: Int = 8
     var upperRange: Int = 12
-    var targetReps: Int = 10
+    var targetReps: Int = 8
     
     var displayText: String {
         switch activeMode {
@@ -21,7 +21,7 @@ class RepRangePolicy {
         }
     }
     
-    init(activeMode: RepRangeMode = .notSet, lowerRange: Int = 8, upperRange: Int = 12, targetReps: Int = 10) {
+    init(activeMode: RepRangeMode = .notSet, lowerRange: Int = 8, upperRange: Int = 12, targetReps: Int = 8) {
         self.activeMode = activeMode
         self.lowerRange = lowerRange
         self.upperRange = upperRange

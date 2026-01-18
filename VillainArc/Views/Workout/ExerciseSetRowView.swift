@@ -16,7 +16,6 @@ struct ExerciseSetRowView: View {
                 set.type = newValue
                 if newValue != oldValue {
                     Haptics.selection()
-                    exercise.updateRestSecondsForSetTypeChange(set)
                 }
             })) {
                 ForEach(ExerciseSetType.allCases, id: \.self) { type in

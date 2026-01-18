@@ -1,63 +1,68 @@
 import Foundation
+import SwiftData
 
-enum RestTimePolicy: Codable, Equatable {
-    case allSame(seconds: Int)
-    case byType(RestTimeByType)
-    case individual
-    
-    static let defaultAllSameSeconds = 90
+@Model
+class RestTimePolicy {
+    static let defaultRestSeconds = 90
     static let defaultWarmupSeconds = 60
-    static let defaultPolicy: RestTimePolicy = .allSame(seconds: defaultAllSameSeconds)
+    
+    var activeMode: RestTimeMode = RestTimeMode.allSame
+    var allSameSeconds: Int = RestTimePolicy.defaultRestSeconds
+    var warmupSeconds: Int = RestTimePolicy.defaultWarmupSeconds
+    var regularSeconds: Int = RestTimePolicy.defaultRestSeconds
+    var superSetSeconds: Int = RestTimePolicy.defaultRestSeconds
+    var dropSetSeconds: Int = RestTimePolicy.defaultRestSeconds
+    var failureSeconds: Int = RestTimePolicy.defaultRestSeconds
+    
+    init() {}
+    
+    func seconds(for set: ExerciseSet) -> Int {
+        switch activeMode {
+        case .allSame:
+            return allSameSeconds
+        case .byType:
+            switch set.type {
+            case .warmup:
+                return warmupSeconds
+            case .regular:
+                return regularSeconds
+            case .superSet:
+                return superSetSeconds
+            case .dropSet:
+                return dropSetSeconds
+            case .failure:
+                return failureSeconds
+            }
+        case .individual:
+            return set.restSeconds
+        }
+    }
+    
+    func defaultRegularSeconds() -> Int {
+        switch activeMode {
+        case .allSame:
+            allSameSeconds
+        case .byType:
+            regularSeconds
+        case .individual:
+            RestTimePolicy.defaultRestSeconds
+        }
+    }
 }
 
-struct RestTimeByType: Codable, Equatable {
-    var warmup: Int
-    var regular: Int
-    var superSet: Int
-    var dropSet: Int
-    var failure: Int
+enum RestTimeMode: String, CaseIterable, Codable {
+    case allSame
+    case byType
+    case individual
     
-    static let defaultValues = RestTimeByType(
-        warmup: RestTimePolicy.defaultWarmupSeconds,
-        regular: RestTimePolicy.defaultAllSameSeconds,
-        superSet: 0,
-        dropSet: 0,
-        failure: 0
-    )
-    
-    func seconds(for type: ExerciseSetType) -> Int {
-        switch type {
-        case .warmup:
-            return warmup
-        case .regular:
-            return regular
-        case .superSet:
-            return superSet
-        case .dropSet:
-            return dropSet
-        case .failure:
-            return failure
+    var displayName: String {
+        switch self {
+        case .allSame:
+            return "All Same"
+        case .byType:
+            return "By Type"
+        case .individual:
+            return "Individual"
         }
-    }
-    
-    mutating func setSeconds(_ seconds: Int, for type: ExerciseSetType) {
-        switch type {
-        case .warmup:
-            warmup = seconds
-        case .regular:
-            regular = seconds
-        case .superSet:
-            superSet = seconds
-        case .dropSet:
-            dropSet = seconds
-        case .failure:
-            failure = seconds
-        }
-    }
-    
-    func settingRegular(_ seconds: Int) -> RestTimeByType {
-        var copy = self
-        copy.regular = seconds
-        return copy
     }
 }

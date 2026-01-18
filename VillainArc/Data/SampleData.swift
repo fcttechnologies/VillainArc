@@ -10,7 +10,7 @@ class SampleDataContainer {
     }
     
     init() {
-        let schema = Schema([Workout.self, WorkoutExercise.self, ExerciseSet.self, Exercise.self, RepRangePolicy.self])
+        let schema = Schema([Workout.self, WorkoutExercise.self, ExerciseSet.self, Exercise.self, RepRangePolicy.self, RestTimePolicy.self])
 
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])

@@ -20,3 +20,9 @@ class ExerciseSet {
         self.exercise = exercise
     }
 }
+
+extension ExerciseSet {
+    var effectiveRestSeconds: Int {
+        exercise.effectiveRestSeconds(after: self)
+    }
+}

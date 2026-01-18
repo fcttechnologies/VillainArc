@@ -5,6 +5,10 @@ struct RepRangeEditorView: View {
     @Environment(\.modelContext) private var context
     @Bindable var repRange: RepRangePolicy
     
+    private var mode: RepRangeMode {
+        repRange.activeMode
+    }
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -20,14 +24,14 @@ struct RepRangeEditorView: View {
                 }
                 
                 Section {
-                    if repRange.activeMode == .target {
+                    if mode == .target {
                         Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
-                    } else if repRange.activeMode == .range {
+                    } else if mode == .range {
                         Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
                         Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: (repRange.lowerRange + 1)...200)
                     }
                 } footer: {
-                    if repRange.activeMode == .target || repRange.activeMode == .range {
+                    if mode == .target || mode == .range {
                         Text(repGuidanceFooterText)
                     }
                 }
@@ -43,7 +47,7 @@ struct RepRangeEditorView: View {
                     }
                 }
             }
-            .onChange(of: repRange.activeMode) { _, _ in
+            .onChange(of: mode) { _, _ in
                 Haptics.selection()
             }
             .onChange(of: repRange.lowerRange) { _, newValue in
@@ -55,7 +59,7 @@ struct RepRangeEditorView: View {
     }
     
     private var modeFooterText: String {
-        switch repRange.activeMode {
+        switch mode {
         case .notSet:
             return "No rep goal is stored for this exercise."
         case .target:

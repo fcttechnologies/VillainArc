@@ -16,7 +16,8 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/ExerciseView.swift`: per-exercise editing, prior-set lookup, notes.
 - `Views/Workout/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion.
 - `Views/Workout/RepRangeEditorView.swift`: rep range editor sheet with confirm/cancel actions.
-- `Views/Workout/RestTimeEditorView.swift`: rest time editor sheet and mode selection.
+- `Views/Workout/RestTimeEditorView.swift`: rest time editor sheet, mode selection, and duration slider rows.
+- `Views/Workout/TimerDurationPicker.swift`: tick-based duration slider for rest time picking.
 - `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters.
 - `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI.
 - `Data/Models/Workout.swift`: workout model, ordering helpers.

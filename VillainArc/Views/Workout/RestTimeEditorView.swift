@@ -2,19 +2,17 @@ import SwiftUI
 
 struct RestTimeEditorView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("autoStartRestTimer") private var storedAutoStartRestTimer = true
+    @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
     
-    @State private var mode: RestTimeMode = .allSame
-    @State private var allSameSeconds: Int = RestTimePolicy.defaultAllSameSeconds
-    @State private var byType: RestTimeByType = RestTimeByType.defaultValues
-    @State private var showAllSamePicker = false
-    @State private var showWarmupPicker = false
-    @State private var showRegularPicker = false
-    @State private var autoStartRestTimer = true
-    @State private var individualSetSeconds: [Int: Int] = [:]
-    @State private var expandedSetIndex: Int? = nil
+    @State private var showAdvancedByType = false
+    @State private var expandedPicker: RestTimePicker? = nil
+    @State private var copiedSeconds: Int? = nil
+    
+    private var restTimePolicy: RestTimePolicy {
+        exercise.restTimePolicy
+    }
     
     var body: some View {
         NavigationStack {
@@ -26,8 +24,8 @@ struct RestTimeEditorView: View {
                 }
                 
                 Section {
-                    Picker("Mode", selection: $mode) {
-                        ForEach(RestTimeMode.allCases) { mode in
+                    Picker("Mode", selection: $exercise.restTimePolicy.activeMode) {
+                        ForEach(RestTimeMode.allCases, id: \.self) { mode in
                             Text(mode.displayName)
                                 .tag(mode)
                         }
@@ -37,51 +35,33 @@ struct RestTimeEditorView: View {
                 }
                 
                 Section {
-                    switch mode {
+                    switch restTimePolicy.activeMode {
                     case .allSame:
-                        restTimeRow(
-                            title: "Rest Time",
-                            timeLabel: allSameTimeLabel,
-                            isExpanded: showAllSamePicker,
-                            toggle: toggleAllSamePicker,
-                            minutes: allSameMinutes,
-                            seconds: allSameSecondsPart
-                        )
+                        restTimeRow(title: "Rest Time", seconds: policyBinding(\.allSameSeconds), isExpanded: expandedPicker == .allSame, toggle: { togglePicker(.allSame) })
                     case .byType:
-                        restTimeRow(
-                            title: "Warm Up Sets",
-                            timeLabel: warmupTimeLabel,
-                            isExpanded: showWarmupPicker,
-                            toggle: toggleWarmupPicker,
-                            minutes: warmupMinutes,
-                            seconds: warmupSecondsPart
-                        )
+                        restTimeRow(title: "Warm Up Sets", seconds: policyBinding(\.warmupSeconds), isExpanded: expandedPicker == .warmup, toggle: { togglePicker(.warmup) })
                         
-                        restTimeRow(
-                            title: "Normal Sets",
-                            timeLabel: regularTimeLabel,
-                            isExpanded: showRegularPicker,
-                            toggle: toggleRegularPicker,
-                            minutes: regularMinutes,
-                            seconds: regularSecondsPart
-                        )
+                        restTimeRow(title: "Normal Sets", seconds: policyBinding(\.regularSeconds), isExpanded: expandedPicker == .regular, toggle: { togglePicker(.regular) })
+                        
+                        DisclosureGroup("Advanced", isExpanded: $showAdvancedByType) {
+                            restTimeRow(title: "Super Sets", seconds: policyBinding(\.superSetSeconds), isExpanded: expandedPicker == .superSet, toggle: { togglePicker(.superSet) })
+                            
+                            restTimeRow(title: "Drop Sets", seconds: policyBinding(\.dropSetSeconds), isExpanded: expandedPicker == .dropSet, toggle: { togglePicker(.dropSet) })
+                            
+                            restTimeRow(title: "Failure Sets", seconds: policyBinding(\.failureSeconds), isExpanded: expandedPicker == .failure, toggle: { togglePicker(.failure) })
+                        }
                     case .individual:
                         if exercise.sortedSets.isEmpty {
                             Text("Add sets first to change their rest times.")
                                 .foregroundStyle(.secondary)
                         } else {
                             ForEach(exercise.sortedSets) { set in
-                                restTimeRow(
-                                    title: individualSetTitle(for: set),
-                                    timeLabel: individualTimeLabel(for: set),
-                                    isExpanded: expandedSetIndex == set.index,
-                                    toggle: { toggleIndividualPicker(for: set.index) },
-                                    minutes: individualMinutes(for: set),
-                                    seconds: individualSecondsPart(for: set)
-                                )
+                                restTimeRow(title: individualSetTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedPicker == .individual(set.index), toggle: { togglePicker(.individual(set.index)) })
                             }
                         }
                     }
+                } footer: {
+                    Text("If you complete a set but the next set is a super or drop set, the rest time will skipped.")
                 }
                 .listRowSeparator(.hidden)
             }
@@ -91,119 +71,50 @@ struct RestTimeEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
                         Haptics.success()
-                        applyChanges()
+                        saveContext(context: context)
                         dismiss()
                     }
                 }
             }
-            .onAppear {
-                loadFromPolicy()
-            }
-            .onChange(of: mode) { _, _ in
+            .onChange(of: restTimePolicy.activeMode) {
                 Haptics.selection()
                 collapsePickers()
             }
-            .onChange(of: autoStartRestTimer) { _, _ in
+            .onChange(of: showAdvancedByType) {
+                if !showAdvancedByType {
+                    if let picker = expandedPicker, isAdvancedPicker(picker) {
+                        expandedPicker = nil
+                    }
+                }
+            }
+            .onChange(of: autoStartRestTimer) {
                 Haptics.selection()
             }
         }
     }
     
-    private func timeLabel(for totalSeconds: Int) -> String {
-        let minutes = max(0, totalSeconds / 60)
-        let seconds = max(0, totalSeconds % 60)
-        let paddedSeconds = seconds < 10 ? "0\(seconds)" : "\(seconds)"
-        return "\(minutes):\(paddedSeconds)"
+    private func format(seconds: Int) -> String {
+        let minutes = max(0, seconds / 60)
+        let remainingSeconds = max(0, seconds % 60)
+        return "\(minutes):" + String(format: "%02d", remainingSeconds)
     }
     
-    private var allSameTimeLabel: String {
-        timeLabel(for: allSameSeconds)
-    }
-    
-    private var warmupTimeLabel: String {
-        timeLabel(for: byType.warmup)
-    }
-    
-    private var regularTimeLabel: String {
-        timeLabel(for: byType.regular)
-    }
-    
-    private var allSameMinutes: Binding<Int> {
+    private func policyBinding(_ keyPath: ReferenceWritableKeyPath<RestTimePolicy, Int>) -> Binding<Int> {
         Binding(
-            get: { min(10, max(0, allSameSeconds / 60)) },
-            set: { newValue in
-                let seconds = max(0, min(55, allSameSeconds % 60))
-                allSameSeconds = max(0, newValue) * 60 + seconds
-            }
+            get: { restTimePolicy[keyPath: keyPath] },
+            set: { restTimePolicy[keyPath: keyPath] = $0 }
         )
     }
     
-    private var allSameSecondsPart: Binding<Int> {
+    private func restSecondsBinding(for set: ExerciseSet) -> Binding<Int> {
         Binding(
-            get: { max(0, min(55, (allSameSeconds % 60) / 5 * 5)) },
-            set: { newValue in
-                let minutes = max(0, min(10, allSameSeconds / 60))
-                let clamped = max(0, min(55, newValue))
-                allSameSeconds = minutes * 60 + clamped
-            }
+            get: { set.restSeconds },
+            set: { set.restSeconds = $0 }
         )
-    }
-    
-    private var warmupMinutes: Binding<Int> {
-        Binding(
-            get: { min(10, max(0, byType.warmup / 60)) },
-            set: { newValue in
-                let seconds = max(0, min(55, byType.warmup % 60))
-                byType.warmup = max(0, newValue) * 60 + seconds
-            }
-        )
-    }
-    
-    private var warmupSecondsPart: Binding<Int> {
-        Binding(
-            get: { max(0, min(55, (byType.warmup % 60) / 5 * 5)) },
-            set: { newValue in
-                let minutes = max(0, min(10, byType.warmup / 60))
-                let clamped = max(0, min(55, newValue))
-                byType.warmup = minutes * 60 + clamped
-            }
-        )
-    }
-    
-    private var regularMinutes: Binding<Int> {
-        Binding(
-            get: { min(10, max(0, byType.regular / 60)) },
-            set: { newValue in
-                let seconds = max(0, min(55, byType.regular % 60))
-                byType.regular = max(0, newValue) * 60 + seconds
-            }
-        )
-    }
-    
-    private var regularSecondsPart: Binding<Int> {
-        Binding(
-            get: { max(0, min(55, (byType.regular % 60) / 5 * 5)) },
-            set: { newValue in
-                let minutes = max(0, min(10, byType.regular / 60))
-                let clamped = max(0, min(55, newValue))
-                byType.regular = minutes * 60 + clamped
-            }
-        )
-    }
-    
-    private var currentPolicy: RestTimePolicy {
-        switch mode {
-        case .allSame:
-            return .allSame(seconds: allSameSeconds)
-        case .byType:
-            return .byType(byType)
-        case .individual:
-            return .individual
-        }
     }
     
     private var modeFooterText: String {
-        switch mode {
+        switch restTimePolicy.activeMode {
         case .allSame:
             return "All sets will use the same rest time."
         case .byType:
@@ -213,56 +124,13 @@ struct RestTimeEditorView: View {
         }
     }
     
-    private func loadFromPolicy() {
-        autoStartRestTimer = storedAutoStartRestTimer
-        individualSetSeconds = Dictionary(uniqueKeysWithValues: exercise.sortedSets.map { ($0.index, $0.restSeconds) })
-        switch exercise.restTimePolicy {
-        case .allSame(let seconds):
-            mode = .allSame
-            allSameSeconds = seconds
-            byType = RestTimeByType.defaultValues.settingRegular(seconds)
-        case .byType(let values):
-            mode = .byType
-            byType = values
-            allSameSeconds = values.regular
-        case .individual:
-            mode = .individual
-            allSameSeconds = RestTimePolicy.defaultAllSameSeconds
-            byType = RestTimeByType.defaultValues
-        }
-    }
-    
-    private func applyChanges() {
-        if mode == .individual {
-            for set in exercise.sortedSets {
-                if let seconds = individualSetSeconds[set.index] {
-                    set.restSeconds = seconds
-                }
-            }
-            exercise.restTimePolicy = .individual
-        } else {
-            exercise.setRestTimePolicy(currentPolicy)
-        }
-        storedAutoStartRestTimer = autoStartRestTimer
-        saveContext(context: context)
-    }
-    
     private func collapsePickers() {
-        showAllSamePicker = false
-        showWarmupPicker = false
-        showRegularPicker = false
-        expandedSetIndex = nil
+        showAdvancedByType = false
+        expandedPicker = nil
     }
     
     @ViewBuilder
-    private func restTimeRow(
-        title: String,
-        timeLabel: String,
-        isExpanded: Bool,
-        toggle: @escaping () -> Void,
-        minutes: Binding<Int>,
-        seconds: Binding<Int>
-    ) -> some View {
+    private func restTimeRow(title: String, seconds: Binding<Int>, isExpanded: Bool, toggle: @escaping () -> Void) -> some View {
         VStack(spacing: 0) {
             HStack {
                 Text(title)
@@ -270,76 +138,68 @@ struct RestTimeEditorView: View {
                 Button {
                     toggle()
                 } label: {
-                    Text(timeLabel)
+                    Text(format(seconds: seconds.wrappedValue))
                         .fontWeight(.semibold)
-                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .sensoryFeedback(.selection, trigger: seconds.wrappedValue)
                 }
                 .buttonStyle(.borderless)
+                .tint(.primary)
+                .contextMenu {
+                    Button("Copy") {
+                        copySeconds(seconds.wrappedValue)
+                    }
+                    
+                    if copiedSeconds != nil {
+                        Button("Paste") {
+                            pasteSeconds(into: seconds)
+                        }
+                    }
+                }
             }
             
             if isExpanded {
-                HStack(spacing: 16) {
-                    Picker("Minutes", selection: minutes) {
-                        ForEach(0...10, id: \.self) { minute in
-                            Text("\(minute) min")
-                                .tag(minute)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(maxWidth: .infinity)
-                    
-                    Picker("Seconds", selection: seconds) {
-                        ForEach(0...11, id: \.self) { step in
-                            let second = step * 5
-                            Text("\(second) sec")
-                                .tag(second)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(maxWidth: .infinity)
-                }
-                .frame(height: 140)
+                TimerDurationPicker(seconds: seconds, showZero: true)
+                    .frame(height: 60)
             }
         }
     }
     
-    private func toggleAllSamePicker() {
+    private func togglePicker(_ picker: RestTimePicker) {
         Haptics.selection()
-        showAllSamePicker.toggle()
-        if showAllSamePicker {
-            showWarmupPicker = false
-            showRegularPicker = false
-        }
-    }
-    
-    private func toggleWarmupPicker() {
-        Haptics.selection()
-        showWarmupPicker.toggle()
-        if showWarmupPicker {
-            showAllSamePicker = false
-            showRegularPicker = false
-        }
-    }
-    
-    private func toggleRegularPicker() {
-        Haptics.selection()
-        showRegularPicker.toggle()
-        if showRegularPicker {
-            showAllSamePicker = false
-            showWarmupPicker = false
-        }
-    }
-    
-    private func toggleIndividualPicker(for index: Int) {
-        Haptics.selection()
-        if expandedSetIndex == index {
-            expandedSetIndex = nil
+        if expandedPicker == picker {
+            expandedPicker = nil
         } else {
-            expandedSetIndex = index
+            expandedPicker = picker
         }
-        showAllSamePicker = false
-        showWarmupPicker = false
-        showRegularPicker = false
+        
+        if isAdvancedPicker(picker) {
+            showAdvancedByType = true
+        }
+        
+        if case .individual = picker {
+            showAdvancedByType = false
+        }
+    }
+    
+    private func isAdvancedPicker(_ picker: RestTimePicker) -> Bool {
+        switch picker {
+        case .superSet, .dropSet, .failure:
+            return true
+        case .allSame, .warmup, .regular, .individual:
+            return false
+        }
+    }
+
+    private func copySeconds(_ value: Int) {
+        copiedSeconds = value
+        Haptics.selection()
+    }
+    
+    private func pasteSeconds(into binding: Binding<Int>) {
+        guard let copiedSeconds else { return }
+        binding.wrappedValue = copiedSeconds
+        Haptics.selection()
     }
     
     private func individualSetTitle(for set: ExerciseSet) -> String {
@@ -349,57 +209,14 @@ struct RestTimeEditorView: View {
         
         return "Set \(set.index + 1) (\(set.type.rawValue))"
     }
-    
-    private func individualTimeLabel(for set: ExerciseSet) -> String {
-        let seconds = individualSetSeconds[set.index] ?? set.restSeconds
-        return timeLabel(for: seconds)
-    }
-    
-    private func individualMinutes(for set: ExerciseSet) -> Binding<Int> {
-        Binding(
-            get: {
-                let seconds = individualSetSeconds[set.index] ?? set.restSeconds
-                return min(10, max(0, seconds / 60))
-            },
-            set: { newValue in
-                let current = individualSetSeconds[set.index] ?? set.restSeconds
-                let secondsPart = max(0, min(55, current % 60))
-                individualSetSeconds[set.index] = max(0, newValue) * 60 + secondsPart
-            }
-        )
-    }
-    
-    private func individualSecondsPart(for set: ExerciseSet) -> Binding<Int> {
-        Binding(
-            get: {
-                let seconds = individualSetSeconds[set.index] ?? set.restSeconds
-                return max(0, min(55, (seconds % 60) / 5 * 5))
-            },
-            set: { newValue in
-                let current = individualSetSeconds[set.index] ?? set.restSeconds
-                let minutes = max(0, min(10, current / 60))
-                let clamped = max(0, min(55, newValue))
-                individualSetSeconds[set.index] = minutes * 60 + clamped
-            }
-        )
-    }
-}
 
-private enum RestTimeMode: String, CaseIterable, Identifiable {
-    case allSame
-    case byType
-    case individual
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .allSame:
-            return "All Same"
-        case .byType:
-            return "By Type"
-        case .individual:
-            return "Individual"
-        }
+    private enum RestTimePicker: Equatable {
+        case allSame
+        case warmup
+        case regular
+        case superSet
+        case dropSet
+        case failure
+        case individual(Int)
     }
 }
