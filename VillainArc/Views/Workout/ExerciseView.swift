@@ -5,6 +5,7 @@ struct ExerciseView: View {
     @Query private var exercises: [WorkoutExercise]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
+    
     @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
@@ -35,31 +36,29 @@ struct ExerciseView: View {
                 headerView
                     .padding(.horizontal)
                 
-                if !exercise.sets.isEmpty {
-                    Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+                Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+                    GridRow {
+                        Text("Set")
+                        Text("Reps")
+                            .gridColumnAlignment(.leading)
+                        Text("Weight")
+                            .gridColumnAlignment(.leading)
+                        Text("Previous")
+                        Text(" ")
+                    }
+                    .font(.title3)
+                    .bold()
+                    
+                    ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            Text("Set")
-                            Text("Reps")
-                                .gridColumnAlignment(.leading)
-                            Text("Weight")
-                                .gridColumnAlignment(.leading)
-                            Text("Previous")
-                            Text(" ")
+                            ExerciseSetRowView(set: set, exercise: exercise, previousSetDisplay: previousSetDisplay(for: set.index), fieldWidth: geometry.size.width / 5)
                         }
                         .font(.title3)
-                        .bold()
-                        
-                        ForEach(exercise.sortedSets) { set in
-                            GridRow {
-                                ExerciseSetRowView(set: set, exercise: exercise, previousSetDisplay: previousSetDisplay(for: set.index), fieldWidth: geometry.size.width / 5)
-                            }
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .animation(.bouncy, value: set.complete)
-                        }
+                        .fontWeight(.semibold)
+                        .animation(.bouncy, value: set.complete)
                     }
-                    .padding(.vertical)
                 }
+                .padding(.vertical)
                 
                 Button {
                     Haptics.impact(.light)
@@ -69,7 +68,6 @@ struct ExerciseView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                         .padding(.vertical, 5)
-                        .foregroundStyle(.primary)
                 }
                 .buttonStyle(.glassProminent)
                 .buttonSizing(.flexible)
@@ -93,7 +91,7 @@ struct ExerciseView: View {
                 .bold()
                 .lineLimit(1)
             HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(exercise.displayMuscle)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
@@ -144,7 +142,7 @@ struct ExerciseView: View {
         .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
                 .interactiveDismissDisabled()
-                .presentationDetents([.fraction(0.75), .large])
+                .presentationDetents([.medium, .large])
         }
     }
     

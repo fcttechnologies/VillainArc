@@ -5,8 +5,8 @@ import SwiftData
 class Exercise {
     var name: String = ""
     var musclesTargeted: [Muscle] = []
-    var isCustom: Bool = false
     var lastUsed: Date? = nil
+    var favorite: Bool = false
 
     init(from exerciseDetails: ExerciseDetails) {
         self.name = exerciseDetails.rawValue
@@ -15,5 +15,9 @@ class Exercise {
     
     func updateLastUsed(to time: Date = .now) {
         lastUsed = time
+    }
+    
+    func toggleFavorite() {
+        favorite.toggle()
     }
 }

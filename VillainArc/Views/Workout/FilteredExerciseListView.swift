@@ -7,31 +7,44 @@ struct FilteredExerciseListView: View {
     
     let searchText: String
     let muscleFilters: [Muscle]
+    let showAllMuscleGroups: Bool
+    let favoritesOnly: Bool
+    let selectedOnly: Bool
+    
+    @Environment(\.modelContext) private var context
+    
+    private var hasFavorites: Bool {
+        allExercises.contains(where: { $0.favorite })
+    }
     
     var filteredExercises: [Exercise] {
         let cleanText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let filtered = allExercises.filter { exercise in
-            let matchesSearch = cleanText.isEmpty ||
+        let matchesSearch: (Exercise) -> Bool = { exercise in
+            cleanText.isEmpty ||
             exercise.name.localizedStandardContains(cleanText) ||
             exercise.musclesTargeted.contains(where: { $0.rawValue.localizedStandardContains(cleanText) })
+        }
+        
+        if selectedOnly {
+            let filtered = favoritesOnly
+                ? selectedExercises.filter { $0.favorite }
+                : selectedExercises
             
-            let matchesMuscleFilter = muscleFilters.isEmpty || exercise.musclesTargeted.contains(where: { muscleFilters.contains($0) })
+            return filtered
+                .sorted { $0.name < $1.name }
+        }
+        
+        let filtered = allExercises.filter { exercise in
+            let matchesFavorites = !favoritesOnly || exercise.favorite
+            let matchesMuscleFilter = showAllMuscleGroups ||
+                muscleFilters.isEmpty ||
+                exercise.musclesTargeted.contains(where: { muscleFilters.contains($0) })
             
-            return matchesSearch && matchesMuscleFilter
+            return matchesSearch(exercise) && matchesFavorites && matchesMuscleFilter
         }
         
         return filtered.sorted { first, second in
-            let firstSelected = selectedExercises.contains(first)
-            let secondSelected = selectedExercises.contains(second)
-            if cleanText.isEmpty {
-                if firstSelected && !secondSelected {
-                    return true
-                } else if !firstSelected && secondSelected {
-                    return false
-                }
-            }
-            
             switch (first.lastUsed, second.lastUsed) {
             case (.some(let date1), .some(let date2)):
                 return date1 > date2
@@ -53,42 +66,77 @@ struct FilteredExerciseListView: View {
                         Haptics.selection()
                         selectedExercises.removeAll { $0 == exercise }
                     } label: {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(exercise.name)
-                                .font(.headline)
-                            Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                        }
+                        exerciseRow(for: exercise)
                     }
                     .tint(.primary)
                     .listRowBackground(Color.blue.opacity(0.45))
+                    .swipeActions(edge: .leading) {
+                        favoriteAction(for: exercise)
+                    }
                 } else {
                     Button {
                         Haptics.selection()
                         selectedExercises.append(exercise)
                     } label: {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(exercise.name)
-                                .font(.headline)
-                            Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                        }
+                        exerciseRow(for: exercise)
                     }
                     .tint(.primary)
+                    .swipeActions(edge: .leading) {
+                        favoriteAction(for: exercise)
+                    }
                 }
             }
         }
-        .animation(.linear, value: filteredExercises.count)
-        .animation(.bouncy, value: selectedExercises)
         .scrollDismissesKeyboard(.immediately)
         .overlay {
             if filteredExercises.isEmpty {
-                ContentUnavailableView.search(text: searchText)
+                emptyStateView
             }
+        }
+    }
+    
+    private func exerciseRow(for exercise: Exercise) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(exercise.name)
+                    .font(.headline)
+                Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            Spacer()
+            if exercise.favorite {
+                Image(systemName: "star.fill")
+                    .foregroundStyle(.yellow)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func favoriteAction(for exercise: Exercise) -> some View {
+        Button {
+            exercise.toggleFavorite()
+            Haptics.selection()
+            saveContext(context: context)
+        } label: {
+            if exercise.favorite {
+                Label("Unfavorite", systemImage: "star.slash")
+            } else {
+                Label("Favorite", systemImage: "star")
+            }
+        }
+        .tint(.yellow)
+    }
+    
+    @ViewBuilder
+    private var emptyStateView: some View {
+        if favoritesOnly && !hasFavorites {
+            ContentUnavailableView("No Favorites Yet", systemImage: "star", description: Text("Swipe right on an exercise to favorite it."))
+        } else if selectedOnly {
+            ContentUnavailableView("No Exercises Selected", systemImage: "checkmark.circle", description: Text("Select exercises to see them here."))
+        } else {
+            ContentUnavailableView.search(text: searchText)
         }
     }
 }

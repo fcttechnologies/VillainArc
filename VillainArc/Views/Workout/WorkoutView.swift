@@ -3,6 +3,7 @@ import SwiftData
 
 struct WorkoutView: View {
     @Bindable var workout: Workout
+    
     @State private var activeExercise: WorkoutExercise?
     @State private var showExerciseListView: Bool = false
     @State private var showAddExerciseSheet: Bool = false
@@ -13,6 +14,7 @@ struct WorkoutView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    
     @Namespace private var animation
     
     var body: some View {
@@ -52,7 +54,6 @@ struct WorkoutView: View {
                 AddExerciseView(workout: workout)
                     .navigationTransition(.zoom(sourceID: "addExercise", in: animation))
                     .interactiveDismissDisabled()
-                    .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showRestTimerSheet) {
                 RestTimerView()
@@ -116,22 +117,23 @@ struct WorkoutView: View {
                     activeExercise = exercise
                     showExerciseListView = false
                 } label: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(exercise.name)
-                            .font(.title3)
-                            .bold()
-                        Text(exercise.displayMuscle)
-                            .foregroundStyle(.secondary)
-                            .fontWeight(.semibold)
-                            .font(.headline)
-                        ForEach(exercise.sortedSets) { set in
-                            Text("\(set.reps)x\(Int(set.weight)) lbs")
-                                .font(.subheadline)
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(exercise.name)
+                                .font(.title3)
+                                .bold()
+                            Text(exercise.displayMuscle)
+                                .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
+                                .font(.headline)
                         }
+                        Spacer()
+                        Text("^[\(exercise.sortedSets.count) set](inflect: true)")
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
                     }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical)
                 }
                 .listRowBackground(Color.clear)
                 .buttonStyle(.glass)
@@ -143,6 +145,7 @@ struct WorkoutView: View {
         }
         .scrollIndicators(.hidden)
         .listStyle(.plain)
+        .listRowInsets(.all, 0)
     }
 
     var toolBarMenu: some View {
@@ -175,13 +178,31 @@ struct WorkoutView: View {
         }
     }
     
-    private func finishWorkout() {
+    private func finishWorkout(action: WorkoutFinishAction) {
         Haptics.success()
         showWorkoutSettingsSheet = false
-        workout.completed = true
-        if workout.endTime == nil {
-            workout.endTime = Date.now
+        
+        switch action {
+        case .markAllComplete:
+            for exercise in workout.exercises {
+                for set in exercise.sets where !set.complete {
+                    set.complete = true
+                }
+            }
+        case .deleteIncomplete:
+            for exercise in workout.exercises {
+                let incompleteSets = exercise.sets.filter { !$0.complete }
+                for set in incompleteSets {
+                    exercise.removeSet(set)
+                    context.delete(set)
+                }
+            }
+        case .keepIncomplete:
+            break
         }
+
+        workout.completed = true
+        workout.endTime = Date.now
         restTimer.stop()
         saveContext(context: context)
         dismiss()
@@ -227,13 +248,9 @@ struct WorkoutView: View {
         if restTimer.isRunning, let endDate = restTimer.endDate {
             Text(endDate, style: .timer)
                 .fontWeight(.semibold)
-                .monospacedDigit()
-                .contentTransition(.numericText())
         } else if restTimer.isPaused {
             Text(secondsToTime(restTimer.pausedRemainingSeconds))
                 .fontWeight(.semibold)
-                .monospacedDigit()
-                .contentTransition(.numericText())
         } else {
             Image(systemName: "timer")
         }
@@ -244,5 +261,8 @@ struct WorkoutView: View {
 #Preview {
     WorkoutView(workout: sampleWorkout())
         .sampleDataConainer()
-        .environment(RestTimerState())
+}
+
+#Preview("New Workout") {
+    WorkoutView(workout: Workout())
 }

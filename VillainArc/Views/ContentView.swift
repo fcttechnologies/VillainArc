@@ -9,30 +9,19 @@ struct ContentView: View {
     @Query private var workouts: [Workout]
     @State private var workout: Workout?
     
-    private func deleteWorkout(offsets: IndexSet) {
-        guard !offsets.isEmpty else { return }
-        Haptics.warning()
-        for index in offsets {
-            let workout = workouts[index]
-            context.delete(workout)
-            saveContext(context: context)
-        }
-    }
-    
     var body: some View {
         NavigationStack {
             List {
-                Section("Workouts") {
-                    ForEach(workouts) { workout in
-                        Text(workout.title)
-                    }
-                    .onDelete(perform: deleteWorkout)
+                ForEach(workouts) { workout in
+                    Text(workout.title)
                 }
+                .onDelete(perform: deleteWorkout)
             }
-            .navigationTitle("Workout")
+            .navigationTitle("Home")
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
                     Button("Start Workout", systemImage: "plus") {
                         startNewWorkout()
                     }
@@ -62,6 +51,16 @@ struct ContentView: View {
     private func checkForUnfinishedWorkout() {
         if let unfinishedWorkout = workouts.first(where: { !$0.completed }) {
             workout = unfinishedWorkout
+        }
+    }
+    
+    private func deleteWorkout(offsets: IndexSet) {
+        guard !offsets.isEmpty else { return }
+        Haptics.warning()
+        for index in offsets {
+            let workout = workouts[index]
+            context.delete(workout)
+            saveContext(context: context)
         }
     }
 }

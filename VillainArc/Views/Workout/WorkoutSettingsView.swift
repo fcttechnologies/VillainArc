@@ -1,9 +1,15 @@
 import SwiftUI
 import SwiftData
 
+enum WorkoutFinishAction {
+    case keepIncomplete
+    case markAllComplete
+    case deleteIncomplete
+}
+
 struct WorkoutSettingsView: View {
     @Bindable var workout: Workout
-    var onFinish: () -> Void
+    var onFinish: (WorkoutFinishAction) -> Void
     var onDelete: () -> Void
     
     @Environment(\.dismiss) private var dismiss
@@ -11,24 +17,45 @@ struct WorkoutSettingsView: View {
     
     @State private var showDeleteConfirmation: Bool = false
     @State private var showSaveConfirmation: Bool = false
+    @FocusState private var isTitleFocused: Bool
+    
+    private var incompleteSetCount: Int {
+        workout.exercises.reduce(0) { count, exercise in
+            count + exercise.sets.filter { !$0.complete }.count
+        }
+    }
         
     var body: some View {
         NavigationStack {
             Form {
+                Section("Title") {
+                    TextField("Workout Title", text: $workout.title)
+                        .focused($isTitleFocused)
+                        .onSubmit {
+                            normalizeTitleIfNeeded()
+                        }
+                }
+                
                 Section("Time") {
                     DatePicker("Start Time", selection: $workout.startTime, in: ...Date.now, displayedComponents: [.date, .hourAndMinute])
                 }
                 
-                Section("Exercises") {
+                Section {
                     ForEach(workout.sortedExercises) { exercise in
-                            HStack {
-                                Text(exercise.name)
-                                    .fontWeight(.semibold)
-                                Spacer()
-                                Text("^[\(exercise.sortedSets.count) set](inflect: true)")
-                                    .foregroundStyle(.secondary)
-                                    .font(.subheadline)
-                            }
+                        HStack {
+                            Text(exercise.name)
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Text("^[\(exercise.sortedSets.count) set](inflect: true)")
+                                .foregroundStyle(.secondary)
+                                .font(.subheadline)
+                        }
+                    }
+                } header: {
+                    Text("Exercises")
+                } footer: {
+                    if incompleteSetCount > 0 {
+                        Text("Some exercises have incomplete sets.")
                     }
                 }
             }
@@ -69,23 +96,63 @@ struct WorkoutSettingsView: View {
                     .buttonStyle(.glassProminent)
                     .tint(.green)
                     .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
-                        Button("Finish", role: .confirm) {
-                            onFinish()
+                        if incompleteSetCount > 0 {
+                            Button("Mark All Sets Complete and Finish") {
+                                onFinish(.markAllComplete)
+                            }
+                            Button("Delete Incomplete Sets and Finish", role: .destructive) {
+                                onFinish(.deleteIncomplete)
+                            }
+                            Button("Finish As Is") {
+                                onFinish(.keepIncomplete)
+                            }
+                        } else {
+                            Button("Finish", role: .confirm) {
+                                onFinish(.keepIncomplete)
+                            }
                         }
                     } message: {
-                        Text("Save and finish this workout?")
+                        if incompleteSetCount > 0 {
+                            Text("Choose how to finish this workout.")
+                        } else {
+                            Text("Finish and save this workout?")
+                        }
                     }
                 }
             }
             .onChange(of: workout.startTime) {
                 saveContext(context: context)
             }
+            .onChange(of: workout.title) {
+                saveContext(context: context)
+            }
+            .onChange(of: isTitleFocused) {
+                if !isTitleFocused {
+                    normalizeTitleIfNeeded()
+                }
+            }
+            .onDisappear {
+                normalizeTitleIfNeeded()
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    dismissKeyboard()
+                }
+            )
+        }
+    }
+
+    private func normalizeTitleIfNeeded() {
+        if workout.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            workout.title = "New Workout"
+            saveContext(context: context)
         }
     }
 }
 
 #Preview {
-    WorkoutSettingsView(workout: sampleWorkout()) {
+    WorkoutSettingsView(workout: sampleWorkout()) { _ in
         // no-op
     } onDelete: {
         // no-op

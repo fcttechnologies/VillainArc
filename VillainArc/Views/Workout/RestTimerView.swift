@@ -50,7 +50,6 @@ struct RestTimerView: View {
                             Text(secondsToTime(history.seconds))
                                 .font(.title)
                                 .fontWeight(.semibold)
-                                .monospacedDigit()
                             
                             Spacer()
                             
@@ -100,8 +99,9 @@ struct RestTimerView: View {
                     restTimer.pause()
                 } label: {
                     Text("Pause")
-                        .padding(.vertical, 8)
+                        .font(.title3)
                         .fontWeight(.semibold)
+                        .padding(.vertical, 5)
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
@@ -112,8 +112,9 @@ struct RestTimerView: View {
                     restTimer.stop()
                 } label: {
                     Text("Stop")
-                        .padding(.vertical, 8)
+                        .font(.title3)
                         .fontWeight(.semibold)
+                        .padding(.vertical, 5)
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
@@ -126,8 +127,9 @@ struct RestTimerView: View {
                     restTimer.resume()
                 } label: {
                     Text("Resume")
-                        .padding(.vertical, 8)
+                        .font(.title3)
                         .fontWeight(.semibold)
+                        .padding(.vertical, 5)
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
@@ -138,8 +140,9 @@ struct RestTimerView: View {
                     restTimer.stop()
                 } label: {
                     Text("Stop")
-                        .padding(.vertical, 8)
+                        .font(.title3)
                         .fontWeight(.semibold)
+                        .padding(.vertical, 5)
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
@@ -153,8 +156,9 @@ struct RestTimerView: View {
                 saveContext(context: context)
             } label: {
                 Text("Start")
-                    .padding(.vertical, 8)
+                    .font(.title3)
                     .fontWeight(.semibold)
+                    .padding(.vertical, 5)
             }
             .buttonSizing(.flexible)
             .buttonStyle(.glassProminent)
