@@ -1,7 +1,12 @@
 import SwiftUI
 
 struct WorkoutDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     let workout: Workout
+    let onStartFromWorkout: (Workout) -> Void
+    let onDeleteWorkout: (Workout) -> Void
+    
+    @State private var showDeleteWorkoutConfirmation: Bool = false
     
     var body: some View {
         List {
@@ -52,11 +57,32 @@ struct WorkoutDetailView: View {
         .navigationTitle(workout.title)
         .navigationSubtitle(Text(workout.startTime, style: .date))
         .toolbarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu("Options", systemImage: "ellipsis") {
+                    Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
+                        onStartFromWorkout(workout)
+                        dismiss()
+                    }
+                    Button("Delete Workout", systemImage: "trash", role: .destructive) {
+                        showDeleteWorkoutConfirmation = true
+                    }
+                }
+                .confirmationDialog("Delete Workout", isPresented: $showDeleteWorkoutConfirmation) {
+                    Button("Delete", role: .destructive) {
+                        onDeleteWorkout(workout)
+                        dismiss()
+                    }
+                } message: {
+                    Text("Are you sure you want to delete this workout? This cannot be undone.")
+                }
+            }
+        }
     }
 }
 
 #Preview {
     NavigationStack {
-        WorkoutDetailView(workout: sampleWorkout())
+        WorkoutDetailView(workout: sampleWorkout(), onStartFromWorkout: { _ in }, onDeleteWorkout: { _ in })
     }
 }

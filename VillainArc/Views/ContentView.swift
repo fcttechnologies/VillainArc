@@ -13,9 +13,11 @@ struct ContentView: View {
         NavigationStack {
             List {
                 ForEach(workouts) { workout in
-                    WorkoutRowView(workout: workout)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                    WorkoutRowView(workout: workout, onStartFromWorkout: { template in
+                        startWorkout(from: template)
+                    }, onDeleteWorkout: deleteWorkout)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
                 .onDelete(perform: deleteWorkout)
             }
@@ -26,7 +28,7 @@ struct ContentView: View {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
                     Button("Start Workout", systemImage: "plus") {
-                        startNewWorkout()
+                        startWorkout()
                     }
                     .matchedTransitionSource(id: "startWorkout", in: animation)
                 }
@@ -43,9 +45,9 @@ struct ContentView: View {
         }
     }
     
-    private func startNewWorkout() {
+    private func startWorkout(from template: Workout? = nil) {
         Haptics.impact(.medium)
-        let newWorkout = Workout(title: "New Workout")
+        let newWorkout = template.map { Workout(previous: $0) } ?? Workout()
         context.insert(newWorkout)
         saveContext(context: context)
         workout = newWorkout
@@ -59,12 +61,15 @@ struct ContentView: View {
     
     private func deleteWorkout(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
-        Haptics.warning()
         for index in offsets {
-            let workout = workouts[index]
-            context.delete(workout)
-            saveContext(context: context)
+            deleteWorkout(workouts[index])
         }
+    }
+    
+    private func deleteWorkout(_ workout: Workout) {
+        Haptics.warning()
+        context.delete(workout)
+        saveContext(context: context)
     }
 }
 

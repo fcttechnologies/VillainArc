@@ -21,11 +21,19 @@ class RepRangePolicy {
         }
     }
     
+    // Testing
     init(activeMode: RepRangeMode = .notSet, lowerRange: Int = 8, upperRange: Int = 12, targetReps: Int = 8) {
         self.activeMode = activeMode
         self.lowerRange = lowerRange
         self.upperRange = upperRange
         self.targetReps = targetReps
+    }
+
+    init(previous policy: RepRangePolicy) {
+        activeMode = policy.activeMode
+        lowerRange = policy.lowerRange
+        upperRange = policy.upperRange
+        targetReps = policy.targetReps
     }
 }
 

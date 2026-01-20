@@ -19,6 +19,15 @@ class ExerciseSet {
         self.restSeconds = restSeconds
         self.exercise = exercise
     }
+
+    init(previous set: ExerciseSet, exercise: WorkoutExercise) {
+        index = set.index
+        type = set.type
+        weight = set.weight
+        reps = set.reps
+        restSeconds = set.restSeconds
+        self.exercise = exercise
+    }
 }
 
 extension ExerciseSet {

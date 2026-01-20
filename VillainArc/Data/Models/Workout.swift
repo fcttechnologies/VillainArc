@@ -18,6 +18,12 @@ class Workout {
     init(title: String = "New Workout") {
         self.title = title
     }
+
+    init(previous workout: Workout) {
+        title = workout.title
+        notes = workout.notes
+        exercises = workout.sortedExercises.map { WorkoutExercise(previous: $0, workout: self) }
+    }
     
     func addExercise(_ exercise: Exercise) {
         let workoutExercise = WorkoutExercise(from: exercise, workout: self)

@@ -31,6 +31,17 @@ class WorkoutExercise {
         self.workout = workout
         addSet()
     }
+
+    init(previous exercise: WorkoutExercise, workout: Workout?) {
+        index = exercise.index
+        name = exercise.name
+        notes = exercise.notes
+        repRange = RepRangePolicy(previous: exercise.repRange)
+        musclesTargeted = exercise.musclesTargeted
+        restTimePolicy = RestTimePolicy(previous: exercise.restTimePolicy)
+        self.workout = workout
+        sets = exercise.sortedSets.map { ExerciseSet(previous: $0, exercise: self) }
+    }
     
     func addSet() {
         if let previous = sortedSets.last {

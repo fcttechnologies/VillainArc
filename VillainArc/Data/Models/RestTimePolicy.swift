@@ -15,6 +15,16 @@ class RestTimePolicy {
     var failureSeconds: Int = RestTimePolicy.defaultRestSeconds
     
     init() {}
+
+    init(previous policy: RestTimePolicy) {
+        activeMode = policy.activeMode
+        allSameSeconds = policy.allSameSeconds
+        warmupSeconds = policy.warmupSeconds
+        regularSeconds = policy.regularSeconds
+        superSetSeconds = policy.superSetSeconds
+        dropSetSeconds = policy.dropSetSeconds
+        failureSeconds = policy.failureSeconds
+    }
     
     func seconds(for set: ExerciseSet) -> Int {
         switch activeMode {
