@@ -117,20 +117,21 @@ struct WorkoutView: View {
                     activeExercise = exercise
                     showExerciseListView = false
                 } label: {
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(exercise.name)
-                                .font(.title3)
-                                .bold()
+                    VStack(alignment: .leading) {
+                        Text(exercise.name)
+                            .font(.title3)
+                            .bold()
+                            .lineLimit(1)
+                        HStack(alignment: .bottom) {
                             Text(exercise.displayMuscle)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
                                 .font(.headline)
+                            Spacer()
+                            Text("^[\(exercise.sortedSets.count) set](inflect: true)")
+                                .foregroundStyle(.secondary)
+                                .font(.subheadline)
                         }
-                        Spacer()
-                        Text("^[\(exercise.sortedSets.count) set](inflect: true)")
-                            .foregroundStyle(.secondary)
-                            .font(.subheadline)
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical)
@@ -197,10 +198,19 @@ struct WorkoutView: View {
                     context.delete(set)
                 }
             }
-        case .keepIncomplete:
-            break
+            let emptyExercises = workout.exercises.filter { $0.sets.isEmpty }
+            for exercise in emptyExercises {
+                workout.removeExercise(exercise)
+                context.delete(exercise)
+            }
+            if workout.exercises.isEmpty {
+                restTimer.stop()
+                context.delete(workout)
+                saveContext(context: context)
+                dismiss()
+                return
+            }
         }
-
         workout.completed = true
         workout.endTime = Date.now
         restTimer.stop()

@@ -68,10 +68,9 @@ struct RestTimeEditorView: View {
             .navigationTitle("Set Rest Times")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .close) {
                         Haptics.success()
-                        saveContext(context: context)
                         dismiss()
                     }
                 }
@@ -89,6 +88,9 @@ struct RestTimeEditorView: View {
             }
             .onChange(of: autoStartRestTimer) {
                 Haptics.selection()
+            }
+            .onDisappear {
+                saveContext(context: context)
             }
         }
     }

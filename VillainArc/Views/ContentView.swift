@@ -6,19 +6,22 @@ struct ContentView: View {
     
     @Namespace private var animation
     
-    @Query private var workouts: [Workout]
+    @Query(sort: \Workout.startTime, order: .reverse) private var workouts: [Workout]
     @State private var workout: Workout?
     
     var body: some View {
         NavigationStack {
             List {
                 ForEach(workouts) { workout in
-                    Text(workout.title)
+                    WorkoutRowView(workout: workout)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
                 .onDelete(perform: deleteWorkout)
             }
             .navigationTitle("Home")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .listStyle(.plain)
             .toolbar {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {

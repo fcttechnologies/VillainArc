@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 
 enum WorkoutFinishAction {
-    case keepIncomplete
     case markAllComplete
     case deleteIncomplete
 }
@@ -34,6 +33,10 @@ struct WorkoutSettingsView: View {
                         .onSubmit {
                             normalizeTitleIfNeeded()
                         }
+                }
+                
+                Section("Workout Notes") {
+                    TextField("Workout Notes", text: $workout.notes, axis: .vertical)
                 }
                 
                 Section("Time") {
@@ -103,17 +106,14 @@ struct WorkoutSettingsView: View {
                             Button("Delete Incomplete Sets and Finish", role: .destructive) {
                                 onFinish(.deleteIncomplete)
                             }
-                            Button("Finish As Is") {
-                                onFinish(.keepIncomplete)
-                            }
                         } else {
                             Button("Finish", role: .confirm) {
-                                onFinish(.keepIncomplete)
+                                onFinish(.markAllComplete)
                             }
                         }
                     } message: {
                         if incompleteSetCount > 0 {
-                            Text("Choose how to finish this workout.")
+                            Text("Choose how to handle incomplete sets.")
                         } else {
                             Text("Finish and save this workout?")
                         }
@@ -124,6 +124,9 @@ struct WorkoutSettingsView: View {
                 saveContext(context: context)
             }
             .onChange(of: workout.title) {
+                saveContext(context: context)
+            }
+            .onChange(of: workout.notes) {
                 saveContext(context: context)
             }
             .onChange(of: isTitleFocused) {

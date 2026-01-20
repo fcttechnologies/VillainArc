@@ -39,10 +39,9 @@ struct RepRangeEditorView: View {
             .navigationTitle("Rep Range")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .close) {
                         Haptics.success()
-                        saveContext(context: context)
                         dismiss()
                     }
                 }
@@ -54,6 +53,9 @@ struct RepRangeEditorView: View {
                 if newValue > repRange.upperRange {
                     repRange.upperRange = newValue
                 }
+            }
+            .onDisappear {
+                saveContext(context: context)
             }
         }
     }

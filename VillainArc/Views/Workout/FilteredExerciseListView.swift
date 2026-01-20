@@ -100,7 +100,7 @@ struct FilteredExerciseListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(exercise.name)
                     .font(.headline)
-                Text(exercise.musclesTargeted.filter(\.isMajor).map({ $0.rawValue }), format: .list(type: .and))
+                Text(displayMuscles(for: exercise).map(\.rawValue), format: .list(type: .and))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
@@ -111,6 +111,14 @@ struct FilteredExerciseListView: View {
                     .foregroundStyle(.yellow)
             }
         }
+    }
+
+    private func displayMuscles(for exercise: Exercise) -> [Muscle] {
+        let majors = exercise.musclesTargeted.filter(\.isMajor)
+        if !majors.isEmpty {
+            return majors
+        }
+        return Array(exercise.musclesTargeted.prefix(1))
     }
     
     @ViewBuilder

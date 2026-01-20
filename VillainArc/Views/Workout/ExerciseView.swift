@@ -136,13 +136,10 @@ struct ExerciseView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .sheet(isPresented: $showRepRangeEditor) {
             RepRangeEditorView(repRange: exercise.repRange)
-                .interactiveDismissDisabled()
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
-                .interactiveDismissDisabled()
-                .presentationDetents([.medium, .large])
         }
     }
     
