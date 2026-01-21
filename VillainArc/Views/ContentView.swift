@@ -6,49 +6,14 @@ struct ContentView: View {
     
     @Namespace private var animation
     
-    @Query(filter: #Predicate<Workout> { !$0.completed }, sort: \Workout.startTime, order: .reverse) private var incompleteWorkouts: [Workout]
-    @Query private var previousWorkouts: [Workout]
+    @Query(Workout.incompleteWorkout) private var incompleteWorkout: [Workout]
     @State private var router = WorkoutRouter()
-
-    init() {
-        let predicate = #Predicate<Workout> { $0.completed }
-        let sort = [SortDescriptor(\Workout.startTime, order: .reverse)]
-        var descriptor = FetchDescriptor(predicate: predicate, sortBy: sort)
-        descriptor.fetchLimit = 1
-        _previousWorkouts = Query(descriptor)
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    NavigationLink {
-                        PreviousWorkoutsListView()
-                    } label: {
-                        HStack(spacing: 0) {
-                            Text("Previous Workouts")
-                                .fontWeight(.semibold)
-                                .fontDesign(.rounded)
-                            Image(systemName: "chevron.right")
-                                .bold()
-                                .foregroundStyle(.secondary)
-                        }
-                        .font(.title3)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.leading, 4)
-                    
-                    if previousWorkouts.isEmpty {
-                        ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Click the '\(Image(systemName: "plus"))' to start your first workout."))
-                            .frame(maxWidth: .infinity)
-                            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
-                    } else {
-                        ForEach(previousWorkouts) {
-                            WorkoutRowView(workout: $0)
-                        }
-                    }
-                }
-                .padding()
+                PreviousWorkoutSectionView()
+                    .padding()
             }
             .navigationTitle("Home")
             .toolbarTitleDisplayMode(.inlineLarge)
@@ -81,7 +46,7 @@ struct ContentView: View {
     
     private func checkForUnfinishedWorkout() {
         guard router.activeWorkout == nil else { return }
-        if let unfinishedWorkout = incompleteWorkouts.first {
+        if let unfinishedWorkout = incompleteWorkout.first {
             router.resume(unfinishedWorkout)
         }
     }

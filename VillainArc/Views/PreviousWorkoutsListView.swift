@@ -3,7 +3,7 @@ import SwiftData
 
 struct PreviousWorkoutsListView: View {
     @Environment(\.modelContext) private var context
-    @Query(filter: #Predicate<Workout> { $0.completed }, sort: \Workout.startTime, order: .reverse) private var workouts: [Workout]
+    @Query(Workout.completedWorkouts) private var workouts: [Workout]
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
 

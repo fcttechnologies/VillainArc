@@ -13,6 +13,10 @@ class RestTimeHistory {
 }
 
 extension RestTimeHistory {
+    static var recents: FetchDescriptor<RestTimeHistory> {
+        FetchDescriptor(sortBy: [SortDescriptor(\RestTimeHistory.lastUsed, order: .reverse)])
+    }
+
     @MainActor
     static func record(seconds: Int, context: ModelContext) {
         guard seconds > 0 else { return }

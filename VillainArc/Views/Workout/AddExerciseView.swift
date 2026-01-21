@@ -4,7 +4,6 @@ import SwiftData
 struct AddExerciseView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Query private var exercises: [Exercise]
     
     @Bindable var workout: Workout
     let isEditing: Bool

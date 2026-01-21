@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ExerciseView: View {
-    @Query private var exercises: [WorkoutExercise]
+    @Query private var previousExercise: [WorkoutExercise]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
     let isEditing: Bool
@@ -14,16 +14,12 @@ struct ExerciseView: View {
     init(exercise: WorkoutExercise, isEditing: Bool = false) {
         self.exercise = exercise
         self.isEditing = isEditing
-        
-        let name = exercise.name
-        let predicate = #Predicate<WorkoutExercise> { exercise in
-            exercise.name == name && exercise.workout.completed
-        }
-        _exercises = Query(filter: predicate, sort: \.date, order: .reverse)
+
+        _previousExercise = Query(WorkoutExercise.lastCompleted(for: exercise))
     }
     
     private var previousSets: [ExerciseSet] {
-        exercises.first?.sortedSets ?? []
+        previousExercise.first?.sortedSets ?? []
     }
     
     private func previousSetDisplay(for index: Int) -> String {

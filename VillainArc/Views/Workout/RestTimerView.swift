@@ -5,7 +5,7 @@ struct RestTimerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RestTimerState.self) private var restTimer
     @Environment(\.modelContext) private var context
-    @Query(sort: \RestTimeHistory.lastUsed, order: .reverse) private var recentTimes: [RestTimeHistory]
+    @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
     @State private var selectedSeconds = RestTimePolicy.defaultRestSeconds
     
     var body: some View {

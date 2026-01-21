@@ -33,7 +33,7 @@ struct WorkoutRowView: View {
                 }
             }
             .padding()
-            .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 12))
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
             .tint(.primary)
             .fontDesign(.rounded)
         }

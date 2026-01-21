@@ -55,3 +55,33 @@ class Workout {
         self.endTime = endTime
     }
 }
+
+extension Workout {
+    static var recencySortDescriptors: [SortDescriptor<Workout>] {
+        [SortDescriptor(\Workout.startTime, order: .reverse)]
+    }
+
+    static func completedWorkouts(limit: Int? = nil) -> FetchDescriptor<Workout> {
+        let predicate = #Predicate<Workout> { $0.completed }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: recencySortDescriptors)
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
+        return descriptor
+    }
+
+    static var incompleteWorkout: FetchDescriptor<Workout> {
+        let predicate = #Predicate<Workout> { !$0.completed }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: recencySortDescriptors)
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
+    static var recentWorkout: FetchDescriptor<Workout> {
+        completedWorkouts(limit: 1)
+    }
+
+    static var completedWorkouts: FetchDescriptor<Workout> {
+        completedWorkouts()
+    }
+}

@@ -82,3 +82,18 @@ class WorkoutExercise {
         self.workout = workout
     }
 }
+
+extension WorkoutExercise {
+    static func lastCompleted(for exercise: WorkoutExercise) -> FetchDescriptor<WorkoutExercise> {
+        let name = exercise.name
+        let predicate = #Predicate<WorkoutExercise> { item in
+            item.name == name && item.workout.completed
+        }
+        var descriptor = FetchDescriptor(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\WorkoutExercise.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+}
