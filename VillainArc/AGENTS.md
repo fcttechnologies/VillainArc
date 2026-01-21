@@ -5,14 +5,21 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 
 ## Architecture Overview
 - `Root/VillainArcApp.swift` builds the SwiftData model container and launches `ContentView`.
-- `Views/ContentView.swift` loads workouts, seeds the catalog via `DataManager`, and presents `WorkoutView`.
+- `Views/ContentView.swift` loads workouts, seeds the catalog via `DataManager`, shows the latest completed workout, and presents `WorkoutView` using `WorkoutRouter`.
+- `Views/PreviousWorkoutsListView.swift` lists completed workouts with edit/delete controls.
+- `Views/Workout/WorkoutDetailView.swift` displays a completed workout summary and can start or edit a workout.
 - `Views/Workout/WorkoutView.swift` coordinates session UI and add/delete/move actions on exercises.
 - `Views/Workout/ExerciseView.swift` queries previous completed sets and edits notes/sets.
+- `Data/Classes/WorkoutRouter.swift` centralizes start/resume state for workout sessions.
 
 ## Project Structure & File Guide
 - `Root/VillainArcApp.swift`: app entry, model container setup.
-- `Views/ContentView.swift`: workout list, start/resume, navigation to `WorkoutView`.
+- `Views/ContentView.swift`: latest workout summary, start/resume flow, navigation to `PreviousWorkoutsListView`.
+- `Views/PreviousWorkoutsListView.swift`: completed workout history list and bulk delete.
 - `Views/Workout/WorkoutView.swift`: session UI, list vs paging, save/delete flows.
+- `Views/Workout/WorkoutDetailView.swift`: completed workout details with start/edit/delete actions.
+- `Views/Workout/WorkoutRowView.swift`: compact row card for a workout in lists.
+- `Views/Workout/WorkoutSettingsView.swift`: workout settings sheet with finish/delete actions.
 - `Views/Workout/ExerciseView.swift`: per-exercise editing, prior-set lookup, notes.
 - `Views/Workout/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion.
 - `Views/Workout/RepRangeEditorView.swift`: rep range editor sheet with confirm/cancel actions.
@@ -21,6 +28,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/RestTimerView.swift`: rest timer sheet for start/pause/stop and countdown display.
 - `Views/Workout/TimerDurationPicker.swift`: tick-based duration slider for rest time picking.
 - `Helpers/KeyboardDismiss.swift`: shared keyboard dismissal helper.
+- `Helpers/TimeFormatting.swift`: shared date/time formatting helpers.
 - `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters.
 - `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI.
 - `Data/Models/Workout.swift`: workout model, ordering helpers.
@@ -34,6 +42,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/Models/Muscle.swift`: muscle enum, `isMajor`, `allMajor`.
 - `Data/Models/ExerciseDetails.swift`: catalog entries and muscle-target mapping.
 - `Data/DataManager.swift`: seeds catalog using `UserDefaults` versioning.
+- `Data/Classes/WorkoutRouter.swift`: shared workout start/resume state.
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
 - `Data/Assets.xcassets`: app icons and accent color.

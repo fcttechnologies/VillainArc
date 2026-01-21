@@ -2,12 +2,10 @@ import SwiftUI
 
 struct WorkoutRowView: View {
     let workout: Workout
-    let onStartFromWorkout: (Workout) -> Void
-    let onDeleteWorkout: (Workout) -> Void
     
     var body: some View {
         NavigationLink {
-            WorkoutDetailView(workout: workout, onStartFromWorkout: onStartFromWorkout, onDeleteWorkout: onDeleteWorkout)
+            WorkoutDetailView(workout: workout)
         } label: {
             VStack(alignment: .leading) {
                 HStack {
@@ -45,6 +43,7 @@ struct WorkoutRowView: View {
 
 #Preview {
     NavigationStack {
-        WorkoutRowView(workout: sampleWorkout(), onStartFromWorkout: { _ in }, onDeleteWorkout: { _ in })
+        WorkoutRowView(workout: sampleWorkout())
     }
+    .environment(WorkoutRouter())
 }

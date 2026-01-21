@@ -1,10 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @Environment(WorkoutRouter.self) private var router
     @Bindable var workout: Workout
-    let onStartFromWorkout: (Workout) -> Void
-    let onDeleteWorkout: (Workout) -> Void
     
     @State private var showDeleteWorkoutConfirmation: Bool = false
     @State private var editWorkout: Bool = false
@@ -18,7 +19,7 @@ struct WorkoutDetailView: View {
             }
             ForEach(workout.sortedExercises) { exercise in
                 Section {
-                    Grid {
+                    Grid(verticalSpacing: 6) {
                         GridRow {
                             Text("Set")
                             Spacer()
@@ -56,7 +57,7 @@ struct WorkoutDetailView: View {
             }
         }
         .navigationTitle(workout.title)
-        .navigationSubtitle(Text(workout.startTime, style: .date))
+        .navigationSubtitle(Text(formattedDateRange(start: workout.startTime, end: workout.endTime, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -65,7 +66,8 @@ struct WorkoutDetailView: View {
                         editWorkout = true
                     }
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
-                        onStartFromWorkout(workout)
+                        Haptics.impact(.medium)
+                        router.start(from: workout, context: context)
                         dismiss()
                     }
                     Button("Delete Workout", systemImage: "trash", role: .destructive) {
@@ -74,8 +76,7 @@ struct WorkoutDetailView: View {
                 }
                 .confirmationDialog("Delete Workout", isPresented: $showDeleteWorkoutConfirmation) {
                     Button("Delete", role: .destructive) {
-                        onDeleteWorkout(workout)
-                        dismiss()
+                        deleteWorkout()
                     }
                 } message: {
                     Text("Are you sure you want to delete this workout? This cannot be undone.")
@@ -84,16 +85,23 @@ struct WorkoutDetailView: View {
         }
         .fullScreenCover(isPresented: $editWorkout) {
             WorkoutView(workout: workout, isEditing: true, onDeleteFromEdit: {
-                onDeleteWorkout(workout)
                 editWorkout = false
-                dismiss()
+                deleteWorkout()
             })
         }
+    }
+
+    private func deleteWorkout() {
+        Haptics.warning()
+        context.delete(workout)
+        saveContext(context: context)
+        dismiss()
     }
 }
 
 #Preview {
     NavigationStack {
-        WorkoutDetailView(workout: sampleWorkout(), onStartFromWorkout: { _ in }, onDeleteWorkout: { _ in })
+        WorkoutDetailView(workout: sampleWorkout())
+            .environment(WorkoutRouter())
     }
 }

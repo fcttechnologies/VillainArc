@@ -64,6 +64,7 @@ struct WorkoutSettingsView: View {
                         HStack {
                             Text(exercise.name)
                                 .fontWeight(.semibold)
+                                .multilineTextAlignment(.leading)
                             Spacer()
                             Text("^[\(exercise.sortedSets.count) set](inflect: true)")
                                 .foregroundStyle(.secondary)

@@ -6,24 +6,52 @@ struct ContentView: View {
     
     @Namespace private var animation
     
-    @Query(sort: \Workout.startTime, order: .reverse) private var workouts: [Workout]
-    @State private var workout: Workout?
-    
+    @Query(filter: #Predicate<Workout> { !$0.completed }, sort: \Workout.startTime, order: .reverse) private var incompleteWorkouts: [Workout]
+    @Query private var previousWorkouts: [Workout]
+    @State private var router = WorkoutRouter()
+
+    init() {
+        let predicate = #Predicate<Workout> { $0.completed }
+        let sort = [SortDescriptor(\Workout.startTime, order: .reverse)]
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: sort)
+        descriptor.fetchLimit = 1
+        _previousWorkouts = Query(descriptor)
+    }
+
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(workouts) { workout in
-                    WorkoutRowView(workout: workout, onStartFromWorkout: { template in
-                        startWorkout(from: template)
-                    }, onDeleteWorkout: deleteWorkout)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    NavigationLink {
+                        PreviousWorkoutsListView()
+                    } label: {
+                        HStack(spacing: 0) {
+                            Text("Previous Workouts")
+                                .fontWeight(.semibold)
+                                .fontDesign(.rounded)
+                            Image(systemName: "chevron.right")
+                                .bold()
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.title3)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, 4)
+                    
+                    if previousWorkouts.isEmpty {
+                        ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Click the '\(Image(systemName: "plus"))' to start your first workout."))
+                            .frame(maxWidth: .infinity)
+                            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        ForEach(previousWorkouts) {
+                            WorkoutRowView(workout: $0)
+                        }
+                    }
                 }
-                .onDelete(perform: deleteWorkout)
+                .padding()
             }
             .navigationTitle("Home")
             .toolbarTitleDisplayMode(.inlineLarge)
-            .listStyle(.plain)
             .toolbar {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
@@ -37,39 +65,25 @@ struct ContentView: View {
                 DataManager.seedExercisesIfNeeded(context: context)
                 checkForUnfinishedWorkout()
             }
-            .fullScreenCover(item: $workout) {
+            .fullScreenCover(item: $router.activeWorkout) {
                 WorkoutView(workout: $0)
                     .navigationTransition(.zoom(sourceID: "startWorkout", in: animation))
                     .interactiveDismissDisabled()
             }
         }
+        .environment(router)
     }
-    
-    private func startWorkout(from template: Workout? = nil) {
+
+    private func startWorkout() {
         Haptics.impact(.medium)
-        let newWorkout = template.map { Workout(previous: $0) } ?? Workout()
-        context.insert(newWorkout)
-        saveContext(context: context)
-        workout = newWorkout
+        router.start(context: context)
     }
     
     private func checkForUnfinishedWorkout() {
-        if let unfinishedWorkout = workouts.first(where: { !$0.completed }) {
-            workout = unfinishedWorkout
+        guard router.activeWorkout == nil else { return }
+        if let unfinishedWorkout = incompleteWorkouts.first {
+            router.resume(unfinishedWorkout)
         }
-    }
-    
-    private func deleteWorkout(offsets: IndexSet) {
-        guard !offsets.isEmpty else { return }
-        for index in offsets {
-            deleteWorkout(workouts[index])
-        }
-    }
-    
-    private func deleteWorkout(_ workout: Workout) {
-        Haptics.warning()
-        context.delete(workout)
-        saveContext(context: context)
     }
 }
 

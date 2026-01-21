@@ -81,24 +81,29 @@ extension View {
 
 extension Workout {
     static var sampleData: [Workout] {
-        let now = Date()
-        func end(after minutes: Int) -> Date {
-            Calendar.current.date(byAdding: .minute, value: minutes, to: now) ?? now
+        func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
+            let components = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
+            return Calendar.current.date(from: components) ?? Date.now
         }
-        
-        let chest = Workout(title: "Chest Day", notes: "Testing sample", completed: true, endTime: end(after: 60))
+
+        let chest = Workout(title: "Chest Day", notes: "Testing sample", completed: true, endTime: date(2026, 1, 5, 9, 5))
+        chest.startTime = date(2026, 1, 5, 8, 15)
         chest.exercises = WorkoutExercise.chestDay(for: chest)
         
-        let back = Workout(title: "Back Day", notes: "Testing sample", completed: true, endTime: end(after: 65))
+        let back = Workout(title: "Back Day", notes: "Testing sample", completed: true, endTime: date(2026, 1, 6, 13, 0))
+        back.startTime = date(2026, 1, 6, 11, 30)
         back.exercises = WorkoutExercise.backDay(for: back)
         
-        let shoulder = Workout(title: "Shoulder Day", notes: "Testing sample", completed: true, endTime: end(after: 50))
+        let shoulder = Workout(title: "Shoulder Day", notes: "Testing sample", completed: true, endTime: date(2026, 2, 11, 0, 30))
+        shoulder.startTime = date(2026, 2, 10, 23, 0)
         shoulder.exercises = WorkoutExercise.shoulderDay(for: shoulder)
         
-        let arm = Workout(title: "Arm Day", notes: "Testing sample", completed: true, endTime: end(after: 45))
+        let arm = Workout(title: "Arm Day", notes: "Testing sample", completed: true, endTime: date(2026, 4, 1, 0, 20))
+        arm.startTime = date(2026, 3, 31, 23, 10)
         arm.exercises = WorkoutExercise.armDay(for: arm)
         
-        let leg = Workout(title: "Leg Day", notes: "Testing sample", completed: true, endTime: end(after: 1000))
+        let leg = Workout(title: "Leg Day", notes: "Testing sample", completed: true, endTime: date(2027, 1, 1, 0, 5))
+        leg.startTime = date(2026, 12, 31, 22, 15)
         leg.exercises = WorkoutExercise.legDay(for: leg)
         
         return [chest, back, shoulder, arm, leg]
