@@ -17,7 +17,10 @@ class WorkoutExercise {
     var sets: [ExerciseSet] = []
     
     var displayMuscle: String {
-        musclesTargeted.filter(\.isMajor).first?.rawValue ?? ""
+        if let major = musclesTargeted.first(where: \.isMajor) {
+            return major.rawValue
+        }
+        return musclesTargeted.first?.rawValue ?? ""
     }
     
     var sortedSets: [ExerciseSet] {

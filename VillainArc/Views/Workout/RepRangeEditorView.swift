@@ -46,13 +46,21 @@ struct RepRangeEditorView: View {
                     }
                 }
             }
-            .onChange(of: mode) { _, _ in
+            .onChange(of: mode) {
                 Haptics.selection()
+                saveContext(context: context)
             }
             .onChange(of: repRange.lowerRange) { _, newValue in
                 if newValue > repRange.upperRange {
                     repRange.upperRange = newValue
                 }
+                scheduleSave(context: context)
+            }
+            .onChange(of: repRange.upperRange) {
+                scheduleSave(context: context)
+            }
+            .onChange(of: repRange.targetReps) {
+                scheduleSave(context: context)
             }
             .onDisappear {
                 saveContext(context: context)

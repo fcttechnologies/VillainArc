@@ -77,10 +77,10 @@ struct PreviousWorkoutsListView: View {
             context.delete(workout)
         }
         saveContext(context: context)
+        isEditing = !workouts.isEmpty
     }
 
     private func deleteAllWorkouts() {
-        guard !workouts.isEmpty else { return }
         Haptics.warning()
         for workout in workouts {
             context.delete(workout)

@@ -51,14 +51,6 @@ final class RestTimerState {
         isRunning || (isPaused && pausedRemainingSeconds > 0)
     }
     
-    var displayRemainingSeconds: Int {
-        if isRunning, let endDate {
-            return max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
-        }
-        
-        return max(0, pausedRemainingSeconds)
-    }
-    
     func start(seconds: Int) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {

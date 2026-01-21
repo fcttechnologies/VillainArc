@@ -1,5 +1,6 @@
 import UIKit
 
+@MainActor
 enum Haptics {
     private static let impactGenerators = ImpactGeneratorCache()
     private static let selectionGenerator = UISelectionFeedbackGenerator()

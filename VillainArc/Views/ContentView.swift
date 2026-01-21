@@ -26,7 +26,7 @@ struct ContentView: View {
                     .matchedTransitionSource(id: "startWorkout", in: animation)
                 }
             }
-            .onAppear {
+            .task {
                 DataManager.seedExercisesIfNeeded(context: context)
                 checkForUnfinishedWorkout()
             }

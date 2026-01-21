@@ -16,8 +16,4 @@ final class WorkoutRouter {
     func resume(_ workout: Workout) {
         activeWorkout = workout
     }
-
-    func clear() {
-        activeWorkout = nil
-    }
 }

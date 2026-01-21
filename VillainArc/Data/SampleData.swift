@@ -29,28 +29,13 @@ class SampleDataContainer {
         }
     }
 
-    private func seedExercisesIfNeeded() {
-        let catalogVersion = ExerciseDetails.allCases.count
-        print("Catalog version: \(catalogVersion)")
-        let storedVersion = UserDefaults.standard.integer(forKey: "exerciseCatalogVersion")
-        print("Stored version: \(storedVersion)")
-
-        if storedVersion != catalogVersion {
-            syncExercises()
-            UserDefaults.standard.set(catalogVersion, forKey: "exerciseCatalogVersion")
-        }
-    }
-
     private func syncExercises() {
-        
+        let descriptor = FetchDescriptor<Exercise>()
+        let existingNames = Set((try? context.fetch(descriptor))?.map(\.name) ?? [])
+
         for exerciseDetail in ExerciseDetails.allCases {
             let name = exerciseDetail.rawValue
-            let predicate = #Predicate<Exercise> {
-                $0.name == name
-            }
-            let descriptor = FetchDescriptor(predicate: predicate)
-
-            if (try? context.fetch(descriptor))?.isEmpty ?? true {
+            if !existingNames.contains(name) {
                 context.insert(Exercise(from: exerciseDetail))
             }
         }

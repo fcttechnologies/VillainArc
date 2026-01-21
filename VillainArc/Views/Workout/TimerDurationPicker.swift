@@ -105,7 +105,7 @@ struct TimerDurationPicker: View {
 
                             // Optional: haptic on change
                             if lastHapticIndex != roundedIndex {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                Haptics.impact(.light)
                                 lastHapticIndex = roundedIndex
                             }
                         }

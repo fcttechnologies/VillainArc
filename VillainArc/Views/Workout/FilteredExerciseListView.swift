@@ -6,7 +6,7 @@ struct FilteredExerciseListView: View {
     @Binding var selectedExercises: [Exercise]
     
     let searchText: String
-    let muscleFilters: [Muscle]
+    let muscleFilters: Set<Muscle>
     let showAllMuscleGroups: Bool
     let favoritesOnly: Bool
     let selectedOnly: Bool
@@ -100,7 +100,7 @@ struct FilteredExerciseListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(exercise.name)
                     .font(.headline)
-                Text(displayMuscles(for: exercise).map(\.rawValue), format: .list(type: .and))
+                Text(exercise.displayMuscles)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
@@ -113,14 +113,6 @@ struct FilteredExerciseListView: View {
         }
     }
 
-    private func displayMuscles(for exercise: Exercise) -> [Muscle] {
-        let majors = exercise.musclesTargeted.filter(\.isMajor)
-        if !majors.isEmpty {
-            return majors
-        }
-        return Array(exercise.musclesTargeted.prefix(1))
-    }
-    
     @ViewBuilder
     private func favoriteAction(for exercise: Exercise) -> some View {
         Button {

@@ -61,7 +61,7 @@ struct RestTimeEditorView: View {
                         }
                     }
                 } footer: {
-                    Text("If you complete a set but the next set is a super or drop set, the rest time will skipped.")
+                    Text("If you complete a set but the next set is a super or drop set, the rest time will be skipped.")
                 }
                 .listRowSeparator(.hidden)
             }
@@ -78,6 +78,7 @@ struct RestTimeEditorView: View {
             .onChange(of: restTimePolicy.activeMode) {
                 Haptics.selection()
                 collapsePickers()
+                saveContext(context: context)
             }
             .onChange(of: showAdvancedByType) {
                 if !showAdvancedByType {
@@ -158,6 +159,9 @@ struct RestTimeEditorView: View {
                 TimerDurationPicker(seconds: seconds, showZero: true)
                     .frame(height: 60)
             }
+        }
+        .onChange(of: seconds.wrappedValue) {
+            scheduleSave(context: context)
         }
     }
     

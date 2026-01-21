@@ -50,7 +50,5 @@ enum Muscle: String, Codable, CaseIterable {
         }
     }
     
-    static var allMajor: [Muscle] {
-        allCases.filter(\.isMajor)
-    }
+    static let allMajor: [Muscle] = Muscle.allCases.filter(\.isMajor)
 }

@@ -41,35 +41,33 @@ struct RestTimerView: View {
                     .listRowSeparator(.hidden)
                 
                 if !restTimer.isActive && !recentTimes.isEmpty {
-                    Text("Recents")
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .font(.title3)
-                    ForEach(recentTimes) { history in
-                        HStack {
-                            Text(secondsToTime(history.seconds))
-                                .font(.title)
-                                .fontWeight(.semibold)
-                            
-                            Spacer()
-                            
-                            Button {
-                                Haptics.success()
-                                restTimer.start(seconds: history.seconds)
-                                RestTimeHistory.record(seconds: history.seconds, context: context)
-                                saveContext(context: context)
-                            } label: {
-                                Image(systemName: "play.fill")
-                                    .padding()
+                    Section("Recents") {
+                        ForEach(recentTimes) { history in
+                            HStack {
+                                Text(secondsToTime(history.seconds))
+                                    .font(.title)
                                     .fontWeight(.semibold)
-                                    .font(.title2)
+                                
+                                Spacer()
+                                
+                                Button {
+                                    Haptics.success()
+                                    restTimer.start(seconds: history.seconds)
+                                    RestTimeHistory.record(seconds: history.seconds, context: context)
+                                    saveContext(context: context)
+                                } label: {
+                                    Image(systemName: "play.fill")
+                                        .padding()
+                                        .fontWeight(.semibold)
+                                        .font(.title2)
+                                }
+                                .buttonBorderShape(.circle)
+                                .buttonStyle(.glassProminent)
+                                .tint(.green)
                             }
-                            .buttonBorderShape(.circle)
-                            .buttonStyle(.glassProminent)
-                            .tint(.green)
                         }
+                        .onDelete(perform: deleteRecentTimes)
                     }
-                    .onDelete(perform: deleteRecentTimes)
                 }
             }
             .listStyle(.plain)

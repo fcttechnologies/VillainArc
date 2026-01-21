@@ -1,6 +1,19 @@
 import SwiftUI
 import SwiftData
 
+struct PreviousSetSnapshot {
+    let reps: Int
+    let weight: Double
+
+    var displayText: String {
+        "\(reps)x\(Self.formattedWeight(weight))"
+    }
+
+    static func formattedWeight(_ weight: Double) -> String {
+        weight.formatted(.number.precision(.fractionLength(0...2)))
+    }
+}
+
 struct ExerciseSetRowView: View {
     @Bindable var set: ExerciseSet
     @Bindable var exercise: WorkoutExercise
@@ -9,7 +22,7 @@ struct ExerciseSetRowView: View {
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
     
-    let previousSetDisplay: String
+    let previousSetSnapshot: PreviousSetSnapshot?
     let fieldWidth: CGFloat
     let isEditing: Bool
     
@@ -50,9 +63,19 @@ struct ExerciseSetRowView: View {
                 .frame(width: fieldWidth)
 
             if !isEditing {
-                Text(previousSetDisplay)
+                Text(previousSetSnapshot?.displayText ?? "-")
                     .lineLimit(1)
                     .frame(width: fieldWidth)
+                    .contextMenu {
+                        if let previousSetSnapshot {
+                            Button("Use Previous Set") {
+                                Haptics.selection()
+                                set.reps = previousSetSnapshot.reps
+                                set.weight = previousSetSnapshot.weight
+                                saveContext(context: context)
+                            }
+                        }
+                    }
 
                 if set.complete {
                     Button {
@@ -83,6 +106,12 @@ struct ExerciseSetRowView: View {
             } else {
                 Spacer()
             }
+        }
+        .onChange(of: set.reps) {
+            scheduleSave(context: context)
+        }
+        .onChange(of: set.weight) {
+            scheduleSave(context: context)
         }
         .alert("Replace Rest Timer?", isPresented: $showOverrideTimerAlert) {
             Button("Replace", role: .destructive) {

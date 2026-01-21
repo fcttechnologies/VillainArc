@@ -143,16 +143,16 @@ struct WorkoutSettingsView: View {
                 if isEditing, let endTime = workout.endTime, endTime < workout.startTime {
                     workout.endTime = workout.startTime
                 }
-                saveContext(context: context)
+                scheduleSave(context: context)
             }
             .onChange(of: workout.endTime) {
-                saveContext(context: context)
+                scheduleSave(context: context)
             }
             .onChange(of: workout.title) {
-                saveContext(context: context)
+                scheduleSave(context: context)
             }
             .onChange(of: workout.notes) {
-                saveContext(context: context)
+                scheduleSave(context: context)
             }
             .onChange(of: isTitleFocused) {
                 if !isTitleFocused {

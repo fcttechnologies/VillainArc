@@ -22,10 +22,10 @@ struct ExerciseView: View {
         previousExercise.first?.sortedSets ?? []
     }
     
-    private func previousSetDisplay(for index: Int) -> String {
-        guard index < previousSets.count else { return "-" }
+    private func previousSetSnapshot(for index: Int) -> PreviousSetSnapshot? {
+        guard index < previousSets.count else { return nil }
         let set = previousSets[index]
-        return "\(set.reps)x\(Int(set.weight))"
+        return PreviousSetSnapshot(reps: set.reps, weight: set.weight)
     }
     
     var body: some View {
@@ -52,7 +52,7 @@ struct ExerciseView: View {
                     
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, previousSetDisplay: previousSetDisplay(for: set.index), fieldWidth: fieldWidth, isEditing: isEditing)
+                            ExerciseSetRowView(set: set, exercise: exercise, previousSetSnapshot: previousSetSnapshot(for: set.index), fieldWidth: fieldWidth, isEditing: isEditing)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
@@ -130,7 +130,7 @@ struct ExerciseView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                     .padding(.top, 8)
                     .onChange(of: exercise.notes) {
-                        saveContext(context: context)
+                        scheduleSave(context: context)
                     }
             }
         }

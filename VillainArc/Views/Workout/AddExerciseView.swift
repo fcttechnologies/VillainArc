@@ -10,7 +10,7 @@ struct AddExerciseView: View {
     
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
-    @State private var selectedMuscles: [Muscle] = []
+    @State private var selectedMuscles: Set<Muscle> = []
     @State private var showAllMuscleGroups = true
     @State private var favoritesOnly = false
     @State private var selectedOnly = false
@@ -91,12 +91,12 @@ struct AddExerciseView: View {
         }
         
         if selectedMuscles.contains(muscle) {
-            selectedMuscles.removeAll { $0 == muscle }
+            selectedMuscles.remove(muscle)
             if selectedMuscles.isEmpty {
                 showAllMuscleGroups = true
             }
         } else {
-            selectedMuscles.append(muscle)
+            selectedMuscles.insert(muscle)
         }
         Haptics.selection()
     }
