@@ -191,41 +191,41 @@ extension WorkoutExercise {
 extension ExerciseSet {
     static func sampleSet1(for exercise: WorkoutExercise) -> [ExerciseSet] {
         [
-            ExerciseSet(index: 0, type: .warmup, weight: 135, reps: 10, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 185, reps: 8, exercise: exercise),
-            ExerciseSet(index: 2, type: .regular, weight: 205, reps: 6, exercise: exercise)
+            ExerciseSet(index: 0, type: .warmup, weight: 135, reps: 10, complete: true, exercise: exercise),
+            ExerciseSet(index: 1, type: .regular, weight: 185, reps: 8, complete: true, exercise: exercise),
+            ExerciseSet(index: 2, type: .regular, weight: 205, reps: 6, complete: true, exercise: exercise)
         ]
     }
     
     static func sampleSet2(for exercise: WorkoutExercise) -> [ExerciseSet] {
         [
-            ExerciseSet(index: 0, type: .warmup, weight: 45, reps: 12, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 95, reps: 10, exercise: exercise),
-            ExerciseSet(index: 2, type: .regular, weight: 115, reps: 8, exercise: exercise)
+            ExerciseSet(index: 0, type: .warmup, weight: 45, reps: 12, complete: true, exercise: exercise),
+            ExerciseSet(index: 1, type: .regular, weight: 95, reps: 10, complete: true, exercise: exercise),
+            ExerciseSet(index: 2, type: .regular, weight: 115, reps: 8, complete: true, exercise: exercise)
         ]
     }
     
     static func sampleSet3(for exercise: WorkoutExercise) -> [ExerciseSet] {
         [
-            ExerciseSet(index: 0, type: .regular, weight: 50, reps: 15, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 60, reps: 12, exercise: exercise),
-            ExerciseSet(index: 2, type: .failure, weight: 60, reps: 10, exercise: exercise)
+            ExerciseSet(index: 0, type: .regular, weight: 50, reps: 15, complete: true, exercise: exercise),
+            ExerciseSet(index: 1, type: .regular, weight: 60, reps: 12, complete: true, exercise: exercise),
+            ExerciseSet(index: 2, type: .failure, weight: 60, reps: 10, complete: true, exercise: exercise)
         ]
     }
     
     static func sampleSet4(for exercise: WorkoutExercise) -> [ExerciseSet] {
         [
-            ExerciseSet(index: 0, type: .regular, weight: 25, reps: 12, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 30, reps: 10, exercise: exercise),
-            ExerciseSet(index: 2, type: .dropSet, weight: 20, reps: 12, exercise: exercise)
+            ExerciseSet(index: 0, type: .regular, weight: 25, reps: 12, complete: true, exercise: exercise),
+            ExerciseSet(index: 1, type: .regular, weight: 30, reps: 10, complete: true, exercise: exercise),
+            ExerciseSet(index: 2, type: .dropSet, weight: 20, reps: 12, complete: true, exercise: exercise)
         ]
     }
     
     static func sampleSet5(for exercise: WorkoutExercise) -> [ExerciseSet] {
         [
-            ExerciseSet(index: 0, type: .regular, weight: 100, reps: 5, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 120, reps: 5, exercise: exercise),
-            ExerciseSet(index: 2, type: .regular, weight: 135, reps: 5, exercise: exercise)
+            ExerciseSet(index: 0, type: .regular, weight: 100, reps: 5, complete: true, exercise: exercise),
+            ExerciseSet(index: 1, type: .regular, weight: 120, reps: 5, complete: true, exercise: exercise),
+            ExerciseSet(index: 2, type: .regular, weight: 135, reps: 5, complete: true, exercise: exercise)
         ]
     }
 }

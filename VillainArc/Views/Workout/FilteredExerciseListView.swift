@@ -150,6 +150,6 @@ struct FilteredExerciseListView: View {
 }
 
 #Preview {
-    AddExerciseView(workout: Workout())
+    AddExerciseView(workout: Workout(), isEditing: false)
         .sampleDataConainer()
 }

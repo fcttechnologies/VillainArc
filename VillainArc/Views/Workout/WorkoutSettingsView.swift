@@ -8,6 +8,7 @@ enum WorkoutFinishAction {
 
 struct WorkoutSettingsView: View {
     @Bindable var workout: Workout
+    let isEditing: Bool
     var onFinish: (WorkoutFinishAction) -> Void
     var onDelete: () -> Void
     
@@ -22,6 +23,18 @@ struct WorkoutSettingsView: View {
         workout.exercises.reduce(0) { count, exercise in
             count + exercise.sets.filter { !$0.complete }.count
         }
+    }
+
+    private var endTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                if let endTime = workout.endTime, endTime >= workout.startTime {
+                    return endTime
+                }
+                return workout.startTime
+            },
+            set: { workout.endTime = $0 }
+        )
     }
         
     var body: some View {
@@ -41,6 +54,9 @@ struct WorkoutSettingsView: View {
                 
                 Section("Time") {
                     DatePicker("Start Time", selection: $workout.startTime, in: ...Date.now, displayedComponents: [.date, .hourAndMinute])
+                    if isEditing {
+                        DatePicker("End Time", selection: endTimeBinding, in: workout.startTime...Date.now, displayedComponents: [.date, .hourAndMinute])
+                    }
                 }
                 
                 Section {
@@ -71,56 +87,64 @@ struct WorkoutSettingsView: View {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .bottomBar) {
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        Label("Delete Workout", systemImage: "trash")
-                            .fontWeight(.semibold)
-                    }
-                    .tint(.red)
-                    .buttonStyle(.glassProminent)
-                    .confirmationDialog("Delete Workout", isPresented: $showDeleteConfirmation) {
-                        Button("Delete", role: .destructive) {
-                            onDelete()
+                if !isEditing {
+                    ToolbarItem(placement: .bottomBar) {
+                        Button(role: .destructive) {
+                            showDeleteConfirmation = true
+                        } label: {
+                            Label("Delete Workout", systemImage: "trash")
+                                .fontWeight(.semibold)
                         }
-                    } message: {
-                        Text("Are you sure you want to delete this workout? This cannot be undone.")
-                    }
-                }
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button {
-                        showSaveConfirmation = true
-                    } label: {
-                        Label("Finish Workout", systemImage: "checkmark")
-                            .fontWeight(.semibold)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .tint(.green)
-                    .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
-                        if incompleteSetCount > 0 {
-                            Button("Mark All Sets Complete and Finish") {
-                                onFinish(.markAllComplete)
+                        .tint(.red)
+                        .buttonStyle(.glassProminent)
+                        .confirmationDialog("Delete Workout", isPresented: $showDeleteConfirmation) {
+                            Button("Delete", role: .destructive) {
+                                onDelete()
                             }
-                            Button("Delete Incomplete Sets and Finish", role: .destructive) {
-                                onFinish(.deleteIncomplete)
-                            }
-                        } else {
-                            Button("Finish", role: .confirm) {
-                                onFinish(.markAllComplete)
-                            }
+                        } message: {
+                            Text("Are you sure you want to delete this workout? This cannot be undone.")
                         }
-                    } message: {
-                        if incompleteSetCount > 0 {
-                            Text("Choose how to handle incomplete sets.")
-                        } else {
-                            Text("Finish and save this workout?")
+                    }
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        Button {
+                            showSaveConfirmation = true
+                        } label: {
+                            Label("Finish Workout", systemImage: "checkmark")
+                                .fontWeight(.semibold)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .tint(.green)
+                        .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
+                            if incompleteSetCount > 0 {
+                                Button("Mark All Sets Complete and Finish") {
+                                    onFinish(.markAllComplete)
+                                }
+                                Button("Delete Incomplete Sets and Finish", role: .destructive) {
+                                    onFinish(.deleteIncomplete)
+                                }
+                            } else {
+                                Button("Finish", role: .confirm) {
+                                    onFinish(.markAllComplete)
+                                }
+                            }
+                        } message: {
+                            if incompleteSetCount > 0 {
+                                Text("Choose how to handle incomplete sets.")
+                            } else {
+                                Text("Finish and save this workout?")
+                            }
                         }
                     }
                 }
             }
             .onChange(of: workout.startTime) {
+                if isEditing, let endTime = workout.endTime, endTime < workout.startTime {
+                    workout.endTime = workout.startTime
+                }
+                saveContext(context: context)
+            }
+            .onChange(of: workout.endTime) {
                 saveContext(context: context)
             }
             .onChange(of: workout.title) {
@@ -155,7 +179,7 @@ struct WorkoutSettingsView: View {
 }
 
 #Preview {
-    WorkoutSettingsView(workout: sampleWorkout()) { _ in
+    WorkoutSettingsView(workout: sampleWorkout(), isEditing: false) { _ in
         // no-op
     } onDelete: {
         // no-op

@@ -7,11 +7,7 @@ struct WorkoutRowView: View {
     
     var body: some View {
         NavigationLink {
-            WorkoutDetailView(
-                workout: workout,
-                onStartFromWorkout: onStartFromWorkout,
-                onDeleteWorkout: onDeleteWorkout
-            )
+            WorkoutDetailView(workout: workout, onStartFromWorkout: onStartFromWorkout, onDeleteWorkout: onDeleteWorkout)
         } label: {
             VStack(alignment: .leading) {
                 HStack {

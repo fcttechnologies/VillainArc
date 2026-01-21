@@ -25,8 +25,8 @@ class Workout {
         exercises = workout.sortedExercises.map { WorkoutExercise(previous: $0, workout: self) }
     }
     
-    func addExercise(_ exercise: Exercise) {
-        let workoutExercise = WorkoutExercise(from: exercise, workout: self)
+    func addExercise(_ exercise: Exercise, markSetsComplete: Bool = false) {
+        let workoutExercise = WorkoutExercise(from: exercise, workout: self, markSetsComplete: markSetsComplete)
         exercises.append(workoutExercise)
     }
     

@@ -7,6 +7,8 @@ struct AddExerciseView: View {
     @Query private var exercises: [Exercise]
     
     @Bindable var workout: Workout
+    let isEditing: Bool
+    
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedMuscles: [Muscle] = []
@@ -73,7 +75,7 @@ struct AddExerciseView: View {
     
     private func addSelectedExercises() {
         for exercise in selectedExercises {
-            workout.addExercise(exercise)
+            workout.addExercise(exercise, markSetsComplete: isEditing)
             exercise.updateLastUsed()
         }
         selectedExercises.removeAll()
@@ -120,6 +122,6 @@ struct AddExerciseView: View {
 }
 
 #Preview {
-    AddExerciseView(workout: Workout())
+    AddExerciseView(workout: Workout(), isEditing: false)
         .sampleDataConainer()
 }

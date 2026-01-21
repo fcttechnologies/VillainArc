@@ -5,17 +5,19 @@ struct ExerciseView: View {
     @Query private var exercises: [WorkoutExercise]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
+    let isEditing: Bool
     
     @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     
-    init(exercise: WorkoutExercise) {
+    init(exercise: WorkoutExercise, isEditing: Bool = false) {
         self.exercise = exercise
+        self.isEditing = isEditing
         
         let name = exercise.name
         let predicate = #Predicate<WorkoutExercise> { exercise in
-            exercise.name == name && exercise.workout?.completed == true
+            exercise.name == name && exercise.workout.completed
         }
         _exercises = Query(filter: predicate, sort: \.date, order: .reverse)
     }
@@ -32,26 +34,29 @@ struct ExerciseView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let fieldWidth = geometry.size.width / (isEditing ? 3 : 5)
             ScrollView {
                 headerView
                     .padding(.horizontal)
                 
-                Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+                Grid(horizontalSpacing: 10, verticalSpacing: 12) {
                     GridRow {
                         Text("Set")
                         Text("Reps")
                             .gridColumnAlignment(.leading)
                         Text("Weight")
                             .gridColumnAlignment(.leading)
-                        Text("Previous")
-                        Text(" ")
+                        if !isEditing {
+                            Text("Previous")
+                            Text(" ")
+                        }
                     }
                     .font(.title3)
                     .bold()
                     
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, previousSetDisplay: previousSetDisplay(for: set.index), fieldWidth: geometry.size.width / 5)
+                            ExerciseSetRowView(set: set, exercise: exercise, previousSetDisplay: previousSetDisplay(for: set.index), fieldWidth: fieldWidth, isEditing: isEditing)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
@@ -59,6 +64,7 @@ struct ExerciseView: View {
                     }
                 }
                 .padding(.vertical)
+                .padding(.leading, isEditing ? 10 : 0)
                 
                 Button {
                     Haptics.impact(.light)
@@ -144,14 +150,14 @@ struct ExerciseView: View {
     }
     
     private func addSet() {
-        exercise.addSet()
+        exercise.addSet(complete: isEditing)
         saveContext(context: context)
     }
 
 }
 
 #Preview {
-    ExerciseView(exercise: sampleWorkout().sortedExercises.first!)
+    ExerciseView(exercise: sampleWorkout().sortedExercises.first!, isEditing: false)
         .sampleDataConainer()
         .environment(RestTimerState())
 }

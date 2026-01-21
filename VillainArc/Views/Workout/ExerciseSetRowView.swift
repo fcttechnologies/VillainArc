@@ -11,6 +11,7 @@ struct ExerciseSetRowView: View {
     
     let previousSetDisplay: String
     let fieldWidth: CGFloat
+    let isEditing: Bool
     
     var body: some View {
         Group {
@@ -47,35 +48,40 @@ struct ExerciseSetRowView: View {
             TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .frame(width: fieldWidth)
-            Text(previousSetDisplay)
-                .lineLimit(1)
-                .frame(width: fieldWidth)
-            
-            if set.complete {
-                Button {
-                    Haptics.selection()
-                    set.complete = false
-                    saveContext(context: context)
-                } label: {
-                    Image(systemName: "checkmark")
-                        .padding(2)
+
+            if !isEditing {
+                Text(previousSetDisplay)
+                    .lineLimit(1)
+                    .frame(width: fieldWidth)
+
+                if set.complete {
+                    Button {
+                        Haptics.selection()
+                        set.complete = false
+                        saveContext(context: context)
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .padding(2)
+                    }
+                    .buttonBorderShape(.circle)
+                    .buttonStyle(.glassProminent)
+                    .tint(.green)
+                } else {
+                    Button {
+                        Haptics.success()
+                        set.complete = true
+                        handleAutoStartTimer()
+                        saveContext(context: context)
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .padding(2)
+                    }
+                    .buttonBorderShape(.circle)
+                    .buttonStyle(.glass)
+                    .tint(.primary)
                 }
-                .buttonBorderShape(.circle)
-                .buttonStyle(.glassProminent)
-                .tint(.green)
             } else {
-                Button {
-                    Haptics.success()
-                    set.complete = true
-                    handleAutoStartTimer()
-                    saveContext(context: context)
-                } label: {
-                    Image(systemName: "checkmark")
-                        .padding(2)
-                }
-                .buttonBorderShape(.circle)
-                .buttonStyle(.glass)
-                .tint(.primary)
+                Spacer()
             }
         }
         .alert("Replace Rest Timer?", isPresented: $showOverrideTimerAlert) {
@@ -117,7 +123,7 @@ struct ExerciseSetRowView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleWorkout().sortedExercises.first!)
+    ExerciseView(exercise: sampleWorkout().sortedExercises.first!, isEditing: false)
         .sampleDataConainer()
         .environment(RestTimerState())
 }

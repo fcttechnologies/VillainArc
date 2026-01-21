@@ -2,11 +2,12 @@ import SwiftUI
 
 struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    let workout: Workout
+    @Bindable var workout: Workout
     let onStartFromWorkout: (Workout) -> Void
     let onDeleteWorkout: (Workout) -> Void
     
     @State private var showDeleteWorkoutConfirmation: Bool = false
+    @State private var editWorkout: Bool = false
     
     var body: some View {
         List {
@@ -60,6 +61,9 @@ struct WorkoutDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Options", systemImage: "ellipsis") {
+                    Button("Edit Workout", systemImage: "pencil") {
+                        editWorkout = true
+                    }
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
                         onStartFromWorkout(workout)
                         dismiss()
@@ -77,6 +81,13 @@ struct WorkoutDetailView: View {
                     Text("Are you sure you want to delete this workout? This cannot be undone.")
                 }
             }
+        }
+        .fullScreenCover(isPresented: $editWorkout) {
+            WorkoutView(workout: workout, isEditing: true, onDeleteFromEdit: {
+                onDeleteWorkout(workout)
+                editWorkout = false
+                dismiss()
+            })
         }
     }
 }

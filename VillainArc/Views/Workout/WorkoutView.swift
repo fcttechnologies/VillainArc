@@ -3,6 +3,8 @@ import SwiftData
 
 struct WorkoutView: View {
     @Bindable var workout: Workout
+    let isEditing: Bool
+    let onDeleteFromEdit: (() -> Void)?
     
     @State private var activeExercise: WorkoutExercise?
     @State private var showExerciseListView: Bool = false
@@ -10,12 +12,19 @@ struct WorkoutView: View {
     @State private var showRestTimerSheet: Bool = false
     @State private var showWorkoutSettingsSheet: Bool = false
     @State private var restTimer = RestTimerState()
+    @State private var showDeleteWorkoutConfirmation: Bool = false
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     
     @Namespace private var animation
+    
+    init(workout: Workout, isEditing: Bool = false, onDeleteFromEdit: (() -> Void)? = nil) {
+        self.workout = workout
+        self.isEditing = isEditing
+        self.onDeleteFromEdit = onDeleteFromEdit
+    }
     
     var body: some View {
         NavigationStack {
@@ -31,10 +40,18 @@ struct WorkoutView: View {
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showRestTimerSheet = true
-                    } label: {
-                        timerToolbarLabel
+                    if isEditing {
+                        Button("Done") {
+                            Haptics.success()
+                            saveContext(context: context)
+                            dismiss()
+                        }
+                    } else {
+                        Button {
+                            showRestTimerSheet = true
+                        } label: {
+                            timerToolbarLabel
+                        }
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -51,7 +68,7 @@ struct WorkoutView: View {
             }
             .animation(.smooth, value: showExerciseListView)
             .sheet(isPresented: $showAddExerciseSheet) {
-                AddExerciseView(workout: workout)
+                AddExerciseView(workout: workout, isEditing: isEditing)
                     .navigationTransition(.zoom(sourceID: "addExercise", in: animation))
                     .interactiveDismissDisabled()
             }
@@ -61,7 +78,7 @@ struct WorkoutView: View {
                     .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showWorkoutSettingsSheet) {
-                WorkoutSettingsView(workout: workout, onFinish: finishWorkout, onDelete: deleteWorkout)
+                WorkoutSettingsView(workout: workout, isEditing: isEditing, onFinish: finishWorkout, onDelete: deleteWorkout)
             }
             .onAppear {
                 restTimer.refreshIfExpired()
@@ -78,6 +95,14 @@ struct WorkoutView: View {
                 await restTimer.scheduleStopIfNeeded()
             }
         }
+        .alert("Delete Workout?", isPresented: $showDeleteWorkoutConfirmation) {
+            Button("Delete Workout", role: .destructive) {
+                deleteWorkoutFromEdit()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This is the last exercise. Deleting it will delete the workout.")
+        }
         .environment(restTimer)
     }
     
@@ -90,7 +115,7 @@ struct WorkoutView: View {
                             .containerRelativeFrame(.horizontal)
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise)
+                            ExerciseView(exercise: exercise, isEditing: isEditing)
                                 .containerRelativeFrame(.horizontal)
                                 .id(exercise)
                         }
@@ -229,6 +254,14 @@ struct WorkoutView: View {
     
     private func deleteExercise(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
+        if isEditing, workout.exercises.count - offsets.count == 0 {
+            showDeleteWorkoutConfirmation = true
+            return
+        }
+        deleteExercises(at: offsets)
+    }
+
+    private func deleteExercises(at offsets: IndexSet) {
         Haptics.warning()
         let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
         
@@ -245,6 +278,12 @@ struct WorkoutView: View {
         if workout.exercises.isEmpty {
             showExerciseListView = false
         }
+    }
+
+    private func deleteWorkoutFromEdit() {
+        Haptics.warning()
+        showWorkoutSettingsSheet = false
+        onDeleteFromEdit?()
     }
     
     private func moveExercise(from source: IndexSet, to destination: Int) {
