@@ -66,7 +66,7 @@ struct RestTimeEditorView: View {
                 .listRowSeparator(.hidden)
             }
             .navigationTitle("Set Rest Times")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
@@ -219,4 +219,10 @@ struct RestTimeEditorView: View {
         case failure
         case individual(Int)
     }
+}
+
+#Preview {
+    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!)
+        .sampleDataContainerIncomplete()
+        .environment(RestTimerState())
 }

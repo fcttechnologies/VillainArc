@@ -153,7 +153,7 @@ struct ExerciseView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleWorkout().sortedExercises.first!, isEditing: false)
-        .sampleDataConainer()
+    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, isEditing: false)
+        .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

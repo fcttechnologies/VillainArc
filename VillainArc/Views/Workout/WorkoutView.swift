@@ -308,8 +308,8 @@ struct WorkoutView: View {
 }
 
 #Preview {
-    WorkoutView(workout: sampleWorkout())
-        .sampleDataConainer()
+    WorkoutView(workout: sampleIncompleteWorkout())
+        .sampleDataContainerIncomplete()
 }
 
 #Preview("New Workout") {

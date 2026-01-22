@@ -48,8 +48,6 @@ struct AddExerciseView: View {
                     }
                     ToolbarItem(placement: .bottomBar) {
                         Menu("Filters", systemImage: "line.3.horizontal.decrease") {
-                            Toggle("Selected Only", isOn: $selectedOnly)
-                            Toggle("Favorites Only", isOn: $favoritesOnly)
                             Menu("Muscle Groups") {
                                 Toggle("All Muscles", isOn: Binding(get: { showAllMuscleGroups }, set: { isOn in
                                     toggleShowAllMuscles(isOn)
@@ -60,6 +58,9 @@ struct AddExerciseView: View {
                                 }
                             }
                             .menuOrder(.fixed)
+                            Divider()
+                            Toggle("Selected Only", isOn: $selectedOnly)
+                            Toggle("Favorites Only", isOn: $favoritesOnly)
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)
@@ -69,6 +70,9 @@ struct AddExerciseView: View {
                 }
                 .searchable(text: $searchText)
                 .searchPresentationToolbarBehavior(.avoidHidingContent)
+                .task {
+                    DataManager.dedupeCatalogExercisesIfNeeded(context: context)
+                }
         }
     }
     
@@ -121,6 +125,6 @@ struct AddExerciseView: View {
 }
 
 #Preview {
-    AddExerciseView(workout: Workout(), isEditing: false)
-        .sampleDataConainer()
+    AddExerciseView(workout: sampleIncompleteWorkout(), isEditing: false)
+        .sampleDataContainerIncomplete()
 }

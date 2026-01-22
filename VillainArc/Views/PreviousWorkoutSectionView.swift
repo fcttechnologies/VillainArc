@@ -36,7 +36,8 @@ struct PreviousWorkoutSectionView: View {
 #Preview {
     NavigationStack {
         PreviousWorkoutSectionView()
-            .sampleDataConainer()
             .padding()
     }
+    .sampleDataConainer()
+    .environment(WorkoutRouter())
 }

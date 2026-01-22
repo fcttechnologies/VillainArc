@@ -101,7 +101,8 @@ struct WorkoutDetailView: View {
 
 #Preview {
     NavigationStack {
-        WorkoutDetailView(workout: sampleWorkout())
-            .environment(WorkoutRouter())
+        WorkoutDetailView(workout: sampleCompletedWorkout())
     }
+    .environment(WorkoutRouter())
+    .sampleDataConainer()
 }

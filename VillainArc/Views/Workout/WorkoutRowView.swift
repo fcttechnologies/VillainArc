@@ -2,10 +2,12 @@ import SwiftUI
 
 struct WorkoutRowView: View {
     let workout: Workout
+    @Namespace private var animation
     
     var body: some View {
         NavigationLink {
             WorkoutDetailView(workout: workout)
+                .navigationTransition(.zoom(sourceID: "workoutDetail", in: animation))
         } label: {
             VStack(alignment: .leading) {
                 HStack {
@@ -20,6 +22,7 @@ struct WorkoutRowView: View {
                     .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
+                
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(workout.sortedExercises) { exercise in
                         HStack(alignment: .center, spacing: 3) {
@@ -36,6 +39,7 @@ struct WorkoutRowView: View {
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
             .tint(.primary)
             .fontDesign(.rounded)
+            .matchedTransitionSource(id: "workoutDetail", in: animation)
         }
         .navigationLinkIndicatorVisibility(.hidden)
     }
@@ -43,7 +47,8 @@ struct WorkoutRowView: View {
 
 #Preview {
     NavigationStack {
-        WorkoutRowView(workout: sampleWorkout())
+        WorkoutRowView(workout: sampleCompletedWorkout())
     }
+    .sampleDataConainer()
     .environment(WorkoutRouter())
 }

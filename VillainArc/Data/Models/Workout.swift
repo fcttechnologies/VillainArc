@@ -48,10 +48,11 @@ class Workout {
     }
     
     // Testing
-    init(title: String, notes: String = "", completed: Bool = false, endTime: Date? = nil) {
+    init(title: String, notes: String = "", completed: Bool = false, startTime: Date, endTime: Date) {
         self.title = title
         self.notes = notes
         self.completed = completed
+        self.startTime = startTime
         self.endTime = endTime
     }
 }

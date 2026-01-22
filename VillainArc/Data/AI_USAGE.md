@@ -2,7 +2,7 @@
 
 ## Tools Used
 - **Claude Code**
-- **ChatGPT**
+- **ChatGPT Codex**
 
 ## Usage Tracking
 
@@ -19,12 +19,16 @@
 - **Why**: Needed to evaluate pros and cons of various implementations (class vs enum vs struct vs string) to make an informed decision
 
 ### Exercise Catalog Architecture
-- **Used for**: Brainstorming and researching different design patterns for exercise database management
-- **Why**: Had multiple implementation approaches in mind but needed help identifying edge cases around catalog versioning, seeding strategies, and handling app updates with new exercises
+- **Used for**: Brainstorming design patterns and trade-offs for exercise catalog management
+- **Why**: AI was used to compare options, list pros/cons, and surface edge cases before coding
+
+### Exercise Seeding + iCloud Edge Cases
+- **Used for**: Brainstorming a production-ready seeding approach and iCloud edge cases
+- **Why**: AI helped identify risks around catalog updates, renames, and CloudKit timing
 
 ### Exercise Data
-- **Used for**: Collaborating on the ExerciseDetails catalog and generating some target muscles
-- **Why**: Combined my provided exercises with AI suggestions to ensure completeness; AI primarily handled the biomechanical analysis to correctly order muscle groups from most to least targeted for the computed arrays
+- **Used for**: Collaborating on the `ExerciseCatalog` list and muscle targeting order
+- **Why**: AI assisted with grunt work for muscle ordering and completeness checks
 
 ### iOS Technology Research
 - **Used for**: Researching modern SwiftUI APIs and patterns
@@ -38,4 +42,3 @@
 - **Why**: Document structure and content generation
 
 ---
-

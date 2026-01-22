@@ -4,6 +4,7 @@ import SwiftData
 @Model
 class WorkoutExercise {
     var index: Int
+    var catalogID: String
     var name: String = ""
     var notes: String = ""
     @Relationship(deleteRule: .cascade)
@@ -29,6 +30,7 @@ class WorkoutExercise {
     
     init(from exercise: Exercise, workout: Workout, markSetsComplete: Bool = false) {
         index = workout.exercises.count
+        catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         self.workout = workout
@@ -37,6 +39,7 @@ class WorkoutExercise {
 
     init(previous exercise: WorkoutExercise, workout: Workout) {
         index = exercise.index
+        catalogID = exercise.catalogID
         name = exercise.name
         notes = exercise.notes
         repRange = RepRangePolicy(previous: exercise.repRange)
@@ -76,8 +79,9 @@ class WorkoutExercise {
     }
     
     // Testing
-    init(index: Int, name: String, notes: String = "", repRange: RepRangePolicy = RepRangePolicy(), musclesTargeted: [Muscle], workout: Workout) {
+    init(index: Int, name: String, notes: String = "", repRange: RepRangePolicy = RepRangePolicy(), musclesTargeted: [Muscle], workout: Workout, catalogID: String) {
         self.index = index
+        self.catalogID = catalogID
         self.name = name
         self.notes = notes
         self.repRange = repRange
@@ -88,9 +92,9 @@ class WorkoutExercise {
 
 extension WorkoutExercise {
     static func lastCompleted(for exercise: WorkoutExercise) -> FetchDescriptor<WorkoutExercise> {
-        let name = exercise.name
+        let catalogID = exercise.catalogID
         let predicate = #Predicate<WorkoutExercise> { item in
-            item.name == name && item.workout.completed
+            item.catalogID == catalogID && item.workout.completed
         }
         var descriptor = FetchDescriptor(
             predicate: predicate,

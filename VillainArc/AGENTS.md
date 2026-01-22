@@ -40,8 +40,8 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/Models/RestTimePolicy.swift`: rest timing policy and per-type defaults.
 - `Data/Models/RepRangePolicy.swift`: rep target class and display text, rep range mode.
 - `Data/Models/Muscle.swift`: muscle enum, `isMajor`, `allMajor`.
-- `Data/Models/ExerciseDetails.swift`: catalog entries and muscle-target mapping.
-- `Data/DataManager.swift`: seeds catalog using `UserDefaults` versioning.
+- `Data/Models/ExerciseCatalog.swift`: exercise catalog entries and muscle-target mapping.
+- `Data/Classes/DataManager.swift`: seeds catalog using `UserDefaults` versioning.
 - `Data/Classes/WorkoutRouter.swift`: shared workout start/resume state.
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
@@ -59,9 +59,9 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 
 ## Testing Guidelines
 - No automated test targets in this repo.
-- Use SwiftUI previews with `sampleDataConainer()` for UI checks.
+- Use SwiftUI previews with `sampleDataConainer()` for completed workouts and `sampleDataContainerIncomplete()` for in-progress flows.
 
 
 ## Data & AI Usage Notes
-- When adding exercises, update `ExerciseDetails` and ensure `DataManager` seeding still covers new items.
+- When adding exercises, update `ExerciseCatalog` and bump `ExerciseCatalog.catalogVersion` so `DataManager` re-syncs.
 - Log AI help in `Data/AI_USAGE.md` only when the user approves.

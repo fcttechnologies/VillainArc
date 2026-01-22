@@ -37,7 +37,7 @@ struct RepRangeEditorView: View {
                 }
             }
             .navigationTitle("Rep Range")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
@@ -93,7 +93,7 @@ struct RepRangeEditorView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleWorkout().sortedExercises.first!)
-        .sampleDataConainer()
+    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!)
+        .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

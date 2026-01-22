@@ -58,18 +58,19 @@ struct WorkoutSettingsView: View {
                         DatePicker("End Time", selection: endTimeBinding, in: workout.startTime...Date.now, displayedComponents: [.date, .hourAndMinute])
                     }
                 }
+                .fontWeight(.semibold)
                 
                 Section {
                     ForEach(workout.sortedExercises) { exercise in
                         HStack {
                             Text(exercise.name)
-                                .fontWeight(.semibold)
                                 .multilineTextAlignment(.leading)
                             Spacer()
                             Text("^[\(exercise.sortedSets.count) set](inflect: true)")
                                 .foregroundStyle(.secondary)
                                 .font(.subheadline)
                         }
+                        .fontWeight(.semibold)
                     }
                 } header: {
                     Text("Exercises")
@@ -80,7 +81,7 @@ struct WorkoutSettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
@@ -180,10 +181,10 @@ struct WorkoutSettingsView: View {
 }
 
 #Preview {
-    WorkoutSettingsView(workout: sampleWorkout(), isEditing: false) { _ in
+    WorkoutSettingsView(workout: sampleIncompleteWorkout(), isEditing: false) { _ in
         // no-op
     } onDelete: {
         // no-op
     }
-    .sampleDataConainer()
+    .sampleDataContainerIncomplete()
 }
