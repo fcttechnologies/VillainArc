@@ -6,11 +6,10 @@ enum Haptics {
     private static let selectionGenerator = UISelectionFeedbackGenerator()
     private static let notificationGenerator = UINotificationFeedbackGenerator()
     
-    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle, intensity: CGFloat = 1.0) {
-        let clamped = max(0, min(intensity, 1))
+    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
         let generator = impactGenerators.generator(for: style)
         generator.prepare()
-        generator.impactOccurred(intensity: clamped)
+        generator.impactOccurred(intensity: 1)
     }
     
     static func selection() {

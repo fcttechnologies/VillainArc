@@ -71,13 +71,15 @@ struct PreviousWorkoutsListView: View {
 
     private func deleteWorkouts(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
-        Haptics.warning()
+        Haptics.impact(.light)
         let workoutsToDelete = offsets.map { workouts[$0] }
         for workout in workoutsToDelete {
             context.delete(workout)
         }
         saveContext(context: context)
-        isEditing = !workouts.isEmpty
+        if workouts.isEmpty {
+            isEditing = false
+        }
     }
 
     private func deleteAllWorkouts() {

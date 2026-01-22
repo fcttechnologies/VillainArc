@@ -33,7 +33,7 @@ struct AddExerciseView: View {
                         }
                         .confirmationDialog("Discard selected exercises?", isPresented: $showCancelConfirmation) {
                             Button("Discard Selections", role: .destructive) {
-                                Haptics.warning()
+                                Haptics.impact(.light)
                                 dismiss()
                             }
                         } message: {
@@ -59,8 +59,8 @@ struct AddExerciseView: View {
                             }
                             .menuOrder(.fixed)
                             Divider()
-                            Toggle("Show Selected Only", systemImage: "checkmark.circle", isOn: $selectedOnly)
-                            Toggle("Show Favorites Only", systemImage: "star", isOn: $favoritesOnly)
+                            Toggle("Selected", systemImage: "checkmark.circle", isOn: $selectedOnly)
+                            Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)

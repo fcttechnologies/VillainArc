@@ -51,7 +51,7 @@ struct RestTimerView: View {
                                 Spacer()
                                 
                                 Button {
-                                    Haptics.success()
+                                    Haptics.impact(.light)
                                     restTimer.start(seconds: history.seconds)
                                     RestTimeHistory.record(seconds: history.seconds, context: context)
                                     saveContext(context: context)
@@ -75,7 +75,7 @@ struct RestTimerView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
-                        Haptics.success()
+                        Haptics.impact(.light)
                         dismiss()
                     }
                 }
@@ -93,7 +93,7 @@ struct RestTimerView: View {
         if restTimer.isRunning {
             HStack(spacing: 16) {
                 Button {
-                    Haptics.selection()
+                    Haptics.impact(.light)
                     restTimer.pause()
                 } label: {
                     Text("Pause")
@@ -106,7 +106,7 @@ struct RestTimerView: View {
                 .tint(.yellow)
                 
                 Button {
-                    Haptics.warning()
+                    Haptics.impact(.light)
                     restTimer.stop()
                 } label: {
                     Text("Stop")
@@ -121,7 +121,7 @@ struct RestTimerView: View {
         } else if restTimer.isPaused {
             HStack(spacing: 16) {
                 Button {
-                    Haptics.selection()
+                    Haptics.impact(.light)
                     restTimer.resume()
                 } label: {
                     Text("Resume")
@@ -134,7 +134,7 @@ struct RestTimerView: View {
                 .tint(.green)
                 
                 Button {
-                    Haptics.warning()
+                    Haptics.impact(.light)
                     restTimer.stop()
                 } label: {
                     Text("Stop")
@@ -148,7 +148,7 @@ struct RestTimerView: View {
             }
         } else {
             Button {
-                Haptics.success()
+                Haptics.impact(.light)
                 restTimer.start(seconds: selectedSeconds)
                 RestTimeHistory.record(seconds: selectedSeconds, context: context)
                 saveContext(context: context)
@@ -166,7 +166,7 @@ struct RestTimerView: View {
     
     private func deleteRecentTimes(at offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
-        Haptics.warning()
+        Haptics.impact(.light)
         
         for index in offsets {
             let history = recentTimes[index]

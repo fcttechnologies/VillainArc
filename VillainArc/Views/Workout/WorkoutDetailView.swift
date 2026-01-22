@@ -63,6 +63,7 @@ struct WorkoutDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Options", systemImage: "ellipsis") {
                     Button("Edit Workout", systemImage: "pencil") {
+                        Haptics.impact(.medium)
                         editWorkout = true
                     }
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
@@ -79,7 +80,7 @@ struct WorkoutDetailView: View {
                         deleteWorkout()
                     }
                 } message: {
-                    Text("Are you sure you want to delete this workout? This cannot be undone.")
+                    Text("Are you sure you want to delete this workout?")
                 }
             }
         }

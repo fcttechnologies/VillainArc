@@ -129,7 +129,7 @@ struct ExerciseSetRowView: View {
     }
     
     private func deleteSet() {
-        Haptics.warning()
+        Haptics.impact(.light)
         exercise.removeSet(set)
         context.delete(set)
         saveContext(context: context)

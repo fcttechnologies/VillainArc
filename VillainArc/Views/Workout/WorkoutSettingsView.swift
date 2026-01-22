@@ -80,15 +80,10 @@ struct WorkoutSettingsView: View {
                     }
                 }
             }
-            .navigationTitle("Settings")
-            .toolbarTitleDisplayMode(.inlineLarge)
+            .navBar(title: "Settings") {
+                CloseButton()
+            }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) {
-                        Haptics.success()
-                        dismiss()
-                    }
-                }
                 if !isEditing {
                     ToolbarItem(placement: .bottomBar) {
                         Button(role: .destructive) {
@@ -104,7 +99,7 @@ struct WorkoutSettingsView: View {
                                 onDelete()
                             }
                         } message: {
-                            Text("Are you sure you want to delete this workout? This cannot be undone.")
+                            Text("Are you sure you want to delete this workout?")
                         }
                     }
                     ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -119,10 +114,10 @@ struct WorkoutSettingsView: View {
                         .tint(.green)
                         .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
                             if incompleteSetCount > 0 {
-                                Button("Mark All Sets Complete and Finish") {
+                                Button("Mark All Sets Complete") {
                                     onFinish(.markAllComplete)
                                 }
-                                Button("Delete Incomplete Sets and Finish", role: .destructive) {
+                                Button("Delete Incomplete Sets", role: .destructive) {
                                     onFinish(.deleteIncomplete)
                                 }
                             } else {

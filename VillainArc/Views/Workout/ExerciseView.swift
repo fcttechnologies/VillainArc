@@ -63,7 +63,6 @@ struct ExerciseView: View {
                 .padding(.leading, isEditing ? 10 : 0)
                 
                 Button {
-                    Haptics.impact(.light)
                     addSet()
                 } label: {
                     Label("Add Set", systemImage: "plus")
@@ -98,7 +97,7 @@ struct ExerciseView: View {
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
                     Button {
-                        Haptics.selection()
+                        Haptics.impact(.light)
                         showRepRangeEditor = true
                     } label: {
                         Text(exercise.repRange.displayText)
@@ -116,7 +115,7 @@ struct ExerciseView: View {
                     }
                     
                     Button("Rest Times", systemImage: "timer") {
-                        Haptics.selection()
+                        Haptics.impact(.light)
                         showRestTimeEditor = true
                     }
                 }
@@ -146,6 +145,7 @@ struct ExerciseView: View {
     }
     
     private func addSet() {
+        Haptics.impact(.light)
         exercise.addSet(complete: isEditing)
         saveContext(context: context)
     }

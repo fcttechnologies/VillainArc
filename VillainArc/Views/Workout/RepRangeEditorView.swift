@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct RepRangeEditorView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Bindable var repRange: RepRangePolicy
     
@@ -10,7 +9,6 @@ struct RepRangeEditorView: View {
     }
     
     var body: some View {
-        NavigationStack {
             Form {
                 Section {
                     Picker("Type", selection: $repRange.activeMode) {
@@ -36,18 +34,10 @@ struct RepRangeEditorView: View {
                     }
                 }
             }
-            .navigationTitle("Rep Range")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) {
-                        Haptics.success()
-                        dismiss()
-                    }
-                }
+            .navBar(title: "Rep Range") {
+                CloseButton()
             }
             .onChange(of: mode) {
-                Haptics.selection()
                 saveContext(context: context)
             }
             .onChange(of: repRange.lowerRange) { _, newValue in
@@ -65,7 +55,6 @@ struct RepRangeEditorView: View {
             .onDisappear {
                 saveContext(context: context)
             }
-        }
     }
     
     private var modeFooterText: String {

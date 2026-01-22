@@ -250,7 +250,7 @@ struct FilteredExerciseListView: View {
             if selectedOnly {
                 ContentUnavailableView("No Favorites Selected", systemImage: "star", description: Text("Select favorite exercises to see them here."))
             } else {
-                ContentUnavailableView("No Favorites Yet", systemImage: "star", description: Text("Swipe right on an exercise to favorite it."))
+                ContentUnavailableView("No Favorites", systemImage: "star", description: Text("Swipe right on an exercise to favorite it."))
             }
         } else {
             ContentUnavailableView.search(text: searchText)

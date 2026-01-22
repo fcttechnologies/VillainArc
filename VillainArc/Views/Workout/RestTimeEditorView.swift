@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct RestTimeEditorView: View {
-    @Environment(\.dismiss) private var dismiss
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
@@ -15,84 +14,73 @@ struct RestTimeEditorView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Toggle("Auto-Start Timer", isOn: $autoStartRestTimer)
-                } footer: {
-                    Text("Starts a rest timer after completing a set, based on the mode and times below.")
-                }
-                
-                Section {
-                    Picker("Mode", selection: $exercise.restTimePolicy.activeMode) {
-                        ForEach(RestTimeMode.allCases, id: \.self) { mode in
-                            Text(mode.displayName)
-                                .tag(mode)
-                        }
+        Form {
+            Section {
+                Toggle("Auto-Start Timer", isOn: $autoStartRestTimer)
+            } footer: {
+                Text("Starts a rest timer after completing a set, based on the mode and times below.")
+            }
+            
+            Section {
+                Picker("Mode", selection: $exercise.restTimePolicy.activeMode) {
+                    ForEach(RestTimeMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName)
+                            .tag(mode)
                     }
-                } footer: {
-                    Text(modeFooterText)
                 }
-                
-                Section {
-                    switch restTimePolicy.activeMode {
-                    case .allSame:
-                        restTimeRow(title: "Rest Time", seconds: policyBinding(\.allSameSeconds), isExpanded: expandedPicker == .allSame, toggle: { togglePicker(.allSame) })
-                    case .byType:
-                        restTimeRow(title: "Warm Up Sets", seconds: policyBinding(\.warmupSeconds), isExpanded: expandedPicker == .warmup, toggle: { togglePicker(.warmup) })
+            } footer: {
+                Text(modeFooterText)
+            }
+            
+            Section {
+                switch restTimePolicy.activeMode {
+                case .allSame:
+                    restTimeRow(title: "Rest Time", seconds: policyBinding(\.allSameSeconds), isExpanded: expandedPicker == .allSame, toggle: { togglePicker(.allSame) })
+                case .byType:
+                    restTimeRow(title: "Warm Up Sets", seconds: policyBinding(\.warmupSeconds), isExpanded: expandedPicker == .warmup, toggle: { togglePicker(.warmup) })
+                    
+                    restTimeRow(title: "Normal Sets", seconds: policyBinding(\.regularSeconds), isExpanded: expandedPicker == .regular, toggle: { togglePicker(.regular) })
+                    
+                    DisclosureGroup("Advanced", isExpanded: $showAdvancedByType) {
+                        restTimeRow(title: "Super Sets", seconds: policyBinding(\.superSetSeconds), isExpanded: expandedPicker == .superSet, toggle: { togglePicker(.superSet) })
                         
-                        restTimeRow(title: "Normal Sets", seconds: policyBinding(\.regularSeconds), isExpanded: expandedPicker == .regular, toggle: { togglePicker(.regular) })
+                        restTimeRow(title: "Drop Sets", seconds: policyBinding(\.dropSetSeconds), isExpanded: expandedPicker == .dropSet, toggle: { togglePicker(.dropSet) })
                         
-                        DisclosureGroup("Advanced", isExpanded: $showAdvancedByType) {
-                            restTimeRow(title: "Super Sets", seconds: policyBinding(\.superSetSeconds), isExpanded: expandedPicker == .superSet, toggle: { togglePicker(.superSet) })
-                            
-                            restTimeRow(title: "Drop Sets", seconds: policyBinding(\.dropSetSeconds), isExpanded: expandedPicker == .dropSet, toggle: { togglePicker(.dropSet) })
-                            
-                            restTimeRow(title: "Failure Sets", seconds: policyBinding(\.failureSeconds), isExpanded: expandedPicker == .failure, toggle: { togglePicker(.failure) })
-                        }
-                    case .individual:
-                        if exercise.sortedSets.isEmpty {
-                            Text("Add sets first to change their rest times.")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(exercise.sortedSets) { set in
-                                restTimeRow(title: individualSetTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedPicker == .individual(set.index), toggle: { togglePicker(.individual(set.index)) })
-                            }
+                        restTimeRow(title: "Failure Sets", seconds: policyBinding(\.failureSeconds), isExpanded: expandedPicker == .failure, toggle: { togglePicker(.failure) })
+                    }
+                case .individual:
+                    if exercise.sortedSets.isEmpty {
+                        Text("Add sets first to change their rest times.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(exercise.sortedSets) { set in
+                            restTimeRow(title: individualSetTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedPicker == .individual(set.index), toggle: { togglePicker(.individual(set.index)) })
                         }
                     }
-                } footer: {
-                    Text("If you complete a set but the next set is a super or drop set, the rest time will be skipped.")
                 }
-                .listRowSeparator(.hidden)
+            } footer: {
+                Text("If you complete a set but the next set is a super or drop set, the rest time will be skipped.")
             }
-            .navigationTitle("Set Rest Times")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) {
-                        Haptics.success()
-                        dismiss()
-                    }
-                }
-            }
-            .onChange(of: restTimePolicy.activeMode) {
-                Haptics.selection()
-                collapsePickers()
-                saveContext(context: context)
-            }
-            .onChange(of: showAdvancedByType) {
-                if !showAdvancedByType {
-                    if let picker = expandedPicker, isAdvancedPicker(picker) {
-                        expandedPicker = nil
-                    }
+            .listRowSeparator(.hidden)
+        }
+        .navBar(title: "Set Rest Times") {
+            CloseButton()
+        }
+        .onChange(of: restTimePolicy.activeMode) {
+            Haptics.selection()
+            collapsePickers()
+            saveContext(context: context)
+        }
+        .onChange(of: showAdvancedByType) {
+            Haptics.selection()
+            if !showAdvancedByType {
+                if let picker = expandedPicker, isAdvancedPicker(picker) {
+                    expandedPicker = nil
                 }
             }
-            .onChange(of: autoStartRestTimer) {
-                Haptics.selection()
-            }
-            .onDisappear {
-                saveContext(context: context)
-            }
+        }
+        .onDisappear {
+            saveContext(context: context)
         }
     }
     
@@ -222,7 +210,7 @@ struct RestTimeEditorView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!)
+    RestTimeEditorView(exercise: sampleIncompleteWorkout().sortedExercises.first!)
         .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

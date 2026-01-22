@@ -2,12 +2,10 @@ import SwiftUI
 
 struct WorkoutRowView: View {
     let workout: Workout
-    @Namespace private var animation
     
     var body: some View {
         NavigationLink {
             WorkoutDetailView(workout: workout)
-                .navigationTransition(.zoom(sourceID: "workoutDetail", in: animation))
         } label: {
             VStack(alignment: .leading) {
                 HStack {
@@ -39,7 +37,6 @@ struct WorkoutRowView: View {
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
             .tint(.primary)
             .fontDesign(.rounded)
-            .matchedTransitionSource(id: "workoutDetail", in: animation)
         }
         .navigationLinkIndicatorVisibility(.hidden)
     }
