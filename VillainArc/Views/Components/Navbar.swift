@@ -16,7 +16,7 @@ struct CloseButton: View {
     
     var body: some View {
         Button(role: .close) {
-            Haptics.impact(.light)
+            Haptics.selection()
             dismiss()
         } label: {
             Label("Close", systemImage: "xmark")

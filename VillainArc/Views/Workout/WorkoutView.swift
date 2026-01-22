@@ -42,14 +42,14 @@ struct WorkoutView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     if isEditing {
                         Button("Done") {
-                            Haptics.impact(.medium)
+                            Haptics.selection()
                             saveContext(context: context)
                             dismiss()
                         }
                     } else {
                         Button {
                             showRestTimerSheet = true
-                            Haptics.impact(.light)
+                            Haptics.selection()
                         } label: {
                             timerToolbarLabel
                         }
@@ -67,7 +67,7 @@ struct WorkoutView: View {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
                     Button("Add Exercise", systemImage: "plus") {
-                        Haptics.impact(.medium)
+                        Haptics.selection()
                         showAddExerciseSheet = true
                     }
                     .matchedTransitionSource(id: "addExercise", in: animation)
@@ -185,20 +185,20 @@ struct WorkoutView: View {
             ControlGroup {
                 Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in
                     showExerciseListView = true
-                    Haptics.impact(.light)
+                    Haptics.selection()
                 })) {
                     Label("List View", systemImage: "list.dash")
                 }
                 Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in
                     showExerciseListView = false
-                    Haptics.impact(.light)
+                    Haptics.selection()
                 })) {
                     Label("Exercise View", systemImage: "list.clipboard")
                 }
             }
             Divider()
             Button("Settings", systemImage: "gearshape") {
-                Haptics.impact(.light)
+                Haptics.selection()
                 showWorkoutSettingsSheet = true
             }
         }
@@ -228,7 +228,7 @@ struct WorkoutView: View {
                 context.delete(exercise)
             }
             if workout.exercises.isEmpty {
-                Haptics.warning()
+                Haptics.selection()
                 restTimer.stop()
                 context.delete(workout)
                 saveContext(context: context)
@@ -236,7 +236,7 @@ struct WorkoutView: View {
                 return
             }
         }
-        Haptics.success()
+        Haptics.selection()
         workout.completed = true
         workout.endTime = Date.now
         restTimer.stop()
@@ -245,7 +245,7 @@ struct WorkoutView: View {
     }
     
     private func deleteWorkout() {
-        Haptics.warning()
+        Haptics.selection()
         showWorkoutSettingsSheet = false
         restTimer.stop()
         context.delete(workout)
@@ -263,7 +263,7 @@ struct WorkoutView: View {
     }
     
     private func deleteExercises(at offsets: IndexSet) {
-        Haptics.impact(.light)
+        Haptics.selection()
         let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
         
         for exercise in exercisesToDelete {
@@ -282,7 +282,7 @@ struct WorkoutView: View {
     }
     
     private func deleteWorkoutFromEdit() {
-        Haptics.warning()
+        Haptics.selection()
         showWorkoutSettingsSheet = false
         onDeleteFromEdit?()
     }

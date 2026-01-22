@@ -63,11 +63,11 @@ struct WorkoutDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Options", systemImage: "ellipsis") {
                     Button("Edit Workout", systemImage: "pencil") {
-                        Haptics.impact(.medium)
+                        Haptics.selection()
                         editWorkout = true
                     }
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
-                        Haptics.impact(.medium)
+                        Haptics.selection()
                         router.start(from: workout, context: context)
                         dismiss()
                     }
@@ -93,7 +93,7 @@ struct WorkoutDetailView: View {
     }
 
     private func deleteWorkout() {
-        Haptics.warning()
+        Haptics.selection()
         context.delete(workout)
         saveContext(context: context)
         dismiss()

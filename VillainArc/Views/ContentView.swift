@@ -40,7 +40,7 @@ struct ContentView: View {
     }
 
     private func startWorkout() {
-        Haptics.impact(.medium)
+        Haptics.selection()
         router.start(context: context)
     }
     

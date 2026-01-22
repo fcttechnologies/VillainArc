@@ -91,7 +91,7 @@ struct ExerciseSetRowView: View {
                     .tint(.green)
                 } else {
                     Button {
-                        Haptics.success()
+                        Haptics.selection()
                         set.complete = true
                         handleAutoStartTimer()
                         saveContext(context: context)
@@ -129,7 +129,7 @@ struct ExerciseSetRowView: View {
     }
     
     private func deleteSet() {
-        Haptics.impact(.light)
+        Haptics.selection()
         exercise.removeSet(set)
         context.delete(set)
         saveContext(context: context)
