@@ -35,7 +35,7 @@ struct AddExerciseView: View {
                         }
                         .confirmationDialog("Discard selected exercises?", isPresented: $showCancelConfirmation) {
                             Button("Discard Selections", role: .destructive) {
-                                Haptics.impact(.light)
+                                Haptics.selection()
                                 dismiss()
                             }
                         } message: {
@@ -44,7 +44,7 @@ struct AddExerciseView: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(role: .confirm) {
-                            Haptics.success()
+                            Haptics.selection()
                             addSelectedExercises()
                         }
                     }

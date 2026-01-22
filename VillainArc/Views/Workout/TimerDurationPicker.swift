@@ -105,7 +105,7 @@ struct TimerDurationPicker: View {
 
                             // Optional: haptic on change
                             if lastHapticIndex != roundedIndex {
-                                Haptics.impact(.light)
+                                Haptics.selection()
                                 lastHapticIndex = roundedIndex
                             }
                         }
