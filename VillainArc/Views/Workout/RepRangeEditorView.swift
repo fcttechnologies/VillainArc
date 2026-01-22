@@ -38,18 +38,22 @@ struct RepRangeEditorView: View {
                 CloseButton()
             }
             .onChange(of: mode) {
+                Haptics.selection()
                 saveContext(context: context)
             }
             .onChange(of: repRange.lowerRange) { _, newValue in
                 if newValue > repRange.upperRange {
                     repRange.upperRange = newValue
                 }
+                Haptics.selection()
                 scheduleSave(context: context)
             }
             .onChange(of: repRange.upperRange) {
+                Haptics.selection()
                 scheduleSave(context: context)
             }
             .onChange(of: repRange.targetReps) {
+                Haptics.selection()
                 scheduleSave(context: context)
             }
             .onDisappear {

@@ -15,10 +15,11 @@ struct AddExerciseView: View {
     @State private var favoritesOnly = false
     @State private var selectedOnly = false
     @State private var showCancelConfirmation = false
+    @State private var exerciseSort: ExerciseSortOption = .mostRecent
 
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(selectedExercises: $selectedExercises, searchText: searchText, muscleFilters: selectedMuscles, showAllMuscleGroups: showAllMuscleGroups, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly)
+            FilteredExerciseListView(selectedExercises: $selectedExercises, searchText: searchText, muscleFilters: selectedMuscles, showAllMuscleGroups: showAllMuscleGroups, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly, sortOption: exerciseSort)
                 .navigationTitle("Exercises")
                 .navigationSubtitle(Text("\(selectedExercises.count) Selected"))
                 .navigationBarTitleDisplayMode(.inline)
@@ -26,6 +27,7 @@ struct AddExerciseView: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(role: .close) {
                             if selectedExercises.isEmpty {
+                                Haptics.selection()
                                 dismiss()
                             } else {
                                 showCancelConfirmation = true
@@ -48,6 +50,15 @@ struct AddExerciseView: View {
                     }
                     ToolbarItem(placement: .bottomBar) {
                         Menu("Filters", systemImage: "line.3.horizontal.decrease") {
+                            Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                                Picker("Sort Options", selection: $exerciseSort) {
+                                    ForEach(ExerciseSortOption.allCases, id: \.self) { option in
+                                        Text(option.rawValue)
+                                            .tag(option)
+                                    }
+                                }
+                            }
+                            Divider()
                             Menu("Muscle Groups") {
                                 Toggle("All Muscles", isOn: Binding(get: { showAllMuscleGroups }, set: { isOn in
                                     toggleShowAllMuscles(isOn)
@@ -72,6 +83,15 @@ struct AddExerciseView: View {
                 .searchPresentationToolbarBehavior(.avoidHidingContent)
                 .task {
                     DataManager.dedupeCatalogExercisesIfNeeded(context: context)
+                }
+                .onChange(of: favoritesOnly) {
+                    Haptics.selection()
+                }
+                .onChange(of: selectedOnly) {
+                    Haptics.selection()
+                }
+                .onChange(of: exerciseSort) {
+                    Haptics.selection()
                 }
         }
     }
@@ -122,6 +142,20 @@ struct AddExerciseView: View {
         Haptics.selection()
     }
     
+}
+
+enum ExerciseSortOption: String, CaseIterable {
+    case mostRecent = "Most Recent"
+    case alphabetical = "Alphabetical"
+
+    var sortDescriptors: [SortDescriptor<Exercise>] {
+        switch self {
+        case .mostRecent:
+            return Exercise.recentsSort
+        case .alphabetical:
+            return [SortDescriptor(\Exercise.name)]
+        }
+    }
 }
 
 #Preview {

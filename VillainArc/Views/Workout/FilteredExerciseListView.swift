@@ -11,14 +11,16 @@ struct FilteredExerciseListView: View {
     let showAllMuscleGroups: Bool
     let favoritesOnly: Bool
     let selectedOnly: Bool
+    let sortOption: ExerciseSortOption
     
-    init(selectedExercises: Binding<[Exercise]>, searchText: String, muscleFilters: Set<Muscle>, showAllMuscleGroups: Bool, favoritesOnly: Bool, selectedOnly: Bool) {
+    init(selectedExercises: Binding<[Exercise]>, searchText: String, muscleFilters: Set<Muscle>, showAllMuscleGroups: Bool, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption) {
         _selectedExercises = selectedExercises
         self.searchText = searchText
         self.muscleFilters = muscleFilters
         self.showAllMuscleGroups = showAllMuscleGroups
         self.favoritesOnly = favoritesOnly
         self.selectedOnly = selectedOnly
+        self.sortOption = sortOption
         
         let predicate: Predicate<Exercise>?
         if selectedOnly {
@@ -28,7 +30,7 @@ struct FilteredExerciseListView: View {
         } else {
             predicate = nil
         }
-        _allExercises = Query(filter: predicate, sort: Exercise.recentsSort)
+        _allExercises = Query(filter: predicate, sort: sortOption.sortDescriptors)
     }
     
     private var hasFavorites: Bool {
