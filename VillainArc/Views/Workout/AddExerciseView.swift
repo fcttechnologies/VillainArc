@@ -59,8 +59,8 @@ struct AddExerciseView: View {
                             }
                             .menuOrder(.fixed)
                             Divider()
-                            Toggle("Selected Only", isOn: $selectedOnly)
-                            Toggle("Favorites Only", isOn: $favoritesOnly)
+                            Toggle("Show Selected Only", systemImage: "checkmark.circle", isOn: $selectedOnly)
+                            Toggle("Show Favorites Only", systemImage: "star", isOn: $favoritesOnly)
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)

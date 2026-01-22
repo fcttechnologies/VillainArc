@@ -30,6 +30,7 @@ import SwiftData
                 }
             }
             didChange = mergeDuplicates(duplicates, keeping: primary, context: context) || didChange
+            didChange = primary.rebuildSearchData() || didChange
         }
 
         if didChange {
@@ -45,13 +46,19 @@ import SwiftData
 
         for catalogItem in ExerciseCatalog.all {
             if let existing = exercisesByCatalogID[catalogItem.id] {
+                var needsSearchIndex = false
                 if existing.name != catalogItem.name {
                     existing.name = catalogItem.name
                     didChange = true
+                    needsSearchIndex = true
                 }
                 if existing.musclesTargeted != catalogItem.musclesTargeted {
                     existing.musclesTargeted = catalogItem.musclesTargeted
                     didChange = true
+                    needsSearchIndex = true
+                }
+                if needsSearchIndex {
+                    didChange = existing.rebuildSearchData() || didChange
                 }
             } else {
                 context.insert(Exercise(from: catalogItem))
