@@ -86,11 +86,8 @@ struct WorkoutSettingsView: View {
             .toolbar {
                 if !isEditing {
                     ToolbarItem(placement: .bottomBar) {
-                        Button(role: .destructive) {
+                        Button("Delete Workout", systemImage: "trash", role: .destructive) {
                             showDeleteConfirmation = true
-                        } label: {
-                            Label("Delete Workout", systemImage: "trash")
-                                .fontWeight(.semibold)
                         }
                         .tint(.red)
                         .buttonStyle(.glassProminent)
@@ -104,13 +101,9 @@ struct WorkoutSettingsView: View {
                     }
                     ToolbarSpacer(.flexible, placement: .bottomBar)
                     ToolbarItem(placement: .bottomBar) {
-                        Button {
+                        Button("Finish Workout", systemImage: "checkmark", role: .confirm) {
                             showSaveConfirmation = true
-                        } label: {
-                            Label("Finish Workout", systemImage: "checkmark")
-                                .fontWeight(.semibold)
                         }
-                        .buttonStyle(.glassProminent)
                         .tint(.green)
                         .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
                             if incompleteSetCount > 0 {
@@ -127,9 +120,9 @@ struct WorkoutSettingsView: View {
                             }
                         } message: {
                             if incompleteSetCount > 0 {
-                                Text("Choose how to handle incomplete sets.")
+                                Text("Choose how to handle incomplete sets before finishing.")
                             } else {
-                                Text("Finish and save this workout?")
+                                Text("Finish and save workout?")
                             }
                         }
                     }

@@ -7,16 +7,15 @@ struct WorkoutView: View {
     let onDeleteFromEdit: (() -> Void)?
     
     @State private var activeExercise: WorkoutExercise?
-    @State private var showExerciseListView: Bool = false
-    @State private var showAddExerciseSheet: Bool = false
-    @State private var showRestTimerSheet: Bool = false
-    @State private var showWorkoutSettingsSheet: Bool = false
+    @State private var showExerciseListView = false
+    @State private var showAddExerciseSheet = false
+    @State private var showRestTimerSheet = false
+    @State private var showWorkoutSettingsSheet = false
     @State private var restTimer = RestTimerState()
-    @State private var showDeleteWorkoutConfirmation: Bool = false
+    @State private var showDeleteWorkoutConfirmation = false
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.scenePhase) private var scenePhase
     
     @Namespace private var animation
     
@@ -61,7 +60,27 @@ struct WorkoutView: View {
                             deleteWorkout()
                         }
                     } else {
-                        toolBarMenu
+                        Menu("Options", systemImage: "ellipsis") {
+                            ControlGroup {
+                                Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in
+                                    showExerciseListView = true
+                                    Haptics.selection()
+                                })) {
+                                    Label("List View", systemImage: "list.dash")
+                                }
+                                Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in
+                                    showExerciseListView = false
+                                    Haptics.selection()
+                                })) {
+                                    Label("Exercise View", systemImage: "list.clipboard")
+                                }
+                            }
+                            Divider()
+                            Button("Settings", systemImage: "gearshape") {
+                                Haptics.selection()
+                                showWorkoutSettingsSheet = true
+                            }
+                        }
                     }
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -87,20 +106,6 @@ struct WorkoutView: View {
             .sheet(isPresented: $showWorkoutSettingsSheet) {
                 WorkoutSettingsView(workout: workout, isEditing: isEditing, onFinish: finishWorkout, onDelete: deleteWorkout)
             }
-            .onAppear {
-                restTimer.refreshIfExpired()
-            }
-            .onChange(of: scenePhase) {
-                if scenePhase == .active {
-                    restTimer.refreshIfExpired()
-                    Task {
-                        await restTimer.scheduleStopIfNeeded()
-                    }
-                }
-            }
-            .task(id: restTimer.endDate) {
-                await restTimer.scheduleStopIfNeeded()
-            }
         }
         .alert("Delete Workout?", isPresented: $showDeleteWorkoutConfirmation) {
             Button("Delete Workout", role: .destructive) {
@@ -122,7 +127,7 @@ struct WorkoutView: View {
                             .containerRelativeFrame(.horizontal)
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise, isEditing: isEditing)
+                            ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet, isEditing: isEditing)
                                 .containerRelativeFrame(.horizontal)
                                 .id(exercise)
                         }
@@ -180,27 +185,16 @@ struct WorkoutView: View {
         .listRowInsets(.all, 0)
     }
     
-    var toolBarMenu: some View {
-        Menu("Options", systemImage: "ellipsis") {
-            ControlGroup {
-                Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in
-                    showExerciseListView = true
-                    Haptics.selection()
-                })) {
-                    Label("List View", systemImage: "list.dash")
-                }
-                Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in
-                    showExerciseListView = false
-                    Haptics.selection()
-                })) {
-                    Label("Exercise View", systemImage: "list.clipboard")
-                }
-            }
-            Divider()
-            Button("Settings", systemImage: "gearshape") {
-                Haptics.selection()
-                showWorkoutSettingsSheet = true
-            }
+    @ViewBuilder
+    private var timerToolbarLabel: some View {
+        if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
+            Text(endDate, style: .timer)
+                .fontWeight(.semibold)
+        } else if restTimer.isPaused {
+            Text(secondsToTime(restTimer.pausedRemainingSeconds))
+                .fontWeight(.semibold)
+        } else {
+            Image(systemName: "timer")
         }
     }
     
@@ -291,20 +285,6 @@ struct WorkoutView: View {
         workout.moveExercise(from: source, to: destination)
         saveContext(context: context)
     }
-    
-    @ViewBuilder
-    private var timerToolbarLabel: some View {
-        if restTimer.isRunning, let endDate = restTimer.endDate {
-            Text(endDate, style: .timer)
-                .fontWeight(.semibold)
-        } else if restTimer.isPaused {
-            Text(secondsToTime(restTimer.pausedRemainingSeconds))
-                .fontWeight(.semibold)
-        } else {
-            Image(systemName: "timer")
-        }
-    }
-    
 }
 
 #Preview {

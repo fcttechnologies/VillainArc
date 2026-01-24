@@ -10,6 +10,7 @@ final class RestTimerState {
         static let isPaused = "restTimerIsPaused"
     }
     
+    private var stopTask: Task<Void, Never>?
     var endDate: Date?
     var pausedRemainingSeconds: Int
     var isPaused: Bool
@@ -29,11 +30,9 @@ final class RestTimerState {
                 endDate = date
                 isPaused = false
                 pausedRemainingSeconds = 0
+                scheduleStop()
             } else {
-                endDate = nil
-                isPaused = false
-                pausedRemainingSeconds = 0
-                persist()
+                stop()
             }
         } else {
             endDate = nil
@@ -62,6 +61,7 @@ final class RestTimerState {
         pausedRemainingSeconds = 0
         isPaused = false
         persist()
+        scheduleStop()
     }
     
     func pause() {
@@ -77,6 +77,8 @@ final class RestTimerState {
         self.endDate = nil
         isPaused = true
         persist()
+        stopTask?.cancel()
+        stopTask = nil
     }
     
     func resume() {
@@ -85,6 +87,7 @@ final class RestTimerState {
         pausedRemainingSeconds = 0
         isPaused = false
         persist()
+        scheduleStop()
     }
     
     func stop() {
@@ -92,36 +95,39 @@ final class RestTimerState {
         pausedRemainingSeconds = 0
         isPaused = false
         persist()
+        stopTask?.cancel()
+        stopTask = nil
     }
     
-    func refreshIfExpired() {
-        if let endDate, endDate <= Date.now {
-            stop()
-        }
-    }
-    
-    func scheduleStopIfNeeded() async {
+    private func scheduleStop() {
+        stopTask?.cancel()
         guard let endDate else { return }
-        let seconds = endDate.timeIntervalSinceNow
-        
-        if seconds <= 0 {
-            stop()
-            return
+        let scheduledEndDate = endDate
+        stopTask = Task { [weak self, scheduledEndDate] in
+            let seconds = scheduledEndDate.timeIntervalSinceNow
+            if seconds <= 0 {
+                self?.stopIfStillScheduled(scheduledEndDate)
+                return
+            }
+            
+            do {
+                try await Task.sleep(for: .seconds(Int(seconds.rounded(.up))))
+            } catch is CancellationError {
+                return
+            } catch {
+                return
+            }
+            
+            if Task.isCancelled {
+                return
+            }
+            
+            self?.stopIfStillScheduled(scheduledEndDate)
         }
-        
-        do {
-            try await Task.sleep(for: .seconds(Int(seconds.rounded(.up))))
-        } catch is CancellationError {
-            return
-        } catch {
-            return
-        }
-        
-        if Task.isCancelled {
-            return
-        }
-        
-        if self.endDate == endDate {
+    }
+    
+    private func stopIfStillScheduled(_ scheduledEndDate: Date) {
+        if endDate == scheduledEndDate {
             stop()
         }
     }

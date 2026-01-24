@@ -9,7 +9,7 @@ struct PreviousWorkoutSectionView: View {
             NavigationLink {
                 PreviousWorkoutsListView()
             } label: {
-                HStack(spacing: 0) {
+                HStack(spacing: 1) {
                     Text("Workouts")
                         .font(.title2)
                         .fontDesign(.rounded)

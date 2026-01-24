@@ -5,14 +5,16 @@ struct ExerciseView: View {
     @Query private var previousExercise: [WorkoutExercise]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
+    @Binding var showRestTimerSheet: Bool
     let isEditing: Bool
     
     @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     
-    init(exercise: WorkoutExercise, isEditing: Bool = false) {
+    init(exercise: WorkoutExercise, showRestTimerSheet: Binding<Bool>, isEditing: Bool = false) {
         self.exercise = exercise
+        _showRestTimerSheet = showRestTimerSheet
         self.isEditing = isEditing
 
         _previousExercise = Query(WorkoutExercise.lastCompleted(for: exercise))
@@ -35,7 +37,7 @@ struct ExerciseView: View {
                 headerView
                     .padding(.horizontal)
                 
-                Grid(horizontalSpacing: 10, verticalSpacing: 12) {
+                Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                     GridRow {
                         Text("Set")
                         Text("Reps")
@@ -52,11 +54,10 @@ struct ExerciseView: View {
                     
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, previousSetSnapshot: previousSetSnapshot(for: set.index), fieldWidth: fieldWidth, isEditing: isEditing)
+                            ExerciseSetRowView(set: set, exercise: exercise, showRestTimerSheet: $showRestTimerSheet, previousSetSnapshot: previousSetSnapshot(for: set.index), fieldWidth: fieldWidth, isEditing: isEditing)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
-                        .animation(.bouncy, value: set.complete)
                     }
                 }
                 .padding(.vertical)
@@ -70,7 +71,8 @@ struct ExerciseView: View {
                         .fontWeight(.semibold)
                         .padding(.vertical, 5)
                 }
-                .buttonStyle(.glassProminent)
+                .tint(.blue)
+                .buttonStyle(.glass)
                 .buttonSizing(.flexible)
                 .padding(.horizontal)
             }
@@ -153,7 +155,8 @@ struct ExerciseView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, isEditing: false)
+    @Previewable @State var showRestTimerSheet = false
+    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet, isEditing: true)
         .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

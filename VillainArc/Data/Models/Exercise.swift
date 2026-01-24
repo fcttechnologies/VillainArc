@@ -36,7 +36,7 @@ class Exercise {
     @discardableResult
     func rebuildSearchData() -> Bool {
         let combined = ([name] + musclesTargeted.map(\.rawValue)).joined(separator: " ")
-        let baseTokens = Exercise.normalizedTokens(for: combined)
+        let baseTokens = normalizedTokens(for: combined)
         var tokens: [String] = []
         var seen = Set<String>()
         
@@ -75,12 +75,6 @@ class Exercise {
         searchIndex = updatedIndex
         searchTokens = tokens
         return true
-    }
-
-    static func normalizedTokens(for value: String) -> [String] {
-        let folded = value.folding(options: .diacriticInsensitive, locale: .current)
-        let parts = folded.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
-        return parts.filter { !$0.isEmpty }
     }
 
     private static let singleWordAbbreviations: [String: String] = [

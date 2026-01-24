@@ -17,6 +17,7 @@ struct PreviousSetSnapshot {
 struct ExerciseSetRowView: View {
     @Bindable var set: ExerciseSet
     @Bindable var exercise: WorkoutExercise
+    @Binding var showRestTimerSheet: Bool
     @Environment(\.modelContext) private var context
     @Environment(RestTimerState.self) private var restTimer
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
@@ -57,15 +58,15 @@ struct ExerciseSetRowView: View {
             
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
-                .frame(width: fieldWidth)
+                .frame(maxWidth: fieldWidth)
             TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
-                .frame(width: fieldWidth)
+                .frame(maxWidth: fieldWidth)
 
             if !isEditing {
                 Text(previousSetSnapshot?.displayText ?? "-")
                     .lineLimit(1)
-                    .frame(width: fieldWidth)
+                    .frame(maxWidth: fieldWidth)
                     .contextMenu {
                         if let previousSetSnapshot {
                             Button("Use Previous Set") {
@@ -88,7 +89,7 @@ struct ExerciseSetRowView: View {
                     }
                     .buttonBorderShape(.circle)
                     .buttonStyle(.glassProminent)
-                    .tint(.green)
+                    .tint(.blue)
                 } else {
                     Button {
                         Haptics.selection()
@@ -101,12 +102,12 @@ struct ExerciseSetRowView: View {
                     }
                     .buttonBorderShape(.circle)
                     .buttonStyle(.glass)
-                    .tint(.primary)
                 }
             } else {
                 Spacer()
             }
         }
+        .animation(.bouncy, value: set.complete)
         .onChange(of: set.reps) {
             scheduleSave(context: context)
         }
@@ -120,6 +121,7 @@ struct ExerciseSetRowView: View {
                     restTimer.start(seconds: restSeconds)
                     RestTimeHistory.record(seconds: restSeconds, context: context)
                     saveContext(context: context)
+                    showRestTimerSheet = true
                 }
             }
             Button("Cancel", role: .cancel) {}
@@ -146,13 +148,15 @@ struct ExerciseSetRowView: View {
             restTimer.start(seconds: restSeconds)
             RestTimeHistory.record(seconds: restSeconds, context: context)
             saveContext(context: context)
+            showRestTimerSheet = true
         }
     }
 
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, isEditing: false)
+    @Previewable @State var showRestTimerSheet = false
+    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
         .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

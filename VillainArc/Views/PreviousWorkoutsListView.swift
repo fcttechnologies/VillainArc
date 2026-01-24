@@ -6,6 +6,15 @@ struct PreviousWorkoutsListView: View {
     @Query(Workout.completedWorkouts) private var workouts: [Workout]
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
+    
+    private var editModeBinding: Binding<EditMode> {
+        Binding(
+            get: { isEditing ? .active : .inactive },
+            set: { newValue in
+                isEditing = newValue == .active
+            }
+        )
+    }
 
     var body: some View {
         List {
@@ -58,15 +67,6 @@ struct PreviousWorkoutsListView: View {
                 ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
             }
         }
-    }
-
-    private var editModeBinding: Binding<EditMode> {
-        Binding(
-            get: { isEditing ? .active : .inactive },
-            set: { newValue in
-                isEditing = newValue == .active
-            }
-        )
     }
 
     private func deleteWorkouts(offsets: IndexSet) {

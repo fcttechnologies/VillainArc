@@ -86,7 +86,8 @@ struct RepRangeEditorView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!)
+    @Previewable @State var showRestTimerSheet = false
+    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet, isEditing: false)
         .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

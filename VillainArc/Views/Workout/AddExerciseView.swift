@@ -10,8 +10,9 @@ struct AddExerciseView: View {
     
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
+    @State private var selectedExerciseIDs: Set<String> = []
     @State private var selectedMuscles: Set<Muscle> = []
-    @State private var showAllMuscleGroups = true
+    @State private var showMuscleFilterSheet = false
     @State private var favoritesOnly = false
     @State private var selectedOnly = false
     @State private var showCancelConfirmation = false
@@ -19,7 +20,7 @@ struct AddExerciseView: View {
 
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(selectedExercises: $selectedExercises, searchText: searchText, muscleFilters: selectedMuscles, showAllMuscleGroups: showAllMuscleGroups, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly, sortOption: exerciseSort)
+            FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly, sortOption: exerciseSort)
                 .navigationTitle("Exercises")
                 .navigationSubtitle(Text("\(selectedExercises.count) Selected"))
                 .navigationBarTitleDisplayMode(.inline)
@@ -59,19 +60,11 @@ struct AddExerciseView: View {
                                 }
                             }
                             Divider()
-                            Menu("Muscle Groups") {
-                                Toggle("All Muscles", isOn: Binding(get: { showAllMuscleGroups }, set: { isOn in
-                                    toggleShowAllMuscles(isOn)
-                                }))
-                                Divider()
-                                ForEach(Muscle.allMajor, id: \.rawValue) { muscle in
-                                    Toggle(muscle.rawValue, isOn: Binding(get: { selectedMuscles.contains(muscle) }, set: { _ in toggleMuscle(muscle) }))
-                                }
-                            }
-                            .menuOrder(.fixed)
-                            Divider()
                             Toggle("Selected", systemImage: "checkmark.circle", isOn: $selectedOnly)
                             Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
+                            Button("Muscle Filters", systemImage: "figure") {
+                                presentMuscleFilterSheet()
+                            }
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)
@@ -81,6 +74,13 @@ struct AddExerciseView: View {
                 }
                 .searchable(text: $searchText)
                 .searchPresentationToolbarBehavior(.avoidHidingContent)
+                .sheet(isPresented: $showMuscleFilterSheet) {
+                    MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
+                        selectedMuscles = updatedMuscles
+                    }
+                    .presentationBackground(Color(.systemBackground))
+                    .presentationDetents([.fraction(0.3)])
+                }
                 .task {
                     DataManager.dedupeCatalogExercisesIfNeeded(context: context)
                 }
@@ -102,46 +102,15 @@ struct AddExerciseView: View {
             exercise.updateLastUsed()
         }
         selectedExercises.removeAll()
+        selectedExerciseIDs.removeAll()
         saveContext(context: context)
         dismiss()
     }
 
-    private func toggleMuscle(_ muscle: Muscle) {
-        if showAllMuscleGroups {
-            showAllMuscleGroups = false
-            selectedMuscles = [muscle]
-            Haptics.selection()
-            return
-        }
-        
-        if selectedMuscles.contains(muscle) {
-            selectedMuscles.remove(muscle)
-            if selectedMuscles.isEmpty {
-                showAllMuscleGroups = true
-            }
-        } else {
-            selectedMuscles.insert(muscle)
-        }
+    private func presentMuscleFilterSheet() {
         Haptics.selection()
+        showMuscleFilterSheet = true
     }
-    
-    private func toggleShowAllMuscles(_ isOn: Bool) {
-        if isOn {
-            showAllMuscleGroups = true
-            selectedMuscles.removeAll()
-            Haptics.selection()
-            return
-        }
-        
-        if selectedMuscles.isEmpty {
-            showAllMuscleGroups = true
-            return
-        }
-        
-        showAllMuscleGroups = false
-        Haptics.selection()
-    }
-    
 }
 
 enum ExerciseSortOption: String, CaseIterable {

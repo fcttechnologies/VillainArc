@@ -5,19 +5,19 @@ struct FilteredExerciseListView: View {
     @Environment(\.modelContext) private var context
     @Query private var allExercises: [Exercise]
     @Binding var selectedExercises: [Exercise]
+    @Binding var selectedExerciseIDs: Set<String>
     
     let searchText: String
     let muscleFilters: Set<Muscle>
-    let showAllMuscleGroups: Bool
     let favoritesOnly: Bool
     let selectedOnly: Bool
     let sortOption: ExerciseSortOption
     
-    init(selectedExercises: Binding<[Exercise]>, searchText: String, muscleFilters: Set<Muscle>, showAllMuscleGroups: Bool, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption) {
+    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption) {
         _selectedExercises = selectedExercises
+        _selectedExerciseIDs = selectedExerciseIDs
         self.searchText = searchText
         self.muscleFilters = muscleFilters
-        self.showAllMuscleGroups = showAllMuscleGroups
         self.favoritesOnly = favoritesOnly
         self.selectedOnly = selectedOnly
         self.sortOption = sortOption
@@ -41,23 +41,29 @@ struct FilteredExerciseListView: View {
         return allExercises.contains(where: { $0.favorite })
     }
     
-    var filteredExercises: [Exercise] {
+    private var filteredExercises: [Exercise] {
         let cleanText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let queryTokens = Exercise.normalizedTokens(for: cleanText)
+        let queryTokens = normalizedTokens(for: cleanText)
+        let sourceExercises = selectedOnly ? selectedExercises : allExercises
+        let needsFavoriteFilter = favoritesOnly && selectedOnly
+        let needsMuscleFilter = !muscleFilters.isEmpty
+        let needsFilters = needsFavoriteFilter || needsMuscleFilter
         
         let isSearchMatch: (Exercise) -> Bool = { exercise in
             matchesSearch(exercise, queryTokens: queryTokens)
         }
         
-        let sourceExercises = selectedOnly ? selectedExercises : allExercises
-        let baseFiltered = sourceExercises.filter { exercise in
-            let matchesFavorites = !(favoritesOnly && selectedOnly) || exercise.favorite
-            let matchesMuscleFilter = showAllMuscleGroups ||
-                muscleFilters.isEmpty ||
+        if queryTokens.isEmpty && !needsFilters {
+            return sourceExercises
+        }
+        
+        let baseFiltered = needsFilters ? sourceExercises.filter { exercise in
+            let matchesFavorites = !needsFavoriteFilter || exercise.favorite
+            let matchesMuscleFilter = !needsMuscleFilter ||
                 exercise.musclesTargeted.contains(where: { muscleFilters.contains($0) })
             
             return matchesFavorites && matchesMuscleFilter
-        }
+        } : sourceExercises
         
         if queryTokens.isEmpty {
             return baseFiltered
@@ -71,6 +77,10 @@ struct FilteredExerciseListView: View {
             return exactFiltered
         }
         
+        guard shouldUseFuzzySearch(queryTokens: queryTokens) else {
+            return []
+        }
+        
         return baseFiltered.filter { exercise in
             matchesSearchFuzzy(exercise, queryTokens: queryTokens)
         }
@@ -79,10 +89,11 @@ struct FilteredExerciseListView: View {
     var body: some View {
         List {
             ForEach(filteredExercises) { exercise in
-                if selectedExercises.contains(exercise) {
+                if selectedExerciseIDs.contains(exercise.catalogID) {
                     Button {
                         Haptics.selection()
                         selectedExercises.removeAll { $0 == exercise }
+                        selectedExerciseIDs.remove(exercise.catalogID)
                     } label: {
                         exerciseRow(for: exercise)
                     }
@@ -95,6 +106,7 @@ struct FilteredExerciseListView: View {
                     Button {
                         Haptics.selection()
                         selectedExercises.append(exercise)
+                        selectedExerciseIDs.insert(exercise.catalogID)
                     } label: {
                         exerciseRow(for: exercise)
                     }
@@ -113,6 +125,7 @@ struct FilteredExerciseListView: View {
         }
     }
     
+    @ViewBuilder
     private func exerciseRow(for exercise: Exercise) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 0) {
@@ -130,104 +143,7 @@ struct FilteredExerciseListView: View {
             }
         }
     }
-
-    private func matchesSearch(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        if queryTokens.isEmpty {
-            return true
-        }
-        
-        let haystack: String
-        if exercise.searchIndex.isEmpty {
-            let combined = ([exercise.name] + exercise.musclesTargeted.map(\.rawValue)).joined(separator: " ")
-            haystack = Exercise.normalizedTokens(for: combined).joined()
-        } else {
-            haystack = exercise.searchIndex
-        }
-
-        return queryTokens.allSatisfy { haystack.contains($0) }
-    }
-
-    private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        if queryTokens.isEmpty {
-            return true
-        }
-        
-        let haystackTokens: [String]
-        if exercise.searchTokens.isEmpty {
-            let combined = ([exercise.name] + exercise.musclesTargeted.map(\.rawValue)).joined(separator: " ")
-            haystackTokens = Exercise.normalizedTokens(for: combined)
-        } else {
-            haystackTokens = exercise.searchTokens
-        }
-        
-        return queryTokens.allSatisfy { queryToken in
-            let maxDistance = maximumFuzzyDistance(for: queryToken)
-            return haystackTokens.contains { token in
-                if token == queryToken {
-                    return true
-                }
-                if maxDistance == 0 {
-                    return false
-                }
-                if abs(token.count - queryToken.count) > maxDistance {
-                    return false
-                }
-                return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
-            }
-        }
-    }
     
-    private func maximumFuzzyDistance(for token: String) -> Int {
-        switch token.count {
-        case 0...2:
-            return 0
-        case 3...5:
-            return 1
-        default:
-            return 2
-        }
-    }
-    
-    private func levenshteinDistance(between left: String, and right: String, maxDistance: Int) -> Int {
-        if left == right {
-            return 0
-        }
-        
-        let leftChars = Array(left)
-        let rightChars = Array(right)
-        
-        if abs(leftChars.count - rightChars.count) > maxDistance {
-            return maxDistance + 1
-        }
-        
-        var previous = Array(0...rightChars.count)
-        
-        for i in 0..<leftChars.count {
-            var current = [i + 1]
-            current.reserveCapacity(rightChars.count + 1)
-            var rowMinimum = current[0]
-            
-            for j in 0..<rightChars.count {
-                let cost = leftChars[i] == rightChars[j] ? 0 : 1
-                let deletion = previous[j + 1] + 1
-                let insertion = current[j] + 1
-                let substitution = previous[j] + cost
-                let value = min(deletion, insertion, substitution)
-                current.append(value)
-                rowMinimum = min(rowMinimum, value)
-            }
-            
-            if rowMinimum > maxDistance {
-                return maxDistance + 1
-            }
-            
-            previous = current
-        }
-        
-        return previous.last ?? maxDistance + 1
-    }
-
-
     @ViewBuilder
     private func favoriteAction(for exercise: Exercise) -> some View {
         Button {
@@ -256,6 +172,39 @@ struct FilteredExerciseListView: View {
             }
         } else {
             ContentUnavailableView.search(text: searchText)
+        }
+    }
+
+    private func matchesSearch(_ exercise: Exercise, queryTokens: [String]) -> Bool {
+        if queryTokens.isEmpty {
+            return true
+        }
+        
+        let haystack = exercise.searchIndex
+        return queryTokens.allSatisfy { haystack.contains($0) }
+    }
+
+    private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
+        if queryTokens.isEmpty {
+            return true
+        }
+        
+        let haystackTokens = exercise.searchTokens
+        
+        return queryTokens.allSatisfy { queryToken in
+            let maxDistance = maximumFuzzyDistance(for: queryToken)
+            return haystackTokens.contains { token in
+                if token == queryToken {
+                    return true
+                }
+                if maxDistance == 0 {
+                    return false
+                }
+                if abs(token.count - queryToken.count) > maxDistance {
+                    return false
+                }
+                return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
+            }
         }
     }
 }

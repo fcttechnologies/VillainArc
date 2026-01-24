@@ -12,7 +12,7 @@ struct RestTimerView: View {
         NavigationStack {
             List {
                 Group {
-                    if restTimer.isRunning, let endDate = restTimer.endDate {
+                    if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
                         VStack(spacing: 6) {
                             Text("\(Image(systemName: "bell")) \(endDate.formatted(date: .omitted, time: .shortened))")
                                 .font(.headline)
@@ -63,7 +63,7 @@ struct RestTimerView: View {
                                 }
                                 .buttonBorderShape(.circle)
                                 .buttonStyle(.glassProminent)
-                                .tint(.green)
+                                .tint(.blue)
                             }
                         }
                         .onDelete(perform: deleteRecentTimes)
@@ -160,7 +160,7 @@ struct RestTimerView: View {
             }
             .buttonSizing(.flexible)
             .buttonStyle(.glassProminent)
-            .tint(.green)
+            .tint(.blue)
         }
     }
     
