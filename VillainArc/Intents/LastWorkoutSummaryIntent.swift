@@ -16,10 +16,12 @@ struct LastWorkoutSummaryIntent: AppIntent {
         
         let exercises = lastWorkout.sortedExercises
         let exerciseSummaries = exercises.map { exercise in
-            "\(exercise.sets.count) sets of \(exercise.name)"
+            let setCount = exercise.sets.count
+            let setWord = setCount == 1 ? "set" : "sets"
+            return "\(setCount) \(setWord) of \(exercise.name)"
         }
         let exercisesList = ListFormatter.localizedString(byJoining: exerciseSummaries)
         
-        return .result(dialog: "In your last workout: \(lastWorkout.title), you did \(exercisesList).")
+        return .result(dialog: "In your last workout, you did \(exercisesList).")
     }
 }
