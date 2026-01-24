@@ -8,9 +8,10 @@ struct ContentView: View {
     
     @Query(Workout.incompleteWorkout) private var incompleteWorkout: [Workout]
     @State private var router = WorkoutRouter()
+    @Bindable private var appRouter = AppRouter.shared
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $appRouter.path) {
             ScrollView {
                 RecentWorkoutSectionView()
                     .padding()
@@ -40,8 +41,19 @@ struct ContentView: View {
                     .navigationTransition(.zoom(sourceID: "startWorkout", in: animation))
                     .interactiveDismissDisabled()
             }
+            .navigationDestination(for: AppRouter.Destination.self) { destination in
+                switch destination {
+                case .workoutsList:
+                    WorkoutsListView()
+                case .workoutDetail(let workout):
+                    WorkoutDetailView(workout: workout)
+                }
+            }
         }
         .environment(router)
+        .onReceive(NotificationCenter.default.publisher(for: .workoutStartedFromIntent)) { _ in
+            handleIntentWorkoutStart()
+        }
     }
 
     private func startWorkout() {
@@ -50,9 +62,17 @@ struct ContentView: View {
     }
     
     private func checkForUnfinishedWorkout() {
-        guard router.activeWorkout == nil else { return }
+        if let unfinishedWorkout = incompleteWorkout.first {
+            Haptics.selection()
+            router.resume(unfinishedWorkout)
+        }
+    }
+    
+    private func handleIntentWorkoutStart() {
         if let unfinishedWorkout = incompleteWorkout.first {
             router.resume(unfinishedWorkout)
+        } else {
+            startWorkout()
         }
     }
 }

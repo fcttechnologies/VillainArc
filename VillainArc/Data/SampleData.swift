@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @MainActor
-class SampleDataContainer {
+class PreviewDataContainer {
     var modelContainer: ModelContainer
     
     var context: ModelContext {
@@ -46,8 +46,8 @@ class SampleDataContainer {
     }
 }
 
-private let sampleContainer = SampleDataContainer()
-private let sampleContainerWithIncomplete = SampleDataContainer(includeIncompleteWorkout: true)
+private let sampleContainer = PreviewDataContainer()
+private let sampleContainerWithIncomplete = PreviewDataContainer(includeIncompleteWorkout: true)
 
 @MainActor
 func sampleCompletedWorkout() -> Workout {

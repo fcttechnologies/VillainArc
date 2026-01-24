@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 class Workout {
+    var id: UUID = UUID()
     var title: String = ""
     var notes: String = ""
     var completed: Bool = false

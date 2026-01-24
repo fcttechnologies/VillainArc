@@ -3,11 +3,12 @@ import SwiftData
 
 struct RecentWorkoutSectionView: View {
     @Query(Workout.recentWorkout) private var recentWorkout: [Workout]
+    private var appRouter = AppRouter.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            NavigationLink {
-                WorkoutsListView()
+            Button {
+                appRouter.navigate(to: .workoutsList)
             } label: {
                 HStack(spacing: 1) {
                     Text("Workouts")

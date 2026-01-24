@@ -2,10 +2,11 @@ import SwiftUI
 
 struct WorkoutRowView: View {
     let workout: Workout
+    var appRouter = AppRouter.shared
     
     var body: some View {
-        NavigationLink {
-            WorkoutDetailView(workout: workout)
+        Button {
+            appRouter.navigate(to: .workoutDetail(workout))
         } label: {
             VStack(alignment: .leading) {
                 HStack {
@@ -42,7 +43,7 @@ struct WorkoutRowView: View {
             .accessibilityValue(AccessibilityText.workoutRowValue(for: workout))
             .accessibilityHint("Shows workout details.")
         }
-        .navigationLinkIndicatorVisibility(.hidden)
+        .buttonStyle(.plain)
     }
 }
 

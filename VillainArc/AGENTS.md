@@ -12,7 +12,19 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/WorkoutDetailView.swift` displays a completed workout summary and can start or edit a workout.
 - `Views/Workout/WorkoutView.swift` coordinates the workout session UI, paging vs list, and sheet flows.
 - `Views/Workout/ExerciseView.swift` manages per-exercise editing, previous set lookup, notes, and the rep/rest editors.
-- `Data/Classes/WorkoutRouter.swift` centralizes start/resume state for workout sessions.
+- `Data/Classes/WorkoutRouter.swift`: centralizes start/resume state for workout sessions.
+- `Data/Classes/AppRouter.swift`: singleton navigation router with `NavigationPath` for deep linking from App Intents.
+- `Data/SharedModelContainer.swift`: shared SwiftData container using App Groups for potential future cross-process access.
+
+## App Intents
+The app supports Siri Shortcuts via in-app App Intents (no separate extension target):
+- `Intents/StartWorkoutIntent.swift`: starts or resumes a workout, opens the app.
+- `Intents/ViewLastWorkoutIntent.swift`: opens the app to the last completed workout (errors if none).
+- `Intents/ShowWorkoutHistoryIntent.swift`: opens the app to the workouts list.
+- `Intents/LastWorkoutSummaryIntent.swift`: spoken response with last workout info (no app open).
+- `Intents/VillainArcShortcuts.swift`: registers all intents with Siri phrases.
+
+**Note:** App Intents are defined in the main app target (not an extension) to avoid provisioning issues without a paid Apple Developer account.
 
 ## Project Structure & File Guide
 - `Root/VillainArcApp.swift`: app entry, model container setup.
