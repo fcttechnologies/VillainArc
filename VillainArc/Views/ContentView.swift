@@ -19,8 +19,7 @@ struct ContentView: View {
                     .accessibilityLabel("Recent workout")
                     .accessibilityIdentifier("homeRecentWorkoutSection")
             }
-            .navigationTitle("Home")
-            .toolbarTitleDisplayMode(.inlineLarge)
+            .navBar(title: "Home")
             .toolbar {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {

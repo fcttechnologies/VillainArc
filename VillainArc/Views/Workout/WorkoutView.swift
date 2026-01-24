@@ -37,6 +37,7 @@ struct WorkoutView: View {
             .navigationTitle(workout.title)
             .navigationSubtitle(Text(workout.startTime, style: .date))
             .toolbarTitleDisplayMode(.inline)
+            .animation(.bouncy, value: showExerciseListView)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if isEditing {
@@ -68,25 +69,23 @@ struct WorkoutView: View {
                         .accessibilityLabel("Delete Workout")
                         .accessibilityIdentifier("workoutDeleteEmptyButton")
                         .accessibilityHint("Deletes this workout.")
+                    } else if showExerciseListView {
+                        Button("Done Editing", systemImage: "checkmark") {
+                            Haptics.selection()
+                            showExerciseListView = false
+                        }
+                        .labelStyle(.iconOnly)
+                        .tint(.blue)
+                        .accessibilityIdentifier("workoutDoneEditingButton")
+                        .accessibilityHint("Finishes editing the list of exercises.")
                     } else {
                         Menu("Workout Options", systemImage: "ellipsis") {
-                            ControlGroup {
-                                Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in
-                                    showExerciseListView = true
-                                    Haptics.selection()
-                                })) {
-                                    Label("List View", systemImage: "list.dash")
-                                }
-                                .accessibilityIdentifier("workoutListViewToggle")
-                                Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in
-                                    showExerciseListView = false
-                                    Haptics.selection()
-                                })) {
-                                    Label("Exercise View", systemImage: "list.clipboard")
-                                }
-                                .accessibilityIdentifier("workoutExerciseViewToggle")
+                            Button("Edit Exercises", systemImage: "pencil") {
+                                Haptics.selection()
+                                showExerciseListView = true
                             }
-                            Divider()
+                            .accessibilityIdentifier("workoutEditExercisesButton")
+                            .accessibilityHint("Show the list of exercises.")
                             Button("Settings", systemImage: "gearshape") {
                                 Haptics.selection()
                                 showWorkoutSettingsSheet = true
@@ -159,6 +158,7 @@ struct WorkoutView: View {
             }
             .scrollIndicators(.hidden)
             .scrollTargetBehavior(.paging)
+            .scrollDisabled(workout.exercises.isEmpty)
             .scrollPosition(id: $activeExercise)
             .accessibilityIdentifier("workoutExercisePager")
             .onAppear {
@@ -192,12 +192,9 @@ struct WorkoutView: View {
                                 .font(.subheadline)
                         }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical)
                 }
-                .listRowBackground(Color.clear)
-                .buttonStyle(.glass)
-                .buttonBorderShape(.roundedRectangle)
+                .buttonStyle(.borderless)
+                .tint(.primary)
                 .listRowSeparator(.hidden)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseListRow(exercise))
                 .accessibilityLabel(exercise.name)
@@ -209,7 +206,7 @@ struct WorkoutView: View {
         }
         .scrollIndicators(.hidden)
         .listStyle(.plain)
-        .listRowInsets(.all, 0)
+        .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier("workoutExerciseList")
     }
     
