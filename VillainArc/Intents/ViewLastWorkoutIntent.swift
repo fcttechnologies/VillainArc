@@ -36,7 +36,7 @@ enum ViewLastWorkoutError: Error, CustomLocalizedStringResourceConvertible {
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .noWorkoutsFound:
-            return "You haven't completed a workout yet."
+            return "You haven't completed a workout."
         }
     }
 }

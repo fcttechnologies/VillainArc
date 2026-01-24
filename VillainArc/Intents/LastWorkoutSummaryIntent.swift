@@ -11,7 +11,7 @@ struct LastWorkoutSummaryIntent: AppIntent {
         let context = ModelContext(SharedModelContainer.container)
         
         guard let lastWorkout = try context.fetch(Workout.recentWorkout).first else {
-            return .result(dialog: "You don't have any completed workouts yet.")
+            return .result(dialog: "You haven't completed a workout.")
         }
         
         let exercises = lastWorkout.sortedExercises
