@@ -260,6 +260,7 @@ struct WorkoutView: View {
         workout.endTime = Date.now
         restTimer.stop()
         saveContext(context: context)
+        Task { await IntentDonations.donateLastWorkoutSummary() }
         dismiss()
     }
     

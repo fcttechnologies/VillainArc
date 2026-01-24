@@ -9,6 +9,7 @@ struct RecentWorkoutSectionView: View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
                 appRouter.navigate(to: .workoutsList)
+                Task { await IntentDonations.donateShowWorkoutHistory() }
             } label: {
                 HStack(spacing: 1) {
                     Text("Workouts")
@@ -35,6 +36,9 @@ struct RecentWorkoutSectionView: View {
                 WorkoutRowView(workout: workout)
                     .accessibilityIdentifier("recentWorkoutRow")
                     .accessibilityHint("Shows details for your most recent workout.")
+                    .onTapGesture {
+                        Task { await IntentDonations.donateViewLastWorkout() }
+                    }
             }
         }
     }

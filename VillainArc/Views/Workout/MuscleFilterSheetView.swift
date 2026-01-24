@@ -57,8 +57,6 @@ struct MuscleFilterSheetView: View {
                         Button(role: .close) {
                             Haptics.selection()
                             dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
                         }
                         .accessibilityLabel("Close")
                         .accessibilityIdentifier("muscleFilterCloseButton")
@@ -69,8 +67,6 @@ struct MuscleFilterSheetView: View {
                         Haptics.selection()
                         onConfirm(selectedMuscles)
                         dismiss()
-                    } label: {
-                        Image(systemName: "checkmark")
                     }
                     .accessibilityLabel("Apply Filters")
                     .accessibilityIdentifier("muscleFilterConfirmButton")

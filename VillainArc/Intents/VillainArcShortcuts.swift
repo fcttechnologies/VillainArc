@@ -41,8 +41,9 @@ struct VillainArcShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: LastWorkoutSummaryIntent(),
             phrases: [
-                "When was my last workout in \(.applicationName)",
-                "How long since my last workout in \(.applicationName)"
+                "What did I do in my last workout in \(.applicationName)",
+                "Summarize my last workout in \(.applicationName)",
+                "Tell me about my last workout in \(.applicationName)"
             ],
             shortTitle: "Last Workout Summary",
             systemImageName: "questionmark.bubble"

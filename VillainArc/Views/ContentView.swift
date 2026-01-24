@@ -58,6 +58,7 @@ struct ContentView: View {
     private func startWorkout() {
         Haptics.selection()
         router.start(context: context)
+        Task { await IntentDonations.donateStartWorkout() }
     }
     
     private func checkForUnfinishedWorkout() {
