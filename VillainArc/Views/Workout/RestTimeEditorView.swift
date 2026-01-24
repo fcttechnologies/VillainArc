@@ -17,6 +17,7 @@ struct RestTimeEditorView: View {
         Form {
             Section {
                 Toggle("Auto-Start Timer", isOn: $autoStartRestTimer)
+                    .accessibilityIdentifier("restTimeAutoStartToggle")
             } footer: {
                 Text("Starts a rest timer after completing a set, based on the mode and times below.")
             }
@@ -28,6 +29,7 @@ struct RestTimeEditorView: View {
                             .tag(mode)
                     }
                 }
+                .accessibilityIdentifier("restTimeModePicker")
             } footer: {
                 Text(modeFooterText)
             }
@@ -48,10 +50,12 @@ struct RestTimeEditorView: View {
                         
                         restTimeRow(title: "Failure Sets", seconds: policyBinding(\.failureSeconds), isExpanded: expandedPicker == .failure, toggle: { togglePicker(.failure) })
                     }
+                    .accessibilityIdentifier("restTimeAdvancedDisclosure")
                 case .individual:
                     if exercise.sortedSets.isEmpty {
                         Text("Add sets first to change their rest times.")
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("restTimeEmptySetsMessage")
                     } else {
                         ForEach(exercise.sortedSets) { set in
                             restTimeRow(title: individualSetTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedPicker == .individual(set.index), toggle: { togglePicker(.individual(set.index)) })
@@ -66,6 +70,7 @@ struct RestTimeEditorView: View {
         .navBar(title: "Set Rest Times") {
             CloseButton()
         }
+        .accessibilityIdentifier("restTimeEditorForm")
         .onChange(of: restTimePolicy.activeMode) {
             Haptics.selection()
             collapsePickers()
@@ -130,6 +135,10 @@ struct RestTimeEditorView: View {
                 }
                 .buttonStyle(.borderless)
                 .tint(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimeRowButton(title))
+                .accessibilityLabel(title)
+                .accessibilityValue(secondsToTime(seconds.wrappedValue))
+                .accessibilityHint("Shows duration picker.")
                 .contextMenu {
                     Button("Copy") {
                         copySeconds(seconds.wrappedValue)
@@ -146,6 +155,7 @@ struct RestTimeEditorView: View {
             if isExpanded {
                 TimerDurationPicker(seconds: seconds, showZero: true)
                     .frame(height: 60)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.restTimeRowPicker(title))
             }
         }
         .onChange(of: seconds.wrappedValue) {

@@ -1,13 +1,13 @@
 import SwiftUI
 import SwiftData
 
-struct PreviousWorkoutSectionView: View {
-    @Query(Workout.recentWorkout) private var previousWorkout: [Workout]
+struct RecentWorkoutSectionView: View {
+    @Query(Workout.recentWorkout) private var recentWorkout: [Workout]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             NavigationLink {
-                PreviousWorkoutsListView()
+                WorkoutsListView()
             } label: {
                 HStack(spacing: 1) {
                     Text("Workouts")
@@ -18,16 +18,22 @@ struct PreviousWorkoutSectionView: View {
                         .font(.title3)
                 }
                 .fontWeight(.semibold)
+                .accessibilityElement(children: .combine)
             }
             .buttonStyle(.plain)
             .padding(.leading, 10)
+            .accessibilityIdentifier("recentWorkoutHistoryLink")
+            .accessibilityHint("Shows your workout history.")
 
-            if previousWorkout.isEmpty {
+            if recentWorkout.isEmpty {
                 ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Click the '\(Image(systemName: "plus"))' to start your first workout."))
                     .frame(maxWidth: .infinity)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
-            } else if let workout = previousWorkout.first {
+                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                    .accessibilityIdentifier("recentWorkoutEmptyState")
+            } else if let workout = recentWorkout.first {
                 WorkoutRowView(workout: workout)
+                    .accessibilityIdentifier("recentWorkoutRow")
+                    .accessibilityHint("Shows details for your most recent workout.")
             }
         }
     }
@@ -35,7 +41,7 @@ struct PreviousWorkoutSectionView: View {
 
 #Preview {
     NavigationStack {
-        PreviousWorkoutSectionView()
+        RecentWorkoutSectionView()
             .padding()
     }
     .sampleDataConainer()

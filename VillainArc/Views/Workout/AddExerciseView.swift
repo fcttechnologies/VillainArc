@@ -34,11 +34,14 @@ struct AddExerciseView: View {
                                 showCancelConfirmation = true
                             }
                         }
+                        .accessibilityLabel("Close")
+                        .accessibilityIdentifier("addExerciseCloseButton")
                         .confirmationDialog("Discard selected exercises?", isPresented: $showCancelConfirmation) {
                             Button("Discard Selections", role: .destructive) {
                                 Haptics.selection()
                                 dismiss()
                             }
+                            .accessibilityIdentifier("addExerciseDiscardSelectionsButton")
                         } message: {
                             Text("If you leave now, the selected exercises will not be added to your workout.")
                         }
@@ -48,6 +51,9 @@ struct AddExerciseView: View {
                             Haptics.selection()
                             addSelectedExercises()
                         }
+                        .accessibilityLabel("Add Exercises")
+                        .accessibilityIdentifier("addExerciseConfirmButton")
+                        .accessibilityHint("Adds the selected exercises to your workout.")
                     }
                     ToolbarItem(placement: .bottomBar) {
                         Menu("Filters", systemImage: "line.3.horizontal.decrease") {
@@ -59,21 +65,29 @@ struct AddExerciseView: View {
                                     }
                                 }
                             }
+                            .accessibilityIdentifier("addExerciseSortMenu")
                             Divider()
                             Toggle("Selected", systemImage: "checkmark.circle", isOn: $selectedOnly)
+                                .accessibilityIdentifier("addExerciseSelectedToggle")
                             Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
+                                .accessibilityIdentifier("addExerciseFavoritesToggle")
                             Button("Muscle Filters", systemImage: "figure") {
                                 presentMuscleFilterSheet()
                             }
+                            .accessibilityIdentifier("addExerciseMuscleFiltersButton")
+                            .accessibilityHint("Shows muscle filter options.")
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)
+                        .accessibilityIdentifier("addExerciseFiltersMenu")
+                        .accessibilityHint("Shows filter options.")
                     }
                     ToolbarSpacer(.fixed, placement: .bottomBar)
                     DefaultToolbarItem(kind: .search, placement: .bottomBar)
                 }
                 .searchable(text: $searchText)
                 .searchPresentationToolbarBehavior(.avoidHidingContent)
+                .accessibilityIdentifier("addExerciseListContainer")
                 .sheet(isPresented: $showMuscleFilterSheet) {
                     MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
                         selectedMuscles = updatedMuscles

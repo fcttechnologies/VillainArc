@@ -41,4 +41,8 @@
 - **Used for**: Creating this AI_USAGE.md file
 - **Why**: Document structure and content generation
 
+### Accessibility & Instrumentation
+- **Used for**: Applying accessibility identifiers, labels, hints, and helper APIs across the workout flows for VoiceOver and UI automation.
+- **Why**: AI eliminated a lot of the tedious coordination work so I could consistently instrument controls without rethinking the UX decisions themselves.
+
 ---

@@ -15,6 +15,7 @@ struct WorkoutDetailView: View {
             if !workout.notes.isEmpty {
                 Section("Workout Notes") {
                     Text(workout.notes)
+                        .accessibilityIdentifier("workoutDetailNotesText")
                 }
             }
             ForEach(workout.sortedExercises) { exercise in
@@ -29,6 +30,7 @@ struct WorkoutDetailView: View {
                         }
                         .font(.title3)
                         .bold()
+                        .accessibilityHidden(true)
                         
                         ForEach(exercise.sortedSets) { set in
                             GridRow {
@@ -43,19 +45,27 @@ struct WorkoutDetailView: View {
                                     .gridColumnAlignment(.leading)
                             }
                             .font(.title3)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSet(exercise, set: set))
+                            .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
+                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set))
                         }
                     }
                 } header: {
                     Text(exercise.name)
                         .lineLimit(1)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseHeader(exercise))
                 } footer: {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
                             .multilineTextAlignment(.leading)
+                            .accessibilityIdentifier("workoutDetailExerciseNotes-\(exercise.catalogID)")
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
             }
         }
+        .accessibilityIdentifier("workoutDetailList")
         .navigationTitle(workout.title)
         .navigationSubtitle(Text(formattedDateRange(start: workout.startTime, end: workout.endTime, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
@@ -66,19 +76,28 @@ struct WorkoutDetailView: View {
                         Haptics.selection()
                         editWorkout = true
                     }
+                    .accessibilityIdentifier("workoutDetailEditButton")
+                    .accessibilityHint("Edits this workout.")
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
                         Haptics.selection()
                         router.start(from: workout, context: context)
                         dismiss()
                     }
+                    .accessibilityIdentifier("workoutDetailStartButton")
+                    .accessibilityHint("Starts a workout based on this one.")
                     Button("Delete Workout", systemImage: "trash", role: .destructive) {
                         showDeleteWorkoutConfirmation = true
                     }
+                    .accessibilityIdentifier("workoutDetailDeleteButton")
+                    .accessibilityHint("Deletes this workout.")
                 }
+                .accessibilityIdentifier("workoutDetailOptionsMenu")
+                .accessibilityHint("Workout actions.")
                 .confirmationDialog("Delete Workout", isPresented: $showDeleteWorkoutConfirmation) {
                     Button("Delete", role: .destructive) {
                         deleteWorkout()
                     }
+                    .accessibilityIdentifier("workoutDetailConfirmDeleteButton")
                 } message: {
                     Text("Are you sure you want to delete this workout?")
                 }

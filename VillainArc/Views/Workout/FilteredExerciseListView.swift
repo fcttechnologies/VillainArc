@@ -102,6 +102,10 @@ struct FilteredExerciseListView: View {
                     .swipeActions(edge: .leading) {
                         favoriteAction(for: exercise)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
+                    .accessibilityLabel(exercise.name)
+                    .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: true))
+                    .accessibilityHint("Removes this exercise from your selection.")
                 } else {
                     Button {
                         Haptics.selection()
@@ -114,10 +118,15 @@ struct FilteredExerciseListView: View {
                     .swipeActions(edge: .leading) {
                         favoriteAction(for: exercise)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
+                    .accessibilityLabel(exercise.name)
+                    .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: false))
+                    .accessibilityHint("Adds this exercise to your selection.")
                 }
             }
         }
         .scrollDismissesKeyboard(.immediately)
+        .accessibilityIdentifier("filteredExerciseList")
         .overlay {
             if filteredExercises.isEmpty {
                 emptyStateView
@@ -140,8 +149,10 @@ struct FilteredExerciseListView: View {
             if exercise.favorite {
                 Image(systemName: "star.fill")
                     .foregroundStyle(.yellow)
+                    .accessibilityHidden(true)
             }
         }
+        .accessibilityElement(children: .combine)
     }
     
     @ViewBuilder
@@ -158,20 +169,25 @@ struct FilteredExerciseListView: View {
             }
         }
         .tint(.yellow)
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseFavoriteToggle(exercise))
     }
     
     @ViewBuilder
     private var emptyStateView: some View {
         if selectedOnly && selectedExercises.isEmpty {
             ContentUnavailableView("No Exercises Selected", systemImage: "checkmark.circle", description: Text("Select exercises to see them here."))
+                .accessibilityIdentifier("filteredExerciseEmptySelectedState")
         } else if favoritesOnly && !hasFavorites {
             if selectedOnly {
                 ContentUnavailableView("No Favorites Selected", systemImage: "star", description: Text("Select favorite exercises to see them here."))
+                    .accessibilityIdentifier("filteredExerciseEmptyFavoritesSelectedState")
             } else {
                 ContentUnavailableView("No Favorites", systemImage: "star", description: Text("Swipe right on an exercise to favorite it."))
+                    .accessibilityIdentifier("filteredExerciseEmptyFavoritesState")
             }
         } else {
             ContentUnavailableView.search(text: searchText)
+                .accessibilityIdentifier("filteredExerciseEmptySearchState")
         }
     }
 

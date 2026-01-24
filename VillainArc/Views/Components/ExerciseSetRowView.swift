@@ -48,6 +48,7 @@ struct ExerciseSetRowView: View {
                     Button("Delete Set", systemImage: "trash", role: .destructive) {
                         deleteSet()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetDeleteButton(exercise, set: set))
                 }
             } label: {
                 Text(set.type == .regular ? String(set.index + 1) : set.type.shortLabel)
@@ -55,13 +56,19 @@ struct ExerciseSetRowView: View {
                     .frame(width: 40, height: 40)
                     .glassEffect(.regular, in: .circle)
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetMenu(exercise, set: set))
+            .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
+            .accessibilityValue(AccessibilityText.exerciseSetMenuValue(for: set))
+            .accessibilityHint("Opens set options.")
             
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: fieldWidth)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
             TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .frame(maxWidth: fieldWidth)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
 
             if !isEditing {
                 Text(previousSetSnapshot?.displayText ?? "-")
@@ -75,8 +82,12 @@ struct ExerciseSetRowView: View {
                                 set.weight = previousSetSnapshot.weight
                                 saveContext(context: context)
                             }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
                         }
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
+                    .accessibilityLabel("Previous")
+                    .accessibilityValue(previousSetSnapshot?.displayText ?? "None")
 
                 if set.complete {
                     Button {
@@ -90,6 +101,8 @@ struct ExerciseSetRowView: View {
                     .buttonBorderShape(.circle)
                     .buttonStyle(.glassProminent)
                     .tint(.blue)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
+                    .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
                 } else {
                     Button {
                         Haptics.selection()
@@ -102,6 +115,8 @@ struct ExerciseSetRowView: View {
                     }
                     .buttonBorderShape(.circle)
                     .buttonStyle(.glass)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
+                    .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
                 }
             } else {
                 Spacer()
@@ -124,7 +139,9 @@ struct ExerciseSetRowView: View {
                     showRestTimerSheet = true
                 }
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetReplaceTimerButton(exercise, set: set))
             Button("Cancel", role: .cancel) {}
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCancelReplaceTimerButton(exercise, set: set))
         } message: {
             Text("Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
         }

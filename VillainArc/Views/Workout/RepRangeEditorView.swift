@@ -17,6 +17,7 @@ struct RepRangeEditorView: View {
                                 .tag(mode)
                         }
                     }
+                    .accessibilityIdentifier("repRangeModePicker")
                 } footer: {
                     Text(modeFooterText)
                 }
@@ -24,9 +25,12 @@ struct RepRangeEditorView: View {
                 Section {
                     if mode == .target {
                         Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
+                            .accessibilityIdentifier("repRangeTargetStepper")
                     } else if mode == .range {
                         Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
+                            .accessibilityIdentifier("repRangeLowerStepper")
                         Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: (repRange.lowerRange + 1)...200)
+                            .accessibilityIdentifier("repRangeUpperStepper")
                     }
                 } footer: {
                     if mode == .target || mode == .range {
@@ -37,6 +41,7 @@ struct RepRangeEditorView: View {
             .navBar(title: "Rep Range") {
                 CloseButton()
             }
+            .accessibilityIdentifier("repRangeForm")
             .onChange(of: mode) {
                 Haptics.selection()
                 saveContext(context: context)

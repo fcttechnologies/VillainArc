@@ -37,6 +37,10 @@ struct WorkoutRowView: View {
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
             .tint(.primary)
             .fontDesign(.rounded)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(AccessibilityText.workoutRowLabel(for: workout))
+            .accessibilityValue(AccessibilityText.workoutRowValue(for: workout))
+            .accessibilityHint("Shows workout details.")
         }
         .navigationLinkIndicatorVisibility(.hidden)
     }

@@ -33,6 +33,10 @@ struct MuscleFilterSheetView: View {
                                 .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterChip(muscle))
+                        .accessibilityLabel(muscle.rawValue)
+                        .accessibilityAddTraits(selectedMuscles.contains(muscle) ? .isSelected : [])
+                        .accessibilityHint("Toggles this muscle filter.")
                     }
                 }
                 .padding()
@@ -47,6 +51,8 @@ struct MuscleFilterSheetView: View {
                         Button("Clear") {
                             clearSelection()
                         }
+                        .accessibilityIdentifier("muscleFilterClearButton")
+                        .accessibilityHint("Clears all selected muscles.")
                     } else {
                         Button(role: .close) {
                             Haptics.selection()
@@ -54,6 +60,8 @@ struct MuscleFilterSheetView: View {
                         } label: {
                             Image(systemName: "xmark")
                         }
+                        .accessibilityLabel("Close")
+                        .accessibilityIdentifier("muscleFilterCloseButton")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -64,8 +72,11 @@ struct MuscleFilterSheetView: View {
                     } label: {
                         Image(systemName: "checkmark")
                     }
+                    .accessibilityLabel("Apply Filters")
+                    .accessibilityIdentifier("muscleFilterConfirmButton")
                 }
             }
+            .accessibilityIdentifier("muscleFilterSheet")
         }
     }
 

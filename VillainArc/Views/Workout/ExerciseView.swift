@@ -51,6 +51,7 @@ struct ExerciseView: View {
                     }
                     .font(.title3)
                     .bold()
+                    .accessibilityHidden(true)
                     
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
@@ -75,6 +76,8 @@ struct ExerciseView: View {
                 .buttonStyle(.glass)
                 .buttonSizing(.flexible)
                 .padding(.horizontal)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseAddSetButton(exercise))
+                .accessibilityHint("Adds a new set.")
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)
@@ -106,6 +109,10 @@ struct ExerciseView: View {
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Rep range")
+                    .accessibilityValue(exercise.repRange.displayText)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRepRangeButton(exercise))
+                    .accessibilityHint("Edits the rep range.")
                 }
                 Spacer()
                 HStack(spacing: 12) {
@@ -115,11 +122,15 @@ struct ExerciseView: View {
                             isNotesExpanded.toggle()
                         }
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesButton(exercise))
+                    .accessibilityHint("Shows notes.")
                     
                     Button("Rest Times", systemImage: "timer") {
                         Haptics.selection()
                         showRestTimeEditor = true
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
+                    .accessibilityHint("Edits rest times.")
                 }
                 .labelStyle(.iconOnly)
                 .font(.title)
@@ -133,6 +144,7 @@ struct ExerciseView: View {
                     .onChange(of: exercise.notes) {
                         scheduleSave(context: context)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
             }
         }
         .padding()

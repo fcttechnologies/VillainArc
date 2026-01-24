@@ -6,31 +6,38 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 ## Architecture Overview
 - `Root/VillainArcApp.swift` builds the SwiftData model container and launches `ContentView`.
 - `Views/ContentView.swift` loads workouts, seeds the catalog via `DataManager`, shows the latest completed workout, and presents `WorkoutView` using `WorkoutRouter`.
+- `Views/Components/RecentWorkoutSectionView.swift` surfaces the most recent completed workout or an empty prompt and links to the full history.
 - `Views/PreviousWorkoutsListView.swift` lists completed workouts with edit/delete controls.
+- `Views/Components/WorkoutRowView.swift` renders a compact summary/link for a workout in lists or sections.
 - `Views/Workout/WorkoutDetailView.swift` displays a completed workout summary and can start or edit a workout.
-- `Views/Workout/WorkoutView.swift` coordinates session UI and add/delete/move actions on exercises.
-- `Views/Workout/ExerciseView.swift` queries previous completed sets and edits notes/sets.
+- `Views/Workout/WorkoutView.swift` coordinates the workout session UI, paging vs list, and sheet flows.
+- `Views/Workout/ExerciseView.swift` manages per-exercise editing, previous set lookup, notes, and the rep/rest editors.
 - `Data/Classes/WorkoutRouter.swift` centralizes start/resume state for workout sessions.
 
 ## Project Structure & File Guide
 - `Root/VillainArcApp.swift`: app entry, model container setup.
-- `Views/ContentView.swift`: latest workout summary, start/resume flow, navigation to `PreviousWorkoutsListView`.
+- `Views/ContentView.swift`: latest workout summary, start/resume flow, navigation to `RecentWorkoutSectionView`.
+- `Views/Components/RecentWorkoutSectionView.swift`: shows the most recent completed workout or empty state plus a link to `WorkoutsListView`.
 - `Views/PreviousWorkoutsListView.swift`: completed workout history list and bulk delete.
-- `Views/Workout/WorkoutView.swift`: session UI, list vs paging, save/delete flows.
+- `Views/Workout/WorkoutView.swift`: session UI, list vs paging, save/delete flows, plus sheets for add/edit/rest timer settings.
 - `Views/Workout/WorkoutDetailView.swift`: completed workout details with start/edit/delete actions.
-- `Views/Workout/WorkoutRowView.swift`: compact row card for a workout in lists.
-- `Views/Workout/WorkoutSettingsView.swift`: workout settings sheet with finish/delete actions.
-- `Views/Workout/ExerciseView.swift`: per-exercise editing, prior-set lookup, notes.
-- `Views/Workout/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion.
+- `Views/Components/WorkoutRowView.swift`: compact row card for a workout throughout lists and sections, now with shared accessibility helpers.
+- `Views/Workout/WorkoutSettingsView.swift`: workout settings sheet with finish/delete actions and accessibility-aware toolbar/button flow.
+- `Views/Workout/ExerciseView.swift`: per-exercise editing, prior-set lookup, notes, rep/rest editors, and embedded set rows.
+- `Views/Components/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion, and launch rest timers; now exposes accessibility identifiers/hints.
 - `Views/Workout/RepRangeEditorView.swift`: rep range editor sheet with confirm/cancel actions.
 - `Views/Workout/RestTimeEditorView.swift`: rest time editor sheet, mode selection, and duration slider rows.
 - `Views/Workout/RestTimerState.swift`: observable rest timer state with persistence.
 - `Views/Workout/RestTimerView.swift`: rest timer sheet for start/pause/stop and countdown display.
-- `Views/Workout/TimerDurationPicker.swift`: tick-based duration slider for rest time picking.
+- `Views/Components/TimerDurationPicker.swift`: tick-based duration slider for rest time picking with VoiceOver adjustable support.
+- `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters, and accessible toolbar flows.
+- `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI with accessible row metadata and empty states.
+- `Views/Workout/MuscleFilterSheetView.swift`: sheet with chip-based muscle filters, clear/close/confirm actions.
+- `Views/Components/Navbar.swift`: shared inline-large title + reusable close button used by the custom nav bars across sheets.
+- `Helpers/Accessibility.swift`: centralized identifiers/labels for workout flows, lists, sheets, and editors.
 - `Helpers/KeyboardDismiss.swift`: shared keyboard dismissal helper.
+- `Helpers/Haptics.swift`: reusable UIKit haptics helper for impact/selection/notifications.
 - `Helpers/TimeFormatting.swift`: shared date/time formatting helpers.
-- `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters.
-- `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI.
 - `Data/Models/Workout.swift`: workout model, ordering helpers.
 - `Data/Models/WorkoutExercise.swift`: per-workout exercise state and set helpers.
 - `Data/Models/ExerciseSet.swift`: set data (type, reps, weight, complete).
@@ -46,7 +53,6 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
 - `Data/Assets.xcassets`: app icons and accent color.
-- `Helpers/Haptics.swift`: reusable UIKit haptics helper for impact/selection/notifications.
 
 ## Build, Test, and Development Commands
 - Xcode: open `../VillainArc.xcodeproj`, Product > Run/Test.
@@ -65,3 +71,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 ## Data & AI Usage Notes
 - When adding exercises, update `ExerciseCatalog` and bump `ExerciseCatalog.catalogVersion` so `DataManager` re-syncs.
 - Log AI help in `Data/AI_USAGE.md` only when the user approves.
+- Accessibility and testing: every new view/sheet/action should push accessibility metadata at the same time.
+  - Use `Helpers/Accessibility.swift` for shared identifiers/text and give key controls explicit `accessibilityIdentifier`, `accessibilityLabel`, `accessibilityHint`, or trait overrides.
+  - Keep the custom `navBar`/`CloseButton` in `Views/Components/Navbar.swift` fully labeled so any sheet inherits the same semantics.
+  - When wiring new flows, call out identifiers in the relevant view and worksheet (e.g., add identifier hints to modals, lists, buttons, and helper rows) before relying on UI automation.

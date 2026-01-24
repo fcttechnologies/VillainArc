@@ -46,16 +46,20 @@ struct WorkoutSettingsView: View {
                         .onSubmit {
                             normalizeTitleIfNeeded()
                         }
+                        .accessibilityIdentifier("workoutSettingsTitleField")
                 }
                 
                 Section("Workout Notes") {
                     TextField("Workout Notes", text: $workout.notes, axis: .vertical)
+                        .accessibilityIdentifier("workoutSettingsNotesField")
                 }
                 
                 Section("Time") {
                     DatePicker("Start Time", selection: $workout.startTime, in: ...Date.now, displayedComponents: [.date, .hourAndMinute])
+                        .accessibilityIdentifier("workoutSettingsStartTimePicker")
                     if isEditing {
                         DatePicker("End Time", selection: endTimeBinding, in: workout.startTime...Date.now, displayedComponents: [.date, .hourAndMinute])
+                            .accessibilityIdentifier("workoutSettingsEndTimePicker")
                     }
                 }
                 .fontWeight(.semibold)
@@ -71,6 +75,8 @@ struct WorkoutSettingsView: View {
                                 .font(.subheadline)
                         }
                         .fontWeight(.semibold)
+                        .accessibilityLabel(exercise.name)
+                        .accessibilityValue(AccessibilityText.exerciseSetCountText(exercise.sortedSets.count))
                     }
                 } header: {
                     Text("Exercises")
@@ -91,10 +97,13 @@ struct WorkoutSettingsView: View {
                         }
                         .tint(.red)
                         .buttonStyle(.glassProminent)
+                        .accessibilityIdentifier("workoutSettingsDeleteButton")
+                        .accessibilityHint("Deletes this workout.")
                         .confirmationDialog("Delete Workout", isPresented: $showDeleteConfirmation) {
                             Button("Delete", role: .destructive) {
                                 onDelete()
                             }
+                            .accessibilityIdentifier("workoutSettingsConfirmDeleteButton")
                         } message: {
                             Text("Are you sure you want to delete this workout?")
                         }
@@ -105,18 +114,23 @@ struct WorkoutSettingsView: View {
                             showSaveConfirmation = true
                         }
                         .tint(.green)
+                        .accessibilityIdentifier("workoutSettingsFinishButton")
+                        .accessibilityHint("Finishes and saves the workout.")
                         .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
                             if incompleteSetCount > 0 {
                                 Button("Mark All Sets Complete") {
                                     onFinish(.markAllComplete)
                                 }
+                                .accessibilityIdentifier("workoutSettingsFinishMarkCompleteButton")
                                 Button("Delete Incomplete Sets", role: .destructive) {
                                     onFinish(.deleteIncomplete)
                                 }
+                                .accessibilityIdentifier("workoutSettingsFinishDeleteIncompleteButton")
                             } else {
                                 Button("Finish", role: .confirm) {
                                     onFinish(.markAllComplete)
                                 }
+                                .accessibilityIdentifier("workoutSettingsFinishConfirmButton")
                             }
                         } message: {
                             if incompleteSetCount > 0 {
@@ -157,6 +171,7 @@ struct WorkoutSettingsView: View {
                     dismissKeyboard()
                 }
             )
+            .accessibilityIdentifier("workoutSettingsForm")
         }
     }
 

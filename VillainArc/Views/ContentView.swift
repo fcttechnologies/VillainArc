@@ -12,8 +12,11 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                PreviousWorkoutSectionView()
+                RecentWorkoutSectionView()
                     .padding()
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel("Recent workout")
+                    .accessibilityIdentifier("homeRecentWorkoutSection")
             }
             .navigationTitle("Home")
             .toolbarTitleDisplayMode(.inlineLarge)
@@ -24,6 +27,8 @@ struct ContentView: View {
                         startWorkout()
                     }
                     .matchedTransitionSource(id: "startWorkout", in: animation)
+                    .accessibilityIdentifier("homeStartWorkoutButton")
+                    .accessibilityHint("Starts a new workout session.")
                 }
             }
             .task {

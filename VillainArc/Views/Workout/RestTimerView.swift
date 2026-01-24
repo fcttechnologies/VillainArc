@@ -29,11 +29,15 @@ struct RestTimerView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowSeparator(.hidden)
+                .accessibilityIdentifier("restTimerCountdown")
+                .accessibilityLabel("Rest timer")
+                .accessibilityValue(restTimer.isPaused ? "Paused" : restTimer.isRunning ? "Running" : "Ready")
                 
                 if !restTimer.isActive {
                     TimerDurationPicker(seconds: $selectedSeconds, showZero: false)
                         .frame(height: 60)
                         .listRowSeparator(.hidden)
+                        .accessibilityIdentifier("restTimerDurationPicker")
                 }
                 
                 controls
@@ -56,15 +60,19 @@ struct RestTimerView: View {
                                     RestTimeHistory.record(seconds: history.seconds, context: context)
                                     saveContext(context: context)
                                 } label: {
-                                    Image(systemName: "play.fill")
+                                    Label("Start Rest Timer", systemImage: "play.fill")
                                         .padding()
                                         .fontWeight(.semibold)
                                         .font(.title2)
+                                        .labelStyle(.iconOnly)
                                 }
                                 .buttonBorderShape(.circle)
                                 .buttonStyle(.glassProminent)
                                 .tint(.blue)
+                                .accessibilityLabel("Start \(secondsToTime(history.seconds)) timer")
+                                .accessibilityHint("Starts the rest timer.")
                             }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.restTimerRecentRow(history))
                         }
                         .onDelete(perform: deleteRecentTimes)
                     }
@@ -72,12 +80,15 @@ struct RestTimerView: View {
             }
             .listStyle(.plain)
             .scrollIndicators(.hidden)
+            .accessibilityIdentifier("restTimerList")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
                         Haptics.selection()
                         dismiss()
                     }
+                    .accessibilityLabel("Close")
+                    .accessibilityIdentifier("restTimerCloseButton")
                 }
             }
             .onAppear {
@@ -104,6 +115,8 @@ struct RestTimerView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
                 .tint(.yellow)
+                .accessibilityIdentifier("restTimerPauseButton")
+                .accessibilityHint("Pauses the rest timer.")
                 
                 Button {
                     Haptics.selection()
@@ -117,6 +130,8 @@ struct RestTimerView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
                 .tint(.red)
+                .accessibilityIdentifier("restTimerStopButton")
+                .accessibilityHint("Stops the rest timer.")
             }
         } else if restTimer.isPaused {
             HStack(spacing: 16) {
@@ -132,6 +147,8 @@ struct RestTimerView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
                 .tint(.green)
+                .accessibilityIdentifier("restTimerResumeButton")
+                .accessibilityHint("Resumes the rest timer.")
                 
                 Button {
                     Haptics.selection()
@@ -145,6 +162,8 @@ struct RestTimerView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
                 .tint(.red)
+                .accessibilityIdentifier("restTimerStopButton")
+                .accessibilityHint("Stops the rest timer.")
             }
         } else {
             Button {
@@ -161,6 +180,8 @@ struct RestTimerView: View {
             .buttonSizing(.flexible)
             .buttonStyle(.glassProminent)
             .tint(.blue)
+            .accessibilityIdentifier("restTimerStartButton")
+            .accessibilityHint("Starts the rest timer.")
         }
     }
     

@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct PreviousWorkoutsListView: View {
+struct WorkoutsListView: View {
     @Environment(\.modelContext) private var context
     @Query(Workout.completedWorkouts) private var workouts: [Workout]
     @State private var showDeleteAllConfirmation = false
@@ -22,9 +22,12 @@ struct PreviousWorkoutsListView: View {
                 WorkoutRowView(workout: workout)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutRow(workout))
+                    .accessibilityHint("Shows workout details.")
             }
             .onDelete(perform: deleteWorkouts)
         }
+        .accessibilityIdentifier("workoutsList")
         .environment(\.editMode, editModeBinding)
         .animation(.smooth, value: isEditing)
         .navigationTitle("Workouts")
@@ -34,10 +37,13 @@ struct PreviousWorkoutsListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if isEditing {
-                    Button("Delete All", role: .destructive) {
+                    Button("Delete All", systemImage: "trash", role: .destructive) {
                         showDeleteAllConfirmation = true
                     }
                     .tint(.red)
+                    .labelStyle(.titleOnly)
+                    .accessibilityIdentifier("workoutsDeleteAllButton")
+                    .accessibilityHint("Deletes all completed workouts.")
                     .confirmationDialog("Delete All Workouts?", isPresented: $showDeleteAllConfirmation) {
                         Button("Delete All", role: .destructive) {
                             deleteAllWorkouts()
@@ -50,14 +56,19 @@ struct PreviousWorkoutsListView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if !workouts.isEmpty {
                     if isEditing {
-                        Button("Done", systemImage: "checkmark") {
+                        Button("Done Editing", systemImage: "checkmark") {
                             isEditing = false
                         }
                         .labelStyle(.iconOnly)
+                        .accessibilityIdentifier("workoutsDoneEditingButton")
+                        .accessibilityHint("Exits edit mode.")
                     } else {
-                        Button("Edit") {
+                        Button("Edit", systemImage: "pencil") {
                             isEditing = true
                         }
+                        .labelStyle(.titleOnly)
+                        .accessibilityIdentifier("workoutsEditButton")
+                        .accessibilityHint("Enters edit mode.")
                     }
                 }
             }
@@ -65,6 +76,7 @@ struct PreviousWorkoutsListView: View {
         .overlay(alignment: .center) {
             if workouts.isEmpty {
                 ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
+                    .accessibilityIdentifier("workoutsEmptyState")
             }
         }
     }
@@ -90,11 +102,12 @@ struct PreviousWorkoutsListView: View {
         saveContext(context: context)
         isEditing = false
     }
+
 }
 
 #Preview {
     NavigationStack {
-        PreviousWorkoutsListView()
+        WorkoutsListView()
     }
     .sampleDataConainer()
     .environment(WorkoutRouter())
@@ -102,6 +115,6 @@ struct PreviousWorkoutsListView: View {
 
 #Preview("No Previous Workouts") {
     NavigationStack {
-        PreviousWorkoutsListView()
+        WorkoutsListView()
     }
 }

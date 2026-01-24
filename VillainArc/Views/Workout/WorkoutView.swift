@@ -40,11 +40,14 @@ struct WorkoutView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if isEditing {
-                        Button("Done") {
+                        Button("Done", systemImage: "checkmark") {
                             Haptics.selection()
                             saveContext(context: context)
                             dismiss()
                         }
+                        .labelStyle(.titleOnly)
+                        .accessibilityIdentifier("workoutDoneEditingButton")
+                        .accessibilityHint("Saves changes and closes the workout.")
                     } else {
                         Button {
                             showRestTimerSheet = true
@@ -52,15 +55,21 @@ struct WorkoutView: View {
                         } label: {
                             timerToolbarLabel
                         }
+                        .accessibilityIdentifier("workoutRestTimerButton")
+                        .accessibilityHint("Shows the rest timer.")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if workout.exercises.isEmpty {
-                        Button(role: .close) {
+                        Button("Cancel Workout", systemImage: "xmark", role: .close) {
                             deleteWorkout()
                         }
+                        .labelStyle(.iconOnly)
+                        .accessibilityLabel("Delete Workout")
+                        .accessibilityIdentifier("workoutDeleteEmptyButton")
+                        .accessibilityHint("Deletes this workout.")
                     } else {
-                        Menu("Options", systemImage: "ellipsis") {
+                        Menu("Workout Options", systemImage: "ellipsis") {
                             ControlGroup {
                                 Toggle(isOn: Binding(get: { showExerciseListView }, set: { _ in
                                     showExerciseListView = true
@@ -68,19 +77,26 @@ struct WorkoutView: View {
                                 })) {
                                     Label("List View", systemImage: "list.dash")
                                 }
+                                .accessibilityIdentifier("workoutListViewToggle")
                                 Toggle(isOn: Binding(get: { !showExerciseListView }, set: { _ in
                                     showExerciseListView = false
                                     Haptics.selection()
                                 })) {
                                     Label("Exercise View", systemImage: "list.clipboard")
                                 }
+                                .accessibilityIdentifier("workoutExerciseViewToggle")
                             }
                             Divider()
                             Button("Settings", systemImage: "gearshape") {
                                 Haptics.selection()
                                 showWorkoutSettingsSheet = true
                             }
+                            .accessibilityIdentifier("workoutSettingsButton")
+                            .accessibilityHint("Shows workout settings.")
                         }
+                        .labelStyle(.iconOnly)
+                        .accessibilityIdentifier("workoutOptionsMenu")
+                        .accessibilityHint("Workout actions.")
                     }
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -90,6 +106,8 @@ struct WorkoutView: View {
                         showAddExerciseSheet = true
                     }
                     .matchedTransitionSource(id: "addExercise", in: animation)
+                    .accessibilityIdentifier("workoutAddExerciseButton")
+                    .accessibilityHint("Adds an exercise.")
                 }
             }
             .animation(.smooth, value: showExerciseListView)
@@ -111,7 +129,9 @@ struct WorkoutView: View {
             Button("Delete Workout", role: .destructive) {
                 deleteWorkoutFromEdit()
             }
+            .accessibilityIdentifier("workoutConfirmDeleteButton")
             Button("Cancel", role: .cancel) {}
+                .accessibilityIdentifier("workoutCancelDeleteButton")
         } message: {
             Text("This is the last exercise. Deleting it will delete the workout.")
         }
@@ -125,11 +145,13 @@ struct WorkoutView: View {
                     if workout.exercises.isEmpty {
                         ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Click the '\(Image(systemName: "plus"))' icon to add some exercises."))
                             .containerRelativeFrame(.horizontal)
+                            .accessibilityIdentifier("workoutExercisesEmptyState")
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
                             ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet, isEditing: isEditing)
                                 .containerRelativeFrame(.horizontal)
                                 .id(exercise)
+                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisePage(exercise))
                         }
                     }
                 }
@@ -138,6 +160,7 @@ struct WorkoutView: View {
             .scrollIndicators(.hidden)
             .scrollTargetBehavior(.paging)
             .scrollPosition(id: $activeExercise)
+            .accessibilityIdentifier("workoutExercisePager")
             .onAppear {
                 if let activeExercise {
                     proxy.scrollTo(activeExercise)
@@ -176,6 +199,10 @@ struct WorkoutView: View {
                 .buttonStyle(.glass)
                 .buttonBorderShape(.roundedRectangle)
                 .listRowSeparator(.hidden)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseListRow(exercise))
+                .accessibilityLabel(exercise.name)
+                .accessibilityValue(AccessibilityText.workoutExerciseListValue(for: exercise))
+                .accessibilityHint("Shows the exercise in the workout.")
             }
             .onDelete(perform: deleteExercise)
             .onMove(perform: moveExercise)
@@ -183,6 +210,7 @@ struct WorkoutView: View {
         .scrollIndicators(.hidden)
         .listStyle(.plain)
         .listRowInsets(.all, 0)
+        .accessibilityIdentifier("workoutExerciseList")
     }
     
     @ViewBuilder
