@@ -4,7 +4,7 @@ import SwiftData
 struct StartWorkoutWithTemplateIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Workout with Template"
     static let description = IntentDescription("Starts a new workout from a template.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @Parameter(title: "Template")
     var template: WorkoutTemplateEntity

@@ -4,7 +4,7 @@ import SwiftData
 struct CancelWorkoutIntent: AppIntent {
     static let title: LocalizedStringResource = "Cancel Workout"
     static let description = IntentDescription("Cancels and deletes the currently active workout.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .background
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {

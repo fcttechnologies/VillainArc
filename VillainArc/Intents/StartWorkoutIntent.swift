@@ -4,7 +4,7 @@ import SwiftData
 struct StartWorkoutIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Empty Workout"
     static let description = IntentDescription("Starts a new empty workout.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {

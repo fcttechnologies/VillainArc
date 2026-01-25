@@ -4,7 +4,7 @@ import SwiftData
 struct StartLastWorkoutAgainIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Last Workout Again"
     static let description = IntentDescription("Starts a new workout based on your most recent completed workout.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {

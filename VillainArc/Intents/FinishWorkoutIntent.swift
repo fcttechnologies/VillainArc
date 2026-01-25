@@ -4,7 +4,7 @@ import SwiftData
 struct FinishWorkoutIntent: AppIntent {
     static let title: LocalizedStringResource = "Finish Workout"
     static let description = IntentDescription("Finishes the currently active workout.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .background
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -51,9 +51,11 @@ struct FinishWorkoutIntent: AppIntent {
         saveContext(context: context)
         AppRouter.shared.activeWorkout = nil
         
+        let exercisesList = workout.exerciseSummary
+        
         await IntentDonations.donateLastWorkoutSummary()
         await IntentDonations.donateViewLastWorkout()
         
-        return .result(dialog: "Workout finished.")
+        return .result(dialog: "Workout finished. You did \(exercisesList).")
     }
 }

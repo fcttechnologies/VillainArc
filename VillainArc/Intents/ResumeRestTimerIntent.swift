@@ -3,7 +3,7 @@ import AppIntents
 struct ResumeRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Resume Rest Timer"
     static let description = IntentDescription("Resumes the paused rest timer.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .background
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {

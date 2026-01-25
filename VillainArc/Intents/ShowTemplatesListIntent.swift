@@ -3,7 +3,7 @@ import AppIntents
 struct ShowTemplatesListIntent: AppIntent {
     static let title: LocalizedStringResource = "Show Templates"
     static let description = IntentDescription("Opens your template list.")
-    static let openAppWhenRun = true
+    static let supportedModes: IntentModes = .foreground
 
     @MainActor
     func perform() async throws -> some IntentResult {

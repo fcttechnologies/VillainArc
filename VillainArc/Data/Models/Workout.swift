@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import SwiftData
 
@@ -68,6 +69,15 @@ class Workout {
 }
 
 extension Workout {
+    var exerciseSummary: String {
+        let exerciseSummaries = sortedExercises.map { exercise in
+            let setCount = exercise.sets.count
+            let setWord = setCount == 1 ? "set" : "sets"
+            return "\(setCount) \(setWord) of \(exercise.name)"
+        }
+        return ListFormatter.localizedString(byJoining: exerciseSummaries)
+    }
+
     static var recencySortDescriptors: [SortDescriptor<Workout>] {
         [SortDescriptor(\Workout.startTime, order: .reverse)]
     }

@@ -4,7 +4,7 @@ import SwiftData
 struct ViewLastWorkoutIntent: AppIntent {
     static let title: LocalizedStringResource = "View Last Workout"
     static let description = IntentDescription("Shows your most recent completed workout.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
@@ -15,8 +15,6 @@ struct ViewLastWorkoutIntent: AppIntent {
         }
         
         AppRouter.shared.navigate(to: .workoutDetail(lastWorkout))
-        
-        // Open the app after setting up navigation
         return .result(opensIntent: OpenAppIntent())
     }
 }

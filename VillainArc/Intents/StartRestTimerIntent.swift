@@ -4,7 +4,7 @@ import SwiftData
 struct StartRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Rest Timer"
     static let description = IntentDescription("Starts a rest timer.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .background
 
     @Parameter(title: "Seconds")
     var seconds: Int?

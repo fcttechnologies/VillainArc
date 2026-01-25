@@ -4,7 +4,7 @@ import SwiftData
 struct ResumeActiveSessionIntent: AppIntent {
     static let title: LocalizedStringResource = "Resume Active Session"
     static let description = IntentDescription("Resumes your current workout or template.")
-    static let openAppWhenRun = false
+    static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
