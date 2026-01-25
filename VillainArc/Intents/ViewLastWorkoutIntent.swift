@@ -21,15 +21,6 @@ struct ViewLastWorkoutIntent: AppIntent {
     }
 }
 
-struct OpenAppIntent: AppIntent {
-    static let title: LocalizedStringResource = "Open Villain Arc"
-    static let openAppWhenRun = true
-    
-    func perform() async throws -> some IntentResult {
-        return .result()
-    }
-}
-
 enum ViewLastWorkoutError: Error, CustomLocalizedStringResourceConvertible {
     case noWorkoutsFound
     

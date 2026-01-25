@@ -80,6 +80,7 @@ struct WorkoutDetailView: View {
                     .accessibilityHint("Edits this workout.")
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
                         router.startWorkout(from: workout)
+                        donateStartLastWorkoutAgainIfNeeded()
                         dismiss()
                     }
                     .accessibilityIdentifier("workoutDetailStartButton")
@@ -115,6 +116,12 @@ struct WorkoutDetailView: View {
         context.delete(workout)
         saveContext(context: context)
         dismiss()
+    }
+
+    private func donateStartLastWorkoutAgainIfNeeded() {
+        let latestWorkout = (try? context.fetch(Workout.recentWorkout).first)
+        guard latestWorkout?.id == workout.id else { return }
+        Task { await IntentDonations.donateStartLastWorkoutAgain() }
     }
 }
 

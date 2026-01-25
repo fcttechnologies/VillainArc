@@ -66,6 +66,10 @@ class WorkoutTemplate {
 }
 
 extension WorkoutTemplate {
+    static var completedPredicate: Predicate<WorkoutTemplate> {
+        #Predicate<WorkoutTemplate> { $0.complete }
+    }
+
     static var recentsSort: [SortDescriptor<WorkoutTemplate>] {
         [
             SortDescriptor(\WorkoutTemplate.lastUsed, order: .reverse),
@@ -74,16 +78,11 @@ extension WorkoutTemplate {
     }
 
     static var all: FetchDescriptor<WorkoutTemplate> {
-        return FetchDescriptor(sortBy: recentsSort)
-    }
-    
-    static var favorites: FetchDescriptor<WorkoutTemplate> {
-        let predicate = #Predicate<WorkoutTemplate> { $0.isFavorite }
-        return FetchDescriptor(predicate: predicate, sortBy: recentsSort)
+        return FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
     }
     
     static var recents: FetchDescriptor<WorkoutTemplate> {
-        var descriptor = FetchDescriptor(sortBy: recentsSort)
+        var descriptor = FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
         descriptor.fetchLimit = 3
         return descriptor
     }

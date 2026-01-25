@@ -3,11 +3,11 @@ import AppIntents
 struct ShowWorkoutHistoryIntent: AppIntent {
     static let title: LocalizedStringResource = "Show Workout History"
     static let description = IntentDescription("Opens your workout history.")
-    static let openAppWhenRun = false
+    static let openAppWhenRun = true
 
     @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    func perform() async throws -> some IntentResult {
         AppRouter.shared.navigate(to: .workoutsList)
-        return .result(opensIntent: OpenAppIntent())
+        return .result()
     }
 }

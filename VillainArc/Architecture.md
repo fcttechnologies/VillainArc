@@ -54,11 +54,11 @@ This document is updated as we walk through files for the Swift 6 migration.
   - Toggles favorites and deletes templates; saves via `saveContext(context:)`.
 - `Views/Workout/WorkoutDetailView.swift`
   - Displays a completed workout summary and sets.
-  - Uses `AppRouter` to start a workout from an existing one.
+  - Uses `AppRouter` to start a workout from an existing one and donates "start last workout again" when applicable.
   - Deletes workouts via `saveContext(context:)` and dismisses the view.
 - `Views/Template/TemplateDetailView.swift`
   - Displays a template summary.
-  - Uses `AppRouter` to start a workout from a template.
+  - Uses `AppRouter` to start a workout from a template and donates "start workout with template".
   - Toggles favorites and deletes templates; saves via `saveContext(context:)`.
 - `Views/Components/RecentWorkoutSectionView.swift`
   - Shows the most recent completed workout via `@Query(Workout.recentWorkout)`.
@@ -66,7 +66,7 @@ This document is updated as we walk through files for the Swift 6 migration.
   - Donates the "show workout history" and "view last workout" intents.
 - `Views/Components/RecentTemplatesSectionView.swift`
   - Shows recent templates via `@Query(WorkoutTemplate.recents)`.
-  - Navigates to `TemplatesListView` using `AppRouter`.
+  - Navigates to `TemplatesListView` using `AppRouter` and donates "show templates list".
 - `Views/Components/WorkoutRowView.swift`
   - Compact workout card that navigates to `WorkoutDetailView` via `AppRouter`.
 - `Views/Components/TemplateRowView.swift`
@@ -127,21 +127,38 @@ This document is updated as we walk through files for the Swift 6 migration.
 ## Intents
 - `Intents/IntentDonations.swift`
   - Convenience wrappers for donating App Intents from UI flows.
+- `Intents/WorkoutTemplateEntity.swift`
+  - AppEntity support for template selection in Shortcuts via `WorkoutTemplateEntity`.
 - `Intents/StartWorkoutIntent.swift`
-  - App Intent to start or resume a workout.
+  - App Intent to start a new empty workout.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
-  - Opens the app via `OpenAppIntent`.
+  - Opens the app via `OpenAppIntent` on success.
+- `Intents/StartWorkoutWithTemplateIntent.swift`
+  - App Intent to start a workout from a selected template.
+  - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
+  - Opens the app via `OpenAppIntent` on success.
+- `Intents/StartLastWorkoutAgainIntent.swift`
+  - App Intent to start a workout based on the most recent completed workout.
+  - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
+  - Opens the app via `OpenAppIntent` on success.
+- `Intents/ResumeActiveSessionIntent.swift`
+  - App Intent to resume an active workout or template session.
+  - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
+  - Opens the app via `OpenAppIntent` on success.
 - `Intents/CreateTemplateIntent.swift`
   - App Intent to create or resume a template.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
-  - Opens the app via `OpenAppIntent`.
+  - Opens the app via `OpenAppIntent` on success.
 - `Intents/ViewLastWorkoutIntent.swift`
   - App Intent to navigate to the most recent completed workout.
   - Uses `ModelContext(SharedModelContainer.container)` and `AppRouter.shared`.
   - Defines `OpenAppIntent` and opens the app after navigation setup.
 - `Intents/ShowWorkoutHistoryIntent.swift`
   - App Intent to open the workouts list via `AppRouter.shared`.
-  - Opens the app via `OpenAppIntent`.
+  - Opens the app via `openAppWhenRun = true` after navigation setup.
+- `Intents/ShowTemplatesListIntent.swift`
+  - App Intent to open the templates list via `AppRouter.shared`.
+  - Opens the app via `openAppWhenRun = true` after navigation setup.
 - `Intents/LastWorkoutSummaryIntent.swift`
   - App Intent that speaks a summary of the last workout without opening the app.
   - Uses `ModelContext(SharedModelContainer.container)`.

@@ -56,6 +56,7 @@ struct TemplateDetailView: View {
                 Menu("Options", systemImage: "ellipsis") {
                     Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
                         router.startWorkout(from: template)
+                        Task { await IntentDonations.donateStartWorkoutWithTemplate(template: template) }
                         dismiss()
                     }
                     .accessibilityIdentifier("templateDetailStartWorkoutButton")

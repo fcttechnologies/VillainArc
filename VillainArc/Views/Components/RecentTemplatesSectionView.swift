@@ -9,6 +9,7 @@ struct RecentTemplatesSectionView: View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
                 appRouter.navigate(to: .templateList)
+                Task { await IntentDonations.donateShowTemplatesList() }
             } label: {
                 HStack(spacing: 1) {
                     Text("Templates")

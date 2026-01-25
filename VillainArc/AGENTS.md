@@ -5,9 +5,9 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 
 ## Architecture Overview
 - `Root/VillainArcApp.swift` builds the SwiftData model container and launches `ContentView`.
-- `Views/ContentView.swift` loads workouts, seeds the catalog via `DataManager`, shows the latest completed workout, and presents `WorkoutView` using `WorkoutRouter`.
+- `Views/ContentView.swift` loads workouts, seeds the catalog via `DataManager`, and presents `WorkoutView`/`TemplateView` using `AppRouter`.
 - `Views/Components/RecentWorkoutSectionView.swift` surfaces the most recent completed workout or an empty prompt and links to the full history.
-- `Views/PreviousWorkoutsListView.swift` lists completed workouts with edit/delete controls.
+- `Views/WorkoutsListView.swift` lists completed workouts with edit/delete controls.
 - `Views/Components/WorkoutRowView.swift` renders a compact summary/link for a workout in lists or sections.
 - `Views/Workout/WorkoutDetailView.swift` displays a completed workout summary and can start or edit a workout.
 - `Views/Workout/WorkoutView.swift` coordinates the workout session UI, paging vs list, and sheet flows.
@@ -17,11 +17,16 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 
 ## App Intents
 The app supports Siri Shortcuts via in-app App Intents (no separate extension target):
-- `Intents/StartWorkoutIntent.swift`: starts or resumes a workout, opens the app.
-- `Intents/CreateTemplateIntent.swift`: creates a new workout template.
+- `Intents/StartWorkoutIntent.swift`: starts a new empty workout (errors if a workout/template is active).
+- `Intents/StartWorkoutWithTemplateIntent.swift`: starts a workout from a selected template.
+- `Intents/StartLastWorkoutAgainIntent.swift`: starts a workout based on the most recent completed workout.
+- `Intents/ResumeActiveSessionIntent.swift`: resumes an active workout or template.
+- `Intents/CreateTemplateIntent.swift`: creates or resumes a workout template.
 - `Intents/ViewLastWorkoutIntent.swift`: opens the app to the last completed workout (errors if none).
 - `Intents/ShowWorkoutHistoryIntent.swift`: opens the app to the workouts list.
+- `Intents/ShowTemplatesListIntent.swift`: opens the app to the templates list.
 - `Intents/LastWorkoutSummaryIntent.swift`: spoken response with last workout info (no app open).
+- `Intents/WorkoutTemplateEntity.swift`: AppEntity wrapper for template selection in Shortcuts.
 - `Intents/VillainArcShortcuts.swift`: registers all intents with Siri phrases.
 
 **Note:** App Intents are defined in the main app target (not an extension) to avoid provisioning issues without a paid Apple Developer account.
@@ -31,7 +36,7 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Views/ContentView.swift`: latest workout summary, start/resume flow, navigation to `RecentWorkoutSectionView`.
 - `Views/Components/RecentWorkoutSectionView.swift`: shows the most recent completed workout or empty state plus a link to `WorkoutsListView`.
 - `Views/Components/RecentTemplatesSectionView.swift`: shows recent templates and a link to `TemplatesListView`.
-- `Views/PreviousWorkoutsListView.swift`: completed workout history list and bulk delete.
+- `Views/WorkoutsListView.swift`: completed workout history list and bulk delete.
 - `Views/Template/TemplatesListView.swift`: lists saved workout templates.
 - `Views/Template/TemplateView.swift`: editor for creating or editing a workout template.
 - `Views/Template/TemplateDetailView.swift`: details view for a template with start/edit actions.
