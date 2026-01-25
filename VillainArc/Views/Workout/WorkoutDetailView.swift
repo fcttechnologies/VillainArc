@@ -79,7 +79,7 @@ struct WorkoutDetailView: View {
                     .accessibilityIdentifier("workoutDetailEditButton")
                     .accessibilityHint("Edits this workout.")
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
-                        router.startWorkout(from: workout, context: context)
+                        router.startWorkout(from: workout)
                         dismiss()
                     }
                     .accessibilityIdentifier("workoutDetailStartButton")

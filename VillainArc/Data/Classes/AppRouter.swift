@@ -19,6 +19,10 @@ final class AppRouter {
     
     private init() {}
     
+    private var context: ModelContext {
+        SharedModelContainer.container.mainContext
+    }
+    
     func navigate(to destination: Destination) {
         path.append(destination)
     }
@@ -27,7 +31,7 @@ final class AppRouter {
         path = NavigationPath()
     }
 
-    func startWorkout(from workout: Workout? = nil, context: ModelContext) {
+    func startWorkout(from workout: Workout? = nil) {
         Haptics.selection()
         let newWorkout = workout.map { Workout(previous: $0) } ?? Workout()
         context.insert(newWorkout)
@@ -35,7 +39,7 @@ final class AppRouter {
         activeWorkout = newWorkout
     }
     
-    func createTemplate(context: ModelContext) {
+    func createTemplate() {
         Haptics.selection()
         let newTemplate = WorkoutTemplate()
         context.insert(newTemplate)
@@ -43,7 +47,7 @@ final class AppRouter {
         activeTemplate = newTemplate
     }
     
-    func startWorkout(from template: WorkoutTemplate, context: ModelContext) {
+    func startWorkout(from template: WorkoutTemplate) {
         Haptics.selection()
         let workout = Workout(from: template)
         context.insert(workout)
@@ -61,7 +65,7 @@ final class AppRouter {
         activeTemplate = template
     }
     
-    func checkForUnfinishedData(context: ModelContext) {
+    func checkForUnfinishedData() {
         do {
             if let unfinishedWorkout = try context.fetch(Workout.incomplete).first {
                 resumeWorkout(unfinishedWorkout)

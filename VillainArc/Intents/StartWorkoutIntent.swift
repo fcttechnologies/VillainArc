@@ -8,15 +8,15 @@ struct StartWorkoutIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
-//        let context = ModelContext(SharedModelContainer.container)
-//        if let _ = try? context.fetch(WorkoutTemplate.incomplete).first {
-//            throw StartWorkoutError.templateIsActive
-//        }
-//        if let workout = try? context.fetch(Workout.incomplete).first {
-//            AppRouter.shared.resumeWorkout(workout)
-//        } else {
-//            AppRouter.shared.startWorkout(context: context)
-//        }
+        let context = SharedModelContainer.container.mainContext
+        if let _ = try? context.fetch(WorkoutTemplate.incomplete).first {
+            throw StartWorkoutError.templateIsActive
+        }
+        if let workout = try? context.fetch(Workout.incomplete).first {
+            AppRouter.shared.resumeWorkout(workout)
+        } else {
+            AppRouter.shared.startWorkout()
+        }
         return .result(opensIntent: OpenAppIntent())
     }
 }

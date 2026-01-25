@@ -55,7 +55,7 @@ struct TemplateDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Options", systemImage: "ellipsis") {
                     Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
-                        router.startWorkout(from: template, context: context)
+                        router.startWorkout(from: template)
                         dismiss()
                     }
                     .accessibilityIdentifier("templateDetailStartWorkoutButton")

@@ -41,7 +41,7 @@ struct ContentView: View {
             }
             .task {
                 DataManager.seedExercisesIfNeeded(context: context)
-                router.checkForUnfinishedData(context: context)
+                router.checkForUnfinishedData()
             }
             .fullScreenCover(item: $router.activeWorkout) {
                 WorkoutView(workout: $0)
@@ -70,12 +70,12 @@ struct ContentView: View {
     }
 
     private func startWorkout() {
-        router.startWorkout(context: context)
+        router.startWorkout()
         Task { await IntentDonations.donateStartWorkout() }
     }
     
     private func createTemplate() {
-        router.createTemplate(context: context)
+        router.createTemplate()
         Task { await IntentDonations.donateCreateTemplate() }
     }
 }

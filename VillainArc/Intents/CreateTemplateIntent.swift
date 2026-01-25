@@ -8,15 +8,15 @@ struct CreateTemplateIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
-//        let context = ModelContext(SharedModelContainer.container)
-//        if let _ = try? context.fetch(Workout.incomplete).first {
-//            throw StartTemplateError.workoutIsActive
-//        }
-//        if let template = try? context.fetch(WorkoutTemplate.incomplete).first {
-//            AppRouter.shared.resumeTemplate(template)
-//        } else {
-//            AppRouter.shared.createTemplate(context: context)
-//        }
+        let context = SharedModelContainer.container.mainContext
+        if let _ = try? context.fetch(Workout.incomplete).first {
+            throw StartTemplateError.workoutIsActive
+        }
+        if let template = try? context.fetch(WorkoutTemplate.incomplete).first {
+            AppRouter.shared.resumeTemplate(template)
+        } else {
+            AppRouter.shared.createTemplate()
+        }
         return .result(opensIntent: OpenAppIntent())
     }
 }
