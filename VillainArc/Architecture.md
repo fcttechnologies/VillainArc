@@ -1,12 +1,11 @@
-# Architecture Map (Work in Progress)
-
-This document is updated as we walk through files for the Swift 6 migration.
+# Architecture Map
 
 ## Root
 - `Root/VillainArcApp.swift`
   - App entry point.
   - Creates the main `WindowGroup` with `ContentView`.
   - Injects the SwiftData container via `SharedModelContainer.container`.
+  - Handles Spotlight continuations with `onContinueUserActivity(CSSearchableItemActionType)` and routes via `AppRouter` when no session is active.
 
 ## Data
 - `Data/SharedModelContainer.swift`
@@ -27,6 +26,12 @@ This document is updated as we walk through files for the Swift 6 migration.
 - `Data/Models/Exercise.swift`
   - Catalog exercise model with search index/tokens and favorite/last-used metadata.
   - Uses `Muscle.isMajor` to format `displayMuscles`.
+- `Data/Models/Workout.swift`
+  - Workout model with ordering helpers and completion state.
+  - Provides summary strings for spoken responses and Spotlight indexing.
+- `Data/Models/WorkoutTemplate.swift`
+  - Template model with ordering helpers, favorites, and completion state.
+  - Provides summary strings for spoken responses and Spotlight indexing.
 - `Data/Models/WorkoutExercise.swift`
   - Per-workout exercise with sets, rep/rest policies, and display helpers.
   - Uses `Muscle.isMajor` to choose `displayMuscle`.
@@ -47,11 +52,11 @@ This document is updated as we walk through files for the Swift 6 migration.
 - `Views/WorkoutsListView.swift`
   - Lists completed workouts via `@Query(Workout.completedWorkouts)`.
   - Uses `WorkoutRowView` for each workout row.
-  - Deletes workouts and saves via `saveContext(context:)`.
+  - Deletes workouts and removes Spotlight items before saving via `saveContext(context:)`.
 - `Views/Template/TemplatesListView.swift`
   - Lists templates via `@Query(WorkoutTemplate.all)` with favorites filtering.
   - Uses `TemplateRowView` for each template row.
-  - Toggles favorites and deletes templates; saves via `saveContext(context:)`.
+  - Toggles favorites and deletes templates; removes Spotlight items and saves via `saveContext(context:)`.
 - `Views/Workout/WorkoutDetailView.swift`
   - Displays a completed workout summary and sets.
   - Uses `AppRouter` to start a workout from an existing one and donates "start last workout again" when applicable.
@@ -75,7 +80,7 @@ This document is updated as we walk through files for the Swift 6 migration.
   - Main workout session UI with paging vs list modes.
   - Presents sheets for add exercise, rest timer, and settings.
   - Uses `RestTimerState.shared` environment and donates finish/cancel intents on workout completion.
-  - Saves/deletes workouts via `saveContext(context:)`.
+  - Saves/deletes workouts via `saveContext(context:)` and indexes completed workouts in Spotlight.
 - `Views/Workout/WorkoutSettingsView.swift`
   - Workout edit/finish sheet; normalizes title and schedules saves.
   - Handles finish actions and delete confirmation.
@@ -103,6 +108,7 @@ This document is updated as we walk through files for the Swift 6 migration.
 - `Views/Template/TemplateView.swift`
   - Template editor with add exercise sheet and per-exercise edit sections.
   - Uses `RepRangeEditorView` and `RestTimeEditorView` for template exercises.
+  - Confirms cancel/delete when removing the final exercise while editing.
 
 ## Data / Classes
 - `Data/Classes/AppRouter.swift`
@@ -110,6 +116,10 @@ This document is updated as we walk through files for the Swift 6 migration.
   - Reads/writes via `SharedModelContainer.container.mainContext`.
   - Starts or resumes workouts/templates, inserts into SwiftData, and saves via `saveContext`.
   - Note: any use from non-main contexts (e.g., App Intents, background tasks) must hop to `MainActor`.
+
+- `Data/Classes/SpotlightIndexer.swift`
+  - Indexes completed workouts/templates in Core Spotlight and removes entries on delete.
+  - Uses stable identifiers with `workout:` and `template:` prefixes.
 
 - `Data/Classes/RestTimerState.swift`
   - `@MainActor` + `@Observable` rest timer state persisted in `UserDefaults`.
@@ -131,55 +141,63 @@ This document is updated as we walk through files for the Swift 6 migration.
 ## Intents
 - `Intents/IntentDonations.swift`
   - Convenience wrappers for donating App Intents from UI flows, including rest timer and finish/cancel actions.
-- `Intents/WorkoutTemplateEntity.swift`
+- `Intents/OpenAppIntent.swift`
+  - Opens the app for foregrounding flows.
+- `Intents/Template/WorkoutTemplateEntity.swift`
   - AppEntity support for template selection in Shortcuts via `WorkoutTemplateEntity` (suggests up to 10 recent templates).
-- `Intents/StartWorkoutIntent.swift`
+- `Intents/Exercise/ExerciseEntity.swift`
+  - AppEntity support for exercise selection in Shortcuts with search/fuzzy matching.
+- `Intents/Workout/StartWorkoutIntent.swift`
   - App Intent to start a new empty workout.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
   - Opens the app via `OpenAppIntent` on success.
-- `Intents/StartWorkoutWithTemplateIntent.swift`
+- `Intents/Workout/StartWorkoutWithTemplateIntent.swift`
   - App Intent to start a workout from a selected template.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
   - Opens the app via `OpenAppIntent` on success.
-- `Intents/StartLastWorkoutAgainIntent.swift`
+- `Intents/Workout/StartLastWorkoutAgainIntent.swift`
   - App Intent to start a workout based on the most recent completed workout.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
   - Opens the app via `OpenAppIntent` on success.
-- `Intents/ResumeActiveSessionIntent.swift`
+- `Intents/Workout/ResumeActiveSessionIntent.swift`
   - App Intent to resume an active workout or template session.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
   - Opens the app via `OpenAppIntent` on success.
-- `Intents/CreateTemplateIntent.swift`
+- `Intents/Template/CreateTemplateIntent.swift`
   - App Intent to create or resume a template.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
   - Opens the app via `OpenAppIntent` on success.
-- `Intents/ViewLastWorkoutIntent.swift`
+- `Intents/Workout/ViewLastWorkoutIntent.swift`
   - App Intent to navigate to the most recent completed workout.
   - Uses `ModelContext(SharedModelContainer.container)` and `AppRouter.shared`.
   - Defines `OpenAppIntent` and opens the app after navigation setup.
-- `Intents/ShowWorkoutHistoryIntent.swift`
+- `Intents/Workout/ShowWorkoutHistoryIntent.swift`
   - App Intent to open the workouts list via `AppRouter.shared`.
-  - Opens the app via `openAppWhenRun = true` after navigation setup.
-- `Intents/ShowTemplatesListIntent.swift`
+  - Opens the app after navigation setup.
+- `Intents/Template/ShowTemplatesListIntent.swift`
   - App Intent to open the templates list via `AppRouter.shared`.
-  - Opens the app via `openAppWhenRun = true` after navigation setup.
-- `Intents/LastWorkoutSummaryIntent.swift`
+  - Opens the app after navigation setup.
+- `Intents/Workout/LastWorkoutSummaryIntent.swift`
   - App Intent that speaks a summary of the last workout without opening the app.
   - Uses `ModelContext(SharedModelContainer.container)`.
-- `Intents/FinishWorkoutIntent.swift`
+- `Intents/Workout/FinishWorkoutIntent.swift`
   - App Intent that finishes the active workout and stops the rest timer.
   - Saves changes via `SharedModelContainer.container.mainContext`.
-- `Intents/CancelWorkoutIntent.swift`
+- `Intents/Workout/CompleteActiveSetIntent.swift`
+  - App Intent that completes the next incomplete set and can auto-start the rest timer.
+- `Intents/Exercise/AddExercisesIntent.swift`
+  - App Intent that adds selected exercises to the active workout or template.
+- `Intents/Workout/CancelWorkoutIntent.swift`
   - App Intent that cancels the active workout and stops the rest timer.
   - Saves changes via `SharedModelContainer.container.mainContext`.
-- `Intents/StartRestTimerIntent.swift`
+- `Intents/RestTimer/StartRestTimerIntent.swift`
   - App Intent that starts a rest timer for a duration (uses recents/defaults if needed).
   - Requires an active workout and records rest time history.
-- `Intents/PauseRestTimerIntent.swift`
+- `Intents/RestTimer/PauseRestTimerIntent.swift`
   - App Intent that pauses the running rest timer.
-- `Intents/ResumeRestTimerIntent.swift`
+- `Intents/RestTimer/ResumeRestTimerIntent.swift`
   - App Intent that resumes the paused rest timer.
-- `Intents/StopRestTimerIntent.swift`
+- `Intents/RestTimer/StopRestTimerIntent.swift`
   - App Intent that stops any active rest timer.
 - `Intents/VillainArcShortcuts.swift`
   - Registers Siri shortcut phrases for all App Intents.

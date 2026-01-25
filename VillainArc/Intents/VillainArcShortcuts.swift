@@ -51,16 +51,16 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "play.circle"
         )
         
-        AppShortcut(
-            intent: ViewLastWorkoutIntent(),
-            phrases: [
-                "Show my last workout in \(.applicationName)",
-                "View last workout in \(.applicationName)",
-                "What was my last workout in \(.applicationName)"
-            ],
-            shortTitle: "View Last Workout",
-            systemImageName: "clock.arrow.circlepath"
-        )
+//        AppShortcut(
+//            intent: ViewLastWorkoutIntent(),
+//            phrases: [
+//                "Show my last workout in \(.applicationName)",
+//                "View last workout in \(.applicationName)",
+//                "What was my last workout in \(.applicationName)"
+//            ],
+//            shortTitle: "View Last Workout",
+//            systemImageName: "clock.arrow.circlepath"
+//        )
         
 //        AppShortcut(
 //            intent: ShowWorkoutHistoryIntent(),
@@ -117,17 +117,39 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             shortTitle: "Finish Workout",
             systemImageName: "checkmark.circle"
         )
-        
+
         AppShortcut(
-            intent: CancelWorkoutIntent(),
+            intent: CompleteActiveSetIntent(),
             phrases: [
-                "Cancel workout in \(.applicationName)",
-                "Discard workout in \(.applicationName)",
-                "Delete current workout in \(.applicationName)"
+                "Complete active set in \(.applicationName)",
+                "Complete next set in \(.applicationName)",
+                "Mark next set complete in \(.applicationName)"
             ],
-            shortTitle: "Cancel Workout",
-            systemImageName: "xmark.circle"
+            shortTitle: "Complete Set",
+            systemImageName: "checkmark.circle.badge.questionmark"
         )
+
+        AppShortcut(
+            intent: AddExercisesIntent(),
+            phrases: [
+                "Add exercises in \(.applicationName)",
+                "Add exercises to workout in \(.applicationName)",
+                "Add exercises to template in \(.applicationName)"
+            ],
+            shortTitle: "Add Exercises",
+            systemImageName: "plus.circle"
+        )
+
+//        AppShortcut(
+//            intent: CancelWorkoutIntent(),
+//            phrases: [
+//                "Cancel workout in \(.applicationName)",
+//                "Discard workout in \(.applicationName)",
+//                "Delete current workout in \(.applicationName)"
+//            ],
+//            shortTitle: "Cancel Workout",
+//            systemImageName: "xmark.circle"
+//        )
 
         AppShortcut(
             intent: StartRestTimerIntent(),

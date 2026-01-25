@@ -151,9 +151,11 @@ struct AddExerciseView: View {
                 exercise.updateLastUsed()
             }
         }
+        let donatedExercises = selectedExercises
         selectedExercises.removeAll()
         selectedExerciseIDs.removeAll()
         saveContext(context: context)
+        Task { await IntentDonations.donateAddExercises(exercises: donatedExercises) }
         dismiss()
     }
 

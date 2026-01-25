@@ -58,6 +58,13 @@ enum IntentDonations {
         _ = try? await FinishWorkoutIntent().donate()
     }
 
+    static func donateAddExercises(exercises: [Exercise]) async {
+        guard !exercises.isEmpty else { return }
+        let intent = AddExercisesIntent()
+        intent.exercises = exercises.map(ExerciseEntity.init)
+        _ = try? await intent.donate()
+    }
+
     static func donateCancelWorkout() async {
         _ = try? await CancelWorkoutIntent().donate()
     }
