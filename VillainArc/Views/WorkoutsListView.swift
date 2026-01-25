@@ -85,6 +85,7 @@ struct WorkoutsListView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let workoutsToDelete = offsets.map { workouts[$0] }
+        SpotlightIndexer.deleteWorkouts(ids: workoutsToDelete.map(\.id))
         for workout in workoutsToDelete {
             context.delete(workout)
         }
@@ -96,6 +97,7 @@ struct WorkoutsListView: View {
 
     private func deleteAllWorkouts() {
         Haptics.selection()
+        SpotlightIndexer.deleteWorkouts(ids: workouts.map(\.id))
         for workout in workouts {
             context.delete(workout)
         }

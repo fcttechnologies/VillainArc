@@ -111,6 +111,7 @@ struct TemplatesListView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let templatesToDelete = offsets.map { filteredTemplates[$0] }
+        SpotlightIndexer.deleteTemplates(ids: templatesToDelete.map(\.id))
         for template in templatesToDelete {
             context.delete(template)
         }
@@ -123,6 +124,7 @@ struct TemplatesListView: View {
 
     private func deleteAllTemplates() {
         Haptics.selection()
+        SpotlightIndexer.deleteTemplates(ids: templates.map(\.id))
         for template in templates {
             context.delete(template)
         }

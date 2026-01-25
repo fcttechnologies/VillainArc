@@ -1,4 +1,3 @@
-import Foundation
 import SwiftUI
 import SwiftData
 
@@ -76,6 +75,13 @@ extension Workout {
             return "\(setCount) \(setWord) of \(exercise.name)"
         }
         return ListFormatter.localizedString(byJoining: exerciseSummaries)
+    }
+
+    var spotlightSummary: String {
+        let exerciseSummaries = sortedExercises.map { exercise in
+            "\(exercise.sets.count)x \(exercise.name)"
+        }
+        return exerciseSummaries.joined(separator: ", ")
     }
 
     static var recencySortDescriptors: [SortDescriptor<Workout>] {

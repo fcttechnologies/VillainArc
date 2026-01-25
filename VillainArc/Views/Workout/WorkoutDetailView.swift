@@ -113,6 +113,7 @@ struct WorkoutDetailView: View {
 
     private func deleteWorkout() {
         Haptics.selection()
+        SpotlightIndexer.deleteWorkout(id: workout.id)
         context.delete(workout)
         saveContext(context: context)
         dismiss()

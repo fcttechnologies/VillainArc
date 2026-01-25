@@ -7,12 +7,16 @@ struct TemplateView: View {
     
     @Bindable var template: WorkoutTemplate
     let isEditing: Bool
+    let onDeleteFromEdit: (() -> Void)?
     
     @State private var showAddExerciseSheet = false
+    @State private var showDeleteTemplateConfirmation = false
+    @State private var showCancelTemplateConfirmation = false
     
-    init(template: WorkoutTemplate, isEditing: Bool = false) {
+    init(template: WorkoutTemplate, isEditing: Bool = false, onDeleteFromEdit: (() -> Void)? = nil) {
         self.template = template
         self.isEditing = isEditing
+        self.onDeleteFromEdit = onDeleteFromEdit
     }
     
     var body: some View {
@@ -47,26 +51,36 @@ struct TemplateView: View {
             )
             .toolbar {
                 if !isEditing {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel Template Creation", systemImage: "xmark", role: .cancel) {
                             Haptics.selection()
-                            context.delete(template)
-                            saveContext(context: context)
-                            dismiss()
+                            if template.exercises.isEmpty {
+                                deleteTemplateAndDismiss()
+                            } else {
+                                showCancelTemplateConfirmation = true
+                            }
                         }
+                        .labelStyle(.iconOnly)
                         .accessibilityIdentifier("templateCancelButton")
+                        .confirmationDialog("Cancel Template?", isPresented: $showCancelTemplateConfirmation) {
+                            Button("Cancel Template", role: .destructive) {
+                                deleteTemplateAndDismiss()
+                            }
+                            .accessibilityIdentifier("templateConfirmCancelButton")
+                        } message: {
+                            Text("Are you sure you want to cancel this template?")
+                        }
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(isEditing ? "Done" : "Save") {
                         Haptics.selection()
-                        saveContext(context: context)
-                        if template.complete {
-                            dismiss()
-                        } else {
+                        if !template.complete {
                             template.complete = true
-                            dismiss()
                         }
+                        saveContext(context: context)
+                        SpotlightIndexer.index(template: template)
+                        dismiss()
                     }
                     .disabled(template.name.isEmpty || template.exercises.isEmpty)
                     .accessibilityIdentifier("templateSaveButton")
@@ -86,9 +100,26 @@ struct TemplateView: View {
                     .interactiveDismissDisabled()
             }
         }
+        .alert("Delete Template?", isPresented: $showDeleteTemplateConfirmation) {
+            Button("Delete Template", role: .destructive) {
+                deleteTemplateFromEdit()
+            }
+            .accessibilityIdentifier("templateConfirmDeleteButton")
+        } message: {
+            Text("This is the last exercise. Deleting it will delete the template.")
+        }
     }
     
     private func deleteExercise(offsets: IndexSet) {
+        guard !offsets.isEmpty else { return }
+        if isEditing, template.exercises.count - offsets.count == 0 {
+            showDeleteTemplateConfirmation = true
+            return
+        }
+        deleteExercises(at: offsets)
+    }
+
+    private func deleteExercises(at offsets: IndexSet) {
         Haptics.selection()
         let exercisesToDelete = offsets.map { template.sortedExercises[$0] }
         
@@ -102,6 +133,18 @@ struct TemplateView: View {
     private func moveExercise(from source: IndexSet, to destination: Int) {
         template.moveExercise(from: source, to: destination)
         saveContext(context: context)
+    }
+
+    private func deleteTemplateAndDismiss() {
+        Haptics.selection()
+        context.delete(template)
+        saveContext(context: context)
+        dismiss()
+    }
+
+    private func deleteTemplateFromEdit() {
+        Haptics.selection()
+        onDeleteFromEdit?()
     }
 }
 
@@ -136,7 +179,7 @@ struct TemplateExerciseEditSection: View {
                 HStack {
                     Text("Rep Range")
                     Spacer()
-                    Text(exercise.repRange.displayText)
+                    Text(exercise.repRange.activeMode.displayName)
                         .foregroundStyle(.secondary)
                 }
             }

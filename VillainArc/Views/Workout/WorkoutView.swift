@@ -44,6 +44,7 @@ struct WorkoutView: View {
                         Button("Done", systemImage: "checkmark") {
                             Haptics.selection()
                             saveContext(context: context)
+                            SpotlightIndexer.index(workout: workout)
                             dismiss()
                         }
                         .labelStyle(.titleOnly)
@@ -261,6 +262,7 @@ struct WorkoutView: View {
         workout.sourceTemplate?.updateLastUsed()
         restTimer.stop()
         saveContext(context: context)
+        SpotlightIndexer.index(workout: workout)
         Task {
             await IntentDonations.donateFinishWorkout()
             await IntentDonations.donateLastWorkoutSummary()

@@ -49,6 +49,7 @@ struct FinishWorkoutIntent: AppIntent {
 
         RestTimerState.shared.stop()
         saveContext(context: context)
+        SpotlightIndexer.index(workout: workout)
         AppRouter.shared.activeWorkout = nil
         
         let exercisesList = workout.exerciseSummary

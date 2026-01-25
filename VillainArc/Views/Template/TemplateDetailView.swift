@@ -95,12 +95,16 @@ struct TemplateDetailView: View {
             }
         }
         .fullScreenCover(isPresented: $editTemplate) {
-            TemplateView(template: template, isEditing: true)
+            TemplateView(template: template, isEditing: true, onDeleteFromEdit: {
+                editTemplate = false
+                deleteTemplate()
+            })
         }
     }
     
     private func deleteTemplate() {
         Haptics.selection()
+        SpotlightIndexer.deleteTemplate(id: template.id)
         context.delete(template)
         saveContext(context: context)
         dismiss()
