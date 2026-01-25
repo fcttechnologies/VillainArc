@@ -39,7 +39,7 @@ struct WorkoutTemplateEntityQuery: EntityQuery, EntityStringQuery {
     func suggestedEntities() async throws -> [WorkoutTemplateEntity] {
         let context = SharedModelContainer.container.mainContext
         var descriptor = FetchDescriptor(predicate: WorkoutTemplate.completedPredicate, sortBy: WorkoutTemplate.recentsSort)
-        descriptor.fetchLimit = 6
+        descriptor.fetchLimit = 10
         let templates = (try? context.fetch(descriptor)) ?? []
         return templates.map(WorkoutTemplateEntity.init)
     }

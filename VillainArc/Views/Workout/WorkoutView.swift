@@ -11,7 +11,7 @@ struct WorkoutView: View {
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
     @State private var showWorkoutSettingsSheet = false
-    @State private var restTimer = RestTimerState()
+    @State private var restTimer = RestTimerState.shared
     @State private var showDeleteWorkoutConfirmation = false
     
     @Environment(\.modelContext) private var context
@@ -261,7 +261,10 @@ struct WorkoutView: View {
         workout.sourceTemplate?.updateLastUsed()
         restTimer.stop()
         saveContext(context: context)
-        Task { await IntentDonations.donateLastWorkoutSummary() }
+        Task {
+            await IntentDonations.donateFinishWorkout()
+            await IntentDonations.donateLastWorkoutSummary()
+        }
         dismiss()
     }
     
@@ -271,6 +274,7 @@ struct WorkoutView: View {
         restTimer.stop()
         context.delete(workout)
         saveContext(context: context)
+        Task { await IntentDonations.donateCancelWorkout() }
         dismiss()
     }
     

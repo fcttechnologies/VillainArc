@@ -34,4 +34,31 @@ enum IntentDonations {
         intent.template = WorkoutTemplateEntity(template: template)
         _ = try? await intent.donate()
     }
+
+    static func donateStartRestTimer(seconds: Int) async {
+        guard seconds > 0 else { return }
+        let intent = StartRestTimerIntent()
+        intent.seconds = seconds
+        _ = try? await intent.donate()
+    }
+
+    static func donatePauseRestTimer() async {
+        _ = try? await PauseRestTimerIntent().donate()
+    }
+
+    static func donateResumeRestTimer() async {
+        _ = try? await ResumeRestTimerIntent().donate()
+    }
+
+    static func donateStopRestTimer() async {
+        _ = try? await StopRestTimerIntent().donate()
+    }
+
+    static func donateFinishWorkout() async {
+        _ = try? await FinishWorkoutIntent().donate()
+    }
+
+    static func donateCancelWorkout() async {
+        _ = try? await CancelWorkoutIntent().donate()
+    }
 }

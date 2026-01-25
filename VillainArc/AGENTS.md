@@ -13,6 +13,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/WorkoutView.swift` coordinates the workout session UI, paging vs list, and sheet flows.
 - `Views/Workout/ExerciseView.swift` manages per-exercise editing, previous set lookup, notes, and the rep/rest editors.
 - `Data/Classes/AppRouter.swift`: singleton navigation router handling `NavigationPath`, deep linking, and active workout/template sessions.
+- `Data/Classes/RestTimerState.swift`: shared rest timer state for UI and App Intents with persisted end date.
 - `Data/SharedModelContainer.swift`: shared SwiftData container using App Groups for potential future cross-process access.
 
 ## App Intents
@@ -22,6 +23,12 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Intents/StartLastWorkoutAgainIntent.swift`: starts a workout based on the most recent completed workout.
 - `Intents/ResumeActiveSessionIntent.swift`: resumes an active workout or template.
 - `Intents/CreateTemplateIntent.swift`: creates or resumes a workout template.
+- `Intents/FinishWorkoutIntent.swift`: finishes the active workout and stops the rest timer.
+- `Intents/CancelWorkoutIntent.swift`: cancels the active workout and stops the rest timer.
+- `Intents/StartRestTimerIntent.swift`: starts a rest timer during an active workout, using recent/default duration if needed.
+- `Intents/PauseRestTimerIntent.swift`: pauses the running rest timer.
+- `Intents/ResumeRestTimerIntent.swift`: resumes the paused rest timer.
+- `Intents/StopRestTimerIntent.swift`: stops the active rest timer.
 - `Intents/ViewLastWorkoutIntent.swift`: opens the app to the last completed workout (errors if none).
 - `Intents/ShowWorkoutHistoryIntent.swift`: opens the app to the workouts list.
 - `Intents/ShowTemplatesListIntent.swift`: opens the app to the templates list.
@@ -29,7 +36,7 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Intents/WorkoutTemplateEntity.swift`: AppEntity wrapper for template selection in Shortcuts.
 - `Intents/VillainArcShortcuts.swift`: registers all intents with Siri phrases.
 
-**Note:** App Intents are defined in the main app target (not an extension) to avoid provisioning issues without a paid Apple Developer account.
+**Note:** App Intents are defined in the main app target (not an extension) to avoid provisioning issues without a paid Apple Developer account. Keep the App Shortcuts list capped at 10 (comment out extras in `Intents/VillainArcShortcuts.swift`).
 
 ## Project Structure & File Guide
 - `Root/VillainArcApp.swift`: app entry, model container setup.
@@ -49,7 +56,7 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Views/Components/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion, and launch rest timers; now exposes accessibility identifiers/hints.
 - `Views/Workout/RepRangeEditorView.swift`: rep range editor sheet with confirm/cancel actions.
 - `Views/Workout/RestTimeEditorView.swift`: rest time editor sheet, mode selection, and duration slider rows.
-- `Views/Workout/RestTimerState.swift`: observable rest timer state with persistence.
+- `Data/Classes/RestTimerState.swift`: observable rest timer state with persistence and shared singleton access.
 - `Views/Workout/RestTimerView.swift`: rest timer sheet for start/pause/stop and countdown display.
 - `Views/Components/TimerDurationPicker.swift`: tick-based duration slider for rest time picking with VoiceOver adjustable support.
 - `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters, and accessible toolbar flows.

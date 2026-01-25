@@ -4,6 +4,8 @@ import Observation
 @MainActor
 @Observable
 final class RestTimerState {
+    static let shared = RestTimerState()
+
     private enum StorageKey {
         static let endDate = "restTimerEndDate"
         static let remainingSeconds = "restTimerRemainingSeconds"

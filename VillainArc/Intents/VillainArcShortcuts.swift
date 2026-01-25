@@ -28,16 +28,16 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "list.clipboard"
         )
 
-        AppShortcut(
-            intent: StartLastWorkoutAgainIntent(),
-            phrases: [
-                "Repeat last workout in \(.applicationName)",
-                "Start last workout again in \(.applicationName)",
-                "Do last workout in \(.applicationName)"
-            ],
-            shortTitle: "Repeat Last Workout",
-            systemImageName: "arrow.triangle.2.circlepath"
-        )
+//        AppShortcut(
+//            intent: StartLastWorkoutAgainIntent(),
+//            phrases: [
+//                "Repeat last workout in \(.applicationName)",
+//                "Start last workout again in \(.applicationName)",
+//                "Do last workout in \(.applicationName)"
+//            ],
+//            shortTitle: "Repeat Last Workout",
+//            systemImageName: "arrow.triangle.2.circlepath"
+//        )
 
         AppShortcut(
             intent: ResumeActiveSessionIntent(),
@@ -62,27 +62,27 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "clock.arrow.circlepath"
         )
         
-        AppShortcut(
-            intent: ShowWorkoutHistoryIntent(),
-            phrases: [
-                "Show my workout history in \(.applicationName)",
-                "Show my workouts in \(.applicationName)",
-                "Open workout history in \(.applicationName)"
-            ],
-            shortTitle: "Workout History",
-            systemImageName: "list.bullet.clipboard"
-        )
+//        AppShortcut(
+//            intent: ShowWorkoutHistoryIntent(),
+//            phrases: [
+//                "Show my workout history in \(.applicationName)",
+//                "Show my workouts in \(.applicationName)",
+//                "Open workout history in \(.applicationName)"
+//            ],
+//            shortTitle: "Workout History",
+//            systemImageName: "list.bullet.clipboard"
+//        )
 
-        AppShortcut(
-            intent: ShowTemplatesListIntent(),
-            phrases: [
-                "Show templates in \(.applicationName)",
-                "Open templates in \(.applicationName)",
-                "View templates in \(.applicationName)"
-            ],
-            shortTitle: "Templates",
-            systemImageName: "list.clipboard"
-        )
+//        AppShortcut(
+//            intent: ShowTemplatesListIntent(),
+//            phrases: [
+//                "Show templates in \(.applicationName)",
+//                "Open templates in \(.applicationName)",
+//                "View templates in \(.applicationName)"
+//            ],
+//            shortTitle: "Templates",
+//            systemImageName: "list.clipboard"
+//        )
         
         AppShortcut(
             intent: LastWorkoutSummaryIntent(),
@@ -95,16 +95,82 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "questionmark.bubble"
         )
         
+//        AppShortcut(
+//            intent: CreateTemplateIntent(),
+//            phrases: [
+//                "Create workout template in \(.applicationName)",
+//                "Create template in \(.applicationName)",
+//                "Begin creating a template with \(.applicationName)",
+//                "Begin creating a workout template in \(.applicationName)"
+//            ],
+//            shortTitle: "Create Template",
+//            systemImageName: "list.clipboard"
+//        )
+        
         AppShortcut(
-            intent: CreateTemplateIntent(),
+            intent: FinishWorkoutIntent(),
             phrases: [
-                "Create workout template in \(.applicationName)",
-                "Create template in \(.applicationName)",
-                "Begin creating a template with \(.applicationName)",
-                "Begin creating a workout template in \(.applicationName)"
+                "Finish workout in \(.applicationName)",
+                "Complete workout in \(.applicationName)",
+                "End workout in \(.applicationName)"
             ],
-            shortTitle: "Create Template",
-            systemImageName: "list.clipboard"
+            shortTitle: "Finish Workout",
+            systemImageName: "checkmark.circle"
         )
+        
+        AppShortcut(
+            intent: CancelWorkoutIntent(),
+            phrases: [
+                "Cancel workout in \(.applicationName)",
+                "Discard workout in \(.applicationName)",
+                "Delete current workout in \(.applicationName)"
+            ],
+            shortTitle: "Cancel Workout",
+            systemImageName: "xmark.circle"
+        )
+
+        AppShortcut(
+            intent: StartRestTimerIntent(),
+            phrases: [
+                "Start rest timer in \(.applicationName)",
+                "Start a rest timer in \(.applicationName)",
+                "Begin rest timer in \(.applicationName)"
+            ],
+            shortTitle: "Start Timer",
+            systemImageName: "timer"
+        )
+
+        AppShortcut(
+            intent: PauseRestTimerIntent(),
+            phrases: [
+                "Pause rest timer in \(.applicationName)",
+                "Pause my rest timer in \(.applicationName)",
+                "Pause timer in \(.applicationName)"
+            ],
+            shortTitle: "Pause Timer",
+            systemImageName: "pause.circle"
+        )
+
+        AppShortcut(
+            intent: ResumeRestTimerIntent(),
+            phrases: [
+                "Resume rest timer in \(.applicationName)",
+                "Resume my rest timer in \(.applicationName)",
+                "Continue rest timer in \(.applicationName)"
+            ],
+            shortTitle: "Resume Timer",
+            systemImageName: "play.circle"
+        )
+//
+//        AppShortcut(
+//            intent: StopRestTimerIntent(),
+//            phrases: [
+//                "Stop rest timer in \(.applicationName)",
+//                "Stop my rest timer in \(.applicationName)",
+//                "End rest timer in \(.applicationName)"
+//            ],
+//            shortTitle: "Stop Timer",
+//            systemImageName: "stop.circle"
+//        )
     }
 }

@@ -59,6 +59,7 @@ struct RestTimerView: View {
                                     restTimer.start(seconds: history.seconds)
                                     RestTimeHistory.record(seconds: history.seconds, context: context)
                                     saveContext(context: context)
+                                    Task { await IntentDonations.donateStartRestTimer(seconds: history.seconds) }
                                 } label: {
                                     Label("Start Rest Timer", systemImage: "play.fill")
                                         .padding()
@@ -107,6 +108,7 @@ struct RestTimerView: View {
                 Button {
                     Haptics.selection()
                     restTimer.pause()
+                    Task { await IntentDonations.donatePauseRestTimer() }
                 } label: {
                     Text("Pause")
                         .font(.title3)
@@ -122,6 +124,7 @@ struct RestTimerView: View {
                 Button {
                     Haptics.selection()
                     restTimer.stop()
+                    Task { await IntentDonations.donateStopRestTimer() }
                 } label: {
                     Text("Stop")
                         .font(.title3)
@@ -139,6 +142,7 @@ struct RestTimerView: View {
                 Button {
                     Haptics.selection()
                     restTimer.resume()
+                    Task { await IntentDonations.donateResumeRestTimer() }
                 } label: {
                     Text("Resume")
                         .font(.title3)
@@ -154,6 +158,7 @@ struct RestTimerView: View {
                 Button {
                     Haptics.selection()
                     restTimer.stop()
+                    Task { await IntentDonations.donateStopRestTimer() }
                 } label: {
                     Text("Stop")
                         .font(.title3)
@@ -172,6 +177,7 @@ struct RestTimerView: View {
                 restTimer.start(seconds: selectedSeconds)
                 RestTimeHistory.record(seconds: selectedSeconds, context: context)
                 saveContext(context: context)
+                Task { await IntentDonations.donateStartRestTimer(seconds: selectedSeconds) }
             } label: {
                 Text("Start")
                     .font(.title3)

@@ -139,6 +139,7 @@ struct ExerciseSetRowView: View {
                     restTimer.start(seconds: restSeconds)
                     RestTimeHistory.record(seconds: restSeconds, context: context)
                     saveContext(context: context)
+                    Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
                     showRestTimerSheet = true
                 }
             }
@@ -168,6 +169,7 @@ struct ExerciseSetRowView: View {
             restTimer.start(seconds: restSeconds)
             RestTimeHistory.record(seconds: restSeconds, context: context)
             saveContext(context: context)
+            Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
             showRestTimerSheet = true
         }
     }

@@ -74,14 +74,14 @@ This document is updated as we walk through files for the Swift 6 migration.
 - `Views/Workout/WorkoutView.swift`
   - Main workout session UI with paging vs list modes.
   - Presents sheets for add exercise, rest timer, and settings.
-  - Uses `RestTimerState` environment and `IntentDonations` on workout completion.
+  - Uses `RestTimerState.shared` environment and donates finish/cancel intents on workout completion.
   - Saves/deletes workouts via `saveContext(context:)`.
 - `Views/Workout/WorkoutSettingsView.swift`
   - Workout edit/finish sheet; normalizes title and schedules saves.
   - Handles finish actions and delete confirmation.
 - `Views/Workout/RestTimerView.swift`
   - Rest timer sheet driven by `RestTimerState` and recent `RestTimeHistory`.
-  - Records recent rest times and saves via `saveContext(context:)`.
+  - Records recent rest times, saves via `saveContext(context:)`, and donates rest timer intents for manual actions.
 - `Views/Workout/AddExerciseView.swift`
   - Exercise picker sheet for workouts/templates.
   - Uses `FilteredExerciseListView` and `MuscleFilterSheetView`.
@@ -111,6 +111,10 @@ This document is updated as we walk through files for the Swift 6 migration.
   - Starts or resumes workouts/templates, inserts into SwiftData, and saves via `saveContext`.
   - Note: any use from non-main contexts (e.g., App Intents, background tasks) must hop to `MainActor`.
 
+- `Data/Classes/RestTimerState.swift`
+  - `@MainActor` + `@Observable` rest timer state persisted in `UserDefaults`.
+  - Exposes `shared` singleton for UI + App Intents and schedules auto-stop tasks.
+
 - `Data/Classes/DataManager.swift`
   - `@MainActor` utility for seeding and deduping the exercise catalog.
   - Uses `UserDefaults` versioning and SwiftData fetches/inserts/deletes.
@@ -126,9 +130,9 @@ This document is updated as we walk through files for the Swift 6 migration.
 
 ## Intents
 - `Intents/IntentDonations.swift`
-  - Convenience wrappers for donating App Intents from UI flows.
+  - Convenience wrappers for donating App Intents from UI flows, including rest timer and finish/cancel actions.
 - `Intents/WorkoutTemplateEntity.swift`
-  - AppEntity support for template selection in Shortcuts via `WorkoutTemplateEntity`.
+  - AppEntity support for template selection in Shortcuts via `WorkoutTemplateEntity` (suggests up to 10 recent templates).
 - `Intents/StartWorkoutIntent.swift`
   - App Intent to start a new empty workout.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
@@ -162,5 +166,20 @@ This document is updated as we walk through files for the Swift 6 migration.
 - `Intents/LastWorkoutSummaryIntent.swift`
   - App Intent that speaks a summary of the last workout without opening the app.
   - Uses `ModelContext(SharedModelContainer.container)`.
+- `Intents/FinishWorkoutIntent.swift`
+  - App Intent that finishes the active workout and stops the rest timer.
+  - Saves changes via `SharedModelContainer.container.mainContext`.
+- `Intents/CancelWorkoutIntent.swift`
+  - App Intent that cancels the active workout and stops the rest timer.
+  - Saves changes via `SharedModelContainer.container.mainContext`.
+- `Intents/StartRestTimerIntent.swift`
+  - App Intent that starts a rest timer for a duration (uses recents/defaults if needed).
+  - Requires an active workout and records rest time history.
+- `Intents/PauseRestTimerIntent.swift`
+  - App Intent that pauses the running rest timer.
+- `Intents/ResumeRestTimerIntent.swift`
+  - App Intent that resumes the paused rest timer.
+- `Intents/StopRestTimerIntent.swift`
+  - App Intent that stops any active rest timer.
 - `Intents/VillainArcShortcuts.swift`
   - Registers Siri shortcut phrases for all App Intents.
