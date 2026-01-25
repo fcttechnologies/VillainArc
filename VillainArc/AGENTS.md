@@ -12,13 +12,13 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/WorkoutDetailView.swift` displays a completed workout summary and can start or edit a workout.
 - `Views/Workout/WorkoutView.swift` coordinates the workout session UI, paging vs list, and sheet flows.
 - `Views/Workout/ExerciseView.swift` manages per-exercise editing, previous set lookup, notes, and the rep/rest editors.
-- `Data/Classes/WorkoutRouter.swift`: centralizes start/resume state for workout sessions.
-- `Data/Classes/AppRouter.swift`: singleton navigation router with `NavigationPath` for deep linking from App Intents.
+- `Data/Classes/AppRouter.swift`: singleton navigation router handling `NavigationPath`, deep linking, and active workout/template sessions.
 - `Data/SharedModelContainer.swift`: shared SwiftData container using App Groups for potential future cross-process access.
 
 ## App Intents
 The app supports Siri Shortcuts via in-app App Intents (no separate extension target):
 - `Intents/StartWorkoutIntent.swift`: starts or resumes a workout, opens the app.
+- `Intents/CreateTemplateIntent.swift`: creates a new workout template.
 - `Intents/ViewLastWorkoutIntent.swift`: opens the app to the last completed workout (errors if none).
 - `Intents/ShowWorkoutHistoryIntent.swift`: opens the app to the workouts list.
 - `Intents/LastWorkoutSummaryIntent.swift`: spoken response with last workout info (no app open).
@@ -30,10 +30,15 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Root/VillainArcApp.swift`: app entry, model container setup.
 - `Views/ContentView.swift`: latest workout summary, start/resume flow, navigation to `RecentWorkoutSectionView`.
 - `Views/Components/RecentWorkoutSectionView.swift`: shows the most recent completed workout or empty state plus a link to `WorkoutsListView`.
+- `Views/Components/RecentTemplatesSectionView.swift`: shows recent templates and a link to `TemplatesListView`.
 - `Views/PreviousWorkoutsListView.swift`: completed workout history list and bulk delete.
+- `Views/Template/TemplatesListView.swift`: lists saved workout templates.
+- `Views/Template/TemplateView.swift`: editor for creating or editing a workout template.
+- `Views/Template/TemplateDetailView.swift`: details view for a template with start/edit actions.
 - `Views/Workout/WorkoutView.swift`: session UI, list vs paging, save/delete flows, plus sheets for add/edit/rest timer settings.
 - `Views/Workout/WorkoutDetailView.swift`: completed workout details with start/edit/delete actions.
 - `Views/Components/WorkoutRowView.swift`: compact row card for a workout throughout lists and sections, now with shared accessibility helpers.
+- `Views/Components/TemplateRowView.swift`: row view for a workout template.
 - `Views/Workout/WorkoutSettingsView.swift`: workout settings sheet with finish/delete actions and accessibility-aware toolbar/button flow.
 - `Views/Workout/ExerciseView.swift`: per-exercise editing, prior-set lookup, notes, rep/rest editors, and embedded set rows.
 - `Views/Components/ExerciseSetRowView.swift`: edit reps/weight/type, toggle completion, and launch rest timers; now exposes accessibility identifiers/hints.
@@ -53,6 +58,9 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Data/Models/Workout.swift`: workout model, ordering helpers.
 - `Data/Models/WorkoutExercise.swift`: per-workout exercise state and set helpers.
 - `Data/Models/ExerciseSet.swift`: set data (type, reps, weight, complete).
+- `Data/Models/WorkoutTemplate.swift`: template model containing exercises and sets.
+- `Data/Models/TemplateExercise.swift`: exercise within a template.
+- `Data/Models/TemplateSet.swift`: set configuration within a template.
 - `Data/Models/Exercise.swift`: catalog exercise, `lastUsed` tracking.
 - `Data/Models/ExerciseSetType.swift`: set type labels, short codes, tint colors.
 - `Data/Models/RestTimeHistory.swift`: global rest time history entries with last-used tracking.
@@ -61,7 +69,6 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Data/Models/Muscle.swift`: muscle enum, `isMajor`, `allMajor`.
 - `Data/Models/ExerciseCatalog.swift`: exercise catalog entries and muscle-target mapping.
 - `Data/Classes/DataManager.swift`: seeds catalog using `UserDefaults` versioning.
-- `Data/Classes/WorkoutRouter.swift`: shared workout start/resume state.
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
 - `Data/Assets.xcassets`: app icons and accent color.

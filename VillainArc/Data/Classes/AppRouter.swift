@@ -28,7 +28,6 @@ final class AppRouter {
     }
 
     func startWorkout(from workout: Workout? = nil, context: ModelContext) {
-        let context = ModelContext(SharedModelContainer.container)
         Haptics.selection()
         let newWorkout = workout.map { Workout(previous: $0) } ?? Workout()
         context.insert(newWorkout)
