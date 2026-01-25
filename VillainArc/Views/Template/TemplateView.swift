@@ -78,6 +78,7 @@ struct TemplateView: View {
                         showAddExerciseSheet = true
                     }
                     .accessibilityIdentifier("templateAddExerciseButton")
+                    .accessibilityHint("Adds an exercise.")
                 }
             }
             .sheet(isPresented: $showAddExerciseSheet) {
@@ -109,6 +110,10 @@ struct TemplateExerciseEditSection: View {
     @Bindable var exercise: TemplateExercise
     @State private var showRepRangeEditorSheet = false
     @State private var showRestTimeEditorSheet = false
+
+    private var identifierSuffix: String {
+        "\(exercise.catalogID)-\(exercise.index)"
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -121,7 +126,8 @@ struct TemplateExerciseEditSection: View {
                     adjustSetCount(for: exercise, to: newValue)
                 }
             ), in: 1...20)
-            .accessibilityIdentifier("templateExerciseSetStepper-\(exercise.catalogID)")
+            .accessibilityIdentifier("templateExerciseSetStepper-\(identifierSuffix)")
+            .accessibilityHint("Adjusts set count.")
             
             Button {
                 Haptics.selection()
@@ -136,7 +142,8 @@ struct TemplateExerciseEditSection: View {
             }
             .tint(.primary)
             .buttonStyle(.borderless)
-            .accessibilityIdentifier("templateExerciseRepRangeButton-\(exercise.catalogID)")
+            .accessibilityIdentifier("templateExerciseRepRangeButton-\(identifierSuffix)")
+            .accessibilityHint("Edits rep range.")
             
             Button {
                 Haptics.selection()
@@ -151,12 +158,13 @@ struct TemplateExerciseEditSection: View {
             }
             .tint(.primary)
             .buttonStyle(.borderless)
-            .accessibilityIdentifier("templateExerciseRestTimeButton-\(exercise.catalogID)")
+            .accessibilityIdentifier("templateExerciseRestTimeButton-\(identifierSuffix)")
+            .accessibilityHint("Edits rest time policy.")
             
             TextField("Notes", text: $exercise.notes, axis: .vertical)
-                .accessibilityIdentifier("templateExerciseNotes-\(exercise.catalogID)")
+                .accessibilityIdentifier("templateExerciseNotes-\(identifierSuffix)")
         }
-        .accessibilityIdentifier("templateExerciseSection-\(exercise.catalogID)")
+        .accessibilityIdentifier("templateExerciseSection-\(identifierSuffix)")
         .sheet(isPresented: $showRepRangeEditorSheet) {
             RepRangeEditorView(repRange: exercise.repRange)
                 .presentationDetents([.medium, .large])

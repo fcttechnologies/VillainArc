@@ -69,6 +69,7 @@ struct RestTimerView: View {
                                 .buttonBorderShape(.circle)
                                 .buttonStyle(.glassProminent)
                                 .tint(.blue)
+                                .accessibilityIdentifier("restTimerRecentStartButton-\(history.seconds)")
                                 .accessibilityLabel("Start \(secondsToTime(history.seconds)) timer")
                                 .accessibilityHint("Starts the rest timer.")
                             }

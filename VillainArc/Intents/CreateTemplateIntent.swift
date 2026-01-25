@@ -4,7 +4,7 @@ import SwiftData
 struct CreateTemplateIntent: AppIntent {
     static let title: LocalizedStringResource = "Create Template"
     static let description = IntentDescription("Creates a new workout template")
-    static var openAppWhenRun = false
+    static let openAppWhenRun = false
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {

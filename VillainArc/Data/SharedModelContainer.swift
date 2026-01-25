@@ -20,14 +20,17 @@ enum SharedModelContainer {
 
     static let container: ModelContainer = {
         do {
-            let url = FileManager.default
-                .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)!
-                .appendingPathComponent("VillainArc.store")
-
-            let configuration = ModelConfiguration(
-                schema: schema,
-                url: url
-            )
+            let configuration: ModelConfiguration
+            if let url = FileManager.default
+                .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
+                .appendingPathComponent("VillainArc.store") {
+                configuration = ModelConfiguration(
+                    schema: schema,
+                    url: url
+                )
+            } else {
+                configuration = ModelConfiguration(schema: schema)
+            }
 
             return try ModelContainer(
                 for: schema,

@@ -150,6 +150,12 @@ struct RestTimeEditorView<E: RestTimeEditable>: View {
                         }
                     }
                 }
+                .accessibilityAction(named: "Copy") {
+                    copySeconds(seconds.wrappedValue)
+                }
+                .accessibilityAction(named: "Paste") {
+                    pasteSeconds(into: seconds)
+                }
             }
             
             if isExpanded {

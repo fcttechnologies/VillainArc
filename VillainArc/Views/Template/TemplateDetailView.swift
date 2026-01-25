@@ -44,7 +44,7 @@ struct TemplateDetailView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
                 .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("templateDetailExercise-\(exercise.catalogID)")
+                .accessibilityIdentifier("templateDetailExercise-\(exercise.catalogID)-\(exercise.index)")
             }
         }
         .accessibilityIdentifier("templateDetailList")
@@ -59,25 +59,30 @@ struct TemplateDetailView: View {
                         dismiss()
                     }
                     .accessibilityIdentifier("templateDetailStartWorkoutButton")
+                    .accessibilityHint("Starts a workout from this template.")
                     
                     Button("Edit Template", systemImage: "pencil") {
                         Haptics.selection()
                         editTemplate = true
                     }
                     .accessibilityIdentifier("templateDetailEditButton")
+                    .accessibilityHint("Edits this template.")
                     Button(template.isFavorite ? "Undo" : "Favorite", systemImage: template.isFavorite ? "star.slash.fill" : "star.fill") {
                         Haptics.selection()
                         template.isFavorite.toggle()
                         saveContext(context: context)
                     }
                     .accessibilityIdentifier("templateDetailFavoriteButton")
+                    .accessibilityHint("Toggles favorite.")
                     
                     Button("Delete Template", systemImage: "trash", role: .destructive) {
                         showDeleteTemplateConfirmation = true
                     }
                     .accessibilityIdentifier("templateDetailDeleteButton")
+                    .accessibilityHint("Deletes this template.")
                 }
                 .accessibilityIdentifier("templateDetailOptionsMenu")
+                .accessibilityHint("Template actions.")
                 .confirmationDialog("Delete Template", isPresented: $showDeleteTemplateConfirmation) {
                     Button("Delete", role: .destructive) {
                         deleteTemplate()

@@ -41,7 +41,7 @@ enum Muscle: String, Codable, CaseIterable {
     case lowerAbs = "Lower Abs"
     case obliques = "Obliques"
     
-    var isMajor: Bool {
+    nonisolated var isMajor: Bool {
         switch self {
         case .chest, .back, .shoulders, .biceps, .triceps, .abs, .glutes, .quads, .hamstrings, .calves:
             return true

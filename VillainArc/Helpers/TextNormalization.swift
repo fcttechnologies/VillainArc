@@ -1,16 +1,16 @@
 import Foundation
 
-func normalizedTokens(for value: String) -> [String] {
+nonisolated func normalizedTokens(for value: String) -> [String] {
     let folded = value.folding(options: .diacriticInsensitive, locale: .current)
     let parts = folded.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
     return parts.filter { !$0.isEmpty }
 }
 
-func shouldUseFuzzySearch(queryTokens: [String]) -> Bool {
+nonisolated func shouldUseFuzzySearch(queryTokens: [String]) -> Bool {
     queryTokens.contains { $0.count >= 3 }
 }
 
-func maximumFuzzyDistance(for token: String) -> Int {
+nonisolated func maximumFuzzyDistance(for token: String) -> Int {
     switch token.count {
     case 0...2:
         return 0
@@ -21,7 +21,7 @@ func maximumFuzzyDistance(for token: String) -> Int {
     }
 }
 
-func levenshteinDistance(between left: String, and right: String, maxDistance: Int) -> Int {
+nonisolated func levenshteinDistance(between left: String, and right: String, maxDistance: Int) -> Int {
     if left == right {
         return 0
     }

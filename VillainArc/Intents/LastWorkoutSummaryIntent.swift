@@ -4,7 +4,7 @@ import SwiftData
 struct LastWorkoutSummaryIntent: AppIntent {
     static let title: LocalizedStringResource = "Last Workout Summary"
     static let description = IntentDescription("Tells you about your last workout.")
-    static var openAppWhenRun = false
+    static let openAppWhenRun = false
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {

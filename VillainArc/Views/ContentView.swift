@@ -19,6 +19,8 @@ struct ContentView: View {
                 RecentTemplatesSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
+                    .accessibilityLabel("Recent templates")
+                    .accessibilityIdentifier("homeRecentTemplatesSection")
             }
             .navBar(title: "Home")
             .toolbar {
@@ -35,8 +37,12 @@ struct ContentView: View {
                             createTemplate()
                         }
                         .matchedTransitionSource(id: "createTemplate", in: animation)
+                        .accessibilityIdentifier("homeCreateTemplateButton")
+                        .accessibilityHint("Creates a new template.")
                     }
                     .labelStyle(.iconOnly)
+                    .accessibilityIdentifier("homeOptionsMenu")
+                    .accessibilityHint("Shows workout and template options.")
                 }
             }
             .task {

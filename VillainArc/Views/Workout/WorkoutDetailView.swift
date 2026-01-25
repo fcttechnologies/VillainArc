@@ -59,7 +59,7 @@ struct WorkoutDetailView: View {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
                             .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier("workoutDetailExerciseNotes-\(exercise.catalogID)")
+                            .accessibilityIdentifier("workoutDetailExerciseNotes-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)")
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))

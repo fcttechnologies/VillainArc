@@ -4,7 +4,7 @@ import SwiftData
 struct ViewLastWorkoutIntent: AppIntent {
     static let title: LocalizedStringResource = "View Last Workout"
     static let description = IntentDescription("Shows your most recent completed workout.")
-    static var openAppWhenRun = false
+    static let openAppWhenRun = false
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
@@ -23,7 +23,7 @@ struct ViewLastWorkoutIntent: AppIntent {
 
 struct OpenAppIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Villain Arc"
-    static var openAppWhenRun = true
+    static let openAppWhenRun = true
     
     func perform() async throws -> some IntentResult {
         return .result()

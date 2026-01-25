@@ -2,88 +2,88 @@ import Foundation
 
 enum AccessibilityIdentifiers {
     static func workoutRow(_ workout: Workout) -> String {
-        let timestamp = Int(workout.startTime.timeIntervalSince1970)
-        return "workoutsListRow-\(timestamp)-\(workout.title)"
+        "workoutsListRow-\(workout.id.uuidString)"
     }
 
     static func workoutDetailExercise(_ exercise: WorkoutExercise) -> String {
-        "workoutDetailExercise-\(exercise.catalogID)"
+        "workoutDetailExercise-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func workoutDetailExerciseHeader(_ exercise: WorkoutExercise) -> String {
-        "workoutDetailExerciseHeader-\(exercise.catalogID)"
+        "workoutDetailExerciseHeader-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func workoutDetailSet(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "workoutDetailSet-\(exercise.catalogID)-\(set.index)"
+        "workoutDetailSet-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func workoutExercisePage(_ exercise: WorkoutExercise) -> String {
-        "workoutExercisePage-\(exercise.catalogID)-\(exercise.index)"
+        "workoutExercisePage-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func workoutExerciseListRow(_ exercise: WorkoutExercise) -> String {
-        "workoutExerciseListRow-\(exercise.catalogID)-\(exercise.index)"
+        "workoutExerciseListRow-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func exerciseRepRangeButton(_ exercise: WorkoutExercise) -> String {
-        "exerciseRepRangeButton-\(exercise.catalogID)"
+        "exerciseRepRangeButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func exerciseNotesButton(_ exercise: WorkoutExercise) -> String {
-        "exerciseNotesButton-\(exercise.catalogID)"
+        "exerciseNotesButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func exerciseNotesField(_ exercise: WorkoutExercise) -> String {
-        "exerciseNotesField-\(exercise.catalogID)"
+        "exerciseNotesField-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func exerciseRestTimesButton(_ exercise: WorkoutExercise) -> String {
-        "exerciseRestTimesButton-\(exercise.catalogID)"
+        "exerciseRestTimesButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func exerciseAddSetButton(_ exercise: WorkoutExercise) -> String {
-        "exerciseAddSetButton-\(exercise.catalogID)"
+        "exerciseAddSetButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
     static func exerciseSetMenu(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetMenu-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetMenu-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetRepsField(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetRepsField-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetRepsField-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetWeightField(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetWeightField-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetWeightField-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetPreviousValue(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetPreviousValue-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetPreviousValue-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetCompleteButton(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetCompleteButton-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetCompleteButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetDeleteButton(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetDeleteButton-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetDeleteButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetUsePreviousButton(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetUsePreviousButton-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetUsePreviousButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetReplaceTimerButton(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetReplaceTimerButton-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetReplaceTimerButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func exerciseSetCancelReplaceTimerButton(_ exercise: WorkoutExercise, set: ExerciseSet) -> String {
-        "exerciseSetCancelReplaceTimerButton-\(exercise.catalogID)-\(set.index)"
+        "exerciseSetCancelReplaceTimerButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
     static func restTimerRecentRow(_ history: RestTimeHistory) -> String {
-        "restTimerRecent-\(history.seconds)"
+        let timestamp = Int(history.lastUsed.timeIntervalSince1970)
+        return "restTimerRecent-\(history.seconds)-\(timestamp)"
     }
 
     static func restTimeRowButton(_ title: String) -> String {

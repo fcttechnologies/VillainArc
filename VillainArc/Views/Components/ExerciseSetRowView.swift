@@ -65,10 +65,12 @@ struct ExerciseSetRowView: View {
                 .keyboardType(.numberPad)
                 .frame(maxWidth: fieldWidth)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
+                .accessibilityLabel("Reps")
             TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .frame(maxWidth: fieldWidth)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
+                .accessibilityLabel("Weight")
 
             if !isEditing {
                 Text(previousSetSnapshot?.displayText ?? "-")
@@ -88,6 +90,7 @@ struct ExerciseSetRowView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
                     .accessibilityLabel("Previous")
                     .accessibilityValue(previousSetSnapshot?.displayText ?? "None")
+                    .accessibilityHint(previousSetSnapshot == nil ? "No previous set data." : "Long-press for options.")
 
                 if set.complete {
                     Button {

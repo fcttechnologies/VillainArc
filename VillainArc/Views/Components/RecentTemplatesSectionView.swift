@@ -68,6 +68,11 @@ struct TemplateSummaryRowView: View {
                 }
                 .buttonStyle(.borderless)
                 .tint(.primary)
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("recentTemplateRow-\(template.id)")
+                .accessibilityLabel(template.name)
+                .accessibilityValue(template.musclesTargeted())
+                .accessibilityHint("Shows template details.")
             }
         }
         .padding(.horizontal)

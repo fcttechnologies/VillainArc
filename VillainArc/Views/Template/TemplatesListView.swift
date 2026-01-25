@@ -90,6 +90,8 @@ struct TemplatesListView: View {
                             .accessibilityIdentifier("templatesEditButton")
                             .accessibilityHint("Enters edit mode.")
                         }
+                        .accessibilityIdentifier("templatesOptionsMenu")
+                        .accessibilityHint("Template list options.")
                     }
                 }
             }
