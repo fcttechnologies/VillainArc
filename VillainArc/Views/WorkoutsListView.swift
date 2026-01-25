@@ -102,7 +102,6 @@ struct WorkoutsListView: View {
         saveContext(context: context)
         isEditing = false
     }
-
 }
 
 #Preview {
@@ -110,7 +109,6 @@ struct WorkoutsListView: View {
         WorkoutsListView()
     }
     .sampleDataConainer()
-    .environment(WorkoutRouter())
 }
 
 #Preview("No Previous Workouts") {

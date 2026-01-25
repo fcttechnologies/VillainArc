@@ -258,6 +258,7 @@ struct WorkoutView: View {
         Haptics.selection()
         workout.completed = true
         workout.endTime = Date.now
+        workout.sourceTemplate?.updateLastUsed()
         restTimer.stop()
         saveContext(context: context)
         Task { await IntentDonations.donateLastWorkoutSummary() }

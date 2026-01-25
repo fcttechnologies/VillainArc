@@ -4,7 +4,7 @@ import SwiftData
 struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @Environment(WorkoutRouter.self) private var router
+    var router = AppRouter.shared
     @Bindable var workout: Workout
     
     @State private var showDeleteWorkoutConfirmation: Bool = false
@@ -79,8 +79,7 @@ struct WorkoutDetailView: View {
                     .accessibilityIdentifier("workoutDetailEditButton")
                     .accessibilityHint("Edits this workout.")
                     Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
-                        Haptics.selection()
-                        router.start(from: workout, context: context)
+                        router.startWorkout(from: workout, context: context)
                         dismiss()
                     }
                     .accessibilityIdentifier("workoutDetailStartButton")
@@ -123,6 +122,5 @@ struct WorkoutDetailView: View {
     NavigationStack {
         WorkoutDetailView(workout: sampleCompletedWorkout())
     }
-    .environment(WorkoutRouter())
     .sampleDataConainer()
 }

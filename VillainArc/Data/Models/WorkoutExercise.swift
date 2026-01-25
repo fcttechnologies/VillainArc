@@ -48,6 +48,18 @@ class WorkoutExercise {
         self.workout = workout
         sets = exercise.sortedSets.map { ExerciseSet(previous: $0, exercise: self) }
     }
+
+    init(from templateExercise: TemplateExercise, workout: Workout) {
+        index = templateExercise.index
+        catalogID = templateExercise.catalogID
+        name = templateExercise.name
+        notes = templateExercise.notes
+        repRange = RepRangePolicy(previous: templateExercise.repRange)
+        musclesTargeted = templateExercise.musclesTargeted
+        restTimePolicy = RestTimePolicy(previous: templateExercise.restTimePolicy)
+        self.workout = workout
+        sets = templateExercise.sortedSets.map { ExerciseSet(from: $0, exercise: self) }
+    }
     
     func addSet(complete: Bool = false) {
         if let previous = sortedSets.last {
@@ -104,3 +116,5 @@ extension WorkoutExercise {
         return descriptor
     }
 }
+
+extension WorkoutExercise: RestTimeEditable {}

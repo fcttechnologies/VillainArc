@@ -16,4 +16,8 @@ enum IntentDonations {
     static func donateLastWorkoutSummary() async {
         _ = try? await LastWorkoutSummaryIntent().donate()
     }
+    
+    static func donateCreateTemplate() async {
+        _ = try? await CreateTemplateIntent().donate()
+    }
 }

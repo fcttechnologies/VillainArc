@@ -29,6 +29,13 @@ class ExerciseSet {
         restSeconds = set.restSeconds
         self.exercise = exercise
     }
+
+    init(from templateSet: TemplateSet, exercise: WorkoutExercise) {
+        index = templateSet.index
+        type = templateSet.type
+        restSeconds = templateSet.restSeconds
+        self.exercise = exercise
+    }
 }
 
 extension ExerciseSet {
@@ -36,3 +43,5 @@ extension ExerciseSet {
         exercise.effectiveRestSeconds(after: self)
     }
 }
+
+extension ExerciseSet: RestTimeEditableSet {}

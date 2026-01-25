@@ -11,6 +11,8 @@ class Workout {
     var endTime: Date? = nil
     @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workout)
     var exercises: [WorkoutExercise] = []
+    @Relationship(deleteRule: .nullify)
+    var sourceTemplate: WorkoutTemplate?
     
     var sortedExercises: [WorkoutExercise] {
         exercises.sorted { $0.index < $1.index }
@@ -24,6 +26,13 @@ class Workout {
         title = workout.title
         notes = workout.notes
         exercises = workout.sortedExercises.map { WorkoutExercise(previous: $0, workout: self) }
+    }
+
+    init(from template: WorkoutTemplate) {
+        title = template.name
+        notes = template.notes
+        sourceTemplate = template
+        exercises = template.sortedExercises.map { WorkoutExercise(from: $0, workout: self) }
     }
     
     func addExercise(_ exercise: Exercise, markSetsComplete: Bool = false) {
@@ -72,7 +81,7 @@ extension Workout {
         return descriptor
     }
 
-    static var incompleteWorkout: FetchDescriptor<Workout> {
+    static var incomplete: FetchDescriptor<Workout> {
         let predicate = #Predicate<Workout> { !$0.completed }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: recencySortDescriptors)
         descriptor.fetchLimit = 1

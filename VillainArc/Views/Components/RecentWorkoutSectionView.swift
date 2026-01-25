@@ -3,7 +3,7 @@ import SwiftData
 
 struct RecentWorkoutSectionView: View {
     @Query(Workout.recentWorkout) private var recentWorkout: [Workout]
-    private var appRouter = AppRouter.shared
+    private let appRouter = AppRouter.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -24,7 +24,7 @@ struct RecentWorkoutSectionView: View {
             }
             .buttonStyle(.plain)
             .padding(.leading, 10)
-            .accessibilityIdentifier("recentWorkoutHistoryLink")
+            .accessibilityIdentifier("workoutHistoryLink")
             .accessibilityHint("Shows your workout history.")
 
             if recentWorkout.isEmpty {
@@ -50,5 +50,4 @@ struct RecentWorkoutSectionView: View {
             .padding()
     }
     .sampleDataConainer()
-    .environment(WorkoutRouter())
 }

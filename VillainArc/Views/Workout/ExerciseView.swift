@@ -62,7 +62,7 @@ struct ExerciseView: View {
                     }
                 }
                 .padding(.vertical)
-                .padding(.leading, isEditing ? 10 : 0)
+                .padding(.leading, isEditing ? 15 : 0)
                 
                 Button {
                     addSet()

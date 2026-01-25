@@ -5,8 +5,9 @@ struct AddExerciseView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
-    @Bindable var workout: Workout
-    let isEditing: Bool
+    private let workout: Workout?
+    private let template: WorkoutTemplate?
+    private let isEditing: Bool
     
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
@@ -17,6 +18,18 @@ struct AddExerciseView: View {
     @State private var selectedOnly = false
     @State private var showCancelConfirmation = false
     @State private var exerciseSort: ExerciseSortOption = .mostRecent
+
+    init(workout: Workout, isEditing: Bool = false) {
+        self.workout = workout
+        self.template = nil
+        self.isEditing = isEditing
+    }
+    
+    init(template: WorkoutTemplate) {
+        self.workout = nil
+        self.template = template
+        self.isEditing = false
+    }
 
     var body: some View {
         NavigationStack {
@@ -43,7 +56,7 @@ struct AddExerciseView: View {
                             }
                             .accessibilityIdentifier("addExerciseDiscardSelectionsButton")
                         } message: {
-                            Text("If you leave now, the selected exercises will not be added to your workout.")
+                            Text(confirmationMessage)
                         }
                     }
                     ToolbarItem(placement: .confirmationAction) {
@@ -53,7 +66,7 @@ struct AddExerciseView: View {
                         }
                         .accessibilityLabel("Add Exercises")
                         .accessibilityIdentifier("addExerciseConfirmButton")
-                        .accessibilityHint("Adds the selected exercises to your workout.")
+                        .accessibilityHint(confirmationHint)
                     }
                     ToolbarItem(placement: .bottomBar) {
                         Menu("Filters", systemImage: "line.3.horizontal.decrease") {
@@ -110,10 +123,33 @@ struct AddExerciseView: View {
         }
     }
     
+    private var confirmationMessage: String {
+        if workout != nil {
+            return "If you leave now, the selected exercises will not be added to your workout."
+        } else {
+            return "If you leave now, the selected exercises will not be added to your template."
+        }
+    }
+    
+    private var confirmationHint: String {
+        if workout != nil {
+            return "Adds the selected exercises to your workout."
+        } else {
+            return "Adds the selected exercises to your template."
+        }
+    }
+    
     private func addSelectedExercises() {
-        for exercise in selectedExercises {
-            workout.addExercise(exercise, markSetsComplete: isEditing)
-            exercise.updateLastUsed()
+        if let workout {
+            for exercise in selectedExercises {
+                workout.addExercise(exercise, markSetsComplete: isEditing)
+                exercise.updateLastUsed()
+            }
+        } else if let template {
+            for exercise in selectedExercises {
+                template.addExercise(exercise)
+                exercise.updateLastUsed()
+            }
         }
         selectedExercises.removeAll()
         selectedExerciseIDs.removeAll()

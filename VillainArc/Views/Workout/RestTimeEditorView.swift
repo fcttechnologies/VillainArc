@@ -1,9 +1,9 @@
 import SwiftUI
 
-struct RestTimeEditorView: View {
+struct RestTimeEditorView<E: RestTimeEditable>: View {
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
-    @Bindable var exercise: WorkoutExercise
+    @Bindable var exercise: E
     
     @State private var showAdvancedByType = false
     @State private var expandedPicker: RestTimePicker? = nil
@@ -57,7 +57,7 @@ struct RestTimeEditorView: View {
                             .foregroundStyle(.secondary)
                             .accessibilityIdentifier("restTimeEmptySetsMessage")
                     } else {
-                        ForEach(exercise.sortedSets) { set in
+                        ForEach(exercise.sortedSets, id: \.index) { set in
                             restTimeRow(title: individualSetTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedPicker == .individual(set.index), toggle: { togglePicker(.individual(set.index)) })
                         }
                     }
@@ -96,7 +96,7 @@ struct RestTimeEditorView: View {
         )
     }
     
-    private func restSecondsBinding(for set: ExerciseSet) -> Binding<Int> {
+    private func restSecondsBinding(for set: E.SetType) -> Binding<Int> {
         Binding(
             get: { set.restSeconds },
             set: { set.restSeconds = $0 }
@@ -200,7 +200,7 @@ struct RestTimeEditorView: View {
         Haptics.selection()
     }
     
-    private func individualSetTitle(for set: ExerciseSet) -> String {
+    private func individualSetTitle(for set: E.SetType) -> String {
         if set.type == .regular {
             return "Set \(set.index + 1)"
         }

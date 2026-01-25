@@ -48,5 +48,17 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             shortTitle: "Last Workout Summary",
             systemImageName: "questionmark.bubble"
         )
+        
+        AppShortcut(
+            intent: CreateTemplateIntent(),
+            phrases: [
+                "Create workout template in \(.applicationName)",
+                "Create template in \(.applicationName)",
+                "Begin creating a template with \(.applicationName)",
+                "Begin creating a workout template in \(.applicationName)"
+            ],
+            shortTitle: "Create Template",
+            systemImageName: "list.clipboard"
+        )
     }
 }

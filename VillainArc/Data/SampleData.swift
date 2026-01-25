@@ -10,12 +10,24 @@ class PreviewDataContainer {
     }
     
     init(includeIncompleteWorkout: Bool = false) {
-        let schema = Schema([Workout.self, WorkoutExercise.self, ExerciseSet.self, Exercise.self, RepRangePolicy.self, RestTimePolicy.self, RestTimeHistory.self])
+        let schema = Schema([
+            Workout.self,
+            WorkoutExercise.self,
+            ExerciseSet.self,
+            Exercise.self,
+            RepRangePolicy.self,
+            RestTimePolicy.self,
+            RestTimeHistory.self,
+            WorkoutTemplate.self,
+            TemplateExercise.self,
+            TemplateSet.self
+        ])
 
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])
             
             loadSampleData()
+            loadSampleTemplates()
             syncExercises()
             if includeIncompleteWorkout {
                 loadIncompleteWorkout()
@@ -44,6 +56,12 @@ class PreviewDataContainer {
         workout.exercises = WorkoutExercise.incompleteChestDay(for: workout)
         context.insert(workout)
     }
+    
+    private func loadSampleTemplates() {
+        for template in WorkoutTemplate.sampleData {
+            context.insert(template)
+        }
+    }
 }
 
 private let sampleContainer = PreviewDataContainer()
@@ -63,7 +81,7 @@ func sampleCompletedWorkout() -> Workout {
 
 @MainActor
 func sampleIncompleteWorkout() -> Workout {
-    let workouts = (try? sampleContainerWithIncomplete.context.fetch(Workout.incompleteWorkout)) ?? []
+    let workouts = (try? sampleContainerWithIncomplete.context.fetch(Workout.incomplete)) ?? []
     if let workout = workouts.first {
         return workout
     }
@@ -72,6 +90,19 @@ func sampleIncompleteWorkout() -> Workout {
     workout.exercises = WorkoutExercise.incompleteChestDay(for: workout)
     sampleContainerWithIncomplete.context.insert(workout)
     return workout
+}
+
+@MainActor
+func sampleTemplate() -> WorkoutTemplate {
+    let descriptor = FetchDescriptor<WorkoutTemplate>()
+    let templates = (try? sampleContainer.context.fetch(descriptor)) ?? []
+    if let template = templates.first {
+        return template
+    }
+    
+    let fallback = WorkoutTemplate(name: "Push Day")
+    sampleContainer.context.insert(fallback)
+    return fallback
 }
 
 extension View {
@@ -238,5 +269,55 @@ extension ExerciseSet {
             ExerciseSet(index: 1, type: .regular, weight: 75, reps: 10, complete: false, exercise: exercise),
             ExerciseSet(index: 2, type: .regular, weight: 95, reps: 8, complete: false, exercise: exercise)
         ]
+    }
+}
+
+extension TemplateExercise {
+    private static func catalogItem(for id: String) -> ExerciseCatalogItem {
+        guard let item = ExerciseCatalog.byID[id] else {
+            preconditionFailure("Missing catalog item for id: \(id)")
+        }
+        return item
+    }
+    
+    private static func makeExercise(index: Int, id: String, template: WorkoutTemplate, notes: String = "", repRange: RepRangePolicy = RepRangePolicy()) -> TemplateExercise {
+        let item = catalogItem(for: id)
+        let exercise = TemplateExercise(index: index, name: item.name, notes: notes, repRange: repRange, musclesTargeted: item.musclesTargeted, template: template, catalogID: item.id)
+        exercise.sets = TemplateSet.sampleSets(for: exercise)
+        return exercise
+    }
+    
+    static func samplePushDay(for template: WorkoutTemplate) -> [TemplateExercise] {
+        let e1 = makeExercise(index: 0, id: "barbell_bench_press", template: template, notes: "Warm-up + 3x5 @ RPE 8")
+        let e2 = makeExercise(index: 1, id: "dumbbell_incline_bench_press", template: template, repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10))
+        let e3 = makeExercise(index: 2, id: "cable_bench_chest_fly", template: template, notes: "slow eccentric", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15))
+        let e4 = makeExercise(index: 3, id: "cable_bar_pushdown", template: template, notes: "triceps finisher", repRange: RepRangePolicy(activeMode: .range, lowerRange: 10, upperRange: 12))
+        return [e1, e2, e3, e4]
+    }
+}
+
+extension TemplateSet {
+    static func sampleSets(for exercise: TemplateExercise) -> [TemplateSet] {
+        [
+            TemplateSet(index: 0, type: .warmup, restSeconds: 60, exercise: exercise),
+            TemplateSet(index: 1, type: .regular, restSeconds: 90, exercise: exercise),
+            TemplateSet(index: 2, type: .regular, restSeconds: 90, exercise: exercise)
+        ]
+    }
+}
+
+extension WorkoutTemplate {
+    static var sampleData: [WorkoutTemplate] {
+        let pushDay = WorkoutTemplate(name: "Push Day")
+        pushDay.notes = "Chest and triceps focus"
+        pushDay.exercises = TemplateExercise.samplePushDay(for: pushDay)
+        pushDay.isFavorite = true
+        
+        let pushDay2 = WorkoutTemplate(name: "Push Day")
+        pushDay2.notes = "Chest and triceps focus"
+        pushDay2.exercises = TemplateExercise.samplePushDay(for: pushDay2)
+        pushDay2.lastUsed = Date()
+        
+        return [pushDay, pushDay2]
     }
 }

@@ -12,7 +12,10 @@ enum SharedModelContainer {
         Exercise.self,
         RepRangePolicy.self,
         RestTimePolicy.self,
-        RestTimeHistory.self
+        RestTimeHistory.self,
+        WorkoutTemplate.self,
+        TemplateExercise.self,
+        TemplateSet.self
     ])
 
     static let container: ModelContainer = {

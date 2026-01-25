@@ -2,7 +2,7 @@ import SwiftUI
 
 struct WorkoutRowView: View {
     let workout: Workout
-    var appRouter = AppRouter.shared
+    private let appRouter = AppRouter.shared
     
     var body: some View {
         Button {
@@ -52,5 +52,4 @@ struct WorkoutRowView: View {
         WorkoutRowView(workout: sampleCompletedWorkout())
     }
     .sampleDataConainer()
-    .environment(WorkoutRouter())
 }
