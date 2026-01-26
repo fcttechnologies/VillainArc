@@ -68,12 +68,10 @@ import SwiftData
                 }
                 if needsSearchIndex {
                     didChange = existing.rebuildSearchData() || didChange
-                    SpotlightIndexer.index(exercise: existing)
                 }
             } else {
                 let newExercise = Exercise(from: catalogItem)
                 context.insert(newExercise)
-                SpotlightIndexer.index(exercise: newExercise)
                 didChange = true
             }
         }

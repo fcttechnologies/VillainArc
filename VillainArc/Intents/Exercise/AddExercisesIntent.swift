@@ -44,6 +44,7 @@ struct AddExercisesIntent: AppIntent {
         for exercise in resolvedExercises {
             workout.addExercise(exercise)
             exercise.updateLastUsed()
+            SpotlightIndexer.index(exercise: exercise)
         }
         saveContext(context: context)
         let count = resolvedExercises.count
@@ -63,6 +64,7 @@ struct AddExercisesIntent: AppIntent {
         for exercise in resolvedExercises {
             template.addExercise(exercise)
             exercise.updateLastUsed()
+            SpotlightIndexer.index(exercise: exercise)
         }
         saveContext(context: context)
         let count = resolvedExercises.count

@@ -160,6 +160,9 @@ struct FilteredExerciseListView: View {
         Button {
             exercise.toggleFavorite()
             Haptics.selection()
+            if exercise.favorite {
+                SpotlightIndexer.index(exercise: exercise)
+            }
             saveContext(context: context)
         } label: {
             if exercise.favorite {

@@ -35,6 +35,20 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "list.clipboard"
         )
 
+        AppShortcut(
+            intent: StartTodaysWorkoutIntent(),
+            phrases: [
+                "Start today's workout in \(.applicationName)",
+                "Start my workout for today in \(.applicationName)",
+                "Begin today's workout in \(.applicationName)",
+                "Start my split workout in \(.applicationName)",
+                "Start today's split in \(.applicationName)",
+                "Do today's split in \(.applicationName)"
+            ],
+            shortTitle: "Start Today's Workout",
+            systemImageName: "figure.strengthtraining.traditional"
+        )
+
 //        AppShortcut(
 //            intent: StartLastWorkoutAgainIntent(),
 //            phrases: [
@@ -194,17 +208,17 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "pause.circle"
         )
 
-        AppShortcut(
-            intent: ResumeRestTimerIntent(),
-            phrases: [
-                "Resume rest timer in \(.applicationName)",
-                "Resume my rest timer in \(.applicationName)",
-                "Continue rest timer in \(.applicationName)",
-                "Continue my rest in \(.applicationName)"
-            ],
-            shortTitle: "Resume Timer",
-            systemImageName: "play.circle"
-        )
+//        AppShortcut(
+//            intent: ResumeRestTimerIntent(),
+//            phrases: [
+//                "Resume rest timer in \(.applicationName)",
+//                "Resume my rest timer in \(.applicationName)",
+//                "Continue rest timer in \(.applicationName)",
+//                "Continue my rest in \(.applicationName)"
+//            ],
+//            shortTitle: "Resume Timer",
+//            systemImageName: "play.circle"
+//        )
 //
 //        AppShortcut(
 //            intent: StopRestTimerIntent(),

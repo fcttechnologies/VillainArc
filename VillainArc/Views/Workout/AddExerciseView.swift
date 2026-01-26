@@ -144,11 +144,13 @@ struct AddExerciseView: View {
             for exercise in selectedExercises {
                 workout.addExercise(exercise, markSetsComplete: isEditing)
                 exercise.updateLastUsed()
+                SpotlightIndexer.index(exercise: exercise)
             }
         } else if let template {
             for exercise in selectedExercises {
                 template.addExercise(exercise)
                 exercise.updateLastUsed()
+                SpotlightIndexer.index(exercise: exercise)
             }
         }
         let donatedExercises = selectedExercises

@@ -15,7 +15,9 @@ enum SharedModelContainer {
         RestTimeHistory.self,
         WorkoutTemplate.self,
         TemplateExercise.self,
-        TemplateSet.self
+        TemplateSet.self,
+        WorkoutSplit.self,
+        WorkoutSplitDay.self
     ])
 
     static let container: ModelContainer = {

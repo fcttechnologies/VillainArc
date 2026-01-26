@@ -85,6 +85,11 @@ struct WorkoutDetailView: View {
                     }
                     .accessibilityIdentifier("workoutDetailStartButton")
                     .accessibilityHint("Starts a workout based on this one.")
+                    Button("Save as Template", systemImage: "list.clipboard") {
+                        saveWorkoutAsTemplate()
+                    }
+                    .accessibilityIdentifier("workoutDetailSaveTemplateButton")
+                    .accessibilityHint("Saves this workout as a template.")
                     Button("Delete Workout", systemImage: "trash", role: .destructive) {
                         showDeleteWorkoutConfirmation = true
                     }
@@ -117,6 +122,16 @@ struct WorkoutDetailView: View {
         context.delete(workout)
         saveContext(context: context)
         dismiss()
+    }
+
+    private func saveWorkoutAsTemplate() {
+        Haptics.selection()
+        let template = WorkoutTemplate(from: workout)
+        context.insert(template)
+        saveContext(context: context)
+        SpotlightIndexer.index(template: template)
+        router.popToRoot()
+        router.navigate(to: .templateDetail(template))
     }
 
     private func donateStartLastWorkoutAgainIfNeeded() {

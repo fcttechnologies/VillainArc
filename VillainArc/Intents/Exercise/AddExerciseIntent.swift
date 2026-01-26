@@ -28,6 +28,7 @@ struct AddExerciseIntent: AppIntent {
         if let workout = try? context.fetch(Workout.incomplete).first {
             workout.addExercise(resolvedExercise)
             resolvedExercise.updateLastUsed()
+            SpotlightIndexer.index(exercise: resolvedExercise)
             saveContext(context: context)
             return .result(dialog: "Added \(resolvedExercise.name) to your workout.")
         }
@@ -35,6 +36,7 @@ struct AddExerciseIntent: AppIntent {
         if let template = try? context.fetch(WorkoutTemplate.incomplete).first {
             template.addExercise(resolvedExercise)
             resolvedExercise.updateLastUsed()
+            SpotlightIndexer.index(exercise: resolvedExercise)
             saveContext(context: context)
             return .result(dialog: "Added \(resolvedExercise.name) to your template.")
         }
