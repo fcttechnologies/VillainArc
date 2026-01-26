@@ -56,7 +56,7 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
     func suggestedEntities() async throws -> [ExerciseEntity] {
         let context = SharedModelContainer.container.mainContext
         var descriptor = Exercise.all
-        descriptor.fetchLimit = 20
+        descriptor.fetchLimit = 30
         let exercises = (try? context.fetch(descriptor)) ?? []
         return exercises.map(ExerciseEntity.init)
     }

@@ -9,12 +9,12 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "Start a new workout in \(.applicationName)",
                 "Start an empty workout in \(.applicationName)",
-                "Begin a new workout with \(.applicationName)",
-                "New workout in \(.applicationName)",
-                "Let's workout with \(.applicationName)",
-                "Time to workout in \(.applicationName)"
+                "Begin a workout from scratch in \(.applicationName)",
+                "Create a new workout in \(.applicationName)",
+                "Start a blank workout with \(.applicationName)",
+                "Kick off a new workout with \(.applicationName)"
             ],
-            shortTitle: "New Workout",
+            shortTitle: "Start Workout",
             systemImageName: "figure.strengthtraining.traditional"
         )
 
@@ -22,13 +22,16 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             intent: StartWorkoutWithTemplateIntent(),
             phrases: [
                 "Start \(\.$template) in \(.applicationName)",
-                "Start template in \(.applicationName)",
-                "Begin \(\.$template) with \(.applicationName)",
-                "Start template \(\.$template) in \(.applicationName)",
-                "Do \(\.$template) in \(.applicationName)",
-                "Let's do \(\.$template) with \(.applicationName)"
+                "Start \(\.$template) with \(.applicationName)",
+                "Start the \(\.$template) workout in \(.applicationName)",
+                "Start the \(\.$template) template in \(.applicationName)",
+                "Start a workout from the \(\.$template) template in \(.applicationName)",
+                "Use the \(\.$template) template with \(.applicationName)",
+                "Begin the \(\.$template) template workout in \(.applicationName)",
+                "Start a template workout in \(.applicationName)",
+                "Start a workout from a template in \(.applicationName)"
             ],
-            shortTitle: "Start Template",
+            shortTitle: "Start Workout with Template",
             systemImageName: "list.clipboard"
         )
 
@@ -64,7 +67,7 @@ struct VillainArcShortcuts: AppShortcutsProvider {
 //                "View last workout in \(.applicationName)",
 //                "What was my last workout in \(.applicationName)"
 //            ],
-//            shortTitle: "View Last Workout",
+//            shortTitle: "View My Last Workout",
 //            systemImageName: "clock.arrow.circlepath"
 //        )
         
@@ -111,7 +114,7 @@ struct VillainArcShortcuts: AppShortcutsProvider {
 //                "Begin creating a template with \(.applicationName)",
 //                "Begin creating a workout template in \(.applicationName)"
 //            ],
-//            shortTitle: "Create Template",
+//            shortTitle: "Create New Template",
 //            systemImageName: "list.clipboard"
 //        )
         

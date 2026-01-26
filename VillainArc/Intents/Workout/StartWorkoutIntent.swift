@@ -2,7 +2,7 @@ import AppIntents
 import SwiftData
 
 struct StartWorkoutIntent: AppIntent {
-    static let title: LocalizedStringResource = "Start Empty Workout"
+    static let title: LocalizedStringResource = "Start Workout"
     static let description = IntentDescription("Starts a new empty workout.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
