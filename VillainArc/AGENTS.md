@@ -4,7 +4,7 @@
 VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain ordered exercises with sets, backed by a seeded exercise catalog.
 
 ## Architecture Overview
-- `Root/VillainArcApp.swift` builds the SwiftData model container, launches `ContentView`, and routes Spotlight continuations when no session is active.
+- `Root/VillainArcApp.swift` builds the SwiftData model container, launches `ContentView`, updates App Shortcut parameters, and routes Spotlight continuations when no session is active.
 - `Views/ContentView.swift` loads workouts, seeds the catalog via `DataManager`, and presents `WorkoutView`/`TemplateView` using `AppRouter`.
 - `Views/Components/RecentWorkoutSectionView.swift` surfaces the most recent completed workout or an empty prompt and links to the full history.
 - `Views/WorkoutsListView.swift` lists completed workouts with edit/delete controls.
@@ -13,7 +13,7 @@ VillainArc is a SwiftUI iOS workout tracker using SwiftData. Workouts contain or
 - `Views/Workout/WorkoutView.swift` coordinates the workout session UI, paging vs list, and sheet flows.
 - `Views/Workout/ExerciseView.swift` manages per-exercise editing, previous set lookup, notes, and the rep/rest editors.
 - `Data/Classes/AppRouter.swift`: singleton navigation router handling `NavigationPath`, deep linking, and active workout/template sessions.
-- `Data/Classes/SpotlightIndexer.swift`: Core Spotlight indexing and removal for completed workouts and templates.
+- `Data/Classes/SpotlightIndexer.swift`: Core Spotlight indexing and removal for completed workouts, templates, and catalog exercises.
 - `Data/Classes/RestTimerState.swift`: shared rest timer state for UI and App Intents with persisted end date.
 - `Data/SharedModelContainer.swift`: shared SwiftData container using App Groups for potential future cross-process access.
 
@@ -27,9 +27,10 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Intents/Template/CreateTemplateIntent.swift`: creates or resumes a workout template.
 - `Intents/Workout/FinishWorkoutIntent.swift`: finishes the active workout and stops the rest timer.
 - `Intents/Workout/CompleteActiveSetIntent.swift`: completes the next incomplete set in the active workout.
+- `Intents/Exercise/AddExerciseIntent.swift`: adds a single exercise to the active workout or template.
 - `Intents/Exercise/AddExercisesIntent.swift`: adds exercises to the active workout or template.
 - `Intents/Workout/CancelWorkoutIntent.swift`: cancels the active workout and stops the rest timer.
-- `Intents/RestTimer/StartRestTimerIntent.swift`: starts a rest timer during an active workout, using recent/default duration if needed.
+- `Intents/RestTimer/StartRestTimerIntent.swift`: starts a rest timer during an active workout for a specified duration.
 - `Intents/RestTimer/PauseRestTimerIntent.swift`: pauses the running rest timer.
 - `Intents/RestTimer/ResumeRestTimerIntent.swift`: resumes the paused rest timer.
 - `Intents/RestTimer/StopRestTimerIntent.swift`: stops the active rest timer.
@@ -44,7 +45,7 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 **Note:** App Intents are defined in the main app target (not an extension) to avoid provisioning issues without a paid Apple Developer account. Keep the App Shortcuts list capped at 10 (comment out extras in `Intents/VillainArcShortcuts.swift`).
 
 ## Project Structure & File Guide
-- `Root/VillainArcApp.swift`: app entry, model container setup, Spotlight continuation routing.
+- `Root/VillainArcApp.swift`: app entry, model container setup, App Shortcut parameter refresh, Spotlight continuation routing.
 - `Views/ContentView.swift`: latest workout summary, start/resume flow, navigation to `RecentWorkoutSectionView`.
 - `Views/Components/RecentWorkoutSectionView.swift`: shows the most recent completed workout or empty state plus a link to `WorkoutsListView`.
 - `Views/Components/RecentTemplatesSectionView.swift`: shows recent templates and a link to `TemplatesListView`.
@@ -78,15 +79,15 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Data/Models/WorkoutTemplate.swift`: template model containing exercises and sets, Spotlight summary text.
 - `Data/Models/TemplateExercise.swift`: exercise within a template.
 - `Data/Models/TemplateSet.swift`: set configuration within a template.
-- `Data/Models/Exercise.swift`: catalog exercise, `lastUsed` tracking.
+- `Data/Models/Exercise.swift`: catalog exercise, aliases, `lastUsed` tracking.
 - `Data/Models/ExerciseSetType.swift`: set type labels, short codes, tint colors.
 - `Data/Models/RestTimeHistory.swift`: global rest time history entries with last-used tracking.
 - `Data/Models/RestTimePolicy.swift`: rest timing policy and per-type defaults.
 - `Data/Models/RepRangePolicy.swift`: rep target class and display text, rep range mode.
 - `Data/Models/Muscle.swift`: muscle enum, `isMajor`, `allMajor`.
-- `Data/Models/ExerciseCatalog.swift`: exercise catalog entries and muscle-target mapping.
-- `Data/Classes/DataManager.swift`: seeds catalog using `UserDefaults` versioning.
-- `Data/Classes/SpotlightIndexer.swift`: Core Spotlight indexing/removal for workouts and templates.
+- `Data/Models/ExerciseCatalog.swift`: exercise catalog entries, aliases, and muscle-target mapping.
+- `Data/Classes/DataManager.swift`: seeds/syncs catalog using `UserDefaults` versioning and keeps Spotlight exercise entries updated.
+- `Data/Classes/SpotlightIndexer.swift`: Core Spotlight indexing/removal for workouts, templates, and exercises.
 - `Data/SampleData.swift`: sample workouts/sets and preview container helper.
 - `Data/AI_USAGE.md`: AI usage log.
 - `Data/Assets.xcassets`: app icons and accent color.

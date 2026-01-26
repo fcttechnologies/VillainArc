@@ -7,6 +7,7 @@ struct ShowWorkoutHistoryIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutsList)
         return .result()
     }

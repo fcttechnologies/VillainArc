@@ -8,7 +8,7 @@ struct LastWorkoutSummaryIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let context = ModelContext(SharedModelContainer.container)
+        let context = SharedModelContainer.container.mainContext
         
         guard let lastWorkout = try context.fetch(Workout.recentWorkout).first else {
             return .result(dialog: "You haven't completed a workout.")

@@ -6,6 +6,7 @@ class Exercise {
     var catalogID: String = ""
     var name: String = ""
     var musclesTargeted: [Muscle] = []
+    var aliases: [String] = []
     var lastUsed: Date? = nil
     var favorite: Bool = false
     var isCustom: Bool = false
@@ -22,6 +23,7 @@ class Exercise {
         catalogID = catalogItem.id
         name = catalogItem.name
         musclesTargeted = catalogItem.musclesTargeted
+        aliases = catalogItem.aliases
         rebuildSearchData()
     }
     
@@ -35,7 +37,7 @@ class Exercise {
 
     @discardableResult
     func rebuildSearchData() -> Bool {
-        let combined = ([name] + musclesTargeted.map(\.rawValue)).joined(separator: " ")
+        let combined = ([name] + aliases + musclesTargeted.map(\.rawValue)).joined(separator: " ")
         let baseTokens = normalizedTokens(for: combined)
         var tokens: [String] = []
         var seen = Set<String>()
@@ -99,5 +101,9 @@ extension Exercise {
     static var catalogExercises: FetchDescriptor<Exercise> {
         let predicate = #Predicate<Exercise> { !$0.isCustom }
         return FetchDescriptor(predicate: predicate)
+    }
+    
+    static var all: FetchDescriptor<Exercise> {
+        FetchDescriptor(sortBy: Exercise.recentsSort)
     }
 }

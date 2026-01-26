@@ -28,6 +28,10 @@ import SwiftData
                     primary.musclesTargeted = catalogItem.musclesTargeted
                     didChange = true
                 }
+                if primary.aliases != catalogItem.aliases {
+                    primary.aliases = catalogItem.aliases
+                    didChange = true
+                }
             }
             didChange = mergeDuplicates(duplicates, keeping: primary, context: context) || didChange
             didChange = primary.rebuildSearchData() || didChange
@@ -57,11 +61,19 @@ import SwiftData
                     didChange = true
                     needsSearchIndex = true
                 }
+                if existing.aliases != catalogItem.aliases {
+                    existing.aliases = catalogItem.aliases
+                    didChange = true
+                    needsSearchIndex = true
+                }
                 if needsSearchIndex {
                     didChange = existing.rebuildSearchData() || didChange
+                    SpotlightIndexer.index(exercise: existing)
                 }
             } else {
-                context.insert(Exercise(from: catalogItem))
+                let newExercise = Exercise(from: catalogItem)
+                context.insert(newExercise)
+                SpotlightIndexer.index(exercise: newExercise)
                 didChange = true
             }
         }

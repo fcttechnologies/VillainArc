@@ -1,3 +1,4 @@
+import AppIntents
 import CoreSpotlight
 import SwiftUI
 import SwiftData
@@ -7,6 +8,9 @@ struct VillainArcApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    VillainArcShortcuts.updateAppShortcutParameters()
+                }
                 .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
                     Task { @MainActor in
                         handleSpotlight(userActivity)

@@ -1,13 +1,22 @@
 import AppIntents
+import Foundation
 import SwiftData
 
 struct StartRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Rest Timer"
     static let description = IntentDescription("Starts a rest timer.")
     static let supportedModes: IntentModes = .background
+    static var parameterSummary: some ParameterSummary {
+        Summary("Start rest timer for \(\.$duration)")
+    }
 
-    @Parameter(title: "Seconds")
-    var seconds: Int?
+    @Parameter(
+        title: "Duration",
+        defaultUnit: .seconds,
+        supportsNegativeNumbers: false,
+        requestValueDialog: IntentDialog("How long should the rest timer be?")
+    )
+    var duration: Measurement<UnitDuration>
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -17,23 +26,15 @@ struct StartRestTimerIntent: AppIntent {
             return .result(dialog: "No active workout to start a rest timer.")
         }
 
-        let selectedSeconds = seconds ?? recentSeconds(context: context) ?? RestTimePolicy.defaultRestSeconds
-        let clampedSeconds = max(0, selectedSeconds)
-
-        guard clampedSeconds > 0 else {
+        let durationSeconds = Int(duration.converted(to: .seconds).value.rounded())
+        guard durationSeconds > 0 else {
             return .result(dialog: "Rest timer duration must be greater than zero.")
         }
 
-        RestTimerState.shared.start(seconds: clampedSeconds)
-        RestTimeHistory.record(seconds: clampedSeconds, context: context)
+        RestTimerState.shared.start(seconds: durationSeconds)
+        RestTimeHistory.record(seconds: durationSeconds, context: context)
         saveContext(context: context)
 
-        return .result(dialog: "Rest timer started for \(secondsToTime(clampedSeconds)).")
-    }
-
-    private func recentSeconds(context: ModelContext) -> Int? {
-        var descriptor = RestTimeHistory.recents
-        descriptor.fetchLimit = 1
-        return (try? context.fetch(descriptor).first)?.seconds
+        return .result(dialog: "Rest timer started for \(secondsToTime(durationSeconds)).")
     }
 }

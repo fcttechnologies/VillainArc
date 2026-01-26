@@ -1,19 +1,30 @@
 import AppIntents
+import CoreSpotlight
 import SwiftData
 
-struct WorkoutTemplateEntity: AppEntity, Identifiable {
-    nonisolated static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Workout Template")
-    nonisolated static let defaultQuery = WorkoutTemplateEntityQuery()
+struct WorkoutTemplateEntity: AppEntity, IndexedEntity, Identifiable {
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Workout Template")
+    static let defaultQuery = WorkoutTemplateEntityQuery()
 
-    nonisolated let id: UUID
-    nonisolated let name: String
-    nonisolated let muscles: String
+    let id: UUID
+    let name: String
+    let summary: String
+    let exerciseNames: [String]
 
-    nonisolated var displayRepresentation: DisplayRepresentation {
-        if muscles.isEmpty {
+    var displayRepresentation: DisplayRepresentation {
+        if summary.isEmpty {
             return DisplayRepresentation(title: "\(name)")
         }
-        return DisplayRepresentation(title: "\(name)", subtitle: "\(muscles)")
+        return DisplayRepresentation(title: "\(name)", subtitle: "\(summary)")
+    }
+
+    var attributeSet: CSSearchableItemAttributeSet {
+        let attributes = CSSearchableItemAttributeSet()
+        attributes.title = name
+        attributes.displayName = name
+        attributes.contentDescription = summary
+        attributes.keywords = [name] + exerciseNames + ["Template"]
+        return attributes
     }
 }
 
@@ -21,7 +32,8 @@ extension WorkoutTemplateEntity {
     init(template: WorkoutTemplate) {
         id = template.id
         name = template.name
-        muscles = template.musclesTargeted()
+        summary = template.spotlightSummary
+        exerciseNames = template.sortedExercises.map(\.name)
     }
 }
 
@@ -30,17 +42,16 @@ struct WorkoutTemplateEntityQuery: EntityQuery, EntityStringQuery {
     func entities(for identifiers: [WorkoutTemplateEntity.ID]) async throws -> [WorkoutTemplateEntity] {
         guard !identifiers.isEmpty else { return [] }
         let context = SharedModelContainer.container.mainContext
-        let templates = (try? context.fetch(FetchDescriptor<WorkoutTemplate>())) ?? []
-        let idSet = Set(identifiers)
-        return templates.filter { idSet.contains($0.id) }.map(WorkoutTemplateEntity.init)
+        let ids = identifiers
+        let predicate = #Predicate<WorkoutTemplate> { ids.contains($0.id) }
+        let descriptor = FetchDescriptor(predicate: predicate)
+        return try context.fetch(descriptor).map(WorkoutTemplateEntity.init)
     }
 
     @MainActor
     func suggestedEntities() async throws -> [WorkoutTemplateEntity] {
         let context = SharedModelContainer.container.mainContext
-        var descriptor = FetchDescriptor(predicate: WorkoutTemplate.completedPredicate, sortBy: WorkoutTemplate.recentsSort)
-        descriptor.fetchLimit = 10
-        let templates = (try? context.fetch(descriptor)) ?? []
+        let templates = (try? context.fetch(WorkoutTemplate.all)) ?? []
         return templates.map(WorkoutTemplateEntity.init)
     }
 
@@ -48,11 +59,15 @@ struct WorkoutTemplateEntityQuery: EntityQuery, EntityStringQuery {
     func entities(matching string: String) async throws -> [WorkoutTemplateEntity] {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
         let context = SharedModelContainer.container.mainContext
-        let descriptor = FetchDescriptor(predicate: WorkoutTemplate.completedPredicate, sortBy: WorkoutTemplate.recentsSort)
-        let templates = (try? context.fetch(descriptor)) ?? []
-        let filtered = trimmed.isEmpty
-            ? templates
-            : templates.filter { $0.name.localizedStandardContains(trimmed) }
-        return filtered.map(WorkoutTemplateEntity.init)
+        let descriptor: FetchDescriptor<WorkoutTemplate>
+        if trimmed.isEmpty {
+            descriptor = WorkoutTemplate.all
+        } else {
+            let predicate = #Predicate<WorkoutTemplate> {
+                $0.complete && $0.name.localizedStandardContains(trimmed)
+            }
+            descriptor = FetchDescriptor(predicate: predicate, sortBy: WorkoutTemplate.recentsSort)
+        }
+        return try context.fetch(descriptor).map(WorkoutTemplateEntity.init)
     }
 }

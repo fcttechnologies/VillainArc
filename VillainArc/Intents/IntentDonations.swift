@@ -1,4 +1,5 @@
 import AppIntents
+import Foundation
 
 enum IntentDonations {
     static func donateStartWorkout() async {
@@ -38,7 +39,7 @@ enum IntentDonations {
     static func donateStartRestTimer(seconds: Int) async {
         guard seconds > 0 else { return }
         let intent = StartRestTimerIntent()
-        intent.seconds = seconds
+        intent.duration = Measurement(value: Double(seconds), unit: .seconds)
         _ = try? await intent.donate()
     }
 

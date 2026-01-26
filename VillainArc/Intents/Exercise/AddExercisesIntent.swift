@@ -5,8 +5,11 @@ struct AddExercisesIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Exercises"
     static let description = IntentDescription("Adds exercises to the active workout or template.")
     static let supportedModes: IntentModes = .background
+    static var parameterSummary: some ParameterSummary {
+        Summary("Add \(\.$exercises)")
+    }
 
-    @Parameter(title: "Exercises")
+    @Parameter(title: "Exercises", requestValueDialog: IntentDialog("Which exercises?"))
     var exercises: [ExerciseEntity]
 
     @MainActor
@@ -71,8 +74,12 @@ struct AddExercisesIntent: AppIntent {
 
     @MainActor
     private func resolveExercises(in context: ModelContext) -> [Exercise] {
-        let allExercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
-        let exercisesByID = Dictionary(allExercises.map { ($0.catalogID, $0) }, uniquingKeysWith: { first, _ in first })
-        return exercises.compactMap { exercisesByID[$0.id] }
+        let ids = exercises.map(\.id)
+        guard !ids.isEmpty else { return [] }
+        let predicate = #Predicate<Exercise> { ids.contains($0.catalogID) }
+        let descriptor = FetchDescriptor(predicate: predicate)
+        let matchedExercises = (try? context.fetch(descriptor)) ?? []
+        let exercisesByID = Dictionary(matchedExercises.map { ($0.catalogID, $0) }, uniquingKeysWith: { first, _ in first })
+        return ids.compactMap { exercisesByID[$0] }
     }
 }

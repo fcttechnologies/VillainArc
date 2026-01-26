@@ -8,12 +8,13 @@ struct ViewLastWorkoutIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
-        let context = ModelContext(SharedModelContainer.container)
+        let context = SharedModelContainer.container.mainContext
         
         guard let lastWorkout = try context.fetch(Workout.recentWorkout).first else {
             throw ViewLastWorkoutError.noWorkoutsFound
         }
         
+        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutDetail(lastWorkout))
         return .result(opensIntent: OpenAppIntent())
     }

@@ -5,6 +5,7 @@
   - App entry point.
   - Creates the main `WindowGroup` with `ContentView`.
   - Injects the SwiftData container via `SharedModelContainer.container`.
+  - Refreshes App Shortcuts parameters via `VillainArcShortcuts.updateAppShortcutParameters()` on launch.
   - Handles Spotlight continuations with `onContinueUserActivity(CSSearchableItemActionType)` and routes via `AppRouter` when no session is active.
 
 ## Data
@@ -24,7 +25,7 @@
   - Muscle enum with major/minor classification and `allMajor` list.
   - `isMajor` is `nonisolated` to allow use in key paths under Swift 6.
 - `Data/Models/Exercise.swift`
-  - Catalog exercise model with search index/tokens and favorite/last-used metadata.
+  - Catalog exercise model with aliases, search index/tokens, and favorite/last-used metadata.
   - Uses `Muscle.isMajor` to format `displayMuscles`.
 - `Data/Models/Workout.swift`
   - Workout model with ordering helpers and completion state.
@@ -40,6 +41,7 @@
   - Uses `Muscle.isMajor` to choose `displayMuscle`.
 - `Data/Models/ExerciseCatalog.swift`
   - Static exercise catalog used for seeding and previews.
+  - Supports optional aliases for common exercise names.
   - Catalog constants are `nonisolated` for Swift 6 access outside `MainActor`.
 
 ## Views
@@ -118,8 +120,9 @@
   - Note: any use from non-main contexts (e.g., App Intents, background tasks) must hop to `MainActor`.
 
 - `Data/Classes/SpotlightIndexer.swift`
-  - Indexes completed workouts/templates in Core Spotlight and removes entries on delete.
-  - Uses stable identifiers with `workout:` and `template:` prefixes.
+  - Indexes completed workouts/templates plus catalog exercises in Core Spotlight and removes entries on delete.
+  - Associates App Entities for templates/exercises to improve Spotlight suggestions.
+  - Uses stable identifiers with `workout:`, `template:`, and `exercise:` prefixes.
 
 - `Data/Classes/RestTimerState.swift`
   - `@MainActor` + `@Observable` rest timer state persisted in `UserDefaults`.
@@ -127,7 +130,7 @@
 
 - `Data/Classes/DataManager.swift`
   - `@MainActor` utility for seeding and deduping the exercise catalog.
-  - Uses `UserDefaults` versioning and SwiftData fetches/inserts/deletes.
+  - Uses `UserDefaults` versioning, syncs aliases, and updates Spotlight exercise entries.
   - Exposes `saveContext` and `scheduleSave` helpers (main-actor isolated).
 
 ## Helpers
@@ -144,9 +147,11 @@
 - `Intents/OpenAppIntent.swift`
   - Opens the app for foregrounding flows.
 - `Intents/Template/WorkoutTemplateEntity.swift`
-  - AppEntity support for template selection in Shortcuts via `WorkoutTemplateEntity` (suggests up to 10 recent templates).
+  - Indexed AppEntity for template selection in Shortcuts with Spotlight metadata.
+  - Uses `WorkoutTemplate.all` for suggestions and derives summary/keywords from the template.
 - `Intents/Exercise/ExerciseEntity.swift`
-  - AppEntity support for exercise selection in Shortcuts with search/fuzzy matching.
+  - Indexed AppEntity for exercise selection in Shortcuts with alias synonyms and Spotlight metadata.
+  - Uses `Exercise.all` for suggestions and exposes aliases as synonyms.
 - `Intents/Workout/StartWorkoutIntent.swift`
   - App Intent to start a new empty workout.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.
@@ -169,17 +174,17 @@
   - Opens the app via `OpenAppIntent` on success.
 - `Intents/Workout/ViewLastWorkoutIntent.swift`
   - App Intent to navigate to the most recent completed workout.
-  - Uses `ModelContext(SharedModelContainer.container)` and `AppRouter.shared`.
+  - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared` (pops to root before navigation).
   - Defines `OpenAppIntent` and opens the app after navigation setup.
 - `Intents/Workout/ShowWorkoutHistoryIntent.swift`
-  - App Intent to open the workouts list via `AppRouter.shared`.
+  - App Intent to open the workouts list via `AppRouter.shared` (pops to root first).
   - Opens the app after navigation setup.
 - `Intents/Template/ShowTemplatesListIntent.swift`
-  - App Intent to open the templates list via `AppRouter.shared`.
+  - App Intent to open the templates list via `AppRouter.shared` (pops to root first).
   - Opens the app after navigation setup.
 - `Intents/Workout/LastWorkoutSummaryIntent.swift`
   - App Intent that speaks a summary of the last workout without opening the app.
-  - Uses `ModelContext(SharedModelContainer.container)`.
+  - Uses `SharedModelContainer.container.mainContext`.
 - `Intents/Workout/FinishWorkoutIntent.swift`
   - App Intent that finishes the active workout and stops the rest timer.
   - Saves changes via `SharedModelContainer.container.mainContext`.
@@ -187,11 +192,13 @@
   - App Intent that completes the next incomplete set and can auto-start the rest timer.
 - `Intents/Exercise/AddExercisesIntent.swift`
   - App Intent that adds selected exercises to the active workout or template.
+- `Intents/Exercise/AddExerciseIntent.swift`
+  - App Intent that adds a single exercise to the active workout or template.
 - `Intents/Workout/CancelWorkoutIntent.swift`
   - App Intent that cancels the active workout and stops the rest timer.
   - Saves changes via `SharedModelContainer.container.mainContext`.
 - `Intents/RestTimer/StartRestTimerIntent.swift`
-  - App Intent that starts a rest timer for a duration (uses recents/defaults if needed).
+  - App Intent that starts a rest timer for an explicit duration (`Measurement<UnitDuration>`).
   - Requires an active workout and records rest time history.
 - `Intents/RestTimer/PauseRestTimerIntent.swift`
   - App Intent that pauses the running rest timer.

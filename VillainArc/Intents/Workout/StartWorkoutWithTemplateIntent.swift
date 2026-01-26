@@ -5,8 +5,11 @@ struct StartWorkoutWithTemplateIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Workout with Template"
     static let description = IntentDescription("Starts a new workout from a template.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
+    static var parameterSummary: some ParameterSummary {
+        Summary("Start workout with \(\.$template)")
+    }
 
-    @Parameter(title: "Template")
+    @Parameter(title: "Template", requestValueDialog: IntentDialog("Which template?"))
     var template: WorkoutTemplateEntity
 
     @MainActor

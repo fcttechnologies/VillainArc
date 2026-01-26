@@ -66,14 +66,6 @@ class WorkoutTemplate {
 }
 
 extension WorkoutTemplate {
-    var exerciseSummary: String {
-        let exerciseSummaries = sortedExercises.map { exercise in
-            let setCount = exercise.sets.count
-            let setWord = setCount == 1 ? "set" : "sets"
-            return "\(setCount) \(setWord) of \(exercise.name)"
-        }
-        return ListFormatter.localizedString(byJoining: exerciseSummaries)
-    }
 
     var spotlightSummary: String {
         let exerciseSummaries = sortedExercises.map { exercise in

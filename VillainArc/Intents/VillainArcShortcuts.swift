@@ -10,7 +10,9 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Start a new workout in \(.applicationName)",
                 "Start an empty workout in \(.applicationName)",
                 "Begin a new workout with \(.applicationName)",
-                "New workout in \(.applicationName)"
+                "New workout in \(.applicationName)",
+                "Let's workout with \(.applicationName)",
+                "Time to workout in \(.applicationName)"
             ],
             shortTitle: "New Workout",
             systemImageName: "figure.strengthtraining.traditional"
@@ -20,9 +22,11 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             intent: StartWorkoutWithTemplateIntent(),
             phrases: [
                 "Start \(\.$template) in \(.applicationName)",
-                "Start \(\.$template) workout in \(.applicationName)",
+                "Start template in \(.applicationName)",
                 "Begin \(\.$template) with \(.applicationName)",
-                "Start template \(\.$template) in \(.applicationName)"
+                "Start template \(\.$template) in \(.applicationName)",
+                "Do \(\.$template) in \(.applicationName)",
+                "Let's do \(\.$template) with \(.applicationName)"
             ],
             shortTitle: "Start Template",
             systemImageName: "list.clipboard"
@@ -45,7 +49,9 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Resume workout in \(.applicationName)",
                 "Continue workout in \(.applicationName)",
                 "Resume session in \(.applicationName)",
-                "Continue session in \(.applicationName)"
+                "Continue session in \(.applicationName)",
+                "Go back to my workout in \(.applicationName)",
+                "Open my workout in \(.applicationName)"
             ],
             shortTitle: "Resume Session",
             systemImageName: "play.circle"
@@ -89,7 +95,9 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "What did I do in my last workout in \(.applicationName)",
                 "Summarize my last workout in \(.applicationName)",
-                "Tell me about my last workout in \(.applicationName)"
+                "Tell me about my last workout in \(.applicationName)",
+                "How was my last workout in \(.applicationName)",
+                "Recap my last workout in \(.applicationName)"
             ],
             shortTitle: "Last Workout Summary",
             systemImageName: "questionmark.bubble"
@@ -112,7 +120,9 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "Finish workout in \(.applicationName)",
                 "Complete workout in \(.applicationName)",
-                "End workout in \(.applicationName)"
+                "End workout in \(.applicationName)",
+                "I'm done working out in \(.applicationName)",
+                "Done with my workout in \(.applicationName)"
             ],
             shortTitle: "Finish Workout",
             systemImageName: "checkmark.circle"
@@ -123,20 +133,25 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "Complete active set in \(.applicationName)",
                 "Complete next set in \(.applicationName)",
-                "Mark next set complete in \(.applicationName)"
+                "Mark next set complete in \(.applicationName)",
+                "Log my set in \(.applicationName)",
+                "Done with my set in \(.applicationName)",
+                "Set complete in \(.applicationName)"
             ],
             shortTitle: "Complete Set",
             systemImageName: "checkmark.circle.badge.questionmark"
         )
 
         AppShortcut(
-            intent: AddExercisesIntent(),
+            intent: AddExerciseIntent(),
             phrases: [
-                "Add exercises in \(.applicationName)",
-                "Add exercises to workout in \(.applicationName)",
-                "Add exercises to template in \(.applicationName)"
+                "Add \(\.$exercise) in \(.applicationName)",
+                "Add \(\.$exercise) to workout in \(.applicationName)",
+                "Add \(\.$exercise) to template in \(.applicationName)",
+                "Add an exercise in \(.applicationName)",
+                "Add exercise in \(.applicationName)"
             ],
-            shortTitle: "Add Exercises",
+            shortTitle: "Add Exercise",
             systemImageName: "plus.circle"
         )
 
@@ -156,7 +171,9 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "Start rest timer in \(.applicationName)",
                 "Start a rest timer in \(.applicationName)",
-                "Begin rest timer in \(.applicationName)"
+                "Begin rest timer in \(.applicationName)",
+                "Start resting in \(.applicationName)",
+                "Rest for in \(.applicationName)"
             ],
             shortTitle: "Start Timer",
             systemImageName: "timer"
@@ -167,7 +184,8 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "Pause rest timer in \(.applicationName)",
                 "Pause my rest timer in \(.applicationName)",
-                "Pause timer in \(.applicationName)"
+                "Pause timer in \(.applicationName)",
+                "Pause my rest in \(.applicationName)"
             ],
             shortTitle: "Pause Timer",
             systemImageName: "pause.circle"
@@ -178,7 +196,8 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             phrases: [
                 "Resume rest timer in \(.applicationName)",
                 "Resume my rest timer in \(.applicationName)",
-                "Continue rest timer in \(.applicationName)"
+                "Continue rest timer in \(.applicationName)",
+                "Continue my rest in \(.applicationName)"
             ],
             shortTitle: "Resume Timer",
             systemImageName: "play.circle"
@@ -189,7 +208,11 @@ struct VillainArcShortcuts: AppShortcutsProvider {
 //            phrases: [
 //                "Stop rest timer in \(.applicationName)",
 //                "Stop my rest timer in \(.applicationName)",
-//                "End rest timer in \(.applicationName)"
+//                "End rest timer in \(.applicationName)",
+//                "Skip rest in \(.applicationName)",
+//                "Skip my rest in \(.applicationName)",
+//                "Skip rest timer in \(.applicationName)",
+//                "I'm ready in \(.applicationName)"
 //            ],
 //            shortTitle: "Stop Timer",
 //            systemImageName: "stop.circle"
