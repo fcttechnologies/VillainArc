@@ -35,7 +35,6 @@ class WorkoutTemplate {
     init(from workout: Workout) {
         name = workout.title
         notes = workout.notes
-        complete = true
         exercises = workout.sortedExercises.map { TemplateExercise(from: $0, template: self) }
     }
     

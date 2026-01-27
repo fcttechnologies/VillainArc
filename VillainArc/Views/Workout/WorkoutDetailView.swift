@@ -9,6 +9,7 @@ struct WorkoutDetailView: View {
     
     @State private var showDeleteWorkoutConfirmation: Bool = false
     @State private var editWorkout: Bool = false
+    @State private var newTemplate: WorkoutTemplate?
     
     var body: some View {
         List {
@@ -114,6 +115,9 @@ struct WorkoutDetailView: View {
                 deleteWorkout()
             })
         }
+        .fullScreenCover(item: $newTemplate) {
+            TemplateView(template: $0)
+        }
     }
 
     private func deleteWorkout() {
@@ -129,9 +133,7 @@ struct WorkoutDetailView: View {
         let template = WorkoutTemplate(from: workout)
         context.insert(template)
         saveContext(context: context)
-        SpotlightIndexer.index(template: template)
-        router.popToRoot()
-        router.navigate(to: .templateDetail(template))
+        newTemplate = template
     }
 
     private func donateStartLastWorkoutAgainIfNeeded() {

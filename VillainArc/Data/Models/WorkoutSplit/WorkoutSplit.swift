@@ -3,10 +3,11 @@ import SwiftData
 
 @Model
 class WorkoutSplit {
+    var title: String = ""
     var mode: SplitMode = SplitMode.weekly
-    var isActive: Bool = true
+    var isActive: Bool = false
     
-    // Weekly mode: offset when user skips a day
+    // Weekly mode: offset when user misses a day
     var weeklySplitOffset: Int = 0
     
     // Rotation mode: current position in the cycle
@@ -25,7 +26,9 @@ class WorkoutSplit {
         }
     }
     
-    init() {}
+    init(mode: SplitMode) {
+        self.mode = mode
+    }
 
     func missedDay() {
         weeklySplitOffset = (weeklySplitOffset + 1) % 7
@@ -59,6 +62,26 @@ class WorkoutSplit {
         }
         rotationCurrentIndex = (rotationCurrentIndex + delta) % days.count
         rotationLastUpdatedDate = startToday
+    }
+
+    func deleteDay(_ day: WorkoutSplitDay) {
+        let ordered = sortedDays
+        guard let deletedIndex = ordered.firstIndex(of: day) else { return }
+
+        days.removeAll { $0 == day }
+
+        let reordered = sortedDays
+        for (newIndex, splitDay) in reordered.enumerated() {
+            splitDay.index = newIndex
+        }
+
+        if rotationCurrentIndex > deletedIndex {
+            rotationCurrentIndex -= 1
+        }
+
+        if rotationCurrentIndex >= reordered.count {
+            rotationCurrentIndex = max(0, reordered.count - 1)
+        }
     }
     
     var todaysDayIndex: Int? {

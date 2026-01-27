@@ -30,6 +30,7 @@ class PreviewDataContainer {
             
             loadSampleData()
             loadSampleTemplates()
+            loadSampleSplits()
             syncExercises()
             if includeIncompleteWorkout {
                 loadIncompleteWorkout()
@@ -62,6 +63,12 @@ class PreviewDataContainer {
     private func loadSampleTemplates() {
         for template in WorkoutTemplate.sampleData {
             context.insert(template)
+        }
+    }
+
+    private func loadSampleSplits() {
+        for split in WorkoutSplit.sampleData {
+            context.insert(split)
         }
     }
 }
@@ -103,6 +110,39 @@ func sampleTemplate() -> WorkoutTemplate {
     }
     
     let fallback = WorkoutTemplate(name: "Push Day")
+    sampleContainer.context.insert(fallback)
+    return fallback
+}
+
+@MainActor
+func sampleWeeklySplit() -> WorkoutSplit {
+    let descriptor = FetchDescriptor<WorkoutSplit>()
+    let splits = (try? sampleContainer.context.fetch(descriptor)) ?? []
+    if let split = splits.first(where: { $0.mode == .weekly }) {
+        return split
+    }
+    
+    let fallback = WorkoutSplit(mode: .weekly)
+    fallback.days = (1...7).map { WorkoutSplitDay(weekday: $0, split: fallback) }
+    sampleContainer.context.insert(fallback)
+    return fallback
+}
+
+@MainActor
+func sampleRotationSplit() -> WorkoutSplit {
+    let descriptor = FetchDescriptor<WorkoutSplit>()
+    let splits = (try? sampleContainer.context.fetch(descriptor)) ?? []
+    if let split = splits.first(where: { $0.mode == .rotation }) {
+        return split
+    }
+    
+    let fallback = WorkoutSplit(mode: .rotation)
+    fallback.title = "4 Day Rotation"
+    for i in 0..<4 {
+        let day = WorkoutSplitDay(index: i, split: fallback)
+        day.name = "Day \(i + 1)"
+        fallback.days.append(day)
+    }
     sampleContainer.context.insert(fallback)
     return fallback
 }
@@ -314,12 +354,42 @@ extension WorkoutTemplate {
         pushDay.notes = "Chest and triceps focus"
         pushDay.exercises = TemplateExercise.samplePushDay(for: pushDay)
         pushDay.isFavorite = true
+        pushDay.complete = true
         
         let pushDay2 = WorkoutTemplate(name: "Push Day")
         pushDay2.notes = "Chest and triceps focus"
         pushDay2.exercises = TemplateExercise.samplePushDay(for: pushDay2)
         pushDay2.lastUsed = Date()
+        pushDay2.complete = true
         
         return [pushDay, pushDay2]
+    }
+}
+
+extension WorkoutSplit {
+    static var sampleData: [WorkoutSplit] {
+        let weeklySplit = WorkoutSplit(mode: .weekly)
+        weeklySplit.title = "PPL Split"
+        weeklySplit.isActive = true
+        weeklySplit.days = (1...7).map { weekday in
+            let day = WorkoutSplitDay(weekday: weekday, split: weeklySplit)
+            // Mark Sunday (1) and Wednesday (4) as rest days
+            day.isRestDay = (weekday == 1 || weekday == 4)
+            return day
+        }
+        
+        let rotationSplit = WorkoutSplit(mode: .rotation)
+        rotationSplit.title = "Upper/Lower"
+        rotationSplit.days = [
+            WorkoutSplitDay(index: 0, split: rotationSplit), // Upper
+            WorkoutSplitDay(index: 1, split: rotationSplit), // Lower
+            WorkoutSplitDay(index: 2, split: rotationSplit)  // Rest
+        ]
+        rotationSplit.days[0].name = "Upper Body"
+        rotationSplit.days[1].name = "Lower Body"
+        rotationSplit.days[2].name = "Rest"
+        rotationSplit.days[2].isRestDay = true
+        
+        return [weeklySplit, rotationSplit]
     }
 }
