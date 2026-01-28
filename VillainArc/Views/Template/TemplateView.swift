@@ -209,7 +209,7 @@ struct TemplateExerciseEditSection: View {
         }
         .accessibilityIdentifier("templateExerciseSection-\(identifierSuffix)")
         .sheet(isPresented: $showRepRangeEditorSheet) {
-            RepRangeEditorView(repRange: exercise.repRange)
+            RepRangeEditorView(repRange: exercise.repRange, catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showRestTimeEditorSheet) {

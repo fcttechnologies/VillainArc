@@ -29,6 +29,12 @@ enum AccessibilityIdentifiers {
         "exerciseRepRangeButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }
 
+    static let repRangeSuggestionsSection = "repRangeSuggestionsSection"
+
+    static func repRangeSuggestionButton(catalogID: String, index: Int) -> String {
+        "repRangeSuggestionButton-\(slug(catalogID))-\(index)"
+    }
+
     static func exerciseNotesButton(_ exercise: WorkoutExercise) -> String {
         "exerciseNotesButton-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)"
     }

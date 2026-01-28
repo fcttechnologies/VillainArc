@@ -115,6 +115,26 @@ extension WorkoutExercise {
         descriptor.fetchLimit = 1
         return descriptor
     }
+
+    static func matching(catalogID: String) -> FetchDescriptor<WorkoutExercise> {
+        let predicate = #Predicate<WorkoutExercise> { item in
+            item.catalogID == catalogID && item.workout.completed
+        }
+        return FetchDescriptor(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\WorkoutExercise.date, order: .reverse)]
+        )
+    }
+
+    static var completedAll: FetchDescriptor<WorkoutExercise> {
+        let predicate = #Predicate<WorkoutExercise> { item in
+            item.workout.completed
+        }
+        return FetchDescriptor(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\WorkoutExercise.date, order: .reverse)]
+        )
+    }
 }
 
 extension WorkoutExercise: RestTimeEditable {}
