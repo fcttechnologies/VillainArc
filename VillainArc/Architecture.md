@@ -25,7 +25,7 @@
   - Muscle enum with major/minor classification and `allMajor` list.
   - `isMajor` is `nonisolated` to allow use in key paths under Swift 6.
 - `Data/Models/Exercise.swift`
-  - Catalog exercise model with aliases, search index/tokens, and favorite/last-used metadata.
+  - Catalog exercise model with aliases, name-only search index/tokens, and favorite/last-used metadata.
   - Uses `Muscle.isMajor` to format `displayMuscles`.
 - `Data/Models/Workout.swift`
   - Workout model with ordering helpers and completion state.
@@ -96,7 +96,7 @@
 - `Views/Workout/MuscleFilterSheetView.swift`
   - Chip-based muscle filter selector with custom flow layout.
 - `Views/Workout/FilteredExerciseListView.swift`
-  - Exercise catalog list with search, favorites, and muscle filters.
+  - Exercise catalog list with ranked search, favorites, and muscle filters.
   - Saves favorite toggles via `saveContext(context:)`.
 - `Views/Workout/ExerciseView.swift`
   - Per-exercise editing view used in the workout session.
@@ -140,6 +140,9 @@
 - `Helpers/TextNormalization.swift`
   - Pure text normalization and fuzzy-search helpers.
   - Marked `nonisolated` for use from model code under Swift 6.
+- `Helpers/ExerciseSearch.swift`
+  - Centralized exercise search scoring and token expansion.
+  - Shared by the exercise picker list and App Intents to keep ranking consistent.
 
 ## Intents
 - `Intents/IntentDonations.swift`
@@ -151,7 +154,7 @@
   - Uses `WorkoutTemplate.all` for suggestions and derives summary/keywords from the template.
 - `Intents/Exercise/ExerciseEntity.swift`
   - Indexed AppEntity for exercise selection in Shortcuts with alias synonyms and Spotlight metadata.
-  - Uses `Exercise.all` for suggestions and exposes aliases as synonyms.
+  - Uses `Exercise.all` for suggestions, ranked search for matching, and exposes aliases as synonyms.
 - `Intents/Workout/StartWorkoutIntent.swift`
   - App Intent to start a new empty workout.
   - Uses `SharedModelContainer.container.mainContext` and `AppRouter.shared`.

@@ -19,6 +19,7 @@ class Exercise {
         return ListFormatter.localizedString(byJoining: muscles.map(\.rawValue))
     }
 
+    @MainActor
     init(from catalogItem: ExerciseCatalogItem) {
         catalogID = catalogItem.id
         name = catalogItem.name
@@ -35,41 +36,11 @@ class Exercise {
         favorite.toggle()
     }
 
+    @MainActor
     @discardableResult
     func rebuildSearchData() -> Bool {
-        let combined = ([name] + aliases + musclesTargeted.map(\.rawValue)).joined(separator: " ")
-        let baseTokens = normalizedTokens(for: combined)
-        var tokens: [String] = []
-        var seen = Set<String>()
-        
-        func appendToken(_ token: String) {
-            guard !token.isEmpty, !seen.contains(token) else { return }
-            seen.insert(token)
-            tokens.append(token)
-        }
-        
-        baseTokens.forEach(appendToken)
-        let baseSet = Set(baseTokens)
-        
-        for (abbreviation, fullWord) in Exercise.singleWordAbbreviations {
-            if baseSet.contains(abbreviation) {
-                appendToken(fullWord)
-            }
-            if baseSet.contains(fullWord) {
-                appendToken(abbreviation)
-            }
-        }
-        
-        for (abbreviation, words) in Exercise.phraseAbbreviations {
-            if baseSet.contains(abbreviation) {
-                words.forEach(appendToken)
-            }
-            if words.allSatisfy({ baseSet.contains($0) }) {
-                appendToken(abbreviation)
-            }
-        }
-        
-        let updatedIndex = tokens.joined()
+        let tokens = exerciseSearchTokens(for: self)
+        let updatedIndex = tokens.joined(separator: " ")
         if updatedIndex == searchIndex && tokens == searchTokens {
             return false
         }
@@ -79,12 +50,12 @@ class Exercise {
         return true
     }
 
-    private static let singleWordAbbreviations: [String: String] = [
+    static let singleWordAbbreviations: [String: String] = [
         "db": "dumbbell",
         "bb": "barbell"
     ]
 
-    private static let phraseAbbreviations: [String: [String]] = [
+    static let phraseAbbreviations: [String: [String]] = [
         "ohp": ["overhead", "press"],
         "rdl": ["romanian", "deadlift"]
     ]

@@ -71,6 +71,7 @@ struct RepRangeEditorView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.repRangeSuggestionsSection)
             }
         }
+        .listSectionSpacing(20)
         .navBar(title: "Rep Range") {
             CloseButton()
         }

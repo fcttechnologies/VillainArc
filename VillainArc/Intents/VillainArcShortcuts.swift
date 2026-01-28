@@ -117,7 +117,7 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Recap my last workout in \(.applicationName)"
             ],
             shortTitle: "Last Workout Summary",
-            systemImageName: "questionmark.bubble"
+            systemImageName: "note.text"
         )
         
 //        AppShortcut(
@@ -157,7 +157,7 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Complete set in \(.applicationName)"
             ],
             shortTitle: "Complete Set",
-            systemImageName: "checkmark.circle.badge.questionmark"
+            systemImageName: "checkmark.circle"
         )
 
         AppShortcut(
@@ -170,7 +170,7 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Add exercise in \(.applicationName)"
             ],
             shortTitle: "Add Exercise",
-            systemImageName: "plus.circle"
+            systemImageName: "dumbbell.fill"
         )
 
 //        AppShortcut(

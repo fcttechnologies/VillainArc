@@ -66,10 +66,11 @@ The app supports Siri Shortcuts via in-app App Intents (no separate extension ta
 - `Views/Workout/RestTimerView.swift`: rest timer sheet for start/pause/stop and countdown display.
 - `Views/Components/TimerDurationPicker.swift`: tick-based duration slider for rest time picking with VoiceOver adjustable support.
 - `Views/Workout/AddExerciseView.swift`: exercise picker, search, muscle filters, and accessible toolbar flows.
-- `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI with accessible row metadata and empty states.
+- `Views/Workout/FilteredExerciseListView.swift`: catalog filtering and selection UI with ranked search results, accessible row metadata, and empty states.
 - `Views/Workout/MuscleFilterSheetView.swift`: sheet with chip-based muscle filters, clear/close/confirm actions.
 - `Views/Components/Navbar.swift`: shared inline-large title + reusable close button used by the custom nav bars across sheets.
 - `Helpers/Accessibility.swift`: centralized identifiers/labels for workout flows, lists, sheets, and editors.
+- `Helpers/ExerciseSearch.swift`: shared exercise search scoring/tokens used by the UI and App Intents.
 - `Helpers/KeyboardDismiss.swift`: shared keyboard dismissal helper.
 - `Helpers/Haptics.swift`: reusable UIKit haptics helper for impact/selection/notifications.
 - `Helpers/TimeFormatting.swift`: shared date/time formatting helpers.
