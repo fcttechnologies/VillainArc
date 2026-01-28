@@ -86,6 +86,13 @@ enum AccessibilityIdentifiers {
         return "restTimerRecent-\(history.seconds)-\(timestamp)"
     }
 
+    static func restTimerAdjustButton(deltaSeconds: Int) -> String {
+        let direction = deltaSeconds < 0 ? "minus" : "plus"
+        return "restTimerAdjustButton-\(direction)-\(abs(deltaSeconds))"
+    }
+
+    static let restTimerNextSet = "restTimerNextSet"
+
     static func restTimeRowButton(_ title: String) -> String {
         "restTimeRowButton-\(slug(title))"
     }

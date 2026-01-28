@@ -2,15 +2,20 @@ import SwiftUI
 import SwiftData
 
 struct ExerciseView: View {
+    @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @Query private var previousExercise: [WorkoutExercise]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: WorkoutExercise
     @Binding var showRestTimerSheet: Bool
     let isEditing: Bool
+    private let restTimer = RestTimerState.shared
     
     @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
+    @State private var showRestTimeUpdateAlert = false
+    @State private var restTimeUpdateDeltaSeconds = 0
+    @State private var restTimeUpdateSeconds = 0
     
     init(exercise: WorkoutExercise, showRestTimerSheet: Binding<Bool>, isEditing: Bool = false) {
         self.exercise = exercise
@@ -87,6 +92,18 @@ struct ExerciseView: View {
                     dismissKeyboard()
                 }
             )
+            .alert("Update Rest Timer?", isPresented: $showRestTimeUpdateAlert) {
+                Button("Update") {
+                    Haptics.selection()
+                    restTimer.adjust(by: restTimeUpdateDeltaSeconds)
+                    if restTimer.isActive {
+                        restTimer.startedSeconds = restTimeUpdateSeconds
+                    }
+                }
+                Button("Keep Current", role: .cancel) {}
+            } message: {
+                Text("Update the timer by \(restTimeUpdateDeltaText)?")
+            }
         }
     }
     
@@ -155,6 +172,9 @@ struct ExerciseView: View {
         }
         .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
+                .onDisappear {
+                    checkForRestTimeUpdate()
+                }
         }
     }
     
@@ -162,6 +182,26 @@ struct ExerciseView: View {
         Haptics.selection()
         exercise.addSet(complete: isEditing)
         saveContext(context: context)
+    }
+
+    private func checkForRestTimeUpdate() {
+        guard autoStartRestTimer else { return }
+        guard let startedFromSetID = restTimer.startedFromSetID else { return }
+        guard let matchingSet = exercise.sortedSets.first(where: { $0.persistentModelID == startedFromSetID }) else { return }
+
+        let newRestSeconds = matchingSet.effectiveRestSeconds
+        let originalSeconds = restTimer.startedSeconds
+        guard newRestSeconds != originalSeconds else { return }
+
+        restTimeUpdateDeltaSeconds = newRestSeconds - originalSeconds
+        restTimeUpdateSeconds = newRestSeconds
+        showRestTimeUpdateAlert = true
+    }
+
+    private var restTimeUpdateDeltaText: String {
+        let delta = restTimeUpdateDeltaSeconds
+        let magnitude = secondsToTime(abs(delta))
+        return delta < 0 ? "-\(magnitude)" : "+\(magnitude)"
     }
 
 }

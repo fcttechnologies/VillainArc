@@ -15,31 +15,15 @@ struct WorkoutSplitCreationView: View {
     }
     
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal) {
-                HStack(spacing: 0) {
-                    ForEach(split.sortedDays) { day in
-                        WorkoutSplitDayView(splitDay: day, mode: split.mode)
-                            .padding(.top, 20)
-                            .padding(.horizontal)
-                            .containerRelativeFrame(.horizontal)
-                            .id(day)
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .scrollDisabled(true)
-            .scrollIndicators(.hidden)
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $selectedSplitDay)
-            .onChange(of: selectedSplitDay) {
-                if let selectedSplitDay {
-                    withAnimation(.smooth) {
-                        proxy.scrollTo(selectedSplitDay)
-                    }
-                }
+        TabView(selection: $selectedSplitDay) {
+            ForEach(split.sortedDays) { day in
+                WorkoutSplitDayView(splitDay: day, mode: split.mode)
+                    .padding(.top, 20)
+                    .padding(.horizontal)
+                    .tag(day)
             }
         }
+        .tabViewStyle(.page(indexDisplayMode: .never))
         .safeAreaBar(edge: .top) {
             if split.mode == .weekly {
                 weeklyHeader
@@ -49,14 +33,6 @@ struct WorkoutSplitCreationView: View {
         }
         .navigationTitle(split.mode == .weekly ? "Weekly Split" : "Rotation Split")
         .toolbarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Done") {
-                    
-                }
-                .accessibilityIdentifier("workoutSplitCreationDoneButton")
-            }
-        }
         .accessibilityIdentifier("workoutSplitCreationView")
         .onAppear {
             if split.mode == .weekly {
@@ -87,21 +63,7 @@ struct WorkoutSplitCreationView: View {
                         .contextMenu {
                             if split.days.count > 1 {
                                 Button("Delete Day", systemImage: "trash", role: .destructive) {
-                                    let ordered = split.sortedDays
-                                    let deletedIndex = ordered.firstIndex(of: day) ?? 0
-                                    let currentIndex = selectedSplitDay.flatMap { ordered.firstIndex(of: $0) } ?? 0
-                                    
-                                    split.deleteDay(day)
-                                    context.delete(day)
-                                    saveContext(context: context)
-                                    
-                                    let updated = split.sortedDays
-                                    var nextIndex = currentIndex
-                                    if deletedIndex <= currentIndex, currentIndex > 0 {
-                                        nextIndex = currentIndex - 1
-                                    }
-                                    nextIndex = min(nextIndex, updated.count - 1)
-                                    selectedSplitDay = updated[nextIndex]
+                                    deleteDay(day)
                                 }
                             }
                         }
@@ -218,65 +180,23 @@ struct WorkoutSplitCreationView: View {
         .accessibilityIdentifier("addRotationDayCapsule")
         .accessibilityLabel("Add day")
     }
-}
-
-struct WorkoutSplitDayView: View {
-    @Environment(\.modelContext) private var context
-    @Bindable var splitDay: WorkoutSplitDay
-    let mode: SplitMode
     
-    var body: some View {
-        GeometryReader { geometry in
-            ScrollView {
-                VStack(spacing: 20) {
-                    if mode == .weekly {
-                        Text(weekdayName(for: splitDay.weekday))
-                            .font(.title)
-                            .bold()
-                    }
-                    Toggle("Rest Day", systemImage: "bed.double.fill", isOn: $splitDay.isRestDay)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .padding(.trailing)
-                        .tint(.blue)
-                    
-                    if !splitDay.isRestDay {
-                        TextField("Split Day Name", text: $splitDay.name)
-                            .font(.title)
-                            .fontWeight(.semibold)
-                        Button {
-                            
-                        } label: {
-                            if let template = splitDay.template {
-                                TemplateRowView(template: template)
-                            } else {
-                                ContentUnavailableView("Select a template \(mode == .weekly ? ("for \(weekdayName(for: splitDay.weekday))") : "\(splitDay.name)")", systemImage: "list.bullet.clipboard")
-                                    .foregroundStyle(.white)
-                                    .background(.blue.gradient, in: .rect(cornerRadius: 20))
-                                    .frame(height: geometry.size.height / 3)
-                            }
-                        }
-                        .padding(.top)
-                    } else {
-                        ContentUnavailableView("Enjoy your day off!", systemImage: "zzz")
-                            .frame(height: geometry.size.height / 1.4)
-                    }
-                }
-            }
-            .scrollDismissesKeyboard(.immediately)
+    private func deleteDay(_ day: WorkoutSplitDay) {
+        let ordered = split.sortedDays
+        let deletedIndex = ordered.firstIndex(of: day) ?? 0
+        let currentIndex = selectedSplitDay.flatMap { ordered.firstIndex(of: $0) } ?? 0
+        
+        split.deleteDay(day)
+        context.delete(day)
+        saveContext(context: context)
+        
+        let updated = split.sortedDays
+        var nextIndex = currentIndex
+        if deletedIndex <= currentIndex, currentIndex > 0 {
+            nextIndex = currentIndex - 1
         }
-        .animation(.easeInOut, value: splitDay.isRestDay)
-        .onChange(of: splitDay.isRestDay) {
-            saveContext(context: context)
-        }
-        .onChange(of: splitDay.name) {
-            scheduleSave(context: context)
-        }
-    }
-    
-    private func weekdayName(for weekday: Int) -> String {
-        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        return names[weekday - 1]
+        nextIndex = min(nextIndex, updated.count - 1)
+        selectedSplitDay = updated[nextIndex]
     }
 }
 

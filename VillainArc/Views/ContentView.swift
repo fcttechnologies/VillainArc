@@ -11,6 +11,11 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $router.path) {
             ScrollView {
+                Button {
+                    router.navigate(to: .splitList)
+                } label: {
+                    Text("hi")
+                }
                 RecentWorkoutSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
@@ -69,6 +74,10 @@ struct ContentView: View {
                     TemplatesListView()
                 case .templateDetail(let template):
                     TemplateDetailView(template: template)
+                case .splitList:
+                    WorkoutSplitView()
+                case .splitDettail(let split):
+                    WorkoutSplitCreationView(split: split)
                 }
             }
         }

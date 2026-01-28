@@ -3,28 +3,19 @@ import SwiftData
 
 struct RestTimerView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(RestTimerState.self) private var restTimer
+    private let restTimer = RestTimerState.shared
     @Environment(\.modelContext) private var context
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
     @State private var selectedSeconds = RestTimePolicy.defaultRestSeconds
+    @Bindable var workout: Workout
     
     var body: some View {
         NavigationStack {
             List {
                 Group {
-                    if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
-                        VStack(spacing: 6) {
-                            Text("\(Image(systemName: "bell")) \(endDate.formatted(date: .omitted, time: .shortened))")
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                            
-                            Text(endDate, style: .timer)
-                                .font(.system(size: 80, weight: .bold))
-                        }
-                    } else {
-                        Text(secondsToTime(restTimer.isPaused ? restTimer.pausedRemainingSeconds : selectedSeconds))
-                            .font(.system(size: 80, weight: .bold))
-                            .contentTransition(.numericText())
+                    VStack(spacing: 0) {
+                        timerDisplay
+                        nextSetView
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -107,6 +98,22 @@ struct RestTimerView: View {
             HStack(spacing: 16) {
                 Button {
                     Haptics.selection()
+                    restTimer.stop()
+                    Task { await IntentDonations.donateStopRestTimer() }
+                } label: {
+                    Text("Stop")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .padding(.vertical, 5)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glassProminent)
+                .tint(.red)
+                .accessibilityIdentifier("restTimerStopButton")
+                .accessibilityHint("Stops the rest timer.")
+                
+                Button {
+                    Haptics.selection()
                     restTimer.pause()
                     Task { await IntentDonations.donatePauseRestTimer() }
                 } label: {
@@ -120,7 +127,9 @@ struct RestTimerView: View {
                 .tint(.yellow)
                 .accessibilityIdentifier("restTimerPauseButton")
                 .accessibilityHint("Pauses the rest timer.")
-                
+            }
+        } else if restTimer.isPaused {
+            HStack(spacing: 16) {
                 Button {
                     Haptics.selection()
                     restTimer.stop()
@@ -136,9 +145,7 @@ struct RestTimerView: View {
                 .tint(.red)
                 .accessibilityIdentifier("restTimerStopButton")
                 .accessibilityHint("Stops the rest timer.")
-            }
-        } else if restTimer.isPaused {
-            HStack(spacing: 16) {
+                
                 Button {
                     Haptics.selection()
                     restTimer.resume()
@@ -154,22 +161,6 @@ struct RestTimerView: View {
                 .tint(.green)
                 .accessibilityIdentifier("restTimerResumeButton")
                 .accessibilityHint("Resumes the rest timer.")
-                
-                Button {
-                    Haptics.selection()
-                    restTimer.stop()
-                    Task { await IntentDonations.donateStopRestTimer() }
-                } label: {
-                    Text("Stop")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .padding(.vertical, 5)
-                }
-                .buttonSizing(.flexible)
-                .buttonStyle(.glassProminent)
-                .tint(.red)
-                .accessibilityIdentifier("restTimerStopButton")
-                .accessibilityHint("Stops the rest timer.")
             }
         } else {
             Button {
@@ -191,6 +182,79 @@ struct RestTimerView: View {
             .accessibilityHint("Starts the rest timer.")
         }
     }
+
+    @ViewBuilder
+    private var timerDisplay: some View {
+        if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
+            VStack(spacing: 6) {
+                Text("\(Image(systemName: "bell")) \(endDate.formatted(date: .omitted, time: .shortened))")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 12) {
+                    adjustButton(deltaSeconds: -15)
+
+                    Text(endDate, style: .timer)
+                        .font(.system(size: 80, weight: .bold))
+
+                    adjustButton(deltaSeconds: 15)
+                }
+            }
+        } else {
+            let displayText = secondsToTime(restTimer.isPaused ? restTimer.pausedRemainingSeconds : selectedSeconds)
+
+            if restTimer.isPaused {
+                HStack(spacing: 12) {
+                    adjustButton(deltaSeconds: -15)
+
+                    Text(displayText)
+                        .font(.system(size: 80, weight: .bold))
+                        .contentTransition(.numericText())
+
+                    adjustButton(deltaSeconds: 15)
+                }
+            } else {
+                Text(displayText)
+                    .font(.system(size: 80, weight: .bold))
+                    .contentTransition(.numericText())
+            }
+        }
+    }
+
+    private func adjustButton(deltaSeconds: Int) -> some View {
+        Button {
+            Haptics.selection()
+            restTimer.adjust(by: deltaSeconds)
+        } label: {
+            Text("\(deltaSeconds < 0 ? "-" : "+")15")
+                .fontWeight(.semibold)
+                .padding(5)
+                .font(.subheadline)
+        }
+        .buttonBorderShape(.circle)
+        .buttonStyle(.glass)
+        .tint(deltaSeconds < 0 ? .red : .blue)
+        .accessibilityIdentifier(AccessibilityIdentifiers.restTimerAdjustButton(deltaSeconds: deltaSeconds))
+        .accessibilityLabel(deltaSeconds < 0 ? "Decrease rest time by 15 seconds" : "Increase rest time by 15 seconds")
+        .accessibilityHint("Adjusts the rest timer.")
+    }
+
+    @ViewBuilder
+    private var nextSetView: some View {
+        if let nextSet = workout.activeSet(),
+           let exercise = workout.exercise(containing: nextSet) {
+            Text("Next Set: \(exercise.name) - \(nextSet.reps) x \(formattedWeight(nextSet.weight)) lbs")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerNextSet)
+                .accessibilityLabel("Next set")
+                .accessibilityValue("\(exercise.name), \(nextSet.reps) reps, \(formattedWeight(nextSet.weight)) pounds")
+        }
+    }
+
+    private func formattedWeight(_ weight: Double) -> String {
+        weight.formatted(.number.precision(.fractionLength(0...2)))
+    }
     
     private func deleteRecentTimes(at offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
@@ -205,7 +269,7 @@ struct RestTimerView: View {
 }
 
 #Preview {
-    RestTimerView()
+    RestTimerView(workout: sampleIncompleteWorkout())
         .environment(RestTimerState())
         .sampleDataConainer()
 }

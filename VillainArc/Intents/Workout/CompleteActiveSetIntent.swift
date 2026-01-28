@@ -13,17 +13,17 @@ struct CompleteActiveSetIntent: AppIntent {
             return .result(dialog: "No active workout to update.")
         }
 
-        for exercise in workout.sortedExercises {
-            if let set = exercise.sortedSets.first(where: { !$0.complete }) {
-                set.complete = true
-                startRestTimerIfNeeded(for: set, context: context)
-                saveContext(context: context)
-                let setNumber = set.index + 1
-                return .result(dialog: "Completed set \(setNumber) of \(exercise.name).")
-            }
+        guard let set = workout.activeSet(),
+              let exercise = workout.exercise(containing: set)
+        else {
+            return .result(dialog: "No incomplete sets found.")
         }
 
-        return .result(dialog: "No incomplete sets found.")
+        set.complete = true
+        startRestTimerIfNeeded(for: set, context: context)
+        saveContext(context: context)
+        let setNumber = set.index + 1
+        return .result(dialog: "Completed set \(setNumber) of \(exercise.name).")
     }
     
     @MainActor
@@ -32,7 +32,7 @@ struct CompleteActiveSetIntent: AppIntent {
         let restSeconds = set.effectiveRestSeconds
         guard restSeconds > 0 else { return }
 
-        RestTimerState.shared.start(seconds: restSeconds)
+        RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
         RestTimeHistory.record(seconds: restSeconds, context: context)
         Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
     }

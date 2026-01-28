@@ -31,11 +31,20 @@ class WorkoutSplit {
     }
 
     func missedDay() {
-        weeklySplitOffset = (weeklySplitOffset + 1) % 7
+        weeklySplitOffset = wrappedWeeklyOffset(weeklySplitOffset - 1)
     }
 
     func resetSplit() {
         weeklySplitOffset = 0
+    }
+
+    var normalizedWeeklyOffset: Int {
+        wrappedWeeklyOffset(weeklySplitOffset)
+    }
+
+    private func wrappedWeeklyOffset(_ value: Int) -> Int {
+        let mod = ((value % 7) + 7) % 7
+        return mod == 0 ? 0 : mod - 7
     }
 
     func updateCurrentIndex(advanced: Bool, today: Date = .now) {
@@ -88,7 +97,7 @@ class WorkoutSplit {
         switch mode {
         case .weekly:
             let weekday = Calendar.current.component(.weekday, from: .now)
-            let adjusted = weekday + weeklySplitOffset
+            let adjusted = weekday + normalizedWeeklyOffset
             let wrapped = ((adjusted - 1) % 7 + 7) % 7 + 1
             return wrapped
         case .rotation:

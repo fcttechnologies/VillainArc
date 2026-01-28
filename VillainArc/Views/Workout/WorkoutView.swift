@@ -5,14 +5,17 @@ struct WorkoutView: View {
     @Bindable var workout: Workout
     let isEditing: Bool
     let onDeleteFromEdit: (() -> Void)?
+    private let restTimer = RestTimerState.shared
     
     @State private var activeExercise: WorkoutExercise?
     @State private var showExerciseListView = false
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
-    @State private var showWorkoutSettingsSheet = false
-    @State private var restTimer = RestTimerState.shared
-    @State private var showDeleteWorkoutConfirmation = false
+    @State private var showDeleteWorkoutAlert = false
+    @State private var showTitleEditorSheet = false
+    @State private var showNotesEditorSheet = false
+    @State private var showDeleteConfirmation = false
+    @State private var showSaveConfirmation = false
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -23,6 +26,12 @@ struct WorkoutView: View {
         self.workout = workout
         self.isEditing = isEditing
         self.onDeleteFromEdit = onDeleteFromEdit
+    }
+    
+    private var incompleteSetCount: Int {
+        workout.exercises.reduce(0) { count, exercise in
+            count + exercise.sets.filter { !$0.complete }.count
+        }
     }
     
     var body: some View {
@@ -36,6 +45,14 @@ struct WorkoutView: View {
             }
             .navigationTitle(workout.title)
             .navigationSubtitle(Text(workout.startTime, style: .date))
+            .toolbarTitleMenu {
+                Button("Change Title", systemImage: "pencil") {
+                    showTitleEditorSheet = true
+                }
+                Button("Workout Notes", systemImage: "note.text") {
+                    showNotesEditorSheet = true
+                }
+            }
             .toolbarTitleDisplayMode(.inline)
             .animation(.bouncy, value: showExerciseListView)
             .toolbar {
@@ -62,42 +79,7 @@ struct WorkoutView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    if workout.exercises.isEmpty {
-                        Button("Cancel Workout", systemImage: "xmark", role: .close) {
-                            deleteWorkout()
-                        }
-                        .labelStyle(.iconOnly)
-                        .accessibilityLabel("Delete Workout")
-                        .accessibilityIdentifier("workoutDeleteEmptyButton")
-                        .accessibilityHint("Deletes this workout.")
-                    } else if showExerciseListView {
-                        Button("Done Editing", systemImage: "checkmark") {
-                            Haptics.selection()
-                            showExerciseListView = false
-                        }
-                        .labelStyle(.iconOnly)
-                        .tint(.blue)
-                        .accessibilityIdentifier("workoutDoneEditingButton")
-                        .accessibilityHint("Finishes editing the list of exercises.")
-                    } else {
-                        Menu("Workout Options", systemImage: "ellipsis") {
-                            Button("Edit Exercises", systemImage: "pencil") {
-                                Haptics.selection()
-                                showExerciseListView = true
-                            }
-                            .accessibilityIdentifier("workoutEditExercisesButton")
-                            .accessibilityHint("Show the list of exercises.")
-                            Button("Settings", systemImage: "gearshape") {
-                                Haptics.selection()
-                                showWorkoutSettingsSheet = true
-                            }
-                            .accessibilityIdentifier("workoutSettingsButton")
-                            .accessibilityHint("Shows workout settings.")
-                        }
-                        .labelStyle(.iconOnly)
-                        .accessibilityIdentifier("workoutOptionsMenu")
-                        .accessibilityHint("Workout actions.")
-                    }
+                    workoutOptionsToolbarLabel
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
@@ -117,15 +99,20 @@ struct WorkoutView: View {
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showRestTimerSheet) {
-                RestTimerView()
+                RestTimerView(workout: workout)
                     .presentationDetents([.medium, .large])
                     .presentationBackground(Color(.systemBackground))
             }
-            .sheet(isPresented: $showWorkoutSettingsSheet) {
-                WorkoutSettingsView(workout: workout, isEditing: isEditing, onFinish: finishWorkout, onDelete: deleteWorkout)
+            .sheet(isPresented: $showNotesEditorSheet) {
+                WorkoutNotesEditorView(workout: workout)
+                    .presentationDetents([.fraction(0.4)])
+            }
+            .sheet(isPresented: $showTitleEditorSheet) {
+                WorkoutTitleEditorView(workout: workout)
+                    .presentationDetents([.fraction(0.2)])
             }
         }
-        .alert("Delete Workout?", isPresented: $showDeleteWorkoutConfirmation) {
+        .alert("Delete Workout?", isPresented: $showDeleteWorkoutAlert) {
             Button("Delete Workout", role: .destructive) {
                 deleteWorkoutFromEdit()
             }
@@ -135,7 +122,6 @@ struct WorkoutView: View {
         } message: {
             Text("This is the last exercise. Deleting it will delete the workout.")
         }
-        .environment(restTimer)
     }
     
     var exerciseTabView: some View {
@@ -224,9 +210,88 @@ struct WorkoutView: View {
         }
     }
     
+    @ViewBuilder
+    private var workoutOptionsToolbarLabel: some View {
+        Group {
+            if workout.exercises.isEmpty {
+                Button("Cancel Workout", systemImage: "xmark", role: .close) {
+                    deleteWorkout()
+                }
+                .labelStyle(.iconOnly)
+                .accessibilityLabel("Delete Workout")
+                .accessibilityIdentifier("workoutDeleteEmptyButton")
+                .accessibilityHint("Deletes this workout.")
+            } else if showExerciseListView {
+                Button("Done Editing", systemImage: "checkmark") {
+                    Haptics.selection()
+                    showExerciseListView = false
+                }
+                .labelStyle(.iconOnly)
+                .tint(.blue)
+                .accessibilityIdentifier("workoutDoneEditingButton")
+                .accessibilityHint("Finishes editing the list of exercises.")
+            } else {
+                Menu("Workout Options", systemImage: "ellipsis") {
+                    Button("Edit Exercises", systemImage: "pencil") {
+                        Haptics.selection()
+                        showExerciseListView = true
+                    }
+                    .accessibilityIdentifier("workoutEditExercisesButton")
+                    .accessibilityHint("Show the list of exercises.")
+                    Button("Finish Workout", systemImage: "checkmark", role: .confirm) {
+                        showSaveConfirmation = true
+                    }
+                    .tint(.green)
+                    .accessibilityIdentifier("workoutFinishButton")
+                    .accessibilityHint("Finishes and saves the workout.")
+                    Button("Cancel Workout", systemImage: "xmark", role: .destructive) {
+                        showDeleteConfirmation = true
+                    }
+                    .tint(.red)
+                    .buttonStyle(.glassProminent)
+                    .accessibilityIdentifier("workoutDeleteButton")
+                    .accessibilityHint("Deletes this workout.")
+                }
+                .labelStyle(.iconOnly)
+                .accessibilityIdentifier("workoutOptionsMenu")
+                .accessibilityHint("Workout actions.")
+                .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
+                    if incompleteSetCount > 0 {
+                        Button("Mark All Sets Complete") {
+                            finishWorkout(action: .markAllComplete)
+                        }
+                        .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
+                        Button("Delete Incomplete Sets", role: .destructive) {
+                            finishWorkout(action: .deleteIncomplete)
+                        }
+                        .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
+                    } else {
+                        Button("Finish", role: .confirm) {
+                            finishWorkout(action: .markAllComplete)
+                        }
+                        .accessibilityIdentifier("workoutFinishConfirmButton")
+                    }
+                } message: {
+                    if incompleteSetCount > 0 {
+                        Text("Before finishing, choose how to handle incomplete sets.")
+                    } else {
+                        Text("Finish and save workout?")
+                    }
+                }
+            }
+        }
+        .confirmationDialog("Cancel Workout", isPresented: $showDeleteConfirmation) {
+            Button("Cancel Workout", role: .destructive) {
+                showDeleteConfirmation = false
+                deleteWorkout()
+            }
+            .accessibilityIdentifier("workoutConfirmDeleteButton")
+        } message: {
+            Text("Are you sure you want to delete this workout?")
+        }
+    }
+    
     private func finishWorkout(action: WorkoutFinishAction) {
-        showWorkoutSettingsSheet = false
-        
         switch action {
         case .markAllComplete:
             for exercise in workout.exercises {
@@ -272,7 +337,6 @@ struct WorkoutView: View {
     
     private func deleteWorkout() {
         Haptics.selection()
-        showWorkoutSettingsSheet = false
         restTimer.stop()
         context.delete(workout)
         saveContext(context: context)
@@ -283,7 +347,7 @@ struct WorkoutView: View {
     private func deleteExercise(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
         if isEditing, workout.exercises.count - offsets.count == 0 {
-            showDeleteWorkoutConfirmation = true
+            showDeleteWorkoutAlert = true
             return
         }
         deleteExercises(at: offsets)
@@ -310,7 +374,6 @@ struct WorkoutView: View {
     
     private func deleteWorkoutFromEdit() {
         Haptics.selection()
-        showWorkoutSettingsSheet = false
         onDeleteFromEdit?()
     }
     
@@ -318,6 +381,11 @@ struct WorkoutView: View {
         workout.moveExercise(from: source, to: destination)
         saveContext(context: context)
     }
+}
+
+enum WorkoutFinishAction {
+    case markAllComplete
+    case deleteIncomplete
 }
 
 #Preview {

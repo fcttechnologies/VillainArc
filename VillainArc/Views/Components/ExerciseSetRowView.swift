@@ -19,7 +19,7 @@ struct ExerciseSetRowView: View {
     @Bindable var exercise: WorkoutExercise
     @Binding var showRestTimerSheet: Bool
     @Environment(\.modelContext) private var context
-    @Environment(RestTimerState.self) private var restTimer
+    private let restTimer = RestTimerState.shared
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
     
@@ -136,7 +136,7 @@ struct ExerciseSetRowView: View {
             Button("Replace", role: .destructive) {
                 let restSeconds = set.effectiveRestSeconds
                 if restSeconds > 0 {
-                    restTimer.start(seconds: restSeconds)
+                    restTimer.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
                     RestTimeHistory.record(seconds: restSeconds, context: context)
                     saveContext(context: context)
                     Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
@@ -144,7 +144,7 @@ struct ExerciseSetRowView: View {
                 }
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetReplaceTimerButton(exercise, set: set))
-            Button("Cancel", role: .cancel) {}
+            Button("Keep Current", role: .cancel) {}
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCancelReplaceTimerButton(exercise, set: set))
         } message: {
             Text("Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
@@ -166,7 +166,7 @@ struct ExerciseSetRowView: View {
         if restTimer.isActive {
             showOverrideTimerAlert = true
         } else {
-            restTimer.start(seconds: restSeconds)
+            restTimer.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
             RestTimeHistory.record(seconds: restSeconds, context: context)
             saveContext(context: context)
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }

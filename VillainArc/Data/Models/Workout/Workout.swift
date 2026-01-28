@@ -111,4 +111,19 @@ extension Workout {
     static var completedWorkouts: FetchDescriptor<Workout> {
         completedWorkouts()
     }
+
+    func activeSet() -> ExerciseSet? {
+        for exercise in sortedExercises {
+            if let set = exercise.sortedSets.first(where: { !$0.complete }) {
+                return set
+            }
+        }
+        return nil
+    }
+
+    func exercise(containing set: ExerciseSet) -> WorkoutExercise? {
+        sortedExercises.first { exercise in
+            exercise.sets.contains { $0 === set }
+        }
+    }
 }

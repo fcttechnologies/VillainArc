@@ -153,7 +153,8 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Mark next set complete in \(.applicationName)",
                 "Log my set in \(.applicationName)",
                 "Done with my set in \(.applicationName)",
-                "Set complete in \(.applicationName)"
+                "Set complete in \(.applicationName)",
+                "Complete set in \(.applicationName)"
             ],
             shortTitle: "Complete Set",
             systemImageName: "checkmark.circle.badge.questionmark"

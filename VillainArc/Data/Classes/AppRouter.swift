@@ -13,6 +13,8 @@ final class AppRouter {
         case workoutDetail(Workout)
         case templateList
         case templateDetail(WorkoutTemplate)
+        case splitList
+        case splitDettail(WorkoutSplit)
     }
     
     var path = NavigationPath()

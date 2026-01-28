@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 @MainActor
 @Observable
@@ -10,21 +11,34 @@ final class RestTimerState {
         static let endDate = "restTimerEndDate"
         static let remainingSeconds = "restTimerRemainingSeconds"
         static let isPaused = "restTimerIsPaused"
+        static let startedFromSetID = "restTimerStartedFromSetID"
+        static let startedSeconds = "restTimerStartedSeconds"
     }
     
     private var stopTask: Task<Void, Never>?
     var endDate: Date?
     var pausedRemainingSeconds: Int
     var isPaused: Bool
+    var startedFromSetID: PersistentIdentifier?
+    var startedSeconds: Int
     
     init() {
         let defaults = UserDefaults.standard
         let storedEndDate = defaults.double(forKey: StorageKey.endDate)
         let storedRemaining = defaults.integer(forKey: StorageKey.remainingSeconds)
         let storedPaused = defaults.bool(forKey: StorageKey.isPaused)
+        let storedStartedSeconds = defaults.integer(forKey: StorageKey.startedSeconds)
+        let storedStartedSetID = defaults.data(forKey: StorageKey.startedFromSetID)
         
         pausedRemainingSeconds = max(0, storedRemaining)
         isPaused = storedPaused
+        startedSeconds = max(0, storedStartedSeconds)
+        if let storedStartedSetID,
+           let decodedID = try? JSONDecoder().decode(PersistentIdentifier.self, from: storedStartedSetID) {
+            startedFromSetID = decodedID
+        } else {
+            startedFromSetID = nil
+        }
         
         if storedEndDate > 0 {
             let date = Date(timeIntervalSince1970: storedEndDate)
@@ -42,6 +56,11 @@ final class RestTimerState {
                 isPaused = false
             }
         }
+
+        if !isActive {
+            startedFromSetID = nil
+            startedSeconds = 0
+        }
     }
     
     var isRunning: Bool {
@@ -52,7 +71,7 @@ final class RestTimerState {
         isRunning || (isPaused && pausedRemainingSeconds > 0)
     }
     
-    func start(seconds: Int) {
+    func start(seconds: Int, startedFromSetID: PersistentIdentifier? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
             stop()
@@ -62,6 +81,8 @@ final class RestTimerState {
         endDate = Date.now.addingTimeInterval(TimeInterval(clamped))
         pausedRemainingSeconds = 0
         isPaused = false
+        self.startedFromSetID = startedFromSetID
+        startedSeconds = clamped
         persist()
         scheduleStop()
     }
@@ -96,9 +117,36 @@ final class RestTimerState {
         endDate = nil
         pausedRemainingSeconds = 0
         isPaused = false
+        startedFromSetID = nil
+        startedSeconds = 0
         persist()
         stopTask?.cancel()
         stopTask = nil
+    }
+
+    func adjust(by deltaSeconds: Int) {
+        guard deltaSeconds != 0 else { return }
+
+        if isRunning, let endDate {
+            let adjustedEndDate = endDate.addingTimeInterval(TimeInterval(deltaSeconds))
+            if adjustedEndDate <= Date.now {
+                stop()
+                return
+            }
+
+            self.endDate = adjustedEndDate
+            persist()
+            scheduleStop()
+        } else if isPaused {
+            let adjustedRemaining = max(0, pausedRemainingSeconds + deltaSeconds)
+            if adjustedRemaining == 0 {
+                stop()
+                return
+            }
+
+            pausedRemainingSeconds = adjustedRemaining
+            persist()
+        }
     }
     
     private func scheduleStop() {
@@ -143,5 +191,12 @@ final class RestTimerState {
         }
         defaults.set(pausedRemainingSeconds, forKey: StorageKey.remainingSeconds)
         defaults.set(isPaused, forKey: StorageKey.isPaused)
+        defaults.set(startedSeconds, forKey: StorageKey.startedSeconds)
+        if let startedFromSetID,
+           let encodedID = try? JSONEncoder().encode(startedFromSetID) {
+            defaults.set(encodedID, forKey: StorageKey.startedFromSetID)
+        } else {
+            defaults.removeObject(forKey: StorageKey.startedFromSetID)
+        }
     }
 }
