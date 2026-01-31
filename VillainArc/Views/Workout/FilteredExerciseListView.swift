@@ -49,10 +49,6 @@ struct FilteredExerciseListView: View {
         let needsMuscleFilter = !muscleFilters.isEmpty
         let needsFilters = needsFavoriteFilter || needsMuscleFilter
         
-        let isSearchMatch: (Exercise) -> Bool = { exercise in
-            matchesSearch(exercise, queryTokens: queryTokens)
-        }
-        
         if queryTokens.isEmpty && !needsFilters {
             return sourceExercises
         }
@@ -69,21 +65,25 @@ struct FilteredExerciseListView: View {
             return baseFiltered
         }
         
-        let exactFiltered = baseFiltered.filter { exercise in
-            isSearchMatch(exercise)
+        let scored = exerciseSearchMatches(in: baseFiltered, queryTokens: queryTokens)
+        if !scored.isEmpty {
+            return scored.sorted { left, right in
+                if left.score != right.score {
+                    return left.score > right.score
+                }
+                return isOrderedBefore(left.exercise, right.exercise)
+            }.map(\.exercise)
         }
-        
-        if !exactFiltered.isEmpty {
-            return exactFiltered
-        }
-        
-        guard shouldUseFuzzySearch(queryTokens: queryTokens) else {
-            return []
-        }
-        
-        return baseFiltered.filter { exercise in
+
+        guard shouldUseFuzzySearch(queryTokens: queryTokens) else { return [] }
+
+        let fuzzyFiltered = baseFiltered.filter { exercise in
             matchesSearchFuzzy(exercise, queryTokens: queryTokens)
         }
+        if fuzzyFiltered.isEmpty {
+            return []
+        }
+        return fuzzyFiltered.sorted(by: isOrderedBefore)
     }
     
     var body: some View {
@@ -194,21 +194,12 @@ struct FilteredExerciseListView: View {
         }
     }
 
-    private func matchesSearch(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        if queryTokens.isEmpty {
-            return true
-        }
-        
-        let haystack = exercise.searchIndex
-        return queryTokens.allSatisfy { haystack.contains($0) }
-    }
-
     private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
         if queryTokens.isEmpty {
             return true
         }
         
-        let haystackTokens = exercise.searchTokens
+        let haystackTokens = exerciseSearchTokens(for: exercise)
         
         return queryTokens.allSatisfy { queryToken in
             let maxDistance = maximumFuzzyDistance(for: queryToken)
@@ -224,6 +215,26 @@ struct FilteredExerciseListView: View {
                 }
                 return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
             }
+        }
+    }
+
+    private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
+        switch sortOption {
+        case .mostRecent:
+            let leftDate = left.lastUsed ?? .distantPast
+            let rightDate = right.lastUsed ?? .distantPast
+            if leftDate != rightDate {
+                return leftDate > rightDate
+            }
+            return left.name.localizedStandardCompare(right.name) == .orderedAscending
+        case .alphabetical:
+            let nameComparison = left.name.localizedStandardCompare(right.name)
+            if nameComparison != .orderedSame {
+                return nameComparison == .orderedAscending
+            }
+            let leftDate = left.lastUsed ?? .distantPast
+            let rightDate = right.lastUsed ?? .distantPast
+            return leftDate > rightDate
         }
     }
 }

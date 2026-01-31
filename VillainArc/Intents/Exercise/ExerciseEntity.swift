@@ -72,12 +72,15 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
             return exercises.map(ExerciseEntity.init)
         }
 
-        let exactFiltered = exercises.filter { exercise in
-            matchesSearch(exercise, queryTokens: queryTokens)
-        }
-
-        if !exactFiltered.isEmpty {
-            return exactFiltered.map(ExerciseEntity.init)
+        let scored = exerciseSearchMatches(in: exercises, queryTokens: queryTokens)
+        if !scored.isEmpty {
+            let sorted = scored.sorted { left, right in
+                if left.score != right.score {
+                    return left.score > right.score
+                }
+                return isOrderedBefore(left.exercise, right.exercise)
+            }
+            return sorted.map { ExerciseEntity(exercise: $0.exercise) }
         }
 
         guard shouldUseFuzzySearch(queryTokens: queryTokens) else {
@@ -89,16 +92,11 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         }
         return fuzzyFiltered.map(ExerciseEntity.init)
     }
-
-    private func matchesSearch(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        guard !queryTokens.isEmpty else { return true }
-        let haystack = exercise.searchIndex
-        return queryTokens.allSatisfy { haystack.contains($0) }
-    }
-
+    
+    @MainActor
     private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
         guard !queryTokens.isEmpty else { return true }
-        let haystackTokens = exercise.searchTokens
+        let haystackTokens = exerciseSearchTokens(for: exercise)
 
         return queryTokens.allSatisfy { queryToken in
             let maxDistance = maximumFuzzyDistance(for: queryToken)
@@ -115,5 +113,14 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
                 return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
             }
         }
+    }
+
+    private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
+        let leftDate = left.lastUsed ?? .distantPast
+        let rightDate = right.lastUsed ?? .distantPast
+        if leftDate != rightDate {
+            return leftDate > rightDate
+        }
+        return left.name.localizedStandardCompare(right.name) == .orderedAscending
     }
 }
