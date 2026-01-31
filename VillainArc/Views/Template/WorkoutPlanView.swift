@@ -348,7 +348,7 @@ private struct WorkoutPlanExerciseView: View {
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .sheet(isPresented: $showRepRangeEditor) {
-            RepRangeEditorView(repRange: exercise.repRange)
+            RepRangeEditorView(repRange: exercise.repRange, catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showRestTimeEditor) {

@@ -96,4 +96,24 @@ extension ExercisePerformance {
         descriptor.fetchLimit = 1
         return descriptor
     }
+    
+    static func matching(catalogID: String) -> FetchDescriptor<ExercisePerformance> {
+        let predicate = #Predicate<ExercisePerformance> { item in
+            item.catalogID == catalogID && item.workoutSession?.completed == true
+        }
+        return FetchDescriptor(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)]
+        )
+    }
+
+    static var completedAll: FetchDescriptor<ExercisePerformance> {
+        let predicate = #Predicate<ExercisePerformance> { item in
+            item.workoutSession?.completed == true
+        }
+        return FetchDescriptor(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)]
+        )
+    }
 }

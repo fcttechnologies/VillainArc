@@ -154,7 +154,7 @@ struct RepRangeEditorView: View {
     private func collectCandidates(catalogID: String?) -> [RepRangeCandidate] {
         var candidates: [RepRangeCandidate] = []
 
-        let workoutExercises = fetchWorkoutExercises(catalogID: catalogID)
+        let workoutExercises = fetchExercises(catalogID: catalogID)
         for exercise in workoutExercises {
             guard let kind = suggestionKind(from: exercise.repRange) else { continue }
             candidates.append(RepRangeCandidate(kind: kind, date: exercise.date))
@@ -205,11 +205,11 @@ struct RepRangeEditorView: View {
         .first
     }
 
-    private func fetchWorkoutExercises(catalogID: String?) -> [WorkoutExercise] {
+    private func fetchExercises(catalogID: String?) -> [ExercisePerformance] {
         if let catalogID {
-            return (try? context.fetch(WorkoutExercise.matching(catalogID: catalogID))) ?? []
+            return (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID))) ?? []
         }
-        return (try? context.fetch(WorkoutExercise.completedAll)) ?? []
+        return (try? context.fetch(ExercisePerformance.completedAll)) ?? []
     }
 
 }
