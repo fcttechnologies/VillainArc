@@ -24,13 +24,13 @@ struct StartTodaysWorkoutIntent: AppIntent {
         split.refreshRotationIfNeeded()
         saveContext(context: context)
         
-        // Check no template being edited
-        if let _ = try? context.fetch(WorkoutTemplate.incomplete).first {
-            throw StartWorkoutError.templateIsActive
+        // Check no workout plan is being created
+        if let _ = try? context.fetch(WorkoutPlan.incomplete).first {
+            throw StartWorkoutError.workoutPlanIsActive
         }
         
         // Check no workout in progress
-        if let _ = try? context.fetch(Workout.incomplete).first {
+        if let _ = try? context.fetch(WorkoutSession.incomplete).first {
             throw StartWorkoutError.workoutIsActive
         }
         
@@ -44,13 +44,13 @@ struct StartTodaysWorkoutIntent: AppIntent {
             throw StartTodaysWorkoutError.todayIsRestDay
         }
         
-        // Check template exists for today
-        guard let template = todaysDay.template else {
-            throw StartTodaysWorkoutError.noTemplateForToday
+        // Check workout plan exists for today
+        guard let workoutPlan = todaysDay.workoutPlan else {
+            throw StartTodaysWorkoutError.noWorkoutPlanForToday
         }
         
-        await IntentDonations.donateStartWorkoutWithTemplate(template: template)
-        AppRouter.shared.startWorkout(from: template)
+        await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: workoutPlan)
+        AppRouter.shared.startWorkoutSession(from: workoutPlan)
         return .result(opensIntent: OpenAppIntent())
     }
 }
@@ -60,7 +60,7 @@ enum StartTodaysWorkoutError: Error, CustomLocalizedStringResourceConvertible {
     case noDaysInSplit
     case noDayForToday
     case todayIsRestDay
-    case noTemplateForToday
+    case noWorkoutPlanForToday
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
@@ -72,8 +72,8 @@ enum StartTodaysWorkoutError: Error, CustomLocalizedStringResourceConvertible {
             return "Couldn't determine today's workout."
         case .todayIsRestDay:
             return "Today is a rest day! Enjoy your recovery."
-        case .noTemplateForToday:
-            return "No template assigned for today's workout."
+        case .noWorkoutPlanForToday:
+            return "You don't have a workout plan assigned for today."
         }
     }
 }

@@ -19,19 +19,19 @@ struct VillainArcShortcuts: AppShortcutsProvider {
         )
 
         AppShortcut(
-            intent: StartWorkoutWithTemplateIntent(),
+            intent: StartWorkoutWithPlanIntent(),
             phrases: [
-                "Start \(\.$template) in \(.applicationName)",
-                "Start \(\.$template) with \(.applicationName)",
-                "Start the \(\.$template) workout in \(.applicationName)",
-                "Start the \(\.$template) template in \(.applicationName)",
-                "Start a workout from the \(\.$template) template in \(.applicationName)",
-                "Use the \(\.$template) template with \(.applicationName)",
-                "Begin the \(\.$template) template workout in \(.applicationName)",
-                "Start a template workout in \(.applicationName)",
-                "Start a workout from a template in \(.applicationName)"
+                "Start \(\.$workoutPlan) in \(.applicationName)",
+                "Start \(\.$workoutPlan) with \(.applicationName)",
+                "Start the \(\.$workoutPlan) in \(.applicationName)",
+                "Start the \(\.$workoutPlan) plan in \(.applicationName)",
+                "Start a workout from the \(\.$workoutPlan) plan in \(.applicationName)",
+                "Use the \(\.$workoutPlan) plan with \(.applicationName)",
+                "Begin the \(\.$workoutPlan) workout plan in \(.applicationName)",
+                "Start a workout plan in \(.applicationName)",
+                "Start a workout from a plan in \(.applicationName)"
             ],
-            shortTitle: "Start Workout with Template",
+            shortTitle: "Start Workout with Plan",
             systemImageName: "list.clipboard"
         )
 
@@ -47,31 +47,6 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Start Today's Workout",
             systemImageName: "figure.strengthtraining.traditional"
-        )
-
-//        AppShortcut(
-//            intent: StartLastWorkoutAgainIntent(),
-//            phrases: [
-//                "Repeat last workout in \(.applicationName)",
-//                "Start last workout again in \(.applicationName)",
-//                "Do last workout in \(.applicationName)"
-//            ],
-//            shortTitle: "Repeat Last Workout",
-//            systemImageName: "arrow.triangle.2.circlepath"
-//        )
-
-        AppShortcut(
-            intent: ResumeActiveSessionIntent(),
-            phrases: [
-                "Resume workout in \(.applicationName)",
-                "Continue workout in \(.applicationName)",
-                "Resume session in \(.applicationName)",
-                "Continue session in \(.applicationName)",
-                "Go back to my workout in \(.applicationName)",
-                "Open my workout in \(.applicationName)"
-            ],
-            shortTitle: "Resume Session",
-            systemImageName: "play.circle"
         )
         
 //        AppShortcut(
@@ -97,13 +72,13 @@ struct VillainArcShortcuts: AppShortcutsProvider {
 //        )
 
 //        AppShortcut(
-//            intent: ShowTemplatesListIntent(),
+//            intent: ShowWorkoutPsansListIntent(),
 //            phrases: [
-//                "Show templates in \(.applicationName)",
-//                "Open templates in \(.applicationName)",
-//                "View templates in \(.applicationName)"
+//                "Show workout plans in \(.applicationName)",
+//                "Open workout plans in \(.applicationName)",
+//                "View workout plans in \(.applicationName)"
 //            ],
-//            shortTitle: "Templates",
+//            shortTitle: "Workout Plans",
 //            systemImageName: "list.clipboard"
 //        )
         
@@ -121,14 +96,14 @@ struct VillainArcShortcuts: AppShortcutsProvider {
         )
         
 //        AppShortcut(
-//            intent: CreateTemplateIntent(),
+//            intent: CreateWorkoutPlanIntent(),
 //            phrases: [
-//                "Create workout template in \(.applicationName)",
-//                "Create template in \(.applicationName)",
-//                "Begin creating a template with \(.applicationName)",
-//                "Begin creating a workout template in \(.applicationName)"
+//                "Create workout plan in \(.applicationName)",
+//                "Create plan in \(.applicationName)",
+//                "Begin creating a workout plan with \(.applicationName)",
+//                "Begin creating a plan in \(.applicationName)"
 //            ],
-//            shortTitle: "Create New Template",
+//            shortTitle: "Create New Workout Plan",
 //            systemImageName: "list.clipboard"
 //        )
         
@@ -209,18 +184,18 @@ struct VillainArcShortcuts: AppShortcutsProvider {
             systemImageName: "pause.circle"
         )
 
-//        AppShortcut(
-//            intent: ResumeRestTimerIntent(),
-//            phrases: [
-//                "Resume rest timer in \(.applicationName)",
-//                "Resume my rest timer in \(.applicationName)",
-//                "Continue rest timer in \(.applicationName)",
-//                "Continue my rest in \(.applicationName)"
-//            ],
-//            shortTitle: "Resume Timer",
-//            systemImageName: "play.circle"
-//        )
-//
+        AppShortcut(
+            intent: ResumeRestTimerIntent(),
+            phrases: [
+                "Resume rest timer in \(.applicationName)",
+                "Resume my rest timer in \(.applicationName)",
+                "Continue rest timer in \(.applicationName)",
+                "Continue my rest in \(.applicationName)"
+            ],
+            shortTitle: "Resume Timer",
+            systemImageName: "play.circle"
+        )
+
 //        AppShortcut(
 //            intent: StopRestTimerIntent(),
 //            phrases: [

@@ -27,10 +27,10 @@ struct WorkoutSplitDayView: View {
                     Button {
                         
                     } label: {
-                        if let template = splitDay.template {
-                            TemplateRowView(template: template)
+                        if let plan = splitDay.workoutPlan {
+                            WorkoutPlanRowView(workoutPlan: plan)
                         } else {
-                            ContentUnavailableView("Select a template \(mode == .weekly ? ("for \(weekdayName(for: splitDay.weekday))") : "\(splitDay.name)")", systemImage: "list.bullet.clipboard")
+                            ContentUnavailableView("Select a workout plan \(mode == .weekly ? ("for \(weekdayName(for: splitDay.weekday))") : "\(splitDay.name)")", systemImage: "list.bullet.clipboard")
                                 .foregroundStyle(.white)
                                 .background(.blue.gradient, in: .rect(cornerRadius: 20))
                                 .frame(height: geometry.size.height / 3)
@@ -62,11 +62,11 @@ struct WorkoutSplitDayView: View {
     NavigationStack {
         WorkoutSplitCreationView(split: sampleWeeklySplit())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }
 #Preview("Rotation Split") {
     NavigationStack {
         WorkoutSplitCreationView(split: sampleRotationSplit())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

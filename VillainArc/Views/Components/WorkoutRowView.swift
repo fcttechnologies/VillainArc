@@ -1,12 +1,13 @@
 import SwiftUI
+import SwiftData
 
 struct WorkoutRowView: View {
-    let workout: Workout
+    let workout: WorkoutSession
     private let appRouter = AppRouter.shared
     
     var body: some View {
         Button {
-            appRouter.navigate(to: .workoutDetail(workout))
+            appRouter.navigate(to: .workoutSessionDetail(workout))
         } label: {
             VStack(alignment: .leading) {
                 HStack {
@@ -14,7 +15,7 @@ struct WorkoutRowView: View {
                         Text(workout.title)
                             .font(.title3)
                             .lineLimit(1)
-                        Text(workout.startTime, format: .dateTime.day().month(.abbreviated).year())
+                        Text(workout.startedAt, format: .dateTime.day().month(.abbreviated).year())
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -49,7 +50,7 @@ struct WorkoutRowView: View {
 
 #Preview {
     NavigationStack {
-        WorkoutRowView(workout: sampleCompletedWorkout())
+        WorkoutRowView(workout: sampleCompletedSession())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

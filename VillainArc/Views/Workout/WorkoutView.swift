@@ -2,12 +2,10 @@ import SwiftUI
 import SwiftData
 
 struct WorkoutView: View {
-    @Bindable var workout: Workout
-    let isEditing: Bool
-    let onDeleteFromEdit: (() -> Void)?
+    @Bindable var workout: WorkoutSession
     private let restTimer = RestTimerState.shared
     
-    @State private var activeExercise: WorkoutExercise?
+    @State private var activeExercise: ExercisePerformance?
     @State private var showExerciseListView = false
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
@@ -21,12 +19,6 @@ struct WorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     
     @Namespace private var animation
-    
-    init(workout: Workout, isEditing: Bool = false, onDeleteFromEdit: (() -> Void)? = nil) {
-        self.workout = workout
-        self.isEditing = isEditing
-        self.onDeleteFromEdit = onDeleteFromEdit
-    }
     
     private var incompleteSetCount: Int {
         workout.exercises.reduce(0) { count, exercise in
@@ -44,7 +36,7 @@ struct WorkoutView: View {
                 }
             }
             .navigationTitle(workout.title)
-            .navigationSubtitle(Text(workout.startTime, style: .date))
+            .navigationSubtitle(Text(workout.startedAt, style: .date))
             .toolbarTitleMenu {
                 Button("Change Title", systemImage: "pencil") {
                     showTitleEditorSheet = true
@@ -57,26 +49,14 @@ struct WorkoutView: View {
             .animation(.bouncy, value: showExerciseListView)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    if isEditing {
-                        Button("Done", systemImage: "checkmark") {
-                            Haptics.selection()
-                            saveContext(context: context)
-                            SpotlightIndexer.index(workout: workout)
-                            dismiss()
-                        }
-                        .labelStyle(.titleOnly)
-                        .accessibilityIdentifier("workoutDoneEditingButton")
-                        .accessibilityHint("Saves changes and closes the workout.")
-                    } else {
-                        Button {
-                            showRestTimerSheet = true
-                            Haptics.selection()
-                        } label: {
-                            timerToolbarLabel
-                        }
-                        .accessibilityIdentifier("workoutRestTimerButton")
-                        .accessibilityHint("Shows the rest timer.")
+                    Button {
+                        showRestTimerSheet = true
+                        Haptics.selection()
+                    } label: {
+                        timerToolbarLabel
                     }
+                    .accessibilityIdentifier("workoutRestTimerButton")
+                    .accessibilityHint("Shows the rest timer.")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     workoutOptionsToolbarLabel
@@ -94,7 +74,7 @@ struct WorkoutView: View {
             }
             .animation(.smooth, value: showExerciseListView)
             .sheet(isPresented: $showAddExerciseSheet) {
-                AddExerciseView(workout: workout, isEditing: isEditing)
+                AddExerciseView(workout: workout)
                     .navigationTransition(.zoom(sourceID: "addExercise", in: animation))
                     .interactiveDismissDisabled()
             }
@@ -104,23 +84,28 @@ struct WorkoutView: View {
                     .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                WorkoutNotesEditorView(workout: workout)
+                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
                     .presentationDetents([.fraction(0.4)])
+                    .onChange(of: workout.notes) {
+                        scheduleSave(context: context)
+                    }
+                    .onDisappear {
+                        saveContext(context: context)
+                    }
             }
             .sheet(isPresented: $showTitleEditorSheet) {
-                WorkoutTitleEditorView(workout: workout)
+                TextEntryEditorView(title: "Title", placeholder: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField)
                     .presentationDetents([.fraction(0.2)])
+                    .onChange(of: workout.title) {
+                        scheduleSave(context: context)
+                    }
+                    .onDisappear {
+                        if workout.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            workout.title = "New Workout"
+                        }
+                        saveContext(context: context)
+                    }
             }
-        }
-        .alert("Delete Workout?", isPresented: $showDeleteWorkoutAlert) {
-            Button("Delete Workout", role: .destructive) {
-                deleteWorkoutFromEdit()
-            }
-            .accessibilityIdentifier("workoutConfirmDeleteButton")
-            Button("Cancel", role: .cancel) {}
-                .accessibilityIdentifier("workoutCancelDeleteButton")
-        } message: {
-            Text("This is the last exercise. Deleting it will delete the workout.")
         }
     }
     
@@ -134,7 +119,7 @@ struct WorkoutView: View {
                             .accessibilityIdentifier("workoutExercisesEmptyState")
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet, isEditing: isEditing)
+                            ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet)
                                 .containerRelativeFrame(.horizontal)
                                 .id(exercise)
                                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisePage(exercise))
@@ -297,19 +282,20 @@ struct WorkoutView: View {
             for exercise in workout.exercises {
                 for set in exercise.sets where !set.complete {
                     set.complete = true
+                    set.completedAt = Date()
                 }
             }
         case .deleteIncomplete:
             for exercise in workout.exercises {
                 let incompleteSets = exercise.sets.filter { !$0.complete }
                 for set in incompleteSets {
-                    exercise.removeSet(set)
+                    exercise.deleteSet(set)
                     context.delete(set)
                 }
             }
             let emptyExercises = workout.exercises.filter { $0.sets.isEmpty }
             for exercise in emptyExercises {
-                workout.removeExercise(exercise)
+                workout.deleteExercise(exercise)
                 context.delete(exercise)
             }
             if workout.exercises.isEmpty {
@@ -323,11 +309,10 @@ struct WorkoutView: View {
         }
         Haptics.selection()
         workout.completed = true
-        workout.endTime = Date.now
-        workout.sourceTemplate?.updateLastUsed()
+        workout.endedAt = Date()
         restTimer.stop()
         saveContext(context: context)
-        SpotlightIndexer.index(workout: workout)
+        SpotlightIndexer.index(workoutSession: workout)
         Task {
             await IntentDonations.donateFinishWorkout()
             await IntentDonations.donateLastWorkoutSummary()
@@ -346,19 +331,11 @@ struct WorkoutView: View {
     
     private func deleteExercise(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
-        if isEditing, workout.exercises.count - offsets.count == 0 {
-            showDeleteWorkoutAlert = true
-            return
-        }
-        deleteExercises(at: offsets)
-    }
-    
-    private func deleteExercises(at offsets: IndexSet) {
         Haptics.selection()
         let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
         
         for exercise in exercisesToDelete {
-            workout.removeExercise(exercise)
+            workout.deleteExercise(exercise)
             context.delete(exercise)
         }
         saveContext(context: context)
@@ -370,11 +347,6 @@ struct WorkoutView: View {
         if workout.exercises.isEmpty {
             showExerciseListView = false
         }
-    }
-    
-    private func deleteWorkoutFromEdit() {
-        Haptics.selection()
-        onDeleteFromEdit?()
     }
     
     private func moveExercise(from source: IndexSet, to destination: Int) {
@@ -389,10 +361,11 @@ enum WorkoutFinishAction {
 }
 
 #Preview {
-    WorkoutView(workout: sampleIncompleteWorkout())
+    WorkoutView(workout: sampleIncompleteSession())
         .sampleDataContainerIncomplete()
 }
 
 #Preview("New Workout") {
-    WorkoutView(workout: Workout())
+    WorkoutView(workout: WorkoutSession())
+        .sampleDataContainer()
 }

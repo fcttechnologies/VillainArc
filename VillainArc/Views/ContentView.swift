@@ -21,11 +21,11 @@ struct ContentView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel("Recent workout")
                     .accessibilityIdentifier("homeRecentWorkoutSection")
-                RecentTemplatesSectionView()
+                RecentWorkoutPlanSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Recent templates")
-                    .accessibilityIdentifier("homeRecentTemplatesSection")
+                    .accessibilityLabel("Recent workout plan")
+                    .accessibilityIdentifier("homeRecentWorkoutPlanSection")
             }
             .navBar(title: "Home")
             .toolbar {
@@ -33,47 +33,49 @@ struct ContentView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Menu("Options", systemImage: "plus") {
                         Button("Start Empty Workout", systemImage: "figure.strengthtraining.traditional") {
-                            startWorkout()
+                            router.startWorkoutSession()
+                            Task { await IntentDonations.donateStartWorkout() }
                         }
                         .matchedTransitionSource(id: "startWorkout", in: animation)
                         .accessibilityIdentifier("homeStartWorkoutButton")
                         .accessibilityHint("Starts a new workout session.")
-                        Button("Create Template", systemImage: "list.clipboard") {
-                            createTemplate()
+                        Button("Create Workout Plan", systemImage: "list.clipboard") {
+                            router.createWorkoutPlan()
+                            Task { await IntentDonations.donateCreateWorkoutPlan() }
                         }
-                        .matchedTransitionSource(id: "createTemplate", in: animation)
-                        .accessibilityIdentifier("homeCreateTemplateButton")
-                        .accessibilityHint("Creates a new template.")
+                        .matchedTransitionSource(id: "createWorkoutPlan", in: animation)
+                        .accessibilityIdentifier("homeCreatePlanButton")
+                        .accessibilityHint("Creates a new workout plan.")
                     }
                     .labelStyle(.iconOnly)
                     .accessibilityIdentifier("homeOptionsMenu")
-                    .accessibilityHint("Shows workout and template options.")
+                    .accessibilityHint("Shows workout and workout plan options.")
                 }
             }
             .task {
                 DataManager.seedExercisesIfNeeded(context: context)
                 router.checkForUnfinishedData()
             }
-            .fullScreenCover(item: $router.activeWorkout) {
+            .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutView(workout: $0)
                     .navigationTransition(.zoom(sourceID: "startWorkout", in: animation))
                     .interactiveDismissDisabled()
             }
-            .fullScreenCover(item: $router.activeTemplate) {
-                TemplateView(template: $0)
-                    .navigationTransition(.zoom(sourceID: "createTemplate", in: animation))
+            .fullScreenCover(item: $router.activeWorkoutPlan) {
+                WorkoutPlanView(plan: $0)
+                    .navigationTransition(.zoom(sourceID: "createWorkoutPlan", in: animation))
                     .interactiveDismissDisabled()
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
-                case .workoutsList:
+                case .workoutSessionsList:
                     WorkoutsListView()
-                case .workoutDetail(let workout):
-                    WorkoutDetailView(workout: workout)
-                case .templateList:
-                    TemplatesListView()
-                case .templateDetail(let template):
-                    TemplateDetailView(template: template)
+                case .workoutSessionDetail(let session):
+                    WorkoutDetailView(workout: session)
+                case .workoutPlansList:
+                    WorkoutPlansListView()
+                case .workoutPlanDetail(let plan):
+                    WorkoutPlanDetailView(plan: plan)
                 case .splitList:
                     WorkoutSplitView()
                 case .splitDettail(let split):
@@ -81,25 +83,10 @@ struct ContentView: View {
                 }
             }
         }
-        .environment(router)
-    }
-
-    private func startWorkout() {
-        router.startWorkout()
-        Task { await IntentDonations.donateStartWorkout() }
-    }
-    
-    private func createTemplate() {
-        router.createTemplate()
-        Task { await IntentDonations.donateCreateTemplate() }
     }
 }
 
 #Preview {
     ContentView()
-        .sampleDataConainer()
-}
-
-#Preview {
-    ContentView()
+        .sampleDataContainer()
 }

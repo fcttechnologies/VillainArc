@@ -2,13 +2,13 @@ import SwiftUI
 import SwiftData
 
 struct RecentWorkoutSectionView: View {
-    @Query(Workout.recentWorkout) private var recentWorkout: [Workout]
+    @Query(WorkoutSession.recent) private var recentWorkout: [WorkoutSession]
     private let appRouter = AppRouter.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                appRouter.navigate(to: .workoutsList)
+                appRouter.navigate(to: .workoutSessionsList)
                 Task { await IntentDonations.donateShowWorkoutHistory() }
             } label: {
                 HStack(spacing: 1) {
@@ -49,5 +49,5 @@ struct RecentWorkoutSectionView: View {
         RecentWorkoutSectionView()
             .padding()
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

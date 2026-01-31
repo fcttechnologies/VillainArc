@@ -204,11 +204,11 @@ struct WorkoutSplitCreationView: View {
     NavigationStack {
         WorkoutSplitCreationView(split: sampleWeeklySplit())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }
 #Preview("Rotation Split") {
     NavigationStack {
         WorkoutSplitCreationView(split: sampleRotationSplit())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

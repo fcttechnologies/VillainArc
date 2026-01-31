@@ -4,42 +4,41 @@ import AppIntents
 
 @MainActor
 enum SpotlightIndexer {
-    static let workoutIdentifierPrefix = "workout:"
-    static let templateIdentifierPrefix = "template:"
+    static let workoutSessionIdentifierPrefix = "workoutSession:"
+    static let workoutPlanIdentifierPrefix = "workoutPlan:"
     static let exerciseIdentifierPrefix = "exercise:"
-    private static let workoutDomainIdentifier = "com.villainarc.workout"
-    private static let templateDomainIdentifier = "com.villainarc.template"
+    private static let workoutSessionDomainIdentifier = "com.villainarc.workoutSession"
+    private static let workoutPlanDomainIdentifier = "com.villainarc.workoutPlan"
     private static let exerciseDomainIdentifier = "com.villainarc.exercise"
 
-    static func index(workout: Workout) {
-        guard workout.completed else { return }
+    static func index(workoutSession: WorkoutSession) {
         let attributes = CSSearchableItemAttributeSet(contentType: .item)
-        let displayTitle = "\(workout.title) (Workout)"
+        let displayTitle = "\(workoutSession.title) (Workout)"
         attributes.title = displayTitle
         attributes.displayName = displayTitle
-        attributes.contentDescription = workout.spotlightSummary
-        attributes.keywords = workout.sortedExercises.map(\.name) + ["Workout"]
+        attributes.contentDescription = workoutSession.spotlightSummary
+        attributes.keywords = workoutSession.sortedExercises.map(\.name) + ["Workout"]
         let item = CSSearchableItem(
-            uniqueIdentifier: workoutIdentifierPrefix + workout.id.uuidString,
-            domainIdentifier: workoutDomainIdentifier,
+            uniqueIdentifier: workoutSessionIdentifierPrefix + workoutSession.id.uuidString,
+            domainIdentifier: workoutSessionDomainIdentifier,
             attributeSet: attributes
         )
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }
 
-    static func index(template: WorkoutTemplate) {
-        guard template.complete else { return }
+    static func index(workoutPlan: WorkoutPlan) {
+        guard let currentVersion = workoutPlan.currentVersion else { return }
         let attributes = CSSearchableItemAttributeSet(contentType: .item)
-        attributes.title = template.name
-        attributes.displayName = template.name
-        attributes.contentDescription = template.spotlightSummary
-        attributes.keywords = [template.name] + template.sortedExercises.map(\.name) + ["Template"]
+        attributes.title = workoutPlan.title
+        attributes.displayName = workoutPlan.title
+        attributes.contentDescription = workoutPlan.spotlightSummary
+        attributes.keywords = currentVersion.sortedExercises.map(\.name) + ["Workout Plan"]
         let item = CSSearchableItem(
-            uniqueIdentifier: templateIdentifierPrefix + template.id.uuidString,
-            domainIdentifier: templateDomainIdentifier,
+            uniqueIdentifier: workoutPlanIdentifierPrefix + workoutPlan.id.uuidString,
+            domainIdentifier: workoutPlanDomainIdentifier,
             attributeSet: attributes
         )
-        item.associateAppEntity(WorkoutTemplateEntity(template: template), priority: 1)
+        item.associateAppEntity(WorkoutPlanEntity(workoutPlan: workoutPlan), priority: 1)
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }
 
@@ -59,20 +58,20 @@ enum SpotlightIndexer {
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }
 
-    static func deleteWorkout(id: UUID) {
-        delete(identifiers: [workoutIdentifierPrefix + id.uuidString])
+    static func deleteWorkoutSession(id: UUID) {
+        delete(identifiers: [workoutSessionIdentifierPrefix + id.uuidString])
     }
 
-    static func deleteWorkouts(ids: [UUID]) {
-        delete(identifiers: ids.map { workoutIdentifierPrefix + $0.uuidString })
+    static func deleteWorkoutSessions(ids: [UUID]) {
+        delete(identifiers: ids.map { workoutSessionIdentifierPrefix + $0.uuidString })
     }
 
-    static func deleteTemplate(id: UUID) {
-        delete(identifiers: [templateIdentifierPrefix + id.uuidString])
+    static func deleteWorkoutPlan(id: UUID) {
+        delete(identifiers: [workoutPlanIdentifierPrefix + id.uuidString])
     }
 
-    static func deleteTemplates(ids: [UUID]) {
-        delete(identifiers: ids.map { templateIdentifierPrefix + $0.uuidString })
+    static func deleteWorkoutPlans(ids: [UUID]) {
+        delete(identifiers: ids.map { workoutPlanIdentifierPrefix + $0.uuidString })
     }
 
     static func deleteExercise(catalogID: String) {

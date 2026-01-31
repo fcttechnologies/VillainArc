@@ -3,7 +3,7 @@ import SwiftData
 
 struct AddExercisesIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Exercises"
-    static let description = IntentDescription("Adds exercises to the active workout or template.")
+    static let description = IntentDescription("Adds exercises to the workout session or workout plan.")
     static let supportedModes: IntentModes = .background
     static var parameterSummary: some ParameterSummary {
         Summary("Add \(\.$exercises)")
@@ -21,21 +21,21 @@ struct AddExercisesIntent: AppIntent {
             return .result(dialog: "No exercises selected.")
         }
 
-        if let workout = try? context.fetch(Workout.incomplete).first {
+        if let workout = try? context.fetch(WorkoutSession.incomplete).first {
             let dialog = addExercises(to: workout, context: context)
             return .result(dialog: dialog)
         }
 
-        if let template = try? context.fetch(WorkoutTemplate.incomplete).first {
-            let dialog = addExercises(to: template, context: context)
+        if let workoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
+            let dialog = addExercises(to: workoutPlan, context: context)
             return .result(dialog: dialog)
         }
 
-        return .result(dialog: "No active workout or template found.")
+        return .result(dialog: "No current workout session or workout plan found.")
     }
 
     @MainActor
-    private func addExercises(to workout: Workout, context: ModelContext) -> IntentDialog {
+    private func addExercises(to workout: WorkoutSession, context: ModelContext) -> IntentDialog {
         let resolvedExercises = resolveExercises(in: context)
         guard !resolvedExercises.isEmpty else {
             return "No exercises found to add."
@@ -55,23 +55,23 @@ struct AddExercisesIntent: AppIntent {
     }
 
     @MainActor
-    private func addExercises(to template: WorkoutTemplate, context: ModelContext) -> IntentDialog {
+    private func addExercises(to plan: WorkoutPlan, context: ModelContext) -> IntentDialog {
         let resolvedExercises = resolveExercises(in: context)
         guard !resolvedExercises.isEmpty else {
             return "No exercises found to add."
         }
 
         for exercise in resolvedExercises {
-            template.addExercise(exercise)
+            plan.addExercise(exercise)
             exercise.updateLastUsed()
             SpotlightIndexer.index(exercise: exercise)
         }
         saveContext(context: context)
         let count = resolvedExercises.count
         if count == 1 {
-            return "Added exercise to your template."
+            return "Added exercise to your workout plan."
         }
-        return "Added \(count) exercises to your template."
+        return "Added \(count) exercises to your workout plan."
     }
 
     @MainActor

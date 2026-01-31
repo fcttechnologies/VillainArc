@@ -1,0 +1,107 @@
+import SwiftUI
+import SwiftData
+
+@Model
+class WorkoutSession {
+    var id: UUID = UUID()
+    var title: String = "New Workout"
+    var notes: String = ""
+    var completed: Bool = false
+    var startedAt: Date = Date()
+    var endedAt: Date?
+    var origin: SessionOrigin = SessionOrigin.freeform
+    @Relationship(deleteRule: .cascade, inverse: \PreWorkoutMood.workoutSession)
+    var preMood: PreWorkoutMood?
+    @Relationship(deleteRule: .cascade, inverse: \PostWorkoutEffort.workoutSession)
+    var postEffort: PostWorkoutEffort?
+    @Relationship(deleteRule: .nullify)
+    var planSnapshot: PlanSnapshot?
+    @Relationship(deleteRule: .cascade, inverse: \ExercisePerformance.workoutSession)
+    var exercises: [ExercisePerformance] = []
+    
+    var sortedExercises: [ExercisePerformance] {
+        exercises.sorted { $0.index < $1.index }
+    }
+    
+    // New session
+    init() {}
+    
+    // From workout plan
+    init(from plan: WorkoutPlan) {
+        title = plan.title
+        notes = plan.notes
+        origin = .plan
+        planSnapshot = plan.currentVersion
+        exercises = plan.sortedExercises.map { ExercisePerformance(workoutSession: self, exercisePrescription: $0) }
+    }
+    
+    func addExercise(_ exercise: Exercise) {
+        exercises.append(ExercisePerformance(exercise: exercise, workoutSession: self))
+    }
+    
+    func moveExercise(from source: IndexSet, to destination: Int) {
+        var sortedEx = sortedExercises
+        sortedEx.move(fromOffsets: source, toOffset: destination)
+        for (index, exercise) in sortedEx.enumerated() {
+            exercise.index = index
+        }
+    }
+
+    func deleteExercise(_ exercise: ExercisePerformance) {
+        exercises.removeAll(where: { $0 == exercise })
+        for (index, exercise) in sortedExercises.enumerated() {
+            exercise.index = index
+        }
+    }
+}
+
+extension WorkoutSession {
+    var exerciseSummary: String {
+        let exerciseSummaries = sortedExercises.map { exercise in
+            let setCount = exercise.sets.count
+            let setWord = setCount == 1 ? "set" : "sets"
+            return "\(setCount) \(setWord) of \(exercise.name)"
+        }
+        return ListFormatter.localizedString(byJoining: exerciseSummaries)
+    }
+    
+    var spotlightSummary: String {
+        let exerciseSummaries = sortedExercises.map { exercise in
+            "\(exercise.sets.count)x \(exercise.name)"
+        }
+        return exerciseSummaries.joined(separator: ", ")
+    }
+    
+    static func completedSessions(limit: Int? = nil) -> FetchDescriptor<WorkoutSession> {
+        let predicate = #Predicate<WorkoutSession> { $0.completed }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
+        return descriptor
+    }
+    
+    static var recent: FetchDescriptor<WorkoutSession> {
+        completedSessions(limit: 1)
+    }
+    
+    static var completedSession: FetchDescriptor<WorkoutSession> {
+        completedSessions()
+    }
+    
+    static var incomplete: FetchDescriptor<WorkoutSession> {
+        let predicate = #Predicate<WorkoutSession> { !$0.completed }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+    
+    func activeExerciseAndSet() -> (exercise: ExercisePerformance, set: SetPerformance)? {
+        for exercise in sortedExercises {
+            if let set = exercise.sortedSets.first(where: { !$0.complete }) {
+                return (exercise, set)
+            }
+        }
+        return nil
+    }
+}

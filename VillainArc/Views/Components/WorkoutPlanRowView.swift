@@ -1,26 +1,26 @@
 import SwiftUI
 
-struct TemplateRowView: View {
-    let template: WorkoutTemplate
+struct WorkoutPlanRowView: View {
+    let workoutPlan: WorkoutPlan
     private let appRouter = AppRouter.shared
     
     var body: some View {
         Button {
-            appRouter.navigate(to: .templateDetail(template))
+            appRouter.navigate(to: .workoutPlanDetail(workoutPlan))
         } label: {
             VStack(alignment: .leading) {
                 VStack(alignment: .trailing, spacing: 0) {
                     HStack(alignment: .top) {
-                        if template.isFavorite {
+                        if workoutPlan.favorite {
                             Image(systemName: "star.fill")
                                 .foregroundStyle(.yellow)
                         }
                         Spacer()
-                        Text(template.name)
+                        Text(workoutPlan.title)
                             .font(.title3)
                             .lineLimit(1)
                     }
-                    Text(template.musclesTargeted())
+                    Text(workoutPlan.musclesTargeted())
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -28,7 +28,7 @@ struct TemplateRowView: View {
                 .fontWeight(.semibold)
                 
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(template.sortedExercises) { exercise in
+                    ForEach(workoutPlan.sortedExercises) { exercise in
                         HStack(alignment: .center, spacing: 3) {
                             Text("\(exercise.sets.count)x")
                             Text(exercise.name)
@@ -44,18 +44,18 @@ struct TemplateRowView: View {
             .tint(.primary)
             .fontDesign(.rounded)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(template.name)
-            .accessibilityValue("\(template.exercises.count) exercises, \(template.musclesTargeted())")
-            .accessibilityHint("Shows template details.")
+            .accessibilityLabel(workoutPlan.title)
+            .accessibilityValue("\(workoutPlan.sortedExercises.count) exercises, \(workoutPlan.musclesTargeted())")
+            .accessibilityHint("Shows workout plan details.")
         }
         .buttonStyle(.borderless)
-        .accessibilityIdentifier("templateRow-\(template.id)")
+        .accessibilityIdentifier("workoutPlanRow-\(workoutPlan.id)")
     }
 }
 
 #Preview {
     NavigationStack {
-        TemplateRowView(template: sampleTemplate())
+        WorkoutPlanRowView(workoutPlan: sampleCompletedPlan())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

@@ -21,38 +21,12 @@ class RepRangePolicy {
         }
     }
     
-    // Testing
-    init(activeMode: RepRangeMode = .notSet, lowerRange: Int = 8, upperRange: Int = 12, targetReps: Int = 8) {
-        self.activeMode = activeMode
-        self.lowerRange = lowerRange
-        self.upperRange = upperRange
-        self.targetReps = targetReps
-    }
+    init() {}
 
-    init(previous policy: RepRangePolicy) {
-        activeMode = policy.activeMode
-        lowerRange = policy.lowerRange
-        upperRange = policy.upperRange
-        targetReps = policy.targetReps
-    }
-}
-
-enum RepRangeMode: String, CaseIterable, Codable {
-    case notSet
-    case target
-    case range
-    case untilFailure
-    
-    var displayName: String {
-        switch self {
-        case .notSet:
-            return "Not Set"
-        case .target:
-            return "Target"
-        case .range:
-            return "Range"
-        case .untilFailure:
-            return "Until Failure"
-        }
+    init(copying source: RepRangePolicy) {
+        self.activeMode = source.activeMode
+        self.lowerRange = source.lowerRange
+        self.upperRange = source.upperRange
+        self.targetReps = source.targetReps
     }
 }

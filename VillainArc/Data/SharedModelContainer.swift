@@ -6,18 +6,23 @@ enum SharedModelContainer {
     static let appGroupID = "group.com.fcttechnologies.VillainArc"
 
     static let schema = Schema([
-        Workout.self,
-        WorkoutExercise.self,
-        ExerciseSet.self,
+        WorkoutSession.self,
+        PreWorkoutMood.self,
+        PostWorkoutEffort.self,
+        ExercisePerformance.self,
+        SetPerformance.self,
         Exercise.self,
         RepRangePolicy.self,
         RestTimePolicy.self,
         RestTimeHistory.self,
-        WorkoutTemplate.self,
-        TemplateExercise.self,
-        TemplateSet.self,
+        WorkoutPlan.self,
+        PlanSnapshot.self,
+        ExercisePrescription.self,
+        SetPrescription.self,
         WorkoutSplit.self,
-        WorkoutSplitDay.self
+        WorkoutSplitDay.self,
+        PlanSuggestion.self,
+        SuggestedChange.self
     ])
 
     static let container: ModelContainer = {

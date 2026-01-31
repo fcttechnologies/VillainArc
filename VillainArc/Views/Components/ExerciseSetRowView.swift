@@ -1,12 +1,14 @@
 import SwiftUI
 import SwiftData
 
-struct PreviousSetSnapshot {
-    let reps: Int
-    let weight: Double
+struct SetReferenceData {
+    let reps: Int?
+    let weight: Double?
+    let actionLabel: String
 
     var displayText: String {
-        "\(reps)x\(Self.formattedWeight(weight))"
+        guard let reps, let weight else { return "-" }
+        return "\(reps)x\(Self.formattedWeight(weight))"
     }
 
     static func formattedWeight(_ weight: Double) -> String {
@@ -15,18 +17,17 @@ struct PreviousSetSnapshot {
 }
 
 struct ExerciseSetRowView: View {
-    @Bindable var set: ExerciseSet
-    @Bindable var exercise: WorkoutExercise
+    @Bindable var set: SetPerformance
+    @Bindable var exercise: ExercisePerformance
     @Binding var showRestTimerSheet: Bool
     @Environment(\.modelContext) private var context
     private let restTimer = RestTimerState.shared
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
-    
-    let previousSetSnapshot: PreviousSetSnapshot?
+
+    let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
-    let isEditing: Bool
-    
+
     var body: some View {
         Group {
             Menu {
@@ -60,7 +61,7 @@ struct ExerciseSetRowView: View {
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
             .accessibilityValue(AccessibilityText.exerciseSetMenuValue(for: set))
             .accessibilityHint("Opens set options.")
-            
+
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: fieldWidth)
@@ -72,57 +73,58 @@ struct ExerciseSetRowView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
                 .accessibilityLabel("Weight")
 
-            if !isEditing {
-                Text(previousSetSnapshot?.displayText ?? "-")
-                    .lineLimit(1)
-                    .frame(maxWidth: fieldWidth)
-                    .contextMenu {
-                        if let previousSetSnapshot {
-                            Button("Use Previous Set") {
-                                Haptics.selection()
-                                set.reps = previousSetSnapshot.reps
-                                set.weight = previousSetSnapshot.weight
-                                saveContext(context: context)
+            Text(referenceData?.displayText ?? "-")
+                .lineLimit(1)
+                .frame(maxWidth: fieldWidth)
+                .contextMenu {
+                    if let referenceData {
+                        Button(referenceData.actionLabel) {
+                            Haptics.selection()
+                            if let reps = referenceData.reps {
+                                set.reps = reps
                             }
-                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
+                            if let weight = referenceData.weight {
+                                set.weight = weight
+                            }
+                            saveContext(context: context)
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
-                    .accessibilityLabel("Previous")
-                    .accessibilityValue(previousSetSnapshot?.displayText ?? "None")
-                    .accessibilityHint(previousSetSnapshot == nil ? "No previous set data." : "Long-press for options.")
-
-                if set.complete {
-                    Button {
-                        Haptics.selection()
-                        set.complete = false
-                        saveContext(context: context)
-                    } label: {
-                        Image(systemName: "checkmark")
-                            .padding(2)
-                    }
-                    .buttonBorderShape(.circle)
-                    .buttonStyle(.glassProminent)
-                    .tint(.blue)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
-                    .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
-                } else {
-                    Button {
-                        Haptics.selection()
-                        set.complete = true
-                        handleAutoStartTimer()
-                        saveContext(context: context)
-                    } label: {
-                        Image(systemName: "checkmark")
-                            .padding(2)
-                    }
-                    .buttonBorderShape(.circle)
-                    .buttonStyle(.glass)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
-                    .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
+                .accessibilityLabel(referenceData?.actionLabel ?? "Reference")
+                .accessibilityValue(referenceData?.displayText ?? "None")
+                .accessibilityHint(referenceData == nil ? "No reference data." : "Long-press for options.")
+
+            if set.complete {
+                Button {
+                    Haptics.selection()
+                    set.complete = false
+                    saveContext(context: context)
+                } label: {
+                    Image(systemName: "checkmark")
+                        .padding(2)
+                }
+                .buttonBorderShape(.circle)
+                .buttonStyle(.glassProminent)
+                .tint(.blue)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
+                .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
             } else {
-                Spacer()
+                Button {
+                    Haptics.selection()
+                    set.complete = true
+                    set.completedAt = Date()
+                    handleAutoStartTimer()
+                    saveContext(context: context)
+                } label: {
+                    Image(systemName: "checkmark")
+                        .padding(2)
+                }
+                .buttonBorderShape(.circle)
+                .buttonStyle(.glass)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
+                .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
             }
         }
         .animation(.bouncy, value: set.complete)
@@ -150,19 +152,18 @@ struct ExerciseSetRowView: View {
             Text("Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
         }
     }
-    
+
     private func deleteSet() {
         Haptics.selection()
-        exercise.removeSet(set)
-        context.delete(set)
+        exercise.deleteSet(set)
         saveContext(context: context)
     }
-    
+
     private func handleAutoStartTimer() {
         guard autoStartRestTimer else { return }
         let restSeconds = set.effectiveRestSeconds
         guard restSeconds > 0 else { return }
-        
+
         if restTimer.isActive {
             showOverrideTimerAlert = true
         } else {
@@ -178,7 +179,7 @@ struct ExerciseSetRowView: View {
 
 #Preview {
     @Previewable @State var showRestTimerSheet = false
-    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
+    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
         .sampleDataContainerIncomplete()
         .environment(RestTimerState())
 }

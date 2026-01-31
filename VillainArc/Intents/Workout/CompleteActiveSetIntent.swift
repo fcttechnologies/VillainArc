@@ -3,19 +3,17 @@ import SwiftData
 
 struct CompleteActiveSetIntent: AppIntent {
     static let title: LocalizedStringResource = "Complete Active Set"
-    static let description = IntentDescription("Completes the next incomplete set in your active workout.")
+    static let description = IntentDescription("Completes the next incomplete set in your workout session.")
     static let supportedModes: IntentModes = .background
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        guard let workout = try? context.fetch(Workout.incomplete).first else {
-            return .result(dialog: "No active workout to update.")
+        guard let workout = try? context.fetch(WorkoutSession.incomplete).first else {
+            return .result(dialog: "No workout session to update.")
         }
 
-        guard let set = workout.activeSet(),
-              let exercise = workout.exercise(containing: set)
-        else {
+        guard let (exercise, set) = workout.activeExerciseAndSet() else {
             return .result(dialog: "No incomplete sets found.")
         }
 
@@ -27,7 +25,7 @@ struct CompleteActiveSetIntent: AppIntent {
     }
     
     @MainActor
-    private func startRestTimerIfNeeded(for set: ExerciseSet, context: ModelContext) {
+    private func startRestTimerIfNeeded(for set: SetPerformance, context: ModelContext) {
         guard autoStartRestTimerEnabled else { return }
         let restSeconds = set.effectiveRestSeconds
         guard restSeconds > 0 else { return }

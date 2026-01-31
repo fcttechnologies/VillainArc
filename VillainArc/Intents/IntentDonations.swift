@@ -14,25 +14,21 @@ enum IntentDonations {
         _ = try? await ShowWorkoutHistoryIntent().donate()
     }
 
-    static func donateShowTemplatesList() async {
-        _ = try? await ShowTemplatesListIntent().donate()
+    static func donateShowWorkoutPlans() async {
+        _ = try? await ShowWorkoutPlansIntent().donate()
     }
     
     static func donateLastWorkoutSummary() async {
         _ = try? await LastWorkoutSummaryIntent().donate()
     }
     
-    static func donateCreateTemplate() async {
-        _ = try? await CreateTemplateIntent().donate()
+    static func donateCreateWorkoutPlan() async {
+        _ = try? await CreateWorkoutPlanIntent().donate()
     }
 
-    static func donateStartLastWorkoutAgain() async {
-        _ = try? await StartLastWorkoutAgainIntent().donate()
-    }
-
-    static func donateStartWorkoutWithTemplate(template: WorkoutTemplate) async {
-        let intent = StartWorkoutWithTemplateIntent()
-        intent.template = WorkoutTemplateEntity(template: template)
+    static func donateStartWorkoutWithPlan(workoutPlan: WorkoutPlan) async {
+        let intent = StartWorkoutWithPlanIntent()
+        intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
         _ = try? await intent.donate()
     }
 

@@ -5,14 +5,14 @@ import SwiftData
 @Observable
 final class AppRouter {
     static let shared = AppRouter()
-    var activeWorkout: Workout?
-    var activeTemplate: WorkoutTemplate?
+    var activeWorkoutSession: WorkoutSession?
+    var activeWorkoutPlan: WorkoutPlan?
     
     enum Destination: Hashable {
-        case workoutsList
-        case workoutDetail(Workout)
-        case templateList
-        case templateDetail(WorkoutTemplate)
+        case workoutSessionsList
+        case workoutSessionDetail(WorkoutSession)
+        case workoutPlansList
+        case workoutPlanDetail(WorkoutPlan)
         case splitList
         case splitDettail(WorkoutSplit)
     }
@@ -33,50 +33,46 @@ final class AppRouter {
         path = NavigationPath()
     }
 
-    func startWorkout(from workout: Workout? = nil) {
+    func startWorkoutSession() {
         Haptics.selection()
-        let newWorkout = workout.map { Workout(previous: $0) } ?? Workout()
+        let newWorkout = WorkoutSession()
         context.insert(newWorkout)
         saveContext(context: context)
-        activeWorkout = newWorkout
+        activeWorkoutSession = newWorkout
     }
     
-    func createTemplate() {
+    func createWorkoutPlan() {
         Haptics.selection()
-        let newTemplate = WorkoutTemplate()
-        context.insert(newTemplate)
+        let newWorkoutPlan = WorkoutPlan()
+        context.insert(newWorkoutPlan)
         saveContext(context: context)
-        activeTemplate = newTemplate
+        activeWorkoutPlan = newWorkoutPlan
     }
     
-    func startWorkout(from template: WorkoutTemplate) {
+    func startWorkoutSession(from plan: WorkoutPlan) {
         Haptics.selection()
-        let workout = Workout(from: template)
-        context.insert(workout)
+        let workoutSession = WorkoutSession(from: plan)
+        context.insert(workoutSession)
         saveContext(context: context)
-        activeWorkout = workout
+        activeWorkoutSession = workoutSession
     }
 
-    func resumeWorkout(_ workout: Workout) {
+    func resumeWorkoutSession(_ workoutSession: WorkoutSession) {
         Haptics.selection()
-        activeWorkout = workout
+        activeWorkoutSession = workoutSession
     }
     
-    func resumeTemplate(_ template: WorkoutTemplate) {
+    func resumeWorkoutPlanCreation(_ workoutPlan: WorkoutPlan) {
         Haptics.selection()
-        activeTemplate = template
+        activeWorkoutPlan = workoutPlan
     }
     
     func checkForUnfinishedData() {
-        do {
-            if let unfinishedWorkout = try context.fetch(Workout.incomplete).first {
-                resumeWorkout(unfinishedWorkout)
-            }
-            if let unfinishedTemplate = try context.fetch(WorkoutTemplate.incomplete).first {
-                resumeTemplate(unfinishedTemplate)
-            }
-        } catch {
-            
+        if let unfinishedWorkoutSession = try? context.fetch(WorkoutSession.incomplete).first {
+            resumeWorkoutSession(unfinishedWorkoutSession)
+        }
+        if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
+            resumeWorkoutPlanCreation(unfinishedWorkoutPlan)
         }
     }
 }

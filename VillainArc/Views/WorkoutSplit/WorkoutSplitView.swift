@@ -235,10 +235,10 @@ struct WorkoutSplitView: View {
         if !day.name.isEmpty {
             return day.name
         }
-        if let template = day.template {
-            return template.name
+        if let plan = day.workoutPlan {
+            return plan.title
         }
-        return "No template assigned"
+        return "No workout plan assigned"
     }
 
     private func weeklyOffsetControls(for split: WorkoutSplit) -> some View {
@@ -333,5 +333,5 @@ struct WorkoutSplitView: View {
     NavigationStack {
         WorkoutSplitView()
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

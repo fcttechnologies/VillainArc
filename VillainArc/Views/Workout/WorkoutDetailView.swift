@@ -5,11 +5,10 @@ struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     var router = AppRouter.shared
-    @Bindable var workout: Workout
+    let workout: WorkoutSession
     
     @State private var showDeleteWorkoutConfirmation: Bool = false
-    @State private var editWorkout: Bool = false
-    @State private var newTemplate: WorkoutTemplate?
+    @State private var newWorkoutPlan: WorkoutPlan?
     
     var body: some View {
         List {
@@ -60,7 +59,7 @@ struct WorkoutDetailView: View {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
                             .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier("workoutDetailExerciseNotes-\(exercise.workout.id.uuidString)-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityIdentifier("workoutDetailExerciseNotes-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)")
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
@@ -68,29 +67,16 @@ struct WorkoutDetailView: View {
         }
         .accessibilityIdentifier("workoutDetailList")
         .navigationTitle(workout.title)
-        .navigationSubtitle(Text(formattedDateRange(start: workout.startTime, end: workout.endTime, includeTime: true)))
+        .navigationSubtitle(Text(formattedDateRange(start: workout.startedAt, end: workout.endedAt, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Options", systemImage: "ellipsis") {
-                    Button("Edit Workout", systemImage: "pencil") {
-                        Haptics.selection()
-                        editWorkout = true
+                    Button("Save as Workout Plan", systemImage: "list.clipboard") {
+                        saveWorkoutAsPlan()
                     }
-                    .accessibilityIdentifier("workoutDetailEditButton")
-                    .accessibilityHint("Edits this workout.")
-                    Button("Start Workout", systemImage: "arrow.triangle.2.circlepath") {
-                        router.startWorkout(from: workout)
-                        donateStartLastWorkoutAgainIfNeeded()
-                        dismiss()
-                    }
-                    .accessibilityIdentifier("workoutDetailStartButton")
-                    .accessibilityHint("Starts a workout based on this one.")
-                    Button("Save as Template", systemImage: "list.clipboard") {
-                        saveWorkoutAsTemplate()
-                    }
-                    .accessibilityIdentifier("workoutDetailSaveTemplateButton")
-                    .accessibilityHint("Saves this workout as a template.")
+                    .accessibilityIdentifier("workoutDetailSaveWorkoutPlanButton")
+                    .accessibilityHint("Saves this workout as a workout plan.")
                     Button("Delete Workout", systemImage: "trash", role: .destructive) {
                         showDeleteWorkoutConfirmation = true
                     }
@@ -109,43 +95,31 @@ struct WorkoutDetailView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $editWorkout) {
-            WorkoutView(workout: workout, isEditing: true, onDeleteFromEdit: {
-                editWorkout = false
-                deleteWorkout()
-            })
-        }
-        .fullScreenCover(item: $newTemplate) {
-            TemplateView(template: $0)
+        .fullScreenCover(item: $newWorkoutPlan) {
+            WorkoutPlanView(plan: $0)
         }
     }
 
     private func deleteWorkout() {
         Haptics.selection()
-        SpotlightIndexer.deleteWorkout(id: workout.id)
+        SpotlightIndexer.deleteWorkoutSession(id: workout.id)
         context.delete(workout)
         saveContext(context: context)
         dismiss()
     }
 
-    private func saveWorkoutAsTemplate() {
+    private func saveWorkoutAsPlan() {
         Haptics.selection()
-        let template = WorkoutTemplate(from: workout)
-        context.insert(template)
+        let plan = WorkoutPlan(from: workout)
+        context.insert(plan)
         saveContext(context: context)
-        newTemplate = template
-    }
-
-    private func donateStartLastWorkoutAgainIfNeeded() {
-        let latestWorkout = (try? context.fetch(Workout.recentWorkout).first)
-        guard latestWorkout?.id == workout.id else { return }
-        Task { await IntentDonations.donateStartLastWorkoutAgain() }
+        newWorkoutPlan = plan
     }
 }
 
 #Preview {
     NavigationStack {
-        WorkoutDetailView(workout: sampleCompletedWorkout())
+        WorkoutDetailView(workout: sampleCompletedSession())
     }
-    .sampleDataConainer()
+    .sampleDataContainer()
 }

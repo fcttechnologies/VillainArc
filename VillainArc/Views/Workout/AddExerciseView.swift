@@ -5,9 +5,8 @@ struct AddExerciseView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
-    private let workout: Workout?
-    private let template: WorkoutTemplate?
-    private let isEditing: Bool
+    private let workout: WorkoutSession?
+    private let plan: WorkoutPlan?
     
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
@@ -19,16 +18,14 @@ struct AddExerciseView: View {
     @State private var showCancelConfirmation = false
     @State private var exerciseSort: ExerciseSortOption = .mostRecent
 
-    init(workout: Workout, isEditing: Bool = false) {
+    init(workout: WorkoutSession) {
         self.workout = workout
-        self.template = nil
-        self.isEditing = isEditing
+        self.plan = nil
     }
-    
-    init(template: WorkoutTemplate) {
+
+    init(plan: WorkoutPlan) {
         self.workout = nil
-        self.template = template
-        self.isEditing = false
+        self.plan = plan
     }
 
     var body: some View {
@@ -127,7 +124,7 @@ struct AddExerciseView: View {
         if workout != nil {
             return "If you leave now, the selected exercises will not be added to your workout."
         } else {
-            return "If you leave now, the selected exercises will not be added to your template."
+            return "If you leave now, the selected exercises will not be added to your plan."
         }
     }
     
@@ -135,20 +132,20 @@ struct AddExerciseView: View {
         if workout != nil {
             return "Adds the selected exercises to your workout."
         } else {
-            return "Adds the selected exercises to your template."
+            return "Adds the selected exercises to your plan."
         }
     }
     
     private func addSelectedExercises() {
         if let workout {
             for exercise in selectedExercises {
-                workout.addExercise(exercise, markSetsComplete: isEditing)
+                workout.addExercise(exercise)
                 exercise.updateLastUsed()
                 SpotlightIndexer.index(exercise: exercise)
             }
-        } else if let template {
+        } else if let plan {
             for exercise in selectedExercises {
-                template.addExercise(exercise)
+                plan.addExercise(exercise)
                 exercise.updateLastUsed()
                 SpotlightIndexer.index(exercise: exercise)
             }
@@ -182,6 +179,6 @@ enum ExerciseSortOption: String, CaseIterable {
 }
 
 #Preview {
-    AddExerciseView(workout: sampleIncompleteWorkout(), isEditing: false)
+    AddExerciseView(workout: sampleIncompleteSession())
         .sampleDataContainerIncomplete()
 }

@@ -3,7 +3,7 @@ import SwiftData
 
 struct WorkoutsListView: View {
     @Environment(\.modelContext) private var context
-    @Query(Workout.completedWorkouts) private var workouts: [Workout]
+    @Query(WorkoutSession.completedSession) private var workouts: [WorkoutSession]
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
     
@@ -85,7 +85,7 @@ struct WorkoutsListView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let workoutsToDelete = offsets.map { workouts[$0] }
-        SpotlightIndexer.deleteWorkouts(ids: workoutsToDelete.map(\.id))
+        SpotlightIndexer.deleteWorkoutSessions(ids: workoutsToDelete.map(\.id))
         for workout in workoutsToDelete {
             context.delete(workout)
         }
@@ -97,7 +97,7 @@ struct WorkoutsListView: View {
 
     private func deleteAllWorkouts() {
         Haptics.selection()
-        SpotlightIndexer.deleteWorkouts(ids: workouts.map(\.id))
+        SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))
         for workout in workouts {
             context.delete(workout)
         }
@@ -110,11 +110,5 @@ struct WorkoutsListView: View {
     NavigationStack {
         WorkoutsListView()
     }
-    .sampleDataConainer()
-}
-
-#Preview("No Previous Workouts") {
-    NavigationStack {
-        WorkoutsListView()
-    }
+    .sampleDataContainer()
 }

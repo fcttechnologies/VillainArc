@@ -22,7 +22,7 @@ struct VillainArcApp: App {
 
     @MainActor
     private func handleSpotlight(_ userActivity: NSUserActivity) {
-        guard AppRouter.shared.activeWorkout == nil, AppRouter.shared.activeTemplate == nil else {
+        guard AppRouter.shared.activeWorkoutSession == nil, AppRouter.shared.activeWorkoutPlan == nil else {
             return
         }
         guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
@@ -30,28 +30,28 @@ struct VillainArcApp: App {
         }
 
         let context = SharedModelContainer.container.mainContext
-        if identifier.hasPrefix(SpotlightIndexer.workoutIdentifierPrefix) {
-            let idString = String(identifier.dropFirst(SpotlightIndexer.workoutIdentifierPrefix.count))
+        if identifier.hasPrefix(SpotlightIndexer.workoutSessionIdentifierPrefix) {
+            let idString = String(identifier.dropFirst(SpotlightIndexer.workoutSessionIdentifierPrefix.count))
             guard let id = UUID(uuidString: idString) else { return }
-            let predicate = #Predicate<Workout> { $0.id == id }
+            let predicate = #Predicate<WorkoutSession> { $0.id == id }
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
-            if let workout = try? context.fetch(descriptor).first {
+            if let workoutSession = try? context.fetch(descriptor).first {
                 AppRouter.shared.popToRoot()
-                AppRouter.shared.navigate(to: .workoutDetail(workout))
+                AppRouter.shared.navigate(to: .workoutSessionDetail(workoutSession))
             }
             return
         }
 
-        if identifier.hasPrefix(SpotlightIndexer.templateIdentifierPrefix) {
-            let idString = String(identifier.dropFirst(SpotlightIndexer.templateIdentifierPrefix.count))
+        if identifier.hasPrefix(SpotlightIndexer.workoutPlanIdentifierPrefix) {
+            let idString = String(identifier.dropFirst(SpotlightIndexer.workoutPlanIdentifierPrefix.count))
             guard let id = UUID(uuidString: idString) else { return }
-            let predicate = #Predicate<WorkoutTemplate> { $0.id == id }
+            let predicate = #Predicate<WorkoutPlan> { $0.id == id }
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
-            if let template = try? context.fetch(descriptor).first {
+            if let workoutPlan = try? context.fetch(descriptor).first {
                 AppRouter.shared.popToRoot()
-                AppRouter.shared.navigate(to: .templateDetail(template))
+                AppRouter.shared.navigate(to: .workoutPlanDetail(workoutPlan))
             }
         }
     }

@@ -16,17 +16,17 @@ class RestTimePolicy {
     
     init() {}
 
-    init(previous policy: RestTimePolicy) {
-        activeMode = policy.activeMode
-        allSameSeconds = policy.allSameSeconds
-        warmupSeconds = policy.warmupSeconds
-        regularSeconds = policy.regularSeconds
-        superSetSeconds = policy.superSetSeconds
-        dropSetSeconds = policy.dropSetSeconds
-        failureSeconds = policy.failureSeconds
+    init(copying source: RestTimePolicy) {
+        self.activeMode = source.activeMode
+        self.allSameSeconds = source.allSameSeconds
+        self.warmupSeconds = source.warmupSeconds
+        self.regularSeconds = source.regularSeconds
+        self.superSetSeconds = source.superSetSeconds
+        self.dropSetSeconds = source.dropSetSeconds
+        self.failureSeconds = source.failureSeconds
     }
     
-    func seconds(for set: ExerciseSet) -> Int {
+    func seconds(for set: SetPerformance) -> Int {
         switch activeMode {
         case .allSame:
             return allSameSeconds
@@ -56,23 +56,6 @@ class RestTimePolicy {
             regularSeconds
         case .individual:
             RestTimePolicy.defaultRestSeconds
-        }
-    }
-}
-
-enum RestTimeMode: String, CaseIterable, Codable {
-    case allSame
-    case byType
-    case individual
-    
-    var displayName: String {
-        switch self {
-        case .allSame:
-            return "All Same"
-        case .byType:
-            return "By Type"
-        case .individual:
-            return "Individual"
         }
     }
 }

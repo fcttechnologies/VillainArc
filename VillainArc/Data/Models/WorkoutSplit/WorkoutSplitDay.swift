@@ -7,9 +7,9 @@ class WorkoutSplitDay {
     var index: Int = 0
     var weekday: Int = 1
     var isRestDay: Bool = false
-    var split: WorkoutSplit
+    var split: WorkoutSplit?
     @Relationship(deleteRule: .nullify)
-    var template: WorkoutTemplate?
+    var workoutPlan: WorkoutPlan?
     
     init(weekday: Int, split: WorkoutSplit) {
         self.weekday = weekday

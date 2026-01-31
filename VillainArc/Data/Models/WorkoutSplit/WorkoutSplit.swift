@@ -121,9 +121,9 @@ class WorkoutSplit {
         }
     }
     
-    var todaysTemplate: WorkoutTemplate? {
+    var todaysWorkoutPlan: WorkoutPlan? {
         guard let day = todaysSplitDay, !day.isRestDay else { return nil }
-        return day.template
+        return day.workoutPlan
     }
 }
 

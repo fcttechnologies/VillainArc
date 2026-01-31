@@ -4,47 +4,47 @@ import SwiftData
 @MainActor
 class PreviewDataContainer {
     var modelContainer: ModelContainer
-    
+
     var context: ModelContext {
         modelContainer.mainContext
     }
-    
-    init(includeIncompleteWorkout: Bool = false) {
+
+    init(includeIncompleteData: Bool = false) {
         let schema = Schema([
-            Workout.self,
-            WorkoutExercise.self,
-            ExerciseSet.self,
+            WorkoutSession.self,
+            PreWorkoutMood.self,
+            PostWorkoutEffort.self,
+            ExercisePerformance.self,
+            SetPerformance.self,
             Exercise.self,
             RepRangePolicy.self,
             RestTimePolicy.self,
             RestTimeHistory.self,
-            WorkoutTemplate.self,
-            TemplateExercise.self,
-            TemplateSet.self,
+            WorkoutPlan.self,
+            PlanSnapshot.self,
+            ExercisePrescription.self,
+            SetPrescription.self,
             WorkoutSplit.self,
-            WorkoutSplitDay.self
+            WorkoutSplitDay.self,
+            PlanSuggestion.self,
+            SuggestedChange.self
         ])
 
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])
-            
-            loadSampleData()
-            loadSampleTemplates()
-            loadSampleSplits()
+
             syncExercises()
-            if includeIncompleteWorkout {
-                loadIncompleteWorkout()
+            loadCompletedPlan()
+            loadCompletedSession()
+            loadSampleSplits()
+            if includeIncompleteData {
+                loadIncompleteSession()
+                loadIncompletePlan()
             }
 
             try context.save()
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
-        }
-    }
-    
-    private func loadSampleData() {
-        for workout in Workout.sampleData {
-            context.insert(workout)
         }
     }
 
@@ -54,64 +54,300 @@ class PreviewDataContainer {
         }
     }
 
-    private func loadIncompleteWorkout() {
-        let workout = Workout(title: "Sample Workout")
-        workout.exercises = WorkoutExercise.incompleteChestDay(for: workout)
-        context.insert(workout)
-    }
-    
-    private func loadSampleTemplates() {
-        for template in WorkoutTemplate.sampleData {
-            context.insert(template)
+    // MARK: - Completed Plan (Push Day)
+
+    private func loadCompletedPlan() {
+        let plan = WorkoutPlan()
+        plan.title = "Push Day"
+        plan.completed = true
+        plan.favorite = true
+        plan.lastUsed = date(2026, 1, 5, 8, 15)
+        context.insert(plan)
+
+        guard let snapshot = plan.currentVersion else { return }
+        snapshot.notes = "Chest and triceps focus"
+
+        let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
+                (.warmup, 45, 12, 60),
+                (.regular, 135, 10, 90),
+                (.regular, 155, 8, 90)
+            ]),
+            ("dumbbell_incline_bench_press", "", [
+                (.warmup, 25, 12, 60),
+                (.regular, 55, 10, 90),
+                (.regular, 60, 8, 90)
+            ]),
+            ("cable_bench_chest_fly", "slow eccentric", [
+                (.regular, 30, 12, 90),
+                (.regular, 35, 10, 90),
+                (.regular, 35, 10, 90)
+            ]),
+            ("cable_bar_pushdown", "triceps finisher", [
+                (.regular, 50, 12, 60),
+                (.regular, 55, 10, 60),
+                (.regular, 60, 8, 60)
+            ])
+        ]
+
+        for ex in exercises {
+            let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+            let prescription = ExercisePrescription(exercise: exercise, planSnapshot: snapshot)
+            prescription.notes = ex.notes
+
+            if ex.id == "dumbbell_incline_bench_press" {
+                prescription.repRange.activeMode = .range
+                prescription.repRange.lowerRange = 8
+                prescription.repRange.upperRange = 10
+            } else if ex.id == "cable_bench_chest_fly" {
+                prescription.repRange.activeMode = .range
+                prescription.repRange.lowerRange = 12
+                prescription.repRange.upperRange = 15
+            } else if ex.id == "cable_bar_pushdown" {
+                prescription.repRange.activeMode = .range
+                prescription.repRange.lowerRange = 10
+                prescription.repRange.upperRange = 12
+            }
+
+            for s in ex.sets {
+                let setPrescription = SetPrescription(exercisePrescription: prescription)
+                setPrescription.type = s.type
+                setPrescription.targetWeight = s.weight
+                setPrescription.targetReps = s.reps
+                setPrescription.targetRest = s.rest
+                prescription.sets.append(setPrescription)
+            }
+
+            snapshot.exercises.append(prescription)
         }
     }
+
+    // MARK: - Completed Session (Chest Day)
+
+    private func loadCompletedSession() {
+        let session = WorkoutSession()
+        session.title = "Chest Day"
+        session.notes = "Testing sample"
+        session.completed = true
+        session.startedAt = date(2026, 1, 5, 8, 15)
+        session.endedAt = date(2026, 1, 5, 9, 5)
+        context.insert(session)
+
+        let preMood = PreWorkoutMood(feeling: .good, notes: "", workoutSession: session)
+        session.preMood = preMood
+
+        let postEffort = PostWorkoutEffort(rpe: 7, notes: "Felt strong", workoutSession: session)
+        session.postEffort = postEffort
+
+        let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])] = [
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
+                (.warmup, 45, 12),
+                (.regular, 135, 10),
+                (.regular, 155, 8)
+            ]),
+            ("dumbbell_incline_bench_press", "", [
+                (.warmup, 25, 12),
+                (.regular, 55, 10),
+                (.regular, 60, 8)
+            ]),
+            ("cable_bench_chest_fly", "slow eccentric", [
+                (.regular, 30, 12),
+                (.regular, 35, 10),
+                (.regular, 35, 10)
+            ]),
+            ("push_ups", "2xAMRAP", [
+                (.regular, 0, 25),
+                (.failure, 0, 18)
+            ])
+        ]
+
+        for (i, ex) in exercises.enumerated() {
+            let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+            let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
+            performance.notes = ex.notes
+
+            if ex.id == "dumbbell_incline_bench_press" {
+                performance.repRange.activeMode = .range
+                performance.repRange.lowerRange = 8
+                performance.repRange.upperRange = 10
+            } else if ex.id == "cable_bench_chest_fly" {
+                performance.repRange.activeMode = .range
+                performance.repRange.lowerRange = 12
+                performance.repRange.upperRange = 15
+            } else if ex.id == "push_ups" {
+                performance.repRange.activeMode = .untilFailure
+            }
+
+            for (j, s) in ex.sets.enumerated() {
+                let setPerf = SetPerformance(exercise: performance)
+                setPerf.type = s.type
+                setPerf.weight = s.weight
+                setPerf.reps = s.reps
+                setPerf.restSeconds = s.type == .warmup ? 60 : 90
+                setPerf.complete = true
+                setPerf.completedAt = session.startedAt.addingTimeInterval(Double((i * 3 + j + 1) * 120))
+                performance.sets.append(setPerf)
+            }
+
+            session.exercises.append(performance)
+        }
+    }
+
+    // MARK: - Incomplete Session
+
+    private func loadIncompleteSession() {
+        let session = WorkoutSession()
+        session.title = "Sample Workout"
+        context.insert(session)
+
+        let exercises: [(id: String, notes: String)] = [
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8"),
+            ("dumbbell_incline_bench_press", ""),
+            ("cable_bench_chest_fly", "slow eccentric")
+        ]
+
+        for ex in exercises {
+            let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+            let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
+            performance.notes = ex.notes
+
+            for _ in 0..<3 {
+                let setPerf = SetPerformance(exercise: performance)
+                setPerf.type = performance.sets.isEmpty ? .warmup : .regular
+                setPerf.restSeconds = performance.sets.isEmpty ? 60 : 90
+                performance.sets.append(setPerf)
+            }
+
+            session.exercises.append(performance)
+        }
+    }
+
+    // MARK: - Incomplete Plan
+
+    private func loadIncompletePlan() {
+        let plan = WorkoutPlan()
+        plan.title = "Back Day"
+        context.insert(plan)
+
+        guard let snapshot = plan.currentVersion else { return }
+
+        let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
+        let prescription = ExercisePrescription(exercise: exercise, planSnapshot: snapshot)
+
+        let set1 = SetPrescription(exercisePrescription: prescription)
+        set1.type = .warmup
+        set1.targetRest = 60
+        prescription.sets.append(set1)
+
+        let set2 = SetPrescription(exercisePrescription: prescription)
+        set2.targetRest = 90
+        prescription.sets.append(set2)
+
+        snapshot.exercises.append(prescription)
+    }
+
+    // MARK: - Splits
 
     private func loadSampleSplits() {
-        for split in WorkoutSplit.sampleData {
-            context.insert(split)
+        let weeklySplit = WorkoutSplit(mode: .weekly)
+        weeklySplit.title = "PPL Split"
+        weeklySplit.isActive = true
+        weeklySplit.days = (1...7).map { weekday in
+            let day = WorkoutSplitDay(weekday: weekday, split: weeklySplit)
+            day.isRestDay = (weekday == 1 || weekday == 4)
+            return day
         }
+        context.insert(weeklySplit)
+
+        let rotationSplit = WorkoutSplit(mode: .rotation)
+        rotationSplit.title = "Upper/Lower"
+        rotationSplit.days = [
+            WorkoutSplitDay(index: 0, split: rotationSplit),
+            WorkoutSplitDay(index: 1, split: rotationSplit),
+            WorkoutSplitDay(index: 2, split: rotationSplit)
+        ]
+        rotationSplit.days[0].name = "Upper Body"
+        rotationSplit.days[1].name = "Lower Body"
+        rotationSplit.days[2].name = "Rest"
+        rotationSplit.days[2].isRestDay = true
+        context.insert(rotationSplit)
+    }
+
+    // MARK: - Helpers
+
+    private func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
+        let components = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
+        return Calendar.current.date(from: components) ?? .now
     }
 }
+
+// MARK: - Shared Containers
 
 private let sampleContainer = PreviewDataContainer()
-private let sampleContainerWithIncomplete = PreviewDataContainer(includeIncompleteWorkout: true)
+private let sampleContainerWithIncomplete = PreviewDataContainer(includeIncompleteData: true)
+
+// MARK: - Sample Accessors
 
 @MainActor
-func sampleCompletedWorkout() -> Workout {
-    let workouts = (try? sampleContainer.context.fetch(Workout.completedWorkouts)) ?? []
-    if let workout = workouts.first {
-        return workout
+func sampleCompletedSession() -> WorkoutSession {
+    let sessions = (try? sampleContainer.context.fetch(WorkoutSession.completedSession)) ?? []
+    if let session = sessions.first {
+        return session
     }
 
-    let fallback = Workout(title: "Chest Day", notes: "Testing sample", completed: true, startTime: .now, endTime: .now)
+    let fallback = WorkoutSession()
+    fallback.title = "Chest Day"
+    fallback.completed = true
+    fallback.endedAt = .now
     sampleContainer.context.insert(fallback)
     return fallback
 }
 
 @MainActor
-func sampleIncompleteWorkout() -> Workout {
-    let workouts = (try? sampleContainerWithIncomplete.context.fetch(Workout.incomplete)) ?? []
-    if let workout = workouts.first {
-        return workout
+func sampleIncompleteSession() -> WorkoutSession {
+    let sessions = (try? sampleContainerWithIncomplete.context.fetch(WorkoutSession.incomplete)) ?? []
+    if let session = sessions.first {
+        return session
     }
 
-    let workout = Workout()
-    workout.exercises = WorkoutExercise.incompleteChestDay(for: workout)
-    sampleContainerWithIncomplete.context.insert(workout)
-    return workout
+    let fallback = WorkoutSession()
+    sampleContainerWithIncomplete.context.insert(fallback)
+    return fallback
 }
 
 @MainActor
-func sampleTemplate() -> WorkoutTemplate {
-    let descriptor = FetchDescriptor<WorkoutTemplate>()
-    let templates = (try? sampleContainer.context.fetch(descriptor)) ?? []
-    if let template = templates.first {
-        return template
+func sampleCompletedPlan() -> WorkoutPlan {
+    let descriptor = FetchDescriptor(predicate: WorkoutPlan.completedPredicate)
+    let plans = (try? sampleContainer.context.fetch(descriptor)) ?? []
+    if let plan = plans.first {
+        return plan
     }
-    
-    let fallback = WorkoutTemplate(name: "Push Day")
+
+    let fallback = WorkoutPlan()
+    fallback.title = "Push Day"
+    fallback.completed = true
     sampleContainer.context.insert(fallback)
     return fallback
+}
+
+@MainActor
+func sampleIncompletePlan() -> WorkoutPlan {
+    let plans = (try? sampleContainerWithIncomplete.context.fetch(WorkoutPlan.incomplete)) ?? []
+    if let plan = plans.first {
+        return plan
+    }
+
+    let fallback = WorkoutPlan()
+    fallback.title = "Back Day"
+    sampleContainerWithIncomplete.context.insert(fallback)
+    return fallback
+}
+
+@MainActor
+func sampleEditingPlan() -> WorkoutPlan {
+    let plan = sampleCompletedPlan()
+    plan.startEditing()
+    return plan
 }
 
 @MainActor
@@ -121,7 +357,7 @@ func sampleWeeklySplit() -> WorkoutSplit {
     if let split = splits.first(where: { $0.mode == .weekly }) {
         return split
     }
-    
+
     let fallback = WorkoutSplit(mode: .weekly)
     fallback.days = (1...7).map { WorkoutSplitDay(weekday: $0, split: fallback) }
     sampleContainer.context.insert(fallback)
@@ -135,10 +371,10 @@ func sampleRotationSplit() -> WorkoutSplit {
     if let split = splits.first(where: { $0.mode == .rotation }) {
         return split
     }
-    
+
     let fallback = WorkoutSplit(mode: .rotation)
-    fallback.title = "4 Day Rotation"
-    for i in 0..<4 {
+    fallback.title = "Upper/Lower"
+    for i in 0..<3 {
         let day = WorkoutSplitDay(index: i, split: fallback)
         day.name = "Day \(i + 1)"
         fallback.days.append(day)
@@ -147,249 +383,14 @@ func sampleRotationSplit() -> WorkoutSplit {
     return fallback
 }
 
+// MARK: - View Modifiers
+
 extension View {
-    func sampleDataConainer() -> some View {
-        self
-            .modelContainer(sampleContainer.modelContainer)
+    func sampleDataContainer() -> some View {
+        self.modelContainer(sampleContainer.modelContainer)
     }
 
     func sampleDataContainerIncomplete() -> some View {
-        self
-            .modelContainer(sampleContainerWithIncomplete.modelContainer)
-    }
-}
-
-extension Workout {
-    static var sampleData: [Workout] {
-        func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
-            let components = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
-            return Calendar.current.date(from: components) ?? Date.now
-        }
-
-        let chest = Workout(title: "Chest Day", notes: "Testing sample", completed: true, startTime: date(2026, 1, 5, 8, 15), endTime: date(2026, 1, 5, 9, 5))
-        chest.exercises = WorkoutExercise.chestDay(for: chest)
-        
-        let back = Workout(title: "Back Day", notes: "Testing sample", completed: true, startTime: date(2026, 1, 6, 11, 30), endTime: date(2026, 1, 6, 13, 0))
-        back.exercises = WorkoutExercise.backDay(for: back)
-        
-        let shoulder = Workout(title: "Shoulder Day", notes: "Testing sample", completed: true, startTime: date(2026, 2, 10, 23, 0), endTime: date(2026, 2, 11, 0, 30))
-        shoulder.exercises = WorkoutExercise.shoulderDay(for: shoulder)
-        
-        let arm = Workout(title: "Arm Day", notes: "Testing sample", completed: true, startTime: date(2026, 3, 31, 23, 10), endTime: date(2026, 4, 1, 0, 20))
-        arm.exercises = WorkoutExercise.armDay(for: arm)
-        
-        let leg = Workout(title: "Leg Day", notes: "Testing sample", completed: true, startTime: date(2026, 12, 31, 22, 15), endTime: date(2027, 1, 1, 0, 5))
-        leg.exercises = WorkoutExercise.legDay(for: leg)
-        
-        return [chest, back, shoulder, arm, leg]
-    }
-}
-
-
-extension WorkoutExercise {
-    private static func catalogItem(for id: String) -> ExerciseCatalogItem {
-        guard let item = ExerciseCatalog.byID[id] else {
-            preconditionFailure("Missing catalog item for id: \(id)")
-        }
-        return item
-    }
-
-    private static func makeExercise(index: Int, id: String, workout: Workout, notes: String = "", repRange: RepRangePolicy = RepRangePolicy()) -> WorkoutExercise {
-        let item = catalogItem(for: id)
-        return WorkoutExercise(index: index, name: item.name, notes: notes, repRange: repRange, musclesTargeted: item.musclesTargeted, workout: workout, catalogID: item.id)
-    }
-
-    static func chestDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_bench_press", workout: workout, notes: "Warm-up + 3x5 @ RPE 8")
-        e1.sets = ExerciseSet.sampleCompleteSet(for: e1)
-
-        let e2 = makeExercise(index: 1, id: "dumbbell_incline_bench_press", workout: workout, repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10))
-        e2.sets = ExerciseSet.sampleCompleteSet(for: e2)
-
-        let e3 = makeExercise(index: 2, id: "cable_bench_chest_fly", workout: workout, notes: "slow eccentric", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15))
-        e3.sets = ExerciseSet.sampleCompleteSet(for: e3)
-
-        let e4 = makeExercise(index: 3, id: "push_ups", workout: workout, notes: "2xAMRAP", repRange: RepRangePolicy(activeMode: .untilFailure))
-        e4.sets = ExerciseSet.sampleCompleteSet(for: e4)
-
-        return [e1, e2, e3, e4]
-    }
-    
-    static func backDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_deadlift", workout: workout, notes: "Warm-up + 3x3 @ RPE 8", repRange: RepRangePolicy(activeMode: .target, targetReps: 3))
-        e1.sets = ExerciseSet.sampleCompleteSet(for: e1)
-
-        let e2 = makeExercise(index: 1, id: "barbell_bent_over_row", workout: workout, notes: "straps optional")
-        e2.sets = ExerciseSet.sampleCompleteSet(for: e2)
-
-        let e3 = makeExercise(index: 2, id: "cable_lat_pulldown", workout: workout, repRange: RepRangePolicy(activeMode: .range, lowerRange: 10, upperRange: 12))
-        e3.sets = ExerciseSet.sampleCompleteSet(for: e3)
-
-        let e4 = makeExercise(index: 3, id: "cable_rope_face_pulls", workout: workout, notes: "focus on scapular movement", repRange: RepRangePolicy(activeMode: .target, targetReps: 15))
-        e4.sets = ExerciseSet.sampleCompleteSet(for: e4)
-
-        return [e1, e2, e3, e4]
-    }
-    
-    static func shoulderDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_shoulder_press", workout: workout, notes: "5x5, full ROM", repRange: RepRangePolicy(activeMode: .target, targetReps: 5))
-        e1.sets = ExerciseSet.sampleCompleteSet(for: e1)
-
-        let e2 = makeExercise(index: 1, id: "dumbbell_lateral_raises", workout: workout, notes: "4x12–15, controlled tempo")
-        e2.sets = ExerciseSet.sampleCompleteSet(for: e2)
-
-        let e3 = makeExercise(index: 2, id: "dumbbell_rear_delt_fly", workout: workout, notes: "3x12–15", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15))
-        e3.sets = ExerciseSet.sampleCompleteSet(for: e3)
-
-        let e4 = makeExercise(index: 3, id: "barbell_upright_row", workout: workout, notes: "3x10", repRange: RepRangePolicy(activeMode: .target, targetReps: 10))
-        e4.sets = ExerciseSet.sampleCompleteSet(for: e4)
-
-        return [e1, e2, e3, e4]
-    }
-    
-    static func legDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_squat", workout: workout, notes: "5x5, belt as needed")
-        e1.sets = ExerciseSet.sampleCompleteSet(for: e1)
-
-        let e2 = makeExercise(index: 1, id: "barbell_romanian_deadlift", workout: workout, notes: "3x8–10", repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10))
-        e2.sets = ExerciseSet.sampleCompleteSet(for: e2)
-
-        let e3 = makeExercise(index: 2, id: "leg_press", workout: workout, notes: "3x12, full lockout optional", repRange: RepRangePolicy(activeMode: .target, targetReps: 12))
-        e3.sets = ExerciseSet.sampleCompleteSet(for: e3)
-
-        let e4 = makeExercise(index: 3, id: "barbell_standing_calf_raises", workout: workout, notes: "4x12–15, pause at top", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15))
-        e4.sets = ExerciseSet.sampleCompleteSet(for: e4)
-
-        return [e1, e2, e3, e4]
-    }
-    
-    static func armDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_curls", workout: workout, notes: "4x10, strict form", repRange: RepRangePolicy(activeMode: .target, targetReps: 10))
-        e1.sets = ExerciseSet.sampleCompleteSet(for: e1)
-
-        let e2 = makeExercise(index: 1, id: "cable_bar_pushdown", workout: workout, notes: "4x10–12", repRange: RepRangePolicy(activeMode: .range, lowerRange: 10, upperRange: 12))
-        e2.sets = ExerciseSet.sampleCompleteSet(for: e2)
-
-        let e3 = makeExercise(index: 2, id: "dumbbell_hammer_curls", workout: workout, notes: "3x12")
-        e3.sets = ExerciseSet.sampleCompleteSet(for: e3)
-
-        let e4 = makeExercise(index: 3, id: "barbell_skullcrushers", workout: workout, notes: "3x10", repRange: RepRangePolicy(activeMode: .target, targetReps: 10))
-        e4.sets = ExerciseSet.sampleCompleteSet(for: e4)
-
-        return [e1, e2, e3, e4]
-    }
-
-    static func incompleteChestDay(for workout: Workout) -> [WorkoutExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_bench_press", workout: workout, notes: "Warm-up + 3x5 @ RPE 8")
-        e1.sets = ExerciseSet.sampleIncompleteSet(for: e1)
-
-        let e2 = makeExercise(index: 1, id: "dumbbell_incline_bench_press", workout: workout, repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10))
-        e2.sets = ExerciseSet.sampleIncompleteSet(for: e2)
-
-        let e3 = makeExercise(index: 2, id: "cable_bench_chest_fly", workout: workout, notes: "slow eccentric", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15))
-        e3.sets = ExerciseSet.sampleIncompleteSet(for: e3)
-
-        let e4 = makeExercise(index: 3, id: "push_ups", workout: workout, notes: "2xAMRAP", repRange: RepRangePolicy(activeMode: .untilFailure))
-        e4.sets = ExerciseSet.sampleIncompleteSet(for: e4)
-
-        return [e1, e2, e3, e4]
-    }
-}
-
-extension ExerciseSet {
-    static func sampleCompleteSet(for exercise: WorkoutExercise) -> [ExerciseSet] {
-        [
-            ExerciseSet(index: 0, type: .warmup, weight: 45, reps: 12, complete: true, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 75, reps: 10, complete: true, exercise: exercise),
-            ExerciseSet(index: 2, type: .regular, weight: 95, reps: 8, complete: true, exercise: exercise)
-        ]
-    }
-
-    static func sampleIncompleteSet(for exercise: WorkoutExercise) -> [ExerciseSet] {
-        [
-            ExerciseSet(index: 0, type: .warmup, weight: 45, reps: 12, complete: false, exercise: exercise),
-            ExerciseSet(index: 1, type: .regular, weight: 75, reps: 10, complete: false, exercise: exercise),
-            ExerciseSet(index: 2, type: .regular, weight: 95, reps: 8, complete: false, exercise: exercise)
-        ]
-    }
-}
-
-extension TemplateExercise {
-    private static func catalogItem(for id: String) -> ExerciseCatalogItem {
-        guard let item = ExerciseCatalog.byID[id] else {
-            preconditionFailure("Missing catalog item for id: \(id)")
-        }
-        return item
-    }
-    
-    private static func makeExercise(index: Int, id: String, template: WorkoutTemplate, notes: String = "", repRange: RepRangePolicy = RepRangePolicy()) -> TemplateExercise {
-        let item = catalogItem(for: id)
-        let exercise = TemplateExercise(index: index, name: item.name, notes: notes, repRange: repRange, musclesTargeted: item.musclesTargeted, template: template, catalogID: item.id)
-        exercise.sets = TemplateSet.sampleSets(for: exercise)
-        return exercise
-    }
-    
-    static func samplePushDay(for template: WorkoutTemplate) -> [TemplateExercise] {
-        let e1 = makeExercise(index: 0, id: "barbell_bench_press", template: template, notes: "Warm-up + 3x5 @ RPE 8")
-        let e2 = makeExercise(index: 1, id: "dumbbell_incline_bench_press", template: template, repRange: RepRangePolicy(activeMode: .range, lowerRange: 8, upperRange: 10))
-        let e3 = makeExercise(index: 2, id: "cable_bench_chest_fly", template: template, notes: "slow eccentric", repRange: RepRangePolicy(activeMode: .range, lowerRange: 12, upperRange: 15))
-        let e4 = makeExercise(index: 3, id: "cable_bar_pushdown", template: template, notes: "triceps finisher", repRange: RepRangePolicy(activeMode: .range, lowerRange: 10, upperRange: 12))
-        return [e1, e2, e3, e4]
-    }
-}
-
-extension TemplateSet {
-    static func sampleSets(for exercise: TemplateExercise) -> [TemplateSet] {
-        [
-            TemplateSet(index: 0, type: .warmup, restSeconds: 60, exercise: exercise),
-            TemplateSet(index: 1, type: .regular, restSeconds: 90, exercise: exercise),
-            TemplateSet(index: 2, type: .regular, restSeconds: 90, exercise: exercise)
-        ]
-    }
-}
-
-extension WorkoutTemplate {
-    static var sampleData: [WorkoutTemplate] {
-        let pushDay = WorkoutTemplate(name: "Push Day")
-        pushDay.notes = "Chest and triceps focus"
-        pushDay.exercises = TemplateExercise.samplePushDay(for: pushDay)
-        pushDay.isFavorite = true
-        pushDay.complete = true
-        
-        let pushDay2 = WorkoutTemplate(name: "Push Day")
-        pushDay2.notes = "Chest and triceps focus"
-        pushDay2.exercises = TemplateExercise.samplePushDay(for: pushDay2)
-        pushDay2.lastUsed = Date()
-        pushDay2.complete = true
-        
-        return [pushDay, pushDay2]
-    }
-}
-
-extension WorkoutSplit {
-    static var sampleData: [WorkoutSplit] {
-        let weeklySplit = WorkoutSplit(mode: .weekly)
-        weeklySplit.title = "PPL Split"
-        weeklySplit.isActive = true
-        weeklySplit.days = (1...7).map { weekday in
-            let day = WorkoutSplitDay(weekday: weekday, split: weeklySplit)
-            // Mark Sunday (1) and Wednesday (4) as rest days
-            day.isRestDay = (weekday == 1 || weekday == 4)
-            return day
-        }
-        
-        let rotationSplit = WorkoutSplit(mode: .rotation)
-        rotationSplit.title = "Upper/Lower"
-        rotationSplit.days = [
-            WorkoutSplitDay(index: 0, split: rotationSplit), // Upper
-            WorkoutSplitDay(index: 1, split: rotationSplit), // Lower
-            WorkoutSplitDay(index: 2, split: rotationSplit)  // Rest
-        ]
-        rotationSplit.days[0].name = "Upper Body"
-        rotationSplit.days[1].name = "Lower Body"
-        rotationSplit.days[2].name = "Rest"
-        rotationSplit.days[2].isRestDay = true
-        
-        return [weeklySplit, rotationSplit]
+        self.modelContainer(sampleContainerWithIncomplete.modelContainer)
     }
 }

@@ -1,9 +1,9 @@
 import SwiftUI
 
-struct RestTimeEditorView<E: RestTimeEditable>: View {
+struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
-    @Bindable var exercise: E
+    @Bindable var exercise: ExerciseType
     
     @State private var showAdvancedByType = false
     @State private var expandedPicker: RestTimePicker? = nil
@@ -96,7 +96,7 @@ struct RestTimeEditorView<E: RestTimeEditable>: View {
         )
     }
     
-    private func restSecondsBinding(for set: E.SetType) -> Binding<Int> {
+    private func restSecondsBinding(for set: ExerciseType.SetType) -> Binding<Int> {
         Binding(
             get: { set.restSeconds },
             set: { set.restSeconds = $0 }
@@ -206,7 +206,7 @@ struct RestTimeEditorView<E: RestTimeEditable>: View {
         Haptics.selection()
     }
     
-    private func individualSetTitle(for set: E.SetType) -> String {
+    private func individualSetTitle(for set: ExerciseType.SetType) -> String {
         if set.type == .regular {
             return "Set \(set.index + 1)"
         }
@@ -226,7 +226,6 @@ struct RestTimeEditorView<E: RestTimeEditable>: View {
 }
 
 #Preview {
-    RestTimeEditorView(exercise: sampleIncompleteWorkout().sortedExercises.first!)
+    RestTimeEditorView(exercise: sampleIncompleteSession().sortedExercises.first!)
         .sampleDataContainerIncomplete()
-        .environment(RestTimerState())
 }

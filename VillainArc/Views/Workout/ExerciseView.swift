@@ -3,45 +3,55 @@ import SwiftData
 
 struct ExerciseView: View {
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
-    @Query private var previousExercise: [WorkoutExercise]
+    @Query private var previousExercise: [ExercisePerformance]
     @Environment(\.modelContext) private var context
-    @Bindable var exercise: WorkoutExercise
+    @Bindable var exercise: ExercisePerformance
     @Binding var showRestTimerSheet: Bool
-    let isEditing: Bool
     private let restTimer = RestTimerState.shared
-    
+
     @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showRestTimeUpdateAlert = false
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
-    
-    init(exercise: WorkoutExercise, showRestTimerSheet: Binding<Bool>, isEditing: Bool = false) {
+
+    init(exercise: ExercisePerformance, showRestTimerSheet: Binding<Bool>) {
         self.exercise = exercise
         _showRestTimerSheet = showRestTimerSheet
-        self.isEditing = isEditing
 
-        _previousExercise = Query(WorkoutExercise.lastCompleted(for: exercise))
+        _previousExercise = Query(ExercisePerformance.lastCompleted(for: exercise))
     }
-    
-    private var previousSets: [ExerciseSet] {
-        previousExercise.first?.sortedSets ?? []
+
+    private var isPlanSession: Bool {
+        exercise.workoutSession?.origin == .plan
     }
-    
-    private func previousSetSnapshot(for index: Int) -> PreviousSetSnapshot? {
-        guard index < previousSets.count else { return nil }
-        let set = previousSets[index]
-        return PreviousSetSnapshot(reps: set.reps, weight: set.weight)
+
+    private var previousSets: [SetPerformance] {
+        return previousExercise.first?.sortedSets ?? []
     }
-    
+
+    private func referenceData(for set: SetPerformance) -> SetReferenceData? {
+        if isPlanSession {
+            guard let prescription = set.prescription else { return nil }
+            let reps = prescription.targetReps > 0 ? prescription.targetReps : nil
+            let weight = prescription.targetWeight > 0 ? prescription.targetWeight : nil
+            guard reps != nil || weight != nil else { return nil }
+            return SetReferenceData(reps: reps, weight: weight, actionLabel: "Use Target")
+        } else {
+            guard set.index < previousSets.count else { return nil }
+            let prevSet = previousSets[set.index]
+            return SetReferenceData(reps: prevSet.reps, weight: prevSet.weight, actionLabel: "Use Previous")
+        }
+    }
+
     var body: some View {
         GeometryReader { geometry in
-            let fieldWidth = geometry.size.width / (isEditing ? 3 : 5)
+            let fieldWidth = geometry.size.width / 5
             ScrollView {
                 headerView
                     .padding(.horizontal)
-                
+
                 Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                     GridRow {
                         Text("Set")
@@ -49,26 +59,23 @@ struct ExerciseView: View {
                             .gridColumnAlignment(.leading)
                         Text("Weight")
                             .gridColumnAlignment(.leading)
-                        if !isEditing {
-                            Text("Previous")
+                            Text(isPlanSession ? "Target" : "Previous")
                             Text(" ")
-                        }
                     }
                     .font(.title3)
                     .bold()
                     .accessibilityHidden(true)
-                    
+
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, showRestTimerSheet: $showRestTimerSheet, previousSetSnapshot: previousSetSnapshot(for: set.index), fieldWidth: fieldWidth, isEditing: isEditing)
+                            ExerciseSetRowView(set: set, exercise: exercise, showRestTimerSheet: $showRestTimerSheet, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
                     }
                 }
                 .padding(.vertical)
-                .padding(.leading, isEditing ? 15 : 0)
-                
+
                 Button {
                     addSet()
                 } label: {
@@ -106,7 +113,7 @@ struct ExerciseView: View {
             }
         }
     }
-    
+
     var headerView: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(exercise.name)
@@ -141,7 +148,7 @@ struct ExerciseView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesButton(exercise))
                     .accessibilityHint("Shows notes.")
-                    
+
                     Button("Rest Times", systemImage: "timer") {
                         Haptics.selection()
                         showRestTimeEditor = true
@@ -153,7 +160,7 @@ struct ExerciseView: View {
                 .font(.title)
                 .tint(.primary)
             }
-            
+
             if isNotesExpanded {
                 TextField("Notes", text: $exercise.notes, axis: .vertical)
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -177,10 +184,10 @@ struct ExerciseView: View {
                 }
         }
     }
-    
+
     private func addSet() {
         Haptics.selection()
-        exercise.addSet(complete: isEditing)
+        exercise.addSet()
         saveContext(context: context)
     }
 
@@ -208,7 +215,6 @@ struct ExerciseView: View {
 
 #Preview {
     @Previewable @State var showRestTimerSheet = false
-    ExerciseView(exercise: sampleIncompleteWorkout().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet, isEditing: true)
+    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
         .sampleDataContainerIncomplete()
-        .environment(RestTimerState())
 }

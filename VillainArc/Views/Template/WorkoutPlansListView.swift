@@ -1,9 +1,9 @@
 import SwiftUI
 import SwiftData
 
-struct TemplatesListView: View {
+struct WorkoutPlansListView: View {
     @Environment(\.modelContext) private var context
-    @Query(WorkoutTemplate.all) private var templates: [WorkoutTemplate]
+    @Query(WorkoutPlan.all) private var workoutPlans: [WorkoutPlan]
     
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
@@ -19,34 +19,34 @@ struct TemplatesListView: View {
         )
     }
     
-    var filteredTemplates: [WorkoutTemplate] {
+    var filteredWorkoutPlans: [WorkoutPlan] {
         if favoritesOnly {
-            return templates.filter { $0.isFavorite }
+            return workoutPlans.filter { $0.favorite }
         }
-        return templates
+        return workoutPlans
     }
     
     var body: some View {
         List {
-            ForEach(filteredTemplates) { template in
-                TemplateRowView(template: template)
+            ForEach(filteredWorkoutPlans) { plan in
+                WorkoutPlanRowView(workoutPlan: plan)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                    .accessibilityHint("Shows template details.")
+                    .accessibilityHint("Shows workout plan details.")
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                        Button(template.isFavorite ? "Undo" : "Favorite", systemImage: template.isFavorite ? "star.slash.fill" : "star.fill") {
-                            template.isFavorite.toggle()
+                        Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.slash.fill" : "star.fill") {
+                            plan.favorite.toggle()
                             saveContext(context: context)
                         }
                         .tint(.yellow)
                     }
             }
-            .onDelete(perform: deleteTemplates)
+            .onDelete(perform: deleteWorkoutPlan)
         }
-        .accessibilityIdentifier("templatesList")
+        .accessibilityIdentifier("workoutPlansList")
         .environment(\.editMode, editModeBinding)
         .animation(.smooth, value: isEditing)
-        .navigationTitle("Templates")
+        .navigationTitle("Workout Plans")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
         .navigationBarBackButtonHidden(isEditing)
@@ -58,26 +58,26 @@ struct TemplatesListView: View {
                     }
                     .tint(.red)
                     .labelStyle(.titleOnly)
-                    .accessibilityIdentifier("templatesDeleteAllButton")
-                    .accessibilityHint("Deletes all templates.")
-                    .confirmationDialog("Delete All Templates?", isPresented: $showDeleteAllConfirmation) {
+                    .accessibilityIdentifier("workoutPlansDeleteAllButton")
+                    .accessibilityHint("Deletes all workout plans.")
+                    .confirmationDialog("Delete All Workout Plans?", isPresented: $showDeleteAllConfirmation) {
                         Button("Delete All", role: .destructive) {
-                            deleteAllTemplates()
+                            deleteAllWorkoutPlans()
                         }
                     } message: {
-                        Text("Are you sure you want to delete all templates?")
+                        Text("Are you sure you want to delete all workout plans?")
                     }
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if !templates.isEmpty {
+                if !workoutPlans.isEmpty {
                     if isEditing {
                         Button("Done Editing", systemImage: "checkmark") {
                             isEditing = false
                             favoritesOnly = previousFavoritesState
                         }
                         .labelStyle(.iconOnly)
-                        .accessibilityIdentifier("templatesDoneEditingButton")
+                        .accessibilityIdentifier("workoutPlansDoneEditingButton")
                         .accessibilityHint("Exits edit mode.")
                     } else {
                         Menu("Options", systemImage: "ellipsis") {
@@ -87,46 +87,46 @@ struct TemplatesListView: View {
                                 favoritesOnly = false
                                 isEditing = true
                             }
-                            .accessibilityIdentifier("templatesEditButton")
+                            .accessibilityIdentifier("workoutPlansEditButton")
                             .accessibilityHint("Enters edit mode.")
                         }
-                        .accessibilityIdentifier("templatesOptionsMenu")
-                        .accessibilityHint("Template list options.")
+                        .accessibilityIdentifier("workoutPlansOptionsMenu")
+                        .accessibilityHint("Workout Plans list options.")
                     }
                 }
             }
         }
         .overlay(alignment: .center) {
-            if templates.isEmpty {
-                ContentUnavailableView("No Templates", systemImage: "list.clipboard", description: Text("Your created templates will appear here."))
-                    .accessibilityIdentifier("templatesEmptyState")
-            } else if favoritesOnly && filteredTemplates.isEmpty {
-                ContentUnavailableView("No Favorites", systemImage: "star.slash", description: Text("Mark templates as favorite to see them here."))
-                    .accessibilityIdentifier("templatesNoFavoritesState")
+            if workoutPlans.isEmpty {
+                ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Your created workout plans will appear here."))
+                    .accessibilityIdentifier("workoutPlansEmptyState")
+            } else if favoritesOnly && workoutPlans.isEmpty {
+                ContentUnavailableView("No Favorites", systemImage: "star.slash", description: Text("Mark workout plans as favorite to see them here."))
+                    .accessibilityIdentifier("workoutPlansNoFavoritesState")
             }
         }
     }
     
-    private func deleteTemplates(offsets: IndexSet) {
+    private func deleteWorkoutPlan(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
-        let templatesToDelete = offsets.map { filteredTemplates[$0] }
-        SpotlightIndexer.deleteTemplates(ids: templatesToDelete.map(\.id))
-        for template in templatesToDelete {
-            context.delete(template)
+        let workoutPlansToDelete = offsets.map { filteredWorkoutPlans[$0] }
+        SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlansToDelete.map(\.id))
+        for plan in workoutPlansToDelete {
+            context.delete(plan)
         }
         saveContext(context: context)
-        if templates.isEmpty {
+        if workoutPlans.isEmpty {
             isEditing = false
             favoritesOnly = false
         }
     }
 
-    private func deleteAllTemplates() {
+    private func deleteAllWorkoutPlans() {
         Haptics.selection()
-        SpotlightIndexer.deleteTemplates(ids: templates.map(\.id))
-        for template in templates {
-            context.delete(template)
+        SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
+        for plan in workoutPlans {
+            context.delete(plan)
         }
         saveContext(context: context)
         isEditing = false
@@ -136,13 +136,7 @@ struct TemplatesListView: View {
 
 #Preview {
     NavigationStack {
-        TemplatesListView()
+        WorkoutPlansListView()
     }
-    .sampleDataConainer()
-}
-
-#Preview("No Templates Created") {
-    NavigationStack {
-        TemplatesListView()
-    }
+    .sampleDataContainer()
 }

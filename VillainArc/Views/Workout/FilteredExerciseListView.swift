@@ -229,6 +229,6 @@ struct FilteredExerciseListView: View {
 }
 
 #Preview {
-    AddExerciseView(workout: sampleIncompleteWorkout(), isEditing: false)
+    AddExerciseView(workout: sampleIncompleteSession())
         .sampleDataContainerIncomplete()
 }

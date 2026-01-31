@@ -22,8 +22,8 @@ struct StartRestTimerIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
 
-        guard (try? context.fetch(Workout.incomplete).first) != nil else {
-            return .result(dialog: "No active workout to start a rest timer.")
+        guard (try? context.fetch(WorkoutSession.incomplete).first) != nil else {
+            return .result(dialog: "No workout session to start a rest timer in.")
         }
 
         let durationSeconds = Int(duration.converted(to: .seconds).value.rounded())

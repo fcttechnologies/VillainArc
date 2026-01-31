@@ -7,7 +7,7 @@ struct RestTimerView: View {
     @Environment(\.modelContext) private var context
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
     @State private var selectedSeconds = RestTimePolicy.defaultRestSeconds
-    @Bindable var workout: Workout
+    @Bindable var workout: WorkoutSession
     
     var body: some View {
         NavigationStack {
@@ -241,8 +241,7 @@ struct RestTimerView: View {
 
     @ViewBuilder
     private var nextSetView: some View {
-        if let nextSet = workout.activeSet(),
-           let exercise = workout.exercise(containing: nextSet) {
+        if let (exercise, nextSet) = workout.activeExerciseAndSet() {
             Text("Next Set: \(exercise.name) - \(nextSet.reps) x \(formattedWeight(nextSet.weight)) lbs")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -269,7 +268,6 @@ struct RestTimerView: View {
 }
 
 #Preview {
-    RestTimerView(workout: sampleIncompleteWorkout())
-        .environment(RestTimerState())
-        .sampleDataConainer()
+    RestTimerView(workout: sampleIncompleteSession())
+        .sampleDataContainer()
 }
