@@ -34,7 +34,7 @@ struct OpenWorkoutPlanIntent: AppIntent {
         }
 
         AppRouter.shared.popToRoot()
-        AppRouter.shared.navigate(to: .workoutPlanDetail(storedPlan))
+        AppRouter.shared.navigate(to: .workoutPlanDetail(storedPlan, false))
         return .result(opensIntent: OpenAppIntent())
     }
 }

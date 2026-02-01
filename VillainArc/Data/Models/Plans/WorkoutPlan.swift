@@ -13,6 +13,8 @@ class WorkoutPlan {
     var currentVersion: PlanSnapshot?
     @Relationship(deleteRule: .cascade, inverse: \PlanSnapshot.workoutPlan)
     var versions: [PlanSnapshot] = []
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
+    var splitDays: [WorkoutSplitDay] = []
     
     var notes: String {
         currentVersion?.notes ?? ""

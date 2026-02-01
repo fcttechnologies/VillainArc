@@ -8,12 +8,14 @@ struct WorkoutPlanDetailView: View {
     @Bindable var plan: WorkoutPlan
     private let router = AppRouter.shared
     private let onSelect: (() -> Void)?
+    private let showsUseOnly: Bool
 
     @State private var showDeleteWorkoutPlanConfirmation = false
     @State private var editWorkoutPlan = false
 
-    init(plan: WorkoutPlan, onSelect: (() -> Void)? = nil) {
+    init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil) {
         self.plan = plan
+        self.showsUseOnly = showsUseOnly
         self.onSelect = onSelect
     }
 
@@ -79,7 +81,20 @@ struct WorkoutPlanDetailView: View {
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if let onSelect {
+                if showsUseOnly {
+                    Button("Use") {
+                        Haptics.selection()
+                        if let onSelect {
+                            onSelect()
+                        } else {
+                            router.startWorkoutSession(from: plan)
+                            Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
+                        }
+                        dismiss()
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailUseButton)
+                    .accessibilityHint("Uses this workout plan.")
+                } else if let onSelect {
                     Button("Select") {
                         Haptics.selection()
                         onSelect()

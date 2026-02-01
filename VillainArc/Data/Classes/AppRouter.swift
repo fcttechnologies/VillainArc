@@ -13,7 +13,7 @@ final class AppRouter {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
         case workoutPlansList
-        case workoutPlanDetail(WorkoutPlan)
+        case workoutPlanDetail(WorkoutPlan, Bool)
         case splitList
         case splitDettail(WorkoutSplit)
     }
@@ -106,7 +106,7 @@ final class AppRouter {
             descriptor.fetchLimit = 1
             if let workoutPlan = try? context.fetch(descriptor).first {
                 popToRoot()
-                navigate(to: .workoutPlanDetail(workoutPlan))
+                navigate(to: .workoutPlanDetail(workoutPlan, false))
             }
         }
     }

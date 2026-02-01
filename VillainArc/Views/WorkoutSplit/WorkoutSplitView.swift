@@ -6,6 +6,7 @@ struct WorkoutSplitView: View {
     @Query private var splits: [WorkoutSplit]
     private let appRouter = AppRouter.shared
     @State private var showInactiveSplits = false
+    @State private var planPickerDay: WorkoutSplitDay?
 
     private var activeSplit: WorkoutSplit? {
         splits.first { $0.isActive }
@@ -20,13 +21,12 @@ struct WorkoutSplitView: View {
             if !splits.isEmpty {
                 Section {
                     if let activeSplit {
-                        splitRow(for: activeSplit, isActive: true)
-                            .accessibilityIdentifier("workoutSplitActiveRow")
-                        activeSplitSummary(for: activeSplit)
+                        SplitRowView(split: activeSplit, allSplits: splits)
+                        .accessibilityIdentifier("workoutSplitActiveRow")
+                        ActiveSplitSummaryView(split: activeSplit, planPickerDay: $planPickerDay)
                     } else {
-                        Text("No active split.")
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("workoutSplitNoActiveRow")
+                        ContentUnavailableView("No Active Split", systemImage: "calendar.badge.plus", description: Text("Set one of your other splits as active or make a new one."))
+                            .accessibilityIdentifier("workoutSplitNoActiveView")
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -35,14 +35,8 @@ struct WorkoutSplitView: View {
                     Section {
                         if showInactiveSplits {
                             ForEach(inactiveSplits) { split in
-                                splitRow(for: split, isActive: false)
-                                    .accessibilityIdentifier("workoutSplitInactiveRow-\(split.title)")
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button("Set Active", systemImage: "checkmark.circle") {
-                                            setActive(split)
-                                        }
-                                        .tint(.green)
-                                    }
+                                SplitRowView(split: split, allSplits: splits)
+                                .accessibilityIdentifier("workoutSplitInactiveRow-\(split.title)")
                             }
                             .onDelete(perform: deleteInactiveSplits)
                         }
@@ -89,62 +83,8 @@ struct WorkoutSplitView: View {
                     .accessibilityIdentifier("workoutSplitEmptyState")
             }
         }
-    }
-
-    @ViewBuilder
-    private func splitRow(for split: WorkoutSplit, isActive: Bool) -> some View {
-        Button {
-            appRouter.navigate(to: .splitDettail(split))
-        } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(splitTitle(for: split))
-                        .font(.headline)
-                    Text(splitSubtitle(for: split))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isActive {
-                    Button("Active", systemImage: "checkmark.circle.fill") {
-                        withAnimation(.smooth) {
-                            split.isActive = false
-                        }
-                        saveContext(context: context)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .labelStyle(.titleOnly)
-                    .fontWeight(.semibold)
-                    .accessibilityIdentifier("workoutSplitSetInactiveButton")
-                    .accessibilityHint("Makes this split inactive.")
-                } else {
-                    Button("Set Active", systemImage: "checkmark.circle") {
-                        withAnimation(.smooth) {
-                            setActive(split)
-                        }
-                    }
-                    .buttonStyle(.glass)
-                    .foregroundStyle(.blue)
-                    .fontWeight(.semibold)
-                    .labelStyle(.titleOnly)
-                    .accessibilityIdentifier("workoutSplitSetActiveButton")
-                    .accessibilityHint("Makes this split active.")
-                }
-            }
-            .accessibilityElement(children: .combine)
-        }
-    }
-
-    private func splitTitle(for split: WorkoutSplit) -> String {
-        split.title.isEmpty ? "Untitled Split" : split.title
-    }
-
-    private func splitSubtitle(for split: WorkoutSplit) -> String {
-        switch split.mode {
-        case .weekly:
-            return "Weekly"
-        case .rotation:
-            return "Rotation · \(split.days.count) day cycle"
+        .sheet(item: $planPickerDay) { day in
+            SplitDayPlanPickerSheet(splitDay: day)
         }
     }
 
@@ -172,135 +112,6 @@ struct WorkoutSplitView: View {
         .accessibilityIdentifier("workoutSplitInactiveToggle")
         .accessibilityLabel(showInactiveSplits ? "Collapse other splits" : "Expand other splits")
         .accessibilityHint("Shows or hides inactive splits.")
-    }
-
-    @ViewBuilder
-    private func activeSplitSummary(for split: WorkoutSplit) -> some View {
-        let summary = activeSplitSummaryInfo(for: split)
-
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Text(summary.title)
-                if let secondary = summary.secondary {
-                    Text("•")
-                    Text(secondary)
-                }
-            }
-            .fontWeight(.semibold)
-            .foregroundStyle(.secondary)
-            
-            Text(summary.detail)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .padding(.bottom)
-
-            if split.mode == .weekly {
-                weeklyOffsetControls(for: split)
-            } else {
-                rotationAdvanceControls(for: split)
-            }
-        }
-        .padding(.vertical, 6)
-        .accessibilityIdentifier("workoutSplitActiveSummary")
-    }
-
-    private func activeSplitSummaryInfo(for split: WorkoutSplit) -> (title: String, detail: String, secondary: String?) {
-        switch split.mode {
-        case .weekly:
-            let detail = splitDayLabel(for: split.todaysSplitDay)
-            let offset = split.normalizedWeeklyOffset
-            let behindDays = abs(offset)
-            let offsetText = behindDays == 0 ? "On schedule" : "\(behindDays) day\(behindDays == 1 ? "" : "s") behind"
-            return (title: "Today", detail: detail, secondary: offsetText)
-        case .rotation:
-            let count = max(1, split.sortedDays.count)
-            let dayNumber = (split.todaysDayIndex ?? 0) + 1
-            let detail = splitDayLabel(for: split.todaysSplitDay)
-            return (title: "Cycle Day \(dayNumber) of \(count)", detail: detail, secondary: nil)
-        }
-    }
-
-    private func splitDayLabel(for day: WorkoutSplitDay?) -> String {
-        guard let day else { return "No day configured" }
-        if day.isRestDay {
-            return "Rest Day"
-        }
-        if !day.name.isEmpty {
-            return day.name
-        }
-        if let plan = day.workoutPlan {
-            return plan.title
-        }
-        return "No workout plan assigned"
-    }
-
-    private func weeklyOffsetControls(for split: WorkoutSplit) -> some View {
-        HStack(spacing: 12) {
-            Button("Missed Day", systemImage: "calendar.badge.exclamationmark") {
-                Haptics.selection()
-                split.missedDay()
-                saveContext(context: context)
-            }
-            .buttonSizing(.flexible)
-            .accessibilityIdentifier("workoutSplitMissedDayButton")
-            .accessibilityHint("Moves the weekly split back by one day.")
-
-            Button("Reset Offset", systemImage: "arrow.counterclockwise") {
-                Haptics.selection()
-                split.resetSplit()
-                saveContext(context: context)
-            }
-            .buttonSizing(.flexible)
-            .disabled(split.normalizedWeeklyOffset == 0)
-            .accessibilityIdentifier("workoutSplitResetOffsetButton")
-            .accessibilityHint("Resets the weekly split offset to today.")
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-    }
-
-    private func rotationAdvanceControls(for split: WorkoutSplit) -> some View {
-        HStack(spacing: 12) {
-            Button("Previous", systemImage: "chevron.left") {
-                Haptics.selection()
-                split.updateCurrentIndex(advanced: false)
-                saveContext(context: context)
-            }
-            .buttonSizing(.flexible)
-            .accessibilityIdentifier("workoutSplitRotationPreviousButton")
-            .accessibilityHint("Moves back one day in the rotation.")
-
-            Button("Advance", systemImage: "chevron.right") {
-                Haptics.selection()
-                split.updateCurrentIndex(advanced: true)
-                saveContext(context: context)
-            }
-            .buttonSizing(.flexible)
-            .accessibilityIdentifier("workoutSplitRotationAdvanceButton")
-            .accessibilityHint("Moves forward one day in the rotation.")
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-    }
-
-    private func weekdayName(for weekday: Int) -> String {
-        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        return names[max(1, min(weekday, 7)) - 1]
-    }
-
-    private func setActive(_ split: WorkoutSplit) {
-        Haptics.selection()
-        for item in splits where item !== split {
-            if item.isActive {
-                item.isActive = false
-            }
-        }
-        split.isActive = true
-        if split.mode == .rotation {
-            split.rotationCurrentIndex = 0
-            split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
-        }
-        saveContext(context: context)
     }
 
     private func createSplit(mode: SplitMode) {
@@ -331,6 +142,242 @@ struct WorkoutSplitView: View {
         let splitsToDelete = offsets.map { inactiveSplits[$0] }
         for split in splitsToDelete {
             context.delete(split)
+        }
+        saveContext(context: context)
+    }
+}
+
+private struct SplitDayPlanPickerSheet: View {
+    @Bindable var splitDay: WorkoutSplitDay
+
+    var body: some View {
+        WorkoutPlanPickerView(selectedPlan: $splitDay.workoutPlan)
+    }
+}
+
+private struct ActiveSplitSummaryView: View {
+    let split: WorkoutSplit
+    @Binding var planPickerDay: WorkoutSplitDay?
+
+    var body: some View {
+        let day = split.todaysSplitDay
+
+        VStack(alignment: .leading, spacing: 8) {
+            if let day {
+                if day.isRestDay {
+                    ContentUnavailableView("Enjoy your day off!", systemImage: "zzz")
+                        .accessibilityIdentifier("workoutSplitRestDayUnavailable")
+                } else if let plan = day.workoutPlan {
+                    WorkoutPlanRowView(workoutPlan: plan, showsUseOnly: true)
+                        .accessibilityIdentifier("workoutSplitActivePlanRow")
+                } else {
+                    noPlanSelectedView(for: day)
+                }
+            } else {
+                ContentUnavailableView("No split day configured", systemImage: "calendar.badge.exclamationmark")
+                    .accessibilityIdentifier("workoutSplitNoDayConfigured")
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityIdentifier("workoutSplitActiveSummary")
+    }
+
+    private func noPlanSelectedView(for day: WorkoutSplitDay) -> some View {
+        Button {
+            Haptics.selection()
+            planPickerDay = day
+        } label: {
+            ContentUnavailableView(
+                "No plan selected for this day",
+                systemImage: "list.bullet.clipboard",
+                description: Text("Tap to choose a workout plan.")
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("workoutSplitSelectPlanButton")
+        .accessibilityHint("Selects a workout plan for this day.")
+    }
+}
+
+private struct SplitRowView: View {
+    @Environment(\.modelContext) private var context
+    let split: WorkoutSplit
+    let allSplits: [WorkoutSplit]
+    private let appRouter = AppRouter.shared
+
+    var body: some View {
+        Button {
+            appRouter.navigate(to: .splitDettail(split))
+        } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(titleText)
+                        .font(.headline)
+                    Text(subtitleText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if split.isActive {
+                    activeControls
+                } else {
+                    setActiveButton
+                }
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            if split.isActive {
+                Button {
+                    setInactive()
+                } label: {
+                    Label("Set Inactive", systemImage: "xmark.circle")
+                }
+                .tint(.orange)
+                .accessibilityIdentifier("workoutSplitSetInactiveButton")
+                .accessibilityHint("Makes this split inactive.")
+            }
+        }
+    }
+
+    private var titleText: String {
+        if split.isActive {
+            return activeSplitTitle
+        }
+        return split.title.isEmpty ? "Untitled Split" : split.title
+    }
+
+    private var subtitleText: String {
+        if split.isActive {
+            return activeSplitSubtitle
+        }
+        switch split.mode {
+        case .weekly:
+            return "Weekly"
+        case .rotation:
+            return "Rotation · \(split.days.count) day cycle"
+        }
+    }
+
+    private var activeSplitTitle: String {
+        guard let day = split.todaysSplitDay else { return "Unnamed split day" }
+        if day.isRestDay {
+            return "Rest Day"
+        }
+        let name = day.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? "Unnamed split day" : name
+    }
+
+    private var activeSplitSubtitle: String {
+        switch split.mode {
+        case .weekly:
+            return "Weekly · \(weeklyScheduleStatus)"
+        case .rotation:
+            let count = max(1, split.sortedDays.count)
+            let dayNumber = (split.todaysDayIndex ?? 0) + 1
+            return "Rotation · Cycle Day \(dayNumber) of \(count)"
+        }
+    }
+
+    private var weeklyScheduleStatus: String {
+        let offset = split.normalizedWeeklyOffset
+        let behindDays = abs(offset)
+        return behindDays == 0 ? "On schedule" : "\(behindDays) day\(behindDays == 1 ? "" : "s") behind"
+    }
+
+    private var activeControls: some View {
+        Group {
+            if split.mode == .weekly {
+                weeklyOffsetControls
+            } else {
+                rotationAdvanceControls
+            }
+        }
+    }
+
+    private var weeklyOffsetControls: some View {
+        HStack(spacing: 8) {
+            Button("Missed Day", systemImage: "calendar.badge.exclamationmark") {
+                Haptics.selection()
+                split.missedDay()
+                saveContext(context: context)
+            }
+            .accessibilityIdentifier("workoutSplitMissedDayButton")
+            .accessibilityHint("Moves the weekly split back by one day.")
+
+            Button("Reset Offset", systemImage: "arrow.counterclockwise") {
+                Haptics.selection()
+                split.resetSplit()
+                saveContext(context: context)
+            }
+            .disabled(split.normalizedWeeklyOffset == 0)
+            .accessibilityIdentifier("workoutSplitResetOffsetButton")
+            .accessibilityHint("Resets the weekly split offset to today.")
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.circle)
+        .controlSize(.small)
+        .fontWeight(.semibold)
+    }
+
+    private var rotationAdvanceControls: some View {
+        HStack(spacing: 8) {
+            Button("Previous", systemImage: "chevron.left") {
+                Haptics.selection()
+                split.updateCurrentIndex(advanced: false)
+                saveContext(context: context)
+            }
+            .accessibilityIdentifier("workoutSplitRotationPreviousButton")
+            .accessibilityHint("Moves back one day in the rotation.")
+
+            Button("Advance", systemImage: "chevron.right") {
+                Haptics.selection()
+                split.updateCurrentIndex(advanced: true)
+                saveContext(context: context)
+            }
+            .accessibilityIdentifier("workoutSplitRotationAdvanceButton")
+            .accessibilityHint("Moves forward one day in the rotation.")
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.circle)
+        .controlSize(.small)
+        .fontWeight(.semibold)
+    }
+
+    private var setActiveButton: some View {
+        Button("Set Active", systemImage: "checkmark.circle") {
+            withAnimation(.smooth) {
+                setActive()
+            }
+        }
+        .buttonStyle(.glassProminent)
+        .foregroundStyle(.blue)
+        .fontWeight(.semibold)
+        .labelStyle(.titleOnly)
+        .accessibilityIdentifier("workoutSplitSetActiveButton")
+        .accessibilityHint("Makes this split active.")
+    }
+
+    private func setActive() {
+        Haptics.selection()
+        for item in allSplits where item !== split {
+            if item.isActive {
+                item.isActive = false
+            }
+        }
+        split.isActive = true
+        if split.mode == .rotation {
+            split.rotationCurrentIndex = 0
+            split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
+        }
+        saveContext(context: context)
+    }
+
+    private func setInactive() {
+        Haptics.selection()
+        withAnimation(.smooth) {
+            split.isActive = false
         }
         saveContext(context: context)
     }

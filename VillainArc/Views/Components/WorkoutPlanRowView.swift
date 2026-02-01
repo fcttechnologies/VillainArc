@@ -2,11 +2,12 @@ import SwiftUI
 
 struct WorkoutPlanRowView: View {
     let workoutPlan: WorkoutPlan
+    var showsUseOnly: Bool = false
     private let appRouter = AppRouter.shared
     
     var body: some View {
         Button {
-            appRouter.navigate(to: .workoutPlanDetail(workoutPlan))
+            appRouter.navigate(to: .workoutPlanDetail(workoutPlan, showsUseOnly))
         } label: {
             WorkoutPlanCardView(workoutPlan: workoutPlan)
         }

@@ -133,7 +133,9 @@ enum AccessibilityIdentifiers {
 
     static let workoutPlanPickerList = "workoutPlanPickerList"
     static let workoutPlanPickerClearButton = "workoutPlanPickerClearButton"
+    static let workoutPlanPickerCreateButton = "workoutPlanPickerCreateButton"
     static let workoutPlanDetailSelectButton = "workoutPlanDetailSelectButton"
+    static let workoutPlanDetailUseButton = "workoutPlanDetailUseButton"
 
     static func workoutSplitRenameButton(_ split: WorkoutSplit) -> String {
         "workoutSplitRenameButton-\(split.title)"

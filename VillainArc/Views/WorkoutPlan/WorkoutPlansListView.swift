@@ -100,7 +100,7 @@ struct WorkoutPlansListView: View {
             if workoutPlans.isEmpty {
                 ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Your created workout plans will appear here."))
                     .accessibilityIdentifier("workoutPlansEmptyState")
-            } else if favoritesOnly && workoutPlans.isEmpty {
+            } else if favoritesOnly && filteredWorkoutPlans.isEmpty {
                 ContentUnavailableView("No Favorites", systemImage: "star.slash", description: Text("Mark workout plans as favorite to see them here."))
                     .accessibilityIdentifier("workoutPlansNoFavoritesState")
             }

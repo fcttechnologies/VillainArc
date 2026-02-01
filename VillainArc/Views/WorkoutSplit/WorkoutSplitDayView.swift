@@ -31,7 +31,7 @@ struct WorkoutSplitDayView: View {
                         if let plan = splitDay.workoutPlan {
                             WorkoutPlanCardView(workoutPlan: plan)
                         } else {
-                            ContentUnavailableView("Select a workout plan \(mode == .weekly ? ("for \(weekdayName(for: splitDay.weekday))") : "\(splitDay.name)")", systemImage: "list.bullet.clipboard")
+                            ContentUnavailableView("Select a workout plan", systemImage: "list.bullet.clipboard")
                                 .foregroundStyle(.white)
                                 .background(.blue.gradient, in: .rect(cornerRadius: 20))
                         }

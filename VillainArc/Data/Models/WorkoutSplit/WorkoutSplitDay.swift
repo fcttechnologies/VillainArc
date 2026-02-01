@@ -8,7 +8,6 @@ class WorkoutSplitDay {
     var weekday: Int = 1
     var isRestDay: Bool = false
     var split: WorkoutSplit?
-    @Relationship(deleteRule: .nullify)
     var workoutPlan: WorkoutPlan?
     
     init(weekday: Int, split: WorkoutSplit) {

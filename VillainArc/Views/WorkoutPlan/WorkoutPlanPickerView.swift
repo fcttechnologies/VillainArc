@@ -6,6 +6,8 @@ struct WorkoutPlanPickerView: View {
     @Environment(\.modelContext) private var context
     @Query(WorkoutPlan.all) private var workoutPlans: [WorkoutPlan]
     @Binding var selectedPlan: WorkoutPlan?
+    @State private var newWorkoutPlan: WorkoutPlan?
+    @State private var newWorkoutPlanID: UUID?
 
     var body: some View {
         NavigationStack {
@@ -31,7 +33,7 @@ struct WorkoutPlanPickerView: View {
             .listStyle(.plain)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Clear", role: .destructive) {
+                    Button("Clear") {
                         Haptics.selection()
                         selectedPlan = nil
                         saveContext(context: context)
@@ -40,6 +42,13 @@ struct WorkoutPlanPickerView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerClearButton)
                     .accessibilityHint("Removes the selected workout plan.")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Create", systemImage: "plus") {
+                        createWorkoutPlan()
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerCreateButton)
+                    .accessibilityHint("Creates a new workout plan to select.")
+                }
             }
             .overlay {
                 if workoutPlans.isEmpty {
@@ -47,6 +56,35 @@ struct WorkoutPlanPickerView: View {
                 }
             }
         }
+        .fullScreenCover(item: $newWorkoutPlan, onDismiss: handleNewWorkoutPlanDismissal) {
+            WorkoutPlanView(plan: $0)
+        }
+    }
+
+    private func createWorkoutPlan() {
+        Haptics.selection()
+        let plan = WorkoutPlan()
+        context.insert(plan)
+        saveContext(context: context)
+        newWorkoutPlanID = plan.id
+        newWorkoutPlan = plan
+    }
+
+    private func handleNewWorkoutPlanDismissal() {
+        defer {
+            newWorkoutPlanID = nil
+            newWorkoutPlan = nil
+        }
+
+        guard let id = newWorkoutPlanID else { return }
+        let predicate = #Predicate<WorkoutPlan> { $0.id == id }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        guard let storedPlan = try? context.fetch(descriptor).first else { return }
+        guard storedPlan.completed else { return }
+        selectedPlan = storedPlan
+        saveContext(context: context)
+        dismiss()
     }
 }
 
