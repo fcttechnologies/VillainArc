@@ -7,6 +7,9 @@ struct SetReferenceData {
     let actionLabel: String
 
     var displayText: String {
+        if let reps, reps > 0, (weight ?? 0) == 0 {
+            return "\(reps) reps"
+        }
         guard let reps, let weight else { return "-" }
         return "\(reps)x\(Self.formattedWeight(weight))"
     }
@@ -56,6 +59,7 @@ struct ExerciseSetRowView: View {
                     .foregroundStyle(set.type.tintColor)
                     .frame(width: 40, height: 40)
                     .glassEffect(.regular, in: .circle)
+                    .opacity(set.complete ? 0.4 : 1)
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetMenu(exercise, set: set))
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
@@ -65,17 +69,20 @@ struct ExerciseSetRowView: View {
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: fieldWidth)
+                .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
                 .accessibilityLabel("Reps")
             TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .frame(maxWidth: fieldWidth)
+                .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
                 .accessibilityLabel("Weight")
 
             Text(referenceData?.displayText ?? "-")
                 .lineLimit(1)
                 .frame(maxWidth: fieldWidth)
+                .opacity(set.complete ? 0.4 : 1)
                 .contextMenu {
                     if let referenceData {
                         Button(referenceData.actionLabel) {
@@ -100,6 +107,7 @@ struct ExerciseSetRowView: View {
                 Button {
                     Haptics.selection()
                     set.complete = false
+                    set.completedAt = nil
                     saveContext(context: context)
                 } label: {
                     Image(systemName: "checkmark")

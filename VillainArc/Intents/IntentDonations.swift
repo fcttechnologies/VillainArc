@@ -65,4 +65,8 @@ enum IntentDonations {
     static func donateCancelWorkout() async {
         _ = try? await CancelWorkoutIntent().donate()
     }
+
+    static func donateCompleteActiveSet() async {
+        _ = try? await CompleteActiveSetIntent().donate()
+    }
 }

@@ -6,6 +6,7 @@ struct RestTimerView: View {
     private let restTimer = RestTimerState.shared
     @Environment(\.modelContext) private var context
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
+    @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @State private var selectedSeconds = RestTimePolicy.defaultRestSeconds
     @Bindable var workout: WorkoutSession
     
@@ -194,7 +195,7 @@ struct RestTimerView: View {
                 HStack(spacing: 12) {
                     adjustButton(deltaSeconds: -15)
 
-                    Text(endDate, style: .timer)
+                    Text(timerInterval: .now...endDate, countsDown: true)
                         .font(.system(size: 80, weight: .bold))
 
                     adjustButton(deltaSeconds: 15)
@@ -242,12 +243,36 @@ struct RestTimerView: View {
     @ViewBuilder
     private var nextSetView: some View {
         if let (exercise, nextSet) = workout.activeExerciseAndSet() {
-            Text("Next Set: \(exercise.name) - \(nextSet.reps) x \(formattedWeight(nextSet.weight)) lbs")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerNextSet)
-                .accessibilityLabel("Next set")
-                .accessibilityValue("\(exercise.name), \(nextSet.reps) reps, \(formattedWeight(nextSet.weight)) pounds")
+            let weightText = formattedWeight(nextSet.weight)
+            let isBodyweightSet = nextSet.reps > 0 && nextSet.weight == 0
+            let setText = isBodyweightSet
+                ? "\(nextSet.reps) reps"
+                : "\(nextSet.reps)x\(weightText)lbs"
+            let accessibilityValue = isBodyweightSet
+                ? "\(exercise.name), \(nextSet.reps) reps"
+                : "\(exercise.name), \(nextSet.reps) reps, \(weightText) pounds"
+
+            HStack(spacing: 12) {
+                Text("\(exercise.name): \(setText)")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.restTimerNextSet)
+                    .accessibilityLabel("Next set")
+                    .accessibilityValue(accessibilityValue)
+
+                Button {
+                    completeNextSet()
+                } label: {
+                    Image(systemName: "checkmark")
+                }
+                .buttonBorderShape(.circle)
+                .buttonStyle(.glass)
+                .tint(.blue)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerCompleteSetButton)
+                .accessibilityLabel("Complete set")
+                .accessibilityHint("Marks the next set complete and restarts the timer.")
+            }
         }
     }
 
@@ -264,6 +289,22 @@ struct RestTimerView: View {
             context.delete(history)
         }
         saveContext(context: context)
+    }
+
+    private func completeNextSet() {
+        guard let (_, nextSet) = workout.activeExerciseAndSet() else { return }
+        Haptics.selection()
+        nextSet.complete = true
+        nextSet.completedAt = Date()
+
+        let restSeconds = nextSet.effectiveRestSeconds
+        if autoStartRestTimer, restSeconds > 0 {
+            restTimer.start(seconds: restSeconds, startedFromSetID: nextSet.persistentModelID)
+            RestTimeHistory.record(seconds: restSeconds, context: context)
+            Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
+        }
+        saveContext(context: context)
+        Task { await IntentDonations.donateCompleteActiveSet() }
     }
 }
 

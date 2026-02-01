@@ -71,6 +71,10 @@ enum AccessibilityIdentifiers {
         "exerciseAddSetButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
 
+    static func exerciseDeleteButton(_ exercise: ExercisePerformance) -> String {
+        "exerciseDeleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
+    }
+
     static func workoutPlanExerciseAddSetButton(_ exercise: ExercisePrescription) -> String {
         "workoutPlanExerciseAddSetButton-\(String(describing: exercise.planSnapshot?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
@@ -155,6 +159,7 @@ enum AccessibilityIdentifiers {
     }
 
     static let restTimerNextSet = "restTimerNextSet"
+    static let restTimerCompleteSetButton = "restTimerCompleteSetButton"
 
     static func restTimeRowButton(_ title: String) -> String {
         "restTimeRowButton-\(slug(title))"
@@ -255,7 +260,16 @@ enum AccessibilityText {
     }
 
     static func workoutExerciseListValue(for exercise: ExercisePerformance) -> String {
-        let setsText = exerciseSetCountText(exercise.sortedSets.count)
+        let totalSets = exercise.sortedSets.count
+        let completedSets = exercise.sortedSets.filter { $0.complete }.count
+        let setsText: String
+        if totalSets > 0, completedSets == totalSets {
+            setsText = "All sets complete"
+        } else if completedSets > 0 {
+            setsText = "\(completedSets)/\(totalSets) sets complete"
+        } else {
+            setsText = exerciseSetCountText(totalSets)
+        }
         guard !exercise.displayMuscle.isEmpty else {
             return setsText
         }

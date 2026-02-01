@@ -89,7 +89,7 @@ final class RestTimerState {
     
     func pause() {
         guard isRunning, let endDate else { return }
-        let remaining = max(0, Int(endDate.timeIntervalSinceNow.rounded(.down)))
+        let remaining = max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
         
         if remaining == 0 {
             stop()

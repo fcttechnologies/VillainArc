@@ -14,6 +14,7 @@ struct WorkoutView: View {
     @State private var showNotesEditorSheet = false
     @State private var showDeleteConfirmation = false
     @State private var showSaveConfirmation = false
+    @State private var autoAdvanceTargetIndex: Int?
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -65,6 +66,7 @@ struct WorkoutView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Button("Add Exercise", systemImage: "plus") {
                         Haptics.selection()
+                        prepareForAddExerciseSheet()
                         showAddExerciseSheet = true
                     }
                     .matchedTransitionSource(id: "addExercise", in: animation)
@@ -73,7 +75,7 @@ struct WorkoutView: View {
                 }
             }
             .animation(.smooth, value: showExerciseListView)
-            .sheet(isPresented: $showAddExerciseSheet) {
+            .sheet(isPresented: $showAddExerciseSheet, onDismiss: handleAddExerciseSheetDismiss) {
                 AddExerciseView(workout: workout)
                     .navigationTransition(.zoom(sourceID: "addExercise", in: animation))
                     .interactiveDismissDisabled()
@@ -84,7 +86,7 @@ struct WorkoutView: View {
                     .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
+                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField, axis: .vertical)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: workout.notes) {
                         scheduleSave(context: context)
@@ -119,10 +121,12 @@ struct WorkoutView: View {
                             .accessibilityIdentifier("workoutExercisesEmptyState")
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet)
-                                .containerRelativeFrame(.horizontal)
-                                .id(exercise)
-                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisePage(exercise))
+                            ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet) {
+                                deleteExercise(exercise)
+                            }
+                            .containerRelativeFrame(.horizontal)
+                            .id(exercise)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisePage(exercise))
                         }
                     }
                 }
@@ -134,6 +138,9 @@ struct WorkoutView: View {
             .scrollPosition(id: $activeExercise)
             .accessibilityIdentifier("workoutExercisePager")
             .onAppear {
+                if activeExercise == nil {
+                    activeExercise = workout.sortedExercises.first
+                }
                 if let activeExercise {
                     proxy.scrollTo(activeExercise)
                 }
@@ -144,6 +151,9 @@ struct WorkoutView: View {
     var exerciseListView: some View {
         List {
             ForEach(workout.sortedExercises) { exercise in
+                let totalSets = exercise.sortedSets.count
+                let completedSets = exercise.sortedSets.filter { $0.complete }.count
+                let isAllSetsComplete = totalSets > 0 && completedSets == totalSets
                 Button {
                     activeExercise = exercise
                     showExerciseListView = false
@@ -159,12 +169,13 @@ struct WorkoutView: View {
                                 .fontWeight(.semibold)
                                 .font(.headline)
                             Spacer()
-                            Text("^[\(exercise.sortedSets.count) set](inflect: true)")
+                            Text(exerciseSetStatusText(totalSets: totalSets, completedSets: completedSets))
                                 .foregroundStyle(.secondary)
                                 .font(.subheadline)
                         }
                     }
                 }
+                .opacity(isAllSetsComplete ? 0.4 : 1)
                 .buttonStyle(.borderless)
                 .tint(.primary)
                 .listRowSeparator(.hidden)
@@ -181,11 +192,21 @@ struct WorkoutView: View {
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier("workoutExerciseList")
     }
+
+    private func exerciseSetStatusText(totalSets: Int, completedSets: Int) -> LocalizedStringKey {
+        if totalSets > 0, completedSets == totalSets {
+            return "All sets complete"
+        }
+        if completedSets > 0 {
+            return "\(completedSets)/\(totalSets) sets complete"
+        }
+        return "^[\(totalSets) set](inflect: true)"
+    }
     
     @ViewBuilder
     private var timerToolbarLabel: some View {
         if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
-            Text(endDate, style: .timer)
+            Text(timerInterval: .now...endDate, countsDown: true)
                 .fontWeight(.semibold)
         } else if restTimer.isPaused {
             Text(secondsToTime(restTimer.pausedRemainingSeconds))
@@ -348,10 +369,59 @@ struct WorkoutView: View {
             showExerciseListView = false
         }
     }
+
+    private func deleteExercise(_ exercise: ExercisePerformance) {
+        let deletedIndex = exercise.index
+        Haptics.selection()
+        workout.deleteExercise(exercise)
+        context.delete(exercise)
+        saveContext(context: context)
+
+        if let active = activeExercise, active == exercise {
+            let remainingExercises = workout.sortedExercises
+            if remainingExercises.isEmpty {
+                activeExercise = nil
+            } else {
+                let nextIndex = min(deletedIndex, remainingExercises.count - 1)
+                activeExercise = remainingExercises[nextIndex]
+            }
+        }
+    }
     
     private func moveExercise(from source: IndexSet, to destination: Int) {
         workout.moveExercise(from: source, to: destination)
         saveContext(context: context)
+    }
+
+    private func prepareForAddExerciseSheet() {
+        let count = workout.sortedExercises.count
+        let isActiveLast = activeExercise?.index == count - 1
+        if !showExerciseListView, activeExerciseAllSetsComplete(), isActiveLast {
+            autoAdvanceTargetIndex = count
+        } else {
+            autoAdvanceTargetIndex = nil
+        }
+    }
+
+    private func handleAddExerciseSheetDismiss() {
+        defer { autoAdvanceTargetIndex = nil }
+        let exercises = workout.sortedExercises
+        if let target = autoAdvanceTargetIndex, target < exercises.count {
+            withAnimation(.smooth) {
+                activeExercise = exercises[target]
+            }
+            return
+        }
+        if activeExercise == nil {
+            activeExercise = exercises.first
+        }
+    }
+
+    private func activeExerciseAllSetsComplete() -> Bool {
+        guard let activeExercise else { return false }
+        let sets = activeExercise.sortedSets
+        guard !sets.isEmpty else { return false }
+        return sets.allSatisfy { $0.complete }
     }
 }
 

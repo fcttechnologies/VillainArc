@@ -7,18 +7,21 @@ struct ExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
     @Binding var showRestTimerSheet: Bool
+    let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
 
-    @State private var isNotesExpanded = false
+    @State private var isNotesExpanded = true
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showRestTimeUpdateAlert = false
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
+    @FocusState private var isNotesFocused: Bool
 
-    init(exercise: ExercisePerformance, showRestTimerSheet: Binding<Bool>) {
+    init(exercise: ExercisePerformance, showRestTimerSheet: Binding<Bool>, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
         _showRestTimerSheet = showRestTimerSheet
+        self.onDeleteExercise = onDeleteExercise
 
         _previousExercise = Query(ExercisePerformance.lastCompleted(for: exercise))
     }
@@ -59,8 +62,8 @@ struct ExerciseView: View {
                             .gridColumnAlignment(.leading)
                         Text("Weight")
                             .gridColumnAlignment(.leading)
-                            Text(isPlanSession ? "Target" : "Previous")
-                            Text(" ")
+                        Text(isPlanSession ? "Target" : "Previous")
+                        Text(" ")
                     }
                     .font(.title3)
                     .bold()
@@ -109,7 +112,7 @@ struct ExerciseView: View {
                 }
                 Button("Keep Current", role: .cancel) {}
             } message: {
-                Text("Update the timer by \(restTimeUpdateDeltaText)?")
+                Text("Want to update rest timer to reflect the new set rest time?")
             }
         }
     }
@@ -163,16 +166,34 @@ struct ExerciseView: View {
 
             if isNotesExpanded {
                 TextField("Notes", text: $exercise.notes, axis: .vertical)
+                    .focused($isNotesFocused)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                     .padding(.top, 8)
                     .onChange(of: exercise.notes) {
                         scheduleSave(context: context)
+                    }
+                    .onChange(of: isNotesFocused) { _, isFocused in
+                        if !isFocused {
+                            exercise.notes = exercise.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
             }
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .contextMenu {
+            if let onDeleteExercise {
+                Button(role: .destructive) {
+                    Haptics.selection()
+                    onDeleteExercise()
+                } label: {
+                    Label("Delete Exercise", systemImage: "trash")
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDeleteButton(exercise))
+                .accessibilityHint("Deletes this exercise.")
+            }
+        }
         .sheet(isPresented: $showRepRangeEditor) {
             RepRangeEditorView(repRange: exercise.repRange, catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
