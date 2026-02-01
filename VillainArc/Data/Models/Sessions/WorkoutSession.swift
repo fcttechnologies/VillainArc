@@ -18,6 +18,8 @@ class WorkoutSession {
     var planSnapshot: PlanSnapshot?
     @Relationship(deleteRule: .cascade, inverse: \ExercisePerformance.workoutSession)
     var exercises: [ExercisePerformance] = []
+    @Relationship(deleteRule: .nullify)
+    var activeExercise: ExercisePerformance?
     
     var sortedExercises: [ExercisePerformance] {
         exercises.sorted { $0.index < $1.index }

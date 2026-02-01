@@ -5,7 +5,6 @@ struct WorkoutView: View {
     @Bindable var workout: WorkoutSession
     private let restTimer = RestTimerState.shared
     
-    @State private var activeExercise: ExercisePerformance?
     @State private var showExerciseListView = false
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
@@ -108,6 +107,9 @@ struct WorkoutView: View {
                         saveContext(context: context)
                     }
             }
+            .onChange(of: workout.activeExercise?.id) {
+                scheduleSave(context: context)
+            }
         }
     }
     
@@ -135,13 +137,13 @@ struct WorkoutView: View {
             .scrollIndicators(.hidden)
             .scrollTargetBehavior(.paging)
             .scrollDisabled(workout.exercises.isEmpty)
-            .scrollPosition(id: $activeExercise)
+            .scrollPosition(id: $workout.activeExercise)
             .accessibilityIdentifier("workoutExercisePager")
             .onAppear {
-                if activeExercise == nil {
-                    activeExercise = workout.sortedExercises.first
+                if workout.activeExercise == nil {
+                    workout.activeExercise = workout.sortedExercises.first
                 }
-                if let activeExercise {
+                if let activeExercise = workout.activeExercise {
                     proxy.scrollTo(activeExercise)
                 }
             }
@@ -155,7 +157,7 @@ struct WorkoutView: View {
                 let completedSets = exercise.sortedSets.filter { $0.complete }.count
                 let isAllSetsComplete = totalSets > 0 && completedSets == totalSets
                 Button {
-                    activeExercise = exercise
+                    workout.activeExercise = exercise
                     showExerciseListView = false
                 } label: {
                     VStack(alignment: .leading) {
@@ -331,6 +333,7 @@ struct WorkoutView: View {
         Haptics.selection()
         workout.completed = true
         workout.endedAt = Date()
+        workout.activeExercise = nil
         restTimer.stop()
         saveContext(context: context)
         SpotlightIndexer.index(workoutSession: workout)
@@ -361,8 +364,8 @@ struct WorkoutView: View {
         }
         saveContext(context: context)
         
-        if let active = activeExercise, exercisesToDelete.contains(active) {
-            activeExercise = workout.sortedExercises.first
+        if let active = workout.activeExercise, exercisesToDelete.contains(active) {
+            workout.activeExercise = workout.sortedExercises.first
         }
         
         if workout.exercises.isEmpty {
@@ -377,13 +380,13 @@ struct WorkoutView: View {
         context.delete(exercise)
         saveContext(context: context)
 
-        if let active = activeExercise, active == exercise {
+        if let active = workout.activeExercise, active == exercise {
             let remainingExercises = workout.sortedExercises
             if remainingExercises.isEmpty {
-                activeExercise = nil
+                workout.activeExercise = nil
             } else {
                 let nextIndex = min(deletedIndex, remainingExercises.count - 1)
-                activeExercise = remainingExercises[nextIndex]
+                workout.activeExercise = remainingExercises[nextIndex]
             }
         }
     }
@@ -395,7 +398,7 @@ struct WorkoutView: View {
 
     private func prepareForAddExerciseSheet() {
         let count = workout.sortedExercises.count
-        let isActiveLast = activeExercise?.index == count - 1
+        let isActiveLast = workout.activeExercise?.index == count - 1
         if !showExerciseListView, activeExerciseAllSetsComplete(), isActiveLast {
             autoAdvanceTargetIndex = count
         } else {
@@ -408,17 +411,17 @@ struct WorkoutView: View {
         let exercises = workout.sortedExercises
         if let target = autoAdvanceTargetIndex, target < exercises.count {
             withAnimation(.smooth) {
-                activeExercise = exercises[target]
+                workout.activeExercise = exercises[target]
             }
             return
         }
-        if activeExercise == nil {
-            activeExercise = exercises.first
+        if workout.activeExercise == nil {
+            workout.activeExercise = exercises.first
         }
     }
 
     private func activeExerciseAllSetsComplete() -> Bool {
-        guard let activeExercise else { return false }
+        guard let activeExercise = workout.activeExercise else { return false }
         let sets = activeExercise.sortedSets
         guard !sets.isEmpty else { return false }
         return sets.allSatisfy { $0.complete }
