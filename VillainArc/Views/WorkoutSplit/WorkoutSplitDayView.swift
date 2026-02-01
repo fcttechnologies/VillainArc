@@ -39,7 +39,7 @@ struct WorkoutSplitDayView: View {
                     .padding(.top)
                     Spacer()
                 } else {
-                    ContentUnavailableView("Enjoy your day off!", systemImage: "zzz")
+                    ContentUnavailableView("Enjoy your day off!", systemImage: "zzz", description: Text("Rest days are perfect for unwinding and recharging."))
                 }
             }
         .animation(.easeInOut, value: splitDay.isRestDay)

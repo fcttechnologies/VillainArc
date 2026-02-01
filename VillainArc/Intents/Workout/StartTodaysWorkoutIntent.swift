@@ -21,8 +21,7 @@ struct StartTodaysWorkoutIntent: AppIntent {
         }
         
         // Sync rotation index if needed
-        split.refreshRotationIfNeeded()
-        saveContext(context: context)
+        split.refreshRotationIfNeeded(context: context)
         
         // Check no workout plan is being created
         if let _ = try? context.fetch(WorkoutPlan.incomplete).first {

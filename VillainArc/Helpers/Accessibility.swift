@@ -141,6 +141,16 @@ enum AccessibilityIdentifiers {
         "workoutSplitRenameButton-\(split.title)"
     }
 
+    static let workoutSplitOptionsMenu = "workoutSplitOptionsMenu"
+    static let workoutSplitRotateMenu = "workoutSplitRotateMenu"
+    static let workoutSplitRotateBackwardButton = "workoutSplitRotateBackwardButton"
+    static let workoutSplitRotateForwardButton = "workoutSplitRotateForwardButton"
+    static let workoutSplitSwapModeButton = "workoutSplitSwapModeButton"
+    static let workoutSplitSwapCancelButton = "workoutSplitSwapCancelButton"
+    static let workoutSplitSwapConfirmButton = "workoutSplitSwapConfirmButton"
+    static let workoutSplitDeleteButton = "workoutSplitDeleteButton"
+    static let workoutSplitDeleteConfirmButton = "workoutSplitDeleteConfirmButton"
+    static let workoutSplitActiveActionsButton = "workoutSplitActiveActionsButton"
     static let workoutSplitTitleEditorField = "workoutSplitTitleEditorField"
 
     static func workoutPlanDetailSet(_ exercise: ExercisePrescription, set: SetPrescription) -> String {

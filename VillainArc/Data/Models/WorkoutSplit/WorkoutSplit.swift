@@ -58,19 +58,26 @@ class WorkoutSplit {
         rotationCurrentIndex = normalized
     }
     
-    func refreshRotationIfNeeded(today: Date = .now) {
+    @MainActor
+    func refreshRotationIfNeeded(today: Date = .now, context: ModelContext) {
         guard mode == .rotation && !days.isEmpty else { return }
         let cal = Calendar.current
         let last = rotationLastUpdatedDate ?? today
         let startLast = cal.startOfDay(for: last)
         let startToday = cal.startOfDay(for: today)
         let delta = cal.dateComponents([.day], from: startLast, to: startToday).day ?? 0
-        guard delta > 0 else {
+        var didUpdate = false
+        if delta > 0 {
+            rotationCurrentIndex = (rotationCurrentIndex + delta) % days.count
             rotationLastUpdatedDate = startToday
-            return
+            didUpdate = true
+        } else if rotationLastUpdatedDate == nil || startLast != startToday {
+            rotationLastUpdatedDate = startToday
+            didUpdate = true
         }
-        rotationCurrentIndex = (rotationCurrentIndex + delta) % days.count
-        rotationLastUpdatedDate = startToday
+        if didUpdate {
+            saveContext(context: context)
+        }
     }
 
     func deleteDay(_ day: WorkoutSplitDay) {

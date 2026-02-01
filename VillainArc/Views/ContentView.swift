@@ -11,11 +11,11 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $router.path) {
             ScrollView {
-                Button {
-                    router.navigate(to: .splitList)
-                } label: {
-                    Text("hi")
-                }
+                WorkoutSplitSectionView()
+                    .padding()
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel("Workout split")
+                    .accessibilityIdentifier("homeWorkoutSplitSection")
                 RecentWorkoutSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
