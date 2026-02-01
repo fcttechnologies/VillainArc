@@ -5,9 +5,19 @@ enum IntentDonations {
     static func donateStartWorkout() async {
         _ = try? await StartWorkoutIntent().donate()
     }
+
+    static func donateStartTodaysWorkout() async {
+        _ = try? await StartTodaysWorkoutIntent().donate()
+    }
     
     static func donateViewLastWorkout() async {
         _ = try? await ViewLastWorkoutIntent().donate()
+    }
+
+    static func donateOpenWorkout(workout: WorkoutSession) async {
+        let intent = OpenWorkoutIntent()
+        intent.workout = WorkoutSessionEntity(workoutSession: workout)
+        _ = try? await intent.donate()
     }
     
     static func donateShowWorkoutHistory() async {
@@ -17,9 +27,21 @@ enum IntentDonations {
     static func donateShowWorkoutPlans() async {
         _ = try? await ShowWorkoutPlansIntent().donate()
     }
+
+    static func donateOpenWorkoutPlan(workoutPlan: WorkoutPlan) async {
+        let intent = OpenWorkoutPlanIntent()
+        intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
+        _ = try? await intent.donate()
+    }
     
     static func donateLastWorkoutSummary() async {
         _ = try? await LastWorkoutSummaryIntent().donate()
+    }
+
+    static func donateTrainingSummary(day: TrainingDay = .today) async {
+        let intent = TrainingSummaryIntent()
+        intent.day = day
+        _ = try? await intent.donate()
     }
     
     static func donateCreateWorkoutPlan() async {
@@ -29,6 +51,12 @@ enum IntentDonations {
     static func donateStartWorkoutWithPlan(workoutPlan: WorkoutPlan) async {
         let intent = StartWorkoutWithPlanIntent()
         intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
+        _ = try? await intent.donate()
+    }
+
+    static func donateAddExercise(exercise: Exercise) async {
+        let intent = AddExerciseIntent()
+        intent.exercise = ExerciseEntity(exercise: exercise)
         _ = try? await intent.donate()
     }
 

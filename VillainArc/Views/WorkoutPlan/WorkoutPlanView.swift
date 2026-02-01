@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct WorkoutPlanView: View {
     @Environment(\.modelContext) private var context
@@ -117,6 +118,13 @@ struct WorkoutPlanView: View {
                     .onDisappear {
                         saveContext(context: context)
                     }
+            }
+            .userActivity("com.villainarc.workoutPlan.edit", element: plan) { plan, activity in
+                activity.title = plan.title
+                activity.isEligibleForSearch = false
+                activity.isEligibleForPrediction = true
+                let entity = WorkoutPlanEntity(workoutPlan: plan)
+                activity.appEntityIdentifier = .init(for: entity)
             }
             .sheet(isPresented: $showTitleEditorSheet) {
                 TextEntryEditorView(title: "Title", placeholder: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)

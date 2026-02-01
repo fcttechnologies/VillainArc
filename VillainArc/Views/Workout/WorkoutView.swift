@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct WorkoutView: View {
     @Bindable var workout: WorkoutSession
@@ -109,6 +110,13 @@ struct WorkoutView: View {
             }
             .onChange(of: workout.activeExercise?.id) {
                 scheduleSave(context: context)
+            }
+            .userActivity("com.villainarc.workoutSession.active", element: workout) { session, activity in
+                activity.title = session.title
+                activity.isEligibleForSearch = false
+                activity.isEligibleForPrediction = true
+                let entity = WorkoutSessionEntity(workoutSession: session)
+                activity.appEntityIdentifier = .init(for: entity)
             }
         }
     }

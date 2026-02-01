@@ -1,6 +1,31 @@
 import AppIntents
 import CoreTransferable
 import SwiftData
+import UniformTypeIdentifiers
+
+struct WorkoutPlanFullContent: Codable {
+    struct Exercise: Codable {
+        struct SetEntry: Codable {
+            let index: Int
+            let type: String
+            let targetReps: Int
+            let targetWeight: Double
+            let targetRestSeconds: Int
+        }
+
+        let index: Int
+        let name: String
+        let notes: String?
+        let muscles: [String]
+        let sets: [SetEntry]
+    }
+
+    let id: UUID
+    let title: String
+    let summary: String
+    let notes: String?
+    let exercises: [Exercise]
+}
 
 struct WorkoutPlanEntity: AppEntity, IndexedEntity, Identifiable {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Workout Plan")
@@ -10,6 +35,7 @@ struct WorkoutPlanEntity: AppEntity, IndexedEntity, Identifiable {
     let title: String
     let summary: String
     let exerciseNames: [String]
+    let fullContent: WorkoutPlanFullContent
 
     var displayRepresentation: DisplayRepresentation {
         if summary.isEmpty {
@@ -25,12 +51,45 @@ extension WorkoutPlanEntity {
         id = workoutPlan.id
         title = workoutPlan.title
         summary = workoutPlan.spotlightSummary
-        exerciseNames = workoutPlan.currentVersion?.sortedExercises.map(\.name) ?? []
+        let exercises = workoutPlan.currentVersion?.sortedExercises ?? []
+        exerciseNames = exercises.map(\.name)
+        fullContent = WorkoutPlanFullContent(
+            id: workoutPlan.id,
+            title: workoutPlan.title,
+            summary: workoutPlan.spotlightSummary,
+            notes: workoutPlan.notes.isEmpty ? nil : workoutPlan.notes,
+            exercises: exercises.map { exercise in
+                WorkoutPlanFullContent.Exercise(
+                    index: exercise.index,
+                    name: exercise.name,
+                    notes: exercise.notes.isEmpty ? nil : exercise.notes,
+                    muscles: exercise.musclesTargeted.map(\.rawValue),
+                    sets: exercise.sortedSets.map { set in
+                        WorkoutPlanFullContent.Exercise.SetEntry(
+                            index: set.index,
+                            type: set.type.rawValue,
+                            targetReps: set.targetReps,
+                            targetWeight: set.targetWeight,
+                            targetRestSeconds: set.targetRest
+                        )
+                    }
+                )
+            }
+        )
     }
 }
 
 extension WorkoutPlanEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { entity in
+            try await MainActor.run {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                encoder.dateEncodingStrategy = .iso8601
+                return try encoder.encode(entity.fullContent)
+            }
+        }
+
         ProxyRepresentation { entity in
             "\(entity.title)\n\(entity.summary)"
         }

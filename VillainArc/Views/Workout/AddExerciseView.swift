@@ -154,7 +154,14 @@ struct AddExerciseView: View {
         selectedExercises.removeAll()
         selectedExerciseIDs.removeAll()
         saveContext(context: context)
-        Task { await IntentDonations.donateAddExercises(exercises: donatedExercises) }
+        Task {
+            guard !donatedExercises.isEmpty else { return }
+            if donatedExercises.count == 1, let exercise = donatedExercises.first {
+                await IntentDonations.donateAddExercise(exercise: exercise)
+            } else {
+                await IntentDonations.donateAddExercises(exercises: donatedExercises)
+            }
+        }
         dismiss()
     }
 

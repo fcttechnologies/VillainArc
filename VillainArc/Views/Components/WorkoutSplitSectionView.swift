@@ -101,6 +101,10 @@ struct WorkoutSplitSectionView: View {
             if !isRestDay, let plan = day.workoutPlan {
                 Button {
                     appRouter.navigate(to: .workoutPlanDetail(plan, true))
+                    Task {
+                        await IntentDonations.donateStartTodaysWorkout()
+                        await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan)
+                    }
                 } label: {
                     Image(systemName: "list.clipboard")
                         .font(.title3)

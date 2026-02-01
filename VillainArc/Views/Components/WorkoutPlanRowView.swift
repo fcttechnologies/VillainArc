@@ -8,6 +8,7 @@ struct WorkoutPlanRowView: View {
     var body: some View {
         Button {
             appRouter.navigate(to: .workoutPlanDetail(workoutPlan, showsUseOnly))
+            Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: workoutPlan) }
         } label: {
             WorkoutPlanCardView(workoutPlan: workoutPlan)
         }

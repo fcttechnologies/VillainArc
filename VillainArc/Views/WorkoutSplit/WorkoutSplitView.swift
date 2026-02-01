@@ -89,6 +89,7 @@ struct WorkoutSplitView: View {
         }
         .onAppear {
             refreshRotationIfNeeded()
+            Task { await IntentDonations.donateTrainingSummary() }
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }

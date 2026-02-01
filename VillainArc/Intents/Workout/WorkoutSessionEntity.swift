@@ -1,6 +1,48 @@
 import AppIntents
 import CoreTransferable
 import SwiftData
+import UniformTypeIdentifiers
+
+struct WorkoutSessionFullContent: Codable {
+    struct PreWorkoutMood: Codable {
+        let feeling: String
+        let notes: String?
+    }
+
+    struct PostWorkoutEffort: Codable {
+        let rpe: Int
+        let notes: String?
+    }
+
+    struct Exercise: Codable {
+        struct SetEntry: Codable {
+            let index: Int
+            let type: String
+            let reps: Int
+            let weight: Double
+            let restSeconds: Int
+            let complete: Bool
+            let completedAt: Date?
+        }
+
+        let index: Int
+        let name: String
+        let notes: String?
+        let muscles: [String]
+        let sets: [SetEntry]
+    }
+
+    let id: UUID
+    let title: String
+    let summary: String
+    let notes: String?
+    let startedAt: Date
+    let endedAt: Date?
+    let origin: String
+    let preWorkoutMood: PreWorkoutMood?
+    let postWorkoutEffort: PostWorkoutEffort?
+    let exercises: [Exercise]
+}
 
 struct WorkoutSessionEntity: AppEntity, IndexedEntity, Identifiable {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Workout")
@@ -11,6 +53,7 @@ struct WorkoutSessionEntity: AppEntity, IndexedEntity, Identifiable {
     let summary: String
     let exerciseNames: [String]
     let startedAt: Date
+    let fullContent: WorkoutSessionFullContent
 
     var displayRepresentation: DisplayRepresentation {
         let subtitle = summary.isEmpty ? startedAt.formatted(date: .abbreviated, time: .omitted) : summary
@@ -24,13 +67,65 @@ extension WorkoutSessionEntity {
         id = workoutSession.id
         title = workoutSession.title
         summary = workoutSession.spotlightSummary
-        exerciseNames = workoutSession.sortedExercises.map(\.name)
         startedAt = workoutSession.startedAt
+        let exercises = workoutSession.sortedExercises
+        exerciseNames = exercises.map(\.name)
+        let preMood = workoutSession.preMood.map { mood in
+            WorkoutSessionFullContent.PreWorkoutMood(
+                feeling: mood.feeling.rawValue,
+                notes: mood.notes?.isEmpty == false ? mood.notes : nil
+            )
+        }
+        let postEffort = workoutSession.postEffort.map { effort in
+            WorkoutSessionFullContent.PostWorkoutEffort(
+                rpe: effort.rpe,
+                notes: effort.notes?.isEmpty == false ? effort.notes : nil
+            )
+        }
+        fullContent = WorkoutSessionFullContent(
+            id: workoutSession.id,
+            title: workoutSession.title,
+            summary: workoutSession.spotlightSummary,
+            notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes,
+            startedAt: workoutSession.startedAt,
+            endedAt: workoutSession.endedAt,
+            origin: workoutSession.origin.rawValue,
+            preWorkoutMood: preMood,
+            postWorkoutEffort: postEffort,
+            exercises: exercises.map { exercise in
+                WorkoutSessionFullContent.Exercise(
+                    index: exercise.index,
+                    name: exercise.name,
+                    notes: exercise.notes.isEmpty ? nil : exercise.notes,
+                    muscles: exercise.musclesTargeted.map(\.rawValue),
+                    sets: exercise.sortedSets.map { set in
+                        WorkoutSessionFullContent.Exercise.SetEntry(
+                            index: set.index,
+                            type: set.type.rawValue,
+                            reps: set.reps,
+                            weight: set.weight,
+                            restSeconds: set.restSeconds,
+                            complete: set.complete,
+                            completedAt: set.completedAt
+                        )
+                    }
+                )
+            }
+        )
     }
 }
 
 extension WorkoutSessionEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { entity in
+            try await MainActor.run {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                encoder.dateEncodingStrategy = .iso8601
+                return try encoder.encode(entity.fullContent)
+            }
+        }
+
         ProxyRepresentation { entity in
             "\(entity.title) — \(entity.startedAt.formatted(date: .abbreviated, time: .omitted))\n\(entity.summary)"
         }
@@ -43,7 +138,7 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
         guard !identifiers.isEmpty else { return [] }
         let context = SharedModelContainer.container.mainContext
         let ids = identifiers
-        let predicate = #Predicate<WorkoutSession> { ids.contains($0.id) && $0.completed }
+        let predicate = #Predicate<WorkoutSession> { ids.contains($0.id) }
         let descriptor = FetchDescriptor(predicate: predicate)
         let sessions = (try? context.fetch(descriptor)) ?? []
         let byID = Dictionary(sessions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
