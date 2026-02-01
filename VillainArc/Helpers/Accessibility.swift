@@ -71,6 +71,10 @@ enum AccessibilityIdentifiers {
         "exerciseAddSetButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
 
+    static func exerciseReplaceButton(_ exercise: ExercisePerformance) -> String {
+        "exerciseReplaceButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
+    }
+
     static func exerciseDeleteButton(_ exercise: ExercisePerformance) -> String {
         "exerciseDeleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
@@ -126,6 +130,16 @@ enum AccessibilityIdentifiers {
     static func workoutPlanDetailExerciseHeader(_ exercise: ExercisePrescription) -> String {
         "workoutPlanDetailExerciseHeader-\(String(describing: exercise.planSnapshot?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
+
+    static let workoutPlanPickerList = "workoutPlanPickerList"
+    static let workoutPlanPickerClearButton = "workoutPlanPickerClearButton"
+    static let workoutPlanDetailSelectButton = "workoutPlanDetailSelectButton"
+
+    static func workoutSplitRenameButton(_ split: WorkoutSplit) -> String {
+        "workoutSplitRenameButton-\(split.title)"
+    }
+
+    static let workoutSplitTitleEditorField = "workoutSplitTitleEditorField"
 
     static func workoutPlanDetailSet(_ exercise: ExercisePrescription, set: SetPrescription) -> String {
         "workoutPlanDetailSet-\(String(describing: exercise.planSnapshot?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"

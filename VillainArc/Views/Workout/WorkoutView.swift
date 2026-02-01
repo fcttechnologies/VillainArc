@@ -263,39 +263,38 @@ struct WorkoutView: View {
                 .labelStyle(.iconOnly)
                 .accessibilityIdentifier("workoutOptionsMenu")
                 .accessibilityHint("Workout actions.")
-                .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
-                    if incompleteSetCount > 0 {
-                        Button("Mark All Sets Complete") {
-                            finishWorkout(action: .markAllComplete)
-                        }
-                        .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
-                        Button("Delete Incomplete Sets", role: .destructive) {
-                            finishWorkout(action: .deleteIncomplete)
-                        }
-                        .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
-                    } else {
-                        Button("Finish", role: .confirm) {
-                            finishWorkout(action: .markAllComplete)
-                        }
-                        .accessibilityIdentifier("workoutFinishConfirmButton")
-                    }
-                } message: {
-                    if incompleteSetCount > 0 {
-                        Text("Before finishing, choose how to handle incomplete sets.")
-                    } else {
-                        Text("Finish and save workout?")
-                    }
-                }
             }
         }
         .confirmationDialog("Cancel Workout", isPresented: $showDeleteConfirmation) {
             Button("Cancel Workout", role: .destructive) {
-                showDeleteConfirmation = false
                 deleteWorkout()
             }
             .accessibilityIdentifier("workoutConfirmDeleteButton")
         } message: {
             Text("Are you sure you want to delete this workout?")
+        }
+        .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
+            if incompleteSetCount > 0 {
+                Button("Mark All Sets Complete") {
+                    finishWorkout(action: .markAllComplete)
+                }
+                .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
+                Button("Delete Incomplete Sets", role: .destructive) {
+                    finishWorkout(action: .deleteIncomplete)
+                }
+                .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
+            } else {
+                Button("Finish", role: .confirm) {
+                    finishWorkout(action: .markAllComplete)
+                }
+                .accessibilityIdentifier("workoutFinishConfirmButton")
+            }
+        } message: {
+            if incompleteSetCount > 0 {
+                Text("Before finishing, choose how to handle incomplete sets.")
+            } else {
+                Text("Finish and save workout?")
+            }
         }
     }
     

@@ -23,6 +23,7 @@ enum SpotlightIndexer {
             domainIdentifier: workoutSessionDomainIdentifier,
             attributeSet: attributes
         )
+        item.associateAppEntity(WorkoutSessionEntity(workoutSession: workoutSession), priority: 1)
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }
 

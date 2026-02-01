@@ -12,8 +12,9 @@ struct FilteredExerciseListView: View {
     let favoritesOnly: Bool
     let selectedOnly: Bool
     let sortOption: ExerciseSortOption
-    
-    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption) {
+    let singleSelection: Bool
+
+    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false) {
         _selectedExercises = selectedExercises
         _selectedExerciseIDs = selectedExerciseIDs
         self.searchText = searchText
@@ -21,6 +22,7 @@ struct FilteredExerciseListView: View {
         self.favoritesOnly = favoritesOnly
         self.selectedOnly = selectedOnly
         self.sortOption = sortOption
+        self.singleSelection = singleSelection
         
         let predicate: Predicate<Exercise>?
         if selectedOnly {
@@ -109,6 +111,10 @@ struct FilteredExerciseListView: View {
                 } else {
                     Button {
                         Haptics.selection()
+                        if singleSelection {
+                            selectedExercises.removeAll()
+                            selectedExerciseIDs.removeAll()
+                        }
                         selectedExercises.append(exercise)
                         selectedExerciseIDs.insert(exercise.catalogID)
                     } label: {

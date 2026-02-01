@@ -5,9 +5,9 @@ struct WorkoutSplitDayView: View {
     @Environment(\.modelContext) private var context
     @Bindable var splitDay: WorkoutSplitDay
     let mode: SplitMode
+    @State private var showPlanPicker = false
     
     var body: some View {
-        GeometryReader { geometry in
             VStack(spacing: 20) {
                 if mode == .weekly {
                     Text(weekdayName(for: splitDay.weekday))
@@ -25,30 +25,32 @@ struct WorkoutSplitDayView: View {
                         .font(.title)
                         .fontWeight(.semibold)
                     Button {
-                        
+                        Haptics.selection()
+                        showPlanPicker = true
                     } label: {
                         if let plan = splitDay.workoutPlan {
-                            WorkoutPlanRowView(workoutPlan: plan)
+                            WorkoutPlanCardView(workoutPlan: plan)
                         } else {
                             ContentUnavailableView("Select a workout plan \(mode == .weekly ? ("for \(weekdayName(for: splitDay.weekday))") : "\(splitDay.name)")", systemImage: "list.bullet.clipboard")
                                 .foregroundStyle(.white)
                                 .background(.blue.gradient, in: .rect(cornerRadius: 20))
-                                .frame(height: geometry.size.height / 3)
                         }
                     }
                     .padding(.top)
+                    Spacer()
                 } else {
                     ContentUnavailableView("Enjoy your day off!", systemImage: "zzz")
-                        .frame(height: geometry.size.height / 1.4)
                 }
             }
-        }
         .animation(.easeInOut, value: splitDay.isRestDay)
         .onChange(of: splitDay.isRestDay) {
             saveContext(context: context)
         }
         .onChange(of: splitDay.name) {
             scheduleSave(context: context)
+        }
+        .sheet(isPresented: $showPlanPicker) {
+            WorkoutPlanPickerView(selectedPlan: $splitDay.workoutPlan)
         }
     }
     

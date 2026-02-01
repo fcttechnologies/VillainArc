@@ -1,5 +1,5 @@
 import AppIntents
-import CoreSpotlight
+import CoreTransferable
 import SwiftData
 
 struct ExerciseEntity: AppEntity, IndexedEntity, Identifiable {
@@ -19,15 +19,6 @@ struct ExerciseEntity: AppEntity, IndexedEntity, Identifiable {
         return DisplayRepresentation(title: "\(name)", subtitle: "\(muscles)", synonyms: synonyms)
     }
 
-    var attributeSet: CSSearchableItemAttributeSet {
-        let attributes = CSSearchableItemAttributeSet()
-        attributes.title = name
-        attributes.displayName = name
-        attributes.alternateNames = aliases
-        attributes.contentDescription = muscles
-        attributes.keywords = [name] + aliases + ["Exercise"]
-        return attributes
-    }
 }
 
 extension ExerciseEntity {
@@ -36,6 +27,14 @@ extension ExerciseEntity {
         name = exercise.name
         muscles = exercise.displayMuscles
         aliases = exercise.aliases
+    }
+}
+
+extension ExerciseEntity: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation { entity in
+            entity.muscles.isEmpty ? entity.name : "\(entity.name) — \(entity.muscles)"
+        }
     }
 }
 

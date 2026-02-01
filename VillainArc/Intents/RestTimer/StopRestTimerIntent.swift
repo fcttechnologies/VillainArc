@@ -1,4 +1,5 @@
 import AppIntents
+import SwiftUI
 
 struct StopRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Stop Rest Timer"
@@ -10,7 +11,7 @@ struct StopRestTimerIntent: AppIntent {
         let restTimer = RestTimerState.shared
 
         guard restTimer.isActive else {
-            return .result(dialog: "No active rest timer to stop.")
+            throw RestTimerIntentError.noActiveTimer
         }
 
         restTimer.stop()

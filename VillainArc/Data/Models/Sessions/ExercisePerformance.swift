@@ -68,6 +68,19 @@ class ExercisePerformance {
         }
     }
 
+    func replaceWith(_ exercise: Exercise, keepSets: Bool) {
+        catalogID = exercise.catalogID
+        name = exercise.name
+        musclesTargeted = exercise.musclesTargeted
+        if !keepSets {
+            for set in sets {
+                modelContext?.delete(set)
+            }
+            sets.removeAll()
+            addSet()
+        }
+    }
+
     func deleteSet(_ set: SetPerformance) {
         sets.removeAll(where: { $0 == set })
         reindexSets()

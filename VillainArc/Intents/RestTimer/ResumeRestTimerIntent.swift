@@ -1,4 +1,5 @@
 import AppIntents
+import SwiftUI
 
 struct ResumeRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Resume Rest Timer"
@@ -6,17 +7,17 @@ struct ResumeRestTimerIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
         let restTimer = RestTimerState.shared
 
         guard restTimer.isPaused, restTimer.pausedRemainingSeconds > 0 else {
             if restTimer.isRunning {
-                return .result(dialog: "Rest timer is already running.")
+                throw RestTimerIntentError.alreadyRunning
             }
-            return .result(dialog: "No paused rest timer to resume.")
+            throw RestTimerIntentError.noPausedTimer
         }
 
         restTimer.resume()
-        return .result(dialog: "Rest timer resumed.")
+        return .result(dialog: "Rest timer resumed.", snippetIntent: RestTimerSnippetIntent())
     }
 }

@@ -14,6 +14,7 @@ struct ExerciseView: View {
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showRestTimeUpdateAlert = false
+    @State private var showReplaceExerciseSheet = false
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
     @FocusState private var isNotesFocused: Bool
@@ -183,6 +184,14 @@ struct ExerciseView: View {
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .contextMenu {
+            Button {
+                Haptics.selection()
+                showReplaceExerciseSheet = true
+            } label: {
+                Label("Replace Exercise", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseReplaceButton(exercise))
+            .accessibilityHint("Replaces this exercise with another.")
             if let onDeleteExercise {
                 Button(role: .destructive) {
                     Haptics.selection()
@@ -203,6 +212,12 @@ struct ExerciseView: View {
                 .onDisappear {
                     checkForRestTimeUpdate()
                 }
+        }
+        .sheet(isPresented: $showReplaceExerciseSheet) {
+            ReplaceExerciseView(exercise: exercise) { newExercise, keepSets in
+                exercise.replaceWith(newExercise, keepSets: keepSets)
+                saveContext(context: context)
+            }
         }
     }
 

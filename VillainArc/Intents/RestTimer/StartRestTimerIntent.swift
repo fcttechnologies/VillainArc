@@ -1,6 +1,7 @@
 import AppIntents
 import Foundation
 import SwiftData
+import SwiftUI
 
 struct StartRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Rest Timer"
@@ -19,22 +20,22 @@ struct StartRestTimerIntent: AppIntent {
     var duration: Measurement<UnitDuration>
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
         let context = SharedModelContainer.container.mainContext
 
         guard (try? context.fetch(WorkoutSession.incomplete).first) != nil else {
-            return .result(dialog: "No workout session to start a rest timer in.")
+            throw RestTimerIntentError.noWorkoutSession
         }
 
         let durationSeconds = Int(duration.converted(to: .seconds).value.rounded())
         guard durationSeconds > 0 else {
-            return .result(dialog: "Rest timer duration must be greater than zero.")
+            throw RestTimerIntentError.invalidDuration
         }
 
         RestTimerState.shared.start(seconds: durationSeconds)
         RestTimeHistory.record(seconds: durationSeconds, context: context)
         saveContext(context: context)
 
-        return .result(dialog: "Rest timer started for \(secondsToTime(durationSeconds)).")
+        return .result(dialog: "Rest timer started for \(secondsToTime(durationSeconds)).", snippetIntent: RestTimerSnippetIntent())
     }
 }

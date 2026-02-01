@@ -28,23 +28,15 @@ struct WorkoutSplitView: View {
                             .foregroundStyle(.secondary)
                             .accessibilityIdentifier("workoutSplitNoActiveRow")
                     }
-                } header: {
-                    Text("Active Split")
-                        .bold()
-                        .font(.title3)
                 }
                 .listRowSeparator(.hidden)
 
-                Section {
-                    if showInactiveSplits {
-                        if inactiveSplits.isEmpty {
-                            Text("No other splits yet.")
-                                .foregroundStyle(.secondary)
-                                .accessibilityIdentifier("workoutSplitNoInactiveRow")
-                        } else {
-                            ForEach(Array(inactiveSplits.enumerated()), id: \.element) { index, split in
+                if !inactiveSplits.isEmpty {
+                    Section {
+                        if showInactiveSplits {
+                            ForEach(inactiveSplits) { split in
                                 splitRow(for: split, isActive: false)
-                                    .accessibilityIdentifier("workoutSplitInactiveRow-\(index)")
+                                    .accessibilityIdentifier("workoutSplitInactiveRow-\(split.title)")
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                         Button("Set Active", systemImage: "checkmark.circle") {
                                             setActive(split)
@@ -52,12 +44,13 @@ struct WorkoutSplitView: View {
                                         .tint(.green)
                                     }
                             }
+                            .onDelete(perform: deleteInactiveSplits)
                         }
+                    } header: {
+                        otherSplitsHeader
                     }
-                } header: {
-                    otherSplitsHeader
+                    .listRowSeparator(.hidden)
                 }
-                .listRowSeparator(.hidden)
             }
         }
         .accessibilityIdentifier("workoutSplitList")
@@ -303,6 +296,10 @@ struct WorkoutSplitView: View {
             }
         }
         split.isActive = true
+        if split.mode == .rotation {
+            split.rotationCurrentIndex = 0
+            split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
+        }
         saveContext(context: context)
     }
 
@@ -326,6 +323,16 @@ struct WorkoutSplitView: View {
         context.insert(split)
         saveContext(context: context)
         appRouter.navigate(to: .splitDettail(split))
+    }
+
+    private func deleteInactiveSplits(at offsets: IndexSet) {
+        guard !offsets.isEmpty else { return }
+        Haptics.selection()
+        let splitsToDelete = offsets.map { inactiveSplits[$0] }
+        for split in splitsToDelete {
+            context.delete(split)
+        }
+        saveContext(context: context)
     }
 }
 

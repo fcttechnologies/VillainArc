@@ -6,6 +6,7 @@ struct WorkoutSplitCreationView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Bindable var split: WorkoutSplit
     @State private var selectedSplitDay: WorkoutSplitDay?
+    @State private var showSplitTitleEditor = false
     @Namespace private var capsuleNamespace
     
     private let weekdayInitials = ["S", "M", "T", "W", "T", "F", "S"]
@@ -39,6 +40,29 @@ struct WorkoutSplitCreationView: View {
                 selectedSplitDay = split.days.first { $0.weekday == currentWeekday }
             } else {
                 selectedSplitDay = split.sortedDays.first
+            }
+        }
+        .contextMenu {
+            Button("Rename Split") {
+                Haptics.selection()
+                showSplitTitleEditor = true
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRenameButton(split))
+        }
+        .sheet(isPresented: $showSplitTitleEditor) {
+            TextEntryEditorView(
+                title: "Split Name",
+                placeholder: "Workout Split",
+                text: $split.title,
+                accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitTitleEditorField
+            )
+            .presentationDetents([.fraction(0.2)])
+            .onChange(of: split.title) {
+                scheduleSave(context: context)
+            }
+            .onDisappear {
+                split.title = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                saveContext(context: context)
             }
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)

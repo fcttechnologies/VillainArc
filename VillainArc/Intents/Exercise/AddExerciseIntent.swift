@@ -41,6 +41,6 @@ struct AddExerciseIntent: AppIntent {
             return .result(dialog: "Added \(resolvedExercise.name) to your template.")
         }
 
-        return .result(dialog: "No active workout or template found.")
+        return .result(dialog: "No active workout or workout plan found.")
     }
 }

@@ -1,5 +1,5 @@
 import AppIntents
-import CoreSpotlight
+import CoreTransferable
 import SwiftData
 
 struct WorkoutPlanEntity: AppEntity, IndexedEntity, Identifiable {
@@ -18,14 +18,6 @@ struct WorkoutPlanEntity: AppEntity, IndexedEntity, Identifiable {
         return DisplayRepresentation(title: "\(title)", subtitle: "\(summary)")
     }
 
-    var attributeSet: CSSearchableItemAttributeSet {
-        let attributes = CSSearchableItemAttributeSet()
-        attributes.title = title
-        attributes.displayName = title
-        attributes.contentDescription = summary
-        attributes.keywords = exerciseNames + ["Workout Plan"]
-        return attributes
-    }
 }
 
 extension WorkoutPlanEntity {
@@ -34,6 +26,14 @@ extension WorkoutPlanEntity {
         title = workoutPlan.title
         summary = workoutPlan.spotlightSummary
         exerciseNames = workoutPlan.currentVersion?.sortedExercises.map(\.name) ?? []
+    }
+}
+
+extension WorkoutPlanEntity: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation { entity in
+            "\(entity.title)\n\(entity.summary)"
+        }
     }
 }
 

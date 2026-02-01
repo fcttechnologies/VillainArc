@@ -1,14 +1,21 @@
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct WorkoutPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Bindable var plan: WorkoutPlan
     private let router = AppRouter.shared
+    private let onSelect: (() -> Void)?
 
     @State private var showDeleteWorkoutPlanConfirmation = false
     @State private var editWorkoutPlan = false
+
+    init(plan: WorkoutPlan, onSelect: (() -> Void)? = nil) {
+        self.plan = plan
+        self.onSelect = onSelect
+    }
 
     var body: some View {
         List {
@@ -72,52 +79,69 @@ struct WorkoutPlanDetailView: View {
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu("Options", systemImage: "ellipsis") {
-                    Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
-                        router.startWorkoutSession(from: plan)
-                        Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
+                if let onSelect {
+                    Button("Select") {
+                        Haptics.selection()
+                        onSelect()
                         dismiss()
                     }
-                    .accessibilityIdentifier("workoutPlanDetailStartWorkoutButton")
-                    .accessibilityHint("Starts a workout from this plan.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSelectButton)
+                    .accessibilityHint("Selects this workout plan.")
+                } else {
+                    Menu("Options", systemImage: "ellipsis") {
+                        Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
+                            router.startWorkoutSession(from: plan)
+                            Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
+                            dismiss()
+                        }
+                        .accessibilityIdentifier("workoutPlanDetailStartWorkoutButton")
+                        .accessibilityHint("Starts a workout from this plan.")
 
-                    Button("Edit Plan", systemImage: "pencil") {
-                        Haptics.selection()
-                        plan.startEditing()
-                        saveContext(context: context)
-                        editWorkoutPlan = true
-                    }
-                    .accessibilityIdentifier("templateDetailEditButton")
-                    .accessibilityHint("Edits this template.")
+                        Button("Edit Plan", systemImage: "pencil") {
+                            Haptics.selection()
+                            plan.startEditing()
+                            saveContext(context: context)
+                            editWorkoutPlan = true
+                        }
+                        .accessibilityIdentifier("templateDetailEditButton")
+                        .accessibilityHint("Edits this template.")
 
-                    Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.slash.fill" : "star.fill") {
-                        Haptics.selection()
-                        plan.favorite.toggle()
-                        saveContext(context: context)
-                    }
-                    .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
-                    .accessibilityHint("Toggles favorite.")
+                        Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.slash.fill" : "star.fill") {
+                            Haptics.selection()
+                            plan.favorite.toggle()
+                            saveContext(context: context)
+                        }
+                        .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
+                        .accessibilityHint("Toggles favorite.")
 
-                    Button("Delete Workout Plan", systemImage: "trash", role: .destructive) {
-                        showDeleteWorkoutPlanConfirmation = true
+                        Button("Delete Workout Plan", systemImage: "trash", role: .destructive) {
+                            showDeleteWorkoutPlanConfirmation = true
+                        }
+                        .accessibilityIdentifier("workoutPlanDetailDeleteButton")
+                        .accessibilityHint("Deletes this workout plan.")
                     }
-                    .accessibilityIdentifier("workoutPlanDetailDeleteButton")
-                    .accessibilityHint("Deletes this workout plan.")
-                }
-                .accessibilityIdentifier("workoutPlanDetailOptionsMenu")
-                .accessibilityHint("Workout Plan actions.")
-                .confirmationDialog("Delete Workout Plan?", isPresented: $showDeleteWorkoutPlanConfirmation) {
-                    Button("Delete", role: .destructive) {
-                        deleteWorkoutPlan()
+                    .accessibilityIdentifier("workoutPlanDetailOptionsMenu")
+                    .accessibilityHint("Workout Plan actions.")
+                    .confirmationDialog("Delete Workout Plan?", isPresented: $showDeleteWorkoutPlanConfirmation) {
+                        Button("Delete", role: .destructive) {
+                            deleteWorkoutPlan()
+                        }
+                        .accessibilityIdentifier("workoutPlanDetailConfirmDeleteButton")
+                    } message: {
+                        Text("Are you sure you want to delete this workout plan?")
                     }
-                    .accessibilityIdentifier("workoutPlanDetailConfirmDeleteButton")
-                } message: {
-                    Text("Are you sure you want to delete this workout plan?")
                 }
             }
         }
         .fullScreenCover(isPresented: $editWorkoutPlan) {
             WorkoutPlanView(plan: plan)
+        }
+        .userActivity("com.villainarc.workoutPlan.view", element: plan) { plan, activity in
+            activity.title = plan.title
+            activity.isEligibleForSearch = true
+            activity.isEligibleForPrediction = true
+            let entity = WorkoutPlanEntity(workoutPlan: plan)
+            activity.appEntityIdentifier = .init(for: entity)
         }
     }
 

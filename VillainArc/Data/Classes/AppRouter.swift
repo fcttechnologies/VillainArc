@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 import SwiftData
 
@@ -73,6 +74,40 @@ final class AppRouter {
         }
         if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
             resumeWorkoutPlanCreation(unfinishedWorkoutPlan)
+        }
+    }
+
+    func handleSpotlight(_ userActivity: NSUserActivity) {
+        guard activeWorkoutSession == nil, activeWorkoutPlan == nil else {
+            return
+        }
+        guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
+            return
+        }
+
+        if identifier.hasPrefix(SpotlightIndexer.workoutSessionIdentifierPrefix) {
+            let idString = String(identifier.dropFirst(SpotlightIndexer.workoutSessionIdentifierPrefix.count))
+            guard let id = UUID(uuidString: idString) else { return }
+            let predicate = #Predicate<WorkoutSession> { $0.id == id }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            if let workoutSession = try? context.fetch(descriptor).first {
+                popToRoot()
+                navigate(to: .workoutSessionDetail(workoutSession))
+            }
+            return
+        }
+
+        if identifier.hasPrefix(SpotlightIndexer.workoutPlanIdentifierPrefix) {
+            let idString = String(identifier.dropFirst(SpotlightIndexer.workoutPlanIdentifierPrefix.count))
+            guard let id = UUID(uuidString: idString) else { return }
+            let predicate = #Predicate<WorkoutPlan> { $0.id == id }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            if let workoutPlan = try? context.fetch(descriptor).first {
+                popToRoot()
+                navigate(to: .workoutPlanDetail(workoutPlan))
+            }
         }
     }
 }

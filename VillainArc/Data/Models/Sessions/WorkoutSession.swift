@@ -76,7 +76,7 @@ extension WorkoutSession {
     
     static func completedSessions(limit: Int? = nil) -> FetchDescriptor<WorkoutSession> {
         let predicate = #Predicate<WorkoutSession> { $0.completed }
-        var descriptor = FetchDescriptor(predicate: predicate)
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         if let limit {
             descriptor.fetchLimit = limit
         }

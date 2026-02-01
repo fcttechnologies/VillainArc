@@ -94,35 +94,51 @@ class WorkoutSplit {
     }
     
     var todaysDayIndex: Int? {
+        dayIndex(for: .now)
+    }
+    
+    var todaysSplitDay: WorkoutSplitDay? {
+        splitDay(for: .now)
+    }
+    
+    var todaysWorkoutPlan: WorkoutPlan? {
+        workoutPlan(for: .now)
+    }
+
+    func dayIndex(for date: Date, calendar: Calendar = .current) -> Int? {
         switch mode {
         case .weekly:
-            let weekday = Calendar.current.component(.weekday, from: .now)
+            let weekday = calendar.component(.weekday, from: date)
             let adjusted = weekday + normalizedWeeklyOffset
             let wrapped = ((adjusted - 1) % 7 + 7) % 7 + 1
             return wrapped
         case .rotation:
             let count = sortedDays.count
             guard count > 0 else { return nil }
-            let normalized = ((rotationCurrentIndex % count) + count) % count
+            let baseDate = rotationLastUpdatedDate ?? date
+            let startBase = calendar.startOfDay(for: baseDate)
+            let startTarget = calendar.startOfDay(for: date)
+            let delta = calendar.dateComponents([.day], from: startBase, to: startTarget).day ?? 0
+            let normalized = ((rotationCurrentIndex + delta) % count + count) % count
             return normalized
         }
     }
-    
-    var todaysSplitDay: WorkoutSplitDay? {
+
+    func splitDay(for date: Date, calendar: Calendar = .current) -> WorkoutSplitDay? {
         switch mode {
         case .weekly:
-            guard let weekday = todaysDayIndex else { return nil }
+            guard let weekday = dayIndex(for: date, calendar: calendar) else { return nil }
             return days.first { $0.weekday == weekday }
         case .rotation:
-            guard let position = todaysDayIndex else { return nil }
+            guard let position = dayIndex(for: date, calendar: calendar) else { return nil }
             let ordered = sortedDays
             guard position >= 0 && position < ordered.count else { return nil }
             return ordered[position]
         }
     }
-    
-    var todaysWorkoutPlan: WorkoutPlan? {
-        guard let day = todaysSplitDay, !day.isRestDay else { return nil }
+
+    func workoutPlan(for date: Date, calendar: Calendar = .current) -> WorkoutPlan? {
+        guard let day = splitDay(for: date, calendar: calendar), !day.isRestDay else { return nil }
         return day.workoutPlan
     }
 }

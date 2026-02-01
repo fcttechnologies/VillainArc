@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -97,6 +98,13 @@ struct WorkoutDetailView: View {
         }
         .fullScreenCover(item: $newWorkoutPlan) {
             WorkoutPlanView(plan: $0)
+        }
+        .userActivity("com.villainarc.workoutSession.view", element: workout) { session, activity in
+            activity.title = session.title
+            activity.isEligibleForSearch = true
+            activity.isEligibleForPrediction = true
+            let entity = WorkoutSessionEntity(workoutSession: session)
+            activity.appEntityIdentifier = .init(for: entity)
         }
     }
 
