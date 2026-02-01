@@ -217,6 +217,7 @@ struct ExerciseView: View {
             ReplaceExerciseView(exercise: exercise) { newExercise, keepSets in
                 exercise.replaceWith(newExercise, keepSets: keepSets)
                 saveContext(context: context)
+                Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
             }
         }
     }

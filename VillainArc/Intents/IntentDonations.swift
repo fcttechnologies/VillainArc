@@ -97,4 +97,10 @@ enum IntentDonations {
     static func donateCompleteActiveSet() async {
         _ = try? await CompleteActiveSetIntent().donate()
     }
+
+    static func donateReplaceExercise(newExercise: Exercise) async {
+        let intent = ReplaceExerciseIntent()
+        intent.newExercise = ExerciseEntity(exercise: newExercise)
+        _ = try? await intent.donate()
+    }
 }
