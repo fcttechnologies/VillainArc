@@ -12,6 +12,7 @@ struct WorkoutView: View {
     @State private var showDeleteWorkoutAlert = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
+    @State private var showMoodSheet = false
     @State private var showDeleteConfirmation = false
     @State private var showSaveConfirmation = false
     @State private var autoAdvanceTargetIndex: Int?
@@ -45,11 +46,19 @@ struct WorkoutView: View {
                 Button("Workout Notes", systemImage: "note.text") {
                     showNotesEditorSheet = true
                 }
+                Button("Pre Workout Mood", systemImage: "face.smiling") {
+                    showMoodSheet = true
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
+                .accessibilityHint("Updates your pre-workout mood.")
             }
             .toolbarTitleDisplayMode(.inline)
             .animation(.bouncy, value: showExerciseListView)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    workoutOptionsToolbarLabel
+                }
+                ToolbarItem(placement: .bottomBar) {
                     Button {
                         showRestTimerSheet = true
                         Haptics.selection()
@@ -58,9 +67,6 @@ struct WorkoutView: View {
                     }
                     .accessibilityIdentifier("workoutRestTimerButton")
                     .accessibilityHint("Shows the rest timer.")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    workoutOptionsToolbarLabel
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
@@ -95,6 +101,12 @@ struct WorkoutView: View {
                         saveContext(context: context)
                     }
             }
+            .sheet(isPresented: $showMoodSheet) {
+                if let mood = workout.preMood {
+                    PreWorkoutMoodView(mood: mood)
+                        .presentationDetents([.fraction(0.4)])
+                }
+            }
             .sheet(isPresented: $showTitleEditorSheet) {
                 TextEntryEditorView(title: "Title", placeholder: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField)
                     .presentationDetents([.fraction(0.2)])
@@ -117,6 +129,15 @@ struct WorkoutView: View {
                 activity.isEligibleForPrediction = true
                 let entity = WorkoutSessionEntity(workoutSession: session)
                 activity.appEntityIdentifier = .init(for: entity)
+            }
+            .task {
+                if workout.preMood == nil {
+                    let mood = PreWorkoutMood(workoutSession: workout)
+                    context.insert(mood)
+                    workout.preMood = mood
+                    saveContext(context: context)
+                    showMoodSheet = true
+                }
             }
         }
     }
@@ -355,8 +376,8 @@ struct WorkoutView: View {
         Haptics.selection()
         restTimer.stop()
         context.delete(workout)
-        saveContext(context: context)
         Task { await IntentDonations.donateCancelWorkout() }
+        saveContext(context: context)
         dismiss()
     }
     

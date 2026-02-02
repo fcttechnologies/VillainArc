@@ -133,7 +133,7 @@ class PreviewDataContainer {
         session.endedAt = date(2026, 1, 5, 9, 5)
         context.insert(session)
 
-        let preMood = PreWorkoutMood(feeling: .good, notes: "", workoutSession: session)
+        let preMood = PreWorkoutMood(workoutSession: session)
         session.preMood = preMood
 
         let postEffort = PostWorkoutEffort(rpe: 7, notes: "Felt strong", workoutSession: session)

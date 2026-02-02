@@ -73,7 +73,7 @@ extension WorkoutSessionEntity {
         let preMood = workoutSession.preMood.map { mood in
             WorkoutSessionFullContent.PreWorkoutMood(
                 feeling: mood.feeling.rawValue,
-                notes: mood.notes?.isEmpty == false ? mood.notes : nil
+                notes: mood.notes.isEmpty ? nil : mood.notes
             )
         }
         let postEffort = workoutSession.postEffort.map { effort in

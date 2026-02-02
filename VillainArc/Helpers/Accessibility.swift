@@ -173,6 +173,13 @@ enum AccessibilityIdentifiers {
     static let workoutNotesEditorField = "workoutNotesEditorField"
     static let workoutPlanTitleEditorField = "workoutPlanTitleEditorField"
     static let workoutPlanNotesEditorField = "workoutPlanNotesEditorField"
+    static let workoutPreMoodButton = "workoutPreMoodButton"
+    static let preWorkoutMoodSheet = "preWorkoutMoodSheet"
+    static let preWorkoutMoodNotesField = "preWorkoutMoodNotesField"
+
+    static func preWorkoutMoodOption(_ mood: MoodLevel) -> String {
+        "preWorkoutMoodOption-\(slug(mood.rawValue))"
+    }
 
     static func restTimerRecentRow(_ history: RestTimeHistory) -> String {
         let timestamp = Int(history.lastUsed.timeIntervalSince1970)
