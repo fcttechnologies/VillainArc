@@ -18,7 +18,8 @@ struct CancelWorkoutIntent: AppIntent {
         context.delete(workoutSession)
         saveContext(context: context)
         AppRouter.shared.activeWorkoutSession = nil
-        
+        WorkoutActivityManager.end()
+
         return .result(dialog: "Workout cancelled.")
     }
 }

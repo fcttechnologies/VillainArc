@@ -55,6 +55,7 @@ struct FinishWorkoutIntent: AppIntent {
                 context.delete(workoutSession)
                 saveContext(context: context)
                 AppRouter.shared.activeWorkoutSession = nil
+                WorkoutActivityManager.end()
                 return .result(dialog: "Workout deleted because no completed sets remained.")
             }
         case .cancel:
@@ -75,7 +76,8 @@ struct FinishWorkoutIntent: AppIntent {
         saveContext(context: context)
         SpotlightIndexer.index(workoutSession: workoutSession)
         AppRouter.shared.activeWorkoutSession = nil
-        
+        WorkoutActivityManager.end()
+
         let exercisesList = workoutSession.exerciseSummary
         
         await IntentDonations.donateLastWorkoutSummary()

@@ -55,10 +55,7 @@ struct WorkoutView: View {
             .toolbarTitleDisplayMode(.inline)
             .animation(.bouncy, value: showExerciseListView)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    workoutOptionsToolbarLabel
-                }
-                ToolbarItem(placement: .bottomBar) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button {
                         showRestTimerSheet = true
                         Haptics.selection()
@@ -67,6 +64,9 @@ struct WorkoutView: View {
                     }
                     .accessibilityIdentifier("workoutRestTimerButton")
                     .accessibilityHint("Shows the rest timer.")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    workoutOptionsToolbarLabel
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
@@ -118,6 +118,7 @@ struct WorkoutView: View {
                             workout.title = "New Workout"
                         }
                         saveContext(context: context)
+                        WorkoutActivityManager.update(for: workout)
                     }
             }
             .onChange(of: workout.activeExercise?.id) {
@@ -138,6 +139,9 @@ struct WorkoutView: View {
                     saveContext(context: context)
                     showMoodSheet = true
                 }
+            }
+            .onAppear {
+                WorkoutActivityManager.start(workout: workout)
             }
         }
     }
@@ -353,7 +357,7 @@ struct WorkoutView: View {
                 Haptics.selection()
                 restTimer.stop()
                 context.delete(workout)
-                saveContext(context: context)
+                WorkoutActivityManager.end()
                 dismiss()
                 return
             }
@@ -365,6 +369,7 @@ struct WorkoutView: View {
         restTimer.stop()
         saveContext(context: context)
         SpotlightIndexer.index(workoutSession: workout)
+        WorkoutActivityManager.end()
         Task {
             await IntentDonations.donateFinishWorkout()
             await IntentDonations.donateLastWorkoutSummary()
@@ -377,7 +382,7 @@ struct WorkoutView: View {
         restTimer.stop()
         context.delete(workout)
         Task { await IntentDonations.donateCancelWorkout() }
-        saveContext(context: context)
+        WorkoutActivityManager.end()
         dismiss()
     }
     
@@ -385,20 +390,21 @@ struct WorkoutView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
-        
+
         for exercise in exercisesToDelete {
             workout.deleteExercise(exercise)
             context.delete(exercise)
         }
         saveContext(context: context)
-        
+
         if let active = workout.activeExercise, exercisesToDelete.contains(active) {
             workout.activeExercise = workout.sortedExercises.first
         }
-        
+
         if workout.exercises.isEmpty {
             showExerciseListView = false
         }
+        WorkoutActivityManager.update(for: workout)
     }
 
     private func deleteExercise(_ exercise: ExercisePerformance) {
@@ -417,11 +423,13 @@ struct WorkoutView: View {
                 workout.activeExercise = remainingExercises[nextIndex]
             }
         }
+        WorkoutActivityManager.update(for: workout)
     }
     
     private func moveExercise(from source: IndexSet, to destination: Int) {
         workout.moveExercise(from: source, to: destination)
         saveContext(context: context)
+        WorkoutActivityManager.update(for: workout)
     }
 
     private func prepareForAddExerciseSheet() {
@@ -441,11 +449,13 @@ struct WorkoutView: View {
             withAnimation(.smooth) {
                 workout.activeExercise = exercises[target]
             }
+            WorkoutActivityManager.update(for: workout)
             return
         }
         if workout.activeExercise == nil {
             workout.activeExercise = exercises.first
         }
+        WorkoutActivityManager.update(for: workout)
     }
 
     private func activeExerciseAllSetsComplete() -> Bool {

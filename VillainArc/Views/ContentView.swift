@@ -55,6 +55,9 @@ struct ContentView: View {
             .task {
                 DataManager.seedExercisesIfNeeded(context: context)
                 router.checkForUnfinishedData()
+                if let activeSession = router.activeWorkoutSession {
+                    WorkoutActivityManager.restoreIfNeeded(workout: activeSession)
+                }
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutView(workout: $0)

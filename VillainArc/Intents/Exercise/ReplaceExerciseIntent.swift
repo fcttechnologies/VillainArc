@@ -55,6 +55,7 @@ struct ReplaceExerciseIntent: AppIntent {
         resolvedExercise.updateLastUsed()
         SpotlightIndexer.index(exercise: resolvedExercise)
         saveContext(context: context)
+        WorkoutActivityManager.update(for: workout)
 
         if keepSets {
             return .result(dialog: "Replaced \(oldName) with \(resolvedExercise.name), kept existing sets.")

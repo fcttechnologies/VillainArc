@@ -20,6 +20,7 @@ struct CompleteActiveSetIntent: AppIntent {
         set.complete = true
         startRestTimerIfNeeded(for: set, context: context)
         saveContext(context: context)
+        WorkoutActivityManager.update(for: workout)
         let setNumber = set.index + 1
         return .result(dialog: "Completed set \(setNumber) of \(exercise.name).")
     }

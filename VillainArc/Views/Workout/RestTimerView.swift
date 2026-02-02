@@ -304,6 +304,7 @@ struct RestTimerView: View {
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
         }
         saveContext(context: context)
+        WorkoutActivityManager.update(for: workout)
         Task { await IntentDonations.donateCompleteActiveSet() }
     }
 }

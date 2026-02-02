@@ -40,6 +40,7 @@ struct ExerciseSetRowView: View {
                     if newValue != oldValue {
                         Haptics.selection()
                         saveContext(context: context)
+                        WorkoutActivityManager.update()
                     }
                 })) {
                     ForEach(ExerciseSetType.allCases, id: \.self) { type in
@@ -109,6 +110,7 @@ struct ExerciseSetRowView: View {
                     set.complete = false
                     set.completedAt = nil
                     saveContext(context: context)
+                    WorkoutActivityManager.update()
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -125,6 +127,7 @@ struct ExerciseSetRowView: View {
                     set.completedAt = Date()
                     handleAutoStartTimer()
                     saveContext(context: context)
+                    WorkoutActivityManager.update()
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -138,9 +141,11 @@ struct ExerciseSetRowView: View {
         .animation(.bouncy, value: set.complete)
         .onChange(of: set.reps) {
             scheduleSave(context: context)
+            WorkoutActivityManager.update()
         }
         .onChange(of: set.weight) {
             scheduleSave(context: context)
+            WorkoutActivityManager.update()
         }
         .alert("Replace Rest Timer?", isPresented: $showOverrideTimerAlert) {
             Button("Replace", role: .destructive) {
@@ -165,6 +170,7 @@ struct ExerciseSetRowView: View {
         Haptics.selection()
         exercise.deleteSet(set)
         saveContext(context: context)
+        WorkoutActivityManager.update()
     }
 
     private func handleAutoStartTimer() {

@@ -1,11 +1,18 @@
 import Foundation
 import Observation
 import SwiftData
+#if canImport(UIKit)
+import AudioToolbox
+import UIKit
+#endif
 
 @MainActor
 @Observable
 final class RestTimerState {
     static let shared = RestTimerState()
+#if canImport(UIKit)
+    private static let completionSoundID: SystemSoundID = 1005
+#endif
 
     private enum StorageKey {
         static let endDate = "restTimerEndDate"
@@ -48,7 +55,7 @@ final class RestTimerState {
                 pausedRemainingSeconds = 0
                 scheduleStop()
             } else {
-                stop()
+                stopInternal(playAlert: false)
             }
         } else {
             endDate = nil
@@ -74,7 +81,7 @@ final class RestTimerState {
     func start(seconds: Int, startedFromSetID: PersistentIdentifier? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
-            stop()
+            stopInternal(playAlert: false)
             return
         }
         
@@ -85,14 +92,15 @@ final class RestTimerState {
         startedSeconds = clamped
         persist()
         scheduleStop()
+        WorkoutActivityManager.update()
     }
-    
+
     func pause() {
         guard isRunning, let endDate else { return }
         let remaining = max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
-        
+
         if remaining == 0 {
-            stop()
+            stopInternal(playAlert: false)
             return
         }
         
@@ -102,8 +110,10 @@ final class RestTimerState {
         persist()
         stopTask?.cancel()
         stopTask = nil
+        cancelNotification()
+        WorkoutActivityManager.update()
     }
-    
+
     func resume() {
         guard isPaused, pausedRemainingSeconds > 0 else { return }
         endDate = Date.now.addingTimeInterval(TimeInterval(pausedRemainingSeconds))
@@ -111,9 +121,14 @@ final class RestTimerState {
         isPaused = false
         persist()
         scheduleStop()
+        WorkoutActivityManager.update()
     }
-    
+
     func stop() {
+        stopInternal(playAlert: false)
+    }
+
+    private func stopInternal(playAlert: Bool) {
         endDate = nil
         pausedRemainingSeconds = 0
         isPaused = false
@@ -122,6 +137,11 @@ final class RestTimerState {
         persist()
         stopTask?.cancel()
         stopTask = nil
+        cancelNotification()
+        WorkoutActivityManager.update()
+        if playAlert {
+            playCompletionAlertIfActive()
+        }
     }
 
     func adjust(by deltaSeconds: Int) {
@@ -130,22 +150,24 @@ final class RestTimerState {
         if isRunning, let endDate {
             let adjustedEndDate = endDate.addingTimeInterval(TimeInterval(deltaSeconds))
             if adjustedEndDate <= Date.now {
-                stop()
+                stopInternal(playAlert: false)
                 return
             }
 
             self.endDate = adjustedEndDate
             persist()
             scheduleStop()
+            WorkoutActivityManager.update()
         } else if isPaused {
             let adjustedRemaining = max(0, pausedRemainingSeconds + deltaSeconds)
             if adjustedRemaining == 0 {
-                stop()
+                stopInternal(playAlert: false)
                 return
             }
 
             pausedRemainingSeconds = adjustedRemaining
             persist()
+            WorkoutActivityManager.update()
         }
     }
     
@@ -153,6 +175,7 @@ final class RestTimerState {
         stopTask?.cancel()
         guard let endDate else { return }
         let scheduledEndDate = endDate
+        scheduleNotification()
         stopTask = Task { [weak self, scheduledEndDate] in
             let seconds = scheduledEndDate.timeIntervalSinceNow
             if seconds <= 0 {
@@ -178,7 +201,10 @@ final class RestTimerState {
     
     private func stopIfStillScheduled(_ scheduledEndDate: Date) {
         if endDate == scheduledEndDate {
-            stop()
+            let now = Date.now
+            let isOnTime = now <= scheduledEndDate.addingTimeInterval(1)
+            stopInternal(playAlert: isOnTime)
+            WorkoutActivityManager.update()
         }
     }
     
@@ -198,5 +224,24 @@ final class RestTimerState {
         } else {
             defaults.removeObject(forKey: StorageKey.startedFromSetID)
         }
+    }
+
+    private func scheduleNotification() {
+        guard let endDate else { return }
+        let duration = startedSeconds
+        Task {
+            await RestTimerNotifications.schedule(endDate: endDate, durationSeconds: duration)
+        }
+    }
+
+    private func cancelNotification() {
+        Task {
+            await RestTimerNotifications.cancel()
+        }
+    }
+
+    private func playCompletionAlertIfActive() {
+        Haptics.success()
+        AudioServicesPlaySystemSound(Self.completionSoundID)
     }
 }

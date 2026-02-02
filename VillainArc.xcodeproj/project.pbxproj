@@ -6,6 +6,22 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD93E5E62F3051FD009569BB /* WidgetKit.framework */; };
+		FD93E5E92F3051FD009569BB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD93E5E82F3051FD009569BB /* SwiftUI.framework */; };
+		FD93E5F42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FD93E5F22F3051FD009569BB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FD93E5E32F3051FD009569BB;
+			remoteInfo = VillainArcWidgetExtensionExtension;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		FD18C78A2F248B3000EB287C /* Embed ExtensionKit Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -17,22 +33,125 @@
 			name = "Embed ExtensionKit Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FD93E5F92F3051FE009569BB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FD93E5F42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VillainArcWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD93E5E62F3051FD009569BB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		FD93E5E82F3051FD009569BB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		FD93E5FA2F305206009569BB /* VillainArcWidgetExtensionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VillainArcWidgetExtensionExtension.entitlements; sourceTree = "<group>"; };
 		FDA193902F16D14500CA57C5 /* VillainArc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VillainArc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDA193A12F16F90000CA57C5 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FD93E5F52F3051FD009569BB /* Exceptions for "VillainArcWidgetExtension" folder in "VillainArcWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
+		};
+		FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
+		};
+		FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Data/Classes/DataManager.swift,
+				Data/Classes/RestTimerState.swift,
+				Data/LiveActivity/WorkoutActivityAttributes.swift,
+				Data/LiveActivity/WorkoutActivityManager.swift,
+				Data/Models/Enums/Exercise/ExerciseSetType.swift,
+				Data/Models/Enums/Exercise/Muscle.swift,
+				Data/Models/Enums/Exercise/RepRangeMode.swift,
+				Data/Models/Enums/Exercise/RestTimeMode.swift,
+				Data/Models/Enums/Sessions/MoodLevel.swift,
+				Data/Models/Enums/Sessions/PlanCreator.swift,
+				Data/Models/Enums/Sessions/SessionOrigin.swift,
+				Data/Models/Enums/SplitMode.swift,
+				Data/Models/Enums/Suggestions/ChangeType.swift,
+				Data/Models/Enums/Suggestions/Decision.swift,
+				Data/Models/Enums/Suggestions/Outcome.swift,
+				Data/Models/Enums/Suggestions/SuggestionSource.swift,
+				Data/Models/Exercise/Exercise.swift,
+				Data/Models/Exercise/ExerciseCatalog.swift,
+				Data/Models/Exercise/RepRangePolicy.swift,
+				Data/Models/Exercise/RestTimePolicy.swift,
+				Data/Models/Plans/ExercisePrescription.swift,
+				Data/Models/Plans/PlanSnapshot.swift,
+				Data/Models/Plans/SetPrescription.swift,
+				Data/Models/Plans/WorkoutPlan.swift,
+				Data/Models/RestTimeHistory.swift,
+				Data/Models/Sessions/ExercisePerformance.swift,
+				Data/Models/Sessions/PostWorkoutEffort.swift,
+				Data/Models/Sessions/PreWorkoutMood.swift,
+				Data/Models/Sessions/SetPerformance.swift,
+				Data/Models/Sessions/WorkoutSession.swift,
+				Data/Models/Suggestions/PlanSuggestion.swift,
+				Data/Models/Suggestions/SuggestedChange.swift,
+				Data/Models/WorkoutSplit/WorkoutSplit.swift,
+				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
+				Data/Protocols/RestTimeEditable.swift,
+				Data/SharedModelContainer.swift,
+				Helpers/ExerciseSearch.swift,
+				Helpers/Haptics.swift,
+				Helpers/RestTimerNotifications.swift,
+				Helpers/TextNormalization.swift,
+				Helpers/TimeFormatting.swift,
+				Intents/LiveActivity/LiveActivityCompleteSetIntent.swift,
+				Intents/LiveActivity/LiveActivityPauseRestTimerIntent.swift,
+				Intents/LiveActivity/LiveActivityResumeRestTimerIntent.swift,
+			);
+			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FD93E5F52F3051FD009569BB /* Exceptions for "VillainArcWidgetExtension" folder in "VillainArcWidgetExtensionExtension" target */,
+			);
+			path = VillainArcWidgetExtension;
+			sourceTree = "<group>";
+		};
 		FDA193922F16D14500CA57C5 /* VillainArc */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */,
+				FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */,
+			);
 			path = VillainArc;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		FD93E5E12F3051FD009569BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD93E5E92F3051FD009569BB /* SwiftUI.framework in Frameworks */,
+				FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDA1938D2F16D14500CA57C5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -43,11 +162,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FD93E5E52F3051FD009569BB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FD93E5E62F3051FD009569BB /* WidgetKit.framework */,
+				FD93E5E82F3051FD009569BB /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		FDA193872F16D14500CA57C5 = {
 			isa = PBXGroup;
 			children = (
+				FD93E5FA2F305206009569BB /* VillainArcWidgetExtensionExtension.entitlements */,
 				FDA193A12F16F90000CA57C5 /* .gitignore */,
 				FDA193922F16D14500CA57C5 /* VillainArc */,
+				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
+				FD93E5E52F3051FD009569BB /* Frameworks */,
 				FDA193912F16D14500CA57C5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				FDA193902F16D14500CA57C5 /* VillainArc.app */,
+				FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,6 +195,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FD93E5F62F3051FE009569BB /* Build configuration list for PBXNativeTarget "VillainArcWidgetExtensionExtension" */;
+			buildPhases = (
+				FD93E5E02F3051FD009569BB /* Sources */,
+				FD93E5E12F3051FD009569BB /* Frameworks */,
+				FD93E5E22F3051FD009569BB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
+			);
+			name = VillainArcWidgetExtensionExtension;
+			packageProductDependencies = (
+			);
+			productName = VillainArcWidgetExtensionExtension;
+			productReference = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		FDA1938F2F16D14500CA57C5 /* VillainArc */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FDA1939B2F16D14600CA57C5 /* Build configuration list for PBXNativeTarget "VillainArc" */;
@@ -71,10 +225,12 @@
 				FDA1938D2F16D14500CA57C5 /* Frameworks */,
 				FDA1938E2F16D14500CA57C5 /* Resources */,
 				FD18C78A2F248B3000EB287C /* Embed ExtensionKit Extensions */,
+				FD93E5F92F3051FE009569BB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				FD93E5F32F3051FD009569BB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FDA193922F16D14500CA57C5 /* VillainArc */,
@@ -96,6 +252,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					FD93E5E32F3051FD009569BB = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					FDA1938F2F16D14500CA57C5 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -116,11 +275,19 @@
 			projectRoot = "";
 			targets = (
 				FDA1938F2F16D14500CA57C5 /* VillainArc */,
+				FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		FD93E5E22F3051FD009569BB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDA1938E2F16D14500CA57C5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -131,6 +298,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		FD93E5E02F3051FD009569BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDA1938C2F16D14500CA57C5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -140,7 +314,79 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		FD93E5F32F3051FD009569BB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
+			targetProxy = FD93E5F22F3051FD009569BB /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		FD93E5F72F3051FE009569BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LT67625NGD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VillainArcWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.VillainArcWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FD93E5F82F3051FE009569BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LT67625NGD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VillainArcWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.VillainArcWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		FDA193992F16D14600CA57C5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -272,8 +518,10 @@
 				DEVELOPMENT_TEAM = LT67625NGD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VillainArc/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -314,8 +562,10 @@
 				DEVELOPMENT_TEAM = LT67625NGD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VillainArc/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -347,6 +597,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		FD93E5F62F3051FE009569BB /* Build configuration list for PBXNativeTarget "VillainArcWidgetExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD93E5F72F3051FE009569BB /* Debug */,
+				FD93E5F82F3051FE009569BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FDA1938B2F16D14500CA57C5 /* Build configuration list for PBXProject "VillainArc" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

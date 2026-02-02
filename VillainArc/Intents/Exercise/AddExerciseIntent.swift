@@ -30,6 +30,7 @@ struct AddExerciseIntent: AppIntent {
             resolvedExercise.updateLastUsed()
             SpotlightIndexer.index(exercise: resolvedExercise)
             saveContext(context: context)
+            WorkoutActivityManager.update(for: workout)
             return .result(dialog: "Added \(resolvedExercise.name) to your workout.")
         }
 

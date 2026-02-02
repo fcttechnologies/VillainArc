@@ -217,6 +217,7 @@ struct ExerciseView: View {
             ReplaceExerciseView(exercise: exercise) { newExercise, keepSets in
                 exercise.replaceWith(newExercise, keepSets: keepSets)
                 saveContext(context: context)
+                WorkoutActivityManager.update()
                 Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
             }
         }
@@ -226,6 +227,7 @@ struct ExerciseView: View {
         Haptics.selection()
         exercise.addSet()
         saveContext(context: context)
+        WorkoutActivityManager.update()
     }
 
     private func checkForRestTimeUpdate() {
