@@ -13,11 +13,9 @@ struct RestTimerView: View {
     var body: some View {
         NavigationStack {
             List {
-                Group {
-                    VStack(spacing: 0) {
-                        timerDisplay
-                        nextSetView
-                    }
+                VStack(spacing: 0) {
+                    timerDisplay
+                    nextSetView
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowSeparator(.hidden)
@@ -257,6 +255,8 @@ struct RestTimerView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
                     .accessibilityIdentifier(AccessibilityIdentifiers.restTimerNextSet)
                     .accessibilityLabel("Next set")
                     .accessibilityValue(accessibilityValue)

@@ -1,18 +1,14 @@
 import Foundation
 import Observation
 import SwiftData
-#if canImport(UIKit)
 import AudioToolbox
 import UIKit
-#endif
 
 @MainActor
 @Observable
 final class RestTimerState {
     static let shared = RestTimerState()
-#if canImport(UIKit)
     private static let completionSoundID: SystemSoundID = 1005
-#endif
 
     private enum StorageKey {
         static let endDate = "restTimerEndDate"
@@ -241,7 +237,6 @@ final class RestTimerState {
     }
 
     private func playCompletionAlertIfActive() {
-        Haptics.success()
-        AudioServicesPlaySystemSound(Self.completionSoundID)
+        AudioServicesPlayAlertSound(Self.completionSoundID)
     }
 }

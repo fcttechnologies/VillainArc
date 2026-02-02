@@ -10,6 +10,7 @@ struct WorkoutLiveActivity: Widget {
                 attributes: context.attributes,
                 state: context.state
             )
+            .activityBackgroundTint(.clear)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -20,8 +21,10 @@ struct WorkoutLiveActivity: Widget {
                         Text(context.attributes.startDate, style: .date)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .fontWeight(.semibold)
                     }
                     .padding(.leading)
+                    .fontDesign(.rounded)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     if context.state.isTimerRunning,
@@ -29,12 +32,22 @@ struct WorkoutLiveActivity: Widget {
                         Text(timerInterval: Date.now...endDate, countsDown: true)
                             .font(.title2)
                             .fontWeight(.bold)
+                            .frame(maxWidth: 70)
+                            .fontDesign(.rounded)
                     } else if context.state.isTimerPaused,
                               let remaining = context.state.timerPausedRemaining {
-                        Text(formatSeconds(remaining))
-                            .font(.title2)
-                            .fontWeight(.bold)
+                        Button(intent: LiveActivityResumeRestTimerIntent()) {
+                            HStack(spacing: 0) {
+                                Image(systemName: "pause.fill")
+                                Text(formatSeconds(remaining))
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: 60)
+                            }
                             .foregroundStyle(.yellow)
+                            .fontDesign(.rounded)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -48,14 +61,15 @@ struct WorkoutLiveActivity: Widget {
                                 Text(setDescription(context.state))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .fontWeight(.semibold)
                             }
+                            .fontDesign(.rounded)
                             Spacer()
                             Button(intent: LiveActivityCompleteSetIntent()) {
                                 Image(systemName: "checkmark")
                                     .font(.body)
                                     .fontWeight(.bold)
                             }
-                            .tint(.blue)
                         }
                         .padding(.horizontal)
                     } else if !context.state.hasExercises {
@@ -63,30 +77,34 @@ struct WorkoutLiveActivity: Widget {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .padding(.leading)
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
                     } else {
                         Text("All sets complete")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .padding(.leading)
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
                     }
                 }
             } compactLeading: {
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.green)
             } compactTrailing: {
                 if context.state.isTimerRunning,
                    let endDate = context.state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
-                        .font(.caption)
-                        .frame(width: 40)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
                 } else {
                     Text(context.attributes.startDate, style: .timer)
-                        .font(.caption)
-                        .frame(width: 40)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
                 }
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.green)
             }
         }
     }
@@ -105,23 +123,30 @@ struct WorkoutLiveActivityExpandedView: View {
                         .lineLimit(1)
                     Text(attributes.startDate, style: .date)
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
                 }
+                .fontDesign(.rounded)
                 Spacer()
                 if state.isTimerRunning, let endDate = state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
                         .font(.title)
                         .fontWeight(.bold)
-                        .foregroundStyle(.blue)
+                        .frame(maxWidth: 70)
+                        .fontDesign(.rounded)
+                        .lineLimit(1)
                 } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
-                    HStack(spacing: 4) {
-                        Image(systemName: "pause.fill")
-                            .font(.caption)
-                        Text(formatSeconds(remaining))
-                            .font(.title)
-                            .fontWeight(.bold)
+                    Button(intent: LiveActivityResumeRestTimerIntent()) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "pause.fill")
+                            Text(formatSeconds(remaining))
+                                .font(.title)
+                                .fontWeight(.bold)
+                        }
+                        .foregroundStyle(.yellow)
+                        .fontDesign(.rounded)
                     }
-                    .foregroundStyle(.yellow)
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -132,27 +157,31 @@ struct WorkoutLiveActivityExpandedView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(exerciseName)
                             .font(.subheadline)
-                            .fontWeight(.semibold)
                             .lineLimit(1)
                         Text(setDescription(state))
-                            .font(.caption)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
+                    .fontDesign(.rounded)
+                    .fontWeight(.semibold)
                     Spacer()
                     Button(intent: LiveActivityCompleteSetIntent()) {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: "checkmark")
                             .font(.title2)
+                            .fontWeight(.bold)
                     }
-                    .tint(.blue)
+                    .buttonStyle(.borderedProminent)
                 }
             } else if !state.hasExercises {
                 Text("Add an exercise to begin")
-                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .fontDesign(.rounded)
+                    .fontWeight(.semibold)
             } else {
                 Text("All sets complete")
-                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .fontDesign(.rounded)
+                    .fontWeight(.semibold)
             }
         }
         .padding()
