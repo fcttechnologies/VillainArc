@@ -77,6 +77,20 @@ final class AppRouter {
         }
     }
 
+    func handleSiriWorkout(_ userActivity: NSUserActivity) {
+        guard activeWorkoutSession == nil, activeWorkoutPlan == nil else { return }
+        startWorkoutSession()
+    }
+
+    func handleSiriCancelWorkout(_ userActivity: NSUserActivity) {
+        guard let workoutSession = activeWorkoutSession else { return }
+        RestTimerState.shared.stop()
+        workoutSession.activeExercise = nil
+        context.delete(workoutSession)
+        activeWorkoutSession = nil
+        WorkoutActivityManager.end()
+    }
+
     func handleSpotlight(_ userActivity: NSUserActivity) {
         guard activeWorkoutSession == nil, activeWorkoutPlan == nil else {
             return

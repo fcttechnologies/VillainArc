@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<key>CFBundleSpokenName</key>
+	<string>Villain Arc</string>
+	<key>INAlternativeAppNames</key>
+	<array>
+		<dict>
+			<key>INAlternativeAppName</key>
+			<string>VillainArc</string>
+		</dict>
+	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.villainarc.siri.startWorkout</string>
+		<string>com.villainarc.siri.cancelWorkout</string>
+		<string>com.villainarc.siri.endWorkout</string>
+	</array>
+</dict>
 </plist>
