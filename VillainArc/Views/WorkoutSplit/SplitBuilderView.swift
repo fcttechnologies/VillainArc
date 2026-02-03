@@ -41,7 +41,7 @@ enum SplitPresetType: String, CaseIterable, Identifiable {
         case .upperLower: [2, 4, 6]
         case .pushPullLegs: [3, 4, 5, 6]
         case .arnoldSplit: [4, 5, 6]
-        case .broSplit: [5, 6]
+        case .broSplit: [5]
         case .hourglass: [3, 4, 5]
         }
     }
@@ -52,22 +52,61 @@ enum SplitPresetType: String, CaseIterable, Identifiable {
         default: availableDaysPerWeek.first ?? 3
         }
     }
+
+    var usesFixedRotationCycle: Bool {
+        switch self {
+        case .fullBody, .upperLower, .pushPullLegs, .arnoldSplit:
+            return true
+        case .broSplit, .hourglass:
+            return false
+        }
+    }
+
+    func availableDays(for mode: SplitMode) -> [Int] {
+        switch (self, mode) {
+        case (.pushPullLegs, .weekly):
+            return [3, 6]
+        case (.arnoldSplit, .weekly):
+            return [3, 6]
+        default:
+            return availableDaysPerWeek
+        }
+    }
+
+    var defaultRotationRestStyle: RotationRestStyle {
+        switch self {
+        case .fullBody:
+            return .afterEachDay
+        case .upperLower, .pushPullLegs, .arnoldSplit, .broSplit, .hourglass:
+            return .afterCycle
+        }
+    }
 }
 
 // MARK: - Builder Config (Observable)
+
+enum RotationRestStyle: String, CaseIterable, Identifiable {
+    case none
+    case afterEachDay
+    case afterCycle
+    case restForTwoDays
+
+    var id: String { rawValue }
+}
 
 @Observable
 class SplitBuilderConfig {
     var type: SplitPresetType = .fullBody
     var mode: SplitMode = .rotation
     var daysPerWeek: Int = 3
-    var includeRestDays: Bool = true
+    var rotationRestStyle: RotationRestStyle = .afterEachDay
     var keepWeekendsFree: Bool = false
     var startingWeekday: Int = 2 // 2 = Monday
     
     func resetForType(_ type: SplitPresetType) {
         self.type = type
         self.daysPerWeek = type.defaultDaysPerWeek
+        self.rotationRestStyle = type.defaultRotationRestStyle
     }
 }
 
@@ -259,6 +298,8 @@ private struct SelectTypeView: View {
                 }
             } header: {
                 Text("Or pick a template")
+            } footer: {
+                Text("Templates are just a starting point. You can adjust the split to fit your needs after you create it.")
             }
         }
     }
@@ -330,7 +371,7 @@ private struct SelectModeView: View {
     }
     
     private func navigateToNextStep() {
-        if config.type.availableDaysPerWeek.count > 1 {
+        if needsDaySelection() {
             path.append(.selectDays)
         } else if shouldAskAboutRestDays() {
             path.append(.selectRestDays)
@@ -338,15 +379,17 @@ private struct SelectModeView: View {
             onCreate()
         }
     }
+
+    private func needsDaySelection() -> Bool {
+        if config.mode == .rotation && config.type.usesFixedRotationCycle {
+            return false
+        }
+        return config.type.availableDays(for: config.mode).count > 1
+    }
     
     private func shouldAskAboutRestDays() -> Bool {
         if config.mode == .rotation {
-            switch config.type {
-            case .fullBody, .upperLower, .pushPullLegs, .hourglass:
-                return true
-            case .arnoldSplit, .broSplit:
-                return false
-            }
+            return true
         } else {
             // Weekly mode: ask about weekends if days <= 5
             return config.daysPerWeek <= 5
@@ -364,7 +407,7 @@ private struct SelectDaysView: View {
     var body: some View {
         List {
             Section {
-                ForEach(config.type.availableDaysPerWeek, id: \.self) { days in
+                ForEach(config.type.availableDays(for: config.mode), id: \.self) { days in
                     Button {
                         Haptics.selection()
                         config.daysPerWeek = days
@@ -402,12 +445,7 @@ private struct SelectDaysView: View {
     
     private func shouldAskAboutRestDays() -> Bool {
         if config.mode == .rotation {
-            switch config.type {
-            case .fullBody, .upperLower, .pushPullLegs, .hourglass:
-                return true
-            case .arnoldSplit, .broSplit:
-                return false
-            }
+            return true
         } else {
             // Weekly mode: ask about weekends if days <= 5
             return config.daysPerWeek <= 5
@@ -420,20 +458,14 @@ private struct SelectDaysView: View {
             return "\(days) sessions per week"
         case .upperLower:
             return "\(days / 2)x Upper, \(days / 2)x Lower"
-        case .pushPullLegs:
+        case .pushPullLegs, .arnoldSplit:
             switch days {
             case 3: return "One full cycle"
             case 6: return "Two full cycles"
             default: return "Continuous rotation"
             }
-        case .arnoldSplit:
-            switch days {
-            case 3: return "One full cycle" // Theoretically not available but good to handle
-            case 6: return "Two full cycles"
-            default: return "Continuous rotation"
-            }
         case .broSplit:
-            return days == 6 ? "Includes weak point day" : "One muscle group per day"
+            return "One muscle group per day"
         case .hourglass:
             switch days {
             case 3: return "2x Lower, 1x Upper"
@@ -466,39 +498,32 @@ private struct SelectRestDaysView: View {
     @ViewBuilder
     private var rotationRestDaysSection: some View {
         Section {
-            Button {
-                Haptics.selection()
-                config.includeRestDays = true
-                onCreate()
-            } label: {
-                HStack {
-                    Text("Yes, add rest days")
-                        .font(.headline)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.tertiary)
+            ForEach(rotationRestOptions) { option in
+                Button {
+                    Haptics.selection()
+                    config.rotationRestStyle = option.style
+                    onCreate()
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(option.title)
+                                .font(.headline)
+                            if let subtitle = option.subtitle {
+                                Text(subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.tertiary)
+                    }
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(option.accessibilityId)
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("splitBuilderRestYes")
-            
-            Button {
-                Haptics.selection()
-                config.includeRestDays = false
-                onCreate()
-            } label: {
-                HStack {
-                    Text("No, just training days")
-                        .font(.headline)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("splitBuilderRestNo")
         } header: {
-            Text("Include rest days in the rotation?")
+            Text(rotationRestHeader)
         }
     }
     
@@ -538,6 +563,210 @@ private struct SelectRestDaysView: View {
             .accessibilityIdentifier("splitBuilderWeekendsNo")
         } header: {
             Text("Keep weekends free?")
+        }
+    }
+
+    private struct RotationRestOption: Identifiable {
+        let id: String
+        let title: String
+        let subtitle: String?
+        let style: RotationRestStyle
+        let accessibilityId: String
+    }
+
+    private var rotationRestOptions: [RotationRestOption] {
+        switch config.type {
+        case .fullBody:
+            return [
+                RotationRestOption(
+                    id: "afterEachDay",
+                    title: "Rest day after workout",
+                    subtitle: "Full Body, Rest",
+                    style: .afterEachDay,
+                    accessibilityId: "splitBuilderRestAfterEach"
+                ),
+                RotationRestOption(
+                    id: "restForTwoDays",
+                    title: "Rest for two days after workout",
+                    subtitle: "Full Body, Rest, Rest",
+                    style: .restForTwoDays,
+                    accessibilityId: "splitBuilderRestForTwoDays"
+                ),
+                RotationRestOption(
+                    id: "none",
+                    title: "No rest days",
+                    subtitle: "Full Body",
+                    style: .none,
+                    accessibilityId: "splitBuilderRestNone"
+                )
+            ]
+        case .upperLower:
+            return [
+                RotationRestOption(
+                    id: "afterEachDay",
+                    title: "Rest day in between",
+                    subtitle: "Upper, Rest, Lower, Rest",
+                    style: .afterEachDay,
+                    accessibilityId: "splitBuilderRestAfterEach"
+                ),
+                RotationRestOption(
+                    id: "afterCycle",
+                    title: "Rest day after cycle",
+                    subtitle: "Upper, Lower, Rest",
+                    style: .afterCycle,
+                    accessibilityId: "splitBuilderRestAfterCycle"
+                ),
+                RotationRestOption(
+                    id: "none",
+                    title: "No rest days",
+                    subtitle: "Upper, Lower",
+                    style: .none,
+                    accessibilityId: "splitBuilderRestNone"
+                )
+            ]
+        case .pushPullLegs:
+            return [
+                RotationRestOption(
+                    id: "afterEachDay",
+                    title: "Rest day in between",
+                    subtitle: "Push, Rest, Pull, Rest, Legs, Rest",
+                    style: .afterEachDay,
+                    accessibilityId: "splitBuilderRestInBetween"
+                ),
+                RotationRestOption(
+                    id: "afterCycle",
+                    title: "Rest day after cycle",
+                    subtitle: "Push, Pull, Legs, Rest",
+                    style: .afterCycle,
+                    accessibilityId: "splitBuilderRestAfterCycle"
+                ),
+                RotationRestOption(
+                    id: "none",
+                    title: "No rest days",
+                    subtitle: "Push, Pull, Legs",
+                    style: .none,
+                    accessibilityId: "splitBuilderRestNone"
+                )
+            ]
+        case .hourglass:
+            let labels = hourglassTrainingLabels()
+            return [
+                RotationRestOption(
+                    id: "afterEachDay",
+                    title: "Rest day in between",
+                    subtitle: rotationSubtitle(labels: labels, style: .afterEachDay),
+                    style: .afterEachDay,
+                    accessibilityId: "splitBuilderRestInBetween"
+                ),
+                RotationRestOption(
+                    id: "afterCycle",
+                    title: "Rest day after cycle",
+                    subtitle: rotationSubtitle(labels: labels, style: .afterCycle),
+                    style: .afterCycle,
+                    accessibilityId: "splitBuilderRestAfterCycle"
+                ),
+                RotationRestOption(
+                    id: "none",
+                    title: "No rest days",
+                    subtitle: rotationSubtitle(labels: labels, style: .none),
+                    style: .none,
+                    accessibilityId: "splitBuilderRestNone"
+                )
+            ]
+        case .arnoldSplit:
+            return [
+                RotationRestOption(
+                    id: "afterEachDay",
+                    title: "Rest day in between",
+                    subtitle: "Chest & Back, Rest, Shoulders & Arms, Rest, Legs, Rest",
+                    style: .afterEachDay,
+                    accessibilityId: "splitBuilderRestInBetween"
+                ),
+                RotationRestOption(
+                    id: "afterCycle",
+                    title: "Rest day after cycle",
+                    subtitle: "Chest & Back, Shoulders & Arms, Legs, Rest",
+                    style: .afterCycle,
+                    accessibilityId: "splitBuilderRestAfterCycle"
+                ),
+                RotationRestOption(
+                    id: "none",
+                    title: "No rest days",
+                    subtitle: "Chest & Back, Shoulders & Arms, Legs",
+                    style: .none,
+                    accessibilityId: "splitBuilderRestNone"
+                )
+            ]
+        case .broSplit:
+            return [
+                RotationRestOption(
+                    id: "afterEachDay",
+                    title: "Rest day in between",
+                    subtitle: "Chest, Rest, Back, Rest, Shoulders, Rest, Legs, Rest, Arms, Rest",
+                    style: .afterEachDay,
+                    accessibilityId: "splitBuilderRestInBetween"
+                ),
+                RotationRestOption(
+                    id: "afterCycle",
+                    title: "Rest day after cycle",
+                    subtitle: "Chest, Back, Shoulders, Legs, Arms, Rest",
+                    style: .afterCycle,
+                    accessibilityId: "splitBuilderRestAfterCycle"
+                ),
+                RotationRestOption(
+                    id: "none",
+                    title: "No rest days",
+                    subtitle: "Chest, Back, Shoulders, Legs, Arms",
+                    style: .none,
+                    accessibilityId: "splitBuilderRestNone"
+                )
+            ]
+        }
+    }
+
+    private var rotationRestHeader: String {
+        switch config.type {
+        case .fullBody:
+            return "Full body rotation rest days"
+        case .upperLower, .pushPullLegs:
+            return "Rest day placement"
+        case .hourglass:
+            return "Rest days"
+        case .arnoldSplit, .broSplit:
+            return "Rest days"
+        }
+    }
+
+    private func hourglassTrainingLabels() -> [String] {
+        switch config.daysPerWeek {
+        case 3:
+            return ["Glutes & Hams", "Upper Body & Abs", "Quads & Glutes"]
+        case 4:
+            return ["Glutes & Hams", "Shoulders & Back", "Quads & Glutes", "Upper Body"]
+        case 5:
+            return ["Glutes Focus", "Upper Body & Abs", "Quads Focus", "Shoulders & Back", "Glutes & Hams"]
+        default:
+            return []
+        }
+    }
+
+    private func rotationSubtitle(labels: [String], style: RotationRestStyle) -> String? {
+        guard !labels.isEmpty else { return nil }
+
+        switch style {
+        case .none:
+            return labels.joined(separator: ", ")
+        case .afterEachDay:
+            var parts: [String] = []
+            for label in labels {
+                parts.append(label)
+                parts.append("Rest")
+            }
+            return parts.joined(separator: ", ")
+        case .afterCycle:
+            return (labels + ["Rest"]).joined(separator: ", ")
+        case .restForTwoDays:
+            return (labels + ["Rest", "Rest"]).joined(separator: ", ")
         }
     }
 }
@@ -613,117 +842,154 @@ private enum SplitGenerator {
         
         return result
     }
+
+    private static func restDay() -> DayTemplate {
+        DayTemplate(name: "Rest", isRestDay: true)
+    }
+
+    private static func applyRotationRestStyle(_ trainingDays: [DayTemplate], style: RotationRestStyle) -> [DayTemplate] {
+        switch style {
+        case .none:
+            return trainingDays
+        case .afterEachDay:
+            var days: [DayTemplate] = []
+            for day in trainingDays {
+                days.append(day)
+                days.append(restDay())
+            }
+            return days
+        case .afterCycle:
+            return trainingDays + [restDay()]
+        case .restForTwoDays:
+            return trainingDays + [restDay(), restDay()]
+        }
+    }
     
     private static func generateFullBody(config: SplitBuilderConfig) -> [DayTemplate] {
-        var days: [DayTemplate] = []
-        for i in 0..<config.daysPerWeek {
-            days.append(DayTemplate(name: "Full Body", isRestDay: false))
-            if config.mode == .rotation && config.includeRestDays && i < config.daysPerWeek - 1 {
-                days.append(DayTemplate(name: "Rest", isRestDay: true))
+        let workout = DayTemplate(name: "Full Body", isRestDay: false)
+        if config.mode == .rotation {
+            switch config.rotationRestStyle {
+            case .restForTwoDays:
+                return [workout, restDay(), restDay()]
+            case .none, .afterEachDay, .afterCycle:
+                return applyRotationRestStyle([workout], style: config.rotationRestStyle)
             }
         }
-        if config.mode == .rotation && config.includeRestDays && config.daysPerWeek == 3 {
-            days.append(DayTemplate(name: "Rest", isRestDay: true))
+
+        var days: [DayTemplate] = []
+        for _ in 0..<config.daysPerWeek {
+            days.append(workout)
         }
         return days
     }
     
     private static func generateUpperLower(config: SplitBuilderConfig) -> [DayTemplate] {
-        var days: [DayTemplate] = []
-        let labels = ["Upper", "Lower"]
-        for i in 0..<config.daysPerWeek {
-            days.append(DayTemplate(name: labels[i % 2], isRestDay: false))
+        let trainingDays = [
+            DayTemplate(name: "Upper", isRestDay: false),
+            DayTemplate(name: "Lower", isRestDay: false)
+        ]
+
+        if config.mode == .rotation {
+            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
         }
-        if config.mode == .rotation && config.includeRestDays {
-            days.append(DayTemplate(name: "Rest", isRestDay: true))
+
+        var days: [DayTemplate] = []
+        for i in 0..<config.daysPerWeek {
+            days.append(DayTemplate(name: trainingDays[i % 2].name, isRestDay: false))
         }
         return days
     }
     
     private static func generatePPL(config: SplitBuilderConfig) -> [DayTemplate] {
-        let labels = ["Push", "Pull", "Legs"]
+        let trainingDays = [
+            DayTemplate(name: "Push", isRestDay: false),
+            DayTemplate(name: "Pull", isRestDay: false),
+            DayTemplate(name: "Legs", isRestDay: false)
+        ]
+
+        if config.mode == .rotation {
+            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
+        }
+
         var days: [DayTemplate] = []
-        
         for i in 0..<config.daysPerWeek {
-            days.append(DayTemplate(name: labels[i % 3], isRestDay: false))
-            
-            // Add rest day after every 3rd day (end of a full cycle)
-            if config.mode == .rotation && config.includeRestDays && (i + 1) % 3 == 0 {
-                days.append(DayTemplate(name: "Rest", isRestDay: true))
-            }
+            days.append(DayTemplate(name: trainingDays[i % 3].name, isRestDay: false))
         }
         return days
     }
     
     private static func generateArnold(config: SplitBuilderConfig) -> [DayTemplate] {
-        let labels = ["Chest & Back", "Shoulders & Arms", "Legs"]
+        let trainingDays = [
+            DayTemplate(name: "Chest & Back", isRestDay: false),
+            DayTemplate(name: "Shoulders & Arms", isRestDay: false),
+            DayTemplate(name: "Legs", isRestDay: false)
+        ]
+
+        if config.mode == .rotation {
+            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
+        }
+
         var days: [DayTemplate] = []
-        
         for i in 0..<config.daysPerWeek {
-            days.append(DayTemplate(name: labels[i % 3], isRestDay: false))
-            
-            // Add rest day after every 3rd day (end of a full cycle)
-            if config.mode == .rotation && config.includeRestDays && (i + 1) % 3 == 0 {
-                days.append(DayTemplate(name: "Rest", isRestDay: true))
-            }
+            days.append(DayTemplate(name: trainingDays[i % 3].name, isRestDay: false))
         }
         return days
     }
     
     private static func generateBroSplit(config: SplitBuilderConfig) -> [DayTemplate] {
-        var days: [DayTemplate] = []
+        var trainingDays: [DayTemplate] = []
         let labels = ["Chest", "Back", "Shoulders", "Legs", "Arms"]
-        
+
         for label in labels {
-            days.append(DayTemplate(name: label, isRestDay: false))
+            trainingDays.append(DayTemplate(name: label, isRestDay: false))
         }
-        
+
         if config.daysPerWeek == 6 {
-            days.append(DayTemplate(name: "Weak Point", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Weak Point", isRestDay: false))
         }
-        
-        if config.mode == .rotation && config.includeRestDays {
-            days.append(DayTemplate(name: "Rest", isRestDay: true))
+
+        if config.mode == .rotation {
+            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
         }
-        
-        return days
+
+        return trainingDays
     }
     
     private static func generateHourglass(config: SplitBuilderConfig) -> [DayTemplate] {
-        var days: [DayTemplate] = []
-        
+        var trainingDays: [DayTemplate] = []
+
         switch config.daysPerWeek {
         case 3:
             // 3-Day: Glutes/Hams, Upper, Quads/Glutes
-            days.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
-            days.append(DayTemplate(name: "Upper Body & Abs", isRestDay: false))
-            days.append(DayTemplate(name: "Quads & Glutes", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Upper Body & Abs", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Quads & Glutes", isRestDay: false))
             
         case 4:
             // 4-Day: Glutes/Hams, Shoulders/Back, Quads/Glutes, Upper Focus
-            days.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
-            days.append(DayTemplate(name: "Shoulders & Back", isRestDay: false))
-            days.append(DayTemplate(name: "Quads & Glutes", isRestDay: false))
-            days.append(DayTemplate(name: "Upper Body", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Shoulders & Back", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Quads & Glutes", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Upper Body", isRestDay: false))
             
         case 5:
             // 5-Day: Glutes, Upper, Quads, Shoulders, Full Legs/Glutes
-            days.append(DayTemplate(name: "Glutes Focus", isRestDay: false))
-            days.append(DayTemplate(name: "Upper Body & Abs", isRestDay: false))
-            days.append(DayTemplate(name: "Quads Focus", isRestDay: false))
-            days.append(DayTemplate(name: "Shoulders & Back", isRestDay: false))
-            days.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Glutes Focus", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Upper Body & Abs", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Quads Focus", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Shoulders & Back", isRestDay: false))
+            trainingDays.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
             
         default:
             // Fallback
             return generateUpperLower(config: config)
         }
-        
-        if config.mode == .rotation && config.includeRestDays {
-            days.append(DayTemplate(name: "Rest", isRestDay: true))
+
+        if config.mode == .rotation {
+            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
         }
-        
-        return days
+
+        return trainingDays
     }
 }
 
