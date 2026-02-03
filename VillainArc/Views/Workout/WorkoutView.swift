@@ -363,7 +363,7 @@ struct WorkoutView: View {
             }
         }
         Haptics.selection()
-        workout.status = .done
+        workout.status = SessionStatus.done.rawValue
         workout.endedAt = Date()
         workout.activeExercise = nil
         restTimer.stop()

@@ -6,10 +6,15 @@ class WorkoutSession {
     var id: UUID = UUID()
     var title: String = "New Workout"
     var notes: String = ""
-    var status: SessionStatus = SessionStatus.active
+    var status: String = SessionStatus.active.rawValue
     var startedAt: Date = Date()
     var endedAt: Date?
     var origin: SessionOrigin = SessionOrigin.freeform
+    
+    var statusValue: SessionStatus {
+        get { SessionStatus(rawValue: status) ?? .active }
+        set { status = newValue.rawValue }
+    }
     @Relationship(deleteRule: .cascade, inverse: \PreWorkoutMood.workoutSession)
     var preMood: PreWorkoutMood?
     @Relationship(deleteRule: .cascade, inverse: \PostWorkoutEffort.workoutSession)
@@ -75,7 +80,7 @@ extension WorkoutSession {
     }
     
     static func completedSessions(limit: Int? = nil) -> FetchDescriptor<WorkoutSession> {
-        let done = SessionStatus.done
+        let done = SessionStatus.done.rawValue
         let predicate = #Predicate<WorkoutSession> { $0.status == done }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         if let limit {
@@ -93,7 +98,7 @@ extension WorkoutSession {
     }
     
     static var incomplete: FetchDescriptor<WorkoutSession> {
-        let done = SessionStatus.done
+        let done = SessionStatus.done.rawValue
         let predicate = #Predicate<WorkoutSession> { $0.status != done }
         var descriptor = FetchDescriptor(predicate: predicate)
         descriptor.fetchLimit = 1

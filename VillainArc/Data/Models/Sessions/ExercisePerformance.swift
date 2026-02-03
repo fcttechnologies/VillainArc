@@ -99,7 +99,7 @@ extension ExercisePerformance: RestTimeEditable {}
 extension ExercisePerformance {
     static func lastCompleted(for exercise: ExercisePerformance) -> FetchDescriptor<ExercisePerformance> {
         let catalogID = exercise.catalogID
-        let done = SessionStatus.done
+        let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in
             item.catalogID == catalogID && item.workoutSession?.status == done
         }
@@ -112,7 +112,7 @@ extension ExercisePerformance {
     }
     
     static func matching(catalogID: String) -> FetchDescriptor<ExercisePerformance> {
-        let done = SessionStatus.done
+        let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in
             item.catalogID == catalogID && item.workoutSession?.status == done
         }
@@ -123,7 +123,7 @@ extension ExercisePerformance {
     }
 
     static var completedAll: FetchDescriptor<ExercisePerformance> {
-        let done = SessionStatus.done
+        let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in
             item.workoutSession?.status == done
         }

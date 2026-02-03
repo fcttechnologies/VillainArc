@@ -124,7 +124,7 @@ class PreviewDataContainer {
         let session = WorkoutSession()
         session.title = "Chest Day"
         session.notes = "Testing sample"
-        session.status = .done
+        session.status = SessionStatus.done.rawValue
         session.startedAt = date(2026, 1, 5, 8, 15)
         session.endedAt = date(2026, 1, 5, 9, 5)
         context.insert(session)
@@ -291,7 +291,7 @@ func sampleCompletedSession() -> WorkoutSession {
 
     let fallback = WorkoutSession()
     fallback.title = "Chest Day"
-    fallback.status = .done
+    fallback.status = SessionStatus.done.rawValue
     fallback.endedAt = .now
     sampleContainer.context.insert(fallback)
     return fallback
