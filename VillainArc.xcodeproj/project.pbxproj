@@ -104,6 +104,7 @@
 				Data/Models/Enums/Sessions/MoodLevel.swift,
 				Data/Models/Enums/Sessions/PlanCreator.swift,
 				Data/Models/Enums/Sessions/SessionOrigin.swift,
+				Data/Models/Enums/Sessions/SessionStatus.swift,
 				Data/Models/Enums/SplitMode.swift,
 				Data/Models/Enums/Suggestions/ChangeType.swift,
 				Data/Models/Enums/Suggestions/Decision.swift,
@@ -114,7 +115,6 @@
 				Data/Models/Exercise/RepRangePolicy.swift,
 				Data/Models/Exercise/RestTimePolicy.swift,
 				Data/Models/Plans/ExercisePrescription.swift,
-				Data/Models/Plans/PlanSnapshot.swift,
 				Data/Models/Plans/SetPrescription.swift,
 				Data/Models/Plans/WorkoutPlan.swift,
 				Data/Models/RestTimeHistory.swift,
@@ -123,7 +123,6 @@
 				Data/Models/Sessions/PreWorkoutMood.swift,
 				Data/Models/Sessions/SetPerformance.swift,
 				Data/Models/Sessions/WorkoutSession.swift,
-				Data/Models/Suggestions/PlanSuggestion.swift,
 				Data/Models/Suggestions/SuggestedChange.swift,
 				Data/Models/WorkoutSplit/WorkoutSplit.swift,
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
@@ -312,7 +311,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					FD6829072F31190700C83480 = {
 						CreatedOnToolsVersion = 26.2;
@@ -415,7 +414,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LT67625NGD;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcIntentsExtension;
@@ -445,7 +443,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LT67625NGD;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcIntentsExtension;
@@ -477,7 +474,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LT67625NGD;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcWidgetExtension;
@@ -509,7 +505,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LT67625NGD;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcWidgetExtension;
@@ -567,6 +562,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = LT67625NGD;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -590,6 +586,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -630,6 +627,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = LT67625NGD;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -646,6 +644,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -660,7 +659,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LT67625NGD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArc/Info.plist;
@@ -704,7 +702,6 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LT67625NGD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArc/Info.plist;

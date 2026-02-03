@@ -28,12 +28,11 @@ enum SpotlightIndexer {
     }
 
     static func index(workoutPlan: WorkoutPlan) {
-        guard let currentVersion = workoutPlan.currentVersion else { return }
         let attributes = CSSearchableItemAttributeSet(contentType: .item)
         attributes.title = workoutPlan.title
         attributes.displayName = workoutPlan.title
         attributes.contentDescription = workoutPlan.spotlightSummary
-        attributes.keywords = currentVersion.sortedExercises.map(\.name) + ["Workout Plan"]
+        attributes.keywords = workoutPlan.sortedExercises.map(\.name) + ["Workout Plan"]
         let item = CSSearchableItem(
             uniqueIdentifier: workoutPlanIdentifierPrefix + workoutPlan.id.uuidString,
             domainIdentifier: workoutPlanDomainIdentifier,

@@ -4,40 +4,41 @@ import SwiftData
 @Model
 class SuggestedChange {
     var id: UUID = UUID()
+    var source: SuggestionSource = SuggestionSource.rules
+    var catalogID: String = ""
+    
+    // When/where triggered
+    @Relationship(deleteRule: .nullify)
+    var sessionFrom: WorkoutSession?
+    var createdAt: Date = Date()              // When suggestion was created
+    
+    // Evidence
+    @Relationship(deleteRule: .nullify)
     var sourceExercisePerformance: ExercisePerformance?
+    @Relationship(deleteRule: .nullify)
     var sourceSetPerformance: SetPerformance?
     
+    // Target
+    @Relationship(deleteRule: .nullify)
     var targetExercisePrescription: ExercisePrescription?
+    @Relationship(deleteRule: .nullify)
     var targetSetPrescription: SetPrescription?
     
+    // The Change
     var changeType: ChangeType = ChangeType.increaseWeight
-    var delta: Double?
-    var value: Double?
+    var previousValue: Double?
+    var newValue: Double?
     var changeReasoning: String?
-    var planSuggestion: PlanSuggestion?
-    var decision: Decision?
-    var decisionReason: String?
-    var decidedAt: Date?
-    @Relationship(deleteRule: .nullify)
-    var appliedInSnapshot: PlanSnapshot?
-    var outcome: Outcome?
-    var evaluatedAt: Date?
-    @Relationship(deleteRule: .nullify)
-    var evaluatedInSession: WorkoutSession?
     
-    init(sourceExercisePerformance: ExercisePerformance, targetExercisePrescription: ExercisePrescription, delta: Double, value: Double, planSuggestion: PlanSuggestion) {
-        self.sourceExercisePerformance = sourceExercisePerformance
-        self.targetExercisePrescription = targetExercisePrescription
-        self.delta = delta
-        self.value = value
-        self.planSuggestion = planSuggestion
-    }
+    // Decision
+    var decision: Decision = Decision.pending         // Default to pending
+    var decidedAt: Date?                      // When user decided
     
-    init(sourceSetPerformance: SetPerformance, targetSetPrescription: SetPrescription, delta: Double, value: Double, planSuggestion: PlanSuggestion) {
-        self.sourceSetPerformance = sourceSetPerformance
-        self.targetSetPrescription = targetSetPrescription
-        self.delta = delta
-        self.value = value
-        self.planSuggestion = planSuggestion
-    }
+    // Outcome
+    var outcome: Outcome = Outcome.pending           // Default to pending
+    @Relationship(deleteRule: .nullify)
+    var evaluatedInSession: WorkoutSession?   // Which session evaluated
+    var evaluatedAt: Date?                    // When outcome was determined
+    
+    init() {}
 }

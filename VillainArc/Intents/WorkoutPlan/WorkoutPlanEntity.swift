@@ -51,7 +51,7 @@ extension WorkoutPlanEntity {
         id = workoutPlan.id
         title = workoutPlan.title
         summary = workoutPlan.spotlightSummary
-        let exercises = workoutPlan.currentVersion?.sortedExercises ?? []
+        let exercises = workoutPlan.sortedExercises
         exerciseNames = exercises.map(\.name)
         fullContent = WorkoutPlanFullContent(
             id: workoutPlan.id,

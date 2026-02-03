@@ -13,9 +13,12 @@ class ExercisePrescription {
     var repRange: RepRangePolicy = RepRangePolicy()
     @Relationship(deleteRule: .cascade)
     var restTimePolicy: RestTimePolicy = RestTimePolicy()
-    var planSnapshot: PlanSnapshot?
+    var workoutPlan: WorkoutPlan?
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
     var sets: [SetPrescription] = []
+    
+    @Relationship(deleteRule: .nullify, inverse: \SuggestedChange.targetExercisePrescription)
+    var suggestedChanges: [SuggestedChange] = []
     
     var sortedSets: [SetPrescription] {
         sets.sorted { $0.index < $1.index }
@@ -26,17 +29,17 @@ class ExercisePrescription {
     }
     
     // Adding exercise in workout plan creation
-    init(exercise: Exercise, planSnapshot: PlanSnapshot) {
-        index = planSnapshot.exercises.count
+    init(exercise: Exercise, workoutPlan: WorkoutPlan) {
+        index = workoutPlan.exercises.count
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
-        self.planSnapshot = planSnapshot
+        self.workoutPlan = workoutPlan
         addSet()
     }
     
-    // Adding exercise from session
-    init(planSnapshot: PlanSnapshot, exercisePerformance: ExercisePerformance) {
+    // Creating from session performance
+    init(workoutPlan: WorkoutPlan, exercisePerformance: ExercisePerformance) {
         index = exercisePerformance.index
         catalogID = exercisePerformance.catalogID
         name = exercisePerformance.name
@@ -44,21 +47,8 @@ class ExercisePrescription {
         musclesTargeted = exercisePerformance.musclesTargeted
         repRange = RepRangePolicy(copying: exercisePerformance.repRange)
         restTimePolicy = RestTimePolicy(copying: exercisePerformance.restTimePolicy)
-        self.planSnapshot = planSnapshot
+        self.workoutPlan = workoutPlan
         sets = exercisePerformance.sortedSets.map { SetPrescription(exercisePrescription: self, setPerformance: $0) }
-    }
-    
-    // Deep copy for versioned editing
-    init(copying source: ExercisePrescription, planSnapshot: PlanSnapshot) {
-        index = source.index
-        catalogID = source.catalogID
-        name = source.name
-        notes = source.notes
-        musclesTargeted = source.musclesTargeted
-        repRange = RepRangePolicy(copying: source.repRange)
-        restTimePolicy = RestTimePolicy(copying: source.restTimePolicy)
-        self.planSnapshot = planSnapshot
-        sets = source.sortedSets.map { SetPrescription(copying: $0, exercisePrescription: self) }
     }
 
     func addSet() {

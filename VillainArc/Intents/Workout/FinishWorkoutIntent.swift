@@ -4,18 +4,18 @@ import SwiftData
 struct FinishWorkoutIntent: AppIntent {
     static let title: LocalizedStringResource = "Finish Workout"
     static let description = IntentDescription("Finishes the current workout session.")
-    static let supportedModes: IntentModes = .background
+    static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         
         guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else {
-            return .result(dialog: "No workout session found.")
+            throw FinishWorkoutError.noWorkoutSession
         }
         
         guard !workoutSession.exercises.isEmpty else {
-            return .result(dialog: "Cannot finish a workout with no exercises.")
+            throw FinishWorkoutError.noExercises
         }
 
         let hasIncompleteSets = workoutSession.exercises.contains { exercise in
@@ -56,10 +56,10 @@ struct FinishWorkoutIntent: AppIntent {
                 saveContext(context: context)
                 AppRouter.shared.activeWorkoutSession = nil
                 WorkoutActivityManager.end()
-                return .result(dialog: "Workout deleted because no completed sets remained.")
+                throw FinishWorkoutError.workoutDeleted
             }
         case .cancel:
-            return .result(dialog: "Workout finish canceled.")
+            throw FinishWorkoutError.cancelled
         default:
             for exercise in workoutSession.exercises {
                 for set in exercise.sets where !set.complete {
@@ -69,7 +69,7 @@ struct FinishWorkoutIntent: AppIntent {
             }
         }
 
-        workoutSession.completed = true
+        workoutSession.status = .summary
         workoutSession.endedAt = Date()
         workoutSession.activeExercise = nil
         RestTimerState.shared.stop()
@@ -77,12 +77,27 @@ struct FinishWorkoutIntent: AppIntent {
         SpotlightIndexer.index(workoutSession: workoutSession)
         AppRouter.shared.activeWorkoutSession = nil
         WorkoutActivityManager.end()
+        
+        return .result(opensIntent: OpenAppIntent())
+    }
+}
 
-        let exercisesList = workoutSession.exerciseSummary
-        
-        await IntentDonations.donateLastWorkoutSummary()
-        await IntentDonations.donateViewLastWorkout()
-        
-        return .result(dialog: "Workout finished. You did \(exercisesList).")
+enum FinishWorkoutError: Error, CustomLocalizedStringResourceConvertible {
+    case noWorkoutSession
+    case noExercises
+    case workoutDeleted
+    case cancelled
+
+    var localizedStringResource: LocalizedStringResource {
+        switch self {
+        case .noWorkoutSession:
+            return "No workout session found."
+        case .noExercises:
+            return "Cannot finish a workout with no exercises."
+        case .workoutDeleted:
+            return "Workout deleted because no completed sets remained."
+        case .cancelled:
+            return "Workout finish canceled."
+        }
     }
 }

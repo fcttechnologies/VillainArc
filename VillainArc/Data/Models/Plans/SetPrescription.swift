@@ -10,6 +10,8 @@ class SetPrescription {
     var targetReps: Int = 0
     var targetRest: Int = 0
     var exercise: ExercisePrescription?
+    @Relationship(deleteRule: .nullify, inverse: \SuggestedChange.targetSetPrescription)
+    var suggestedChanges: [SuggestedChange] = []
     
     // Adding set in workout plan creation
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0) {
@@ -27,16 +29,6 @@ class SetPrescription {
         targetWeight = setPerformance.weight
         targetReps = setPerformance.reps
         targetRest = setPerformance.restSeconds
-        exercise = exercisePrescription
-    }
-
-    // Deep copy for versioned editing
-    init(copying source: SetPrescription, exercisePrescription: ExercisePrescription) {
-        index = source.index
-        type = source.type
-        targetWeight = source.targetWeight
-        targetReps = source.targetReps
-        targetRest = source.targetRest
         exercise = exercisePrescription
     }
 }

@@ -16,12 +16,10 @@ enum SharedModelContainer {
         RestTimePolicy.self,
         RestTimeHistory.self,
         WorkoutPlan.self,
-        PlanSnapshot.self,
         ExercisePrescription.self,
         SetPrescription.self,
         WorkoutSplit.self,
         WorkoutSplitDay.self,
-        PlanSuggestion.self,
         SuggestedChange.self
     ])
 

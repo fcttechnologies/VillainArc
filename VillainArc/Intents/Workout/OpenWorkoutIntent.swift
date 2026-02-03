@@ -29,7 +29,7 @@ struct OpenWorkoutIntent: AppIntent {
         guard let storedWorkout = try context.fetch(descriptor).first else {
             throw OpenWorkoutError.workoutNotFound
         }
-        guard storedWorkout.completed else {
+        guard storedWorkout.status == .done else {
             throw OpenWorkoutError.workoutIncomplete
         }
 

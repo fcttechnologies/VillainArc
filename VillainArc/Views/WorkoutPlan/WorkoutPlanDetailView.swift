@@ -69,7 +69,7 @@ struct WorkoutPlanDetailView: View {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
                             .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier("workoutPlanDetailExerciseNotes-\(String(describing: exercise.planSnapshot?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityIdentifier("workoutPlanDetailExerciseNotes-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)")
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExercise(exercise))
@@ -114,7 +114,7 @@ struct WorkoutPlanDetailView: View {
 
                         Button("Edit Plan", systemImage: "pencil") {
                             Haptics.selection()
-                            plan.startEditing()
+                            plan.isEditing = true
                             saveContext(context: context)
                             editWorkoutPlan = true
                         }

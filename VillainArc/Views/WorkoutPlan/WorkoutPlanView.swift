@@ -14,13 +14,6 @@ struct WorkoutPlanView: View {
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     
-    private var notesBinding: Binding<String> {
-        Binding(
-            get: { plan.currentVersion?.notes ?? "" },
-            set: { plan.currentVersion?.notes = $0 }
-        )
-    }
-    
     init(plan: WorkoutPlan) {
         self.plan = plan
     }
@@ -73,7 +66,7 @@ struct WorkoutPlanView: View {
                     Button(plan.isEditing ? "Done" : "Save") {
                         Haptics.selection()
                         if plan.isEditing {
-                            plan.finishEditing()
+                            plan.isEditing = false
                         } else {
                             plan.completed = true
                         }
@@ -110,7 +103,7 @@ struct WorkoutPlanView: View {
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", placeholder: "Plan Notes", text: notesBinding, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, axis: .vertical)
+                TextEntryEditorView(title: "Notes", placeholder: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, axis: .vertical)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: plan.notes) {
                         scheduleSave(context: context)
@@ -206,6 +199,10 @@ struct WorkoutPlanView: View {
             cancelEditingAndDismiss()
             return
         }
+        if plan.sortedExercises.count - offsets.count == 0 {
+            deleteWorkoutPlanAndDismiss()
+            return
+        }
         deleteExercises(at: offsets)
     }
     
@@ -238,7 +235,7 @@ struct WorkoutPlanView: View {
     
     private func cancelEditingAndDismiss() {
         Haptics.selection()
-        plan.cancelEditing(context: context)
+        plan.isEditing = false
         saveContext(context: context)
         dismiss()
     }

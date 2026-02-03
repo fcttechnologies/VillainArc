@@ -164,8 +164,9 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
             base.sortBy = [SortDescriptor(\WorkoutSession.startedAt, order: .reverse)]
             descriptor = base
         } else {
+            let done = SessionStatus.done
             let predicate = #Predicate<WorkoutSession> {
-                $0.completed && $0.title.localizedStandardContains(trimmed)
+                $0.status == done && $0.title.localizedStandardContains(trimmed)
             }
             descriptor = FetchDescriptor(
                 predicate: predicate,

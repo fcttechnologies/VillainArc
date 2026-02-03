@@ -6,7 +6,7 @@ class WorkoutSession {
     var id: UUID = UUID()
     var title: String = "New Workout"
     var notes: String = ""
-    var completed: Bool = false
+    var status: SessionStatus = SessionStatus.active
     var startedAt: Date = Date()
     var endedAt: Date?
     var origin: SessionOrigin = SessionOrigin.freeform
@@ -15,7 +15,7 @@ class WorkoutSession {
     @Relationship(deleteRule: .cascade, inverse: \PostWorkoutEffort.workoutSession)
     var postEffort: PostWorkoutEffort?
     @Relationship(deleteRule: .nullify)
-    var planSnapshot: PlanSnapshot?
+    var workoutPlan: WorkoutPlan?
     @Relationship(deleteRule: .cascade, inverse: \ExercisePerformance.workoutSession)
     var exercises: [ExercisePerformance] = []
     @Relationship(deleteRule: .nullify)
@@ -33,7 +33,7 @@ class WorkoutSession {
         title = plan.title
         notes = plan.notes
         origin = .plan
-        planSnapshot = plan.currentVersion
+        workoutPlan = plan
         exercises = plan.sortedExercises.map { ExercisePerformance(workoutSession: self, exercisePrescription: $0) }
     }
     
@@ -75,7 +75,8 @@ extension WorkoutSession {
     }
     
     static func completedSessions(limit: Int? = nil) -> FetchDescriptor<WorkoutSession> {
-        let predicate = #Predicate<WorkoutSession> { $0.completed }
+        let done = SessionStatus.done
+        let predicate = #Predicate<WorkoutSession> { $0.status == done }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         if let limit {
             descriptor.fetchLimit = limit
@@ -92,7 +93,8 @@ extension WorkoutSession {
     }
     
     static var incomplete: FetchDescriptor<WorkoutSession> {
-        let predicate = #Predicate<WorkoutSession> { !$0.completed }
+        let done = SessionStatus.done
+        let predicate = #Predicate<WorkoutSession> { $0.status != done }
         var descriptor = FetchDescriptor(predicate: predicate)
         descriptor.fetchLimit = 1
         return descriptor

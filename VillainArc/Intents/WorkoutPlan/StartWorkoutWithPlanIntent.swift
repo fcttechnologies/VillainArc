@@ -28,7 +28,7 @@ struct StartWorkoutWithPlanIntent: AppIntent {
         guard let storedPlan = try context.fetch(descriptor).first else {
             throw StartWorkoutWithPlanError.workoutPlanNotFound
         }
-        guard storedPlan.completed else {
+        guard storedPlan.completed && !storedPlan.isEditing else {
             throw StartWorkoutWithPlanError.workoutPlanIncomplete
         }
         AppRouter.shared.startWorkoutSession(from: storedPlan)

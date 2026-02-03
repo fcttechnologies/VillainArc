@@ -21,12 +21,10 @@ class PreviewDataContainer {
             RestTimePolicy.self,
             RestTimeHistory.self,
             WorkoutPlan.self,
-            PlanSnapshot.self,
             ExercisePrescription.self,
             SetPrescription.self,
             WorkoutSplit.self,
             WorkoutSplitDay.self,
-            PlanSuggestion.self,
             SuggestedChange.self
         ])
 
@@ -59,13 +57,11 @@ class PreviewDataContainer {
     private func loadCompletedPlan() {
         let plan = WorkoutPlan()
         plan.title = "Push Day"
+        plan.notes = "Chest and triceps focus"
         plan.completed = true
         plan.favorite = true
         plan.lastUsed = date(2026, 1, 5, 8, 15)
         context.insert(plan)
-
-        guard let snapshot = plan.currentVersion else { return }
-        snapshot.notes = "Chest and triceps focus"
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
             ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
@@ -92,7 +88,7 @@ class PreviewDataContainer {
 
         for ex in exercises {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
-            let prescription = ExercisePrescription(exercise: exercise, planSnapshot: snapshot)
+            let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
             prescription.notes = ex.notes
 
             if ex.id == "dumbbell_incline_bench_press" {
@@ -118,7 +114,7 @@ class PreviewDataContainer {
                 prescription.sets.append(setPrescription)
             }
 
-            snapshot.exercises.append(prescription)
+            plan.exercises.append(prescription)
         }
     }
 
@@ -128,7 +124,7 @@ class PreviewDataContainer {
         let session = WorkoutSession()
         session.title = "Chest Day"
         session.notes = "Testing sample"
-        session.completed = true
+        session.status = .done
         session.startedAt = date(2026, 1, 5, 8, 15)
         session.endedAt = date(2026, 1, 5, 9, 5)
         context.insert(session)
@@ -229,10 +225,8 @@ class PreviewDataContainer {
         plan.title = "Back Day"
         context.insert(plan)
 
-        guard let snapshot = plan.currentVersion else { return }
-
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
-        let prescription = ExercisePrescription(exercise: exercise, planSnapshot: snapshot)
+        let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
 
         let set1 = SetPrescription(exercisePrescription: prescription)
         set1.type = .warmup
@@ -243,7 +237,7 @@ class PreviewDataContainer {
         set2.targetRest = 90
         prescription.sets.append(set2)
 
-        snapshot.exercises.append(prescription)
+        plan.exercises.append(prescription)
     }
 
     // MARK: - Splits
@@ -297,7 +291,7 @@ func sampleCompletedSession() -> WorkoutSession {
 
     let fallback = WorkoutSession()
     fallback.title = "Chest Day"
-    fallback.completed = true
+    fallback.status = .done
     fallback.endedAt = .now
     sampleContainer.context.insert(fallback)
     return fallback
@@ -346,7 +340,7 @@ func sampleIncompletePlan() -> WorkoutPlan {
 @MainActor
 func sampleEditingPlan() -> WorkoutPlan {
     let plan = sampleCompletedPlan()
-    plan.startEditing()
+    plan.isEditing = true
     return plan
 }
 
