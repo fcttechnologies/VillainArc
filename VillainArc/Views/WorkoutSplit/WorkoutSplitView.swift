@@ -6,8 +6,8 @@ struct WorkoutSplitView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Query private var splits: [WorkoutSplit]
     private let appRouter = AppRouter.shared
-    @State private var showInactiveSplits = false
     @State private var planPickerDay: WorkoutSplitDay?
+    @State private var showSplitBuilder = false
 
     private var activeSplit: WorkoutSplit? {
         splits.first { $0.isActive }
@@ -34,15 +34,17 @@ struct WorkoutSplitView: View {
 
                 if !inactiveSplits.isEmpty {
                     Section {
-                        if showInactiveSplits {
-                            ForEach(inactiveSplits) { split in
-                                SplitRowView(split: split, allSplits: splits)
+                        ForEach(inactiveSplits) { split in
+                            SplitRowView(split: split, allSplits: splits)
                                 .accessibilityIdentifier("workoutSplitInactiveRow-\(split.title)")
-                            }
-                            .onDelete(perform: deleteInactiveSplits)
                         }
+                        .onDelete(perform: deleteInactiveSplits)
                     } header: {
-                        otherSplitsHeader
+                        Text("Inactive Splits")
+                            .font(.title3)
+                            .bold()
+                            .foregroundStyle(.primary)
+                            .textCase(nil)
                     }
                     .listRowSeparator(.hidden)
                 }
@@ -59,23 +61,10 @@ struct WorkoutSplitView: View {
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
             ToolbarItem(placement: .bottomBar) {
-                Menu("Create New Split", systemImage: "plus") {
-                    Button {
-                        createSplit(mode: .weekly)
-                    } label: {
-                            Label("Weekly Split", systemImage: "calendar.badge")
-                            Text("Same workout on the same day every week.")
-                    }
-                    .accessibilityIdentifier("workoutSplitCreateWeeklyButton")
-                    Button {
-                        createSplit(mode: .rotation)
-                    } label: {
-                            Label("Rotation Split", systemImage: "arrow.2.circlepath")
-                            Text("A repeating workout cycle not tied to the calendar.")
-                    }
-                    .accessibilityIdentifier("workoutSplitCreateRotationButton")
+                Button("Create New Split", systemImage: "plus") {
+                    Haptics.selection()
+                    showSplitBuilder = true
                 }
-                .menuOrder(.fixed)
                 .accessibilityIdentifier("workoutSplitCreateButton")
                 .accessibilityHint("Creates a new workout split.")
             }
@@ -98,33 +87,12 @@ struct WorkoutSplitView: View {
         .sheet(item: $planPickerDay) { day in
             SplitDayPlanPickerSheet(splitDay: day)
         }
+        .sheet(isPresented: $showSplitBuilder) {
+            SplitBuilderView()
+        }
     }
 
-    private var otherSplitsHeader: some View {
-        Button {
-            withAnimation(.snappy) {
-                showInactiveSplits.toggle()
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Text("Inactive Splits")
-                    .bold()
-                if !inactiveSplits.isEmpty {
-                    Text("(\(inactiveSplits.count))")
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: showInactiveSplits ? "chevron.down" : "chevron.right")
-                    .foregroundStyle(.secondary)
-            }
-            .font(.title3)
-            .fontWeight(.semibold)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("workoutSplitInactiveToggle")
-        .accessibilityLabel(showInactiveSplits ? "Collapse other splits" : "Expand other splits")
-        .accessibilityHint("Shows or hides inactive splits.")
-    }
+
 
     @ViewBuilder
     private func activeSplitActionsMenu(for split: WorkoutSplit) -> some View {

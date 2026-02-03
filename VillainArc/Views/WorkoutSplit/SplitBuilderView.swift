@@ -1,0 +1,733 @@
+import SwiftUI
+import SwiftData
+
+// MARK: - Preset Type
+
+enum SplitPresetType: String, CaseIterable, Identifiable {
+    case fullBody = "Full Body"
+    case upperLower = "Upper / Lower"
+    case pushPullLegs = "Push / Pull / Legs"
+    case arnoldSplit = "Arnold Split"
+    case broSplit = "Body Part"
+    case hourglass = "Hourglass"
+    
+    var id: String { rawValue }
+    
+    var description: String {
+        switch self {
+        case .fullBody: "Train your entire body each session"
+        case .upperLower: "Alternate between upper and lower body"
+        case .pushPullLegs: "Split by movement pattern"
+        case .arnoldSplit: "Classic bodybuilding split"
+        case .broSplit: "One muscle group per day"
+        case .hourglass: "Focus on glutes, legs, and sculpting upper body"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .fullBody: "figure.strengthtraining.traditional"
+        case .upperLower: "arrow.up.arrow.down"
+        case .pushPullLegs: "arrow.left.arrow.right"
+        case .arnoldSplit: "star.fill"
+        case .broSplit: "figure.arms.open"
+        case .hourglass: "figure.stand"
+        }
+    }
+    
+    var availableDaysPerWeek: [Int] {
+        switch self {
+        case .fullBody: [2, 3, 4]
+        case .upperLower: [2, 4, 6]
+        case .pushPullLegs: [3, 4, 5, 6]
+        case .arnoldSplit: [4, 5, 6]
+        case .broSplit: [5, 6]
+        case .hourglass: [3, 4, 5]
+        }
+    }
+    
+    var defaultDaysPerWeek: Int {
+        switch self {
+        case .hourglass: 4
+        default: availableDaysPerWeek.first ?? 3
+        }
+    }
+}
+
+// MARK: - Builder Config (Observable)
+
+@Observable
+class SplitBuilderConfig {
+    var type: SplitPresetType = .fullBody
+    var mode: SplitMode = .rotation
+    var daysPerWeek: Int = 3
+    var includeRestDays: Bool = true
+    var keepWeekendsFree: Bool = false
+    var startingWeekday: Int = 2 // 2 = Monday
+    
+    func resetForType(_ type: SplitPresetType) {
+        self.type = type
+        self.daysPerWeek = type.defaultDaysPerWeek
+    }
+}
+
+// MARK: - Day Template
+
+struct DayTemplate {
+    let name: String
+    let isRestDay: Bool
+}
+
+// MARK: - Navigation Steps
+
+enum BuilderNavStep: Hashable {
+    case selectMode
+    case selectDays
+    case selectRestDays
+}
+
+// MARK: - Split Builder View
+
+struct SplitBuilderView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var config = SplitBuilderConfig()
+    @State private var path: [BuilderNavStep] = []
+    @State private var showScratchPicker = false
+    private let appRouter = AppRouter.shared
+    
+    var body: some View {
+        NavigationStack(path: $path) {
+            SelectTypeView(config: config, path: $path, showScratchPicker: $showScratchPicker) {
+                createScratchSplit(mode: $0)
+            }
+            .navigationTitle("Create Split")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        Haptics.selection()
+                        dismiss()
+                    }
+                }
+            }
+            .navigationDestination(for: BuilderNavStep.self) { step in
+                switch step {
+                case .selectMode:
+                    SelectModeView(config: config, path: $path, onCreate: createSplitFromConfig)
+                case .selectDays:
+                    SelectDaysView(config: config, path: $path, onCreate: createSplitFromConfig)
+                case .selectRestDays:
+                    SelectRestDaysView(config: config, onCreate: createSplitFromConfig)
+                }
+            }
+        }
+        .accessibilityIdentifier("splitBuilderSheet")
+    }
+    
+    // MARK: - Create Split
+    
+    private func createScratchSplit(mode: SplitMode) {
+        Haptics.selection()
+        
+        let split = WorkoutSplit(mode: mode)
+        
+        switch mode {
+        case .weekly:
+            split.days = (1...7).map { weekday in
+                WorkoutSplitDay(weekday: weekday, split: split)
+            }
+        case .rotation:
+            split.days = [
+                WorkoutSplitDay(index: 0, split: split)
+            ]
+        }
+        
+        // If no active split, make this one active
+        let activeSplits = try? context.fetch(WorkoutSplit.active)
+        if activeSplits?.isEmpty ?? true {
+            split.isActive = true
+        }
+        
+        context.insert(split)
+        saveContext(context: context)
+        
+        dismiss()
+        appRouter.navigate(to: .splitDettail(split))
+    }
+    
+    private func createSplit(days: [DayTemplate]) {
+        Haptics.selection()
+        
+        let split = WorkoutSplit(mode: config.mode)
+        split.title = config.type.rawValue
+        
+        switch config.mode {
+        case .weekly:
+            let weekdayMapping = SplitGenerator.mapToWeekdays(days: days, startingWeekday: config.startingWeekday, keepWeekendsFree: config.keepWeekendsFree)
+            for weekday in 1...7 {
+                let template = weekdayMapping[weekday]!
+                let day = WorkoutSplitDay(weekday: weekday, split: split)
+                day.name = template.name
+                day.isRestDay = template.isRestDay
+                split.days.append(day)
+            }
+        case .rotation:
+            for (index, template) in days.enumerated() {
+                let day = WorkoutSplitDay(index: index, split: split)
+                day.name = template.name
+                day.isRestDay = template.isRestDay
+                split.days.append(day)
+            }
+        }
+        
+        // If no active split, make this one active
+        let activeSplits = try? context.fetch(WorkoutSplit.active)
+        if activeSplits?.isEmpty ?? true {
+            split.isActive = true
+        }
+        
+        context.insert(split)
+        saveContext(context: context)
+        
+        dismiss()
+        appRouter.navigate(to: .splitDettail(split))
+    }
+    
+    private func createSplitFromConfig() {
+        let days = SplitGenerator.generateDays(for: config)
+        createSplit(days: days)
+    }
+}
+
+// MARK: - Step 1: Select Type
+
+private struct SelectTypeView: View {
+    let config: SplitBuilderConfig
+    @Binding var path: [BuilderNavStep]
+    @Binding var showScratchPicker: Bool
+    let onCreateScratch: (SplitMode) -> Void
+    
+    var body: some View {
+        List {
+            Section {
+                Button {
+                    Haptics.selection()
+                    showScratchPicker = true
+                } label: {
+                    Label("Start from Scratch", systemImage: "plus")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("splitBuilderScratchButton")
+                .confirmationDialog("Create from Scratch", isPresented: $showScratchPicker) {
+                    Button("Weekly Split") {
+                        onCreateScratch(.weekly)
+                    }
+                    Button("Rotation Split") {
+                        onCreateScratch(.rotation)
+                    }
+                } message: {
+                    Text("What type of split do you want to create?")
+                }
+            }
+            
+            Section {
+                ForEach(SplitPresetType.allCases) { type in
+                    Button {
+                        Haptics.selection()
+                        config.resetForType(type)
+                        path.append(.selectMode)
+                    } label: {
+                        HStack {
+                            Image(systemName: type.icon)
+                                .frame(width: 24)
+                                .foregroundStyle(.blue)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(type.rawValue)
+                                    .font(.headline)
+                                Text(type.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("splitBuilderType-\(type.rawValue)")
+                }
+            } header: {
+                Text("Or pick a template")
+            }
+        }
+    }
+}
+
+// MARK: - Step 2: Select Mode
+
+private struct SelectModeView: View {
+    let config: SplitBuilderConfig
+    @Binding var path: [BuilderNavStep]
+    let onCreate: () -> Void
+    
+    var body: some View {
+        List {
+            Section {
+                Button {
+                    Haptics.selection()
+                    config.mode = .weekly
+                    navigateToNextStep()
+                } label: {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .frame(width: 24)
+                            .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Weekly")
+                                .font(.headline)
+                            Text("Same workout on the same day every week")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("splitBuilderModeWeekly")
+                
+                Button {
+                    Haptics.selection()
+                    config.mode = .rotation
+                    navigateToNextStep()
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.2.circlepath")
+                            .frame(width: 24)
+                            .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Rotation")
+                                .font(.headline)
+                            Text("A repeating cycle not tied to calendar days")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("splitBuilderModeRotation")
+            } header: {
+                Text("How do you want to schedule it?")
+            }
+        }
+        .navigationTitle("Schedule Type")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private func navigateToNextStep() {
+        if config.type.availableDaysPerWeek.count > 1 {
+            path.append(.selectDays)
+        } else if shouldAskAboutRestDays() {
+            path.append(.selectRestDays)
+        } else {
+            onCreate()
+        }
+    }
+    
+    private func shouldAskAboutRestDays() -> Bool {
+        if config.mode == .rotation {
+            switch config.type {
+            case .fullBody, .upperLower, .pushPullLegs, .hourglass:
+                return true
+            case .arnoldSplit, .broSplit:
+                return false
+            }
+        } else {
+            // Weekly mode: ask about weekends if days <= 5
+            return config.daysPerWeek <= 5
+        }
+    }
+}
+
+// MARK: - Step 3: Select Days
+
+private struct SelectDaysView: View {
+    let config: SplitBuilderConfig
+    @Binding var path: [BuilderNavStep]
+    let onCreate: () -> Void
+    
+    var body: some View {
+        List {
+            Section {
+                ForEach(config.type.availableDaysPerWeek, id: \.self) { days in
+                    Button {
+                        Haptics.selection()
+                        config.daysPerWeek = days
+                        navigateToNextStep()
+                    } label: {
+                        HStack {
+                            Text("\(days) days")
+                                .font(.headline)
+                            Spacer()
+                            Text(daysDescription(for: days))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("splitBuilderDays-\(days)")
+                }
+            } header: {
+                Text("How many days per week?")
+            }
+        }
+        .navigationTitle("Training Days")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private func navigateToNextStep() {
+        if shouldAskAboutRestDays() {
+            path.append(.selectRestDays)
+        } else {
+            onCreate()
+        }
+    }
+    
+    private func shouldAskAboutRestDays() -> Bool {
+        if config.mode == .rotation {
+            switch config.type {
+            case .fullBody, .upperLower, .pushPullLegs, .hourglass:
+                return true
+            case .arnoldSplit, .broSplit:
+                return false
+            }
+        } else {
+            // Weekly mode: ask about weekends if days <= 5
+            return config.daysPerWeek <= 5
+        }
+    }
+    
+    private func daysDescription(for days: Int) -> String {
+        switch config.type {
+        case .fullBody:
+            return "\(days) sessions per week"
+        case .upperLower:
+            return "\(days / 2)x Upper, \(days / 2)x Lower"
+        case .pushPullLegs:
+            switch days {
+            case 3: return "One full cycle"
+            case 6: return "Two full cycles"
+            default: return "Continuous rotation"
+            }
+        case .arnoldSplit:
+            switch days {
+            case 3: return "One full cycle" // Theoretically not available but good to handle
+            case 6: return "Two full cycles"
+            default: return "Continuous rotation"
+            }
+        case .broSplit:
+            return days == 6 ? "Includes weak point day" : "One muscle group per day"
+        case .hourglass:
+            switch days {
+            case 3: return "2x Lower, 1x Upper"
+            case 4: return "2x Lower, 2x Upper"
+            case 5: return "3x Lower, 2x Upper"
+            default: return "Lower body focus"
+            }
+        }
+    }
+}
+
+// MARK: - Step 4: Rest Days
+
+private struct SelectRestDaysView: View {
+    let config: SplitBuilderConfig
+    let onCreate: () -> Void
+    
+    var body: some View {
+        List {
+            if config.mode == .rotation {
+                rotationRestDaysSection
+            } else {
+                weeklyRestDaysSection
+            }
+        }
+        .navigationTitle("Rest Days")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    @ViewBuilder
+    private var rotationRestDaysSection: some View {
+        Section {
+            Button {
+                Haptics.selection()
+                config.includeRestDays = true
+                onCreate()
+            } label: {
+                HStack {
+                    Text("Yes, add rest days")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("splitBuilderRestYes")
+            
+            Button {
+                Haptics.selection()
+                config.includeRestDays = false
+                onCreate()
+            } label: {
+                HStack {
+                    Text("No, just training days")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("splitBuilderRestNo")
+        } header: {
+            Text("Include rest days in the rotation?")
+        }
+    }
+    
+    @ViewBuilder
+    private var weeklyRestDaysSection: some View {
+        Section {
+            Button {
+                Haptics.selection()
+                config.keepWeekendsFree = true
+                onCreate()
+            } label: {
+                HStack {
+                    Text("Yes, keep weekends free")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("splitBuilderWeekendsYes")
+            
+            Button {
+                Haptics.selection()
+                config.keepWeekendsFree = false
+                onCreate()
+            } label: {
+                HStack {
+                    Text("No, train any day")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("splitBuilderWeekendsNo")
+        } header: {
+            Text("Keep weekends free?")
+        }
+    }
+}
+
+// MARK: - Split Generator
+
+private enum SplitGenerator {
+    static func generateDays(for config: SplitBuilderConfig) -> [DayTemplate] {
+        switch config.type {
+        case .fullBody:
+            return generateFullBody(config: config)
+        case .upperLower:
+            return generateUpperLower(config: config)
+        case .pushPullLegs:
+            return generatePPL(config: config)
+        case .arnoldSplit:
+            return generateArnold(config: config)
+        case .broSplit:
+            return generateBroSplit(config: config)
+        case .hourglass:
+            return generateHourglass(config: config)
+        }
+    }
+    
+    static func mapToWeekdays(days: [DayTemplate], startingWeekday: Int, keepWeekendsFree: Bool = false) -> [Int: DayTemplate] {
+        var result: [Int: DayTemplate] = [:]
+        let trainingDays = days.filter { !$0.isRestDay }
+        let trainingCount = trainingDays.count
+        
+        if keepWeekendsFree && trainingCount <= 5 {
+            // Only place training on Mon-Fri (weekdays 2-6)
+            // 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
+            let mondayToFriday = [2, 3, 4, 5, 6] // Mon-Fri
+            
+            // Choose which weekdays to use based on training count
+            let selectedWeekdays: [Int]
+            switch trainingCount {
+            case 1: selectedWeekdays = [4]  // Wed
+            case 2: selectedWeekdays = [2, 5]  // Mon, Thu
+            case 3: selectedWeekdays = [2, 4, 6]  // Mon, Wed, Fri
+            case 4: selectedWeekdays = [2, 3, 5, 6]  // Mon, Tue, Thu, Fri (Wed off)
+            case 5: selectedWeekdays = mondayToFriday  // Mon-Fri
+            default: selectedWeekdays = mondayToFriday
+            }
+            
+            for (index, day) in trainingDays.enumerated() {
+                if index < selectedWeekdays.count {
+                    result[selectedWeekdays[index]] = day
+                }
+            }
+        } else {
+            // Normal distribution across all 7 days
+            let spacing: Int
+            switch trainingCount {
+            case 2: spacing = 3
+            case 3: spacing = 2
+            case 4: spacing = 2
+            case 5: spacing = 1
+            case 6: spacing = 1
+            default: spacing = max(1, 7 / max(1, trainingCount))
+            }
+            
+            for (index, day) in trainingDays.enumerated() {
+                var weekday = startingWeekday + (index * spacing)
+                while weekday > 7 { weekday -= 7 }
+                result[weekday] = day
+            }
+        }
+        
+        for weekday in 1...7 where result[weekday] == nil {
+            result[weekday] = DayTemplate(name: "Rest", isRestDay: true)
+        }
+        
+        return result
+    }
+    
+    private static func generateFullBody(config: SplitBuilderConfig) -> [DayTemplate] {
+        var days: [DayTemplate] = []
+        for i in 0..<config.daysPerWeek {
+            days.append(DayTemplate(name: "Full Body", isRestDay: false))
+            if config.mode == .rotation && config.includeRestDays && i < config.daysPerWeek - 1 {
+                days.append(DayTemplate(name: "Rest", isRestDay: true))
+            }
+        }
+        if config.mode == .rotation && config.includeRestDays && config.daysPerWeek == 3 {
+            days.append(DayTemplate(name: "Rest", isRestDay: true))
+        }
+        return days
+    }
+    
+    private static func generateUpperLower(config: SplitBuilderConfig) -> [DayTemplate] {
+        var days: [DayTemplate] = []
+        let labels = ["Upper", "Lower"]
+        for i in 0..<config.daysPerWeek {
+            days.append(DayTemplate(name: labels[i % 2], isRestDay: false))
+        }
+        if config.mode == .rotation && config.includeRestDays {
+            days.append(DayTemplate(name: "Rest", isRestDay: true))
+        }
+        return days
+    }
+    
+    private static func generatePPL(config: SplitBuilderConfig) -> [DayTemplate] {
+        let labels = ["Push", "Pull", "Legs"]
+        var days: [DayTemplate] = []
+        
+        for i in 0..<config.daysPerWeek {
+            days.append(DayTemplate(name: labels[i % 3], isRestDay: false))
+            
+            // Add rest day after every 3rd day (end of a full cycle)
+            if config.mode == .rotation && config.includeRestDays && (i + 1) % 3 == 0 {
+                days.append(DayTemplate(name: "Rest", isRestDay: true))
+            }
+        }
+        return days
+    }
+    
+    private static func generateArnold(config: SplitBuilderConfig) -> [DayTemplate] {
+        let labels = ["Chest & Back", "Shoulders & Arms", "Legs"]
+        var days: [DayTemplate] = []
+        
+        for i in 0..<config.daysPerWeek {
+            days.append(DayTemplate(name: labels[i % 3], isRestDay: false))
+            
+            // Add rest day after every 3rd day (end of a full cycle)
+            if config.mode == .rotation && config.includeRestDays && (i + 1) % 3 == 0 {
+                days.append(DayTemplate(name: "Rest", isRestDay: true))
+            }
+        }
+        return days
+    }
+    
+    private static func generateBroSplit(config: SplitBuilderConfig) -> [DayTemplate] {
+        var days: [DayTemplate] = []
+        let labels = ["Chest", "Back", "Shoulders", "Legs", "Arms"]
+        
+        for label in labels {
+            days.append(DayTemplate(name: label, isRestDay: false))
+        }
+        
+        if config.daysPerWeek == 6 {
+            days.append(DayTemplate(name: "Weak Point", isRestDay: false))
+        }
+        
+        if config.mode == .rotation && config.includeRestDays {
+            days.append(DayTemplate(name: "Rest", isRestDay: true))
+        }
+        
+        return days
+    }
+    
+    private static func generateHourglass(config: SplitBuilderConfig) -> [DayTemplate] {
+        var days: [DayTemplate] = []
+        
+        switch config.daysPerWeek {
+        case 3:
+            // 3-Day: Glutes/Hams, Upper, Quads/Glutes
+            days.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
+            days.append(DayTemplate(name: "Upper Body & Abs", isRestDay: false))
+            days.append(DayTemplate(name: "Quads & Glutes", isRestDay: false))
+            
+        case 4:
+            // 4-Day: Glutes/Hams, Shoulders/Back, Quads/Glutes, Upper Focus
+            days.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
+            days.append(DayTemplate(name: "Shoulders & Back", isRestDay: false))
+            days.append(DayTemplate(name: "Quads & Glutes", isRestDay: false))
+            days.append(DayTemplate(name: "Upper Body", isRestDay: false))
+            
+        case 5:
+            // 5-Day: Glutes, Upper, Quads, Shoulders, Full Legs/Glutes
+            days.append(DayTemplate(name: "Glutes Focus", isRestDay: false))
+            days.append(DayTemplate(name: "Upper Body & Abs", isRestDay: false))
+            days.append(DayTemplate(name: "Quads Focus", isRestDay: false))
+            days.append(DayTemplate(name: "Shoulders & Back", isRestDay: false))
+            days.append(DayTemplate(name: "Glutes & Hams", isRestDay: false))
+            
+        default:
+            // Fallback
+            return generateUpperLower(config: config)
+        }
+        
+        if config.mode == .rotation && config.includeRestDays {
+            days.append(DayTemplate(name: "Rest", isRestDay: true))
+        }
+        
+        return days
+    }
+}
+
+#Preview {
+    SplitBuilderView()
+        .sampleDataContainer()
+}
