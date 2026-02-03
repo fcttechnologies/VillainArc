@@ -7,8 +7,13 @@ class WorkoutSplitDay {
     var index: Int = 0
     var weekday: Int = 1
     var isRestDay: Bool = false
+    var targetMuscles: [Muscle] = []
     var split: WorkoutSplit?
     var workoutPlan: WorkoutPlan?
+
+    var resolvedMuscles: [Muscle] {
+        workoutPlan?.musclesArray ?? targetMuscles
+    }
     
     init(weekday: Int, split: WorkoutSplit) {
         self.weekday = weekday

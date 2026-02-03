@@ -3,10 +3,13 @@ import SwiftUI
 struct MuscleFilterSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMuscles: Set<Muscle> = []
+    @State private var showAdvanced = false
     let onConfirm: (Set<Muscle>) -> Void
+    let showMinorMuscles: Bool
 
-    init(selectedMuscles: Set<Muscle>, onConfirm: @escaping (Set<Muscle>) -> Void) {
+    init(selectedMuscles: Set<Muscle>, showMinorMuscles: Bool = false, onConfirm: @escaping (Set<Muscle>) -> Void) {
         _selectedMuscles = State(initialValue: selectedMuscles)
+        self.showMinorMuscles = showMinorMuscles
         self.onConfirm = onConfirm
     }
 
@@ -19,28 +22,51 @@ struct MuscleFilterSheetView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                FlowLayout(spacing: chipSpacing) {
-                    ForEach(Muscle.allMajor, id: \.rawValue) { muscle in
-                        Button {
-                            toggleMuscle(muscle)
-                        } label: {
-                            Text(muscle.rawValue)
-                                .foregroundStyle(selectedMuscles.contains(muscle) ? .white : .primary)
-                                .lineLimit(1)
-                                .padding(.vertical, 10)
-                                .padding(.horizontal, 16)
-                                .background(selectedMuscles.contains(muscle) ? Color.blue : Color(.systemGray5))
-                                .clipShape(Capsule())
+                VStack(spacing: 16) {
+                    FlowLayout(spacing: chipSpacing) {
+                        ForEach(Muscle.allMajor, id: \.rawValue) { muscle in
+                            muscleChip(for: muscle)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterChip(muscle))
-                        .accessibilityLabel(muscle.rawValue)
-                        .accessibilityAddTraits(selectedMuscles.contains(muscle) ? .isSelected : [])
-                        .accessibilityHint("Toggles this muscle filter.")
+                    }
+                    .padding()
+                    .background(.ultraThickMaterial, in: .rect(cornerRadius: 20))
+
+                    if showMinorMuscles {
+                        VStack(spacing: 8) {
+                            Button {
+                                Haptics.selection()
+                                showAdvanced.toggle()
+                            } label: {
+                                HStack {
+                                    Text("Advanced")
+                                        .font(.headline)
+                                    Spacer()
+                                    Image(systemName: showAdvanced ? "chevron.up" : "chevron.down")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .contentShape(.rect)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal)
+                            .accessibilityIdentifier("muscleFilterAdvancedToggle")
+                            .accessibilityLabel("Advanced muscles")
+                            .accessibilityValue(showAdvanced ? "Expanded" : "Collapsed")
+                            .accessibilityHint("Shows minor muscles.")
+
+                            if showAdvanced {
+                                FlowLayout(spacing: chipSpacing) {
+                                    ForEach(minorMuscles, id: \.rawValue) { muscle in
+                                        muscleChip(for: muscle)
+                                    }
+                                }
+                                .padding()
+                                .background(.ultraThickMaterial, in: .rect(cornerRadius: 20))
+                            }
+                        }
+                        .padding(.horizontal)
                     }
                 }
-                .padding()
-                .background(.ultraThickMaterial, in: .rect(cornerRadius: 20))
+                .padding(.vertical)
             }
             .navigationTitle("Muscles")
             .navigationBarTitleDisplayMode(.inline)
@@ -88,6 +114,30 @@ struct MuscleFilterSheetView: View {
             selectedMuscles.insert(muscle)
         }
         Haptics.selection()
+    }
+
+    private var minorMuscles: [Muscle] {
+        Muscle.allCases.filter { !$0.isMajor }
+    }
+
+    @ViewBuilder
+    private func muscleChip(for muscle: Muscle) -> some View {
+        Button {
+            toggleMuscle(muscle)
+        } label: {
+            Text(muscle.rawValue)
+                .foregroundStyle(selectedMuscles.contains(muscle) ? .white : .primary)
+                .lineLimit(1)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .background(selectedMuscles.contains(muscle) ? Color.blue : Color(.systemGray5))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterChip(muscle))
+        .accessibilityLabel(muscle.rawValue)
+        .accessibilityAddTraits(selectedMuscles.contains(muscle) ? .isSelected : [])
+        .accessibilityHint("Toggles this muscle filter.")
     }
 }
 
@@ -153,4 +203,8 @@ private struct FlowLayout: Layout {
 
 #Preview("Muscle Filter Selected") {
     MuscleFilterSheetView(selectedMuscles: [.chest, .back, .quads]) { _ in }
+}
+
+#Preview("Include minor muscles") {
+    MuscleFilterSheetView(selectedMuscles: [], showMinorMuscles: true) { _ in }
 }

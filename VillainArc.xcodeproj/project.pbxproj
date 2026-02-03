@@ -98,6 +98,7 @@
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/Enums/Exercise/ExerciseSetType.swift,
 				Data/Models/Enums/Exercise/Muscle.swift,
+				Data/Models/Enums/Exercise/MuscleGroups.swift,
 				Data/Models/Enums/Exercise/RepRangeMode.swift,
 				Data/Models/Enums/Exercise/RestTimeMode.swift,
 				Data/Models/Enums/Sessions/MoodLevel.swift,

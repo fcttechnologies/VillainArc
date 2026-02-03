@@ -38,6 +38,23 @@ class WorkoutPlan {
     }
     
     func musclesTargeted() -> String {
+        ListFormatter.localizedString(byJoining: majorMuscles.map(\.rawValue))
+    }
+
+    var musclesArray: [Muscle] {
+        var seen = Set<Muscle>()
+        var result: [Muscle] = []
+        let exercises = currentVersion?.sortedExercises ?? []
+        for exercise in exercises {
+            for muscle in exercise.musclesTargeted where !seen.contains(muscle) {
+                seen.insert(muscle)
+                result.append(muscle)
+            }
+        }
+        return result
+    }
+
+    var majorMuscles: [Muscle] {
         var seen = Set<Muscle>()
         var result: [Muscle] = []
         let exercises = currentVersion?.sortedExercises ?? []
@@ -47,7 +64,7 @@ class WorkoutPlan {
                 result.append(major)
             }
         }
-        return ListFormatter.localizedString(byJoining: result.map(\.rawValue))
+        return result
     }
     
     func addExercise(_ exercise: Exercise) {

@@ -105,6 +105,11 @@ struct TrainingSummaryIntent: AppIntent {
         }
 
         guard let workoutPlan = splitDay.workoutPlan else {
+            let majorMuscles = splitDay.targetMuscles.filter(\.isMajor)
+            let musclesSummary = ListFormatter.localizedString(byJoining: majorMuscles.map(\.rawValue))
+            if !musclesSummary.isEmpty {
+                return .result(dialog: "You are hitting: \(musclesSummary).")
+            }
             return .result(dialog: "No workout plan assigned for \(dayLabel.lowercased()).")
         }
 
