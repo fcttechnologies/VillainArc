@@ -277,6 +277,117 @@ class PreviewDataContainer {
         context.insert(rotationSplit)
     }
 
+    // MARK: - Session with Suggestions
+    
+    func loadSessionWithSuggestions() {
+        let session = WorkoutSession()
+        session.title = "Suggestions Test"
+        session.status = SessionStatus.pending.rawValue
+        context.insert(session)
+        
+        let plan = WorkoutPlan()
+        plan.title = "Chest Growth"
+        context.insert(plan)
+        session.workoutPlan = plan
+        
+        // Exercise 1: Bench Press (Groups: Set 1, Set 2)
+        let bench = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
+        let benchPrescription = ExercisePrescription(exercise: bench, workoutPlan: plan)
+        plan.exercises.append(benchPrescription)
+        
+        // Set 1 changes
+        let s1 = SetPrescription(exercisePrescription: benchPrescription)
+        s1.type = .warmup
+        s1.targetWeight = 1135
+        s1.targetReps = 10
+        s1.index = 0
+        benchPrescription.sets.append(s1)
+        
+        // Set 2 changes
+        let s2 = SetPrescription(exercisePrescription: benchPrescription)
+        s2.type = .regular
+        s2.targetWeight = 155
+        s2.targetReps = 8
+        s2.index = 1
+        benchPrescription.sets.append(s2)
+        
+        let change1 = PrescriptionChange()
+        change1.changeType = .increaseWeight
+        change1.previousValue = 135
+        change1.newValue = 145
+        change1.targetSetPrescription = s1
+        change1.targetExercisePrescription = benchPrescription
+        change1.catalogID = bench.catalogID
+        change1.changeReasoning = "Hit all reps last 3 sessions"
+        context.insert(change1)
+        
+        let change2 = PrescriptionChange()
+        change2.changeType = .decreaseReps
+        change2.previousValue = 10
+        change2.newValue = 8
+        change2.targetSetPrescription = s1
+        change2.targetExercisePrescription = benchPrescription
+        change2.catalogID = bench.catalogID
+        context.insert(change2)
+        
+        let change3 = PrescriptionChange()
+        change3.changeType = .increaseWeight
+        change3.previousValue = 155
+        change3.newValue = 160
+        change3.targetSetPrescription = s2
+        change3.targetExercisePrescription = benchPrescription
+        change3.catalogID = bench.catalogID
+        context.insert(change3)
+        
+        // Exercise 2: Incline DB (Group: Rep Range)
+        let incline = Exercise(from: ExerciseCatalog.byID["dumbbell_incline_bench_press"]!)
+        let inclinePrescription = ExercisePrescription(exercise: incline, workoutPlan: plan)
+        inclinePrescription.repRange.activeMode = .target
+        inclinePrescription.repRange.targetReps = 8
+        plan.exercises.append(inclinePrescription)
+        
+        let change4 = PrescriptionChange()
+        change4.changeType = .changeRepRangeMode
+        change4.previousValue = Double(RepRangeMode.target.rawValue)
+        change4.newValue = Double(RepRangeMode.range.rawValue)
+        change4.targetExercisePrescription = inclinePrescription
+        change4.catalogID = incline.catalogID
+        change4.changeReasoning = "Switching to range for hypertrophy phase"
+        context.insert(change4)
+        
+        let change5 = PrescriptionChange()
+        change5.changeType = .increaseRepRangeLower
+        change5.previousValue = 8
+        change5.newValue = 10
+        change5.targetExercisePrescription = inclinePrescription
+        change5.catalogID = incline.catalogID
+        context.insert(change5)
+        
+        let change6 = PrescriptionChange()
+        change6.changeType = .increaseRepRangeUpper
+        change6.previousValue = 10
+        change6.newValue = 12
+        change6.targetExercisePrescription = inclinePrescription
+        change6.catalogID = incline.catalogID
+        context.insert(change6)
+        
+        // Exercise 3: Flys (Group: Rest Time)
+        let flys = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
+        let flysPrescription = ExercisePrescription(exercise: flys, workoutPlan: plan)
+        flysPrescription.restTimePolicy.activeMode = .allSame
+        flysPrescription.restTimePolicy.allSameSeconds = 60
+        plan.exercises.append(flysPrescription)
+        
+        let change7 = PrescriptionChange()
+        change7.changeType = .increaseRestTimeSeconds
+        change7.previousValue = 60
+        change7.newValue = 90
+        change7.targetExercisePrescription = flysPrescription
+        change7.catalogID = flys.catalogID
+        change7.changeReasoning = "Recovery needs increased"
+        context.insert(change7)
+    }
+
     // MARK: - Helpers
 
     private func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
@@ -289,6 +400,11 @@ class PreviewDataContainer {
 
 private let sampleContainer = PreviewDataContainer()
 private let sampleContainerWithIncomplete = PreviewDataContainer(includeIncompleteData: true)
+private let sampleContainerWithSuggestions: PreviewDataContainer = {
+    let container = PreviewDataContainer()
+    container.loadSessionWithSuggestions()
+    return container
+}()
 
 // MARK: - Sample Accessors
 
@@ -387,6 +503,19 @@ func sampleRotationSplit() -> WorkoutSplit {
     return fallback
 }
 
+@MainActor
+func sampleSessionWithSuggestions() -> WorkoutSession {
+    let sessions = (try? sampleContainerWithSuggestions.context.fetch(WorkoutSession.incomplete)) ?? []
+    if let session = sessions.first {
+        return session
+    }
+    // Should have been created
+    let fallback = WorkoutSession()
+    fallback.title = "Suggestions Test (Fallback)"
+    sampleContainerWithSuggestions.context.insert(fallback)
+    return fallback
+}
+
 // MARK: - View Modifiers
 
 extension View {
@@ -396,5 +525,9 @@ extension View {
 
     func sampleDataContainerIncomplete() -> some View {
         self.modelContainer(sampleContainerWithIncomplete.modelContainer)
+    }
+    
+    func sampleDataContainerSuggestions() -> some View {
+        self.modelContainer(sampleContainerWithSuggestions.modelContainer)
     }
 }

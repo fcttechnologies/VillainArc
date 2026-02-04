@@ -7,7 +7,10 @@ struct WorkoutSessionContainer: View {
     var body: some View {
         Group {
             switch workout.statusValue {
-            case .pending, .active:
+            case .pending:
+                DeferredSuggestionsView(workout: workout)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .active:
                 WorkoutView(workout: workout)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             case .summary, .done:

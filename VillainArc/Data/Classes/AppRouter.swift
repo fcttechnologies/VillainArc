@@ -53,6 +53,13 @@ final class AppRouter {
     func startWorkoutSession(from plan: WorkoutPlan) {
         Haptics.selection()
         let workoutSession = WorkoutSession(from: plan)
+        
+        // Check for pending/deferred suggestions before starting
+        let hasDeferredSuggestions = !pendingSuggestions(for: plan, in: context).isEmpty
+        if hasDeferredSuggestions {
+            workoutSession.status = SessionStatus.pending.rawValue
+        }
+        
         context.insert(workoutSession)
         saveContext(context: context)
         activeWorkoutSession = workoutSession
