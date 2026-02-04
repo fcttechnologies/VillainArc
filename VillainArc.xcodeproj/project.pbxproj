@@ -15,6 +15,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		FD6824602F33A712009F6D98 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FDA1938F2F16D14500CA57C5;
+			remoteInfo = VillainArc;
+		};
 		FD68290F2F31190700C83480 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
@@ -57,6 +64,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VillainArcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VillainArcIntentsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829092F31190700C83480 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VillainArcWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,6 +107,7 @@
 				Data/Models/Enums/Exercise/ExerciseSetType.swift,
 				Data/Models/Enums/Exercise/Muscle.swift,
 				Data/Models/Enums/Exercise/MuscleGroups.swift,
+				Data/Models/Enums/Exercise/ProgressionTrend.swift,
 				Data/Models/Enums/Exercise/RepRangeMode.swift,
 				Data/Models/Enums/Exercise/RestTimeMode.swift,
 				Data/Models/Enums/Sessions/MoodLevel.swift,
@@ -112,6 +121,8 @@
 				Data/Models/Enums/Suggestions/SuggestionSource.swift,
 				Data/Models/Exercise/Exercise.swift,
 				Data/Models/Exercise/ExerciseCatalog.swift,
+				Data/Models/Exercise/ExerciseHistory.swift,
+				Data/Models/Exercise/ProgressionPoint.swift,
 				Data/Models/Exercise/RepRangePolicy.swift,
 				Data/Models/Exercise/RestTimePolicy.swift,
 				Data/Models/Plans/ExercisePrescription.swift,
@@ -142,6 +153,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		FD68245D2F33A712009F6D98 /* VillainArcTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VillainArcTests;
+			sourceTree = "<group>";
+		};
 		FD68290B2F31190700C83480 /* VillainArcIntentsExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -170,6 +186,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		FD6824592F33A712009F6D98 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FD6829052F31190700C83480 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -215,6 +238,7 @@
 				FDA193922F16D14500CA57C5 /* VillainArc */,
 				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
 				FD68290B2F31190700C83480 /* VillainArcIntentsExtension */,
+				FD68245D2F33A712009F6D98 /* VillainArcTests */,
 				FD93E5E52F3051FD009569BB /* Frameworks */,
 				FDA193912F16D14500CA57C5 /* Products */,
 			);
@@ -226,6 +250,7 @@
 				FDA193902F16D14500CA57C5 /* VillainArc.app */,
 				FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */,
 				FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */,
+				FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -233,6 +258,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		FD68245B2F33A712009F6D98 /* VillainArcTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FD6824642F33A712009F6D98 /* Build configuration list for PBXNativeTarget "VillainArcTests" */;
+			buildPhases = (
+				FD6824582F33A712009F6D98 /* Sources */,
+				FD6824592F33A712009F6D98 /* Frameworks */,
+				FD68245A2F33A712009F6D98 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FD6824612F33A712009F6D98 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				FD68245D2F33A712009F6D98 /* VillainArcTests */,
+			);
+			name = VillainArcTests;
+			packageProductDependencies = (
+			);
+			productName = VillainArcTests;
+			productReference = FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		FD6829072F31190700C83480 /* VillainArcIntentsExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FD6829122F31190700C83480 /* Build configuration list for PBXNativeTarget "VillainArcIntentsExtension" */;
@@ -310,9 +358,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					FD68245B2F33A712009F6D98 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = FDA1938F2F16D14500CA57C5;
+					};
 					FD6829072F31190700C83480 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -341,11 +393,19 @@
 				FDA1938F2F16D14500CA57C5 /* VillainArc */,
 				FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */,
 				FD6829072F31190700C83480 /* VillainArcIntentsExtension */,
+				FD68245B2F33A712009F6D98 /* VillainArcTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		FD68245A2F33A712009F6D98 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FD6829062F31190700C83480 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -370,6 +430,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		FD6824582F33A712009F6D98 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FD6829042F31190700C83480 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -394,6 +461,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		FD6824612F33A712009F6D98 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
+			targetProxy = FD6824602F33A712009F6D98 /* PBXContainerItemProxy */;
+		};
 		FD6829102F31190700C83480 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FD6829072F31190700C83480 /* VillainArcIntentsExtension */;
@@ -407,6 +479,58 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		FD6824622F33A712009F6D98 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LT67625NGD;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArcTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VillainArc.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VillainArc";
+			};
+			name = Debug;
+		};
+		FD6824632F33A712009F6D98 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LT67625NGD;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArcTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VillainArc.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VillainArc";
+			};
+			name = Release;
+		};
 		FD6829132F31190700C83480 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -418,6 +542,7 @@
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcIntentsExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -428,11 +553,15 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -447,6 +576,7 @@
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcIntentsExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -457,11 +587,15 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -478,6 +612,7 @@
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcWidgetExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -488,11 +623,15 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -509,6 +648,7 @@
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VillainArcWidgetExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -519,11 +659,15 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -739,6 +883,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		FD6824642F33A712009F6D98 /* Build configuration list for PBXNativeTarget "VillainArcTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD6824622F33A712009F6D98 /* Debug */,
+				FD6824632F33A712009F6D98 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FD6829122F31190700C83480 /* Build configuration list for PBXNativeTarget "VillainArcIntentsExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

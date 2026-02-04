@@ -30,7 +30,7 @@ class SetPerformance {
 
     // Adding set in session
     init(exercise: ExercisePerformance, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0) {
-        self.index = exercise.sets.count
+        index = exercise.sets.count
         self.exercise = exercise
         self.weight = weight
         self.reps = reps
@@ -43,7 +43,7 @@ class SetPerformance {
         type = setPrescription.type
         restSeconds = setPrescription.targetRest
         self.exercise = exercise
-        self.prescription = setPrescription
+        prescription = setPrescription
     }
 }
 

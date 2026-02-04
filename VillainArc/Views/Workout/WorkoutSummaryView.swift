@@ -206,22 +206,26 @@ struct WorkoutSummaryView: View {
     private func loadPRs() {
         var entries: [PRItem] = []
         for exercise in workout.sortedExercises {
-            let history = (try? context.fetch(ExercisePerformance.matching(catalogID: exercise.catalogID))) ?? []
+            // Fetch cached history (much faster than querying all performances)
+            guard let history = ExerciseHistoryUpdater.fetchOrCreateHistory(
+                for: exercise.catalogID,
+                context: context
+            ) else { continue }
 
             var types: [PRType] = []
             var values: [PRType: Double] = [:]
 
             if let current1RM = exercise.bestEstimated1RM {
-                let historical1RM = ExercisePerformance.historicalBestEstimated1RM(in: history)
-                if historical1RM == nil || current1RM > (historical1RM ?? 0) {
+                let historical1RM = history.bestEstimated1RM
+                if historical1RM == 0 || current1RM > historical1RM {
                     types.append(.estimated1RM)
                     values[.estimated1RM] = current1RM
                 }
             }
 
             if let currentWeight = exercise.bestWeight {
-                let historicalWeight = ExercisePerformance.historicalBestWeight(in: history)
-                if historicalWeight == nil || currentWeight > (historicalWeight ?? 0) {
+                let historicalWeight = history.bestWeight
+                if historicalWeight == 0 || currentWeight > historicalWeight {
                     types.append(.maxWeight)
                     values[.maxWeight] = currentWeight
                 }
@@ -229,8 +233,8 @@ struct WorkoutSummaryView: View {
 
             let currentVolume = exercise.totalVolume
             if currentVolume > 0 {
-                let historicalVolume = ExercisePerformance.historicalBestVolume(in: history)
-                if historicalVolume == nil || currentVolume > (historicalVolume ?? 0) {
+                let historicalVolume = history.bestVolume
+                if historicalVolume == 0 || currentVolume > historicalVolume {
                     types.append(.totalVolume)
                     values[.totalVolume] = currentVolume
                 }
@@ -268,6 +272,10 @@ struct WorkoutSummaryView: View {
         Haptics.selection()
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
+        
+        // Update exercise histories after marking workout as done
+        ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
+        
         dismiss()
     }
 

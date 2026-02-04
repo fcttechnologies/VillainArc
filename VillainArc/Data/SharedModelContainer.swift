@@ -12,6 +12,8 @@ enum SharedModelContainer {
         ExercisePerformance.self,
         SetPerformance.self,
         Exercise.self,
+        ExerciseHistory.self,
+        ProgressionPoint.self,
         RepRangePolicy.self,
         RestTimePolicy.self,
         RestTimeHistory.self,

@@ -15,14 +15,14 @@ class SetPrescription {
     
     // Adding set in workout plan creation
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0) {
-        self.index = exercisePrescription.sets.count
-        self.exercise = exercisePrescription
+        index = exercisePrescription.sets.count
+        exercise = exercisePrescription
         self.targetWeight = targetWeight
         self.targetReps = targetReps
         self.targetRest = targetRest
     }
     
-    // Adding set from plan
+    // Creation from sessinon performance
     init(exercisePrescription: ExercisePrescription, setPerformance: SetPerformance) {
         index = setPerformance.index
         type = setPerformance.type
@@ -30,6 +30,7 @@ class SetPrescription {
         targetReps = setPerformance.reps
         targetRest = setPerformance.restSeconds
         exercise = exercisePrescription
+        setPerformance.prescription = self
     }
     
     // Creates a copy with the same ID for edit tracking

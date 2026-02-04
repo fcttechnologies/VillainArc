@@ -1,8 +1,6 @@
 import Foundation
 import SwiftData
 
-// MARK: - Grouping Models
-
 struct SuggestionGroup: Identifiable {
     let id = UUID()
     let changes: [PrescriptionChange]
@@ -29,7 +27,6 @@ struct ExerciseSuggestionSection: Identifiable {
     var exerciseName: String { exercisePrescription.name }
 }
 
-// MARK: - Grouping Logic
 
 func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSection] {
     let byExercise = Dictionary(grouping: changes) { $0.targetExercisePrescription?.id }
@@ -74,7 +71,6 @@ func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSec
     }.sorted { $0.exercisePrescription.index < $1.exercisePrescription.index }
 }
 
-// MARK: - Pending Suggestions Query
 
 func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [PrescriptionChange] {
     let exerciseIDs = Set(plan.exercises.map { $0.id })

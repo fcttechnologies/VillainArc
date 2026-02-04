@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 
-// Pre-workout view for reviewing deferred suggestions before starting
 struct DeferredSuggestionsView: View {
     @Bindable var workout: WorkoutSession
     @Environment(\.modelContext) private var context
@@ -40,9 +39,10 @@ struct DeferredSuggestionsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Skip All") {
+                    Button("Skip") {
                         skipAll()
                     }
+                    .tint(.red)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Accept All") {
@@ -58,7 +58,6 @@ struct DeferredSuggestionsView: View {
     
     private func loadPendingSuggestions() {
         guard let plan = workout.workoutPlan else {
-            // No plan, proceed directly to workout
             workout.status = SessionStatus.active.rawValue
             return
         }
@@ -66,7 +65,6 @@ struct DeferredSuggestionsView: View {
         pendingChanges = pendingSuggestions(for: plan, in: context)
         
         if pendingChanges.isEmpty {
-            // No pending suggestions, proceed directly
             workout.status = SessionStatus.active.rawValue
         } else {
             sections = groupSuggestions(pendingChanges)
@@ -85,7 +83,6 @@ struct DeferredSuggestionsView: View {
     
     private func skipAll() {
         Haptics.selection()
-        // Mark all as rejected (user chose to skip)
         for change in pendingChanges {
             change.decision = .rejected
         }

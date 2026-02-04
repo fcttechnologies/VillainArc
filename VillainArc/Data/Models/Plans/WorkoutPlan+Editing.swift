@@ -61,7 +61,6 @@ extension WorkoutPlan {
     }
 }
 
-// Change Detection
 extension WorkoutPlan {
     
     // Compares self (copy) to original, creates PrescriptionChange for each difference.
@@ -102,11 +101,7 @@ extension WorkoutPlan {
     
     // MARK: Exercise-Level Changes
     
-    private func detectExerciseChanges(
-        original: ExercisePrescription,
-        copy: ExercisePrescription,
-        context: ModelContext
-    ) {
+    private func detectExerciseChanges(original: ExercisePrescription, copy: ExercisePrescription, context: ModelContext) {
         // Rep Range Mode
         if original.repRange.activeMode != copy.repRange.activeMode {
             createChange(
@@ -200,12 +195,7 @@ extension WorkoutPlan {
     
     // MARK: Set-Level Changes
     
-    private func detectSetChanges(
-        original: SetPrescription,
-        copy: SetPrescription,
-        exercise: ExercisePrescription,
-        context: ModelContext
-    ) {
+    private func detectSetChanges(original: SetPrescription, copy: SetPrescription, exercise: ExercisePrescription, context: ModelContext) {
         // Weight
         if original.targetWeight != copy.targetWeight {
             let changeType: ChangeType = copy.targetWeight > original.targetWeight
@@ -268,17 +258,8 @@ extension WorkoutPlan {
         }
     }
     
-    // MARK: Create Change Helper
-    
     @discardableResult
-    private func createChange(
-        type: ChangeType,
-        previousValue: Double,
-        newValue: Double,
-        exercise: ExercisePrescription,
-        set: SetPrescription?,
-        context: ModelContext
-    ) -> PrescriptionChange {
+    private func createChange(type: ChangeType, previousValue: Double, newValue: Double, exercise: ExercisePrescription, set: SetPrescription?, context: ModelContext) -> PrescriptionChange {
         let change = PrescriptionChange()
         change.source = .user
         change.decision = .accepted
@@ -296,9 +277,7 @@ extension WorkoutPlan {
     }
 }
 
-// Pending Change Resolution
 extension WorkoutPlan {
-    
     // Called when an exercise is deleted. Marks ALL its pending changes.
     private func markPendingAsUserOverride(exercise: ExercisePrescription) {
         for change in exercise.changes {
@@ -317,8 +296,9 @@ extension WorkoutPlan {
     }
     
     private func markChangeAsUserOverride(_ change: PrescriptionChange) {
+        guard change.source != .user else { return }
         // Deferred decisions → user overrode without accepting/rejecting
-        if change.decision == .deferred {
+        if change.decision == .deferred || change.decision == .pending {
             change.decision = .userOverride
         }
         // Any pending outcome → user modified the baseline
@@ -350,9 +330,7 @@ extension WorkoutPlan {
     }
 }
 
-// Apply Changes to Original
 extension WorkoutPlan {
-    
     // Applies all values from self (copy) to original
     func applyToOriginal(_ original: WorkoutPlan, context: ModelContext) {
         // Update plan-level properties

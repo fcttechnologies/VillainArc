@@ -1,9 +1,7 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Modular Suggestion Review Component
 
-/// Reusable component for reviewing suggestions (used in both post-workout and pre-workout views)
 struct SuggestionReviewView: View {
     let sections: [ExerciseSuggestionSection]
     let onAcceptGroup: ([PrescriptionChange]) -> Void
@@ -15,13 +13,15 @@ struct SuggestionReviewView: View {
             ContentUnavailableView("No Suggestions", systemImage: "checkmark.circle", description: Text("All caught up!"))
         } else {
             VStack(alignment: .leading, spacing: 16) {
-                ForEach(sections) { section in
+                ForEach(sections, id: \.exerciseName) { section in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.exerciseName)
-                            .font(.headline)
+                            .font(.title3)
+                            .bold()
+                            .lineLimit(1)
                             .fontDesign(.rounded)
                         
-                        ForEach(section.groups) { group in
+                        ForEach(section.groups, id: \.id) { group in
                             SuggestionGroupRow(
                                 group: group,
                                 onAccept: { onAcceptGroup(group.changes) },
@@ -36,8 +36,6 @@ struct SuggestionReviewView: View {
     }
 }
 
-// MARK: - Suggestion Group Row
-
 struct SuggestionGroupRow: View {
     let group: SuggestionGroup
     let onAccept: () -> Void
@@ -51,7 +49,7 @@ struct SuggestionGroupRow: View {
                 .foregroundStyle(.secondary)
                 .fontWeight(.semibold)
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(group.changes, id: \.id) { change in
                     ChangeDescriptionRow(change: change)
                 }
@@ -99,13 +97,12 @@ struct SuggestionGroupRow: View {
     }
 }
 
-// MARK: - Change Description Row
 
 struct ChangeDescriptionRow: View {
     let change: PrescriptionChange
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(changeDescription)
                 .font(.subheadline)
             
@@ -113,9 +110,9 @@ struct ChangeDescriptionRow: View {
                 Text(reasoning)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .italic()
             }
         }
+        .fontWeight(.semibold)
     }
     
     private var changeDescription: String {
@@ -151,7 +148,7 @@ struct ChangeDescriptionRow: View {
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return "Rest time: \(Int(previous))s → \(Int(new))s"
             
-        // Structural (not typically shown)
+        // Structural
         case .addSet, .removeSet, .addExercise, .removeExercise, .reorderExercise:
             return change.changeType.rawValue
         }
@@ -195,7 +192,6 @@ struct ChangeDescriptionRow: View {
     }
 }
 
-// MARK: - Apply Change Logic
 
 @MainActor
 func applyChange(_ change: PrescriptionChange) {

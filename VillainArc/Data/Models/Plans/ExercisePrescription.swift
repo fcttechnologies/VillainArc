@@ -48,6 +48,7 @@ class ExercisePrescription {
         repRange = RepRangePolicy(copying: exercisePerformance.repRange)
         restTimePolicy = RestTimePolicy(copying: exercisePerformance.restTimePolicy)
         self.workoutPlan = workoutPlan
+        exercisePerformance.prescription = self
         sets = exercisePerformance.sortedSets.map { SetPrescription(exercisePrescription: self, setPerformance: $0) }
     }
     

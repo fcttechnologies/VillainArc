@@ -85,11 +85,24 @@ struct WorkoutsListView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let workoutsToDelete = offsets.map { workouts[$0] }
+        
+        // Collect affected catalogIDs before deleting
+        var affectedCatalogIDs = Set<String>()
+        for workout in workoutsToDelete {
+            affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
+        }
+        
         SpotlightIndexer.deleteWorkoutSessions(ids: workoutsToDelete.map(\.id))
         for workout in workoutsToDelete {
             context.delete(workout)
         }
         saveContext(context: context)
+        
+        // Update exercise histories for affected exercises
+        for catalogID in affectedCatalogIDs {
+            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
+        }
+        
         if workouts.isEmpty {
             isEditing = false
         }
@@ -97,11 +110,25 @@ struct WorkoutsListView: View {
 
     private func deleteAllWorkouts() {
         Haptics.selection()
+        
+        // Collect all affected catalogIDs before deleting
+        var affectedCatalogIDs = Set<String>()
+        for workout in workouts {
+            affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
+        }
+        
         SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))
         for workout in workouts {
             context.delete(workout)
         }
         saveContext(context: context)
+        
+        // Update exercise histories for affected exercises
+        // This will delete histories where no performances remain
+        for catalogID in affectedCatalogIDs {
+            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
+        }
+        
         isEditing = false
     }
 }
