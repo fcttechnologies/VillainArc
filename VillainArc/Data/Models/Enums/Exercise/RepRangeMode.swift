@@ -1,10 +1,10 @@
 import Foundation
 
-enum RepRangeMode: String, CaseIterable, Codable {
-    case notSet
-    case target
-    case range
-    case untilFailure
+enum RepRangeMode: Int, CaseIterable, Codable {
+    case notSet = 0
+    case target = 1
+    case range = 2
+    case untilFailure = 3
     
     var displayName: String {
         switch self {

@@ -62,6 +62,7 @@ struct WorkoutSessionEntity: AppEntity, IndexedEntity, Identifiable {
 
 }
 
+@MainActor
 extension WorkoutSessionEntity {
     init(workoutSession: WorkoutSession) {
         id = workoutSession.id
@@ -71,7 +72,7 @@ extension WorkoutSessionEntity {
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
         let preMood = WorkoutSessionFullContent.PreWorkoutMood(
-            feeling: workoutSession.preMood.feeling.rawValue,
+            feeling: workoutSession.preMood.feeling.displayName,
             notes: workoutSession.preMood.notes.isEmpty ? nil : workoutSession.preMood.notes
         )
         let postEffort = workoutSession.postEffort.map { effort in
@@ -99,7 +100,7 @@ extension WorkoutSessionEntity {
                     sets: exercise.sortedSets.map { set in
                         WorkoutSessionFullContent.Exercise.SetEntry(
                             index: set.index,
-                            type: set.type.rawValue,
+                            type: set.type.displayName,
                             reps: set.reps,
                             weight: set.weight,
                             restSeconds: set.restSeconds,

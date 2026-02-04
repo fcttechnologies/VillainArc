@@ -79,7 +79,7 @@ enum WorkoutActivityManager {
             totalSets: activeInfo?.exercise.sortedSets.count,
             weight: activeInfo?.set.weight,
             reps: activeInfo?.set.reps,
-            setTypeRawValue: activeInfo?.set.type.rawValue,
+            setTypeRawValue: activeInfo?.set.type.displayName,
             timerEndDate: restTimer.isRunning ? restTimer.endDate : nil,
             timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil,
             timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil,

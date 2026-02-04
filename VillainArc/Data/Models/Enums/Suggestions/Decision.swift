@@ -5,4 +5,5 @@ enum Decision: String, Codable {
     case accepted
     case rejected
     case deferred
+    case userOverride
 }

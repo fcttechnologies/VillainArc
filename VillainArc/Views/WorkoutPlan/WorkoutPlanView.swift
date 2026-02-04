@@ -235,6 +235,7 @@ struct WorkoutPlanView: View {
     
     private func cancelEditingAndDismiss() {
         Haptics.selection()
+        // need to undo changes some how. maybe we should create a duplicate and then update those
         plan.isEditing = false
         saveContext(context: context)
         dismiss()
@@ -385,7 +386,7 @@ private struct WorkoutPlanSetRowView: View {
                     }
                 })) {
                     ForEach(ExerciseSetType.allCases, id: \.self) { type in
-                        Text(type.rawValue)
+                        Text(type.displayName)
                             .tag(type)
                     }
                 }

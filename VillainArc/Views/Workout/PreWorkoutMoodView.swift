@@ -56,7 +56,7 @@ struct PreWorkoutMoodView: View {
             VStack(spacing: 6) {
                 Text(level.emoji)
                     .font(.title)
-                Text(level.label)
+                Text(level.displayName)
                     .font(.caption)
                     .fontWeight(.semibold)
             }
@@ -70,7 +70,7 @@ struct PreWorkoutMoodView: View {
         .buttonStyle(.plain)
         .animation(.bouncy, value: mood.feeling)
         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodOption(level))
-        .accessibilityLabel(level.label)
+        .accessibilityLabel(level.displayName)
         .accessibilityHint("Sets your pre-workout mood.")
     }
 }

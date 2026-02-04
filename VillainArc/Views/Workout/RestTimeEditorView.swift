@@ -38,19 +38,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                 switch restTimePolicy.activeMode {
                 case .allSame:
                     restTimeRow(title: "Rest Time", seconds: policyBinding(\.allSameSeconds), isExpanded: expandedPicker == .allSame, toggle: { togglePicker(.allSame) })
-                case .byType:
-                    restTimeRow(title: "Warm Up Sets", seconds: policyBinding(\.warmupSeconds), isExpanded: expandedPicker == .warmup, toggle: { togglePicker(.warmup) })
-                    
-                    restTimeRow(title: "Normal Sets", seconds: policyBinding(\.regularSeconds), isExpanded: expandedPicker == .regular, toggle: { togglePicker(.regular) })
-                    
-                    DisclosureGroup("Advanced", isExpanded: $showAdvancedByType) {
-                        restTimeRow(title: "Super Sets", seconds: policyBinding(\.superSetSeconds), isExpanded: expandedPicker == .superSet, toggle: { togglePicker(.superSet) })
-                        
-                        restTimeRow(title: "Drop Sets", seconds: policyBinding(\.dropSetSeconds), isExpanded: expandedPicker == .dropSet, toggle: { togglePicker(.dropSet) })
-                        
-                        restTimeRow(title: "Failure Sets", seconds: policyBinding(\.failureSeconds), isExpanded: expandedPicker == .failure, toggle: { togglePicker(.failure) })
-                    }
-                    .accessibilityIdentifier("restTimeAdvancedDisclosure")
                 case .individual:
                     if exercise.sortedSets.isEmpty {
                         Text("Add sets first to change their rest times.")
@@ -107,8 +94,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
         switch restTimePolicy.activeMode {
         case .allSame:
             return "All sets will use the same rest time."
-        case .byType:
-            return "Rest time for each set will be based on the set's type."
         case .individual:
             return "Each set keeps its own rest time."
         }
@@ -211,7 +196,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
             return "Set \(set.index + 1)"
         }
         
-        return "Set \(set.index + 1) (\(set.type.rawValue))"
+        return "Set \(set.index + 1) (\(set.type.displayName))"
     }
 
     private enum RestTimePicker: Equatable {

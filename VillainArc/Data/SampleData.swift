@@ -25,7 +25,7 @@ class PreviewDataContainer {
             SetPrescription.self,
             WorkoutSplit.self,
             WorkoutSplitDay.self,
-            SuggestedChange.self
+            PrescriptionChange.self
         ])
 
         do {

@@ -1,11 +1,11 @@
 import SwiftUI
 
-enum ExerciseSetType: String, Codable, CaseIterable {
-    case warmup = "Warm Up Set"
-    case regular = "Regular Set"
-    case superSet = "Super Set"
-    case dropSet = "Drop Set"
-    case failure = "Failure Set"
+enum ExerciseSetType: Int, Codable, CaseIterable {
+    case warmup = 0
+    case regular = 1
+    case superSet = 2
+    case dropSet = 3
+    case failure = 4
     
     var shortLabel: String {
         switch self {
@@ -19,6 +19,21 @@ enum ExerciseSetType: String, Codable, CaseIterable {
             return "D"
         case .failure:
             return "F"
+        }
+    }
+    
+    var displayName : String {
+        switch self {
+        case .regular:
+            return "Regular Set"
+        case .warmup:
+            return "Warm Up Set"
+        case .superSet:
+            return "Super Set"
+        case .dropSet:
+            return "Drop Set"
+        case .failure:
+            return "Failure Set"
         }
     }
 

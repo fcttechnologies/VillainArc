@@ -178,7 +178,7 @@ enum AccessibilityIdentifiers {
     static let preWorkoutMoodNotesField = "preWorkoutMoodNotesField"
 
     static func preWorkoutMoodOption(_ mood: MoodLevel) -> String {
-        "preWorkoutMoodOption-\(slug(mood.rawValue))"
+        "preWorkoutMoodOption-\(slug(mood.displayName))"
     }
 
     static func restTimerRecentRow(_ history: RestTimeHistory) -> String {
@@ -245,11 +245,11 @@ enum AccessibilityText {
     }
 
     static func exerciseSetLabel(for set: SetPerformance) -> String {
-        set.type == .regular ? "Set \(set.index + 1)" : set.type.rawValue
+        set.type == .regular ? "Set \(set.index + 1)" : set.type.displayName
     }
 
     static func exerciseSetLabel(for set: SetPrescription) -> String {
-        set.type == .regular ? "Set \(set.index + 1)" : set.type.rawValue
+        set.type == .regular ? "Set \(set.index + 1)" : set.type.displayName
     }
 
     static func exerciseSetValue(for set: SetPerformance) -> String {
@@ -273,7 +273,7 @@ enum AccessibilityText {
     }
 
     static func exerciseSetMenuValue(for set: SetPerformance) -> String {
-        set.type.rawValue
+        set.type.displayName
     }
 
     static func exerciseSetMenuLabel(for set: SetPrescription) -> String {
@@ -281,7 +281,7 @@ enum AccessibilityText {
     }
 
     static func exerciseSetMenuValue(for set: SetPrescription) -> String {
-        set.type.rawValue
+        set.type.displayName
     }
 
     static func exerciseSetCompletionLabel(isComplete: Bool) -> String {

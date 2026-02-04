@@ -10,8 +10,8 @@ class SetPrescription {
     var targetReps: Int = 0
     var targetRest: Int = 0
     var exercise: ExercisePrescription?
-    @Relationship(deleteRule: .nullify, inverse: \SuggestedChange.targetSetPrescription)
-    var suggestedChanges: [SuggestedChange] = []
+    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetSetPrescription)
+    var changes: [PrescriptionChange] = []
     
     // Adding set in workout plan creation
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0) {

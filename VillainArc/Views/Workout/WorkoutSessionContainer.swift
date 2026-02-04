@@ -5,12 +5,17 @@ struct WorkoutSessionContainer: View {
     @Bindable var workout: WorkoutSession
 
     var body: some View {
-        switch workout.statusValue {
-        case .pending, .active:
-            WorkoutView(workout: workout)
-        case .summary, .done:
-            WorkoutSummaryView(workout: workout)
+        Group {
+            switch workout.statusValue {
+            case .pending, .active:
+                WorkoutView(workout: workout)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .summary, .done:
+                WorkoutSummaryView(workout: workout)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.5), value: workout.statusValue)
     }
 }
 

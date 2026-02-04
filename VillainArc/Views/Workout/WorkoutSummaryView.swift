@@ -170,8 +170,9 @@ struct WorkoutSummaryView: View {
     private func summaryStat(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .fontWeight(.semibold)
             Text(value)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -185,16 +186,19 @@ struct WorkoutSummaryView: View {
     private func prRow(_ entry: PRItem) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(entry.exerciseName)
-                .fontWeight(.semibold)
+                .font(.headline)
+                .lineLimit(1)
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(entry.types, id: \.self) { type in
                     Text(prValueText(type: type, value: entry.values[type] ?? 0))
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .fontDesign(.rounded)
         .padding(10)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 10))
     }

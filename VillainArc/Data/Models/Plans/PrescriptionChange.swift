@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class SuggestedChange {
+class PrescriptionChange {
     var id: UUID = UUID()
     var source: SuggestionSource = SuggestionSource.rules
     var catalogID: String = ""
@@ -32,7 +32,6 @@ class SuggestedChange {
     
     // Decision
     var decision: Decision = Decision.pending         // Default to pending
-    var decidedAt: Date?                      // When user decided
     
     // Outcome
     var outcome: Outcome = Outcome.pending           // Default to pending

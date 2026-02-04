@@ -1,16 +1,13 @@
 import Foundation
 
-enum RestTimeMode: String, CaseIterable, Codable {
-    case allSame
-    case byType
-    case individual
+enum RestTimeMode: Int, CaseIterable, Codable {
+    case allSame = 0
+    case individual = 1
     
     var displayName: String {
         switch self {
         case .allSame:
             return "All Same"
-        case .byType:
-            return "By Type"
         case .individual:
             return "Individual"
         }

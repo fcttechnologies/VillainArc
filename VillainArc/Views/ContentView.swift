@@ -55,7 +55,7 @@ struct ContentView: View {
             .task {
                 DataManager.seedExercisesIfNeeded(context: context)
                 router.checkForUnfinishedData()
-                if let activeSession = router.activeWorkoutSession {
+                if let activeSession = router.activeWorkoutSession, activeSession.status == SessionStatus.done.rawValue {
                     WorkoutActivityManager.restoreIfNeeded(workout: activeSession)
                 }
             }

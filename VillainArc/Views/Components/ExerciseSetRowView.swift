@@ -44,7 +44,7 @@ struct ExerciseSetRowView: View {
                     }
                 })) {
                     ForEach(ExerciseSetType.allCases, id: \.self) { type in
-                        Text(type.rawValue)
+                        Text(type.displayName)
                             .tag(type)
                     }
                 }

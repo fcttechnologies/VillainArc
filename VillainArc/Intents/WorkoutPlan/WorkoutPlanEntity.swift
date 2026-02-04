@@ -46,6 +46,7 @@ struct WorkoutPlanEntity: AppEntity, IndexedEntity, Identifiable {
 
 }
 
+@MainActor
 extension WorkoutPlanEntity {
     init(workoutPlan: WorkoutPlan) {
         id = workoutPlan.id
@@ -67,7 +68,7 @@ extension WorkoutPlanEntity {
                     sets: exercise.sortedSets.map { set in
                         WorkoutPlanFullContent.Exercise.SetEntry(
                             index: set.index,
-                            type: set.type.rawValue,
+                            type: set.type.displayName,
                             targetReps: set.targetReps,
                             targetWeight: set.targetWeight,
                             targetRestSeconds: set.targetRest

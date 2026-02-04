@@ -25,7 +25,7 @@ enum MoodLevel: String, Codable, CaseIterable {
         }
     }
 
-    var label: String {
+    var displayName: String {
         rawValue.capitalized
     }
 }

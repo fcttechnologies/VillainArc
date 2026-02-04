@@ -20,7 +20,7 @@ enum SharedModelContainer {
         SetPrescription.self,
         WorkoutSplit.self,
         WorkoutSplitDay.self,
-        SuggestedChange.self
+        PrescriptionChange.self
     ])
 
     static let container: ModelContainer = {
