@@ -17,8 +17,12 @@ enum ChangeType: String, Codable {
     case decreaseRepRangeLower   // e.g., 8 → 6
     case increaseRepRangeUpper   // e.g., 12 → 15
     case decreaseRepRangeUpper   // e.g., 12 → 10
+    case increaseRepRangeTarget  // e.g., target 8 → 10 (when mode is .target)
+    case decreaseRepRangeTarget  // e.g., target 10 → 8
     case changeRepRangeMode      // e.g., .range → .target (use newValue for mode raw value)
     case changeRestTimeMode
+    case increaseRestTimeSeconds // allSameSeconds increase
+    case decreaseRestTimeSeconds // allSameSeconds decrease
     
     // Exercise-level (if needed)
     case reorderExercise

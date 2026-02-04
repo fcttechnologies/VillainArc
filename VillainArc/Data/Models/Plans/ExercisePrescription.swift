@@ -50,6 +50,21 @@ class ExercisePrescription {
         self.workoutPlan = workoutPlan
         sets = exercisePerformance.sortedSets.map { SetPrescription(exercisePrescription: self, setPerformance: $0) }
     }
+    
+    // Creates a copy with the same ID for edit tracking
+    init(copying original: ExercisePrescription, workoutPlan: WorkoutPlan) {
+        self.id = original.id  // Same ID enables matching for change detection
+        self.index = original.index
+        self.catalogID = original.catalogID
+        self.name = original.name
+        self.notes = original.notes
+        self.musclesTargeted = original.musclesTargeted
+        self.repRange = RepRangePolicy(copying: original.repRange)
+        self.restTimePolicy = RestTimePolicy(copying: original.restTimePolicy)
+        self.workoutPlan = workoutPlan
+        // Copy sets with same IDs - NO changes copied (changes stay on original)
+        self.sets = original.sortedSets.map { SetPrescription(copying: $0, exercise: self) }
+    }
 
     func addSet() {
         if let previous = sortedSets.last {

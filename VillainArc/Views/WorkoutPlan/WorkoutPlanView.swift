@@ -27,7 +27,7 @@ struct WorkoutPlanView: View {
                     planDetailView
                 }
             }
-            .navigationTitle(plan.isEditing ? "Edit Plan" : plan.title)
+            .navigationTitle(plan.originalPlan != nil ? "Edit Plan" : plan.title)
             .toolbarTitleMenu {
                 Button("Change Title", systemImage: "pencil") {
                     showTitleEditorSheet = true
@@ -63,15 +63,18 @@ struct WorkoutPlanView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(plan.isEditing ? "Done" : "Save") {
+                    Button(plan.originalPlan != nil ? "Done" : "Save") {
                         Haptics.selection()
-                        if plan.isEditing {
-                            plan.isEditing = false
+                        if plan.originalPlan != nil {
+                            // Editing existing plan - detect changes and apply
+                            plan.finishEditing(context: context)
+                            SpotlightIndexer.index(workoutPlan: plan.originalPlan!)
                         } else {
+                            // Creating new plan
                             plan.completed = true
+                            saveContext(context: context)
+                            SpotlightIndexer.index(workoutPlan: plan)
                         }
-                        saveContext(context: context)
-                        SpotlightIndexer.index(workoutPlan: plan)
                         dismiss()
                     }
                     .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
@@ -195,12 +198,16 @@ struct WorkoutPlanView: View {
     
     private func deleteExercise(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
-        if plan.isEditing, plan.sortedExercises.count - offsets.count == 0 {
-            cancelEditingAndDismiss()
-            return
-        }
+        // Check if deleting these would leave us with no exercises
         if plan.sortedExercises.count - offsets.count == 0 {
-            deleteWorkoutPlanAndDismiss()
+            if plan.originalPlan != nil {
+                // Editing existing - delete both copy and original
+                plan.deletePlanEntirely(context: context)
+            } else {
+                // Creating new - just delete the plan
+                deleteWorkoutPlanAndDismiss()
+            }
+            dismiss()
             return
         }
         deleteExercises(at: offsets)
@@ -235,9 +242,14 @@ struct WorkoutPlanView: View {
     
     private func cancelEditingAndDismiss() {
         Haptics.selection()
-        // need to undo changes some how. maybe we should create a duplicate and then update those
-        plan.isEditing = false
-        saveContext(context: context)
+        if plan.originalPlan != nil {
+            // Editing existing - delete the copy, original unchanged
+            plan.cancelEditing(context: context)
+        } else {
+            // Creating new - delete incomplete plan
+            context.delete(plan)
+            saveContext(context: context)
+        }
         dismiss()
     }
 }

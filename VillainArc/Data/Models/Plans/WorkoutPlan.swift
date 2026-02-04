@@ -15,6 +15,10 @@ class WorkoutPlan {
     @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
     var splitDays: [WorkoutSplitDay] = []
     
+    // Reference to original plan when this is an editing copy (nil on originals)
+    @Relationship(deleteRule: .nullify)
+    var originalPlan: WorkoutPlan?
+    
     var sortedExercises: [ExercisePrescription] {
         exercises.sorted { $0.index < $1.index }
     }

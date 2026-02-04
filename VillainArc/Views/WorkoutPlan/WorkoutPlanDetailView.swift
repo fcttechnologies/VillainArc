@@ -12,6 +12,7 @@ struct WorkoutPlanDetailView: View {
 
     @State private var showDeleteWorkoutPlanConfirmation = false
     @State private var editWorkoutPlan = false
+    @State private var editingCopy: WorkoutPlan?
 
     init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil) {
         self.plan = plan
@@ -114,8 +115,7 @@ struct WorkoutPlanDetailView: View {
 
                         Button("Edit Plan", systemImage: "pencil") {
                             Haptics.selection()
-                            plan.isEditing = true
-                            saveContext(context: context)
+                            editingCopy = plan.createEditingCopy(context: context)
                             editWorkoutPlan = true
                         }
                         .accessibilityIdentifier("templateDetailEditButton")
@@ -149,7 +149,9 @@ struct WorkoutPlanDetailView: View {
             }
         }
         .fullScreenCover(isPresented: $editWorkoutPlan) {
-            WorkoutPlanView(plan: plan)
+            if let copy = editingCopy {
+                WorkoutPlanView(plan: copy)
+            }
         }
         .userActivity("com.villainarc.workoutPlan.view", element: plan) { plan, activity in
             activity.title = plan.title

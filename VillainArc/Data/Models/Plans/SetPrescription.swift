@@ -31,6 +31,18 @@ class SetPrescription {
         targetRest = setPerformance.restSeconds
         exercise = exercisePrescription
     }
+    
+    // Creates a copy with the same ID for edit tracking
+    init(copying original: SetPrescription, exercise: ExercisePrescription) {
+        self.id = original.id  // Same ID enables matching for change detection
+        self.index = original.index
+        self.type = original.type
+        self.targetWeight = original.targetWeight
+        self.targetReps = original.targetReps
+        self.targetRest = original.targetRest
+        self.exercise = exercise
+        // DO NOT copy changes - they remain on the original prescription
+    }
 }
 
 extension SetPrescription: RestTimeEditableSet {
