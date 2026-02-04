@@ -129,9 +129,6 @@ class PreviewDataContainer {
         session.endedAt = date(2026, 1, 5, 9, 5)
         context.insert(session)
 
-        let preMood = PreWorkoutMood(workoutSession: session)
-        session.preMood = preMood
-
         let postEffort = PostWorkoutEffort(rpe: 7, notes: "Felt strong", workoutSession: session)
         session.postEffort = postEffort
 
@@ -199,7 +196,16 @@ class PreviewDataContainer {
         let exercises: [(id: String, notes: String)] = [
             ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8"),
             ("dumbbell_incline_bench_press", ""),
-            ("cable_bench_chest_fly", "slow eccentric")
+            ("cable_bench_chest_fly", "slow eccentric"),
+            ("barbell_bent_over_row", "Back focus")
+        ]
+
+        let sampleReps = [12, 10, 8]
+        let sampleWeights: [String: [Double]] = [
+            "barbell_bench_press": [45, 135, 165],
+            "dumbbell_incline_bench_press": [25, 60, 65],
+            "cable_bench_chest_fly": [20, 35, 40],
+            "barbell_bent_over_row": [45, 95, 115]
         ]
 
         for ex in exercises {
@@ -207,10 +213,14 @@ class PreviewDataContainer {
             let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
             performance.notes = ex.notes
 
-            for _ in 0..<3 {
+            for index in 0..<3 {
                 let setPerf = SetPerformance(exercise: performance)
-                setPerf.type = performance.sets.isEmpty ? .warmup : .regular
-                setPerf.restSeconds = performance.sets.isEmpty ? 60 : 90
+                setPerf.type = index == 0 ? .warmup : .regular
+                setPerf.restSeconds = index == 0 ? 60 : 90
+                setPerf.reps = sampleReps[index]
+                if let weights = sampleWeights[ex.id], index < weights.count {
+                    setPerf.weight = weights[index]
+                }
                 performance.sets.append(setPerf)
             }
 

@@ -69,7 +69,7 @@ struct FinishWorkoutIntent: AppIntent {
             }
         }
 
-        workoutSession.status = SessionStatus.done.rawValue
+        workoutSession.status = SessionStatus.summary.rawValue
         workoutSession.endedAt = Date()
         workoutSession.activeExercise = nil
         RestTimerState.shared.stop()

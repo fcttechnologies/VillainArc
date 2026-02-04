@@ -102,10 +102,14 @@ struct WorkoutView: View {
                     }
             }
             .sheet(isPresented: $showMoodSheet) {
-                if let mood = workout.preMood {
-                    PreWorkoutMoodView(mood: mood)
-                        .presentationDetents([.fraction(0.4)])
-                }
+                PreWorkoutMoodView(mood: workout.preMood)
+                    .presentationDetents([.fraction(0.4)])
+                    .onDisappear {
+                        if workout.preMood.feeling == .notSet {
+                            workout.preMood.feeling = .okay
+                            saveContext(context: context)
+                        }
+                    }
             }
             .sheet(isPresented: $showTitleEditorSheet) {
                 TextEntryEditorView(title: "Title", placeholder: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField)
@@ -132,11 +136,7 @@ struct WorkoutView: View {
                 activity.appEntityIdentifier = .init(for: entity)
             }
             .task {
-                if workout.preMood == nil {
-                    let mood = PreWorkoutMood(workoutSession: workout)
-                    context.insert(mood)
-                    workout.preMood = mood
-                    saveContext(context: context)
+                if workout.preMood.feeling == .notSet {
                     showMoodSheet = true
                 }
             }
@@ -363,7 +363,7 @@ struct WorkoutView: View {
             }
         }
         Haptics.selection()
-        workout.status = SessionStatus.done.rawValue
+        workout.status = SessionStatus.summary.rawValue
         workout.endedAt = Date()
         workout.activeExercise = nil
         restTimer.stop()
@@ -374,7 +374,6 @@ struct WorkoutView: View {
             await IntentDonations.donateFinishWorkout()
             await IntentDonations.donateLastWorkoutSummary()
         }
-        dismiss()
     }
     
     private func deleteWorkout() {

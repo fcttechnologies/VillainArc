@@ -3,11 +3,8 @@ import SwiftData
 
 @Model
 class PreWorkoutMood {
-    var feeling: MoodLevel = MoodLevel.okay
+    var feeling: MoodLevel = MoodLevel.notSet
     var notes: String = ""
-    var workoutSession: WorkoutSession?
     
-    init(workoutSession: WorkoutSession) {
-        self.workoutSession = workoutSession
-    }
+    init() {}
 }

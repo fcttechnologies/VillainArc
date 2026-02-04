@@ -1,6 +1,7 @@
 import Foundation
 
 enum MoodLevel: String, Codable, CaseIterable {
+    case notSet
     case sick
     case tired
     case okay
@@ -19,6 +20,8 @@ enum MoodLevel: String, Codable, CaseIterable {
             return "😴"
         case .sick:
             return "🤒"
+        case .notSet:
+            return ""
         }
     }
 

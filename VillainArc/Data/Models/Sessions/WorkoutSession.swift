@@ -15,8 +15,8 @@ class WorkoutSession {
         get { SessionStatus(rawValue: status) ?? .active }
         set { status = newValue.rawValue }
     }
-    @Relationship(deleteRule: .cascade, inverse: \PreWorkoutMood.workoutSession)
-    var preMood: PreWorkoutMood?
+    @Relationship(deleteRule: .cascade)
+    var preMood: PreWorkoutMood = PreWorkoutMood()
     @Relationship(deleteRule: .cascade, inverse: \PostWorkoutEffort.workoutSession)
     var postEffort: PostWorkoutEffort?
     @Relationship(deleteRule: .nullify)

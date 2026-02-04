@@ -97,6 +97,32 @@ class ExercisePerformance {
 extension ExercisePerformance: RestTimeEditable {}
 
 extension ExercisePerformance {
+    var bestEstimated1RM: Double? {
+        sets.compactMap(\.estimated1RM).max()
+    }
+
+    var bestWeight: Double? {
+        let maxWeight = sets.map(\.weight).max() ?? 0
+        return maxWeight > 0 ? maxWeight : nil
+    }
+
+    var totalVolume: Double {
+        sets.reduce(0) { $0 + $1.volume }
+    }
+
+    static func historicalBestEstimated1RM(in performances: [ExercisePerformance]) -> Double? {
+        performances.compactMap(\.bestEstimated1RM).max()
+    }
+
+    static func historicalBestWeight(in performances: [ExercisePerformance]) -> Double? {
+        performances.compactMap(\.bestWeight).max()
+    }
+
+    static func historicalBestVolume(in performances: [ExercisePerformance]) -> Double? {
+        let maxVolume = performances.map(\.totalVolume).max() ?? 0
+        return maxVolume > 0 ? maxVolume : nil
+    }
+
     static func lastCompleted(for exercise: ExercisePerformance) -> FetchDescriptor<ExercisePerformance> {
         let catalogID = exercise.catalogID
         let done = SessionStatus.done.rawValue

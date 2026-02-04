@@ -70,12 +70,10 @@ extension WorkoutSessionEntity {
         startedAt = workoutSession.startedAt
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
-        let preMood = workoutSession.preMood.map { mood in
-            WorkoutSessionFullContent.PreWorkoutMood(
-                feeling: mood.feeling.rawValue,
-                notes: mood.notes.isEmpty ? nil : mood.notes
-            )
-        }
+        let preMood = WorkoutSessionFullContent.PreWorkoutMood(
+            feeling: workoutSession.preMood.feeling.rawValue,
+            notes: workoutSession.preMood.notes.isEmpty ? nil : workoutSession.preMood.notes
+        )
         let postEffort = workoutSession.postEffort.map { effort in
             WorkoutSessionFullContent.PostWorkoutEffort(
                 rpe: effort.rpe,

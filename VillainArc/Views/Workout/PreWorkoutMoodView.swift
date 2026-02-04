@@ -14,7 +14,7 @@ struct PreWorkoutMoodView: View {
                     .accessibilityAddTraits(.isHeader)
 
                 HStack(spacing: 12) {
-                    ForEach(MoodLevel.allCases, id: \.self) { level in
+                    ForEach(MoodLevel.allCases.filter { $0 != .notSet }, id: \.self) { level in
                         moodCard(for: level)
                     }
                 }
@@ -76,6 +76,6 @@ struct PreWorkoutMoodView: View {
 }
 
 #Preview {
-    PreWorkoutMoodView(mood: PreWorkoutMood(workoutSession: sampleIncompleteSession()))
+    PreWorkoutMoodView(mood: sampleIncompleteSession().preMood)
         .sampleDataContainerIncomplete()
 }

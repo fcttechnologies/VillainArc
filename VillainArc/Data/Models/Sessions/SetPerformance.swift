@@ -19,6 +19,15 @@ class SetPerformance {
         exercise?.effectiveRestSeconds(after: self) ?? restSeconds
     }
 
+    var estimated1RM: Double? {
+        guard weight > 0, reps > 0 else { return nil }
+        return weight * (1 + (Double(reps) / 30))
+    }
+
+    var volume: Double {
+        max(0, weight) * Double(max(0, reps))
+    }
+
     // Adding set in session
     init(exercise: ExercisePerformance, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0) {
         self.index = exercise.sets.count

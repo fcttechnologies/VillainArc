@@ -60,7 +60,7 @@ struct ContentView: View {
                 }
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
-                WorkoutView(workout: $0)
+                WorkoutSessionContainer(workout: $0)
                     .navigationTransition(.zoom(sourceID: "startWorkout", in: animation))
                     .interactiveDismissDisabled()
             }
