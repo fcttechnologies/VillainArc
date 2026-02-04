@@ -9,7 +9,7 @@
 5. [Suggestion Generation System](#suggestion-generation-system)
 6. [Outcome Evaluation System](#outcome-evaluation-system)
 7. [Context Gathering Tools](#context-gathering-tools)
-8. [AI Integration (Future)](#ai-integration-future)
+8. [AI Integration (V1)](#ai-integration-v1)
 9. [Implementation Roadmap](#implementation-roadmap)
 
 ---
@@ -2146,23 +2146,31 @@ struct OutcomeEvaluation {
 
 ### Purpose
 
-Provide rich context to suggestion generation and outcome evaluation:
-1. **Exercise History**: Recent performance trend for this exercise
-2. **Change History**: Past suggestions + outcomes for this exercise/plan
-3. **User Context**: Health data, readiness, goals
+V1 uses a **minimal context footprint**:
+1. **Exercise History** (cached) for trend awareness
+2. **Prescription + Performance snapshots** passed directly per exercise
+
+Change history and user readiness remain valuable but are **post-V1** (after outcomes are recorded).
 
 ### Tool Functions
 
-#### 1. Exercise Performance History
+#### 1. Exercise History (Cached)
 
 ```swift
 struct ExerciseHistoryContext {
     let catalogID: String
-    let recentPerformances: [ExercisePerformance]  // Last 5-10 sessions
-    let bestEstimated1RM: Double?
-    let bestWeight: Double?
-    let bestVolume: Double?
-    let progressionTrend: ProgressionTrend  // .improving / .plateau / .regressing
+    let totalSessions: Int
+    let last30DaySessions: Int
+    let progressionTrend: ProgressionTrend
+    let lastWorkoutDate: Date?
+
+    // PRs + recent averages (summary only)
+    let bestEstimated1RM: Double
+    let bestWeight: Double
+    let bestVolume: Double
+    let last3AvgWeight: Double
+    let last3AvgVolume: Double
+    let typicalSetCount: Int
 }
 
 enum ProgressionTrend {
@@ -2173,45 +2181,33 @@ enum ProgressionTrend {
 
 @MainActor
 class ExerciseHistoryProvider {
-    static func fetchHistory(
+    static func fetchContext(
         catalogID: String,
-        limit: Int = 10,
         context: ModelContext
-    ) -> ExerciseHistoryContext {
-        let descriptor = ExercisePerformance.matching(catalogID: catalogID)
-        let performances = (try? context.fetch(descriptor)) ?? []
-        let recent = Array(performances.prefix(limit))
-        
+    ) -> ExerciseHistoryContext? {
+        let descriptor = ExerciseHistory.forCatalogID(catalogID)
+        guard let history = try? context.fetch(descriptor).first else {
+            return nil
+        }
+
         return ExerciseHistoryContext(
-            catalogID: catalogID,
-            recentPerformances: recent,
-            bestEstimated1RM: ExercisePerformance.historicalBestEstimated1RM(in: performances),
-            bestWeight: ExercisePerformance.historicalBestWeight(in: performances),
-            bestVolume: ExercisePerformance.historicalBestVolume(in: performances),
-            progressionTrend: calculateTrend(performances: recent)
+            catalogID: history.catalogID,
+            totalSessions: history.totalSessions,
+            last30DaySessions: history.last30DaySessions,
+            progressionTrend: history.progressionTrend,
+            lastWorkoutDate: history.lastWorkoutDate,
+            bestEstimated1RM: history.bestEstimated1RM,
+            bestWeight: history.bestWeight,
+            bestVolume: history.bestVolume,
+            last3AvgWeight: history.last3AvgWeight,
+            last3AvgVolume: history.last3AvgVolume,
+            typicalSetCount: history.typicalSetCount
         )
-    }
-    
-    private static func calculateTrend(performances: [ExercisePerformance]) -> ProgressionTrend {
-        // Compare most recent 3 vs previous 3 sessions
-        guard performances.count >= 6 else { return .plateau }
-        
-        let recent3 = performances.prefix(3).map { $0.totalVolume }
-        let previous3 = performances.dropFirst(3).prefix(3).map { $0.totalVolume }
-        
-        let recentAvg = recent3.reduce(0, +) / Double(recent3.count)
-        let previousAvg = previous3.reduce(0, +) / Double(previous3.count)
-        
-        let change = (recentAvg - previousAvg) / previousAvg
-        
-        if change > 0.05 { return .improving }
-        if change < -0.05 { return .regressing }
-        return .plateau
     }
 }
 ```
 
-#### 2. Suggestion History
+#### 2. Suggestion History (Post-V1)
 
 ```swift
 struct SuggestionHistoryContext {
@@ -2257,7 +2253,7 @@ class SuggestionHistoryProvider {
 }
 ```
 
-#### 3. User Readiness Context (Future)
+#### 3. User Readiness Context (Post-V1)
 
 ```swift
 struct UserReadinessContext {
@@ -2351,54 +2347,54 @@ func determineWeightIncrement(
 
 ---
 
-## AI Integration (Future)
+## AI Integration (V1)
 
 ### Apple FoundationModels Framework
 
-**Purpose**: Refine rule-based suggestions using on-device AI for personalized recommendations.
+**Purpose**: Generate V1 AI suggestions per exercise (weight/reps + rep-range only).
 
-**When to Use**:
-- After rule-based generation produces baseline suggestions
-- AI reviews suggestions + context and can:
-  - Refine values (e.g., rules suggest +5 lbs, AI suggests +7.5 lbs)
-  - Add new suggestions not covered by rules
-  - Adjust reasoning text for clarity
+**V1 Approach**:
+- One AI call per exercise after workout completion
+- Pass prescription + performance snapshots for that exercise plus exercise history summary
+- Clear model context between exercises (no cross-exercise memory)
+- Output can include multiple suggestions per exercise (set-level + rep-range)
 
 ### Guided Generation Approach
 
 **Input Structure** (passed to Foundation Model):
 ```swift
-struct SuggestionGenerationInput: Codable {
+struct ExerciseSuggestionInput: Codable {
+    let catalogID: String
+    let exerciseName: String
+    let trainingStyle: String
     let prescription: PrescriptionSnapshot
     let performance: PerformanceSnapshot
-    let exerciseHistory: ExerciseHistoryContext
-    let suggestionHistory: SuggestionHistoryContext
-    let userReadiness: UserReadinessContext
-    let ruleBasedSuggestions: [PrescriptionChangeSnapshot]
+    let exerciseHistory: ExerciseHistoryContext?
 }
 
 struct PrescriptionSnapshot: Codable {
-    let exerciseName: String
     let repRangeMode: String
-    let repRangeLower: Int
-    let repRangeUpper: Int
-    let sets: [SetSnapshot]
+    let repRangeLower: Int?
+    let repRangeUpper: Int?
+    let repRangeTarget: Int?
+    let sets: [SetPrescriptionSnapshot]
 }
 
-struct SetSnapshot: Codable {
+struct SetPrescriptionSnapshot: Codable {
     let index: Int
     let type: String
     let targetWeight: Double
     let targetReps: Int
-    let targetRest: Int
 }
 
 struct PerformanceSnapshot: Codable {
+    let sessionDate: Date
     let sets: [SetPerformanceSnapshot]
 }
 
 struct SetPerformanceSnapshot: Codable {
     let index: Int
+    let type: String
     let weight: Double
     let reps: Int
     let restSeconds: Int
@@ -2408,17 +2404,16 @@ struct SetPerformanceSnapshot: Codable {
 
 **Output Structure** (from Foundation Model):
 ```swift
-struct SuggestionGenerationOutput: Codable {
+struct ExerciseSuggestionOutput: Codable {
     let suggestions: [AISuggestion]
 }
 
 struct AISuggestion: Codable {
-    let changeType: String  // Maps to ChangeType
+    let changeType: String  // Weight/reps + rep-range only for V1
     let targetSetIndex: Int?
     let previousValue: Double?
     let newValue: Double
     let reasoning: String
-    let confidence: Double  // 0-1
 }
 ```
 
@@ -2429,17 +2424,18 @@ import FoundationModels
 
 @MainActor
 class AISuggestionGenerator {
-    static func refineSuggestions(
-        input: SuggestionGenerationInput,
+    static func generateSuggestions(
+        input: ExerciseSuggestionInput,
         context: ModelContext
     ) async throws -> [PrescriptionChange] {
-        // Use FoundationModels guided generation
-        let model = try await FoundationModel.load(named: "workout-suggestion-model")
-        
-        let output: SuggestionGenerationOutput = try await model.generate(
-            from: input,
-            outputType: SuggestionGenerationOutput.self
+        let session = LanguageModelSession(instructions: "You are a strength coach...")
+
+        let response = try await session.respond(
+            to: "Analyze this exercise and suggest changes.",
+            generating: ExerciseSuggestionOutput.self
         )
+
+        let output = response.value
         
         // Convert AI suggestions to PrescriptionChange records
         return output.suggestions.compactMap { aiSuggestion in
@@ -2702,6 +2698,16 @@ extension Array {
 
 ## Implementation Roadmap
 
+### V1 Scope (First Ship)
+
+- Minimum OS: iOS 26+ (FoundationModels available)
+- Change types: weight + reps, plus rep-range suggestions when missing
+- Training style + rep range aware
+- One AI call per exercise (context cleared each call)
+- Inputs: prescription + performance snapshots + exercise history summary
+- Outputs: one or more suggestions per exercise
+- Outcomes/evaluation deferred
+
 ### Phase 1: Core Infrastructure (Current State ✅)
 
 - [x] `PrescriptionChange` model with all relationships
@@ -2710,60 +2716,53 @@ extension Array {
 - [x] `SuggestionGrouping` for UI display
 - [x] `ExercisePerformance` / `SetPerformance` with PR calculations
 
-### Phase 2: Suggestion Generation (Next)
+### Phase 2: V1 Suggestion Generation (Rules + AI)
 
-**Goal**: Generate rule-based suggestions after workouts
+**Goal**: Generate weight/rep suggestions after workouts (per exercise)
 
 **Tasks**:
 1. Create `SuggestionGenerator.swift` in `VillainArc/Data/Classes/`
-   - Implement core rules (rep range progression, rest time, etc.)
-   - Use existing `PrescriptionChange` model
-2. Create `ExerciseHistoryProvider.swift` in `VillainArc/Data/Classes/`
-   - Fetch recent performance history
-   - Calculate progression trends
-3. Create `SuggestionHistoryProvider.swift` in `VillainArc/Data/Classes/`
-   - Fetch past suggestion history
-   - Calculate acceptance/success rates
-4. Hook into workout completion flow:
-   - In `WorkoutSession` finalization, call `SuggestionGenerator.generateSuggestions()`
+   - Rules for weight/reps only
+   - Rep-range suggestions when missing or inconsistent
+   - Training style-aware set selection
+2. Create `AISuggestionGenerator.swift` in `VillainArc/Data/Classes/`
+   - One AI call per exercise
+   - Input: prescription + performance snapshots + exercise history summary
+   - Output: multiple suggestions allowed (weight/reps + rep-range)
+3. Hook into workout completion flow:
+   - In `WorkoutSession` finalization, call generators and save `PrescriptionChange`
+4. Ensure suggestions appear in `DeferredSuggestionsView`
 5. Test with sample data
 
 **Files to Create**:
 - `VillainArc/Data/Classes/SuggestionGenerator.swift`
-- `VillainArc/Data/Classes/ExerciseHistoryProvider.swift`
-- `VillainArc/Data/Classes/SuggestionHistoryProvider.swift`
+- `VillainArc/Data/Classes/AISuggestionGenerator.swift`
 
-### Phase 3: Outcome Evaluation
+### Phase 3: Outcome Evaluation (Post-V1)
 
 **Goal**: Evaluate suggestion outcomes after subsequent workouts
 
 **Tasks**:
 1. Create `OutcomeEvaluator.swift` in `VillainArc/Data/Classes/`
-   - Implement evaluation rules (good, tooAggressive, tooEasy, ignored)
-   - Match performances to prescription changes
-2. Hook into workout completion flow:
-   - After suggestion generation, also evaluate pending outcomes
+2. Hook into workout completion flow to update outcomes
 3. Add outcome display in suggestion review UI
-4. Test evaluation accuracy
 
 **Files to Create**:
 - `VillainArc/Data/Classes/OutcomeEvaluator.swift`
 
-### Phase 4: User Readiness Context
+### Phase 4: User Readiness Context (Post-V1)
 
 **Goal**: Incorporate health data and readiness signals
 
 **Tasks**:
 1. Create `UserReadinessProvider.swift`
-   - Integrate Apple Health (sleep, HRV, resting HR)
-   - Use `PreWorkoutMood` and session frequency
 2. Adjust suggestion generation based on readiness score
 3. Add UI indicators for readiness (optional)
 
 **Files to Create**:
 - `VillainArc/Data/Classes/UserReadinessProvider.swift`
 
-### Phase 5: Advanced Rules
+### Phase 5: Advanced Rules (Post-V1)
 
 **Goal**: Expand rule set with more sophisticated logic
 
@@ -2773,20 +2772,15 @@ extension Array {
 3. Exercise substitution suggestions (when performance drops)
 4. Progressive overload pacing (based on training age)
 
-### Phase 6: AI Integration
+### Phase 6: AI Expansion (Post-V1)
 
-**Goal**: Use Apple FoundationModels for refined suggestions
+**Goal**: Add richer context + tool calling and AI arbitration
 
 **Tasks**:
-1. Research Apple FoundationModels guided generation API
-2. Create `AISuggestionGenerator.swift`
-3. Define input/output schemas for structured generation
-4. Train/fine-tune model with suggestion history (if needed)
-5. Add UI toggle for AI-enhanced suggestions
-6. A/B test rule-based vs AI-refined suggestions
-
-**Files to Create**:
-- `VillainArc/Data/Classes/AISuggestionGenerator.swift`
+1. Add tool calling (history, readiness, suggestion history)
+2. Use suggestion history + outcomes to bias AI decisions
+3. Optional UI toggle for AI enhancements
+4. A/B test rule-based vs AI-refined suggestions
 
 ---
 
@@ -2829,14 +2823,14 @@ extension Array {
 - [x] Rule evaluation structure
 - [x] Phase-by-phase roadmap
 
-### 📋 Required New Code (To Implement)
+### 📋 Required New Code (V1)
 1. **Array safe subscript** extension (add to Helpers)
-2. **Muscle extension** with isLowerBody/isUpperBody/isCore
-3. **ExerciseSetType extension** with eligibility property
-4. **SuggestionGenerator.swift** with complete pipeline
-5. **MetricsCalculator.swift** for SetMetrics/ExerciseMetrics
-6. **SuggestionDeduplicator.swift** with cooldown logic
-7. **Rule files** in Rules/ folder (6 files total)
+2. **ExerciseSetType + Muscle helpers** (eligibility + increment sizing)
+3. **Training style detection helpers**
+4. **MetricsCalculator.swift** for weight/rep-focused metrics
+5. **SuggestionGenerator.swift** (rules: weight/reps + rep-range inference)
+6. **AISuggestionGenerator.swift** (one call per exercise; map to `PrescriptionChange`)
+7. **Minimal dedup/cooldown** (optional for V1, can be post-V1)
 
 ---
 
@@ -2847,10 +2841,10 @@ This specification provides:
 - ✅ **User editing reconciliation** (already implemented & verified)
 - ✅ **Suggestion grouping UI** (already implemented)
 - ✅ **Model alignment** (all references verified against actual code)
-- 🔲 **Rule-based suggestion generation** (ready to implement - fully specified)
-- 🔲 **Outcome evaluation system** (ready to implement - fully specified)
-- 🔲 **Context gathering tools** (ready to implement - fully specified)
-- 🔲 **AI integration roadmap** (future enhancement - fully specified)
+- 🔲 **V1 suggestion generation (rules + AI)** (weight/reps + rep-range)
+- 🔲 **Outcome evaluation system** (post-V1)
+- 🔲 **Tool calling + richer context** (post-V1)
+- 🔲 **AI expansion roadmap** (post-V1)
 
 ### What Makes This Specification Production-Ready
 1. **Every model reference verified** against actual Swift code
@@ -2862,21 +2856,17 @@ This specification provides:
 7. **effectiveRest checking** prevents inappropriate rest suggestions
 8. **Comprehensive rule set** covers progression, safety, cleanup, and optimization
 9. **Anti-spam system** with cooldowns and deduplication
-10. **Clear implementation phases** with MVR → Phase 2 → Phase 3 → AI
+10. **Clear implementation phases** with V1 → post-V1 outcomes → tool calling
 
 ### Ready to Ship
 
-**Phase 2 Implementation** can begin immediately with:
+**V1 Implementation** can begin immediately with:
 1. Add Array safe subscript extension
-2. Add Muscle/ExerciseSetType extensions
-3. Implement MetricsCalculator
-4. Implement SafetyRules (Rule 1.1)
-5. Implement ProgressiveOverloadRules (Rule 2.1, 2.2)
-6. Implement CleanupRules (Rule 3.1, 3.2)
-7. Implement SuggestionDeduplicator
-8. Wire up SuggestionGenerator entry point
-9. Hook into workout completion flow
-10. Test with sample data
+2. Add ExerciseSetType + Muscle + training style helpers
+3. Implement MetricsCalculator (weight/reps)
+4. Implement V1 rules (progressive overload + rep-range inference)
+5. Implement `AISuggestionGenerator` (per-exercise call)
+6. Wire up generators to workout completion
+7. Test with sample data
 
-**Next Steps**: Begin Phase 2 implementation!
-
+**Next Steps**: Begin V1 implementation!

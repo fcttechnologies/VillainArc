@@ -31,9 +31,18 @@ Context providers gather rich historical and environmental data for both rule-ba
 
 ---
 
+## V1 AI Usage (Per Exercise)
+
+- **Exercise history context is complete** (backed by `ExerciseHistory` + `ExerciseHistoryUpdater`).
+- For AI V1, we **do not** need separate `PrescriptionContext` or `PerformanceContext` providers.
+  - We pass the **prescription + performance snapshots directly** per exercise at generation time.
+- Tool calling and richer context remain **post-V1**.
+
 ## 1. Exercise History Context
 
 **NEW: Backed by `ExerciseHistory` Model** (VillainArc/Data/Models/Exercise/ExerciseHistory.swift)
+
+**Status**: Implemented via cached history updates (`ExerciseHistoryUpdater`).
 
 Instead of calculating statistics on-the-fly, we now maintain a cached `ExerciseHistory` model per exercise that updates when workouts complete. This dramatically improves performance.
 
@@ -137,6 +146,8 @@ class ExerciseHistoryProvider {
 
 ## 2. Prescription Context
 
+**V1 Note**: For AI v1, pass prescription snapshots directly per exercise. This provider is optional and can be deferred until tool calling.
+
 ```swift
 /// Current prescription targets for this exercise
 struct PrescriptionContext: Codable, Sendable {
@@ -207,6 +218,8 @@ class PrescriptionContextProvider {
 ---
 
 ## 3. Performance Context
+
+**V1 Note**: For AI v1, pass performance snapshots directly per exercise. This provider is optional and can be deferred until tool calling.
 
 ```swift
 /// What the user actually did this session

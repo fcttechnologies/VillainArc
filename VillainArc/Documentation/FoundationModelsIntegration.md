@@ -9,6 +9,12 @@ Apple's FoundationModels framework (introduced WWDC 2025, available iOS 26+, mac
 
 Our context gathering architecture aligns extremely well with Apple's Tool protocol design.
 
+**V1 plan (VillainArc)**:
+- One AI call **per exercise** after workout completion
+- Input: prescription + performance snapshots for that exercise **plus** exercise history summary
+- Output: multiple suggestions allowed (weight/reps + rep-range only)
+- Tool calling deferred to post-V1
+
 ---
 
 ## 1. Guided Generation with @Generable
@@ -199,9 +205,18 @@ From Apple's documentation:
 
 ## 3. Applying to VillainArc Context System
 
-### Perfect Alignment
+### V1 Approach (Per-Exercise Input)
 
-Our context gathering architecture maps PERFECTLY to Tool calling:
+For V1 we **do not use tool calling**. We construct an `ExerciseSuggestionInput` per exercise that includes:
+- Prescription snapshot for that exercise
+- Performance snapshot for that exercise
+- Exercise history summary (cached `ExerciseHistory`)
+
+We then call the model **once per exercise** and clear context between calls.
+
+### Tool Calling (Post-V1)
+
+Our context gathering architecture maps well to Tool calling when we expand beyond V1:
 
 ```swift
 // Each context provider becomes a Tool!
@@ -232,28 +247,21 @@ struct GetExerciseHistoryContext: Tool {
 
 ### Making Context Structures @Generable
 
-Our context structures need minor adjustments to work as tool outputs:
+V1 only needs **minimal @Generable support** (no tool calling yet):
+- `ExerciseHistoryContext` (summary, already backed by `ExerciseHistory`)
+- `ExerciseSuggestionInput` (prescription + performance snapshots + history)
 
-#### ✅ Already Compatible (Codable is fine)
-```swift
-// Current structure
-struct ExerciseHistoryContext: Codable, Sendable {
-    let catalogID: String
-    let exerciseName: String
-    let sessionCount: Int
-    // ...
-}
-```
+Other contexts (PrescriptionContext, PerformanceContext, SuggestionHistory, UserReadiness) can remain `Codable` until post-V1 tool calling.
 
-#### ✅ Add @Generable for Tool Output
+#### ✅ Exercise History (V1)
 ```swift
 @Generable
 struct ExerciseHistoryContext: Equatable, Sendable {
     let catalogID: String
-    let exerciseName: String
-    let sessionCount: Int
-    let progressionTrend: ProgressionTrend  // Must also be @Generable
-    // ...
+    let totalSessions: Int
+    let last30DaySessions: Int
+    let progressionTrend: ProgressionTrend
+    // Summary fields only (no large arrays)
 }
 
 @Generable
@@ -266,10 +274,9 @@ enum ProgressionTrend {
 ```
 
 **Changes needed**:
-1. Replace `Codable` with `Equatable` (or keep both)
-2. Add `@Generable` macro
-3. Ensure all nested types are also `@Generable`
-4. Convert computed properties to stored properties (if any)
+1. Add `@Generable` macro
+2. Ensure nested types are also `@Generable`
+3. Keep summary fields only (token efficient)
 
 ### Hybrid Approach: Rules + AI
 
@@ -279,7 +286,7 @@ We can use BOTH approaches:
 // Phase 1: Rule-based (current plan)
 let ruleSuggestions = RuleEngine.generateSuggestions(context: bundle)
 
-// Phase 2: AI enhancement
+// V1: AI per exercise (no tools yet)
 if ruleSuggestions.isEmpty || userPreference.useAI {
     let session = LanguageModelSession(instructions: """
         You are a strength training expert. Analyze workout performance and suggest
@@ -287,13 +294,8 @@ if ruleSuggestions.isEmpty || userPreference.useAI {
         """)
 
     let aiSuggestion = try await session.respond(
-        to: "Analyze this workout and suggest one improvement",
-        generating: AISuggestionResponse.self,
-        tools: [
-            GetExerciseHistoryTool(),
-            GetPrescriptionContextTool(),
-            GetPerformanceContextTool()
-        ]
+        to: "Analyze this exercise and suggest changes",
+        generating: AISuggestionResponse.self
     )
 }
 
@@ -386,44 +388,26 @@ The on-device model has a **limited context window** (exact size not publicly do
 
 ## 5. Implementation Recommendations
 
-### Recommendation 1: Start with Pure Rules (Phase 1)
+### Recommendation 1: V1 Rules + AI (Per Exercise)
 
 **Why**:
-- No token budget concerns
-- Deterministic behavior
-- Faster (no LLM inference)
-- Works offline guaranteed
-- Easier to debug and test
+- Small, per-exercise inputs keep the context window tiny
+- Deterministic rule baseline + AI creativity
+- Weight/reps only keeps changes safe and explainable
 
-**When to add AI**: After rules are working and we identify gaps
-
-### Recommendation 2: Use AI for Complex Cases (Phase 2)
+### Recommendation 2: Run Rules + AI in Parallel (No Arbitration Yet)
 
 ```swift
 func generateSuggestions(
-    performance: ExercisePerformance,
-    prescription: ExercisePrescription,
-    session: WorkoutSession,
-    context: ModelContext
+    input: ExerciseSuggestionInput
 ) async throws -> [PrescriptionChange] {
-    // Try rules first
-    let ruleSuggestions = RuleEngine.generate(...)
-
-    // For ambiguous cases, consult AI
-    if ruleSuggestions.count > 3 {  // Too many competing suggestions
-        return try await aiArbitrator.pickBest(suggestions: ruleSuggestions)
-    }
-
-    if ruleSuggestions.isEmpty && history.sessionCount >= 5 {
-        // Rules didn't find anything, but we have data - let AI look
-        return try await aiGenerator.suggestImprovement(...)
-    }
-
-    return ruleSuggestions
+    let ruleSuggestions = RuleEngine.generate(from: input)
+    let aiSuggestions = try await aiGenerator.suggest(from: input)
+    return dedupe(ruleSuggestions + aiSuggestions)
 }
 ```
 
-### Recommendation 3: Tool Design
+### Recommendation 3: Tool Design (Post-V1)
 
 Each context provider becomes a tool:
 
@@ -546,96 +530,45 @@ Bad: "Maybe try more weight or add sets"
 
 ---
 
-## 6. Context Structure Updates Needed
+## 6. Context Structure Updates Needed (V1)
 
-### Current Structure (Codable)
-```swift
-// VillainArc/Documentation/ContextGatheringArchitecture.md
-struct ExerciseHistoryContext: Codable, Sendable {
-    let catalogID: String
-    let exerciseName: String
-    let recentSessions: [ExerciseSessionSnapshot]
-    let sessionCount: Int
-    let progressionTrend: ProgressionTrend  // enum
-    // ... 15 more properties
-}
-```
+### Exercise History (Already Implemented)
+Backed by cached `ExerciseHistory`. For V1, keep **summary fields only** and add `@Generable` for model input.
 
-### Updated Structure (@Generable)
 ```swift
 @Generable
 struct ExerciseHistoryContext: Equatable, Sendable {
     let catalogID: String
-    let exerciseName: String
-
-    // Keep summary properties (token efficient)
-    let sessionCount: Int
+    let totalSessions: Int
+    let last30DaySessions: Int
     let progressionTrend: ProgressionTrend
-    let last3SessionsAvgWeight: Double
-    let last3SessionsAvgVolume: Double
+    let lastWorkoutDate: Date?
+    let bestEstimated1RM: Double
+    let bestWeight: Double
+    let bestVolume: Double
+    let last3AvgWeight: Double
+    let last3AvgVolume: Double
     let typicalSetCount: Int
-
-    // REMOVE: Complex nested arrays that bloat token count
-    // let recentSessions: [ExerciseSessionSnapshot]  // ❌ Too verbose
-    // let weightProgression: [WeightProgressionPoint]  // ❌ Too verbose
-
-    // KEEP: Key metrics only
-    let bestEstimated1RM: Double?
-    let bestWeight: Double?
-    let bestVolume: Double?
-}
-
-@Generable
-enum ProgressionTrend {
-    case improving
-    case stable
-    case declining
-    case insufficient
 }
 ```
 
-### Key Changes
+### ExerciseSuggestionInput (New)
+Per-exercise input for AI calls (prescription + performance snapshots + history).
 
-1. **Remove nested arrays** (bloat context window)
-   - `recentSessions: [ExerciseSessionSnapshot]` → Keep only aggregate stats
-   - `weightProgression: [WeightProgressionPoint]` → Keep trend enum instead
+```swift
+@Generable
+struct ExerciseSuggestionInput: Equatable, Sendable {
+    let catalogID: String
+    let exerciseName: String
+    let trainingStyle: String
+    let prescription: PrescriptionSnapshot
+    let performance: PerformanceSnapshot
+    let exerciseHistory: ExerciseHistoryContext?
+}
+```
 
-2. **Keep summary statistics** (token efficient)
-   - `last3SessionsAvgWeight` ✅
-   - `progressionTrend` ✅
-   - `typicalSetCount` ✅
-
-3. **Simplify nested types**
-   ```swift
-   // OLD: Nested struct with 8 properties
-   struct ExerciseSessionSnapshot: Codable {
-       let date: Date
-       let topSetWeight: Double
-       let topSetReps: Int
-       // ... 5 more properties
-   }
-
-   // NEW: Just include the trend
-   enum ProgressionTrend { ... }
-   ```
-
-4. **Add @Generable to all types**
-   ```swift
-   @Generable
-   struct PrescriptionContext: Equatable, Sendable { ... }
-
-   @Generable
-   struct PerformanceContext: Equatable, Sendable { ... }
-
-   @Generable
-   struct ChangeHistoryContext: Equatable, Sendable { ... }
-
-   @Generable
-   struct UserReadinessContext: Equatable, Sendable { ... }
-
-   @Generable
-   struct SessionContext: Equatable, Sendable { ... }
-   ```
+### Post-V1
+`PrescriptionContext`, `PerformanceContext`, `SuggestionHistoryContext`, and `UserReadinessContext` can remain `Codable` until tool calling is added.
 
 ---
 
@@ -690,33 +623,27 @@ Since FoundationModels requires actual device/simulator:
 
 ## 8. Migration Path
 
-### Phase 1: Pure Rules (Current Plan)
-- Implement all 17 rules
-- Use `Codable` context structures
-- No AI dependency
-- Test and validate with users
+### V1: Rules + AI (Weight/Reps Only)
+- One AI call per exercise (context cleared between calls)
+- Input: prescription + performance snapshots + exercise history summary
+- No tool calling in V1
+- No outcome evaluation required for initial ship
 
-### Phase 2: Hybrid (AI Enhancement)
-1. **Update context structures**
-   - Add `@Generable` to all context types
-   - Simplify nested structures
-   - Keep `Codable` conformance too (for persistence)
+### V2: Outcomes + Tool Calling
+1. **Outcome evaluation**
+   - Record `Outcome` after subsequent workouts
+   - Surface outcomes in review UI
+2. **Tool calling**
+   - Add tools for history, readiness, suggestion history
+   - Provide 3–5 tools per request for token efficiency
+3. **Token optimization**
+   - Use summary fields only
+   - Split calls if necessary
 
-2. **Create tool wrappers**
-   - Implement 6-7 Tool types (one per context provider)
-   - Test tool invocations independently
-
-3. **Add AI fallback**
-   - Use AI only when rules fail or conflict
-   - Instructions for safety-first coaching
-
-4. **Token optimization**
-   - Monitor context window usage
-   - Adjust which tools are provided per suggestion type
-
-5. **User preference**
-   - Setting to enable/disable AI suggestions
-   - Default to rules-only for predictability
+### V3: Advanced Rules + AI Arbitration
+- Use outcomes to bias both rules and AI
+- Add readiness-based adjustments
+- Optional user preference toggle for AI enhancements
 
 ---
 
@@ -733,16 +660,14 @@ Since FoundationModels requires actual device/simulator:
 - **Streaming**: Can show partial results immediately
 
 ### Platform Requirements
-- iOS 26+, macOS 26+, iPadOS 26+
-- Not available on older OS versions
-- Fallback: Use rules-only on older devices
+- VillainArc minimum OS for V1: iOS 26+ (FoundationModels available)
+- If older OS support is added later, keep a rules-only fallback
 
 ```swift
+// Only needed if we ever support < iOS 26
 if #available(iOS 26, macOS 26, *) {
-    // AI-enhanced suggestions
     return try await aiGenerator.suggest(...)
 } else {
-    // Rules-only
     return RuleEngine.generate(...)
 }
 ```
@@ -781,13 +706,12 @@ if #available(iOS 26, macOS 26, *) {
 
 ### Next Steps
 
-1. ✅ Complete Phase 1 (rules engine) as planned
-2. ⏸️ Update context structures to support @Generable
-3. ⏸️ Implement Tool wrappers for each context provider
-4. ⏸️ Create AI suggestion generator with proper instructions
-5. ⏸️ Add hybrid logic (rules first, AI fallback)
-6. ⏸️ Test with real workout data
-7. ⏸️ Ship rules-only first, enable AI in later update
+1. ✅ Define V1 scope (weight/reps + rep-range only, iOS 26+)
+2. ⏳ Add `@Generable` to `ExerciseHistoryContext` + `ExerciseSuggestionInput`
+3. ⏳ Implement `AISuggestionGenerator` (one call per exercise)
+4. ⏳ Implement V1 rules (progressive overload + rep-range inference)
+5. ⏳ Wire into workout completion + suggestion review UI
+6. ⏳ Test with real workout data
 
 ---
 
