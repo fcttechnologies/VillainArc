@@ -388,6 +388,204 @@ class PreviewDataContainer {
         context.insert(change7)
     }
 
+    // MARK: - Suggestion Generation Scenario
+
+    func loadSuggestionGenerationScenario() {
+        let plan = WorkoutPlan()
+        plan.title = "Progression Test Plan"
+        plan.completed = true
+        context.insert(plan)
+
+        let planExercises: [(id: String, repRange: RepRangeMode, lower: Int, upper: Int, target: Int, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
+            ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
+                (.regular, 60, 8, 90),
+                (.regular, 60, 8, 90)
+            ]),
+            ("barbell_bent_over_row", .range, 8, 10, 0, [
+                (.regular, 135, 8, 120),
+                (.regular, 135, 8, 120)
+            ]),
+            ("cable_bench_chest_fly", .notSet, 0, 0, 0, [
+                (.regular, 30, 12, 90),
+                (.regular, 30, 12, 90)
+            ]),
+            ("cable_bar_pushdown", .range, 10, 12, 0, [
+                (.regular, 55, 10, 60),
+                (.regular, 55, 10, 60)
+            ])
+        ]
+
+        for (index, ex) in planExercises.enumerated() {
+            let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+            let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+            prescription.index = index
+            prescription.repRange.activeMode = ex.repRange
+            if ex.repRange == .range {
+                prescription.repRange.lowerRange = ex.lower
+                prescription.repRange.upperRange = ex.upper
+            } else if ex.repRange == .target {
+                prescription.repRange.targetReps = ex.target
+            }
+
+            for (setIndex, s) in ex.sets.enumerated() {
+                let setPrescription = SetPrescription(exercisePrescription: prescription)
+                setPrescription.index = setIndex
+                setPrescription.type = s.type
+                setPrescription.targetWeight = s.weight
+                setPrescription.targetReps = s.reps
+                setPrescription.targetRest = s.rest
+                prescription.sets.append(setPrescription)
+            }
+
+            plan.exercises.append(prescription)
+        }
+
+        let historySessions: [(date: Date, exercises: [(id: String, repRange: RepRangeMode, lower: Int, upper: Int, target: Int, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])])] = [
+            (
+                date(2026, 2, 1, 8, 0),
+                [
+                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
+                        (.regular, 60, 10),
+                        (.regular, 60, 10)
+                    ]),
+                    ("barbell_bent_over_row", .range, 8, 10, 0, [
+                        (.regular, 135, 6),
+                        (.regular, 135, 6)
+                    ]),
+                    ("cable_bench_chest_fly", .range, 12, 15, 0, [
+                        (.regular, 30, 12),
+                        (.regular, 30, 12)
+                    ]),
+                    ("cable_bar_pushdown", .range, 10, 12, 0, [
+                        (.failure, 55, 12),
+                        (.failure, 55, 11)
+                    ])
+                ]
+            ),
+            (
+                date(2026, 2, 3, 8, 0),
+                [
+                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
+                        (.regular, 60, 10),
+                        (.regular, 60, 10)
+                    ]),
+                    ("barbell_bent_over_row", .range, 8, 10, 0, [
+                        (.regular, 135, 7),
+                        (.regular, 135, 7)
+                    ]),
+                    ("cable_bench_chest_fly", .range, 12, 15, 0, [
+                        (.regular, 30, 13),
+                        (.regular, 30, 12)
+                    ]),
+                    ("cable_bar_pushdown", .range, 10, 12, 0, [
+                        (.failure, 55, 12),
+                        (.failure, 55, 10)
+                    ])
+                ]
+            ),
+            (
+                date(2026, 2, 5, 8, 0),
+                [
+                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
+                        (.regular, 60, 10),
+                        (.regular, 60, 10)
+                    ]),
+                    ("barbell_bent_over_row", .range, 8, 10, 0, [
+                        (.regular, 135, 9),
+                        (.regular, 135, 8)
+                    ]),
+                    ("cable_bench_chest_fly", .range, 12, 15, 0, [
+                        (.regular, 30, 12),
+                        (.regular, 30, 12)
+                    ]),
+                    ("cable_bar_pushdown", .range, 10, 12, 0, [
+                        (.failure, 55, 12),
+                        (.failure, 55, 12)
+                    ])
+                ]
+            )
+        ]
+
+        for (sessionIndex, history) in historySessions.enumerated() {
+            let session = WorkoutSession()
+            session.title = "History Session \(sessionIndex + 1)"
+            session.status = SessionStatus.done.rawValue
+            session.startedAt = history.date
+            session.endedAt = history.date.addingTimeInterval(45 * 60)
+            context.insert(session)
+
+            for (exerciseIndex, ex) in history.exercises.enumerated() {
+                let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+                let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
+                performance.index = exerciseIndex
+                performance.repRange.activeMode = ex.repRange
+                if ex.repRange == .range {
+                    performance.repRange.lowerRange = ex.lower
+                    performance.repRange.upperRange = ex.upper
+                } else if ex.repRange == .target {
+                    performance.repRange.targetReps = ex.target
+                }
+
+                for (setIndex, s) in ex.sets.enumerated() {
+                    let setPerf = SetPerformance(exercise: performance)
+                    setPerf.index = setIndex
+                    setPerf.type = s.type
+                    setPerf.weight = s.weight
+                    setPerf.reps = s.reps
+                    setPerf.restSeconds = s.type == .warmup ? 60 : 90
+                    setPerf.complete = true
+                    setPerf.completedAt = history.date.addingTimeInterval(Double((exerciseIndex * 3 + setIndex + 1) * 120))
+                    performance.sets.append(setPerf)
+                }
+
+                session.exercises.append(performance)
+            }
+        }
+
+        let session = WorkoutSession(from: plan)
+        session.title = "Summary Test Session"
+        session.status = SessionStatus.summary.rawValue
+        session.startedAt = date(2026, 2, 7, 8, 0)
+        session.endedAt = date(2026, 2, 7, 9, 0)
+        context.insert(session)
+
+        for (exerciseIndex, performance) in session.sortedExercises.enumerated() {
+            for (setIndex, set) in performance.sortedSets.enumerated() {
+                set.complete = true
+                set.completedAt = session.startedAt.addingTimeInterval(Double((exerciseIndex * 3 + setIndex + 1) * 120))
+            }
+        }
+
+        if let incline = session.sortedExercises.first(where: { $0.catalogID == "dumbbell_incline_bench_press" }) {
+            for set in incline.sortedSets where set.type == .regular {
+                set.weight = 60
+                set.reps = 10
+            }
+        }
+
+        if let row = session.sortedExercises.first(where: { $0.catalogID == "barbell_bent_over_row" }) {
+            for set in row.sortedSets where set.type == .regular {
+                set.weight = 135
+                set.reps = 7
+            }
+        }
+
+        if let fly = session.sortedExercises.first(where: { $0.catalogID == "cable_bench_chest_fly" }) {
+            for set in fly.sortedSets where set.type == .regular {
+                set.weight = 30
+                set.reps = 12
+            }
+        }
+
+        if let pushdown = session.sortedExercises.first(where: { $0.catalogID == "cable_bar_pushdown" }) {
+            for set in pushdown.sortedSets where set.type == .regular {
+                set.weight = 55
+                set.reps = 12
+                set.type = .failure
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
@@ -403,6 +601,11 @@ private let sampleContainerWithIncomplete = PreviewDataContainer(includeIncomple
 private let sampleContainerWithSuggestions: PreviewDataContainer = {
     let container = PreviewDataContainer()
     container.loadSessionWithSuggestions()
+    return container
+}()
+private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
+    let container = PreviewDataContainer()
+    container.loadSuggestionGenerationScenario()
     return container
 }()
 
@@ -516,6 +719,22 @@ func sampleSessionWithSuggestions() -> WorkoutSession {
     return fallback
 }
 
+@MainActor
+func sampleSuggestionGenerationSession() -> WorkoutSession {
+    let summaryStatus = SessionStatus.summary.rawValue
+    let predicate = #Predicate<WorkoutSession> { $0.status == summaryStatus }
+    var descriptor = FetchDescriptor(predicate: predicate)
+    descriptor.fetchLimit = 1
+    if let session = (try? sampleContainerSuggestionGeneration.context.fetch(descriptor))?.first {
+        return session
+    }
+    let fallback = WorkoutSession()
+    fallback.title = "Suggestion Generation (Fallback)"
+    fallback.status = SessionStatus.summary.rawValue
+    sampleContainerSuggestionGeneration.context.insert(fallback)
+    return fallback
+}
+
 // MARK: - View Modifiers
 
 extension View {
@@ -529,5 +748,9 @@ extension View {
     
     func sampleDataContainerSuggestions() -> some View {
         self.modelContainer(sampleContainerWithSuggestions.modelContainer)
+    }
+
+    func sampleDataContainerSuggestionGeneration() -> some View {
+        self.modelContainer(sampleContainerSuggestionGeneration.modelContainer)
     }
 }

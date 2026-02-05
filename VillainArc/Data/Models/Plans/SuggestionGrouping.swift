@@ -29,6 +29,7 @@ struct ExerciseSuggestionSection: Identifiable {
 
 
 func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSection] {
+    // Group by exercise -> set/policy, then sort with a stable ordering.
     let byExercise = Dictionary(grouping: changes) { $0.targetExercisePrescription?.id }
     
     return byExercise.compactMap { (_, exerciseChanges) in
@@ -36,31 +37,31 @@ func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSec
         
         var groups: [SuggestionGroup] = []
         
-        // Separate set-level vs exercise-level
+        // Separate set-level vs exercise-level changes.
         let setChanges = exerciseChanges.filter { $0.targetSetPrescription != nil }
         let exerciseLevelChanges = exerciseChanges.filter { $0.targetSetPrescription == nil }
         
-        // Group set changes by setID
+        // Group set changes by setID (one group per set).
         let bySet = Dictionary(grouping: setChanges) { $0.targetSetPrescription!.id }
         for (_, changes) in bySet {
             groups.append(SuggestionGroup(
-                changes: changes,
+                changes: sortedChanges(changes, policy: nil),
                 setPrescription: changes.first?.targetSetPrescription,
                 policy: nil
             ))
         }
         
-        // Group exercise-level changes by policy
+        // Group exercise-level changes by policy (rep range vs rest time).
         let byPolicy = Dictionary(grouping: exerciseLevelChanges) { $0.changeType.policy }
         for (policy, changes) in byPolicy {
             groups.append(SuggestionGroup(
-                changes: changes,
+                changes: sortedChanges(changes, policy: policy),
                 setPrescription: nil,
                 policy: policy
             ))
         }
         
-        // Sort: sets by index, then exercise-level policies
+        // Sort: set groups by index, then exercise-level policies.
         groups.sort {
             let aOrder = $0.setPrescription?.index ?? (1000 + ($0.policy == .repRange ? 0 : 1))
             let bOrder = $1.setPrescription?.index ?? (1000 + ($1.policy == .repRange ? 0 : 1))
@@ -69,6 +70,69 @@ func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSec
         
         return ExerciseSuggestionSection(exercisePrescription: exercise, groups: groups)
     }.sorted { $0.exercisePrescription.index < $1.exercisePrescription.index }
+}
+
+private func sortedChanges(_ changes: [PrescriptionChange], policy: ChangePolicy?) -> [PrescriptionChange] {
+    // Stable ordering inside each group.
+    changes.sorted { lhs, rhs in
+        let lhsOrder = changeOrder(for: lhs.changeType, policy: policy)
+        let rhsOrder = changeOrder(for: rhs.changeType, policy: policy)
+        if lhsOrder != rhsOrder {
+            return lhsOrder < rhsOrder
+        }
+        // Tie-breaker by creation time so the UI order is deterministic.
+        return lhs.createdAt < rhs.createdAt
+    }
+}
+
+private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> Int {
+    // Policy-specific ordering keeps the UI consistent and predictable.
+    if policy == .repRange {
+        switch changeType {
+        case .changeRepRangeMode:
+            return 1
+        case .increaseRepRangeLower, .decreaseRepRangeLower:
+            return 2
+        case .increaseRepRangeUpper, .decreaseRepRangeUpper:
+            return 3
+        case .increaseRepRangeTarget, .decreaseRepRangeTarget:
+            return 4
+        default:
+            return 10
+        }
+    }
+
+    if policy == .restTime {
+        switch changeType {
+        case .changeRestTimeMode:
+            return 1
+        case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
+            return 2
+        default:
+            return 10
+        }
+    }
+
+    switch changeType {
+    case .increaseWeight, .decreaseWeight:
+        return 1
+    case .increaseReps, .decreaseReps:
+        return 2
+    case .increaseRest, .decreaseRest:
+        return 3
+    case .changeSetType:
+        return 4
+    case .addSet, .removeSet:
+        return 5
+    case .changeRepRangeMode,
+         .increaseRepRangeLower, .decreaseRepRangeLower,
+         .increaseRepRangeUpper, .decreaseRepRangeUpper,
+         .increaseRepRangeTarget, .decreaseRepRangeTarget,
+         .changeRestTimeMode,
+         .increaseRestTimeSeconds, .decreaseRestTimeSeconds,
+         .addExercise, .removeExercise, .reorderExercise:
+        return 10
+    }
 }
 
 

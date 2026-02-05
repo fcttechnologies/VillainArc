@@ -18,10 +18,12 @@ struct WorkoutSummaryView: View {
     @Bindable var workout: WorkoutSession
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Query private var sessionSuggestions: [PrescriptionChange]
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var prEntries: [PRItem] = []
+    @State private var isGeneratingSuggestions = false
 
     private var totalExercises: Int {
         workout.exercises.count
@@ -46,6 +48,23 @@ struct WorkoutSummaryView: View {
             return "\(hours)h \(minutes)m"
         }
         return "\(minutes)m"
+    }
+
+    private var shouldShowSuggestions: Bool {
+        workout.workoutPlan != nil
+    }
+
+    private var suggestionSections: [ExerciseSuggestionSection] {
+        groupSuggestions(sessionSuggestions)
+    }
+
+    init(workout: WorkoutSession) {
+        _workout = Bindable(wrappedValue: workout)
+        let sessionID = workout.id
+        _sessionSuggestions = Query(
+            filter: #Predicate<PrescriptionChange> { $0.sessionFrom?.id == sessionID },
+            sort: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
     }
 
     var body: some View {
@@ -106,7 +125,34 @@ struct WorkoutSummaryView: View {
                     }
                     .buttonStyle(.plain)
 
-                    if !prEntries.isEmpty {
+                    if shouldShowSuggestions {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if isGeneratingSuggestions {
+                                ProgressView("Generating suggestions...")
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            } else {
+                                Text("Suggestions")
+                                    .font(.headline)
+                                SuggestionReviewView(
+                                    sections: suggestionSections,
+                                    onAcceptGroup: { changes in
+                                        acceptGroup(changes, context: context)
+                                    },
+                                    onRejectGroup: { changes in
+                                        rejectGroup(changes, context: context)
+                                    },
+                                    onDeferGroup: { changes in
+                                        deferGroup(changes, context: context)
+                                    },
+                                    showDecisionState: true,
+                                    emptyState: SuggestionEmptyState(
+                                        title: "No Suggestions Yet",
+                                        message: "Keep logging workouts so we have enough information to give you detailed suggestions."
+                                    )
+                                )
+                            }
+                        }
+                    } else if !prEntries.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(prEntries) { entry in
                                 prRow(entry)
@@ -132,13 +178,22 @@ struct WorkoutSummaryView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", systemImage: "checkmark") {
+                    Button {
                         finishSummary()
+                    } label: {
+                        if isGeneratingSuggestions {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Label("Done", systemImage: "checkmark")
+                        }
                     }
+                    .disabled(isGeneratingSuggestions)
                 }
             }
-            .task {
+            .task(id: workout.id) {
                 loadPRs()
+                await generateSuggestionsIfNeeded()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
                 TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField, axis: .vertical)
@@ -270,10 +325,10 @@ struct WorkoutSummaryView: View {
 
     private func finishSummary() {
         Haptics.selection()
+        deferRemainingSuggestions()
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
         
-        // Update exercise histories after marking workout as done
         ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
         
         dismiss()
@@ -286,6 +341,39 @@ struct WorkoutSummaryView: View {
         workout.workoutPlan = plan
         saveContext(context: context)
     }
+
+    @MainActor
+    private func generateSuggestionsIfNeeded() async {
+        guard shouldShowSuggestions else { return }
+        guard !isGeneratingSuggestions else { return }
+
+        guard sessionSuggestions.isEmpty else { return }
+
+        isGeneratingSuggestions = true
+        defer { isGeneratingSuggestions = false }
+
+        let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
+        if !generated.isEmpty {
+            for change in generated {
+                context.insert(change)
+            }
+            saveContext(context: context)
+        }
+    }
+
+    @MainActor
+    private func deferRemainingSuggestions() {
+        guard !sessionSuggestions.isEmpty else { return }
+        for change in sessionSuggestions where change.decision == .pending {
+            change.decision = .deferred
+        }
+        saveContext(context: context)
+    }
+}
+
+#Preview {
+    WorkoutSummaryView(workout: sampleSuggestionGenerationSession())
+        .sampleDataContainerSuggestionGeneration()
 }
 
 #Preview {

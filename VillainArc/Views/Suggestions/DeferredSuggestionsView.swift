@@ -6,7 +6,7 @@ struct DeferredSuggestionsView: View {
     @Environment(\.modelContext) private var context
     
     @State private var sections: [ExerciseSuggestionSection] = []
-    @State private var pendingChanges: [PrescriptionChange] = []
+    @State private var sessionChanges: [PrescriptionChange] = []
     
     var body: some View {
         NavigationStack {
@@ -25,13 +25,14 @@ struct DeferredSuggestionsView: View {
                         sections: sections,
                         onAcceptGroup: { changes in
                             acceptGroup(changes, context: context)
-                            removeProcessedChanges(changes)
+                            refreshSections()
                         },
                         onRejectGroup: { changes in
                             rejectGroup(changes, context: context)
-                            removeProcessedChanges(changes)
+                            refreshSections()
                         },
-                        onDeferGroup: nil  // No defer option in pre-workout
+                        onDeferGroup: nil,  // No defer option in pre-workout
+                        showDecisionState: true
                     )
                 }
                 .fontDesign(.rounded)
@@ -62,28 +63,25 @@ struct DeferredSuggestionsView: View {
             return
         }
         
-        pendingChanges = pendingSuggestions(for: plan, in: context)
-        
-        if pendingChanges.isEmpty {
+        sessionChanges = pendingSuggestions(for: plan, in: context)
+        sections = groupSuggestions(sessionChanges)
+
+        if sessionChanges.isEmpty {
             workout.status = SessionStatus.active.rawValue
-        } else {
-            sections = groupSuggestions(pendingChanges)
         }
     }
     
-    private func removeProcessedChanges(_ processed: [PrescriptionChange]) {
-        let processedIDs = Set(processed.map { $0.id })
-        pendingChanges.removeAll { processedIDs.contains($0.id) }
-        sections = groupSuggestions(pendingChanges)
-        
-        if pendingChanges.isEmpty {
+    private func refreshSections() {
+        sections = groupSuggestions(sessionChanges)
+        let hasUndecided = sessionChanges.contains { $0.decision == .pending || $0.decision == .deferred }
+        if !hasUndecided {
             proceedToWorkout()
         }
     }
     
     private func skipAll() {
         Haptics.selection()
-        for change in pendingChanges {
+        for change in sessionChanges where change.decision == .deferred || change.decision == .pending {
             change.decision = .rejected
         }
         saveContext(context: context)
@@ -92,7 +90,7 @@ struct DeferredSuggestionsView: View {
     
     private func acceptAll() {
         Haptics.selection()
-        for change in pendingChanges {
+        for change in sessionChanges where change.decision == .pending || change.decision == .deferred {
             change.decision = .accepted
             applyChange(change)
         }

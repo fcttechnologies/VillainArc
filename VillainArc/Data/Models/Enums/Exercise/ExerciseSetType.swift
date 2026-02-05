@@ -22,7 +22,7 @@ enum ExerciseSetType: Int, Codable, CaseIterable {
         }
     }
     
-    var displayName : String {
+    nonisolated var displayName : String {
         switch self {
         case .regular:
             return "Regular Set"

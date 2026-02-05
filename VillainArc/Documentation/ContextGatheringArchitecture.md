@@ -1,852 +1,242 @@
 # Context Gathering Architecture
 
-## Overview
+## Purpose
 
-Context providers gather rich historical and environmental data for both rule-based suggestions and AI model calls. All context structures are `Codable` for easy serialization to FoundationModels.
-
----
-
-## Context Provider Categories
-
-### 1. Exercise History Context
-**Purpose**: Track progression, trends, and patterns for a specific exercise over time.
-
-### 2. Prescription Context
-**Purpose**: Current targets and policies for the exercise.
-
-### 3. Performance Context  
-**Purpose**: What the user actually did this session.
-
-### 4. Change History Context
-**Purpose**: Past suggestions, decisions, and outcomes for this exercise.
-
-### 5. User Readiness Context
-**Purpose**: Recovery state, mood, health signals.
-
-### 6. Session Context
-**Purpose**: When, how long, what else was done this session.
-
-### 7. Program Context (Future)
-**Purpose**: Broader training context (volume, frequency, split type).
+Describes how workout context is gathered and provided to both rule-based and AI suggestion systems.
 
 ---
 
-## V1 AI Usage (Per Exercise)
+## Current Implementation (Feb 2026)
 
-- **Exercise history context is complete** (backed by `ExerciseHistory` + `ExerciseHistoryUpdater`).
-- For AI V1, we **do not** need separate `PrescriptionContext` or `PerformanceContext` providers.
-  - We pass the **prescription + performance snapshots directly** per exercise at generation time.
-- Tool calling and richer context remain **post-V1**.
+### Rule-Based Suggestions
 
-## 1. Exercise History Context
+Rules receive context through `ExerciseSuggestionContext` struct:
+- `session: WorkoutSession` - Current workout session
+- `performance: ExercisePerformance` - What user just performed
+- `prescription: ExercisePrescription` - What user was supposed to do
+- `history: [ExercisePerformance]` - Last 3 performances for this exercise
+- `historySummary: ExerciseHistory?` - Cached aggregate stats
+- `plan: WorkoutPlan` - The workout plan being followed
 
-**NEW: Backed by `ExerciseHistory` Model** (VillainArc/Data/Models/Exercise/ExerciseHistory.swift)
+**Location**: `VillainArc/Data/Classes/Suggestions/SuggestionGenerator.swift`
+**How**: Context built per exercise, passed directly to `RuleEngine.evaluate()`
 
-**Status**: Implemented via cached history updates (`ExerciseHistoryUpdater`).
+### AI Suggestions
 
-Instead of calculating statistics on-the-fly, we now maintain a cached `ExerciseHistory` model per exercise that updates when workouts complete. This dramatically improves performance.
+AI receives context through `AIExerciseSuggestionInput` struct:
+- `catalogID: String` - Exercise identifier
+- `exerciseName: String` - Display name
+- `primaryMuscle: String` - Primary muscle targeted
+- `prescription: AIExercisePrescriptionSnapshot` - Target sets/reps/rest
+- `performance: AIExercisePerformanceSnapshot` - Actual sets/reps/rest with ISO 8601 date string
 
-```swift
-import Foundation
-import SwiftData
+**Location**: `VillainArc/Data/Classes/Suggestions/AISuggestionGenerator.swift`
+**How**: Snapshots created from domain models, passed directly in prompt
 
-/// Historical performance data for a specific exercise across multiple sessions
-/// Sourced from cached ExerciseHistory model (updated when workouts complete)
-struct ExerciseHistoryContext: Codable, Sendable {
-    let catalogID: String
-    
-    // Progression metrics
-    let totalSessions: Int
-    let last30DaySessions: Int
-    let progressionTrend: ProgressionTrend
-    let lastWorkoutDate: Date?
-    
-    // Historical bests (PRs)
-    let bestEstimated1RM: Double
-    let bestEstimated1RMDate: Date?
-    let bestWeight: Double
-    let bestWeightDate: Date?
-    let bestVolume: Double
-    let bestVolumeDate: Date?
-    let bestRepsAtWeight: [WeightRepsRecord]  // All weight/rep PRs
-    
-    // Recent averages (last 3 sessions)
-    let last3AvgWeight: Double
-    let last3AvgVolume: Double
-    let last3AvgSetCount: Int
-    let last3AvgRestSeconds: Int
-    
-    // Typical patterns (all-time)
-    let typicalSetCount: Int
-    let typicalRepRangeLower: Int
-    let typicalRepRangeUpper: Int
-    let typicalRestSeconds: Int
-    
-    // Weight progression for charting (last 10 sessions)
-    let progressionPoints: [ProgressionPoint]
-}
-
-// ProgressionTrend is now a proper enum in VillainArc/Data/Models/Enums/Exercise/ProgressionTrend.swift
-// ProgressionPoint is now a SwiftData @Model in VillainArc/Data/Models/Exercise/ProgressionPoint.swift
-
-struct WeightRepsRecord: Codable, Sendable {
-    let weight: Double
-    let reps: Int
-}
-```
-
-**Provider Implementation (uses cached ExerciseHistory):**
-```swift
-@MainActor
-class ExerciseHistoryProvider {
-    static func fetchContext(
-        catalogID: String,
-        context: ModelContext
-    ) -> ExerciseHistoryContext? {
-        // Fetch cached history model
-        let descriptor = ExerciseHistory.forCatalogID(catalogID)
-        guard let history = try? context.fetch(descriptor).first else {
-            return nil  // No history exists yet
-        }
-        
-        // Convert to context structure
-        let repsRecords = history.bestRepsAtWeight.map { weight, reps in
-            WeightRepsRecord(weight: weight, reps: reps)
-        }.sorted { $0.weight > $1.weight }  // Descending weight
-
-        
-        return ExerciseHistoryContext(
-            catalogID: history.catalogID,
-            totalSessions: history.totalSessions,
-            last30DaySessions: history.last30DaySessions,
-            progressionTrend: history.progressionTrend,  // Direct access (computed property)
-            lastWorkoutDate: history.lastWorkoutDate,
-            bestEstimated1RM: history.bestEstimated1RM,
-            bestEstimated1RMDate: history.bestEstimated1RMDate,
-            bestWeight: history.bestWeight,
-            bestWeightDate: history.bestWeightDate,
-            bestVolume: history.bestVolume,
-            bestVolumeDate: history.bestVolumeDate,
-            bestRepsAtWeight: repsRecords,
-            last3AvgWeight: history.last3AvgWeight,
-            last3AvgVolume: history.last3AvgVolume,
-            last3AvgSetCount: history.last3AvgSetCount,
-            last3AvgRestSeconds: history.last3AvgRestSeconds,
-            typicalSetCount: history.typicalSetCount,
-            typicalRepRangeLower: history.typicalRepRangeLower,
-            typicalRepRangeUpper: history.typicalRepRangeUpper,
-            typicalRestSeconds: history.typicalRestSeconds,
-            progressionPoints: history.sortedProgressionPoints  // Use sorted computed property
-        )
-    }
-}
-```
+**Additional Context (on-demand via tools)**:
+- `getExerciseHistoryContext` - Returns cached aggregate stats
+- `getRecentExercisePerformances` - Returns last N detailed performances
 
 ---
 
-## 2. Prescription Context
+## Context Sources
 
-**V1 Note**: For AI v1, pass prescription snapshots directly per exercise. This provider is optional and can be deferred until tool calling.
+### 1. ExerciseHistory (Cached Aggregates)
 
-```swift
-/// Current prescription targets for this exercise
-struct PrescriptionContext: Codable, Sendable {
-    let exerciseName: String
-    let exerciseID: UUID
-    
-    // Rep range policy
-    let repRangeMode: String
-    let repRangeLower: Int?
-    let repRangeUpper: Int?
-    let repRangeTarget: Int?
-    
-    // Rest time policy
-    let restTimeMode: String
-    let restTimeAllSameSeconds: Int?
-    
-    // Sets
-    let sets: [SetPrescriptionSnapshot]
-    let totalPrescribedVolume: Double  // Sum of target weight * target reps
-}
+**What**: Pre-computed statistics across ALL completed sessions for an exercise
+**Model**: `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
+**Updater**: `VillainArc/Data/Classes/ExerciseHistoryUpdater.swift`
+**When Updated**: After workout completion, workout deletion, or manual rebuild
 
-struct SetPrescriptionSnapshot: Codable, Sendable {
-    let index: Int
-    let setID: UUID
-    let type: String
-    let targetWeight: Double
-    let targetReps: Int
-    let targetRest: Int
-}
+**Contains**:
+- Session counts (total, last 30 days)
+- PRs (best 1RM, best weight, best volume, best reps at weight)
+- Recent averages (last 3 sessions: weight, volume, set count, rest)
+- Typical patterns (set count, rep range, rest time)
+- Progression trend (improving, stable, declining, insufficient)
+- Progression points (last 10 sessions for charting)
+
+**Access**:
+- Rules: Passed as `historySummary` in context
+- AI: Available via `getExerciseHistoryContext` tool
+
+### 2. ExercisePerformance (Detailed History)
+
+**What**: Individual workout performances with set-by-set data
+**Model**: `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
+**Query**: `ExercisePerformance.matching(catalogID:)` with fetch limit
+
+**Contains** (per performance):
+- Date of workout (stored as Date, serialized as ISO 8601 for AI snapshots)
+- Sets performed (weight, reps, rest per set)
+- Rep range configuration at time of workout
+- Rest time policy at time of workout
+- Notes and muscle targets
+
+**Access**:
+- Rules: Last 3 fetched and passed as `history` array
+- AI: Available via `getRecentExercisePerformances` tool (max 5)
+
+### 3. ExercisePrescription (Current Target)
+
+**What**: What user is supposed to do for this exercise
+**Model**: `VillainArc/Data/Models/Plans/ExercisePrescription.swift`
+
+**Contains**:
+- Sets with targets (weight, reps, rest per set)
+- Rep range configuration (mode, bounds, target)
+- Rest time policy (mode, seconds)
+- Notes and muscle targets
+
+**Access**:
+- Rules: Passed directly in context
+- AI: Converted to `AIExercisePrescriptionSnapshot`, passed in prompt
+
+### 4. ExercisePerformance (Current Session)
+
+**What**: What user actually did in current session
+**Model**: `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
+
+**Contains**:
+- Completed sets (weight, reps, rest per set)
+- Rep range used
+- Rest time policy used
+- Date of performance (stored as Date, serialized as ISO 8601 for AI snapshots)
+
+**Access**:
+- Rules: Passed directly in context
+- AI: Converted to `AIExercisePerformanceSnapshot`, passed in prompt
+
+---
+
+## AI Tools Implementation
+
+**Location**: `VillainArc/Data/Classes/Suggestions/AISuggestionTools.swift`
+
+### Tool 1: ExerciseHistoryContextTool
+
+**Name**: `getExerciseHistoryContext`
+**Purpose**: Fetch cached aggregate statistics
+**Arguments**: `catalogID: String`
+**Returns**: `AIExerciseHistoryContext`
+
+**When AI uses**:
+- Needs PRs to compare against current performance
+- Needs progression trend (improving/stable/declining)
+- Needs typical patterns to understand what's normal for this exercise
+- Wants token-efficient summary vs detailed history
+
+**Implementation**:
+- Fetches `ExerciseHistory` by catalogID from SwiftData
+- Converts to `AIExerciseHistoryContext` snapshot
+- Returns empty/default struct if no history exists
+
+### Tool 2: RecentExercisePerformancesTool
+
+**Name**: `getRecentExercisePerformances`
+**Purpose**: Fetch detailed set-by-set history
+**Arguments**: `catalogID: String`, `limit: Int` (max 5)
+**Returns**: `[AIExercisePerformanceSnapshot]`
+
+**When AI uses**:
+- Needs set-by-set progression data
+- Analyzing plateaus or regression patterns
+- Checking consistency vs variability
+- Understanding recency (gaps between sessions)
+
+**Implementation**:
+- Fetches last N `ExercisePerformance` records by catalogID
+- Limits to 5 max for token efficiency
+- Converts each to `AIExercisePerformanceSnapshot`
+- Sorted most recent first
+
+---
+
+## Data Flow Summary
+
+### Rule-Based Flow
+
+```
+SuggestionGenerator
+    ↓
+Fetch history (last 3 performances)
+Fetch historySummary (ExerciseHistory)
+    ↓
+Build ExerciseSuggestionContext
+    ↓
+RuleEngine.evaluate(context)
+    ↓
+PrescriptionChange[]
 ```
 
-**Provider:**
-```swift
-@MainActor
-class PrescriptionContextProvider {
-    static func fetchContext(
-        prescription: ExercisePrescription
-    ) -> PrescriptionContext {
-        let sets = prescription.sortedSets.map { set in
-            SetPrescriptionSnapshot(
-                index: set.index,
-                setID: set.id,
-                type: set.type.displayName,
-                targetWeight: set.targetWeight,
-                targetReps: set.targetReps,
-                targetRest: set.targetRest
-            )
-        }
-        
-        let totalVolume = sets.reduce(0.0) { $0 + ($1.targetWeight * Double($1.targetReps)) }
-        
-        return PrescriptionContext(
-            exerciseName: prescription.name,
-            exerciseID: prescription.id,
-            repRangeMode: prescription.repRange.activeMode.displayName,
-            repRangeLower: prescription.repRange.activeMode == .range ? prescription.repRange.lowerRange : nil,
-            repRangeUpper: prescription.repRange.activeMode == .range ? prescription.repRange.upperRange : nil,
-            repRangeTarget: prescription.repRange.activeMode == .target ? prescription.repRange.targetReps : nil,
-            restTimeMode: prescription.restTimePolicy.activeMode.displayName,
-            restTimeAllSameSeconds: prescription.restTimePolicy.activeMode == .allSame ? prescription.restTimePolicy.allSameSeconds : nil,
-            sets: sets,
-            totalPrescribedVolume: totalVolume
-        )
-    }
-}
+### AI Flow
+
+```
+AISuggestionGenerator
+    ↓
+Check model availability
+    ↓
+Build AIExerciseSuggestionInput
+(includes prescription + performance snapshots)
+    ↓
+LanguageModelSession with tools
+    ↓
+AI may call:
+  - getExerciseHistoryContext (for summary stats)
+  - getRecentExercisePerformances (for detailed history)
+    ↓
+AI generates suggestions
+    ↓
+Map to PrescriptionChange[]
 ```
 
 ---
 
-## 3. Performance Context
+## Why This Architecture
 
-**V1 Note**: For AI v1, pass performance snapshots directly per exercise. This provider is optional and can be deferred until tool calling.
+### Direct Pass vs Provider Pattern
 
-```swift
-/// What the user actually did this session
-struct PerformanceContext: Codable, Sendable {
-    let exerciseName: String
-    let sessionDate: Date
-    
-    // Actual sets performed
-    let sets: [SetPerformanceSnapshot]
-    
-    // Aggregates
-    let totalVolume: Double
-    let bestEstimated1RM: Double?
-    let topWeight: Double?
-    let averageReps: Double
-    let averageRestSeconds: Int
-    
-    // Comparison to prescription
-    let setCountDelta: Int  // Performed - prescribed
-    let volumeDelta: Double  // Performed - prescribed (%)
-}
+**Prescription/Performance**: Passed directly because they're always needed upfront
+- Rules need them immediately for all logic
+- AI needs them in every prompt for context
+- No benefit to lazy loading
 
-struct SetPerformanceSnapshot: Codable, Sendable {
-    let index: Int
-    let type: String
-    let weight: Double
-    let reps: Int
-    let restSeconds: Int
-    let effectiveRestSeconds: Int  // Accounts for drop/super sets
-    let complete: Bool
-    
-    // Compared to prescription (if exists)
-    let weightDelta: Double?  // Actual - target
-    let repsDelta: Int?       // Actual - target
-    let restDelta: Int?       // Actual - target
-}
-```
+**Exercise History**: Available via tool for AI because:
+- Not all suggestions need historical context
+- Token budget savings when not needed
+- AI can request on-demand when relevant
+- Rules get it passed directly (no async needed)
 
-**Provider:**
-```swift
-@MainActor
-class PerformanceContextProvider {
-    static func fetchContext(
-        performance: ExercisePerformance,
-        prescription: ExercisePrescription?
-    ) -> PerformanceContext {
-        let sets = performance.sortedSets.enumerated().map { (idx, set) in
-            let prescribedSet = prescription?.sortedSets[safe: idx]
-            
-            return SetPerformanceSnapshot(
-                index: set.index,
-                type: set.type.displayName,
-                weight: set.weight,
-                reps: set.reps,
-                restSeconds: set.restSeconds,
-                effectiveRestSeconds: performance.effectiveRestSeconds(after: set),
-                complete: set.complete,
-                weightDelta: prescribedSet != nil ? set.weight - (prescribedSet!.targetWeight) : nil,
-                repsDelta: prescribedSet != nil ? set.reps - prescribedSet!.targetReps : nil,
-                restDelta: prescribedSet != nil ? set.restSeconds - prescribedSet!.targetRest : nil
-            )
-        }
-        
-        let avgReps = sets.isEmpty ? 0 : Double(sets.map { $0.reps }.reduce(0, +)) / Double(sets.count)
-        let avgRest = sets.isEmpty ? 0 : sets.map { $0.restSeconds }.reduce(0, +) / sets.count
-        
-        let prescribedVolume = prescription?.sortedSets.reduce(0.0) { $0 + ($1.targetWeight * Double($1.targetReps)) } ?? 0
-        let actualVolume = performance.totalVolume
-        let volumeDelta = prescribedVolume > 0 ? ((actualVolume - prescribedVolume) / prescribedVolume) : 0
-        
-        return PerformanceContext(
-            exerciseName: performance.name,
-            sessionDate: performance.date,
-            sets: sets,
-            totalVolume: actualVolume,
-            bestEstimated1RM: performance.bestEstimated1RM,
-            topWeight: performance.bestWeight,
-            averageReps: avgReps,
-            averageRestSeconds: avgRest,
-            setCountDelta: performance.sets.count - (prescription?.sets.count ?? 0),
-            volumeDelta: volumeDelta
-        )
-    }
-}
-```
+### Snapshot Conversion
+
+**Why**: Domain models are mutable (SwiftData), AI models require immutable (@Generable)
+**Where**: Conversion happens in generators before passing to rules/AI
+**Benefit**: Clean separation, no pollution of domain models
+
+### Tool Descriptions
+
+Comprehensive descriptions guide AI on:
+- When to use each tool
+- What data each tool provides
+- Best practices (token efficiency, limits)
+- Trade-offs between tools
 
 ---
 
-## 4. Suggestion History Context
+## Key Files Reference
 
-**Purpose**: Summarize past prescription changes for this exercise to guide future suggestions.
+- **Models**:
+  - `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
+  - `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
+  - `VillainArc/Data/Models/Plans/ExercisePrescription.swift`
 
-This context has two layers:
-1. **Exercise-wide history** (all change types)
-2. **Focused history** for a specific `ChangeType` the rules/AI are considering
+- **Generators**:
+  - `VillainArc/Data/Classes/Suggestions/SuggestionGenerator.swift`
+  - `VillainArc/Data/Classes/Suggestions/AISuggestionGenerator.swift`
 
-```swift
-/// Exercise-wide summary of past suggestions and outcomes
-struct SuggestionHistoryContext: Codable, Sendable {
-    let catalogID: String
+- **AI Structures**:
+  - `VillainArc/Data/Classes/Suggestions/AISuggestionModels.swift`
+  - `VillainArc/Data/Classes/Suggestions/AISuggestionTools.swift`
 
-    // Recent changes (last N)
-    let recentChanges: [ChangeSnapshot]
-
-    // Overall statistics
-    let totalSuggestionsReceived: Int
-    let acceptanceRate: Double
-    let rejectionRate: Double
-    let deferralRate: Double
-
-    // Outcome statistics (outcome matters most)
-    let goodOutcomeRate: Double
-    let tooAggressiveRate: Double
-    let tooEasyRate: Double
-    let ignoredRate: Double
-
-    // Aggregate scoring by change type (weighted by outcome, lightly by decision)
-    let changeTypeScores: [ChangeTypeScore]
-}
-
-/// Focused summary for a specific ChangeType being considered
-struct ChangeTypeHistoryContext: Codable, Sendable {
-    let catalogID: String
-    let changeType: String
-    let totalCount: Int
-    let weightedScore: Double
-    let averageMagnitude: Double?
-    let goodOutcomeRate: Double
-    let tooAggressiveRate: Double
-    let tooEasyRate: Double
-    let ignoredRate: Double
-    let recentChanges: [ChangeSnapshot]
-    let topOutcomeReasons: [String]
-}
-
-struct ChangeTypeScore: Codable, Sendable {
-    let changeType: String
-    let totalCount: Int
-    let weightedScore: Double
-    let averageMagnitude: Double?
-    let goodOutcomeRate: Double
-    let tooAggressiveRate: Double
-    let tooEasyRate: Double
-    let ignoredRate: Double
-}
-
-struct ChangeSnapshot: Codable, Sendable {
-    let changeID: UUID
-    let createdAt: Date
-    let source: String  // SuggestionSource
-    let changeType: String
-    let decision: String
-    let outcome: String
-
-    // Details
-    let previousValue: Double?
-    let newValue: Double?
-    let magnitude: Double?  // abs(new - previous) for numeric changes only
-    let reasoning: String?
-    let outcomeReason: String?
-
-    // Target
-    let targetSetIndex: Int?  // If set-specific
-    let targetExerciseLevel: Bool  // If exercise-level change
-
-    // Evaluation
-    let evaluatedAt: Date?
-    let evaluatedInSessionDate: Date?
-}
-```
-
-**Notes on magnitude**
-- Only compute `magnitude` for numeric change types (weight, reps, rest, rep range values).
-- For categorical changes (mode/type/add/remove/reorder), leave `magnitude` nil and treat magnitude weight as 1.0.
-
-**Scoring guidelines**
-- Outcome drives the score; decision only nudges it (accept adds a small boost).
-- Apply a recency decay so newer outcomes matter more than old ones.
-- Weight by magnitude only when the change is numeric.
-
-**Provider (exercise-wide + focused):**
-```swift
-@MainActor
-class SuggestionHistoryProvider {
-    static func fetchContext(
-        catalogID: String,
-        limit: Int = 10,
-        context: ModelContext
-    ) -> SuggestionHistoryContext {
-        let descriptor = FetchDescriptor<PrescriptionChange>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
-
-        guard let allChanges = try? context.fetch(descriptor) else {
-            return SuggestionHistoryContext.empty(catalogID: catalogID)
-        }
-
-        let exerciseChanges = allChanges.filter { $0.catalogID == catalogID }
-        let recent = Array(exerciseChanges.prefix(limit))
-
-        let snapshots = recent.map { change in
-            let magnitude = (change.previousValue != nil && change.newValue != nil)
-                ? abs((change.newValue ?? 0) - (change.previousValue ?? 0))
-                : nil
-
-            return ChangeSnapshot(
-                changeID: change.id,
-                createdAt: change.createdAt,
-                source: change.source.rawValue,
-                changeType: change.changeType.rawValue,
-                decision: change.decision.rawValue,
-                outcome: change.outcome.rawValue,
-                previousValue: change.previousValue,
-                newValue: change.newValue,
-                magnitude: magnitude,
-                reasoning: change.changeReasoning,
-                outcomeReason: change.outcomeReason,
-                targetSetIndex: change.targetSetPrescription?.index,
-                targetExerciseLevel: change.targetSetPrescription == nil,
-                evaluatedAt: change.evaluatedAt,
-                evaluatedInSessionDate: change.evaluatedInSession?.startedAt
-            )
-        }
-
-        let total = exerciseChanges.count
-        let accepted = exerciseChanges.filter { $0.decision == .accepted }.count
-        let rejected = exerciseChanges.filter { $0.decision == .rejected }.count
-        let deferred = exerciseChanges.filter { $0.decision == .deferred }.count
-
-        let acceptedChanges = exerciseChanges.filter { $0.decision == .accepted }
-        let goodOutcomes = acceptedChanges.filter { $0.outcome == .good }.count
-        let aggressive = acceptedChanges.filter { $0.outcome == .tooAggressive }.count
-        let easy = acceptedChanges.filter { $0.outcome == .tooEasy }.count
-        let ignored = acceptedChanges.filter { $0.outcome == .ignored }.count
-
-        let scores = buildChangeTypeScores(from: exerciseChanges)
-
-        return SuggestionHistoryContext(
-            catalogID: catalogID,
-            recentChanges: snapshots,
-            totalSuggestionsReceived: total,
-            acceptanceRate: total > 0 ? Double(accepted) / Double(total) : 0,
-            rejectionRate: total > 0 ? Double(rejected) / Double(total) : 0,
-            deferralRate: total > 0 ? Double(deferred) / Double(total) : 0,
-            goodOutcomeRate: acceptedChanges.isEmpty ? 0 : Double(goodOutcomes) / Double(acceptedChanges.count),
-            tooAggressiveRate: acceptedChanges.isEmpty ? 0 : Double(aggressive) / Double(acceptedChanges.count),
-            tooEasyRate: acceptedChanges.isEmpty ? 0 : Double(easy) / Double(acceptedChanges.count),
-            ignoredRate: acceptedChanges.isEmpty ? 0 : Double(ignored) / Double(acceptedChanges.count),
-            changeTypeScores: scores
-        )
-    }
-
-    static func fetchChangeTypeContext(
-        catalogID: String,
-        changeType: ChangeType,
-        limit: Int = 10,
-        context: ModelContext
-    ) -> ChangeTypeHistoryContext {
-        let all = fetchContext(catalogID: catalogID, limit: limit, context: context)
-        return buildFocusedContext(from: all, changeType: changeType)
-    }
-}
-
-extension SuggestionHistoryContext {
-    static func empty(catalogID: String) -> SuggestionHistoryContext {
-        SuggestionHistoryContext(
-            catalogID: catalogID,
-            recentChanges: [],
-            totalSuggestionsReceived: 0,
-            acceptanceRate: 0,
-            rejectionRate: 0,
-            deferralRate: 0,
-            goodOutcomeRate: 0,
-            tooAggressiveRate: 0,
-            tooEasyRate: 0,
-            ignoredRate: 0,
-            changeTypeScores: []
-        )
-    }
-}
-```
-
----
-
-## 5. User Readiness Context
-
-```swift
-/// User's recovery state and readiness signals
-struct UserReadinessContext: Codable, Sendable {
-    // Mood
-    let preMoodLevel: String  // MoodLevel
-    let preMoodNotes: String?
-    
-    // Recovery indicators
-    let daysSinceLastWorkout: Int
-    let daysSinceLastTrainedThisMuscle: Int?  // If trackable
-    
-    // Apple Health data (future)
-    let sleepHours: Double?         // Last night's sleep
-    let sleepQuality: Double?       // 0-1 score
-    let restingHeartRate: Int?      // Morning RHR
-    let heartRateVariability: Double?  // HRV in ms
-    
-    // Computed readiness score
-    let readinessScore: Double      // 0-1 composite score
-    let readinessLevel: String      // "Low" / "Moderate" / "High"
-}
-```
-
-**Provider:**
-```swift
-@MainActor
-class UserReadinessProvider {
-    static func fetchContext(
-        for session: WorkoutSession,
-        context: ModelContext
-    ) -> UserReadinessContext {
-        // Get mood
-        let mood = session.preMood.mood
-        let notes = session.preMood.notes
-        
-        // Calculate days since last workout
-        let completedDescriptor = WorkoutSession.completedSessions(limit: 2)
-        let lastSessions = (try? context.fetch(completedDescriptor)) ?? []
-        
-        let daysSince: Int
-        if lastSessions.count >= 2 {
-            let previous = lastSessions[1]
-            let days = Calendar.current.dateComponents([.day], from: previous.startedAt, to: session.startedAt).day ?? 0
-            daysSince = max(0, days)
-        } else {
-            daysSince = 0
-        }
-        
-        // TODO: Apple Health integration
-        let sleepHours: Double? = nil
-        let sleepQuality: Double? = nil
-        let rhr: Int? = nil
-        let hrv: Double? = nil
-        
-        // Calculate readiness score
-        let score = calculateReadinessScore(
-            mood: mood,
-            daysSince: daysSince,
-            sleepHours: sleepHours,
-            hrv: hrv
-        )
-        
-        let level: String
-        if score < 0.4 {
-            level = "Low"
-        } else if score < 0.7 {
-            level = "Moderate"
-        } else {
-            level = "High"
-        }
-        
-        return UserReadinessContext(
-            preMoodLevel: mood.rawValue,
-            preMoodNotes: notes.isEmpty ? nil : notes,
-            daysSinceLastWorkout: daysSince,
-            daysSinceLastTrainedThisMuscle: nil,  // TODO: Implement
-            sleepHours: sleepHours,
-            sleepQuality: sleepQuality,
-            restingHeartRate: rhr,
-            heartRateVariability: hrv,
-            readinessScore: score,
-            readinessLevel: level
-        )
-    }
-    
-    private static func calculateReadinessScore(
-        mood: MoodLevel,
-        daysSince: Int,
-        sleepHours: Double?,
-        hrv: Double?
-    ) -> Double {
-        var score = 0.5  // Base neutral
-        
-        // Mood contribution (0-0.3)
-        switch mood {
-        case .great: score += 0.3
-        case .good: score += 0.15
-        case .neutral: score += 0.0
-        case .low: score -= 0.15
-        case .veryLow: score -= 0.3
-        case .notSet: score += 0.0
-        }
-        
-        // Recovery contribution (0-0.2)
-        if daysSince == 0 { score -= 0.1 }      // Same day (second workout)
-        else if daysSince == 1 { score += 0.1 } // 1 day rest
-        else if daysSince >= 2 { score += 0.2 } // 2+ days rest
-        
-        // Sleep contribution (0-0.2) - future
-        if let sleep = sleepHours {
-            if sleep >= 8 { score += 0.2 }
-            else if sleep >= 7 { score += 0.1 }
-            else if sleep < 6 { score -= 0.1 }
-        }
-        
-        // HRV contribution (0-0.1) - future
-        // Higher HRV = better recovery
-        // Implementation depends on baseline
-        
-        return max(0.0, min(1.0, score))
-    }
-}
-```
-
----
-
-## 6. Session Context
-
-```swift
-/// Context about the current workout session
-struct SessionContext: Codable, Sendable {
-    let sessionID: UUID
-    let startedAt: Date
-    let planName: String?
-    let sessionOrigin: String  // SessionOrigin
-    
-    // Session-level data
-    let totalExercisesCompleted: Int
-    let totalSetsCompleted: Int
-    let sessionDurationMinutes: Int?
-    
-    // Other exercises in this session (for fatigue context)
-    let otherExercisesPerformed: [String]  // Exercise names
-    let precedingExerciseCount: Int  // How many exercises before this one
-}
-```
-
-**Provider:**
-```swift
-@MainActor
-class SessionContextProvider {
-    static func fetchContext(
-        session: WorkoutSession,
-        currentExerciseIndex: Int
-    ) -> SessionContext {
-        let duration: Int?
-        if let ended = session.endedAt {
-            duration = Int(ended.timeIntervalSince(session.startedAt) / 60)
-        } else {
-            duration = nil
-        }
-        
-        let completedSets = session.exercises.flatMap { $0.sets.filter { $0.complete } }.count
-        
-        let otherExercises = session.sortedExercises
-            .filter { $0.index != currentExerciseIndex }
-            .map { $0.name }
-        
-        return SessionContext(
-            sessionID: session.id,
-            startedAt: session.startedAt,
-            planName: session.workoutPlan?.title,
-            sessionOrigin: session.origin.rawValue,
-            totalExercisesCompleted: session.exercises.count,
-            totalSetsCompleted: completedSets,
-            sessionDurationMinutes: duration,
-            otherExercisesPerformed: otherExercises,
-            precedingExerciseCount: currentExerciseIndex
-        )
-    }
-}
-```
-
----
-
-## 7. Complete Context Bundle
-
-```swift
-/// Complete context bundle for suggestion generation or AI model calls
-struct CompleteSuggestionContext: Codable, Sendable {
-    // Core context
-    let exerciseHistory: ExerciseHistoryContext
-    let prescription: PrescriptionContext
-    let performance: PerformanceContext
-    let changeHistory: ChangeHistoryContext
-    
-    // Environmental context
-    let userReadiness: UserReadinessContext
-    let session: SessionContext
-    
-    // Metadata
-    let generatedAt: Date
-    let contextVersion: String  // For future schema changes
-}
-```
-
-**Master Provider:**
-```swift
-@MainActor
-class ContextBundleProvider {
-    static func gatherCompleteContext(
-        for exercisePerformance: ExercisePerformance,
-        prescription: ExercisePrescription,
-        session: WorkoutSession,
-        context: ModelContext
-    ) -> CompleteSuggestionContext {
-        let catalogID = exercisePerformance.catalogID
-        
-        let history = ExerciseHistoryProvider.fetchContext(
-            catalogID: catalogID,
-            sessionLimit: 5,
-            context: context
-        )
-        
-        let prescriptionCtx = PrescriptionContextProvider.fetchContext(
-            prescription: prescription
-        )
-        
-        let performanceCtx = PerformanceContextProvider.fetchContext(
-            performance: exercisePerformance,
-            prescription: prescription
-        )
-        
-        let changeHistory = ChangeHistoryProvider.fetchContext(
-            catalogID: catalogID,
-            limit: 10,
-            context: context
-        )
-        
-        let readiness = UserReadinessProvider.fetchContext(
-            for: session,
-            context: context
-        )
-        
-        let sessionCtx = SessionContextProvider.fetchContext(
-            session: session,
-            currentExerciseIndex: exercisePerformance.index
-        )
-        
-        return CompleteSuggestionContext(
-            exerciseHistory: history,
-            prescription: prescriptionCtx,
-            performance: performanceCtx,
-            changeHistory: changeHistory,
-            userReadiness: readiness,
-            session: sessionCtx,
-            generatedAt: Date(),
-            contextVersion: "1.0"
-        )
-    }
-}
-```
-
----
-
-## Usage Examples
-
-### For Rule-Based Suggestions
-```swift
-let context = ContextBundleProvider.gatherCompleteContext(
-    for: exercisePerformance,
-    prescription: prescription,
-    session: session,
-    context: modelContext
-)
-
-// Rules can access specific parts
-if context.exerciseHistory.progressionTrend == .plateau {
-    // Suggest volume increase
-}
-
-if context.changeHistory.recentlyRejectedTypes.contains("increaseWeight") {
-    // User doesn't want weight increases right now
-}
-
-if context.userReadiness.readinessScore < 0.4 {
-    // Be conservative with suggestions
-}
-```
-
-### For Apple FoundationModels
-```swift
-// Context is already Codable - can be serialized directly
-let context = ContextBundleProvider.gatherCompleteContext(...)
-
-let encoder = JSONEncoder()
-let jsonData = try encoder.encode(context)
-
-// Pass to FoundationModel for guided generation
-let model = try await FoundationModel.load(named: "workout-suggestion-model")
-let suggestions: [AISuggestion] = try await model.generate(
-    from: context,
-    outputType: [AISuggestion].self
-)
-```
-
----
-
-## File Structure
-
-```
-VillainArc/Data/Classes/Context/
-├── Providers/
-│   ├── ExerciseHistoryProvider.swift
-│   ├── PrescriptionContextProvider.swift
-│   ├── PerformanceContextProvider.swift
-│   ├── ChangeHistoryProvider.swift
-│   ├── UserReadinessProvider.swift
-│   ├── SessionContextProvider.swift
-│   └── ContextBundleProvider.swift
-└── Models/
-    ├── ExerciseHistoryContext.swift
-    ├── PrescriptionContext.swift
-    ├── PerformanceContext.swift
-    ├── ChangeHistoryContext.swift
-    ├── UserReadinessContext.swift
-    ├── SessionContext.swift
-    └── CompleteSuggestionContext.swift
-```
-
----
-
-## Benefits of This Architecture
-
-1. **Reusable**: Same context for rules AND AI
-2. **Codable**: Direct serialization to FoundationModels
-3. **Comprehensive**: Rich historical + environmental data
-4. **Modular**: Can fetch only what you need
-5. **Testable**: Easy to mock contexts for unit tests
-6. **Versionable**: contextVersion field for schema evolution
-7. **Type-Safe**: All data properly typed (not stringly-typed)
-8. **Sendable**: Can pass across concurrency boundaries
-
-This context system provides everything needed for both deterministic rules and AI model calls!
+- **Updaters**:
+  - `VillainArc/Data/Classes/ExerciseHistoryUpdater.swift`

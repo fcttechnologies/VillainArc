@@ -26,3 +26,8 @@ struct WorkoutSessionContainer: View {
     WorkoutSessionContainer(workout: sampleIncompleteSession())
         .sampleDataContainerIncomplete()
 }
+
+#Preview("Suggestions") {
+    WorkoutSessionContainer(workout: sampleSessionWithSuggestions())
+        .sampleDataContainerSuggestions()
+}
