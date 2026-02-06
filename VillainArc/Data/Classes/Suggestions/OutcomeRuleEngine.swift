@@ -6,8 +6,8 @@ struct OutcomeRuleEngine {
 
     /// Routes each change type to the matching rule evaluator.
     static func evaluate(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        let completeSets = exercisePerf.sortedSets.filter { $0.complete }
-        let regularSets = completeSets.filter { $0.type == .regular }
+        let sets = exercisePerf.sortedSets
+        let regularSets = sets.filter { $0.type == .working }
 
         switch change.changeType {
         case .increaseWeight, .decreaseWeight:
@@ -17,7 +17,7 @@ struct OutcomeRuleEngine {
         case .increaseRest, .decreaseRest:
             return evaluateSetRestChange(change: change, exercisePerf: exercisePerf)
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            return evaluateExerciseRestChange(change: change, exercisePerf: exercisePerf, completeSets: completeSets)
+            return evaluateExerciseRestChange(change: change, exercisePerf: exercisePerf, completeSets: sets)
         case .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
@@ -142,7 +142,7 @@ struct OutcomeRuleEngine {
         }
 
         // Use average reps from regular sets as the outcome signal for intensity.
-        let regularSets = completeSets.filter { $0.type == .regular }
+        let regularSets = completeSets.filter { $0.type == .working }
         guard let avgReps = regularSets.isEmpty ? nil : regularSets.map(\.reps).reduce(0, +) / regularSets.count else {
             return nil
         }
@@ -235,7 +235,7 @@ struct OutcomeRuleEngine {
             }
             return OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Reps (\(actualReps)) on target (\(target)) after \(context).")
 
-        case .notSet, .untilFailure:
+        case .notSet:
             return nil
         }
     }
@@ -267,7 +267,7 @@ struct OutcomeRuleEngine {
                 switch mode {
                 case .range: return (policy.lowerRange, policy.upperRange)
                 case .target: return (policy.targetReps, policy.targetReps)
-                case .notSet, .untilFailure: return (nil, nil)
+                case .notSet: return (nil, nil)
                 }
             }
             return (nil, nil)
@@ -282,7 +282,7 @@ struct OutcomeRuleEngine {
             switch policy.activeMode {
             case .range: return (policy.lowerRange, policy.upperRange)
             case .target: return (policy.targetReps, policy.targetReps)
-            case .notSet, .untilFailure: return (nil, nil)
+            case .notSet: return (nil, nil)
             }
         }
     }

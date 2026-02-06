@@ -5,7 +5,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExerciseType
     
-    @State private var showAdvancedByType = false
     @State private var expandedPicker: RestTimePicker? = nil
     @State private var copiedSeconds: Int? = nil
     
@@ -48,6 +47,13 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                             restTimeRow(title: individualSetTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedPicker == .individual(set.index), toggle: { togglePicker(.individual(set.index)) })
                         }
                     }
+                case .byType:
+                    restTimeRow(title: "Warm Up Sets", seconds: policyBinding(\.warmupSeconds), isExpanded: expandedPicker == .warmup, toggle: { togglePicker(.warmup) })
+                    
+                    restTimeRow(title: "Working Sets", seconds: policyBinding(\.workingSeconds), isExpanded: expandedPicker == .working, toggle: { togglePicker(.working) })
+                    
+                        
+                    restTimeRow(title: "Drop Sets", seconds: policyBinding(\.dropSetSeconds), isExpanded: expandedPicker == .dropSet, toggle: { togglePicker(.dropSet) })
                 }
             } footer: {
                 Text("If you complete a set but the next set is a super or drop set, the rest time will be skipped.")
@@ -62,14 +68,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
             Haptics.selection()
             collapsePickers()
             saveContext(context: context)
-        }
-        .onChange(of: showAdvancedByType) {
-            Haptics.selection()
-            if !showAdvancedByType {
-                if let picker = expandedPicker, isAdvancedPicker(picker) {
-                    expandedPicker = nil
-                }
-            }
         }
         .onDisappear {
             saveContext(context: context)
@@ -96,11 +94,12 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
             return "All sets will use the same rest time."
         case .individual:
             return "Each set keeps its own rest time."
+        case .byType:
+            return "Rest time for each set will be based on the set's type."
         }
     }
     
     private func collapsePickers() {
-        showAdvancedByType = false
         expandedPicker = nil
     }
     
@@ -161,21 +160,13 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
         } else {
             expandedPicker = picker
         }
-        
-        if isAdvancedPicker(picker) {
-            showAdvancedByType = true
-        }
-        
-        if case .individual = picker {
-            showAdvancedByType = false
-        }
     }
     
     private func isAdvancedPicker(_ picker: RestTimePicker) -> Bool {
         switch picker {
-        case .superSet, .dropSet, .failure:
+        case .dropSet:
             return true
-        case .allSame, .warmup, .regular, .individual:
+        case .allSame, .warmup, .working, .individual:
             return false
         }
     }
@@ -192,7 +183,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     }
     
     private func individualSetTitle(for set: ExerciseType.SetType) -> String {
-        if set.type == .regular {
+        if set.type == .working {
             return "Set \(set.index + 1)"
         }
         
@@ -202,10 +193,8 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     private enum RestTimePicker: Equatable {
         case allSame
         case warmup
-        case regular
-        case superSet
+        case working
         case dropSet
-        case failure
         case individual(Int)
     }
 }

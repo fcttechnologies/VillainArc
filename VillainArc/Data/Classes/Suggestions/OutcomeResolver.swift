@@ -317,8 +317,6 @@ struct OutcomeResolver {
                 return mode.displayName
             }
             return String(roundedInt)
-        default:
-            return String(roundedInt)
         }
     }
 
@@ -403,8 +401,6 @@ struct OutcomeResolver {
                                                    repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper,
                                                    repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy,
                                                    sets: snapshot.sets)
-        default:
-            return snapshot
         }
     }
 

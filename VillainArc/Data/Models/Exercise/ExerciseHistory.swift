@@ -204,7 +204,7 @@ class ExerciseHistory {
         
         // Average weight (top set weight per session)
         let weights = recent.compactMap { perf -> Double? in
-            perf.sortedSets.filter { $0.complete && $0.type == .regular }
+            perf.sortedSets.filter { $0.type == .working }
                 .map { $0.weight }
                 .max()
         }
@@ -214,15 +214,15 @@ class ExerciseHistory {
         let volumes = recent.map { $0.totalVolume }
         last3AvgVolume = volumes.reduce(0, +) / Double(volumes.count)
         
-        // Average set count (completed sets only)
-        let setCounts = recent.map { $0.sortedSets.filter { $0.complete }.count }
+        // Average set count
+        let setCounts = recent.map { $0.sortedSets.count }
         last3AvgSetCount = setCounts.reduce(0, +) / setCounts.count
         
-        // Average rest time (regular sets only)
+        // Average rest time (working sets only)
         var totalRest = 0
         var restCount = 0
         for perf in recent {
-            let regularSets = perf.sortedSets.filter { $0.complete && $0.type == .regular }
+            let regularSets = perf.sortedSets.filter { $0.type == .working }
             for set in regularSets {
                 totalRest += set.restSeconds
                 restCount += 1
@@ -233,12 +233,12 @@ class ExerciseHistory {
     
     private func calculateTypicalPatterns(from performances: [ExercisePerformance]) {
         // Typical set count (median)
-        let setCounts = performances.map { $0.sortedSets.filter { $0.complete }.count }
+        let setCounts = performances.map { $0.sortedSets.count }
         typicalSetCount = median(of: setCounts)
         
-        // Typical rep range (25th and 75th percentile of all completed reps)
+        // Typical rep range (25th and 75th percentile of all working set reps)
         let allReps = performances.flatMap { perf in
-            perf.sortedSets.filter { $0.complete && $0.type == .regular }.map { $0.reps }
+            perf.sortedSets.filter { $0.type == .working }.map { $0.reps }
         }
         if !allReps.isEmpty {
             let sorted = allReps.sorted()
@@ -248,9 +248,9 @@ class ExerciseHistory {
             typicalRepRangeUpper = sorted[min(sorted.count - 1, p75Index)]
         }
         
-        // Typical rest time (median of regular sets)
+        // Typical rest time (median of working sets)
         let restTimes = performances.flatMap { perf in
-            perf.sortedSets.filter { $0.complete && $0.type == .regular }.map { $0.restSeconds }
+            perf.sortedSets.filter { $0.complete && $0.type == .working }.map { $0.restSeconds }
         }
         typicalRestSeconds = median(of: restTimes)
     }
@@ -274,13 +274,13 @@ class ExerciseHistory {
         
         // Compare average weight
         let recentAvgWeight = recent3.compactMap { perf -> Double? in
-            perf.sortedSets.filter { $0.complete && $0.type == .regular }
+            perf.sortedSets.filter { $0.type == .working }
                 .map { $0.weight }
                 .max()
         }.reduce(0, +) / 3.0
         
         let previousAvgWeight = previous3.compactMap { perf -> Double? in
-            perf.sortedSets.filter { $0.complete && $0.type == .regular }
+            perf.sortedSets.filter { $0.type == .working }
                 .map { $0.weight }
                 .max()
         }.reduce(0, +) / 3.0
@@ -305,7 +305,7 @@ class ExerciseHistory {
         let last10 = Array(performances.prefix(10))
         
         for perf in last10 {
-            let topWeight = perf.sortedSets.filter { $0.complete && $0.type == .regular }
+            let topWeight = perf.sortedSets.filter { $0.type == .working }
                 .map { $0.weight }
                 .max() ?? 0
             

@@ -245,11 +245,11 @@ enum AccessibilityText {
     }
 
     static func exerciseSetLabel(for set: SetPerformance) -> String {
-        set.type == .regular ? "Set \(set.index + 1)" : set.type.displayName
+        set.type == .working ? "Set \(set.index + 1)" : set.type.displayName
     }
 
     static func exerciseSetLabel(for set: SetPrescription) -> String {
-        set.type == .regular ? "Set \(set.index + 1)" : set.type.displayName
+        set.type == .working ? "Set \(set.index + 1)" : set.type.displayName
     }
 
     static func exerciseSetValue(for set: SetPerformance) -> String {

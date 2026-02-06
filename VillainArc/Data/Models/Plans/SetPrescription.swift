@@ -5,7 +5,7 @@ import SwiftData
 class SetPrescription {
     var id: UUID = UUID()
     var index: Int = 0
-    var type: ExerciseSetType = ExerciseSetType.regular
+    var type: ExerciseSetType = ExerciseSetType.working
     var targetWeight: Double = 0
     var targetReps: Int = 0
     var targetRest: Int = 0
@@ -35,12 +35,12 @@ class SetPrescription {
     
     // Creates a copy with the same ID for edit tracking
     init(copying original: SetPrescription, exercise: ExercisePrescription) {
-        self.id = original.id  // Same ID enables matching for change detection
-        self.index = original.index
-        self.type = original.type
-        self.targetWeight = original.targetWeight
-        self.targetReps = original.targetReps
-        self.targetRest = original.targetRest
+        id = original.id  // Same ID enables matching for change detection
+        index = original.index
+        type = original.type
+        targetWeight = original.targetWeight
+        targetReps = original.targetReps
+        targetRest = original.targetRest
         self.exercise = exercise
         // DO NOT copy changes - they remain on the original prescription
     }

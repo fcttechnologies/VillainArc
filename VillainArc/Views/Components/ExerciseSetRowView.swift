@@ -56,7 +56,7 @@ struct ExerciseSetRowView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetDeleteButton(exercise, set: set))
                 }
             } label: {
-                Text(set.type == .regular ? String(set.index + 1) : set.type.shortLabel)
+                Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
                     .foregroundStyle(set.type.tintColor)
                     .frame(width: 40, height: 40)
                     .glassEffect(.regular, in: .circle)

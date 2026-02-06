@@ -13,7 +13,6 @@ struct ExerciseSuggestionContext {
 enum RepRangeCandidateKind: Hashable {
     case range(Int, Int)
     case target(Int)
-    case untilFailure
 }
 
 private struct RepRangeCandidateStats {
@@ -119,14 +118,6 @@ struct RuleEngine {
                     reasoning: reasoning
                 ))
             }
-        case .untilFailure:
-            changes.append(makeExerciseChange(
-                context: context,
-                changeType: .changeRepRangeMode,
-                previousValue: Double(context.prescription.repRange.activeMode.rawValue),
-                newValue: Double(RepRangeMode.untilFailure.rawValue),
-                reasoning: reasoning
-            ))
         }
 
         return changes
@@ -265,7 +256,7 @@ struct RuleEngine {
 
         for set in progressionSets {
             guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
-            guard setPrescription.type == .regular else { continue }
+            guard setPrescription.type == .working else { continue }
             guard !progressionIndices.contains(setPrescription.index) else { continue }
             guard setPrescription.targetReps > 0 else { continue }
 
@@ -275,7 +266,7 @@ struct RuleEngine {
             for performance in evidence {
                 guard let perfSet = performance.sortedSets[safe: setPrescription.index],
                       perfSet.complete else { continue }
-                guard perfSet.type == .regular else { continue }
+                guard perfSet.type == .working else { continue }
 
                 if performance.id == context.performance.id {
                     includesCurrent = true
@@ -338,8 +329,6 @@ struct RuleEngine {
                 guard !progressionSets.isEmpty else { return false }
                 return progressionSets.allSatisfy { $0.reps >= target + 5 }
             }
-        default:
-            return []
         }
 
         guard overshootMet else { return [] }
@@ -472,7 +461,7 @@ struct RuleEngine {
         var changes: [PrescriptionChange] = []
 
         for setPrescription in context.prescription.sortedSets {
-            guard setPrescription.type == .regular else { continue }
+            guard setPrescription.type == .working else { continue }
             if progressionIndices.contains(setPrescription.index) {
                 continue
             }
@@ -481,7 +470,7 @@ struct RuleEngine {
             for performance in lastThree {
                 guard let set = performance.sortedSets[safe: setPrescription.index],
                       set.complete,
-                      set.type == .regular else {
+                      set.type == .working else {
                     continue
                 }
                 weights.append(set.weight)
@@ -527,7 +516,7 @@ struct RuleEngine {
 
         var changes: [PrescriptionChange] = []
 
-        for setPrescription in context.prescription.sortedSets where setPrescription.type == .regular {
+        for setPrescription in context.prescription.sortedSets where setPrescription.type == .working {
             var reducedWeights: [Double] = []
             var hitCount = 0
 
@@ -582,7 +571,7 @@ struct RuleEngine {
 
             for idx in 1..<sets.count {
                 let currentSet = sets[idx]
-                guard currentSet.complete, currentSet.type == .regular else { continue }
+                guard currentSet.complete, currentSet.type == .working else { continue }
 
                 let prevSet = sets[idx - 1]
                 let effectiveRest = performance.effectiveRestSeconds(after: prevSet)
@@ -596,7 +585,7 @@ struct RuleEngine {
                 let actualRest = currentSet.restSeconds
                 guard actualRest < targetRest - 15 else { continue }
 
-                let previousRegular = sets[..<idx].last { $0.type == .regular && $0.complete }
+                let previousRegular = sets[..<idx].last { $0.type == .working && $0.complete }
                 let repDrop = previousRegular.map { $0.reps - currentSet.reps } ?? 0
                 let belowFloor = repFloor.map { currentSet.reps < $0 } ?? false
 
@@ -719,7 +708,7 @@ struct RuleEngine {
         let sets = context.performance.sortedSets
         guard sets.contains(where: { $0.type == .dropSet }) else { return [] }
 
-        let regularIndices = Set(sets.filter { $0.type == .regular }.map(\.index))
+        let regularIndices = Set(sets.filter { $0.type == .working }.map(\.index))
 
         // Find first drop set that has no regular set before it.
         let targetDrop = sets.first { set in
@@ -742,7 +731,7 @@ struct RuleEngine {
                 setPrescription: setPrescription,
                 changeType: .changeSetType,
                 previousValue: Double(setPrescription.type.rawValue),
-                newValue: Double(ExerciseSetType.regular.rawValue),
+                newValue: Double(ExerciseSetType.working.rawValue),
                 reasoning: reason
             )
         ]
@@ -786,9 +775,6 @@ struct RuleEngine {
             }
             guard exceededInBoth || overshootInBoth else { return [] }
             return Set(progressionSets.map(\.index))
-
-        default:
-            return []
         }
     }
 
@@ -807,7 +793,7 @@ struct RuleEngine {
 
             for performance in lastTwo {
                 // Compare warmup weight to the max regular set in that session.
-                let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .regular }
+                let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
                 guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0 else { continue }
                 guard let set = performance.sortedSets[safe: setPrescription.index], set.complete else { continue }
 
@@ -828,7 +814,7 @@ struct RuleEngine {
                 setPrescription: setPrescription,
                 changeType: .changeSetType,
                 previousValue: Double(setPrescription.type.rawValue),
-                newValue: Double(ExerciseSetType.regular.rawValue),
+                newValue: Double(ExerciseSetType.working.rawValue),
                 reasoning: reason
             ))
         }
@@ -845,13 +831,13 @@ struct RuleEngine {
         let lastTwo = Array(recent.prefix(2))
         var changes: [PrescriptionChange] = []
 
-        for setPrescription in context.prescription.sortedSets where setPrescription.type == .regular && setPrescription.index <= 1 {
+        for setPrescription in context.prescription.sortedSets where setPrescription.type == .working && setPrescription.index <= 1 {
             var hitCount = 0
             var sourceSet: SetPerformance?
 
             for performance in lastTwo {
                 // Compare this early regular set to the session's max regular set.
-                let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .regular }
+                let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
                 guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0 else { continue }
                 guard let set = performance.sortedSets[safe: setPrescription.index], set.complete else { continue }
 
@@ -891,8 +877,6 @@ struct RuleEngine {
             targetFloor = lower
         case .target(let target):
             targetFloor = target
-        default:
-            return false  // Can't evaluate struggle without a target
         }
 
         // Count how many sessions had sets below or barely hitting target
@@ -1035,8 +1019,6 @@ struct RuleEngine {
             return .range(policy.lowerRange, policy.upperRange)
         case .target:
             return .target(policy.targetReps)
-        case .untilFailure:
-            return .untilFailure
         }
     }
 

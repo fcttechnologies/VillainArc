@@ -17,7 +17,7 @@ class WorkoutSession {
     }
     @Relationship(deleteRule: .cascade)
     var preMood: PreWorkoutMood = PreWorkoutMood()
-    @Relationship(deleteRule: .cascade, inverse: \PostWorkoutEffort.workoutSession)
+    @Relationship(deleteRule: .cascade)
     var postEffort: PostWorkoutEffort?
     @Relationship(deleteRule: .nullify)
     var workoutPlan: WorkoutPlan?

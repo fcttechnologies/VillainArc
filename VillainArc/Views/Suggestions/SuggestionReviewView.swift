@@ -284,10 +284,6 @@ struct ChangeDescriptionRow: View {
             return restTimeModeDescription(newModeRaw: Int(new))
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return "Rest time: \(Int(previous))s → \(Int(new))s"
-            
-        // Structural
-        case .addSet, .removeSet, .addExercise, .removeExercise, .reorderExercise:
-            return change.changeType.rawValue
         }
     }
     
@@ -300,8 +296,6 @@ struct ChangeDescriptionRow: View {
             return "Switch to Range"
         case .target:
             return "Switch to Target"
-        case .untilFailure:
-            return "Switch to Until Failure"
         case .notSet:
             return "Clear rep range"
         }
@@ -317,6 +311,8 @@ struct ChangeDescriptionRow: View {
             return "Switch to All Same (\(exercise.restTimePolicy.allSameSeconds)s)"
         case .individual:
             return "Switch to Individual rest"
+        case .byType:
+            return "Switch to By Type"
         }
     }
     
@@ -339,7 +335,7 @@ func applyChange(_ change: PrescriptionChange) {
     case .increaseRest, .decreaseRest:
         change.targetSetPrescription?.targetRest = Int(change.newValue ?? 0)
     case .changeSetType:
-        change.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue ?? 0)) ?? .regular
+        change.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue ?? 0)) ?? .working
     case .increaseRepRangeLower, .decreaseRepRangeLower:
         change.targetExercisePrescription?.repRange.lowerRange = Int(change.newValue ?? 0)
     case .increaseRepRangeUpper, .decreaseRepRangeUpper:
@@ -352,8 +348,6 @@ func applyChange(_ change: PrescriptionChange) {
         change.targetExercisePrescription?.restTimePolicy.activeMode = RestTimeMode(rawValue: Int(change.newValue ?? 0)) ?? .individual
     case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
         change.targetExercisePrescription?.restTimePolicy.allSameSeconds = Int(change.newValue ?? 0)
-    default:
-        break
     }
 }
 

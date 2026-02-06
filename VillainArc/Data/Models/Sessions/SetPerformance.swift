@@ -5,7 +5,7 @@ import SwiftData
 class SetPerformance {
     var id: UUID = UUID()
     var index: Int = 0
-    var type: ExerciseSetType = ExerciseSetType.regular
+    var type: ExerciseSetType = ExerciseSetType.working
     var weight: Double = 0
     var reps: Int = 0
     var restSeconds: Int = 0

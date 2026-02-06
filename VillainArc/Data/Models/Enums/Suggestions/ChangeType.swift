@@ -13,8 +13,6 @@ enum ChangeType: String, Codable {
     case decreaseReps
     case increaseRest
     case decreaseRest
-    case addSet
-    case removeSet
     case changeSetType
     
     // Exercise-level rep range (target exercise, not set)
@@ -29,12 +27,7 @@ enum ChangeType: String, Codable {
     case increaseRestTimeSeconds // allSameSeconds increase
     case decreaseRestTimeSeconds // allSameSeconds decrease
     
-    // Exercise-level (if needed)
-    case reorderExercise
-    case removeExercise
-    case addExercise
-    
-    /// Returns the policy category for grouping exercise-level changes
+    // Returns the policy category for grouping exercise-level changes
     var policy: ChangePolicy? {
         switch self {
         case .increaseRepRangeLower, .decreaseRepRangeLower,

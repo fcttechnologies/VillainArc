@@ -18,9 +18,9 @@ enum TrainingStyle {
 extension ExerciseSetType {
     var eligibility: SetEligibility {
         switch self {
-        case .regular:
+        case .working:
             return .workingSet
-        case .failure, .dropSet, .superSet:
+        case .dropSet:
             return .supportSet
         case .warmup:
             return .warmupSet
@@ -38,7 +38,7 @@ struct MetricsCalculator {
         let sets = performance.sortedSets
         guard !sets.isEmpty else { return [] }
 
-        let regularSets = sets.filter { $0.type == .regular }
+        let regularSets = sets.filter { $0.type == .working }
         if regularSets.count >= 2 {
             // If user labels sets properly, take the heaviest regular sets.
             return Array(regularSets.sorted { $0.weight > $1.weight }.prefix(2))

@@ -211,7 +211,7 @@ private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> 
         parts.append("\(reps) reps")
     }
 
-    if let rawType = state.setTypeRawValue, rawType != ExerciseSetType.regular.displayName {
+    if let rawType = state.setTypeRawValue, rawType != ExerciseSetType.working.displayName {
         parts.append(rawType)
     }
 

@@ -233,8 +233,6 @@ struct SuggestionDeduplicator {
             return .restTimeMode
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return .restTimeSeconds
-        case .addSet, .removeSet, .addExercise, .removeExercise, .reorderExercise:
-            return .structure
         }
     }
 
@@ -257,10 +255,6 @@ struct SuggestionDeduplicator {
             return 5
         case .changeRestTimeMode, .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return 5
-        case .addSet, .removeSet:
-            return 4
-        case .addExercise, .removeExercise, .reorderExercise:
-            return 6
         }
     }
 }

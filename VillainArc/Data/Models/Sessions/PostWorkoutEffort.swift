@@ -3,13 +3,11 @@ import SwiftData
 
 @Model
 class PostWorkoutEffort {
-    var rpe: Int = 5
-    var notes: String?
-    var workoutSession: WorkoutSession?
+    var rpe: Int = 6
+    var notes: String = ""
     
-    init(rpe: Int, notes: String, workoutSession: WorkoutSession) {
+    init(rpe: Int, notes: String) {
         self.rpe = rpe
         self.notes = notes
-        self.workoutSession = workoutSession
     }
 }

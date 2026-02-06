@@ -45,7 +45,7 @@ struct WorkoutPlanDetailView: View {
 
                         ForEach(exercise.sortedSets) { set in
                             GridRow {
-                                Text(set.type == .regular ? String(set.index + 1) : set.type.shortLabel)
+                                Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
                                     .foregroundStyle(set.type.tintColor)
                                     .gridColumnAlignment(.leading)
                                 Spacer()

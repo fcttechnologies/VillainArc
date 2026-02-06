@@ -16,17 +16,15 @@ class RepRangePolicy {
             return "Rep Range: \(lowerRange)-\(upperRange)"
         case .target:
             return "Rep Target: \(targetReps)"
-        case .untilFailure:
-            return "Rep Goal: Until Failure"
         }
     }
     
     init() {}
 
     init(copying source: RepRangePolicy) {
-        self.activeMode = source.activeMode
-        self.lowerRange = source.lowerRange
-        self.upperRange = source.upperRange
-        self.targetReps = source.targetReps
+        activeMode = source.activeMode
+        lowerRange = source.lowerRange
+        upperRange = source.upperRange
+        targetReps = source.targetReps
     }
 }

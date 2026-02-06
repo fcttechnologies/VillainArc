@@ -122,15 +122,12 @@ private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> I
         return 3
     case .changeSetType:
         return 4
-    case .addSet, .removeSet:
-        return 5
     case .changeRepRangeMode,
          .increaseRepRangeLower, .decreaseRepRangeLower,
          .increaseRepRangeUpper, .decreaseRepRangeUpper,
          .increaseRepRangeTarget, .decreaseRepRangeTarget,
          .changeRestTimeMode,
-         .increaseRestTimeSeconds, .decreaseRestTimeSeconds,
-         .addExercise, .removeExercise, .reorderExercise:
+         .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
         return 10
     }
 }

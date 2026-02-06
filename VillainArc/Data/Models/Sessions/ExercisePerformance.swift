@@ -57,7 +57,7 @@ class ExercisePerformance {
 
     func effectiveRestSeconds(after set: SetPerformance) -> Int {
         if let nextSet = sortedSets.first(where: { $0.index == set.index + 1 }),
-           nextSet.type == .dropSet || nextSet.type == .superSet {
+           nextSet.type == .dropSet {
             return 0
         }
         return restTimePolicy.seconds(for: set)
@@ -67,7 +67,7 @@ class ExercisePerformance {
         if let previous = sortedSets.last {
             sets.append(SetPerformance(exercise: self, weight: previous.weight, reps: previous.reps, restSeconds: previous.restSeconds))
         } else {
-            sets.append(SetPerformance(exercise: self, restSeconds: restTimePolicy.defaultRegularSeconds()))
+            sets.append(SetPerformance(exercise: self, restSeconds: RestTimePolicy.defaultRestSeconds))
         }
     }
 

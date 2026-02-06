@@ -21,23 +21,17 @@ enum AIRepRangeMode: String, Equatable, Sendable {
 @Generable
 enum AIExerciseSetType: String, Equatable, Sendable {
     case warmup = "Warm Up Set"
-    case regular = "Regular Set"
-    case superSet = "Super Set"
+    case working = "Working Set"
     case dropSet = "Drop Set"
-    case failure = "Failure Set"
     
     init(from type: ExerciseSetType) {
         switch type {
         case .warmup:
             self = .warmup
-        case .regular:
-            self = .regular
-        case .superSet:
-            self = .superSet
+        case .working:
+            self = .working
         case .dropSet:
             self = .dropSet
-        case .failure:
-            self = .failure
         }
     }
 }
@@ -135,7 +129,7 @@ struct AIExercisePerformanceSnapshot: Equatable, Sendable {
             self.repRangeLower = nil
             self.repRangeUpper = nil
             self.repRangeTarget = policy.targetReps
-        case .notSet, .untilFailure:
+        case .notSet:
             self.repRangeMode = nil
             self.repRangeLower = nil
             self.repRangeUpper = nil

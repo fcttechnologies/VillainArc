@@ -57,25 +57,25 @@ class ExercisePrescription {
     
     // Creates a copy with the same ID for edit tracking
     init(copying original: ExercisePrescription, workoutPlan: WorkoutPlan) {
-        self.id = original.id  // Same ID enables matching for change detection
-        self.index = original.index
-        self.catalogID = original.catalogID
-        self.name = original.name
-        self.notes = original.notes
-        self.musclesTargeted = original.musclesTargeted
-        self.equipmentType = original.equipmentType
-        self.repRange = RepRangePolicy(copying: original.repRange)
-        self.restTimePolicy = RestTimePolicy(copying: original.restTimePolicy)
+        id = original.id  // Same ID enables matching for change detection
+        index = original.index
+        catalogID = original.catalogID
+        name = original.name
+        notes = original.notes
+        musclesTargeted = original.musclesTargeted
+        equipmentType = original.equipmentType
+        repRange = RepRangePolicy(copying: original.repRange)
+        restTimePolicy = RestTimePolicy(copying: original.restTimePolicy)
         self.workoutPlan = workoutPlan
         // Copy sets with same IDs - NO changes copied (changes stay on original)
-        self.sets = original.sortedSets.map { SetPrescription(copying: $0, exercise: self) }
+        sets = original.sortedSets.map { SetPrescription(copying: $0, exercise: self) }
     }
 
     func addSet() {
         if let previous = sortedSets.last {
             sets.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest))
         } else {
-            sets.append(SetPrescription(exercisePrescription: self, targetRest: restTimePolicy.defaultRegularSeconds()))
+            sets.append(SetPrescription(exercisePrescription: self, targetRest: RestTimePolicy.defaultRestSeconds))
         }
     }
     

@@ -3,12 +3,11 @@ import SwiftData
 
 @Model
 class RestTimeHistory {
-    var seconds: Int
-    var lastUsed: Date
+    var seconds: Int = 0
+    var lastUsed: Date = Date()
     
-    init(seconds: Int, lastUsed: Date = Date.now) {
+    init(seconds: Int) {
         self.seconds = seconds
-        self.lastUsed = lastUsed
     }
 }
 

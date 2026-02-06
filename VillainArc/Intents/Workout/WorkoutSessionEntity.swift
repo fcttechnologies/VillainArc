@@ -78,7 +78,7 @@ extension WorkoutSessionEntity {
         let postEffort = workoutSession.postEffort.map { effort in
             WorkoutSessionFullContent.PostWorkoutEffort(
                 rpe: effort.rpe,
-                notes: effort.notes?.isEmpty == false ? effort.notes : nil
+                notes: effort.notes.isEmpty ? nil : effort.notes
             )
         }
         fullContent = WorkoutSessionFullContent(

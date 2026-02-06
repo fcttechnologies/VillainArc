@@ -71,7 +71,6 @@ enum AIOutcomeChangeType: String, Equatable, Sendable {
         case .decreaseRepRangeUpper: self = .decreaseRepRangeUpper
         case .increaseRepRangeTarget: self = .increaseRepRangeTarget
         case .decreaseRepRangeTarget: self = .decreaseRepRangeTarget
-        default: return nil
         }
     }
 }
@@ -136,11 +135,13 @@ struct AIRestTimePolicy: Equatable, Sendable {
 enum AIRestTimeMode: String, Equatable, Sendable {
     case allSame = "All Same"
     case individual = "Individual"
+    case byType = "By Type"
 
     init(from mode: RestTimeMode) {
         switch mode {
         case .allSame: self = .allSame
         case .individual: self = .individual
+        case .byType: self = .byType
         }
     }
 }
@@ -162,7 +163,7 @@ extension AIExercisePrescriptionSnapshot {
             self.repRangeLower = nil
             self.repRangeUpper = nil
             self.repRangeTarget = policy.targetReps
-        case .notSet, .untilFailure:
+        case .notSet:
             self.repRangeMode = nil
             self.repRangeLower = nil
             self.repRangeUpper = nil

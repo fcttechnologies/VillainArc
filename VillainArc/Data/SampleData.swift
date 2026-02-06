@@ -66,23 +66,23 @@ class PreviewDataContainer {
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
             ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
                 (.warmup, 45, 12, 60),
-                (.regular, 135, 10, 90),
-                (.regular, 155, 8, 90)
+                (.working, 135, 10, 90),
+                (.working, 155, 8, 90)
             ]),
             ("dumbbell_incline_bench_press", "", [
                 (.warmup, 25, 12, 60),
-                (.regular, 55, 10, 90),
-                (.regular, 60, 8, 90)
+                (.working, 55, 10, 90),
+                (.working, 60, 8, 90)
             ]),
             ("cable_bench_chest_fly", "slow eccentric", [
-                (.regular, 30, 12, 90),
-                (.regular, 35, 10, 90),
-                (.regular, 35, 10, 90)
+                (.working, 30, 12, 90),
+                (.working, 35, 10, 90),
+                (.working, 35, 10, 90)
             ]),
             ("cable_bar_pushdown", "triceps finisher", [
-                (.regular, 50, 12, 60),
-                (.regular, 55, 10, 60),
-                (.regular, 60, 8, 60)
+                (.working, 50, 12, 60),
+                (.working, 55, 10, 60),
+                (.working, 60, 8, 60)
             ])
         ]
 
@@ -129,28 +129,28 @@ class PreviewDataContainer {
         session.endedAt = date(2026, 1, 5, 9, 5)
         context.insert(session)
 
-        let postEffort = PostWorkoutEffort(rpe: 7, notes: "Felt strong", workoutSession: session)
+        let postEffort = PostWorkoutEffort(rpe: 7, notes: "Felt strong")
         session.postEffort = postEffort
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])] = [
             ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
                 (.warmup, 45, 12),
-                (.regular, 135, 10),
-                (.regular, 155, 8)
+                (.working, 135, 10),
+                (.working, 155, 8)
             ]),
             ("dumbbell_incline_bench_press", "", [
                 (.warmup, 25, 12),
-                (.regular, 55, 10),
-                (.regular, 60, 8)
+                (.working, 55, 10),
+                (.working, 60, 8)
             ]),
             ("cable_bench_chest_fly", "slow eccentric", [
-                (.regular, 30, 12),
-                (.regular, 35, 10),
-                (.regular, 35, 10)
+                (.working, 30, 12),
+                (.working, 35, 10),
+                (.working, 35, 10)
             ]),
             ("push_ups", "2xAMRAP", [
-                (.regular, 0, 25),
-                (.failure, 0, 18)
+                (.working, 0, 25),
+                (.working, 0, 18)
             ])
         ]
 
@@ -167,8 +167,6 @@ class PreviewDataContainer {
                 performance.repRange.activeMode = .range
                 performance.repRange.lowerRange = 12
                 performance.repRange.upperRange = 15
-            } else if ex.id == "push_ups" {
-                performance.repRange.activeMode = .untilFailure
             }
 
             for (j, s) in ex.sets.enumerated() {
@@ -215,7 +213,7 @@ class PreviewDataContainer {
 
             for index in 0..<3 {
                 let setPerf = SetPerformance(exercise: performance)
-                setPerf.type = index == 0 ? .warmup : .regular
+                setPerf.type = index == 0 ? .warmup : .working
                 setPerf.restSeconds = index == 0 ? 60 : 90
                 setPerf.reps = sampleReps[index]
                 if let weights = sampleWeights[ex.id], index < weights.count {
@@ -305,7 +303,7 @@ class PreviewDataContainer {
         
         // Set 2 changes
         let s2 = SetPrescription(exercisePrescription: benchPrescription)
-        s2.type = .regular
+        s2.type = .working
         s2.targetWeight = 155
         s2.targetReps = 8
         s2.index = 1
@@ -398,20 +396,20 @@ class PreviewDataContainer {
 
         let planExercises: [(id: String, repRange: RepRangeMode, lower: Int, upper: Int, target: Int, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
             ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                (.regular, 60, 8, 90),
-                (.regular, 60, 8, 90)
+                (.working, 60, 8, 90),
+                (.working, 60, 8, 90)
             ]),
             ("barbell_bent_over_row", .range, 8, 10, 0, [
-                (.regular, 135, 8, 120),
-                (.regular, 135, 8, 120)
+                (.working, 135, 8, 120),
+                (.working, 135, 8, 120)
             ]),
             ("cable_bench_chest_fly", .notSet, 0, 0, 0, [
-                (.regular, 30, 12, 90),
-                (.regular, 30, 12, 90)
+                (.working, 30, 12, 90),
+                (.working, 30, 12, 90)
             ]),
             ("cable_bar_pushdown", .range, 10, 12, 0, [
-                (.regular, 55, 10, 60),
-                (.regular, 55, 10, 60)
+                (.working, 55, 10, 60),
+                (.working, 55, 10, 60)
             ])
         ]
 
@@ -445,20 +443,20 @@ class PreviewDataContainer {
                 date(2026, 2, 1, 8, 0),
                 [
                     ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                        (.regular, 60, 10),
-                        (.regular, 60, 10)
+                        (.working, 60, 10),
+                        (.working, 60, 10)
                     ]),
                     ("barbell_bent_over_row", .range, 8, 10, 0, [
-                        (.regular, 135, 6),
-                        (.regular, 135, 6)
+                        (.working, 135, 6),
+                        (.working, 135, 6)
                     ]),
                     ("cable_bench_chest_fly", .range, 12, 15, 0, [
-                        (.regular, 30, 12),
-                        (.regular, 30, 12)
+                        (.working, 30, 12),
+                        (.working, 30, 12)
                     ]),
                     ("cable_bar_pushdown", .range, 10, 12, 0, [
-                        (.failure, 55, 12),
-                        (.failure, 55, 11)
+                        (.working, 55, 12),
+                        (.working, 55, 11)
                     ])
                 ]
             ),
@@ -466,20 +464,20 @@ class PreviewDataContainer {
                 date(2026, 2, 3, 8, 0),
                 [
                     ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                        (.regular, 60, 10),
-                        (.regular, 60, 10)
+                        (.working, 60, 10),
+                        (.working, 60, 10)
                     ]),
                     ("barbell_bent_over_row", .range, 8, 10, 0, [
-                        (.regular, 135, 7),
-                        (.regular, 135, 7)
+                        (.working, 135, 7),
+                        (.working, 135, 7)
                     ]),
                     ("cable_bench_chest_fly", .range, 12, 15, 0, [
-                        (.regular, 30, 13),
-                        (.regular, 30, 12)
+                        (.working, 30, 13),
+                        (.working, 30, 12)
                     ]),
                     ("cable_bar_pushdown", .range, 10, 12, 0, [
-                        (.failure, 55, 12),
-                        (.failure, 55, 10)
+                        (.working, 55, 12),
+                        (.working, 55, 10)
                     ])
                 ]
             ),
@@ -487,20 +485,20 @@ class PreviewDataContainer {
                 date(2026, 2, 5, 8, 0),
                 [
                     ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                        (.regular, 60, 10),
-                        (.regular, 60, 10)
+                        (.working, 60, 10),
+                        (.working, 60, 10)
                     ]),
                     ("barbell_bent_over_row", .range, 8, 10, 0, [
-                        (.regular, 135, 9),
-                        (.regular, 135, 8)
+                        (.working, 135, 9),
+                        (.working, 135, 8)
                     ]),
                     ("cable_bench_chest_fly", .range, 12, 15, 0, [
-                        (.regular, 30, 12),
-                        (.regular, 30, 12)
+                        (.working, 30, 12),
+                        (.working, 30, 12)
                     ]),
                     ("cable_bar_pushdown", .range, 10, 12, 0, [
-                        (.failure, 55, 12),
-                        (.failure, 55, 12)
+                        (.working, 55, 12),
+                        (.working, 55, 12)
                     ])
                 ]
             )
@@ -557,31 +555,30 @@ class PreviewDataContainer {
         }
 
         if let incline = session.sortedExercises.first(where: { $0.catalogID == "dumbbell_incline_bench_press" }) {
-            for set in incline.sortedSets where set.type == .regular {
+            for set in incline.sortedSets where set.type == .working {
                 set.weight = 60
                 set.reps = 10
             }
         }
 
         if let row = session.sortedExercises.first(where: { $0.catalogID == "barbell_bent_over_row" }) {
-            for set in row.sortedSets where set.type == .regular {
+            for set in row.sortedSets where set.type == .working {
                 set.weight = 135
                 set.reps = 7
             }
         }
 
         if let fly = session.sortedExercises.first(where: { $0.catalogID == "cable_bench_chest_fly" }) {
-            for set in fly.sortedSets where set.type == .regular {
+            for set in fly.sortedSets where set.type == .working {
                 set.weight = 30
                 set.reps = 12
             }
         }
 
         if let pushdown = session.sortedExercises.first(where: { $0.catalogID == "cable_bar_pushdown" }) {
-            for set in pushdown.sortedSets where set.type == .regular {
+            for set in pushdown.sortedSets where set.type == .working {
                 set.weight = 55
                 set.reps = 12
-                set.type = .failure
             }
         }
     }

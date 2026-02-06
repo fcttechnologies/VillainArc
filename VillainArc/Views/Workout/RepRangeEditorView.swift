@@ -111,8 +111,6 @@ struct RepRangeEditorView: View {
             return "Set a single rep goal you want to acheive for each set."
         case .range:
             return "Set a rep range you want to aim for."
-        case .untilFailure:
-            return "Use when you plan on taking every set until failure."
         }
     }
     
@@ -122,7 +120,7 @@ struct RepRangeEditorView: View {
             return "Pick one rep target that matches your goal: strength often uses a low target like 3 reps, hypertrophy is often around 10 reps, endurance is usually 15+ reps."
         case .range:
             return "Pick a rep range that matches your goal: strength usually sits around 1–3 reps, hypertrophy is often 8–12 reps, endurance is commonly 12–20+ reps."
-        case .notSet, .untilFailure:
+        case .notSet:
             return ""
         }
     }
@@ -136,8 +134,6 @@ struct RepRangeEditorView: View {
         case .target(let reps):
             repRange.activeMode = .target
             repRange.targetReps = reps
-        case .untilFailure:
-            repRange.activeMode = .untilFailure
         }
 
         Haptics.selection()
@@ -171,8 +167,6 @@ struct RepRangeEditorView: View {
             return .range(policy.lowerRange, policy.upperRange)
         case .target:
             return .target(policy.targetReps)
-        case .untilFailure:
-            return .untilFailure
         }
     }
 
@@ -228,7 +222,6 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
     enum Kind: Hashable {
         case target(Int)
         case range(Int, Int)
-        case untilFailure
 
         var id: String {
             switch self {
@@ -236,8 +229,6 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
                 return "target-\(reps)"
             case .range(let lower, let upper):
                 return "range-\(lower)-\(upper)"
-            case .untilFailure:
-                return "until-failure"
             }
         }
 
@@ -247,8 +238,6 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
                 return "Target"
             case .range:
                 return "Range"
-            case .untilFailure:
-                return "Until Failure"
             }
         }
 
@@ -258,8 +247,6 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
                 return "\(reps) reps"
             case .range(let lower, let upper):
                 return "\(lower)-\(upper) reps"
-            case .untilFailure:
-                return nil
             }
         }
 
@@ -269,8 +256,6 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
                 return "Target \(reps) reps"
             case .range(let lower, let upper):
                 return "Range \(lower) to \(upper) reps"
-            case .untilFailure:
-                return "Until failure"
             }
         }
     }
