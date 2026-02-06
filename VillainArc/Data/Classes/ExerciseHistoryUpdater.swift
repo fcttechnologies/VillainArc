@@ -102,37 +102,34 @@ struct ExerciseHistoryUpdater {
         print("✅ ExerciseHistoryUpdater: Rebuild complete")
     }
     
-    /// Fetches or creates an ExerciseHistory for a given catalogID.
-    /// If history doesn't exist, creates and calculates it on the spot.
+    /// Creates an ExerciseHistory for a catalogID if one doesn't already exist.
+    /// Call this when an exercise is added to a workout so history is ready
+    /// for PR detection and suggestion generation later.
     ///
-    /// **Use Case:**
-    /// - WorkoutSummaryView PR detection
-    /// - Context gathering for suggestions
-    /// - Any place that needs cached stats but may be first access
-    ///
-    /// **Returns:**
-    /// - Existing history if found
-    /// - Newly created history if performances exist but history doesn't
-    /// - nil if no completed performances exist for this exercise
-    static func fetchOrCreateHistory(for catalogID: String, context: ModelContext) -> ExerciseHistory? {
-        // Try to fetch existing
+    /// If prior performances exist, the history is populated with stats.
+    /// If no performances exist, an empty history is created (all zeros)
+    /// so that any new performance will correctly register as a PR.
+    static func createIfNeeded(for catalogID: String, context: ModelContext) {
         let descriptor = ExerciseHistory.forCatalogID(catalogID)
-        if let existing = try? context.fetch(descriptor).first {
-            return existing
-        }
-        
-        // Doesn't exist - create it
-        let performances = (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID))) ?? []
-        
-        guard !performances.isEmpty else {
-            return nil  // No data to create history from
+        if (try? context.fetch(descriptor).first) != nil {
+            return
         }
         
         let history = ExerciseHistory(catalogID: catalogID)
         context.insert(history)
-        history.recalculate(using: performances)
-        saveContext(context: context)
         
-        return history
+        let performances = (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID))) ?? []
+        if !performances.isEmpty {
+            history.recalculate(using: performances)
+        }
+        
+        saveContext(context: context)
+    }
+    
+    /// Fetches the ExerciseHistory for a catalogID.
+    /// Returns nil if no history exists.
+    static func fetchHistory(for catalogID: String, context: ModelContext) -> ExerciseHistory? {
+        let descriptor = ExerciseHistory.forCatalogID(catalogID)
+        return try? context.fetch(descriptor).first
     }
 }

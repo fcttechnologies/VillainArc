@@ -54,6 +54,7 @@ struct ReplaceExerciseIntent: AppIntent {
         activeExercise.replaceWith(resolvedExercise, keepSets: keepSets)
         resolvedExercise.updateLastUsed()
         SpotlightIndexer.index(exercise: resolvedExercise)
+        ExerciseHistoryUpdater.createIfNeeded(for: resolvedExercise.catalogID, context: context)
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
 

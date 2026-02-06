@@ -17,6 +17,8 @@ Rules receive context through `ExerciseSuggestionContext` struct:
 - `history: [ExercisePerformance]` - Last 3 performances for this exercise
 - `historySummary: ExerciseHistory?` - Cached aggregate stats
 - `plan: WorkoutPlan` - The workout plan being followed
+- `resolvedTrainingStyle: TrainingStyle` - Heuristic style with AI fallback when unknown
+- `inferredRepRangeCandidate: RepRangeCandidateKind?` - Inferred rep range when prescription is not set
 
 **Location**: `VillainArc/Data/Classes/Suggestions/SuggestionGenerator.swift`
 **How**: Context built per exercise, passed directly to `RuleEngine.evaluate()`

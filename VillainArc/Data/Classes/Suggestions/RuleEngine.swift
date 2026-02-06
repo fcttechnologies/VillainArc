@@ -5,11 +5,12 @@ struct ExerciseSuggestionContext {
     let performance: ExercisePerformance
     let prescription: ExercisePrescription
     let history: [ExercisePerformance]
-    let historySummary: ExerciseHistory?
     let plan: WorkoutPlan
+    let resolvedTrainingStyle: TrainingStyle
+    let inferredRepRangeCandidate: RepRangeCandidateKind?
 }
 
-private enum RepRangeCandidateKind: Hashable {
+enum RepRangeCandidateKind: Hashable {
     case range(Int, Int)
     case target(Int)
     case untilFailure
@@ -57,10 +58,7 @@ struct RuleEngine {
     private static func repRangeSuggestionIfNeeded(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // If no rep range is set, infer a reasonable default from history.
         guard context.prescription.repRange.activeMode == .notSet else { return [] }
-
-        // Prefer explicit past rep range usage; fallback to cached typical range.
-        let candidate = repRangeCandidate(from: context.history) ?? repRangeCandidate(from: context.historySummary)
-        guard let candidate else { return [] }
+        guard let candidate = context.inferredRepRangeCandidate else { return [] }
 
         var changes: [PrescriptionChange] = []
         let reasoning = "Based on your recent sessions, setting a rep goal will make progression clearer."
@@ -136,24 +134,21 @@ struct RuleEngine {
 
     private static func doubleProgressionRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Range mode progression: hit upper bound for 2 sessions -> increase weight, reset to lower bound.
-        guard context.prescription.repRange.activeMode == .range else { return [] }
-
-        let upper = context.prescription.repRange.upperRange
-        let lower = context.prescription.repRange.lowerRange
+        guard case .range(let lower, let upper) = effectiveRepRangeCandidate(context) else { return [] }
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
         // Require BOTH of the last two sessions to hit the top of the range.
         let lastTwo = Array(recent.prefix(2))
         let hitTopInBoth = lastTwo.allSatisfy { performance in
-            let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+            let progressionSets = selectProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
             return progressionSets.allSatisfy { $0.reps >= upper }
         }
 
         guard hitTopInBoth else { return [] }
 
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
@@ -200,23 +195,21 @@ struct RuleEngine {
 
     private static func doubleProgressionTarget(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Target mode progression: exceed target by 1+ for 2 sessions -> increase weight.
-        guard context.prescription.repRange.activeMode == .target else { return [] }
-
-        let target = context.prescription.repRange.targetReps
+        guard case .target(let target) = effectiveRepRangeCandidate(context) else { return [] }
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
         // Require BOTH of the last two sessions to exceed target by at least 1.
         let lastTwo = Array(recent.prefix(2))
         let exceededTargetInBoth = lastTwo.allSatisfy { performance in
-            let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+            let progressionSets = selectProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
             return progressionSets.allSatisfy { $0.reps >= target + 1 }
         }
 
         guard exceededTargetInBoth else { return [] }
 
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
@@ -246,14 +239,11 @@ struct RuleEngine {
 
     private static func steadyRepIncreaseWithinRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Range mode progression: repeat the same reps at the same weight for 2 sessions -> increase reps by 1.
-        guard context.prescription.repRange.activeMode == .range else { return [] }
-
-        let upper = context.prescription.repRange.upperRange
-        let lower = context.prescription.repRange.lowerRange
+        guard case .range(let lower, let upper) = effectiveRepRangeCandidate(context) else { return [] }
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         // Skip reps-increase if weight progression already qualifies.
@@ -320,21 +310,23 @@ struct RuleEngine {
 
         // Check overshoot in BOTH of the last two sessions.
         let lastTwo = Array(recent.prefix(2))
-        let repRange = context.prescription.repRange
+        guard let repRange = effectiveRepRangeCandidate(context) else { return [] }
 
         let overshootMet: Bool
-        switch repRange.activeMode {
-        case .range:
-            let upper = repRange.upperRange
+        var lower = 0
+        var shouldResetReps = false
+        switch repRange {
+        case .range(let lowerValue, let upper):
+            lower = lowerValue
+            shouldResetReps = true
             overshootMet = lastTwo.allSatisfy { performance in
-                let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+                let progressionSets = selectProgressionSets(from: performance, context: context)
                 guard !progressionSets.isEmpty else { return false }
                 return progressionSets.allSatisfy { $0.reps >= upper + 4 }
             }
-        case .target:
-            let target = repRange.targetReps
+        case .target(let target):
             overshootMet = lastTwo.allSatisfy { performance in
-                let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+                let progressionSets = selectProgressionSets(from: performance, context: context)
                 guard !progressionSets.isEmpty else { return false }
                 return progressionSets.allSatisfy { $0.reps >= target + 5 }
             }
@@ -344,12 +336,10 @@ struct RuleEngine {
 
         guard overshootMet else { return [] }
 
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
-        let lower = repRange.lowerRange
-        let shouldResetReps = repRange.activeMode == .range
         let weightReason = "You exceeded the top of your rep range in two sessions. Increase weight to better match your current strength."
         let repsReason = "Reset reps to \(lower) to account for the larger weight jump."
 
@@ -391,9 +381,7 @@ struct RuleEngine {
 
     private static func belowRangeWeightDecrease(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Range mode safety: below lower bound in 2 of last 3 -> reduce weight.
-        guard context.prescription.repRange.activeMode == .range else { return [] }
-
-        let lower = context.prescription.repRange.lowerRange
+        guard case .range(let lower, _) = effectiveRepRangeCandidate(context) else { return [] }
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
@@ -402,7 +390,7 @@ struct RuleEngine {
         var belowCount = 0
 
         for performance in lastThree {
-            let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+            let progressionSets = selectProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { continue }
 
             var sessionBelow = true
@@ -427,7 +415,7 @@ struct RuleEngine {
 
         guard belowCount >= 2 else { return [] }
 
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
@@ -519,17 +507,7 @@ struct RuleEngine {
         guard recent.count >= 2 else { return [] }
 
         let lastTwo = Array(recent.prefix(2))
-        let repRange = context.prescription.repRange
-        let repFloor: Int? = {
-            switch repRange.activeMode {
-            case .range:
-                return repRange.lowerRange
-            case .target:
-                return repRange.targetReps
-            default:
-                return nil
-            }
-        }()
+        let repFloor = repFloor(from: effectiveRepRangeCandidate(context))
 
         var changes: [PrescriptionChange] = []
 
@@ -577,17 +555,7 @@ struct RuleEngine {
         guard recent.count >= 2 else { return [] }
 
         let lastTwo = Array(recent.prefix(2))
-        let repRange = context.prescription.repRange
-        let repFloor: Int? = {
-            switch repRange.activeMode {
-            case .range:
-                return repRange.lowerRange
-            case .target:
-                return repRange.targetReps
-            default:
-                return nil
-            }
-        }()
+        let repFloor = repFloor(from: effectiveRepRangeCandidate(context))
 
         let restPolicy = context.prescription.restTimePolicy
         let restIncrement = 15
@@ -705,7 +673,7 @@ struct RuleEngine {
             ]
         }
 
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
@@ -770,35 +738,33 @@ struct RuleEngine {
         guard recent.count >= 2 else { return [] }
 
         let lastTwo = Array(recent.prefix(2))
-        let repRange = context.prescription.repRange
-        let progressionSets = MetricsCalculator.selectProgressionSets(from: context.performance)
+        guard let repRange = effectiveRepRangeCandidate(context) else { return [] }
+        let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
-        switch repRange.activeMode {
-        case .range:
-            let upper = repRange.upperRange
+        switch repRange {
+        case .range(_, let upper):
             let hitTopInBoth = lastTwo.allSatisfy { performance in
-                let sets = MetricsCalculator.selectProgressionSets(from: performance)
+                let sets = selectProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= upper }
             }
             let overshootInBoth = lastTwo.allSatisfy { performance in
-                let sets = MetricsCalculator.selectProgressionSets(from: performance)
+                let sets = selectProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= upper + 4 }
             }
             guard hitTopInBoth || overshootInBoth else { return [] }
             return Set(progressionSets.map(\.index))
 
-        case .target:
-            let target = repRange.targetReps
+        case .target(let target):
             let exceededInBoth = lastTwo.allSatisfy { performance in
-                let sets = MetricsCalculator.selectProgressionSets(from: performance)
+                let sets = selectProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= target + 1 }
             }
             let overshootInBoth = lastTwo.allSatisfy { performance in
-                let sets = MetricsCalculator.selectProgressionSets(from: performance)
+                let sets = selectProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= target + 5 }
             }
@@ -898,20 +864,17 @@ struct RuleEngine {
         return changes
     }
 
-    private static func isStrugglingWithTargets(
-        context: ExerciseSuggestionContext,
-        recent: [ExercisePerformance]
-    ) -> Bool {
+    private static func isStrugglingWithTargets(context: ExerciseSuggestionContext, recent: [ExercisePerformance]) -> Bool {
         let lastThree = Array(recent.prefix(3))
-        let repRange = context.prescription.repRange
+        guard let repRange = effectiveRepRangeCandidate(context) else { return false }
 
         // Determine the target floor based on mode
         let targetFloor: Int
-        switch repRange.activeMode {
-        case .range:
-            targetFloor = repRange.lowerRange
-        case .target:
-            targetFloor = repRange.targetReps
+        switch repRange {
+        case .range(let lower, _):
+            targetFloor = lower
+        case .target(let target):
+            targetFloor = target
         default:
             return false  // Can't evaluate struggle without a target
         }
@@ -920,7 +883,7 @@ struct RuleEngine {
         var strugglingCount = 0
 
         for performance in lastThree {
-            let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+            let progressionSets = selectProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { continue }
 
             // Check if any progression sets were below floor
@@ -978,12 +941,34 @@ struct RuleEngine {
         return changes
     }
 
+    private static func selectProgressionSets(from performance: ExercisePerformance, context: ExerciseSuggestionContext) -> [SetPerformance] {
+        MetricsCalculator.selectProgressionSets(from: performance, overrideStyle: context.resolvedTrainingStyle)
+    }
+
+    private static func effectiveRepRangeCandidate(_ context: ExerciseSuggestionContext) -> RepRangeCandidateKind? {
+        if context.prescription.repRange.activeMode != .notSet {
+            return suggestionKind(from: context.prescription.repRange)
+        }
+        return context.inferredRepRangeCandidate
+    }
+
+    private static func repFloor(from candidate: RepRangeCandidateKind?) -> Int? {
+        switch candidate {
+        case .range(let lower, _):
+            return lower
+        case .target(let reps):
+            return reps
+        default:
+            return nil
+        }
+    }
+
     private static func recentPerformances(_ context: ExerciseSuggestionContext) -> [ExercisePerformance] {
         // Include the current session at the front of the historical list.
         [context.performance] + context.history
     }
 
-    private static func repRangeCandidate(from history: [ExercisePerformance]) -> RepRangeCandidateKind? {
+    static func repRangeCandidate(from history: [ExercisePerformance]) -> RepRangeCandidateKind? {
         // Pick the most common rep range mode used in history (ties broken by recency).
         guard !history.isEmpty else { return nil }
 
@@ -1011,14 +996,18 @@ struct RuleEngine {
             .first?
             .key
     }
-    
-    private static func repRangeCandidate(from historySummary: ExerciseHistory?) -> RepRangeCandidateKind? {
-        // Use cached typical rep range when there is no explicit history candidate.
-        guard let historySummary else { return nil }
-        let lower = historySummary.typicalRepRangeLower
-        let upper = historySummary.typicalRepRangeUpper
-        guard lower > 0, upper > lower else { return nil }
-        return .range(lower, upper)
+
+    static func repRangeCandidate(from aiClassification: AIRepRangeClassification?) -> RepRangeCandidateKind? {
+        // Use AI-inferred rep range as last resort when heuristics can't determine one.
+        guard let classification = aiClassification else { return nil }
+        switch classification.mode {
+        case .range:
+            guard classification.lowerRange > 0, classification.upperRange > classification.lowerRange else { return nil }
+            return .range(classification.lowerRange, classification.upperRange)
+        case .target:
+            guard classification.targetReps > 0 else { return nil }
+            return .target(classification.targetReps)
+        }
     }
 
     private static func suggestionKind(from policy: RepRangePolicy) -> RepRangeCandidateKind? {
@@ -1043,15 +1032,7 @@ struct RuleEngine {
         return prescription.sortedSets[safe: set.index]
     }
 
-    private static func makeSetChange(
-        context: ExerciseSuggestionContext,
-        set: SetPerformance?,
-        setPrescription: SetPrescription,
-        changeType: ChangeType,
-        previousValue: Double,
-        newValue: Double,
-        reasoning: String
-    ) -> PrescriptionChange {
+    private static func makeSetChange(context: ExerciseSuggestionContext, set: SetPerformance?, setPrescription: SetPrescription, changeType: ChangeType, previousValue: Double, newValue: Double, reasoning: String) -> PrescriptionChange {
         // Build a set-scoped suggestion change record.
         let change = PrescriptionChange()
         change.source = .rules
@@ -1072,13 +1053,7 @@ struct RuleEngine {
         return change
     }
 
-    private static func makeExerciseChange(
-        context: ExerciseSuggestionContext,
-        changeType: ChangeType,
-        previousValue: Double,
-        newValue: Double,
-        reasoning: String
-    ) -> PrescriptionChange {
+    private static func makeExerciseChange(context: ExerciseSuggestionContext, changeType: ChangeType, previousValue: Double, newValue: Double, reasoning: String) -> PrescriptionChange {
         // Build an exercise-level suggestion change record.
         let change = PrescriptionChange()
         change.source = .rules

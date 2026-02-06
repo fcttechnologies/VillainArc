@@ -1,32 +1,75 @@
 # Plan Suggestion System
 
 ## Overview
-The suggestion system generates prescription changes after a workout and lets users accept, reject, or defer them. Suggestions come from two sources:
-- Rule engine (deterministic, data-driven).
-- On-device AI (FoundationModels) when available.
+The suggestion system generates prescription changes after a workout and lets users accept, reject, or defer them. Suggestions come from the **rule engine** (deterministic, data-driven). On-device AI (FoundationModels) assists by classifying rep range and training style when heuristics are unknown or recent history is weak.
 
 Suggestions are generated per workout session, stored as `PrescriptionChange`, and surfaced in the summary and deferred review flows.
 
 ## Generation Pipeline
 1. `WorkoutSummaryView` asks `SuggestionGenerator` for existing suggestions for the session. If none exist and the session has a plan, it generates new ones.
-2. For each exercise in the session:
-   - Build `ExerciseSuggestionContext` with current performance, prescription, plan, last 3 completed performances, and cached history.
+2. **Gather Phase (Main Actor)**:
+   - Identify candidates for AI inference by checking:
+     - `history.count < 10` (Quick check with `limit: 10`).
+     - OR training style is `unknown`.
+   - Prepare lightweight `AIRequest` snapshots (Sendable) for these candidates.
+   - Map requests by `exercisePerf.id` (UUID) to handle duplicate exercises.
+3. **Scatter Phase (Background - Parallel)**:
+   - Launch a `TaskGroup` to run all AI inference requests simultaneously.
+   - Each request uses `AIConfigurationInferrer` which creates a dedicated, thread-safe session.
+4. **Evaluate Phase (Main Actor)**:
+   - Iterate through exercises again.
+   - Re-fetch **full** history (no limit) for accurate Rule Engine analysis.
+   - Apply pre-calculated AI results if available.
    - Run `RuleEngine.evaluate`.
-   - Run `AISuggestionGenerator.generateSuggestions` (only if the on-device model is available).
-3. Merge all suggestions and pass them through `SuggestionDeduplicator`.
-4. Persist `PrescriptionChange` items with `decision = .pending`.
+5. Merge all suggestions and pass them through `SuggestionDeduplicator`.
+6. Persist `PrescriptionChange` items with `decision = .pending`.
+
+## AI Configuration Inference
+AI does NOT generate suggestions directly. It classifies configuration values that enable rules to fire.
+
+### What AI Classifies
+1. **Rep Range Mode + Values** — When `repRange.activeMode == .notSet` and total history is weak (`< 10` total sessions).
+   - Classifies as Range (lower + upper) or Target (target reps).
+   - AI is never allowed to suggest `untilFailure` mode.
+   - AI is preferred **strictly** when `history.count < 10`; otherwise full history candidates are used.
+
+2. **Training Style** — Classifies set/weight patterns when heuristic detection returns `unknown`.
+   - Used as an override in `MetricsCalculator.selectProgressionSets` when regular sets aren't labeled.
+   - Styles: straightSets, ascendingPyramid, descendingPyramid, ascending, topSetBackoffs, unknown.
+
+### Availability
+- Uses `SystemLanguageModel.default` (on-device). If unavailable, returns nil and existing heuristics are the full fallback.
+- One tool available: `getRecentExercisePerformances` (last N sessions, max 5) for additional context.
+- AI inferences are ephemeral — used for the current suggestion generation only, not persisted.
 
 ## Context and Helpers
-- Recent history: `ExercisePerformance.matching(catalogID:)` with `fetchLimit = 3` (sorted most recent first).
-- Cached history: `ExerciseHistoryUpdater.fetchOrCreateHistory` provides typical ranges and trend data.
-- Progression sets: `MetricsCalculator.selectProgressionSets` picks the 1-2 working sets used by progression rules.
+- Full history: `ExercisePerformance.matching(catalogID:)` returns all completed performances (sorted most recent first).
+- Recent window: `recentHistory = history.prefix(10)` is used for rep range inference and AI gating.
+- Cached history summary: `ExerciseHistoryUpdater.fetchHistory` is passed to context for rules/future use, but rep range inference currently uses recent history only.
+- Progression sets: `MetricsCalculator.selectProgressionSets` picks the 1-2 working sets used by progression rules. Accepts a resolved training style override.
 - Weight increments: `MetricsCalculator.weightIncrement` and `roundToNearestPlate`.
+
+## Training Style Detection
+`MetricsCalculator.detectTrainingStyle` infers training style from weight patterns when set types aren't labeled. AI is only used if this returns `unknown`.
+
+| Style | Detection Pattern | Progression Sets Picked |
+|-------|------------------|------------------------|
+| `straightSets` | All weights within ~10% of average | First 2 complete sets |
+| `topSetBackoffs` | 1-3 sets cluster at top weight (within 90% of max), rest significantly lighter (<80% of max) | Heavy cluster (up to 3 sets) |
+| `ascending` | Weights monotonically increase, heaviest is last | Last 1-2 sets |
+| `descendingPyramid` | Weights mostly descend, heaviest is first | First 1-2 sets |
+| `ascendingPyramid` | Max weight is in the middle (not first or last) | Top 1-2 sets within 95% of max |
+| `unknown` | No clear pattern | 2 heaviest by weight |
 
 ## Rule Engine (Order + Details)
 Rule order matters and is executed exactly as listed below.
 
 ### Rep Range Inference
-- If rep range mode is `.notSet`, infer a mode and values from recent history or cached typical range.
+- If rep range mode is `.notSet`, infer a mode and values from recent history.
+- Candidate sources (in order):
+  1. **AI classification** when `history.count < 10` and AI returns a rep range.
+  2. **Policy-based history**: most common `repRange` policy used in **full** `history` (ties broken by recency).
+  3. **Rep-based history**: p25-p75 of completed regular-set reps in `history` (range mode).
 - Creates exercise-level changes to set mode and bounds/target.
 
 ### Progression Rules
@@ -88,6 +131,7 @@ Rule order matters and is executed exactly as listed below.
 ### Similar Suggestion Cooldown
 - Similar means same `changeType` and same target (set or exercise).
 - If a similar suggestion was created within the last 7 days and is pending, deferred, or accepted, skip it.
+- If the similar suggestion is a user-originated accepted change, the cooldown is 3 days.
 - If a similar suggestion was rejected within the last 7 days, skip it.
 
 ### Conflict Resolution
@@ -98,17 +142,6 @@ Rule order matters and is executed exactly as listed below.
    - Keep highest-priority change.
    - Priority order: decrease weight (1), increase weight/reps (2), set type/rep range (3), add/remove set (4), rest changes (5), exercise structure (6).
    - Tie-breakers: rules over AI, larger magnitude, earlier created.
-
-## AI Suggestion Integration (FoundationModels)
-AI suggestions are live and run per exercise after rules.
-
-- Uses `SystemLanguageModel.default` (on-device). If unavailable, AI returns no suggestions.
-- Tools available to the model:
-  - `getExerciseHistoryContext` (cached summary across all history).
-  - `getRecentExercisePerformances` (last N sessions, max 5).
-- The model outputs 0-5 quantifiable suggestions with a change type, target set index, new value, and reasoning.
-- Values are normalized (plate rounding for weight, integer reps/rest). Exercise-level changes use `targetSetIndex = -1`.
-- AI suggestions are merged with rule suggestions and deduped/conflict-resolved together; rules win ties.
 
 ## Storage and UI
 - Suggestions are stored as `PrescriptionChange` with source, reasoning, decision, and target references.
@@ -121,8 +154,9 @@ AI suggestions are live and run per exercise after rules.
 - Rule engine: `VillainArc/Data/Classes/Suggestions/RuleEngine.swift`
 - Metrics helpers: `VillainArc/Data/Classes/Suggestions/MetricsCalculator.swift`
 - Dedup/conflict handling: `VillainArc/Data/Classes/Suggestions/SuggestionDeduplicator.swift`
-- AI generator: `VillainArc/Data/Classes/Suggestions/AISuggestionGenerator.swift`
-- AI tools/models: `VillainArc/Data/Classes/Suggestions/AISuggestionTools.swift`, `VillainArc/Data/Classes/Suggestions/AISuggestionModels.swift`
+- AI inferrer: `VillainArc/Data/Classes/Suggestions/AIConfigurationInferrer.swift`
+- AI models: `VillainArc/Data/Classes/Suggestions/AISuggestionModels.swift`
+- AI tools: `VillainArc/Data/Classes/Suggestions/AISuggestionTools.swift`
 - Model: `VillainArc/Data/Models/Plans/PrescriptionChange.swift`
 - Grouping: `VillainArc/Data/Models/Plans/SuggestionGrouping.swift`
 - Summary UI: `VillainArc/Views/Workout/WorkoutSummaryView.swift`

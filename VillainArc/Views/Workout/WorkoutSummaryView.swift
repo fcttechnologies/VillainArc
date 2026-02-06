@@ -261,11 +261,7 @@ struct WorkoutSummaryView: View {
     private func loadPRs() {
         var entries: [PRItem] = []
         for exercise in workout.sortedExercises {
-            // Fetch cached history (much faster than querying all performances)
-            guard let history = ExerciseHistoryUpdater.fetchOrCreateHistory(
-                for: exercise.catalogID,
-                context: context
-            ) else { continue }
+            guard let history = ExerciseHistoryUpdater.fetchHistory(for: exercise.catalogID, context: context) else { continue }
 
             var types: [PRType] = []
             var values: [PRType: Double] = [:]
@@ -340,6 +336,7 @@ struct WorkoutSummaryView: View {
         context.insert(plan)
         workout.workoutPlan = plan
         saveContext(context: context)
+        SpotlightIndexer.index(workoutPlan: plan)
     }
 
     @MainActor

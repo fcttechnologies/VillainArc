@@ -216,6 +216,7 @@ struct ExerciseView: View {
         .sheet(isPresented: $showReplaceExerciseSheet) {
             ReplaceExerciseView(exercise: exercise) { newExercise, keepSets in
                 exercise.replaceWith(newExercise, keepSets: keepSets)
+                ExerciseHistoryUpdater.createIfNeeded(for: newExercise.catalogID, context: context)
                 saveContext(context: context)
                 WorkoutActivityManager.update()
                 Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }

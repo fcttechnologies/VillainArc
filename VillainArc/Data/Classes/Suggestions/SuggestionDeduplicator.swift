@@ -2,40 +2,32 @@ import Foundation
 import SwiftData
 
 struct SuggestionDeduplicator {
-    static func process(
-        suggestions: [PrescriptionChange],
-        context: ModelContext
-    ) -> [PrescriptionChange] {
+    static func process(suggestions: [PrescriptionChange], context: ModelContext) -> [PrescriptionChange] {
         // Filters duplicates + recent rejections, then resolves conflicts by priority.
         guard !suggestions.isEmpty else { return [] }
 
         // Fetch once to avoid repeated I/O per suggestion.
+        let cutoffDate = Date().addingTimeInterval(-14 * 24 * 60 * 60) // 14 days ago
         let descriptor = FetchDescriptor<PrescriptionChange>(
+            predicate: #Predicate { $0.createdAt > cutoffDate },
             sortBy: [SortDescriptor(\PrescriptionChange.createdAt, order: .reverse)]
         )
         let existing = (try? context.fetch(descriptor)) ?? []
 
         // Cooldown windows.
         let oneWeekAgo = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+        let threeDaysAgo = Date().addingTimeInterval(-3 * 24 * 60 * 60)
 
         var filtered: [PrescriptionChange] = []
 
         for suggestion in suggestions {
             // Skip if a similar suggestion was shown recently.
-            if hasSimilarRecentSuggestion(
-                suggestion: suggestion,
-                existing: existing,
-                since: oneWeekAgo
-            ) {
+            if hasSimilarRecentSuggestion(suggestion: suggestion, existing: existing, since: oneWeekAgo, userSince: threeDaysAgo) {
                 continue
             }
 
             // Skip if the user recently rejected this suggestion.
-            if wasRecentlyRejected(
-                suggestion: suggestion,
-                existing: existing,
-                since: oneWeekAgo
-            ) {
+            if wasRecentlyRejected(suggestion: suggestion, existing: existing, since: oneWeekAgo) {
                 continue
             }
 
@@ -131,25 +123,17 @@ struct SuggestionDeduplicator {
         return filtered
     }
 
-    private static func hasSimilarRecentSuggestion(
-        suggestion: PrescriptionChange,
-        existing: [PrescriptionChange],
-        since date: Date
-    ) -> Bool {
+    private static func hasSimilarRecentSuggestion(suggestion: PrescriptionChange, existing: [PrescriptionChange], since date: Date, userSince: Date) -> Bool {
         // Cooldown: block recently shown suggestions for the same target/type.
         existing.contains { change in
-            change.createdAt > date &&
+            change.createdAt > ((change.source == .user && change.decision == .accepted) ? userSince : date) &&
             change.changeType == suggestion.changeType &&
             matchesTarget(suggestion: suggestion, existing: change) &&
             (change.decision == .pending || change.decision == .deferred || change.decision == .accepted)
         }
     }
 
-    private static func wasRecentlyRejected(
-        suggestion: PrescriptionChange,
-        existing: [PrescriptionChange],
-        since date: Date
-    ) -> Bool {
+    private static func wasRecentlyRejected(suggestion: PrescriptionChange, existing: [PrescriptionChange], since date: Date) -> Bool {
         // Avoid resurfacing a suggestion the user explicitly rejected.
         existing.contains { change in
             change.createdAt > date &&
