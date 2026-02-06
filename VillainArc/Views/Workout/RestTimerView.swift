@@ -195,9 +195,11 @@ struct RestTimerView: View {
 
                     Text(timerInterval: .now...endDate, countsDown: true)
                         .font(.system(size: 80, weight: .bold))
+                        .minimumScaleFactor(0.7)
 
                     adjustButton(deltaSeconds: 15)
                 }
+                .lineLimit(1)
             }
         } else {
             let displayText = secondsToTime(restTimer.isPaused ? restTimer.pausedRemainingSeconds : selectedSeconds)
@@ -208,10 +210,11 @@ struct RestTimerView: View {
 
                     Text(displayText)
                         .font(.system(size: 80, weight: .bold))
-                        .contentTransition(.numericText())
+                        .minimumScaleFactor(0.7)
 
                     adjustButton(deltaSeconds: 15)
                 }
+                .lineLimit(1)
             } else {
                 Text(displayText)
                     .font(.system(size: 80, weight: .bold))

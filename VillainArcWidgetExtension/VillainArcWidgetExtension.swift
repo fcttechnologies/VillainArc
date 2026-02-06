@@ -31,21 +31,22 @@ struct WorkoutLiveActivity: Widget {
                        let endDate = context.state.timerEndDate {
                         Text(timerInterval: Date.now...endDate, countsDown: true)
                             .font(.title2)
-                            .fontWeight(.bold)
-                            .frame(maxWidth: 70)
-                            .fontDesign(.rounded)
+                            .bold()
+                            .lineLimit(1)
+                            .frame(maxWidth: 80)
                     } else if context.state.isTimerPaused,
                               let remaining = context.state.timerPausedRemaining {
                         Button(intent: LiveActivityResumeRestTimerIntent()) {
-                            HStack(spacing: 0) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "pause.fill")
                                 Text(formatSeconds(remaining))
                                     .font(.title2)
-                                    .fontWeight(.bold)
-                                    .frame(maxWidth: 60)
+                                    .bold()
                             }
                             .foregroundStyle(.yellow)
                             .fontDesign(.rounded)
+                            .frame(maxWidth: 100)
+                            .lineLimit(1)
                         }
                         .buttonStyle(.plain)
                     }
@@ -92,15 +93,24 @@ struct WorkoutLiveActivity: Widget {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(.green)
             } compactTrailing: {
-                if context.state.isTimerRunning,
-                   let endDate = context.state.timerEndDate {
+                if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
+                        .bold()
+                        .frame(maxWidth: 50)
+                } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
+                    HStack(spacing: 4) {
+                        Image(systemName: "pause.fill")
+                        Text(formatSeconds(remaining))
+                            .font(.title)
+                            .bold()
+                            .frame(maxWidth: 70)
+                    }
+                    .foregroundStyle(.yellow)
+                    .fontDesign(.rounded)
                 } else {
                     Text(context.attributes.startDate, style: .timer)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
+                        .bold()
+                        .frame(maxWidth: 60)
                 }
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
@@ -131,18 +141,20 @@ struct WorkoutLiveActivityExpandedView: View {
                 if state.isTimerRunning, let endDate = state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
                         .font(.title)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: 70)
-                        .fontDesign(.rounded)
+                        .bold()
                         .lineLimit(1)
+                        .frame(maxWidth: 90)
                 } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
                     Button(intent: LiveActivityResumeRestTimerIntent()) {
                         HStack(spacing: 4) {
                             Image(systemName: "pause.fill")
+                                .font(.title3)
                             Text(formatSeconds(remaining))
                                 .font(.title)
-                                .fontWeight(.bold)
+                                .bold()
                         }
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .foregroundStyle(.yellow)
                         .fontDesign(.rounded)
                     }
@@ -189,9 +201,16 @@ struct WorkoutLiveActivityExpandedView: View {
 }
 
 private func formatSeconds(_ seconds: Int) -> String {
-    let m = max(0, seconds / 60)
-    let s = max(0, seconds % 60)
-    return "\(m):" + String(format: "%02d", s)
+    let clampedSeconds = max(0, seconds)
+    let hours = clampedSeconds / 3600
+    let minutes = (clampedSeconds % 3600) / 60
+    let remainingSeconds = clampedSeconds % 60
+
+    if hours > 0 {
+        return "\(hours):" + String(format: "%02d:%02d", minutes, remainingSeconds)
+    }
+
+    return "\(minutes):" + String(format: "%02d", remainingSeconds)
 }
 
 private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> String {

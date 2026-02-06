@@ -1,8 +1,15 @@
 import Foundation
 
 func secondsToTime(_ seconds: Int) -> String {
-    let minutes = max(0, seconds / 60)
-    let remainingSeconds = max(0, seconds % 60)
+    let clampedSeconds = max(0, seconds)
+    let hours = clampedSeconds / 3600
+    let minutes = (clampedSeconds % 3600) / 60
+    let remainingSeconds = clampedSeconds % 60
+
+    if hours > 0 {
+        return "\(hours):" + String(format: "%02d:%02d", minutes, remainingSeconds)
+    }
+
     return "\(minutes):" + String(format: "%02d", remainingSeconds)
 }
 

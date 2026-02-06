@@ -246,6 +246,7 @@ struct WorkoutView: View {
         } else if restTimer.isPaused {
             Text(secondsToTime(restTimer.pausedRemainingSeconds))
                 .fontWeight(.semibold)
+                .foregroundStyle(.yellow)
         } else {
             Image(systemName: "timer")
         }

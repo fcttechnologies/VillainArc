@@ -21,7 +21,7 @@ enum ExerciseSetType: Int, Codable, CaseIterable {
         case .working:
             return "Working Set"
         case .warmup:
-            return "Warm Up Set"
+            return "Warm Up"
         case .dropSet:
             return "Drop Set"
         }
