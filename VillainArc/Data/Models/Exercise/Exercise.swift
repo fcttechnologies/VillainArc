@@ -12,6 +12,7 @@ class Exercise {
     var isCustom: Bool = false
     var searchIndex: String = ""
     var searchTokens: [String] = []
+    var equipmentType: EquipmentType = EquipmentType.bodyweight
 
     var displayMuscles: String {
         let majors = musclesTargeted.filter(\.isMajor)
@@ -25,6 +26,7 @@ class Exercise {
         name = catalogItem.name
         musclesTargeted = catalogItem.musclesTargeted
         aliases = catalogItem.aliases
+        equipmentType = catalogItem.equipmentType
         rebuildSearchData()
     }
     

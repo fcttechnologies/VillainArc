@@ -104,6 +104,7 @@
 				Data/Classes/RestTimerState.swift,
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
+				Data/Models/Enums/Exercise/EquipmentType.swift,
 				Data/Models/Enums/Exercise/ExerciseSetType.swift,
 				Data/Models/Enums/Exercise/Muscle.swift,
 				Data/Models/Enums/Exercise/MuscleGroups.swift,

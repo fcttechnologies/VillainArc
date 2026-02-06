@@ -10,6 +10,7 @@ class ExercisePerformance {
     var name: String = ""
     var notes: String = ""
     var musclesTargeted: [Muscle] = []
+    var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade)
     var repRange: RepRangePolicy = RepRangePolicy()
     @Relationship(deleteRule: .cascade)
@@ -34,6 +35,7 @@ class ExercisePerformance {
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
+        equipmentType = exercise.equipmentType
         self.workoutSession = workoutSession
         addSet()
     }
@@ -45,6 +47,7 @@ class ExercisePerformance {
         name = exercisePrescription.name
         notes = exercisePrescription.notes
         musclesTargeted = exercisePrescription.musclesTargeted
+        equipmentType = exercisePrescription.equipmentType
         repRange = RepRangePolicy(copying: exercisePrescription.repRange)
         restTimePolicy = RestTimePolicy(copying: exercisePrescription.restTimePolicy)
         self.workoutSession = workoutSession
@@ -72,6 +75,7 @@ class ExercisePerformance {
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
+        equipmentType = exercise.equipmentType
         if !keepSets {
             for set in sets {
                 modelContext?.delete(set)

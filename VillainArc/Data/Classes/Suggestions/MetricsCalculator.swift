@@ -134,43 +134,54 @@ struct MetricsCalculator {
         return .unknown
     }
 
-    static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle?) -> Double {
-        // Heuristic weight jump based on muscle group or load.
-        if let muscle = primaryMuscle {
-            // Muscle-group based increments (larger jumps for bigger movers).
-            switch muscle {
-            case .chest, .shoulders, .back:
-                return 5.0
-            case .biceps, .triceps:
-                return 5.0
-            case .frontDelt, .sideDelt, .rearDelt, .lats, .lowerBack,
-                 .upperTraps, .lowerTraps, .midTraps, .rhomboids:
-                return 5.0
-            case .longHeadBiceps, .shortHeadBiceps, .brachialis,
-                 .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps:
-                return 5.0
-            case .quads, .hamstrings, .glutes:
-                return 10.0
-            case .calves:
-                return 10.0
-            case .adductors, .abductors:
-                return 5.0
-            case .abs, .obliques, .upperAbs, .lowerAbs:
-                return 5.0
-            case .forearms, .wrists, .rotatorCuff:
-                return 2.5
-            case .upperChest, .lowerChest, .midChest:
-                return 5.0
-            }
+    static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType) -> Double {
+        switch equipmentType {
+        case .dumbbellSingle:
+            return currentWeight < 15 ? 2.5 : 5.0
+        case .dumbbells:
+            let perHand = max(0, currentWeight / 2)
+            return perHand < 15 ? 5.0 : 10.0
+        case .cableSingle:
+            return currentWeight < 30 ? 2.5 : 5.0
+        case .cables:
+            return currentWeight < 60 ? 5.0 : 10.0
+        case .machine, .smithMachine:
+            return currentWeight < 100 ? 5.0 : 10.0
+        case .barbell:
+            break
+        case .bodyweight:
+            if currentWeight <= 0 { return 0 }
+            return currentWeight < 25 ? 2.5 : 5.0
         }
 
-        // Fallback based on absolute load.
-        if currentWeight < 50 {
-            return 2.5
-        } else if currentWeight < 150 {
+        return muscleBasedIncrement(for: currentWeight, primaryMuscle: primaryMuscle)
+    }
+
+    private static func muscleBasedIncrement(for currentWeight: Double, primaryMuscle: Muscle) -> Double {
+        // Muscle-group based increments (larger jumps for bigger movers).
+        switch primaryMuscle {
+        case .chest, .shoulders, .back:
             return 5.0
-        } else {
+        case .biceps, .triceps:
+            return 5.0
+        case .frontDelt, .sideDelt, .rearDelt, .lats, .lowerBack,
+             .upperTraps, .lowerTraps, .midTraps, .rhomboids:
+            return 5.0
+        case .longHeadBiceps, .shortHeadBiceps, .brachialis,
+             .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps:
+            return 5.0
+        case .quads, .hamstrings, .glutes:
             return 10.0
+        case .calves:
+            return 10.0
+        case .adductors, .abductors:
+            return 5.0
+        case .abs, .obliques, .upperAbs, .lowerAbs:
+            return 5.0
+        case .forearms, .wrists, .rotatorCuff:
+            return 2.5
+        case .upperChest, .lowerChest, .midChest:
+            return 5.0
         }
     }
 

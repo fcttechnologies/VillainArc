@@ -9,6 +9,7 @@ class ExercisePrescription {
     var name: String = ""
     var notes: String = ""
     var musclesTargeted: [Muscle] = []
+    var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade)
     var repRange: RepRangePolicy = RepRangePolicy()
     @Relationship(deleteRule: .cascade)
@@ -34,6 +35,7 @@ class ExercisePrescription {
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
+        equipmentType = exercise.equipmentType
         self.workoutPlan = workoutPlan
         addSet()
     }
@@ -45,6 +47,7 @@ class ExercisePrescription {
         name = exercisePerformance.name
         notes = exercisePerformance.notes
         musclesTargeted = exercisePerformance.musclesTargeted
+        equipmentType = exercisePerformance.equipmentType
         repRange = RepRangePolicy(copying: exercisePerformance.repRange)
         restTimePolicy = RestTimePolicy(copying: exercisePerformance.restTimePolicy)
         self.workoutPlan = workoutPlan
@@ -60,6 +63,7 @@ class ExercisePrescription {
         self.name = original.name
         self.notes = original.notes
         self.musclesTargeted = original.musclesTargeted
+        self.equipmentType = original.equipmentType
         self.repRange = RepRangePolicy(copying: original.repRange)
         self.restTimePolicy = RestTimePolicy(copying: original.restTimePolicy)
         self.workoutPlan = workoutPlan

@@ -160,7 +160,11 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             // Increment is based on muscle group and weight size.
-            let increment = MetricsCalculator.weightIncrement(for: currentWeight, primaryMuscle: context.prescription.musclesTargeted.first)
+            let increment = MetricsCalculator.weightIncrement(
+                for: currentWeight,
+                primaryMuscle: context.prescription.musclesTargeted.first!,
+                equipmentType: context.prescription.equipmentType
+            )
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + increment)
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
@@ -220,7 +224,11 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let increment = MetricsCalculator.weightIncrement(for: currentWeight, primaryMuscle: context.prescription.musclesTargeted.first)
+            let increment = MetricsCalculator.weightIncrement(
+                for: currentWeight,
+                primaryMuscle: context.prescription.musclesTargeted.first!,
+                equipmentType: context.prescription.equipmentType
+            )
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + increment)
 
             changes.append(makeSetChange(
@@ -349,7 +357,11 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             // Larger jump = 1.5x the usual increment.
-            let baseIncrement = MetricsCalculator.weightIncrement(for: currentWeight, primaryMuscle: context.prescription.musclesTargeted.first)
+            let baseIncrement = MetricsCalculator.weightIncrement(
+                for: currentWeight,
+                primaryMuscle: context.prescription.musclesTargeted.first!,
+                equipmentType: context.prescription.equipmentType
+            )
             let jumpWeight = currentWeight + (baseIncrement * 1.5)
             let newWeight = MetricsCalculator.roundToNearestPlate(jumpWeight)
 
@@ -426,7 +438,11 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let decrement = MetricsCalculator.weightIncrement(for: currentWeight, primaryMuscle: context.prescription.musclesTargeted.first)
+            let decrement = MetricsCalculator.weightIncrement(
+                for: currentWeight,
+                primaryMuscle: context.prescription.musclesTargeted.first!,
+                equipmentType: context.prescription.equipmentType
+            )
             let newWeight = MetricsCalculator.roundToNearestPlate(max(0, currentWeight - decrement))
 
             changes.append(makeSetChange(

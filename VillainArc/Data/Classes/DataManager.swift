@@ -66,6 +66,11 @@ import SwiftData
                     didChange = true
                     needsSearchIndex = true
                 }
+                if existing.equipmentType != catalogItem.equipmentType {
+                    existing.equipmentType = catalogItem.equipmentType
+                    didChange = true
+                    needsSearchIndex = true
+                }
                 if needsSearchIndex {
                     didChange = existing.rebuildSearchData() || didChange
                 }
