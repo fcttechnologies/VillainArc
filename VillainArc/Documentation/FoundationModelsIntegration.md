@@ -1,70 +1,110 @@
-# AI Configuration Inference (FoundationModels)
+# Foundation Models Integration
 
 **Status**: Implemented using on-device `SystemLanguageModel`.
 
-## 1. AI Models (`AISuggestionModels.swift`)
+VillainArc uses Foundation Models in two independent flows:
 
-Defines `@Generable` structures for type-safe interactions with the model.
+1. Configuration inference during suggestion generation.
+2. Outcome inference during post-workout change evaluation.
 
-### Input
--   `AIInferenceInput`: The top-level container sent to the model.
--   `AIExercisePerformanceSnapshot`: A `Sendable` struct containing exercise data (date, sets, weight, reps, rest) derived from `ExercisePerformance`.
--   `AISetPerformanceSnapshot`: Detailed data for individual sets.
+## 1) Configuration Inference (Suggestion Generation)
 
-### Output
--   `AIInferenceOutput`: Wrapper for optional classifications.
--   `AIRepRangeClassification`:
-    -   `mode`: `Target` or `Range`. **Note**: `untilFailure` is strictly excluded.
-    -   `values`: `lowerRange`/`upperRange` or `targetReps`.
--   `AITrainingStyleClassification`: Enum matching `TrainingStyle` cases (e.g., `straightSets`, `ascendingPyramid`).
+### Models
 
-## 2. AI Tool (`AISuggestionTools.swift`)
+File: `Data/Classes/Suggestions/AISuggestionModels.swift`
 
-**`RecentExercisePerformancesTool`**
--   **Function**: `getRecentExercisePerformances(catalogID: String, limit: Int)`
--   **Purpose**: Allows the model to request historical context if the current session provided in the prompt is ambiguous.
--   **Returns**: List of `AIExercisePerformanceSnapshot` for the last N sessions.
+Primary types:
 
-## 3. AI Inferrer (`AIConfigurationInferrer.swift`)
+- `AIInferenceInput`
+- `AIExercisePerformanceSnapshot`
+- `AISetPerformanceSnapshot`
+- `AIInferenceOutput`
+- `AIRepRangeClassification`
+- `AITrainingStyleClassification`
 
-Orchestrates the session and model interaction.
+### Tooling
 
--   **Function**: `infer(exerciseName:catalogID:primaryMuscle:performance:) -> AIInferenceOutput?`
--   **Concurrency**: Creates a **new** `LanguageModelSession` for every call, ensuring strict thread safety for parallel execution.
--   **Flow**:
-    1.  Checks `SystemLanguageModel.default` availability.
-    2.  Constructs `AIInferenceInput`.
-    3.  Initializes `LanguageModelSession` with tools and instructions.
-    4.  Sends prompt: "Classify the training style and rep range..."
-    5.  Validates output (filters invalid ranges or impossible values).
+File: `Data/Classes/Suggestions/AISuggestionTools.swift`
 
-## 4. Integration (`SuggestionGenerator.swift`)
+- `RecentExercisePerformancesTool` allows the model to request additional recent history.
 
-AI inference is executed in the **Scatter Phase** of the suggestion pipeline.
+### Inferrer
 
-### Parallel Execution
-The generator uses a `TaskGroup` to run multiple inference tasks simultaneously:
+File: `Data/Classes/Suggestions/AIConfigurationInferrer.swift`
 
-```swift
-// Gather Phase (Main Actor)
-// Prepare Sendable snapshots
-var aiRequests: [UUID: AIRequest] = [:]
+- Builds prompt + instructions.
+- Starts a fresh `LanguageModelSession` per request.
+- Validates returned classification.
 
-// Scatter Phase (Background)
-let aiResults = await withTaskGroup(of: (UUID, AIInferenceOutput?).self) { group in
-    for (id, request) in aiRequests {
-        group.addTask {
-            // New session per task = Safe Parallelism
-            let result = await AIConfigurationInferrer.infer(...)
-            return (id, result)
-        }
-    }
-}
-```
+### Runtime Integration
 
-### Usage Logic
-AI is triggered for an exercise only if:
-1.  **New Exercise**: `history.count < 10` (fetched with `limit: 10`).
-2.  **Unknown Style**: Training style could not be detected heuristically.
+File: `Data/Classes/Suggestions/SuggestionGenerator.swift`
 
-The results are then passed to the `RuleEngine` to assist in generating suggestions.
+- AI requests are prepared on main actor.
+- Inference runs in parallel via `TaskGroup`.
+- AI output is used to supplement deterministic rules for unknown training style and missing rep range.
+
+## 2) Outcome Inference (Change Outcome Resolution)
+
+### Models
+
+File: `Data/Classes/Suggestions/AIOutcomeModels.swift`
+
+Primary types:
+
+- `AIOutcome`
+- `AIOutcomeChangeType`
+- `AIOutcomeChange`
+- `AIExercisePrescriptionSnapshot`
+- `AISetPrescriptionSnapshot`
+- `AIRestTimePolicy`
+- `AIOutcomeGroupInput`
+- `AIOutcomeInferenceOutput`
+
+### Inferrer
+
+File: `Data/Classes/Suggestions/AIOutcomeInferrer.swift`
+
+- API: `infer(input: AIOutcomeGroupInput) async -> AIOutcomeInferenceOutput?`
+- Uses `SystemLanguageModel.default` and per-call `LanguageModelSession`.
+- Prompt asks model to classify one grouped change outcome as:
+  - `Good`
+  - `Too Aggressive`
+  - `Too Easy`
+  - `Ignored`
+
+### Runtime Integration
+
+File: `Data/Classes/Suggestions/OutcomeResolver.swift`
+
+Flow:
+
+1. Build grouped inputs (`OutcomeGroup`) by set/policy within exercise.
+2. Run deterministic rule scoring per change.
+3. Build one `AIOutcomeGroupInput` per group, including:
+   - grouped changes (`previousValue` / `newValue`)
+   - pre-change prescription snapshot
+   - trigger performance snapshot
+   - current performance snapshot
+   - aggregated rule hint (`ruleOutcome`, `ruleConfidence`, `ruleReason`)
+4. Execute group AI inference in parallel (`TaskGroup`).
+5. Merge AI + rules per change:
+   - AI override only when disagreement and `confidence >= 0.7`.
+
+## 3) Safety and Execution Characteristics
+
+- All inference is on-device (`FoundationModels` / `SystemLanguageModel`).
+- If model is unavailable or inference fails, system falls back to deterministic logic.
+- Each inference call uses a dedicated session to avoid cross-task session sharing during parallel work.
+- Outputs are validated before use (confidence clamped, required fields checked).
+
+## 4) File Map
+
+- Config models: `Data/Classes/Suggestions/AISuggestionModels.swift`
+- Config tools: `Data/Classes/Suggestions/AISuggestionTools.swift`
+- Config inferrer: `Data/Classes/Suggestions/AIConfigurationInferrer.swift`
+- Config pipeline usage: `Data/Classes/Suggestions/SuggestionGenerator.swift`
+
+- Outcome models: `Data/Classes/Suggestions/AIOutcomeModels.swift`
+- Outcome inferrer: `Data/Classes/Suggestions/AIOutcomeInferrer.swift`
+- Outcome pipeline usage: `Data/Classes/Suggestions/OutcomeResolver.swift`

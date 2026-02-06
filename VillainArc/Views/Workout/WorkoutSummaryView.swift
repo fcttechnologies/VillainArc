@@ -349,6 +349,8 @@ struct WorkoutSummaryView: View {
         isGeneratingSuggestions = true
         defer { isGeneratingSuggestions = false }
 
+        await OutcomeResolver.resolveOutcomes(for: workout, context: context)
+
         let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
         if !generated.isEmpty {
             for change in generated {
