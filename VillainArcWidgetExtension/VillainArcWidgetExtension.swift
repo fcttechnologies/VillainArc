@@ -23,7 +23,7 @@ struct WorkoutLiveActivity: Widget {
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                     }
-                    .padding(.leading)
+                    .padding(.leading, 6)
                     .fontDesign(.rounded)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -33,7 +33,7 @@ struct WorkoutLiveActivity: Widget {
                             .font(.title2)
                             .bold()
                             .lineLimit(1)
-                            .frame(maxWidth: 80)
+                            .frame(maxWidth: 50)
                     } else if context.state.isTimerPaused,
                               let remaining = context.state.timerPausedRemaining {
                         Button(intent: LiveActivityResumeRestTimerIntent()) {
@@ -45,7 +45,7 @@ struct WorkoutLiveActivity: Widget {
                             }
                             .foregroundStyle(.yellow)
                             .fontDesign(.rounded)
-                            .frame(maxWidth: 100)
+                            .fixedSize(horizontal: true, vertical: false)
                             .lineLimit(1)
                         }
                         .buttonStyle(.plain)
@@ -72,7 +72,7 @@ struct WorkoutLiveActivity: Widget {
                                     .fontWeight(.bold)
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.leading, 6)
                     } else if !context.state.hasExercises {
                         Text("Add an exercise to begin")
                             .font(.subheadline)
@@ -96,21 +96,20 @@ struct WorkoutLiveActivity: Widget {
                 if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
                         .bold()
-                        .frame(maxWidth: 50)
+                        .frame(maxWidth: 40)
                 } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
                     HStack(spacing: 4) {
                         Image(systemName: "pause.fill")
                         Text(formatSeconds(remaining))
                             .font(.title)
                             .bold()
-                            .frame(maxWidth: 70)
                     }
                     .foregroundStyle(.yellow)
                     .fontDesign(.rounded)
                 } else {
                     Text(context.attributes.startDate, style: .timer)
                         .bold()
-                        .frame(maxWidth: 60)
+                        .frame(maxWidth: 55)
                 }
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
@@ -143,7 +142,7 @@ struct WorkoutLiveActivityExpandedView: View {
                         .font(.title)
                         .bold()
                         .lineLimit(1)
-                        .frame(maxWidth: 90)
+                        .frame(maxWidth: 65)
                 } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
                     Button(intent: LiveActivityResumeRestTimerIntent()) {
                         HStack(spacing: 4) {
@@ -168,7 +167,7 @@ struct WorkoutLiveActivityExpandedView: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(exerciseName)
-                            .font(.subheadline)
+                            .font(.headline)
                             .lineLimit(1)
                         Text(setDescription(state))
                             .foregroundStyle(.secondary)
@@ -202,15 +201,9 @@ struct WorkoutLiveActivityExpandedView: View {
 
 private func formatSeconds(_ seconds: Int) -> String {
     let clampedSeconds = max(0, seconds)
-    let hours = clampedSeconds / 3600
-    let minutes = (clampedSeconds % 3600) / 60
+    let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
-
-    if hours > 0 {
-        return "\(hours):" + String(format: "%02d:%02d", minutes, remainingSeconds)
-    }
-
-    return "\(minutes):" + String(format: "%02d", remainingSeconds)
+    return String(format: "%02d:%02d", minutes, remainingSeconds)
 }
 
 private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> String {

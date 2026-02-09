@@ -12,7 +12,7 @@ class PreviewDataContainer {
     init(includeIncompleteData: Bool = false) {
         let schema = Schema([
             WorkoutSession.self,
-            PreWorkoutMood.self,
+            PreWorkoutStatus.self,
             PostWorkoutEffort.self,
             ExercisePerformance.self,
             SetPerformance.self,

@@ -2,15 +2,9 @@ import Foundation
 
 func secondsToTime(_ seconds: Int) -> String {
     let clampedSeconds = max(0, seconds)
-    let hours = clampedSeconds / 3600
-    let minutes = (clampedSeconds % 3600) / 60
+    let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
-
-    if hours > 0 {
-        return "\(hours):" + String(format: "%02d:%02d", minutes, remainingSeconds)
-    }
-
-    return "\(minutes):" + String(format: "%02d", remainingSeconds)
+    return String(format: "%02d:%02d", minutes, remainingSeconds)
 }
 
 func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false) -> String {

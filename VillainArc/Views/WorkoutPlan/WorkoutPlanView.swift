@@ -106,7 +106,7 @@ struct WorkoutPlanView: View {
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", placeholder: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, axis: .vertical)
+                TextEntryEditorView(title: "Notes", placeholder: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: plan.notes) {
                         scheduleSave(context: context)
@@ -258,7 +258,6 @@ private struct WorkoutPlanExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePrescription
     
-    @State private var isNotesExpanded = false
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     
@@ -331,37 +330,23 @@ private struct WorkoutPlanExerciseView: View {
                     .accessibilityHint("Edits the rep range.")
                 }
                 Spacer()
-                HStack(spacing: 12) {
-                    Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
-                        Haptics.selection()
-                        withAnimation {
-                            isNotesExpanded.toggle()
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseNotesButton(exercise))
-                    .accessibilityHint("Shows notes.")
-                    
-                    Button("Rest Times", systemImage: "timer") {
-                        Haptics.selection()
-                        showRestTimeEditor = true
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRestTimesButton(exercise))
-                    .accessibilityHint("Edits rest times.")
+                Button("Rest Times", systemImage: "timer") {
+                    Haptics.selection()
+                    showRestTimeEditor = true
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRestTimesButton(exercise))
+                .accessibilityHint("Edits rest times.")
                 .labelStyle(.iconOnly)
                 .font(.title)
                 .tint(.primary)
             }
             
-            if isNotesExpanded {
-                TextField("Notes", text: $exercise.notes, axis: .vertical)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                    .padding(.top, 8)
-                    .onChange(of: exercise.notes) {
-                        scheduleSave(context: context)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseNotesField(exercise))
-            }
+            TextField("Notes", text: $exercise.notes)
+                .padding(.top, 8)
+                .onChange(of: exercise.notes) {
+                    scheduleSave(context: context)
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseNotesField(exercise))
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))

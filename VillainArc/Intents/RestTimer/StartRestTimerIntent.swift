@@ -7,6 +7,7 @@ struct StartRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Rest Timer"
     static let description = IntentDescription("Starts a rest timer.")
     static let supportedModes: IntentModes = .background
+    private static let maximumRestSeconds = 10 * 60
     static var parameterSummary: some ParameterSummary {
         Summary("Start rest timer for \(\.$duration)")
     }
@@ -32,10 +33,11 @@ struct StartRestTimerIntent: AppIntent {
             throw RestTimerIntentError.invalidDuration
         }
 
-        RestTimerState.shared.start(seconds: durationSeconds)
-        RestTimeHistory.record(seconds: durationSeconds, context: context)
+        let clampedSeconds = min(durationSeconds, Self.maximumRestSeconds)
+        RestTimerState.shared.start(seconds: clampedSeconds)
+        RestTimeHistory.record(seconds: clampedSeconds, context: context)
         saveContext(context: context)
 
-        return .result(dialog: "Rest timer started for \(secondsToTime(durationSeconds)).", snippetIntent: RestTimerSnippetIntent())
+        return .result(dialog: "Rest timer started for \(secondsToTime(clampedSeconds)).", snippetIntent: RestTimerSnippetIntent())
     }
 }

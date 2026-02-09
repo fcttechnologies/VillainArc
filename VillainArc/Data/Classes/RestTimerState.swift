@@ -9,6 +9,7 @@ import UIKit
 final class RestTimerState {
     static let shared = RestTimerState()
     private static let completionSoundID: SystemSoundID = 1005
+    private static let maximumRestSeconds = 10 * 60
 
     private enum StorageKey {
         static let endDate = "restTimerEndDate"
@@ -142,26 +143,29 @@ final class RestTimerState {
 
     func adjust(by deltaSeconds: Int) {
         guard deltaSeconds != 0 else { return }
+        let maximumSeconds = Self.maximumRestSeconds
 
         if isRunning, let endDate {
+            let now = Date.now
             let adjustedEndDate = endDate.addingTimeInterval(TimeInterval(deltaSeconds))
-            if adjustedEndDate <= Date.now {
+            if adjustedEndDate <= now {
                 stopInternal(playAlert: false)
                 return
             }
 
-            self.endDate = adjustedEndDate
+            let maximumEndDate = now.addingTimeInterval(TimeInterval(maximumSeconds))
+            self.endDate = min(adjustedEndDate, maximumEndDate)
             persist()
             scheduleStop()
             WorkoutActivityManager.update()
         } else if isPaused {
-            let adjustedRemaining = max(0, pausedRemainingSeconds + deltaSeconds)
-            if adjustedRemaining == 0 {
+            let adjustedRemaining = pausedRemainingSeconds + deltaSeconds
+            if adjustedRemaining <= 0 {
                 stopInternal(playAlert: false)
                 return
             }
 
-            pausedRemainingSeconds = adjustedRemaining
+            pausedRemainingSeconds = min(adjustedRemaining, maximumSeconds)
             persist()
             WorkoutActivityManager.update()
         }

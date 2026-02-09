@@ -12,7 +12,7 @@ struct WorkoutView: View {
     @State private var showDeleteWorkoutAlert = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
-    @State private var showMoodSheet = false
+    @State private var showPreWorkoutSheet = false
     @State private var showDeleteConfirmation = false
     @State private var showSaveConfirmation = false
     @State private var autoAdvanceTargetIndex: Int?
@@ -46,11 +46,11 @@ struct WorkoutView: View {
                 Button("Workout Notes", systemImage: "note.text") {
                     showNotesEditorSheet = true
                 }
-                Button("Pre Workout Mood", systemImage: "face.smiling") {
-                    showMoodSheet = true
+                Button("Pre Workout Energy", systemImage: "face.smiling") {
+                    showPreWorkoutSheet = true
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
-                .accessibilityHint("Updates your pre-workout mood.")
+                .accessibilityHint("Updates your pre-workout energy.")
             }
             .toolbarTitleDisplayMode(.inline)
             .animation(.bouncy, value: showExerciseListView)
@@ -92,7 +92,7 @@ struct WorkoutView: View {
                     .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField, axis: .vertical)
+                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: workout.notes) {
                         scheduleSave(context: context)
@@ -101,12 +101,12 @@ struct WorkoutView: View {
                         saveContext(context: context)
                     }
             }
-            .sheet(isPresented: $showMoodSheet) {
-                PreWorkoutMoodView(mood: workout.preMood)
+            .sheet(isPresented: $showPreWorkoutSheet) {
+                PreWorkoutMoodView(status: workout.preStatus)
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
-                        if workout.preMood.feeling == .notSet {
-                            workout.preMood.feeling = .okay
+                        if workout.preStatus.feeling == .notSet {
+                            workout.preStatus.feeling = .okay
                             saveContext(context: context)
                         }
                     }
@@ -136,8 +136,8 @@ struct WorkoutView: View {
                 activity.appEntityIdentifier = .init(for: entity)
             }
             .task {
-                if workout.preMood.feeling == .notSet {
-                    showMoodSheet = true
+                if workout.preStatus.feeling == .notSet {
+                    showPreWorkoutSheet = true
                 }
             }
             .onAppear {

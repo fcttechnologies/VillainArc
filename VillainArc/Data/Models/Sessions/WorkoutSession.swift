@@ -16,7 +16,7 @@ class WorkoutSession {
         set { status = newValue.rawValue }
     }
     @Relationship(deleteRule: .cascade)
-    var preMood: PreWorkoutMood = PreWorkoutMood()
+    var preStatus: PreWorkoutStatus = PreWorkoutStatus()
     @Relationship(deleteRule: .cascade)
     var postEffort: PostWorkoutEffort?
     @Relationship(deleteRule: .nullify)

@@ -2,55 +2,76 @@ import SwiftUI
 import SwiftData
 
 struct PreWorkoutMoodView: View {
-    @Bindable var mood: PreWorkoutMood
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var status: PreWorkoutStatus
     @Environment(\.modelContext) private var context
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 30) {
-                Text("How are you feeling?")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .accessibilityAddTraits(.isHeader)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 30) {
+                    
+                    HStack(spacing: 12) {
+                        ForEach(MoodLevel.allCases.filter { $0 != .notSet }, id: \.self) { level in
+                            moodCard(for: level)
+                        }
+                    }
+                    
+                    TextField("Notes (optional)", text: $status.notes)
+                        .fontWeight(.semibold)
+                        .onChange(of: status.notes) {
+                            scheduleSave(context: context)
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodNotesField)
+                }
+                .padding()
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    dismissKeyboard()
+                }
+            )
+            .onDisappear {
+                saveContext(context: context)
+                status.notes = status.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodSheet)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    let isSelected = status.tookPreWorkout
 
-                HStack(spacing: 12) {
-                    ForEach(MoodLevel.allCases.filter { $0 != .notSet }, id: \.self) { level in
-                        moodCard(for: level)
+                    return Button {
+                        Haptics.selection()
+                        status.tookPreWorkout.toggle()
+                        saveContext(context: context)
+                    } label: {
+                        Image(systemName: isSelected ? "bolt.fill" : "bolt.slash")
+                            .foregroundStyle(isSelected ? .yellow : .primary)
+                            .contentTransition(.symbolEffect)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutEnergyDrinkCard)
+                    .accessibilityLabel("Pre-workout energy drink")
+                    .accessibilityValue(isSelected ? "Yes" : "No")
+                    .accessibilityHint("Toggles whether you took a pre-workout drink.")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .close) {
+                        dismiss()
                     }
                 }
-
-                TextField("Notes (optional)", text: $mood.notes, axis: .vertical)
-                    .lineLimit(3, reservesSpace: false)
-                    .fontWeight(.semibold)
-                    .onChange(of: mood.notes) {
-                        scheduleSave(context: context)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodNotesField)
             }
-            .padding()
+            .navigationTitle("How are you feeling?")
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .scrollDismissesKeyboard(.immediately)
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                dismissKeyboard()
-            }
-        )
-        .navBar(title: "") {
-            CloseButton()
-        }
-        .onDisappear {
-            saveContext(context: context)
-            mood.notes = mood.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodSheet)
     }
 
     private func moodCard(for level: MoodLevel) -> some View {
-        let isSelected = mood.feeling == level
+        let isSelected = status.feeling == level
 
         return Button {
             Haptics.selection()
-            mood.feeling = level
+            status.feeling = level
             saveContext(context: context)
         } label: {
             VStack(spacing: 6) {
@@ -68,7 +89,7 @@ struct PreWorkoutMoodView: View {
             .scaleEffect(isSelected ? 1.2 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(.bouncy, value: mood.feeling)
+        .animation(.bouncy, value: status.feeling)
         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodOption(level))
         .accessibilityLabel(level.displayName)
         .accessibilityHint("Sets your pre-workout mood.")
@@ -76,6 +97,6 @@ struct PreWorkoutMoodView: View {
 }
 
 #Preview {
-    PreWorkoutMoodView(mood: sampleIncompleteSession().preMood)
+    PreWorkoutMoodView(status: sampleIncompleteSession().preStatus)
         .sampleDataContainerIncomplete()
 }

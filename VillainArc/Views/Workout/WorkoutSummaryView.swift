@@ -196,7 +196,7 @@ struct WorkoutSummaryView: View {
                 await generateSuggestionsIfNeeded()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField, axis: .vertical)
+                TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: workout.notes) {
                         scheduleSave(context: context)

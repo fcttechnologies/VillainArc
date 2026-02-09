@@ -176,6 +176,7 @@ enum AccessibilityIdentifiers {
     static let workoutPreMoodButton = "workoutPreMoodButton"
     static let preWorkoutMoodSheet = "preWorkoutMoodSheet"
     static let preWorkoutMoodNotesField = "preWorkoutMoodNotesField"
+    static let preWorkoutEnergyDrinkCard = "preWorkoutEnergyDrinkCard"
 
     static func preWorkoutMoodOption(_ mood: MoodLevel) -> String {
         "preWorkoutMoodOption-\(slug(mood.displayName))"

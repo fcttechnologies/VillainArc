@@ -4,9 +4,10 @@ import SwiftData
 import UniformTypeIdentifiers
 
 struct WorkoutSessionFullContent: Codable {
-    struct PreWorkoutMood: Codable {
+    struct PreWorkoutStatus: Codable {
         let feeling: String
         let notes: String?
+        let tookPreWorkout: Bool
     }
 
     struct PostWorkoutEffort: Codable {
@@ -39,7 +40,7 @@ struct WorkoutSessionFullContent: Codable {
     let startedAt: Date
     let endedAt: Date?
     let origin: String
-    let preWorkoutMood: PreWorkoutMood?
+    let preStatus: PreWorkoutStatus?
     let postWorkoutEffort: PostWorkoutEffort?
     let exercises: [Exercise]
 }
@@ -71,9 +72,10 @@ extension WorkoutSessionEntity {
         startedAt = workoutSession.startedAt
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
-        let preMood = WorkoutSessionFullContent.PreWorkoutMood(
-            feeling: workoutSession.preMood.feeling.displayName,
-            notes: workoutSession.preMood.notes.isEmpty ? nil : workoutSession.preMood.notes
+        let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(
+            feeling: workoutSession.preStatus.feeling.displayName,
+            notes: workoutSession.preStatus.notes.isEmpty ? nil : workoutSession.preStatus.notes,
+            tookPreWorkout: workoutSession.preStatus.tookPreWorkout
         )
         let postEffort = workoutSession.postEffort.map { effort in
             WorkoutSessionFullContent.PostWorkoutEffort(
@@ -89,7 +91,7 @@ extension WorkoutSessionEntity {
             startedAt: workoutSession.startedAt,
             endedAt: workoutSession.endedAt,
             origin: workoutSession.origin.rawValue,
-            preWorkoutMood: preMood,
+            preStatus: preStatus,
             postWorkoutEffort: postEffort,
             exercises: exercises.map { exercise in
                 WorkoutSessionFullContent.Exercise(

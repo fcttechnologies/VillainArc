@@ -10,14 +10,12 @@ struct ExerciseView: View {
     let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
 
-    @State private var isNotesExpanded = true
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showRestTimeUpdateAlert = false
     @State private var showReplaceExerciseSheet = false
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
-    @FocusState private var isNotesFocused: Bool
 
     init(exercise: ExercisePerformance, showRestTimerSheet: Binding<Bool>, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
@@ -143,43 +141,24 @@ struct ExerciseView: View {
                     .accessibilityHint("Edits the rep range.")
                 }
                 Spacer()
-                HStack(spacing: 12) {
-                    Button("Notes", systemImage: isNotesExpanded ? "note.text" : "note.text.badge.plus") {
-                        Haptics.selection()
-                        withAnimation {
-                            isNotesExpanded.toggle()
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesButton(exercise))
-                    .accessibilityHint("Shows notes.")
-
-                    Button("Rest Times", systemImage: "timer") {
-                        Haptics.selection()
-                        showRestTimeEditor = true
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
-                    .accessibilityHint("Edits rest times.")
+                
+                Button("Rest Times", systemImage: "timer") {
+                    Haptics.selection()
+                    showRestTimeEditor = true
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
+                .accessibilityHint("Edits rest times.")
                 .labelStyle(.iconOnly)
                 .font(.title)
                 .tint(.primary)
             }
 
-            if isNotesExpanded {
-                TextField("Notes", text: $exercise.notes, axis: .vertical)
-                    .focused($isNotesFocused)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                    .padding(.top, 8)
-                    .onChange(of: exercise.notes) {
-                        scheduleSave(context: context)
-                    }
-                    .onChange(of: isNotesFocused) { _, isFocused in
-                        if !isFocused {
-                            exercise.notes = exercise.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
-            }
+            TextField("Notes", text: $exercise.notes)
+                .padding(.top, 8)
+                .onChange(of: exercise.notes) {
+                    scheduleSave(context: context)
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
