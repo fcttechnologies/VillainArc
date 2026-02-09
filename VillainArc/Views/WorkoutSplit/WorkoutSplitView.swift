@@ -17,6 +17,10 @@ struct WorkoutSplitView: View {
         splits.filter { !$0.isActive }
     }
 
+    init(autoPresentBuilder: Bool = false) {
+        _showSplitBuilder = State(initialValue: autoPresentBuilder)
+    }
+
     var body: some View {
         List {
             if !splits.isEmpty {

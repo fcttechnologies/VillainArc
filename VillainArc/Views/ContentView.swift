@@ -79,8 +79,8 @@ struct ContentView: View {
                     WorkoutPlansListView()
                 case .workoutPlanDetail(let plan, let showsUseOnly):
                     WorkoutPlanDetailView(plan: plan, showsUseOnly: showsUseOnly)
-                case .splitList:
-                    WorkoutSplitView()
+                case .splitList(let autoPresentBuilder):
+                    WorkoutSplitView(autoPresentBuilder: autoPresentBuilder)
                 case .splitDettail(let split):
                     WorkoutSplitCreationView(split: split)
                 }

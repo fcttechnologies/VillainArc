@@ -14,7 +14,7 @@ final class AppRouter {
         case workoutSessionDetail(WorkoutSession)
         case workoutPlansList
         case workoutPlanDetail(WorkoutPlan, Bool)
-        case splitList
+        case splitList(autoPresentBuilder: Bool)
         case splitDettail(WorkoutSplit)
     }
     

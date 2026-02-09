@@ -14,7 +14,7 @@ struct WorkoutSplitSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                appRouter.navigate(to: .splitList)
+                appRouter.navigate(to: .splitList(autoPresentBuilder: false))
             } label: {
                 HStack(spacing: 1) {
                     Text("Workout Split")
@@ -47,8 +47,9 @@ struct WorkoutSplitSectionView: View {
     private var content: some View {
         if splits.isEmpty {
             splitUnavailableView(
-                title: "No Workout Split Yet",
-                description: "Create a split to plan your training days."
+                title: "No Workout Split",
+                description: "Create a split to plan your training days.",
+                autoOpenBuilder: true
             )
             .accessibilityIdentifier("recentWorkoutSplitEmptyState")
         } else if let activeSplit {
@@ -71,12 +72,12 @@ struct WorkoutSplitSectionView: View {
         }
     }
 
-    private func splitUnavailableView(title: String, description: String) -> some View {
+    private func splitUnavailableView(title: String, description: String, autoOpenBuilder: Bool = false) -> some View {
         Button {
-            appRouter.navigate(to: .splitList)
+            appRouter.navigate(to: .splitList(autoPresentBuilder: autoOpenBuilder))
         } label: {
-            ContentUnavailableView(title, systemImage: "calendar.badge.exclamationmark", description: Text(description))
-                .frame(maxWidth: .infinity)
+            SmallUnavailableView(sfIconName: "calendar.badge.exclamationmark", title: title, subtitle: description)
+                .padding()
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
         }
         .buttonStyle(.plain)
@@ -119,7 +120,7 @@ struct WorkoutSplitSectionView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 12))
         .contentShape(.rect)
         .onTapGesture {
-            appRouter.navigate(to: .splitList)
+            appRouter.navigate(to: .splitList(autoPresentBuilder: false))
         }
         .accessibilityHint("Shows workout split details.")
     }
@@ -158,4 +159,11 @@ struct WorkoutSplitSectionView: View {
             .padding()
     }
     .sampleDataContainer()
+}
+
+#Preview {
+    NavigationStack {
+        WorkoutSplitSectionView()
+            .padding()
+    }
 }
