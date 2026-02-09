@@ -22,7 +22,6 @@ struct SetReferenceData {
 struct ExerciseSetRowView: View {
     @Bindable var set: SetPerformance
     @Bindable var exercise: ExercisePerformance
-    @Binding var showRestTimerSheet: Bool
     @Environment(\.modelContext) private var context
     private let restTimer = RestTimerState.shared
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
@@ -155,7 +154,6 @@ struct ExerciseSetRowView: View {
                     RestTimeHistory.record(seconds: restSeconds, context: context)
                     saveContext(context: context)
                     Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
-                    showRestTimerSheet = true
                 }
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetReplaceTimerButton(exercise, set: set))
@@ -185,15 +183,12 @@ struct ExerciseSetRowView: View {
             RestTimeHistory.record(seconds: restSeconds, context: context)
             saveContext(context: context)
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
-            showRestTimerSheet = true
         }
     }
 
 }
 
 #Preview {
-    @Previewable @State var showRestTimerSheet = false
-    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
+    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!)
         .sampleDataContainerIncomplete()
-        .environment(RestTimerState())
 }

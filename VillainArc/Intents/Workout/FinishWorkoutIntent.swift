@@ -18,55 +18,92 @@ struct FinishWorkoutIntent: AppIntent {
             throw FinishWorkoutError.noExercises
         }
 
-        let hasIncompleteSets = workoutSession.exercises.contains { exercise in
-            exercise.sets.contains { !$0.complete }
-        }
-
-        let finishAction: IntentChoiceOption.Style
-        if hasIncompleteSets {
-            let markAllOption = IntentChoiceOption(title: "Mark all sets complete", style: .default)
-            let deleteOption = IntentChoiceOption(title: "Delete incomplete sets", style: .destructive)
+        let summary = workoutSession.unfinishedSetSummary
+        let loggedSetLabel = setCountString(summary.loggedCount)
+        let emptySetLabel = setCountString(summary.emptyCount, adjective: "empty")
+        let loggedVerb = summary.loggedCount == 1 ? "isnt" : "arent"
+        let finishAction: FinishWorkoutAction
+        switch summary.caseType {
+        case .none:
+            finishAction = .finish
+        case .emptyAndLogged:
+            let markOption = IntentChoiceOption(title: "Mark logged sets as complete", style: .default)
+            let deleteOption = IntentChoiceOption(title: "Delete all unfinished sets", style: .destructive)
             let choice = try await requestChoice(
-                between: [markAllOption, deleteOption, .cancel],
-                dialog: IntentDialog("Before finishing, choose how to handle incomplete sets.")
+                between: [markOption, deleteOption, .cancel],
+                dialog: IntentDialog("You have \(loggedSetLabel) logged and \(emptySetLabel) with no data.")
             )
-            finishAction = choice.style
-        } else {
-            finishAction = .default
+            switch choice.style {
+            case .default:
+                finishAction = .markLoggedComplete
+            case .destructive:
+                finishAction = .deleteUnfinished
+            default:
+                throw FinishWorkoutError.cancelled
+            }
+        case .loggedOnly:
+            let markOption = IntentChoiceOption(title: "Mark as complete", style: .default)
+            let deleteOption = IntentChoiceOption(title: "Delete these sets", style: .destructive)
+            let choice = try await requestChoice(
+                between: [markOption, deleteOption, .cancel],
+                dialog: IntentDialog("You have \(loggedSetLabel) with data but \(loggedVerb) marked complete.")
+            )
+            switch choice.style {
+            case .default:
+                finishAction = .markLoggedComplete
+            case .destructive:
+                finishAction = .deleteUnfinished
+            default:
+                throw FinishWorkoutError.cancelled
+            }
+        case .emptyOnly:
+            let deleteOption = IntentChoiceOption(title: "Delete empty sets", style: .destructive)
+            let choice = try await requestChoice(
+                between: [deleteOption, .cancel],
+                dialog: IntentDialog("You have \(emptySetLabel).\nTo finish, either log them or remove them.")
+            )
+            switch choice.style {
+            case .destructive:
+                finishAction = .deleteEmpty
+            default:
+                throw FinishWorkoutError.cancelled
+            }
         }
 
         switch finishAction {
-        case .destructive:
-            for exercise in workoutSession.exercises {
-                let incompleteSets = exercise.sets.filter { !$0.complete }
-                for set in incompleteSets {
-                    exercise.deleteSet(set)
+        case .markLoggedComplete:
+            for set in summary.loggedSets {
+                set.complete = true
+                set.completedAt = Date()
+            }
+            if summary.hasEmpty {
+                for set in summary.emptySets {
+                    set.exercise?.deleteSet(set)
                     context.delete(set)
                 }
-            }
-            let emptyExercises = workoutSession.exercises.filter { $0.sets.isEmpty }
-            for exercise in emptyExercises {
-                workoutSession.deleteExercise(exercise)
-                context.delete(exercise)
-            }
-            if workoutSession.exercises.isEmpty {
-                RestTimerState.shared.stop()
-                workoutSession.activeExercise = nil
-                context.delete(workoutSession)
-                saveContext(context: context)
-                AppRouter.shared.activeWorkoutSession = nil
-                WorkoutActivityManager.end()
-                throw FinishWorkoutError.workoutDeleted
-            }
-        case .cancel:
-            throw FinishWorkoutError.cancelled
-        default:
-            for exercise in workoutSession.exercises {
-                for set in exercise.sets where !set.complete {
-                    set.complete = true
-                    set.completedAt = Date()
+                if removeEmptyExercisesIfNeeded(for: workoutSession, context: context) {
+                    throw FinishWorkoutError.workoutDeleted
                 }
             }
+        case .deleteUnfinished:
+            let setsToDelete = summary.loggedSets + summary.emptySets
+            for set in setsToDelete {
+                set.exercise?.deleteSet(set)
+                context.delete(set)
+            }
+            if removeEmptyExercisesIfNeeded(for: workoutSession, context: context) {
+                throw FinishWorkoutError.workoutDeleted
+            }
+        case .deleteEmpty:
+            for set in summary.emptySets {
+                set.exercise?.deleteSet(set)
+                context.delete(set)
+            }
+            if removeEmptyExercisesIfNeeded(for: workoutSession, context: context) {
+                throw FinishWorkoutError.workoutDeleted
+            }
+        case .finish:
+            break
         }
 
         workoutSession.status = SessionStatus.summary.rawValue
@@ -80,6 +117,40 @@ struct FinishWorkoutIntent: AppIntent {
         
         return .result(opensIntent: OpenAppIntent())
     }
+}
+
+private enum FinishWorkoutAction {
+    case finish
+    case markLoggedComplete
+    case deleteUnfinished
+    case deleteEmpty
+}
+
+private func setCountString(_ count: Int, adjective: String? = nil) -> String {
+    let value = count == 1 ? "1" : "\(count)"
+    let suffix = count == 1 ? "set" : "sets"
+    if let adjective {
+        return "\(value) \(adjective) \(suffix)"
+    }
+    return "\(value) \(suffix)"
+}
+
+private func removeEmptyExercisesIfNeeded(for workoutSession: WorkoutSession, context: ModelContext) -> Bool {
+    let emptyExercises = workoutSession.exercises.filter { $0.sets.isEmpty }
+    for exercise in emptyExercises {
+        workoutSession.deleteExercise(exercise)
+        context.delete(exercise)
+    }
+    if workoutSession.exercises.isEmpty {
+        RestTimerState.shared.stop()
+        workoutSession.activeExercise = nil
+        context.delete(workoutSession)
+        saveContext(context: context)
+        AppRouter.shared.activeWorkoutSession = nil
+        WorkoutActivityManager.end()
+        return true
+    }
+    return false
 }
 
 enum FinishWorkoutError: Error, CustomLocalizedStringResourceConvertible {

@@ -22,10 +22,8 @@ struct WorkoutView: View {
     
     @Namespace private var animation
     
-    private var incompleteSetCount: Int {
-        workout.exercises.reduce(0) { count, exercise in
-            count + exercise.sets.filter { !$0.complete }.count
-        }
+    private var unfinishedSetSummary: UnfinishedSetSummary {
+        workout.unfinishedSetSummary
     }
     
     var body: some View {
@@ -46,7 +44,7 @@ struct WorkoutView: View {
                 Button("Workout Notes", systemImage: "note.text") {
                     showNotesEditorSheet = true
                 }
-                Button("Pre Workout Energy", systemImage: "face.smiling") {
+                Button("Pre Workout Energy", systemImage: "bolt.fill") {
                     showPreWorkoutSheet = true
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
@@ -156,7 +154,7 @@ struct WorkoutView: View {
                             .accessibilityIdentifier("workoutExercisesEmptyState")
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise, showRestTimerSheet: $showRestTimerSheet) {
+                            ExerciseView(exercise: exercise) {
                                 deleteExercise(exercise)
                             }
                             .containerRelativeFrame(.horizontal)
@@ -308,60 +306,90 @@ struct WorkoutView: View {
             Text("Are you sure you want to delete this workout?")
         }
         .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
-            if incompleteSetCount > 0 {
-                Button("Mark All Sets Complete") {
-                    finishWorkout(action: .markAllComplete)
+            let summary = unfinishedSetSummary
+            switch summary.caseType {
+            case .emptyAndLogged:
+                Button("Mark logged sets as complete") {
+                    finishWorkout(action: .markLoggedComplete)
                 }
                 .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
-                Button("Delete Incomplete Sets", role: .destructive) {
-                    finishWorkout(action: .deleteIncomplete)
+                Button("Delete all unfinished sets", role: .destructive) {
+                    finishWorkout(action: .deleteUnfinished)
                 }
                 .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
-            } else {
+            case .loggedOnly:
+                Button("Mark as complete") {
+                    finishWorkout(action: .markLoggedComplete)
+                }
+                .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
+                Button("Delete these sets", role: .destructive) {
+                    finishWorkout(action: .deleteUnfinished)
+                }
+                .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
+            case .emptyOnly:
+                Button("Delete empty sets", role: .destructive) {
+                    finishWorkout(action: .deleteEmpty)
+                }
+                .accessibilityIdentifier("workoutFinishDeleteEmptySetsButton")
+                Button("Go back", role: .cancel) {}
+                    .accessibilityIdentifier("workoutFinishGoBackButton")
+            case .none:
                 Button("Finish", role: .confirm) {
-                    finishWorkout(action: .markAllComplete)
+                    finishWorkout(action: .finish)
                 }
                 .accessibilityIdentifier("workoutFinishConfirmButton")
             }
         } message: {
-            if incompleteSetCount > 0 {
-                Text("Before finishing, choose how to handle incomplete sets.")
-            } else {
+            let summary = unfinishedSetSummary
+            switch summary.caseType {
+            case .emptyAndLogged:
+                Text("You have ^[\(summary.loggedCount) logged set](inflect: true) and ^[\(summary.emptyCount) set](inflect: true) with no data.")
+            case .loggedOnly:
+                Text("You have ^[\(summary.loggedCount) set](inflect: true) with data but \(summary.loggedCount == 1 ? "isnt" : "arent") marked complete.")
+            case .emptyOnly:
+                Text("You have ^[\(summary.emptyCount) empty set](inflect: true).\nTo finish, either log them or remove them.")
+            case .none:
                 Text("Finish and save workout?")
             }
         }
     }
     
     private func finishWorkout(action: WorkoutFinishAction) {
+        let summary = workout.unfinishedSetSummary
         switch action {
-        case .markAllComplete:
-            for exercise in workout.exercises {
-                for set in exercise.sets where !set.complete {
-                    set.complete = true
-                    set.completedAt = Date()
-                }
+        case .markLoggedComplete:
+            for set in summary.loggedSets {
+                set.complete = true
+                set.completedAt = Date()
             }
-        case .deleteIncomplete:
-            for exercise in workout.exercises {
-                let incompleteSets = exercise.sets.filter { !$0.complete }
-                for set in incompleteSets {
-                    exercise.deleteSet(set)
+            if summary.hasEmpty {
+                for set in summary.emptySets {
+                    set.exercise?.deleteSet(set)
                     context.delete(set)
                 }
+                if removeEmptyExercisesIfNeeded() {
+                    return
+                }
             }
-            let emptyExercises = workout.exercises.filter { $0.sets.isEmpty }
-            for exercise in emptyExercises {
-                workout.deleteExercise(exercise)
-                context.delete(exercise)
+        case .deleteUnfinished:
+            let setsToDelete = summary.loggedSets + summary.emptySets
+            for set in setsToDelete {
+                set.exercise?.deleteSet(set)
+                context.delete(set)
             }
-            if workout.exercises.isEmpty {
-                Haptics.selection()
-                restTimer.stop()
-                context.delete(workout)
-                WorkoutActivityManager.end()
-                dismiss()
+            if removeEmptyExercisesIfNeeded() {
                 return
             }
+        case .deleteEmpty:
+            for set in summary.emptySets {
+                set.exercise?.deleteSet(set)
+                context.delete(set)
+            }
+            if removeEmptyExercisesIfNeeded() {
+                return
+            }
+        case .finish:
+            break
         }
         Haptics.selection()
         workout.status = SessionStatus.summary.rawValue
@@ -375,6 +403,23 @@ struct WorkoutView: View {
             await IntentDonations.donateFinishWorkout()
             await IntentDonations.donateLastWorkoutSummary()
         }
+    }
+
+    private func removeEmptyExercisesIfNeeded() -> Bool {
+        let emptyExercises = workout.exercises.filter { $0.sets.isEmpty }
+        for exercise in emptyExercises {
+            workout.deleteExercise(exercise)
+            context.delete(exercise)
+        }
+        if workout.exercises.isEmpty {
+            Haptics.selection()
+            restTimer.stop()
+            context.delete(workout)
+            WorkoutActivityManager.end()
+            dismiss()
+            return true
+        }
+        return false
     }
     
     private func deleteWorkout() {
@@ -467,8 +512,10 @@ struct WorkoutView: View {
 }
 
 enum WorkoutFinishAction {
-    case markAllComplete
-    case deleteIncomplete
+    case markLoggedComplete
+    case deleteUnfinished
+    case deleteEmpty
+    case finish
 }
 
 #Preview {

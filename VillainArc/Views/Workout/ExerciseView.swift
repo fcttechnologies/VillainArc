@@ -6,7 +6,6 @@ struct ExerciseView: View {
     @Query private var previousExercise: [ExercisePerformance]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
-    @Binding var showRestTimerSheet: Bool
     let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
 
@@ -17,9 +16,8 @@ struct ExerciseView: View {
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
 
-    init(exercise: ExercisePerformance, showRestTimerSheet: Binding<Bool>, onDeleteExercise: (() -> Void)? = nil) {
+    init(exercise: ExercisePerformance, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
-        _showRestTimerSheet = showRestTimerSheet
         self.onDeleteExercise = onDeleteExercise
 
         _previousExercise = Query(ExercisePerformance.lastCompleted(for: exercise))
@@ -70,7 +68,7 @@ struct ExerciseView: View {
 
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, showRestTimerSheet: $showRestTimerSheet, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
+                            ExerciseSetRowView(set: set, exercise: exercise, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
@@ -233,7 +231,6 @@ struct ExerciseView: View {
 }
 
 #Preview {
-    @Previewable @State var showRestTimerSheet = false
-    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
+    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!)
         .sampleDataContainerIncomplete()
 }

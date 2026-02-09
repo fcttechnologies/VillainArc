@@ -282,7 +282,6 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
 }
 
 #Preview {
-    @Previewable @State var showRestTimerSheet = false
-    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!, showRestTimerSheet: $showRestTimerSheet)
+    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!)
         .sampleDataContainerIncomplete()
 }

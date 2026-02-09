@@ -62,7 +62,54 @@ class WorkoutSession {
     }
 }
 
+enum UnfinishedSetCase {
+    case none
+    case emptyOnly
+    case loggedOnly
+    case emptyAndLogged
+}
+
+struct UnfinishedSetSummary {
+    let emptySets: [SetPerformance]
+    let loggedSets: [SetPerformance]
+
+    var emptyCount: Int { emptySets.count }
+    var loggedCount: Int { loggedSets.count }
+    var hasEmpty: Bool { !emptySets.isEmpty }
+    var hasLogged: Bool { !loggedSets.isEmpty }
+
+    var caseType: UnfinishedSetCase {
+        if hasEmpty && hasLogged {
+            return .emptyAndLogged
+        }
+        if hasEmpty {
+            return .emptyOnly
+        }
+        if hasLogged {
+            return .loggedOnly
+        }
+        return .none
+    }
+}
+
 extension WorkoutSession {
+    @MainActor var unfinishedSetSummary: UnfinishedSetSummary {
+        var emptySets: [SetPerformance] = []
+        var loggedSets: [SetPerformance] = []
+
+        for exercise in exercises {
+            for set in exercise.sets where !set.complete {
+                if set.reps == 0 && set.weight == 0 {
+                    emptySets.append(set)
+                } else {
+                    loggedSets.append(set)
+                }
+            }
+        }
+
+        return UnfinishedSetSummary(emptySets: emptySets, loggedSets: loggedSets)
+    }
+
     var exerciseSummary: String {
         let exerciseSummaries = sortedExercises.map { exercise in
             let setCount = exercise.sets.count
