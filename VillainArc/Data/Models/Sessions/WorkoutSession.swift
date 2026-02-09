@@ -62,6 +62,18 @@ class WorkoutSession {
     }
 }
 
+enum WorkoutFinishAction {
+    case markLoggedComplete
+    case deleteUnfinished
+    case deleteEmpty
+    case finish
+}
+
+enum WorkoutFinishResult {
+    case finished
+    case workoutDeleted
+}
+
 enum UnfinishedSetCase {
     case none
     case emptyOnly
@@ -159,5 +171,64 @@ extension WorkoutSession {
             }
         }
         return nil
+    }
+    
+    @MainActor
+    func finish(action: WorkoutFinishAction, context: ModelContext) -> WorkoutFinishResult {
+        let summary = unfinishedSetSummary
+        
+        switch action {
+        case .markLoggedComplete:
+            for set in summary.loggedSets {
+                set.complete = true
+                set.completedAt = Date()
+            }
+            if summary.hasEmpty {
+                for set in summary.emptySets {
+                    set.exercise?.deleteSet(set)
+                    context.delete(set)
+                }
+                if pruneEmptyExercises(context: context) {
+                    return .workoutDeleted
+                }
+            }
+        case .deleteUnfinished:
+            let setsToDelete = summary.loggedSets + summary.emptySets
+            for set in setsToDelete {
+                set.exercise?.deleteSet(set)
+                context.delete(set)
+            }
+            if pruneEmptyExercises(context: context) {
+                return .workoutDeleted
+            }
+        case .deleteEmpty:
+            for set in summary.emptySets {
+                set.exercise?.deleteSet(set)
+                context.delete(set)
+            }
+            if pruneEmptyExercises(context: context) {
+                return .workoutDeleted
+            }
+        case .finish:
+            break
+        }
+        
+        status = SessionStatus.summary.rawValue
+        endedAt = Date()
+        activeExercise = nil
+        return .finished
+    }
+    
+    private func pruneEmptyExercises(context: ModelContext) -> Bool {
+        let emptyExercises = exercises.filter { $0.sets.isEmpty }
+        for exercise in emptyExercises {
+            deleteExercise(exercise)
+            context.delete(exercise)
+        }
+        if exercises.isEmpty {
+            context.delete(self)
+            return true
+        }
+        return false
     }
 }

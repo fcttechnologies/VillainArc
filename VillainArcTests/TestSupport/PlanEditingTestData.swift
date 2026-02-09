@@ -30,7 +30,7 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
     benchSet1.targetRest = 60
 
     let benchSet2 = SetPrescription(exercisePrescription: bench)
-    benchSet2.type = .regular
+    benchSet2.type = .working
     benchSet2.targetWeight = 155
     benchSet2.targetReps = 8
     benchSet2.targetRest = 90

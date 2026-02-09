@@ -22,7 +22,7 @@ struct FinishWorkoutIntent: AppIntent {
         let loggedSetLabel = setCountString(summary.loggedCount)
         let emptySetLabel = setCountString(summary.emptyCount, adjective: "empty")
         let loggedVerb = summary.loggedCount == 1 ? "isnt" : "arent"
-        let finishAction: FinishWorkoutAction
+        let finishAction: WorkoutFinishAction
         switch summary.caseType {
         case .none:
             finishAction = .finish
@@ -70,60 +70,25 @@ struct FinishWorkoutIntent: AppIntent {
             }
         }
 
-        switch finishAction {
-        case .markLoggedComplete:
-            for set in summary.loggedSets {
-                set.complete = true
-                set.completedAt = Date()
-            }
-            if summary.hasEmpty {
-                for set in summary.emptySets {
-                    set.exercise?.deleteSet(set)
-                    context.delete(set)
-                }
-                if removeEmptyExercisesIfNeeded(for: workoutSession, context: context) {
-                    throw FinishWorkoutError.workoutDeleted
-                }
-            }
-        case .deleteUnfinished:
-            let setsToDelete = summary.loggedSets + summary.emptySets
-            for set in setsToDelete {
-                set.exercise?.deleteSet(set)
-                context.delete(set)
-            }
-            if removeEmptyExercisesIfNeeded(for: workoutSession, context: context) {
-                throw FinishWorkoutError.workoutDeleted
-            }
-        case .deleteEmpty:
-            for set in summary.emptySets {
-                set.exercise?.deleteSet(set)
-                context.delete(set)
-            }
-            if removeEmptyExercisesIfNeeded(for: workoutSession, context: context) {
-                throw FinishWorkoutError.workoutDeleted
-            }
-        case .finish:
-            break
+        let result = workoutSession.finish(action: finishAction, context: context)
+        
+        switch result {
+        case .finished:
+            RestTimerState.shared.stop()
+            saveContext(context: context)
+            SpotlightIndexer.index(workoutSession: workoutSession)
+            AppRouter.shared.activeWorkoutSession = nil
+            WorkoutActivityManager.end()
+        case .workoutDeleted:
+            RestTimerState.shared.stop()
+            saveContext(context: context)
+            AppRouter.shared.activeWorkoutSession = nil
+            WorkoutActivityManager.end()
+            throw FinishWorkoutError.workoutDeleted
         }
-
-        workoutSession.status = SessionStatus.summary.rawValue
-        workoutSession.endedAt = Date()
-        workoutSession.activeExercise = nil
-        RestTimerState.shared.stop()
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSession: workoutSession)
-        AppRouter.shared.activeWorkoutSession = nil
-        WorkoutActivityManager.end()
         
         return .result(opensIntent: OpenAppIntent())
     }
-}
-
-private enum FinishWorkoutAction {
-    case finish
-    case markLoggedComplete
-    case deleteUnfinished
-    case deleteEmpty
 }
 
 private func setCountString(_ count: Int, adjective: String? = nil) -> String {
@@ -133,24 +98,6 @@ private func setCountString(_ count: Int, adjective: String? = nil) -> String {
         return "\(value) \(adjective) \(suffix)"
     }
     return "\(value) \(suffix)"
-}
-
-private func removeEmptyExercisesIfNeeded(for workoutSession: WorkoutSession, context: ModelContext) -> Bool {
-    let emptyExercises = workoutSession.exercises.filter { $0.sets.isEmpty }
-    for exercise in emptyExercises {
-        workoutSession.deleteExercise(exercise)
-        context.delete(exercise)
-    }
-    if workoutSession.exercises.isEmpty {
-        RestTimerState.shared.stop()
-        workoutSession.activeExercise = nil
-        context.delete(workoutSession)
-        saveContext(context: context)
-        AppRouter.shared.activeWorkoutSession = nil
-        WorkoutActivityManager.end()
-        return true
-    }
-    return false
 }
 
 enum FinishWorkoutError: Error, CustomLocalizedStringResourceConvertible {

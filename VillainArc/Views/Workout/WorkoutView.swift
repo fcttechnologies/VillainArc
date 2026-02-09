@@ -20,8 +20,6 @@ struct WorkoutView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
-    @Namespace private var animation
-    
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
     }
@@ -73,7 +71,6 @@ struct WorkoutView: View {
                         prepareForAddExerciseSheet()
                         showAddExerciseSheet = true
                     }
-                    .matchedTransitionSource(id: "addExercise", in: animation)
                     .accessibilityIdentifier("workoutAddExerciseButton")
                     .accessibilityHint("Adds an exercise.")
                 }
@@ -81,7 +78,6 @@ struct WorkoutView: View {
             .animation(.smooth, value: showExerciseListView)
             .sheet(isPresented: $showAddExerciseSheet, onDismiss: handleAddExerciseSheetDismiss) {
                 AddExerciseView(workout: workout)
-                    .navigationTransition(.zoom(sourceID: "addExercise", in: animation))
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showRestTimerSheet) {
@@ -355,71 +351,26 @@ struct WorkoutView: View {
     }
     
     private func finishWorkout(action: WorkoutFinishAction) {
-        let summary = workout.unfinishedSetSummary
-        switch action {
-        case .markLoggedComplete:
-            for set in summary.loggedSets {
-                set.complete = true
-                set.completedAt = Date()
-            }
-            if summary.hasEmpty {
-                for set in summary.emptySets {
-                    set.exercise?.deleteSet(set)
-                    context.delete(set)
-                }
-                if removeEmptyExercisesIfNeeded() {
-                    return
-                }
-            }
-        case .deleteUnfinished:
-            let setsToDelete = summary.loggedSets + summary.emptySets
-            for set in setsToDelete {
-                set.exercise?.deleteSet(set)
-                context.delete(set)
-            }
-            if removeEmptyExercisesIfNeeded() {
-                return
-            }
-        case .deleteEmpty:
-            for set in summary.emptySets {
-                set.exercise?.deleteSet(set)
-                context.delete(set)
-            }
-            if removeEmptyExercisesIfNeeded() {
-                return
-            }
-        case .finish:
-            break
-        }
-        Haptics.selection()
-        workout.status = SessionStatus.summary.rawValue
-        workout.endedAt = Date()
-        workout.activeExercise = nil
-        restTimer.stop()
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSession: workout)
-        WorkoutActivityManager.end()
-        Task {
-            await IntentDonations.donateFinishWorkout()
-            await IntentDonations.donateLastWorkoutSummary()
-        }
-    }
-
-    private func removeEmptyExercisesIfNeeded() -> Bool {
-        let emptyExercises = workout.exercises.filter { $0.sets.isEmpty }
-        for exercise in emptyExercises {
-            workout.deleteExercise(exercise)
-            context.delete(exercise)
-        }
-        if workout.exercises.isEmpty {
+        let result = workout.finish(action: action, context: context)
+        
+        switch result {
+        case .finished:
             Haptics.selection()
             restTimer.stop()
-            context.delete(workout)
+            saveContext(context: context)
+            SpotlightIndexer.index(workoutSession: workout)
+            WorkoutActivityManager.end()
+            Task {
+                await IntentDonations.donateFinishWorkout()
+                await IntentDonations.donateLastWorkoutSummary()
+            }
+        case .workoutDeleted:
+            Haptics.selection()
+            restTimer.stop()
+            saveContext(context: context)
             WorkoutActivityManager.end()
             dismiss()
-            return true
         }
-        return false
     }
     
     private func deleteWorkout() {
@@ -509,13 +460,6 @@ struct WorkoutView: View {
         guard !sets.isEmpty else { return false }
         return sets.allSatisfy { $0.complete }
     }
-}
-
-enum WorkoutFinishAction {
-    case markLoggedComplete
-    case deleteUnfinished
-    case deleteEmpty
-    case finish
 }
 
 #Preview {
