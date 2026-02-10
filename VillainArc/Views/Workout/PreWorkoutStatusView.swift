@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct PreWorkoutMoodView: View {
+struct PreWorkoutStatusView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var status: PreWorkoutStatus
     @Environment(\.modelContext) private var context
@@ -97,6 +97,6 @@ struct PreWorkoutMoodView: View {
 }
 
 #Preview {
-    PreWorkoutMoodView(status: sampleIncompleteSession().preStatus)
+    PreWorkoutStatusView(status: sampleIncompleteSession().preStatus)
         .sampleDataContainerIncomplete()
 }
