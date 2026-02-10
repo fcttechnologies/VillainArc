@@ -13,7 +13,6 @@ class PreviewDataContainer {
         let schema = Schema([
             WorkoutSession.self,
             PreWorkoutStatus.self,
-            PostWorkoutEffort.self,
             ExercisePerformance.self,
             SetPerformance.self,
             Exercise.self,
@@ -115,8 +114,7 @@ class PreviewDataContainer {
         let session = WorkoutSession(title: "Chest Day", notes: "Testing sample", status: .done, startedAt: date(2026, 1, 5, 8, 15), endedAt: date(2026, 1, 5, 9, 5))
         context.insert(session)
 
-        let postEffort = PostWorkoutEffort(effort: 7, notes: "Felt strong")
-        session.postEffort = postEffort
+        session.postEffort = 7
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])] = [
             ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [

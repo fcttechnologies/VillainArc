@@ -135,7 +135,6 @@
 				Data/Models/Plans/WorkoutPlan.swift,
 				Data/Models/RestTimeHistory.swift,
 				Data/Models/Sessions/ExercisePerformance.swift,
-				Data/Models/Sessions/PostWorkoutEffort.swift,
 				Data/Models/Sessions/PreWorkoutStatus.swift,
 				Data/Models/Sessions/SetPerformance.swift,
 				Data/Models/Sessions/WorkoutSession.swift,

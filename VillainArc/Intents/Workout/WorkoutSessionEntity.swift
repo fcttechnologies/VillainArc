@@ -10,11 +10,6 @@ struct WorkoutSessionFullContent: Codable {
         let tookPreWorkout: Bool
     }
 
-    struct PostWorkoutEffort: Codable {
-        let effort: Int
-        let notes: String?
-    }
-
     struct Exercise: Codable {
         struct SetEntry: Codable {
             let index: Int
@@ -41,7 +36,7 @@ struct WorkoutSessionFullContent: Codable {
     let endedAt: Date?
     let origin: String
     let preStatus: PreWorkoutStatus?
-    let postWorkoutEffort: PostWorkoutEffort?
+    let postWorkoutEffort: Int
     let exercises: [Exercise]
 }
 
@@ -73,8 +68,7 @@ extension WorkoutSessionEntity {
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
         let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(feeling: workoutSession.preStatus.feeling.displayName, notes: workoutSession.preStatus.notes.isEmpty ? nil : workoutSession.preStatus.notes, tookPreWorkout: workoutSession.preStatus.tookPreWorkout)
-        let postEffort = WorkoutSessionFullContent.PostWorkoutEffort(effort: workoutSession.postEffort.effort, notes: workoutSession.postEffort.notes.isEmpty ? nil : workoutSession.postEffort.notes)
-        fullContent = WorkoutSessionFullContent(id: workoutSession.id, title: workoutSession.title, summary: workoutSession.spotlightSummary, notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes, startedAt: workoutSession.startedAt, endedAt: workoutSession.endedAt, origin: workoutSession.origin.rawValue, preStatus: preStatus, postWorkoutEffort: postEffort, exercises: exercises.map { exercise in
+        fullContent = WorkoutSessionFullContent(id: workoutSession.id, title: workoutSession.title, summary: workoutSession.spotlightSummary, notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes, startedAt: workoutSession.startedAt, endedAt: workoutSession.endedAt, origin: workoutSession.origin.rawValue, preStatus: preStatus, postWorkoutEffort: workoutSession.postEffort, exercises: exercises.map { exercise in
             WorkoutSessionFullContent.Exercise(index: exercise.index, name: exercise.name, notes: exercise.notes.isEmpty ? nil : exercise.notes, muscles: exercise.musclesTargeted.map(\.rawValue), sets: exercise.sortedSets.map { set in
                 WorkoutSessionFullContent.Exercise.SetEntry(index: set.index, type: set.type.displayName, reps: set.reps, weight: set.weight, restSeconds: set.restSeconds, complete: set.complete, completedAt: set.completedAt)
             })

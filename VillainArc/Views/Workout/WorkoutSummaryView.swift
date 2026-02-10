@@ -227,7 +227,7 @@ struct WorkoutSummaryView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Effort")
                 .font(.headline)
-            Text(effortDescription(workout.postEffort.effort))
+            Text(effortDescription(workout.postEffort))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fontWeight(.semibold)
@@ -240,11 +240,11 @@ struct WorkoutSummaryView: View {
     }
 
     private func effortCard(for value: Int) -> some View {
-        let isSelected = workout.postEffort.effort == value
+        let isSelected = workout.postEffort == value
 
         return Button {
             Haptics.selection()
-            workout.postEffort.effort = value
+            workout.postEffort = value
             saveContext(context: context)
         } label: {
             Text("\(value)")
