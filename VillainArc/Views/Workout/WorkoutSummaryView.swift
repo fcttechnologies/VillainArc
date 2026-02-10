@@ -124,6 +124,8 @@ struct WorkoutSummaryView: View {
                     }
                     .buttonStyle(.plain)
 
+                    effortSection
+
                     if shouldShowSuggestions {
                         VStack(alignment: .leading, spacing: 12) {
                             if isGeneratingSuggestions {
@@ -166,7 +168,7 @@ struct WorkoutSummaryView: View {
                     } label: {
                         if isGeneratingSuggestions {
                             ProgressView()
-                                .controlSize(.small)
+                                .controlSize(.regular)
                         } else {
                             Label("Done", systemImage: "checkmark")
                         }
@@ -219,6 +221,54 @@ struct WorkoutSummaryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var effortSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Effort")
+                .font(.headline)
+            Text(effortDescription(workout.postEffort.effort))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fontWeight(.semibold)
+            HStack(spacing: 8) {
+                ForEach(1...10, id: \.self) { value in
+                    effortCard(for: value)
+                }
+            }
+        }
+    }
+
+    private func effortCard(for value: Int) -> some View {
+        let isSelected = workout.postEffort.effort == value
+
+        return Button {
+            Haptics.selection()
+            workout.postEffort.effort = value
+            saveContext(context: context)
+        } label: {
+            Text("\(value)")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 10))
+                .opacity(isSelected ? 1.0 : 0.6)
+                .scaleEffect(isSelected ? 1.15 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .animation(.bouncy, value: isSelected)
+    }
+
+    private func effortDescription(_ value: Int) -> String {
+        switch value {
+        case 1...2: "Very easy, minimal exertion."
+        case 3...4: "Light effort, could do much more."
+        case 5...6: "Moderate effort, comfortable pace."
+        case 7...8: "Hard effort, pushing your limits."
+        case 9: "Near maximal, barely completed."
+        case 10: "Absolute maximum effort."
+        default: "How hard was this workout?"
+        }
     }
 
     private func prRow(_ entry: PRItem) -> some View {

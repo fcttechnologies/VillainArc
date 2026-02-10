@@ -3,10 +3,10 @@ import SwiftData
 
 @Model
 class PostWorkoutEffort {
-    var effort: Int = 6
+    var effort: Int = 0
     var notes: String = ""
     
-    init(effort: Int, notes: String) {
+    init(effort: Int = 0, notes: String = "") {
         self.effort = effort
         self.notes = notes
     }
