@@ -9,44 +9,51 @@ struct WorkoutSplitDayView: View {
     @State private var showTargetMusclesPicker = false
     
     var body: some View {
-            VStack(spacing: 20) {
-                if mode == .weekly {
-                    Text(weekdayName(for: splitDay.weekday))
-                        .font(.title)
-                        .bold()
-                }
-                Toggle("Rest Day", systemImage: "bed.double.fill", isOn: $splitDay.isRestDay)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding(.trailing)
-                    .tint(.blue)
-                
-                if !splitDay.isRestDay {
-                    if splitDay.workoutPlan == nil {
-                        targetMusclesRow
-                    }
-                    
-                    TextField("Split Day Name", text: $splitDay.name)
-                        .font(.title)
-                        .fontWeight(.semibold)
-                    Button {
-                        Haptics.selection()
-                        showPlanPicker = true
-                    } label: {
-                        if let plan = splitDay.workoutPlan {
-                            WorkoutPlanCardView(workoutPlan: plan)
-                        } else {
-                            ContentUnavailableView("Select a workout plan", systemImage: "list.bullet.clipboard")
-                                .foregroundStyle(.white)
-                                .background(.blue.gradient, in: .rect(cornerRadius: 20))
-                                .frame(maxHeight: 280)
-                        }
-                    }
-                    Spacer()
-                } else {
-                    ContentUnavailableView("Enjoy your day off!", systemImage: "zzz", description: Text("Rest days are perfect for unwinding and recharging."))
-                }
+        VStack(spacing: 20) {
+            if mode == .weekly {
+                Text(weekdayName(for: splitDay.weekday))
+                    .font(.title)
+                    .bold()
             }
+            Toggle("Rest Day", systemImage: "bed.double.fill", isOn: $splitDay.isRestDay)
+                .font(.title2)
+                .fontWeight(.semibold)
+                .padding(.trailing)
+                .tint(.blue)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayRestToggle)
+                .accessibilityHint(AccessibilityText.workoutSplitRestDayToggleHint)
+
+            if !splitDay.isRestDay {
+                if splitDay.workoutPlan == nil {
+                    targetMusclesRow
+                }
+
+                TextField("Split Day Name", text: $splitDay.name)
+                    .font(.title)
+                    .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayNameField)
+                    .accessibilityHint(AccessibilityText.workoutSplitDayNameHint)
+                Button {
+                    Haptics.selection()
+                    showPlanPicker = true
+                } label: {
+                    if let plan = splitDay.workoutPlan {
+                        WorkoutPlanCardView(workoutPlan: plan)
+                    } else {
+                        ContentUnavailableView("Select a workout plan", systemImage: "list.bullet.clipboard")
+                            .foregroundStyle(.white)
+                            .background(.blue.gradient, in: .rect(cornerRadius: 20))
+                            .frame(maxHeight: 280)
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayPlanButton)
+                .accessibilityHint(AccessibilityText.workoutSplitDayPlanButtonHint)
+                Spacer()
+            } else {
+                ContentUnavailableView("Enjoy your day off!", systemImage: "zzz", description: Text("Rest days are perfect for unwinding and recharging."))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayRestUnavailable)
+            }
+        }
         .animation(.easeInOut, value: splitDay.isRestDay)
         .onChange(of: splitDay.isRestDay) {
             saveContext(context: context)
@@ -82,8 +89,10 @@ struct WorkoutSplitDayView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("workoutSplitTargetMusclesButton")
-        .accessibilityHint("Selects the target muscles for this day.")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitTargetMusclesButton)
+        .accessibilityLabel(AccessibilityText.workoutSplitTargetMusclesLabel)
+        .accessibilityValue(targetMusclesSummary)
+        .accessibilityHint(AccessibilityText.workoutSplitTargetMusclesHint)
     }
 
     private var targetMusclesSummary: String {
@@ -105,6 +114,7 @@ struct WorkoutSplitDayView: View {
     }
     .sampleDataContainer()
 }
+
 #Preview("Rotation Split") {
     NavigationStack {
         WorkoutSplitCreationView(split: sampleRotationSplit())

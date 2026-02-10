@@ -43,7 +43,7 @@ struct WorkoutRowView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(AccessibilityText.workoutRowLabel(for: workout))
             .accessibilityValue(AccessibilityText.workoutRowValue(for: workout))
-            .accessibilityHint("Shows workout details.")
+            .accessibilityHint(AccessibilityText.workoutRowHint)
         }
         .buttonStyle(.borderless)
     }

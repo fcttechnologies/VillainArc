@@ -27,11 +27,12 @@ struct WorkoutSplitView: View {
                 Section {
                     if let activeSplit {
                         SplitRowView(split: activeSplit, allSplits: splits)
-                        .accessibilityIdentifier("workoutSplitActiveRow")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveRow)
+                            .accessibilityHint(AccessibilityText.workoutSplitRowHint)
                         ActiveSplitSummaryView(split: activeSplit, planPickerDay: $planPickerDay)
                     } else {
                         ContentUnavailableView("No Active Split", systemImage: "calendar.badge.plus", description: Text("Set one of your other splits as active or make a new one."))
-                            .accessibilityIdentifier("workoutSplitNoActiveView")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitNoActiveView)
                     }
                 }
                 .listRowSeparator(.hidden)
@@ -40,7 +41,8 @@ struct WorkoutSplitView: View {
                     Section {
                         ForEach(inactiveSplits) { split in
                             SplitRowView(split: split, allSplits: splits)
-                                .accessibilityIdentifier("workoutSplitInactiveRow-\(split.title)")
+                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitInactiveRow(split))
+                                .accessibilityHint(AccessibilityText.workoutSplitRowHint)
                         }
                         .onDelete(perform: deleteInactiveSplits)
                     } header: {
@@ -54,7 +56,7 @@ struct WorkoutSplitView: View {
                 }
             }
         }
-        .accessibilityIdentifier("workoutSplitList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitList)
         .navigationTitle("Workout Split")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
@@ -69,15 +71,15 @@ struct WorkoutSplitView: View {
                     Haptics.selection()
                     showSplitBuilder = true
                 }
-                .accessibilityIdentifier("workoutSplitCreateButton")
-                .accessibilityHint("Creates a new workout split.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
+                .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
             }
         }
         .listStyle(.plain)
         .overlay {
             if splits.isEmpty {
                 ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine."))
-                    .accessibilityIdentifier("workoutSplitEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
             }
         }
         .onAppear {
@@ -109,8 +111,8 @@ struct WorkoutSplitView: View {
                     Label("Missed a Day", systemImage: "calendar.badge.exclamationmark")
                     Text("Moves the weekly split back by one day.")
                 }
-                .accessibilityIdentifier("workoutSplitMissedDayButton")
-                .accessibilityHint("Moves the weekly split back by one day.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitMissedDayButton)
+                .accessibilityHint(AccessibilityText.workoutSplitMissedDayHint)
 
                 if split.normalizedWeeklyOffset != 0 {
                     Button {
@@ -119,8 +121,8 @@ struct WorkoutSplitView: View {
                         Label("Reset Offset", systemImage: "arrow.counterclockwise")
                         Text("Returns the weekly split to today.")
                     }
-                    .accessibilityIdentifier("workoutSplitResetOffsetButton")
-                    .accessibilityHint("Resets the weekly split offset to today.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitResetOffsetButton)
+                    .accessibilityHint(AccessibilityText.workoutSplitResetOffsetHint)
                 }
             case .rotation:
                 Button {
@@ -129,8 +131,8 @@ struct WorkoutSplitView: View {
                     Label("Missed One Day", systemImage: "chevron.left")
                     Text("Moves back one day in the rotation.")
                 }
-                .accessibilityIdentifier("workoutSplitRotationPreviousButton")
-                .accessibilityHint("Moves back one day in the rotation.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationPreviousButton)
+                .accessibilityHint(AccessibilityText.workoutSplitRotationPreviousHint)
 
                 Button {
                     updateRotation(for: split, advanced: true)
@@ -138,14 +140,14 @@ struct WorkoutSplitView: View {
                     Label("Skip Day", systemImage: "chevron.right")
                     Text("Moves forward one day in the rotation.")
                 }
-                .accessibilityIdentifier("workoutSplitRotationAdvanceButton")
-                .accessibilityHint("Moves forward one day in the rotation.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationAdvanceButton)
+                .accessibilityHint(AccessibilityText.workoutSplitRotationAdvanceHint)
             }
         }
         .menuOrder(.fixed)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
-        .accessibilityLabel("Split actions")
-        .accessibilityHint("Shows actions for the active split.")
+        .accessibilityLabel(AccessibilityText.workoutSplitActiveActionsLabel)
+        .accessibilityHint(AccessibilityText.workoutSplitActiveActionsHint)
     }
 
     private func createSplit(mode: SplitMode) {
@@ -220,20 +222,20 @@ private struct ActiveSplitSummaryView: View {
             if let day {
                 if day.isRestDay {
                     ContentUnavailableView("Enjoy your day off!", systemImage: "zzz", description: Text("Rest days are perfect for unwinding and recharging."))
-                        .accessibilityIdentifier("workoutSplitRestDayUnavailable")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRestDayUnavailable)
                 } else if let plan = day.workoutPlan {
                     WorkoutPlanRowView(workoutPlan: plan, showsUseOnly: true)
-                        .accessibilityIdentifier("workoutSplitActivePlanRow")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActivePlanRow)
                 } else {
                     noPlanSelectedView(for: day)
                 }
             } else {
                 ContentUnavailableView("No split day configured", systemImage: "calendar.badge.exclamationmark")
-                    .accessibilityIdentifier("workoutSplitNoDayConfigured")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitNoDayConfigured)
             }
         }
         .padding(.vertical, 6)
-        .accessibilityIdentifier("workoutSplitActiveSummary")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveSummary)
     }
 
     private func noPlanSelectedView(for day: WorkoutSplitDay) -> some View {
@@ -244,8 +246,10 @@ private struct ActiveSplitSummaryView: View {
             ContentUnavailableView("No plan selected for this day", systemImage: "list.bullet.clipboard", description: Text("Tap to choose a workout plan."))
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("workoutSplitSelectPlanButton")
-        .accessibilityHint("Selects a workout plan for this day.")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSelectPlanButton)
+        .accessibilityLabel(AccessibilityText.workoutSplitSelectPlanLabel)
+        .accessibilityValue(AccessibilityText.workoutSplitSelectPlanValue)
+        .accessibilityHint(AccessibilityText.workoutSplitSelectPlanHint)
     }
 }
 
@@ -282,8 +286,8 @@ private struct SplitRowView: View {
                 Button("Set Inactive", systemImage: "xmark", role: .destructive) {
                     setInactive()
                 }
-                .accessibilityIdentifier("workoutSplitSetInactiveButton")
-                .accessibilityHint("Makes this split inactive.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSetInactiveButton)
+                .accessibilityHint(AccessibilityText.workoutSplitSetInactiveHint)
             }
         }
     }
@@ -342,8 +346,8 @@ private struct SplitRowView: View {
         .buttonStyle(.glassProminent)
         .fontWeight(.semibold)
         .labelStyle(.titleOnly)
-        .accessibilityIdentifier("workoutSplitSetActiveButton")
-        .accessibilityHint("Makes this split active.")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSetActiveButton)
+        .accessibilityHint(AccessibilityText.workoutSplitSetActiveHint)
     }
 
     private func setActive() {

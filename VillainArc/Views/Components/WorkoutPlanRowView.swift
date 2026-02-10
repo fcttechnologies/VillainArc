@@ -13,7 +13,7 @@ struct WorkoutPlanRowView: View {
             WorkoutPlanCardView(workoutPlan: workoutPlan)
         }
         .buttonStyle(.borderless)
-        .accessibilityIdentifier("workoutPlanRow-\(workoutPlan.id)")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanRow(workoutPlan))
     }
 }
 

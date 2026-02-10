@@ -100,8 +100,10 @@
 		FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Data/Classes/AppRouter.swift,
 				Data/Classes/DataManager.swift,
 				Data/Classes/RestTimerState.swift,
+				Data/Classes/SpotlightIndexer.swift,
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/Enums/Exercise/EquipmentType.swift,
@@ -129,6 +131,7 @@
 				Data/Models/Plans/ExercisePrescription.swift,
 				Data/Models/Plans/PrescriptionChange.swift,
 				Data/Models/Plans/SetPrescription.swift,
+				Data/Models/Plans/SuggestionGrouping.swift,
 				Data/Models/Plans/WorkoutPlan.swift,
 				Data/Models/RestTimeHistory.swift,
 				Data/Models/Sessions/ExercisePerformance.swift,
@@ -145,9 +148,13 @@
 				Helpers/RestTimerNotifications.swift,
 				Helpers/TextNormalization.swift,
 				Helpers/TimeFormatting.swift,
+				Intents/Exercise/ExerciseEntity.swift,
+				Intents/LiveActivity/LiveActivityAddExerciseIntent.swift,
 				Intents/LiveActivity/LiveActivityCompleteSetIntent.swift,
 				Intents/LiveActivity/LiveActivityPauseRestTimerIntent.swift,
 				Intents/LiveActivity/LiveActivityResumeRestTimerIntent.swift,
+				Intents/Workout/WorkoutSessionEntity.swift,
+				Intents/WorkoutPlan/WorkoutPlanEntity.swift,
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
 		};

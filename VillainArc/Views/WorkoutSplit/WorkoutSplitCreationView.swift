@@ -46,7 +46,7 @@ struct WorkoutSplitCreationView: View {
         }
         .navigationTitle(split.title.isEmpty ? (split.mode == .weekly ? "Weekly Split" : "Rotation Split") : split.title)
         .toolbarTitleDisplayMode(.inline)
-        .accessibilityIdentifier("workoutSplitCreationView")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreationView)
         .toolbarTitleMenu {
             Button("Rename Split", systemImage: "pencil") {
                 Haptics.selection()
@@ -61,7 +61,7 @@ struct WorkoutSplitCreationView: View {
                         cancelSwapMode()
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapCancelButton)
-                    .accessibilityHint("Cancels swapping days.")
+                    .accessibilityHint(AccessibilityText.workoutSplitSwapCancelHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Confirm", systemImage: "checkmark") {
@@ -69,7 +69,7 @@ struct WorkoutSplitCreationView: View {
                     }
                     .disabled(!canConfirmSwap)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapConfirmButton)
-                    .accessibilityHint("Swaps the selected days.")
+                    .accessibilityHint(AccessibilityText.workoutSplitSwapConfirmHint)
                 }
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -116,7 +116,7 @@ struct WorkoutSplitCreationView: View {
                                     Label("Swap Days", systemImage: "arrow.left.arrow.right")
                                 }
                                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapModeButton)
-                                .accessibilityHint("Swaps this day with another.")
+                                .accessibilityHint(AccessibilityText.workoutSplitSwapModeHint)
                             }
                             if split.isActive, day.index != split.rotationCurrentIndex {
                                 Button {
@@ -124,13 +124,15 @@ struct WorkoutSplitCreationView: View {
                                 } label: {
                                     Label("Set as Current Day", systemImage: "checkmark.circle")
                                 }
-                                .accessibilityIdentifier("workoutSplitRotationSetCurrentDayButton-\(day.index)")
-                                .accessibilityHint("Sets this day as the current rotation day.")
+                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationSetCurrentDayButton(day))
+                                .accessibilityHint(AccessibilityText.workoutSplitRotationSetCurrentDayHint)
                             }
                             if split.days.count > 1 {
                                 Button("Delete Day", systemImage: "trash", role: .destructive) {
                                     deleteDay(day)
                                 }
+                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDeleteDayButton(day))
+                                .accessibilityHint(AccessibilityText.workoutSplitDeleteDayHint)
                             }
                         }
                 }
@@ -184,7 +186,9 @@ struct WorkoutSplitCreationView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("weekdayCapsule-\(day.weekday)")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitWeekdayCapsule(day))
+        .accessibilityLabel(AccessibilityText.workoutSplitWeekdayCapsuleLabel(weekdayName(for: day.weekday)))
+        .accessibilityHint(AccessibilityText.workoutSplitCapsuleHint)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .modifier(SwapWiggleModifier(isActive: isSwapMode))
         .contextMenu {
@@ -195,7 +199,7 @@ struct WorkoutSplitCreationView: View {
                     Label("Swap Days", systemImage: "arrow.left.arrow.right")
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapModeButton)
-                .accessibilityHint("Swaps this day with another.")
+                .accessibilityHint(AccessibilityText.workoutSplitSwapModeHint)
             }
         }
     }
@@ -240,8 +244,9 @@ struct WorkoutSplitCreationView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("rotationCapsule-\(day.index)")
-        .accessibilityLabel("Day \(dayNumber)")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationCapsule(day))
+        .accessibilityLabel(AccessibilityText.workoutSplitRotationCapsuleLabel(dayNumber: dayNumber))
+        .accessibilityHint(AccessibilityText.workoutSplitCapsuleHint)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .modifier(SwapWiggleModifier(isActive: isSwapMode))
 
@@ -277,8 +282,9 @@ struct WorkoutSplitCreationView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("addRotationDayCapsule")
-        .accessibilityLabel("Add day")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitAddRotationDayCapsule)
+        .accessibilityLabel(AccessibilityText.workoutSplitAddRotationDayLabel)
+        .accessibilityHint(AccessibilityText.workoutSplitAddRotationDayHint)
     }
     
     private func deleteDay(_ day: WorkoutSplitDay) {
@@ -376,7 +382,7 @@ struct WorkoutSplitCreationView: View {
             }
             .disabled(split.mode == .rotation && !canSwapRotationDays)
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapModeButton)
-            .accessibilityHint("Enters swap mode.")
+            .accessibilityHint(AccessibilityText.workoutSplitSwapModeHint)
 
             Menu("Rotate Days", systemImage: "arrow.triangle.2.circlepath") {
                 Button {
@@ -386,7 +392,7 @@ struct WorkoutSplitCreationView: View {
                     Text("Shifts every day back by one.")
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotateBackwardButton)
-                .accessibilityHint("Moves the split schedule back one day.")
+                .accessibilityHint(AccessibilityText.workoutSplitRotateBackwardHint)
 
                 Button {
                     rotateSplit(by: 1)
@@ -395,16 +401,16 @@ struct WorkoutSplitCreationView: View {
                     Text("Shifts every day forward by one.")
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotateForwardButton)
-                .accessibilityHint("Moves the split schedule forward one day.")
+                .accessibilityHint(AccessibilityText.workoutSplitRotateForwardHint)
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotateMenu)
-            .accessibilityHint("Rotates all split days by one.")
+            .accessibilityHint(AccessibilityText.workoutSplitRotateMenuHint)
 
             Button("Delete Split", systemImage: "trash", role: .destructive) {
                 showDeleteSplitConfirmation = true
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDeleteButton)
-            .accessibilityHint("Deletes this split.")
+            .accessibilityHint(AccessibilityText.workoutSplitDeleteHint)
         }
         .confirmationDialog("Delete Split?", isPresented: $showDeleteSplitConfirmation) {
             Button("Delete", role: .destructive) {
@@ -416,8 +422,8 @@ struct WorkoutSplitCreationView: View {
         }
         .labelStyle(.iconOnly)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitOptionsMenu)
-        .accessibilityLabel("Split options")
-        .accessibilityHint("Shows split actions.")
+        .accessibilityLabel(AccessibilityText.workoutSplitOptionsMenuLabel)
+        .accessibilityHint(AccessibilityText.workoutSplitOptionsMenuHint)
     }
 
     private var canConfirmSwap: Bool {
@@ -547,6 +553,12 @@ struct WorkoutSplitCreationView: View {
             let wrapped = ((adjusted % count) + count) % count
             day.index = wrapped
         }
+    }
+
+    private func weekdayName(for weekday: Int) -> String {
+        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        let index = max(0, min(weekday - 1, names.count - 1))
+        return names[index]
     }
 
     private func deleteSplit() {

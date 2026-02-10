@@ -18,11 +18,11 @@ struct WorkoutsListView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutRow(workout))
-                    .accessibilityHint("Shows workout details.")
+                    .accessibilityHint(AccessibilityText.workoutRowHint)
             }
             .onDelete(perform: deleteWorkouts)
         }
-        .accessibilityIdentifier("workoutsList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutsList)
         .environment(\.editMode, editModeBinding)
         .animation(.smooth, value: isEditing)
         .navigationTitle("Workouts")
@@ -37,12 +37,13 @@ struct WorkoutsListView: View {
                     }
                     .tint(.red)
                     .labelStyle(.titleOnly)
-                    .accessibilityIdentifier("workoutsDeleteAllButton")
-                    .accessibilityHint("Deletes all completed workouts.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutsDeleteAllButton)
+                    .accessibilityHint(AccessibilityText.workoutsDeleteAllHint)
                     .confirmationDialog("Delete All Workouts?", isPresented: $showDeleteAllConfirmation) {
                         Button("Delete All", role: .destructive) {
                             deleteAllWorkouts()
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutsDeleteAllConfirmButton)
                     } message: {
                         Text("Are you sure you want to delete all previous workouts?")
                     }
@@ -55,15 +56,15 @@ struct WorkoutsListView: View {
                             isEditing = false
                         }
                         .labelStyle(.iconOnly)
-                        .accessibilityIdentifier("workoutsDoneEditingButton")
-                        .accessibilityHint("Exits edit mode.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutsDoneEditingButton)
+                        .accessibilityHint(AccessibilityText.workoutsDoneEditingHint)
                     } else {
                         Button("Edit", systemImage: "pencil") {
                             isEditing = true
                         }
                         .labelStyle(.titleOnly)
-                        .accessibilityIdentifier("workoutsEditButton")
-                        .accessibilityHint("Enters edit mode.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEditButton)
+                        .accessibilityHint(AccessibilityText.workoutsEditHint)
                     }
                 }
             }
@@ -71,7 +72,7 @@ struct WorkoutsListView: View {
         .overlay(alignment: .center) {
             if workouts.isEmpty {
                 ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
-                    .accessibilityIdentifier("workoutsEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
             }
         }
     }

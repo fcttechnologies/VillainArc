@@ -97,6 +97,7 @@ class ExercisePerformance {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        prescription = nil
         if !keepSets {
             for set in sets {
                 modelContext?.delete(set)

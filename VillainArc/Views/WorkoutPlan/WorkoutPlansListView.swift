@@ -27,7 +27,7 @@ struct WorkoutPlansListView: View {
                 WorkoutPlanRowView(workoutPlan: plan)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                    .accessibilityHint("Shows workout plan details.")
+                    .accessibilityHint(AccessibilityText.workoutPlanRowHint)
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.slash.fill" : "star.fill") {
                             plan.favorite.toggle()
@@ -38,7 +38,7 @@ struct WorkoutPlansListView: View {
             }
             .onDelete(perform: deleteWorkoutPlan)
         }
-        .accessibilityIdentifier("workoutPlansList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansList)
         .environment(\.editMode, editModeBinding)
         .animation(.smooth, value: isEditing)
         .navigationTitle("Workout Plans")
@@ -53,12 +53,13 @@ struct WorkoutPlansListView: View {
                     }
                     .tint(.red)
                     .labelStyle(.titleOnly)
-                    .accessibilityIdentifier("workoutPlansDeleteAllButton")
-                    .accessibilityHint("Deletes all workout plans.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllButton)
+                    .accessibilityHint(AccessibilityText.workoutPlansDeleteAllHint)
                     .confirmationDialog("Delete All Workout Plans?", isPresented: $showDeleteAllConfirmation) {
                         Button("Delete All", role: .destructive) {
                             deleteAllWorkoutPlans()
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllConfirmButton)
                     } message: {
                         Text("Are you sure you want to delete all workout plans?")
                     }
@@ -72,21 +73,24 @@ struct WorkoutPlansListView: View {
                             favoritesOnly = previousFavoritesState
                         }
                         .labelStyle(.iconOnly)
-                        .accessibilityIdentifier("workoutPlansDoneEditingButton")
-                        .accessibilityHint("Exits edit mode.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDoneEditingButton)
+                        .accessibilityHint(AccessibilityText.workoutPlansDoneEditingHint)
                     } else {
                         Menu("Options", systemImage: "ellipsis") {
                             Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
+                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansFavoritesToggle)
+                                .accessibilityHint(AccessibilityText.workoutPlansFavoritesToggleHint)
                             Button("Edit", systemImage: "pencil") {
                                 previousFavoritesState = favoritesOnly
                                 favoritesOnly = false
                                 isEditing = true
                             }
-                            .accessibilityIdentifier("workoutPlansEditButton")
-                            .accessibilityHint("Enters edit mode.")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansEditButton)
+                            .accessibilityHint(AccessibilityText.workoutPlansEditHint)
                         }
-                        .accessibilityIdentifier("workoutPlansOptionsMenu")
-                        .accessibilityHint("Workout Plans list options.")
+                        .accessibilityLabel(AccessibilityText.workoutPlansOptionsMenuLabel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansOptionsMenu)
+                        .accessibilityHint(AccessibilityText.workoutPlansOptionsMenuHint)
                     }
                 }
             }
@@ -94,10 +98,10 @@ struct WorkoutPlansListView: View {
         .overlay(alignment: .center) {
             if workoutPlans.isEmpty {
                 ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Your created workout plans will appear here."))
-                    .accessibilityIdentifier("workoutPlansEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansEmptyState)
             } else if favoritesOnly && filteredWorkoutPlans.isEmpty {
                 ContentUnavailableView("No Favorites", systemImage: "star.slash", description: Text("Mark workout plans as favorite to see them here."))
-                    .accessibilityIdentifier("workoutPlansNoFavoritesState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansNoFavoritesState)
             }
         }
     }

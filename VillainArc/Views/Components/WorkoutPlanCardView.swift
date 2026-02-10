@@ -42,7 +42,7 @@ struct WorkoutPlanCardView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(workoutPlan.title)
         .accessibilityValue("\(workoutPlan.sortedExercises.count) exercises, \(workoutPlan.musclesTargeted())")
-        .accessibilityHint("Shows workout plan details.")
+        .accessibilityHint(AccessibilityText.workoutPlanRowHint)
     }
 }
 

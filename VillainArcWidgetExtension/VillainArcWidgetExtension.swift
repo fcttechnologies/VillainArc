@@ -19,9 +19,10 @@ struct WorkoutLiveActivity: Widget {
                             .font(.headline)
                             .lineLimit(1)
                         Text(context.attributes.startDate, style: .date)
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
+                            .lineLimit(1)
                     }
                     .padding(.leading, 6)
                     .fontDesign(.rounded)
@@ -34,8 +35,7 @@ struct WorkoutLiveActivity: Widget {
                             .bold()
                             .lineLimit(1)
                             .frame(maxWidth: 50)
-                    } else if context.state.isTimerPaused,
-                              let remaining = context.state.timerPausedRemaining {
+                    } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
                         Button(intent: LiveActivityResumeRestTimerIntent()) {
                             HStack(spacing: 4) {
                                 Image(systemName: "pause.fill")
@@ -56,15 +56,14 @@ struct WorkoutLiveActivity: Widget {
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(name)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
+                                    .font(.title3)
                                     .lineLimit(1)
                                 Text(setDescription(context.state))
-                                    .font(.caption)
                                     .foregroundStyle(.secondary)
-                                    .fontWeight(.semibold)
+                                    .lineLimit(1)
                             }
                             .fontDesign(.rounded)
+                            .fontWeight(.semibold)
                             Spacer()
                             Button(intent: LiveActivityCompleteSetIntent()) {
                                 Image(systemName: "checkmark")
@@ -74,16 +73,15 @@ struct WorkoutLiveActivity: Widget {
                         }
                         .padding(.leading, 6)
                     } else if !context.state.hasExercises {
-                        Text("Add an exercise to begin")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .padding(.leading)
-                            .fontWeight(.semibold)
-                            .fontDesign(.rounded)
+                        Button(intent: LiveActivityAddExerciseIntent()) {
+                            Text("Add an exercise to begin")
+                                .fontWeight(.semibold)
+                                .fontDesign(.rounded)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.leading)
                     } else {
                         Text("All sets complete")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                             .padding(.leading)
                             .fontWeight(.semibold)
                             .fontDesign(.rounded)
@@ -126,16 +124,16 @@ struct WorkoutLiveActivityExpandedView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(state.title)
-                        .font(.headline)
+                        .font(.title3)
                         .lineLimit(1)
                     Text(attributes.startDate, style: .date)
-                        .font(.caption)
-                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 .fontDesign(.rounded)
+                .fontWeight(.semibold)
                 Spacer()
                 if state.isTimerRunning, let endDate = state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
@@ -167,11 +165,12 @@ struct WorkoutLiveActivityExpandedView: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(exerciseName)
-                            .font(.headline)
+                            .font(.title3)
                             .lineLimit(1)
                         Text(setDescription(state))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .font(.headline)
                     }
                     .fontDesign(.rounded)
                     .fontWeight(.semibold)
@@ -184,14 +183,17 @@ struct WorkoutLiveActivityExpandedView: View {
                     .buttonStyle(.borderedProminent)
                 }
             } else if !state.hasExercises {
-                Text("Add an exercise to begin")
-                    .foregroundStyle(.secondary)
-                    .fontDesign(.rounded)
-                    .fontWeight(.semibold)
+                Button(intent: LiveActivityAddExerciseIntent()) {
+                    Text("Add an exercise to begin")
+                        .fontDesign(.rounded)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
+                .buttonStyle(.plain)
             } else {
                 Text("All sets complete")
-                    .foregroundStyle(.secondary)
                     .fontDesign(.rounded)
+                    .font(.title3)
                     .fontWeight(.semibold)
             }
         }

@@ -8,6 +8,7 @@ final class AppRouter {
     static let shared = AppRouter()
     var activeWorkoutSession: WorkoutSession?
     var activeWorkoutPlan: WorkoutPlan?
+    var showAddExerciseFromLiveActivity = false
     
     enum Destination: Hashable {
         case workoutSessionsList

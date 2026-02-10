@@ -17,6 +17,8 @@ struct WorkoutView: View {
     @State private var showSaveConfirmation = false
     @State private var autoAdvanceTargetIndex: Int?
     
+    private let router = AppRouter.shared
+
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
@@ -121,6 +123,13 @@ struct WorkoutView: View {
             }
             .onChange(of: workout.activeExercise?.id) {
                 scheduleSave(context: context)
+            }
+            .onChange(of: router.showAddExerciseFromLiveActivity) {
+                if router.showAddExerciseFromLiveActivity {
+                    router.showAddExerciseFromLiveActivity = false
+                    prepareForAddExerciseSheet()
+                    showAddExerciseSheet = true
+                }
             }
             .userActivity("com.villainarc.workoutSession.active", element: workout) { session, activity in
                 activity.title = session.title

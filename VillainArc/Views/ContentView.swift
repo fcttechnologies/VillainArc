@@ -11,18 +11,21 @@ struct ContentView: View {
                 WorkoutSplitSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Workout split")
-                    .accessibilityIdentifier("homeWorkoutSplitSection")
+                    .accessibilityLabel(AccessibilityText.homeWorkoutSplitLabel)
+                    .accessibilityHint(AccessibilityText.homeWorkoutSplitHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.homeWorkoutSplitSection)
                 RecentWorkoutSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Recent workout")
-                    .accessibilityIdentifier("homeRecentWorkoutSection")
+                    .accessibilityLabel(AccessibilityText.homeRecentWorkoutLabel)
+                    .accessibilityHint(AccessibilityText.homeRecentWorkoutHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentWorkoutSection)
                 RecentWorkoutPlanSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Recent workout plan")
-                    .accessibilityIdentifier("homeRecentWorkoutPlanSection")
+                    .accessibilityLabel(AccessibilityText.homeRecentWorkoutPlanLabel)
+                    .accessibilityHint(AccessibilityText.homeRecentWorkoutPlanHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentWorkoutPlanSection)
             }
             .navBar(title: "Home")
             .toolbar {
@@ -33,18 +36,21 @@ struct ContentView: View {
                             router.startWorkoutSession()
                             Task { await IntentDonations.donateStartWorkout() }
                         }
-                        .accessibilityIdentifier("homeStartWorkoutButton")
-                        .accessibilityHint("Starts a new workout session.")
+                        .accessibilityLabel(AccessibilityText.homeStartWorkoutLabel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.homeStartWorkoutButton)
+                        .accessibilityHint(AccessibilityText.homeStartWorkoutHint)
                         Button("Create Workout Plan", systemImage: "list.clipboard") {
                             router.createWorkoutPlan()
                             Task { await IntentDonations.donateCreateWorkoutPlan() }
                         }
-                        .accessibilityIdentifier("homeCreatePlanButton")
-                        .accessibilityHint("Creates a new workout plan.")
+                        .accessibilityLabel(AccessibilityText.homeCreatePlanLabel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.homeCreatePlanButton)
+                        .accessibilityHint(AccessibilityText.homeCreatePlanHint)
                     }
                     .labelStyle(.iconOnly)
-                    .accessibilityIdentifier("homeOptionsMenu")
-                    .accessibilityHint("Shows workout and workout plan options.")
+                    .accessibilityLabel(AccessibilityText.homeOptionsMenuLabel)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.homeOptionsMenu)
+                    .accessibilityHint(AccessibilityText.homeOptionsMenuHint)
                 }
             }
             .task {

@@ -11,7 +11,6 @@ struct WorkoutPlanDetailView: View {
     private let showsUseOnly: Bool
 
     @State private var showDeleteWorkoutPlanConfirmation = false
-    @State private var editWorkoutPlan = false
     @State private var editingCopy: WorkoutPlan?
 
     init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil) {
@@ -82,20 +81,7 @@ struct WorkoutPlanDetailView: View {
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if showsUseOnly {
-                    Button("Use") {
-                        Haptics.selection()
-                        if let onSelect {
-                            onSelect()
-                        } else {
-                            router.startWorkoutSession(from: plan)
-                            Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
-                        }
-                        dismiss()
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailUseButton)
-                    .accessibilityHint("Uses this workout plan.")
-                } else if let onSelect {
+                if let onSelect {
                     Button("Select") {
                         Haptics.selection()
                         onSelect()
@@ -103,31 +89,14 @@ struct WorkoutPlanDetailView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSelectButton)
                     .accessibilityHint("Selects this workout plan.")
-                } else {
+                } else if !showsUseOnly {
                     Menu("Options", systemImage: "ellipsis") {
-                        Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
-                            router.startWorkoutSession(from: plan)
-                            Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
-                            dismiss()
-                        }
-                        .accessibilityIdentifier("workoutPlanDetailStartWorkoutButton")
-                        .accessibilityHint("Starts a workout from this plan.")
-
                         Button("Edit Plan", systemImage: "pencil") {
                             Haptics.selection()
                             editingCopy = plan.createEditingCopy(context: context)
-                            editWorkoutPlan = true
                         }
                         .accessibilityIdentifier("templateDetailEditButton")
                         .accessibilityHint("Edits this template.")
-
-                        Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.slash.fill" : "star.fill") {
-                            Haptics.selection()
-                            plan.favorite.toggle()
-                            saveContext(context: context)
-                        }
-                        .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
-                        .accessibilityHint("Toggles favorite.")
 
                         Button("Delete Workout Plan", systemImage: "trash", role: .destructive) {
                             showDeleteWorkoutPlanConfirmation = true
@@ -147,11 +116,32 @@ struct WorkoutPlanDetailView: View {
                     }
                 }
             }
-        }
-        .fullScreenCover(isPresented: $editWorkoutPlan) {
-            if let copy = editingCopy {
-                WorkoutPlanView(plan: copy)
+            ToolbarItem(placement: .bottomBar) {
+                Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.fill" : "star.slash.fill") {
+                    Haptics.selection()
+                    plan.favorite.toggle()
+                    saveContext(context: context)
+                }
+                .tint(plan.favorite ? .yellow : .primary)
+                .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
+                .accessibilityHint("Toggles favorite.")
             }
+            ToolbarSpacer(.flexible, placement: .bottomBar)
+            
+            ToolbarItem(placement: .bottomBar) {
+                if onSelect == nil {
+                    Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
+                        router.startWorkoutSession(from: plan)
+                        Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
+                        dismiss()
+                    }
+                    .accessibilityIdentifier("workoutPlanDetailStartWorkoutButton")
+                    .accessibilityHint("Starts a workout from this plan.")
+                }
+            }
+        }
+        .fullScreenCover(item: $editingCopy) {
+            WorkoutPlanView(plan: $0)
         }
         .userActivity("com.villainarc.workoutPlan.view", element: plan) { plan, activity in
             activity.title = plan.title

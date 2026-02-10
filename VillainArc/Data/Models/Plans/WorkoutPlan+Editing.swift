@@ -36,14 +36,11 @@ extension WorkoutPlan {
         
         // 3. Delete self (the copy)
         context.delete(self)
-        
-        saveContext(context: context)
     }
     
     // Called on the COPY when user cancels. Deletes copy, original untouched.
     func cancelEditing(context: ModelContext) {
         context.delete(self)
-        saveContext(context: context)
     }
     
     // Called when user deletes the last exercise. Deletes both copy and original.
@@ -53,7 +50,6 @@ extension WorkoutPlan {
             context.delete(original)
         }
         context.delete(self)
-        saveContext(context: context)
     }
 }
 

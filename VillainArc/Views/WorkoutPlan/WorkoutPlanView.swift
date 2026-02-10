@@ -68,6 +68,7 @@ struct WorkoutPlanView: View {
                         if plan.originalPlan != nil {
                             // Editing existing plan - detect changes and apply
                             plan.finishEditing(context: context)
+                            saveContext(context: context)
                             SpotlightIndexer.index(workoutPlan: plan.originalPlan!)
                         } else {
                             // Creating new plan

@@ -85,7 +85,7 @@ class ExercisePrescription {
     }
     
     func reindexSets() {
-        for (index, set) in sets.enumerated() {
+        for (index, set) in sortedSets.enumerated() {
             set.index = index
         }
     }

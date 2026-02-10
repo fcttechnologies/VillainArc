@@ -13,7 +13,7 @@ struct WorkoutSplitSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HomeSectionHeaderButton(title: "Workout Split", accessibilityIdentifier: "workoutSplitLink", accessibilityHint: "Shows your workout split settings.") {
+            HomeSectionHeaderButton(title: "Workout Split", accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitLink, accessibilityHint: AccessibilityText.workoutSplitHeaderHint) {
                 appRouter.navigate(to: .splitList(autoPresentBuilder: false))
             }
 
@@ -32,21 +32,18 @@ struct WorkoutSplitSectionView: View {
     private var content: some View {
         if splits.isEmpty {
             splitUnavailableView(title: "No Workout Split", description: "Create a split to plan your training days.", autoOpenBuilder: true)
-                .accessibilityIdentifier("recentWorkoutSplitEmptyState")
+                .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitEmptyState)
         } else if let activeSplit {
             if let day = activeSplit.todaysSplitDay {
                 activeSplitCard(split: activeSplit, day: day)
-                    .accessibilityIdentifier("recentWorkoutSplitActiveRow")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitActiveRow)
             } else {
                 splitUnavailableView(title: "No Split Day Configured", description: "Add days to your split to get started.")
-                    .accessibilityIdentifier("recentWorkoutSplitNoDayState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoDayState)
             }
         } else {
-            splitUnavailableView(
-                title: "No Active Split",
-                description: "Set one of your splits as active."
-            )
-            .accessibilityIdentifier("recentWorkoutSplitNoActiveState")
+            splitUnavailableView(title: "No Active Split", description: "Set one of your splits as active.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoActiveState)
         }
     }
 
@@ -59,7 +56,10 @@ struct WorkoutSplitSectionView: View {
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .accessibilityHint("Opens workout split settings.")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(description)
+        .accessibilityHint(AccessibilityText.workoutSplitUnavailableHint)
     }
 
     private func activeSplitCard(split: WorkoutSplit, day: WorkoutSplitDay) -> some View {
@@ -89,9 +89,9 @@ struct WorkoutSplitSectionView: View {
                         .font(.title3)
                 }
                 .buttonStyle(.glass)
-                .accessibilityIdentifier("recentWorkoutSplitPlanButton-\(plan.id)")
-                .accessibilityLabel("Open workout plan")
-                .accessibilityHint("Opens the workout plan for today.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitPlanButton(plan))
+                .accessibilityLabel(AccessibilityText.workoutSplitPlanButtonLabel)
+                .accessibilityHint(AccessibilityText.workoutSplitPlanButtonHint)
             }
         }
         .padding()
@@ -100,7 +100,11 @@ struct WorkoutSplitSectionView: View {
         .onTapGesture {
             appRouter.navigate(to: .splitList(autoPresentBuilder: false))
         }
-        .accessibilityHint("Shows workout split details.")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(titleText)
+        .accessibilityValue(subtitleText)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(AccessibilityText.workoutSplitActiveRowHint)
     }
 
     private func activeSplitTitle(for day: WorkoutSplitDay) -> String {

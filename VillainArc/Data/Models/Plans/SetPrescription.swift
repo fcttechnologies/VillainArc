@@ -31,7 +31,7 @@ class SetPrescription {
         }
     }
     
-    // Creation from sessinon performance
+    // Creation from session performance
     init(exercisePrescription: ExercisePrescription, setPerformance: SetPerformance) {
         index = setPerformance.index
         type = setPerformance.type
