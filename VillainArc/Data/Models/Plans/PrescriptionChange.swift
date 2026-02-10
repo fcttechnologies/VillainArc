@@ -60,4 +60,27 @@ class PrescriptionChange {
     var evaluatedAt: Date?                    // When outcome was determined
     
     init() {}
+
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(source: SuggestionSource = .rules, catalogID: String = "", sessionFrom: WorkoutSession? = nil, createdAt: Date = Date(), sourceExercisePerformance: ExercisePerformance? = nil, sourceSetPerformance: SetPerformance? = nil, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, targetPlan: WorkoutPlan? = nil, changeType: ChangeType = .increaseWeight, previousValue: Double? = nil, newValue: Double? = nil, changeReasoning: String? = nil, decision: Decision = .pending, outcome: Outcome = .pending, outcomeReason: String? = nil, evaluatedInSession: WorkoutSession? = nil, evaluatedAt: Date? = nil) {
+        self.init()
+        self.source = source
+        self.catalogID = catalogID
+        self.sessionFrom = sessionFrom
+        self.createdAt = createdAt
+        self.sourceExercisePerformance = sourceExercisePerformance
+        self.sourceSetPerformance = sourceSetPerformance
+        self.targetExercisePrescription = targetExercisePrescription
+        self.targetSetPrescription = targetSetPrescription
+        self.targetPlan = targetPlan
+        self.changeType = changeType
+        self.previousValue = previousValue
+        self.newValue = newValue
+        self.changeReasoning = changeReasoning
+        self.decision = decision
+        self.outcome = outcome
+        self.outcomeReason = outcomeReason
+        self.evaluatedInSession = evaluatedInSession
+        self.evaluatedAt = evaluatedAt
+    }
 }

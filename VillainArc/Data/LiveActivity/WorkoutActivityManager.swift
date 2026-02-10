@@ -72,18 +72,6 @@ enum WorkoutActivityManager {
         let restTimer = RestTimerState.shared
         let activeInfo = workout.activeExerciseAndSet()
 
-        return .init(
-            title: workout.title,
-            exerciseName: activeInfo?.exercise.name,
-            setNumber: activeInfo.map { $0.set.index + 1 },
-            totalSets: activeInfo?.exercise.sortedSets.count,
-            weight: activeInfo?.set.weight,
-            reps: activeInfo?.set.reps,
-            setTypeRawValue: activeInfo?.set.type.displayName,
-            timerEndDate: restTimer.isRunning ? restTimer.endDate : nil,
-            timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil,
-            timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil,
-            hasExercises: !workout.exercises.isEmpty
-        )
+        return .init(title: workout.title, exerciseName: activeInfo?.exercise.name, setNumber: activeInfo.map { $0.set.index + 1 }, totalSets: activeInfo?.exercise.sortedSets.count, weight: activeInfo?.set.weight, reps: activeInfo?.set.reps, setTypeRawValue: activeInfo?.set.type.displayName, timerEndDate: restTimer.isRunning ? restTimer.endDate : nil, timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil, timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil, hasExercises: !workout.exercises.isEmpty)
     }
 }

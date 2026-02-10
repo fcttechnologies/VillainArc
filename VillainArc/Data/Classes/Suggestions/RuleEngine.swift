@@ -28,6 +28,7 @@ struct RuleEngine {
         suggestions.append(contentsOf: reducedWeightToHitReps(context))
         suggestions.append(contentsOf: matchActualWeight(context))
         suggestions.append(contentsOf: stagnationIncreaseRest(context))
+        suggestions.append(contentsOf: volumeRegression(context))
 
         // Set type hygiene (ensure labels match behavior).
         suggestions.append(contentsOf: shortRestPerformanceDrop(context))
@@ -64,39 +65,25 @@ struct RuleEngine {
         var changes: [PrescriptionChange] = []
         let repsReason = "Reset reps to \(lower) to account for the added weight."
 
+        let multiplier = styleIncrementMultiplier(context)
+
         for set in progressionSets {
             guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            // Increment is based on muscle group and weight size.
-            let increment = MetricsCalculator.weightIncrement(for: currentWeight, primaryMuscle: context.prescription.musclesTargeted.first!, equipmentType: context.prescription.equipmentType)
-            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + increment)
+            // Increment is based on muscle group, weight size, and training style.
+            let baseIncrement = weightIncrement(for: currentWeight, context: context)
+            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
                 ? "You hit the top of your rep range (\(upper)) in your last two sessions. Increase weight to keep progressing."
                 : "You hit the top of your rep range (\(upper)) in your last two sessions. Increase weight and keep reps at \(lower)."
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .increaseWeight,
-                previousValue: currentWeight,
-                newValue: newWeight,
-                reasoning: weightReason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: weightReason))
 
             if shouldResetReps {
-                changes.append(makeSetChange(
-                    context: context,
-                    set: set,
-                    setPrescription: setPrescription,
-                    changeType: .decreaseReps,
-                    previousValue: Double(setPrescription.targetReps),
-                    newValue: Double(lower),
-                    reasoning: repsReason
-                ))
+                changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower), reasoning: repsReason))
             }
         }
 
@@ -126,28 +113,17 @@ struct RuleEngine {
 
         var changes: [PrescriptionChange] = []
         let reason = "You exceeded your rep target (\(target)) in your last two sessions. Increase weight to keep progressing."
+        let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
             guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let increment = MetricsCalculator.weightIncrement(
-                for: currentWeight,
-                primaryMuscle: context.prescription.musclesTargeted.first!,
-                equipmentType: context.prescription.equipmentType
-            )
-            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + increment)
+            let baseIncrement = weightIncrement(for: currentWeight, context: context)
+            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .increaseWeight,
-                previousValue: currentWeight,
-                newValue: newWeight,
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: reason))
         }
 
         return changes
@@ -208,15 +184,7 @@ struct RuleEngine {
             let newReps = min(upper, reps + 1)
             guard newReps > setPrescription.targetReps else { continue }
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .increaseReps,
-                previousValue: Double(setPrescription.targetReps),
-                newValue: Double(newReps),
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(newReps), reasoning: reason))
         }
 
         return changes
@@ -271,34 +239,14 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             // Larger jump = 1.5x the usual increment.
-            let baseIncrement = MetricsCalculator.weightIncrement(
-                for: currentWeight,
-                primaryMuscle: context.prescription.musclesTargeted.first!,
-                equipmentType: context.prescription.equipmentType
-            )
+            let baseIncrement = weightIncrement(for: currentWeight, context: context)
             let jumpWeight = currentWeight + (baseIncrement * 1.5)
             let newWeight = MetricsCalculator.roundToNearestPlate(jumpWeight)
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .increaseWeight,
-                previousValue: currentWeight,
-                newValue: newWeight,
-                reasoning: weightReason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: weightReason))
 
             if shouldResetReps, setPrescription.targetReps != lower {
-                changes.append(makeSetChange(
-                    context: context,
-                    set: set,
-                    setPrescription: setPrescription,
-                    changeType: .decreaseReps,
-                    previousValue: Double(setPrescription.targetReps),
-                    newValue: Double(lower),
-                    reasoning: repsReason
-                ))
+                changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower), reasoning: repsReason))
             }
         }
 
@@ -354,22 +302,10 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let decrement = MetricsCalculator.weightIncrement(
-                for: currentWeight,
-                primaryMuscle: context.prescription.musclesTargeted.first!,
-                equipmentType: context.prescription.equipmentType
-            )
+            let decrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(max(0, currentWeight - decrement))
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .decreaseWeight,
-                previousValue: currentWeight,
-                newValue: newWeight,
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: reason))
         }
 
         return changes
@@ -419,15 +355,7 @@ struct RuleEngine {
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
             let reason = "You've used about \(MetricsCalculator.roundToNearestPlate(average)) lbs for three sessions. Update the prescription to match your working weight."
 
-            changes.append(makeSetChange(
-                context: context,
-                set: context.performance.sortedSets[safe: setPrescription.index],
-                setPrescription: setPrescription,
-                changeType: changeType,
-                previousValue: targetWeight,
-                newValue: newWeight,
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: context.performance.sortedSets[safe: setPrescription.index], setPrescription: setPrescription, changeType: changeType, previousValue: targetWeight, newValue: newWeight, reasoning: reason))
         }
 
         return changes
@@ -467,15 +395,7 @@ struct RuleEngine {
 
             let reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
 
-            changes.append(makeSetChange(
-                context: context,
-                set: context.performance.sortedSets[safe: setPrescription.index],
-                setPrescription: setPrescription,
-                changeType: .decreaseWeight,
-                previousValue: setPrescription.targetWeight,
-                newValue: newWeight,
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: context.performance.sortedSets[safe: setPrescription.index], setPrescription: setPrescription, changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight, reasoning: reason))
         }
 
         return changes
@@ -535,15 +455,7 @@ struct RuleEngine {
         if restPolicy.activeMode == .allSame {
             let current = restPolicy.allSameSeconds
             let newValue = current + restIncrement
-            return [
-                makeExerciseChange(
-                    context: context,
-                    changeType: .increaseRestTimeSeconds,
-                    previousValue: Double(current),
-                    newValue: Double(newValue),
-                    reasoning: reason
-                )
-            ]
+            return [makeExerciseChange(context: context, changeType: .increaseRestTimeSeconds, previousValue: Double(current), newValue: Double(newValue), reasoning: reason)]
         }
 
         var changes: [PrescriptionChange] = []
@@ -554,15 +466,7 @@ struct RuleEngine {
             let current = setPrescription.targetRest
             let newValue = current + restIncrement
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .increaseRest,
-                previousValue: Double(current),
-                newValue: Double(newValue),
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue), reasoning: reason))
         }
 
         return changes
@@ -571,7 +475,18 @@ struct RuleEngine {
     private static func stagnationIncreaseRest(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Optimization: if estimated 1RM hasn't improved over 3 sessions AND user is struggling, increase rest.
         let recent = recentPerformances(context)
-        let e1rms = recent.compactMap(\.bestEstimated1RM)
+
+        // Use style-aware e1RM: for top-set styles, measure stagnation from the progression sets only.
+        let e1rms: [Double]
+        switch context.resolvedTrainingStyle {
+        case .topSetBackoffs, .descendingPyramid:
+            e1rms = recent.compactMap { perf in
+                let progressionSets = selectProgressionSets(from: perf, context: context)
+                return progressionSets.compactMap(\.estimated1RM).max()
+            }
+        default:
+            e1rms = recent.compactMap(\.bestEstimated1RM)
+        }
         guard e1rms.count >= 3 else { return [] }
 
         let recent3 = Array(e1rms.prefix(3))
@@ -594,15 +509,7 @@ struct RuleEngine {
         if context.prescription.restTimePolicy.activeMode == .allSame {
             let current = context.prescription.restTimePolicy.allSameSeconds
             let newValue = current + increment
-            return [
-                makeExerciseChange(
-                    context: context,
-                    changeType: .increaseRestTimeSeconds,
-                    previousValue: Double(current),
-                    newValue: Double(newValue),
-                    reasoning: reason
-                )
-            ]
+            return [makeExerciseChange(context: context, changeType: .increaseRestTimeSeconds, previousValue: Double(current), newValue: Double(newValue), reasoning: reason)]
         }
 
         let progressionSets = selectProgressionSets(from: context.performance, context: context)
@@ -616,18 +523,39 @@ struct RuleEngine {
             let current = setPrescription.targetRest
             let newValue = current + increment
 
-            changes.append(makeSetChange(
-                context: context,
-                set: set,
-                setPrescription: setPrescription,
-                changeType: .increaseRest,
-                previousValue: Double(current),
-                newValue: Double(newValue),
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue), reasoning: reason))
         }
 
         return changes
+    }
+
+    private static func volumeRegression(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        // Volume regression: user consistently completes fewer sets than prescribed across 3 sessions -> suggest removing the last set.
+        let prescribedSets = context.prescription.sortedSets
+        let prescribedWorkingSets = prescribedSets.filter { $0.type == .working }
+        guard prescribedWorkingSets.count >= 3 else { return [] } // Need at least 3 prescribed working sets to suggest removing one.
+
+        let recent = recentPerformances(context)
+        guard recent.count >= 3 else { return [] }
+
+        let lastThree = Array(recent.prefix(3))
+        var shortCount = 0
+
+        for performance in lastThree {
+            let completedWorkingSets = performance.sortedSets.filter { $0.type == .working }
+            if completedWorkingSets.count < prescribedWorkingSets.count {
+                shortCount += 1
+            }
+        }
+
+        // Require all 3 recent sessions to show fewer working sets than prescribed.
+        guard shortCount >= 3 else { return [] }
+
+        // The set to remove is the last prescribed working set.
+        let prescribedCount = prescribedWorkingSets.count
+        let reason = "You've completed fewer than the prescribed \(prescribedCount) working sets in your last 3 sessions. Consider removing the last set to match your actual volume."
+
+        return [makeExerciseChange(context: context, changeType: .removeSet, previousValue: Double(prescribedCount), newValue: Double(prescribedCount - 1), reasoning: reason)]
     }
 
     private static func dropSetWithoutBase(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
@@ -651,17 +579,7 @@ struct RuleEngine {
 
         let reason = "Drop sets work best after a heavy working set. Converting the first drop set to regular gives it a proper anchor."
 
-        return [
-            makeSetChange(
-                context: context,
-                set: dropSet,
-                setPrescription: setPrescription,
-                changeType: .changeSetType,
-                previousValue: Double(setPrescription.type.rawValue),
-                newValue: Double(ExerciseSetType.working.rawValue),
-                reasoning: reason
-            )
-        ]
+        return [makeSetChange(context: context, set: dropSet, setPrescription: setPrescription, changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue), reasoning: reason)]
     }
 
     private static func progressionWeightChangeIndices(_ context: ExerciseSuggestionContext) -> Set<Int> {
@@ -741,15 +659,7 @@ struct RuleEngine {
             guard hitCount >= 2 else { continue }
 
             let reason = "This warmup set is within 10% of your top working weight in recent sessions. Consider marking it as a regular set."
-            changes.append(makeSetChange(
-                context: context,
-                set: sourceSet,
-                setPrescription: setPrescription,
-                changeType: .changeSetType,
-                previousValue: Double(setPrescription.type.rawValue),
-                newValue: Double(ExerciseSetType.working.rawValue),
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: sourceSet, setPrescription: setPrescription, changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue), reasoning: reason))
         }
 
         return changes
@@ -785,15 +695,7 @@ struct RuleEngine {
             guard hitCount >= 2 else { continue }
 
             let reason = "This set is much lighter than your top working weight. Consider marking it as a warmup."
-            changes.append(makeSetChange(
-                context: context,
-                set: sourceSet,
-                setPrescription: setPrescription,
-                changeType: .changeSetType,
-                previousValue: Double(setPrescription.type.rawValue),
-                newValue: Double(ExerciseSetType.warmup.rawValue),
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: sourceSet, setPrescription: setPrescription, changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.warmup.rawValue), reasoning: reason))
         }
 
         return changes
@@ -851,15 +753,7 @@ struct RuleEngine {
 
             let reason = "You've logged this set as \(firstType.displayName) for the last two sessions. Update the prescription to match."
 
-            changes.append(makeSetChange(
-                context: context,
-                set: sourceSet,
-                setPrescription: setPrescription,
-                changeType: .changeSetType,
-                previousValue: Double(setPrescription.type.rawValue),
-                newValue: Double(firstType.rawValue),
-                reasoning: reason
-            ))
+            changes.append(makeSetChange(context: context, set: sourceSet, setPrescription: setPrescription, changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(firstType.rawValue), reasoning: reason))
         }
 
         return changes
@@ -867,6 +761,17 @@ struct RuleEngine {
 
     private static func selectProgressionSets(from performance: ExercisePerformance, context: ExerciseSuggestionContext) -> [SetPerformance] {
         MetricsCalculator.selectProgressionSets(from: performance, overrideStyle: context.resolvedTrainingStyle)
+    }
+
+    /// Returns a multiplier for weight increments based on training style.
+    /// Top-set styles can handle slightly larger jumps because backoff volume provides recovery stimulus.
+    private static func styleIncrementMultiplier(_ context: ExerciseSuggestionContext) -> Double {
+        switch context.resolvedTrainingStyle {
+        case .topSetBackoffs:
+            return 1.25
+        default:
+            return 1.0
+        }
     }
 
     private static func repFloor(_ context: ExerciseSuggestionContext) -> Int? {
@@ -894,43 +799,17 @@ struct RuleEngine {
         return prescription.sortedSets[safe: set.index]
     }
 
+    private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
+        MetricsCalculator.weightIncrement(for: weight, primaryMuscle: context.prescription.musclesTargeted.first!, equipmentType: context.prescription.equipmentType)
+    }
+
     private static func makeSetChange(context: ExerciseSuggestionContext, set: SetPerformance?, setPrescription: SetPrescription, changeType: ChangeType, previousValue: Double, newValue: Double, reasoning: String) -> PrescriptionChange {
         // Build a set-scoped suggestion change record.
-        let change = PrescriptionChange()
-        change.source = .rules
-        change.catalogID = context.prescription.catalogID
-        change.sessionFrom = context.session
-        change.createdAt = Date()
-        change.sourceExercisePerformance = context.performance
-        change.sourceSetPerformance = set
-        change.targetExercisePrescription = context.prescription
-        change.targetSetPrescription = setPrescription
-        change.targetPlan = context.plan
-        change.changeType = changeType
-        change.previousValue = previousValue
-        change.newValue = newValue
-        change.changeReasoning = reasoning
-        change.decision = .pending
-        change.outcome = .pending
-        return change
+        return PrescriptionChange(source: .rules, catalogID: context.prescription.catalogID, sessionFrom: context.session, sourceExercisePerformance: context.performance, sourceSetPerformance: set, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, targetPlan: context.plan, changeType: changeType, previousValue: previousValue, newValue: newValue, changeReasoning: reasoning)
     }
 
     private static func makeExerciseChange(context: ExerciseSuggestionContext, changeType: ChangeType, previousValue: Double, newValue: Double, reasoning: String) -> PrescriptionChange {
         // Build an exercise-level suggestion change record.
-        let change = PrescriptionChange()
-        change.source = .rules
-        change.catalogID = context.prescription.catalogID
-        change.sessionFrom = context.session
-        change.createdAt = Date()
-        change.sourceExercisePerformance = context.performance
-        change.targetExercisePrescription = context.prescription
-        change.targetPlan = context.plan
-        change.changeType = changeType
-        change.previousValue = previousValue
-        change.newValue = newValue
-        change.changeReasoning = reasoning
-        change.decision = .pending
-        change.outcome = .pending
-        return change
+        return PrescriptionChange(source: .rules, catalogID: context.prescription.catalogID, sessionFrom: context.session, sourceExercisePerformance: context.performance, targetExercisePrescription: context.prescription, targetPlan: context.plan, changeType: changeType, previousValue: previousValue, newValue: newValue, changeReasoning: reasoning)
     }
 }

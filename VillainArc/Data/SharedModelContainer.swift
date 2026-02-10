@@ -31,18 +31,12 @@ enum SharedModelContainer {
             if let url = FileManager.default
                 .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
                 .appendingPathComponent("VillainArc.store") {
-                configuration = ModelConfiguration(
-                    schema: schema,
-                    url: url
-                )
+                configuration = ModelConfiguration(schema: schema, url: url)
             } else {
                 configuration = ModelConfiguration(schema: schema)
             }
 
-            return try ModelContainer(
-                for: schema,
-                configurations: [configuration]
-            )
+            return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
             fatalError("Failed to create shared ModelContainer: \(error)")
         }

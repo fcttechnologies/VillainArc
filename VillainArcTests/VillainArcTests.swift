@@ -91,15 +91,7 @@ struct VillainArcTests {
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
 
-        let deferredDecrease = PrescriptionChange()
-        deferredDecrease.source = .rules
-        deferredDecrease.changeType = .decreaseWeight
-        deferredDecrease.previousValue = 135
-        deferredDecrease.newValue = 125
-        deferredDecrease.targetSetPrescription = data.benchSet1
-        deferredDecrease.targetExercisePrescription = data.bench
-        deferredDecrease.catalogID = data.bench.catalogID
-        deferredDecrease.decision = .deferred
+        let deferredDecrease = PrescriptionChange(source: .rules, catalogID: data.bench.catalogID, targetExercisePrescription: data.bench, targetSetPrescription: data.benchSet1, changeType: .decreaseWeight, previousValue: 135, newValue: 125, decision: .deferred)
         context.insert(deferredDecrease)
 
         let editCopy = data.plan.createEditingCopy(context: context)
@@ -141,15 +133,7 @@ struct VillainArcTests {
         #expect(inclineSet != nil)
         guard let inclineSet else { return }
 
-        let setChange = PrescriptionChange()
-        setChange.source = .rules
-        setChange.changeType = .increaseReps
-        setChange.previousValue = Double(inclineSet.targetReps)
-        setChange.newValue = Double(inclineSet.targetReps + 2)
-        setChange.targetSetPrescription = inclineSet
-        setChange.targetExercisePrescription = data.incline
-        setChange.catalogID = data.incline.catalogID
-        setChange.decision = .accepted
+        let setChange = PrescriptionChange(source: .rules, catalogID: data.incline.catalogID, targetExercisePrescription: data.incline, targetSetPrescription: inclineSet, changeType: .increaseReps, previousValue: Double(inclineSet.targetReps), newValue: Double(inclineSet.targetReps + 2), decision: .accepted)
         context.insert(setChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)
@@ -176,14 +160,7 @@ struct VillainArcTests {
         guard let flysRuleChange else { return }
         flysRuleChange.decision = .deferred
 
-        let acceptedChange = PrescriptionChange()
-        acceptedChange.source = .rules
-        acceptedChange.changeType = .changeRestTimeMode
-        acceptedChange.previousValue = Double(RestTimeMode.allSame.rawValue)
-        acceptedChange.newValue = Double(RestTimeMode.individual.rawValue)
-        acceptedChange.targetExercisePrescription = data.flys
-        acceptedChange.catalogID = data.flys.catalogID
-        acceptedChange.decision = .accepted
+        let acceptedChange = PrescriptionChange(source: .rules, catalogID: data.flys.catalogID, targetExercisePrescription: data.flys, changeType: .changeRestTimeMode, previousValue: Double(RestTimeMode.allSame.rawValue), newValue: Double(RestTimeMode.individual.rawValue), decision: .accepted)
         context.insert(acceptedChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)

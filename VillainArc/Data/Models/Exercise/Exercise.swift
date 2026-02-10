@@ -52,6 +52,38 @@ class Exercise {
         return true
     }
 
+    @MainActor
+    @discardableResult
+    func applyCatalogItem(_ catalogItem: ExerciseCatalogItem) -> Bool {
+        var didChange = false
+        var needsSearchIndex = false
+
+        if name != catalogItem.name {
+            name = catalogItem.name
+            didChange = true
+            needsSearchIndex = true
+        }
+        if musclesTargeted != catalogItem.musclesTargeted {
+            musclesTargeted = catalogItem.musclesTargeted
+            didChange = true
+            needsSearchIndex = true
+        }
+        if aliases != catalogItem.aliases {
+            aliases = catalogItem.aliases
+            didChange = true
+            needsSearchIndex = true
+        }
+        if equipmentType != catalogItem.equipmentType {
+            equipmentType = catalogItem.equipmentType
+            didChange = true
+            needsSearchIndex = true
+        }
+        if needsSearchIndex {
+            didChange = rebuildSearchData() || didChange
+        }
+        return didChange
+    }
+
     static let singleWordAbbreviations: [String: String] = [
         "db": "dumbbell",
         "bb": "barbell"

@@ -253,15 +253,7 @@ struct WorkoutSplitCreationView: View {
                     draggingRotationDay = day
                     return NSItemProvider(object: "\(day.index)" as NSString)
                 }
-                .onDrop(of: [UTType.text], delegate: RotationDropDelegate(
-                    targetDay: day,
-                    draggingDay: $draggingRotationDay,
-                    onMove: { from, to in
-                        withAnimation(.snappy) {
-                            moveRotationDay(from: from, to: to)
-                        }
-                    }
-                ))
+                .onDrop(of: [UTType.text], delegate: RotationDropDelegate(targetDay: day, draggingDay: $draggingRotationDay, onMove: { from, to in withAnimation(.snappy) { moveRotationDay(from: from, to: to) } }))
         }
     }
     

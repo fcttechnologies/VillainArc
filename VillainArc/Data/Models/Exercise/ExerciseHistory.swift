@@ -203,12 +203,8 @@ class ExerciseHistory {
         guard !recent.isEmpty else { return }
         
         // Average weight (top set weight per session)
-        let weights = recent.compactMap { perf -> Double? in
-            perf.sortedSets.filter { $0.type == .working }
-                .map { $0.weight }
-                .max()
-        }
-        last3AvgWeight = weights.isEmpty ? 0 : weights.reduce(0, +) / Double(weights.count)
+        let weights = recent.compactMap { topWorkingWeight(in: $0) }
+        last3AvgWeight = average(weights)
         
         // Average volume
         let volumes = recent.map { $0.totalVolume }
@@ -273,17 +269,8 @@ class ExerciseHistory {
         let previous3 = Array(performances.dropFirst(3).prefix(3))
         
         // Compare average weight
-        let recentAvgWeight = recent3.compactMap { perf -> Double? in
-            perf.sortedSets.filter { $0.type == .working }
-                .map { $0.weight }
-                .max()
-        }.reduce(0, +) / 3.0
-        
-        let previousAvgWeight = previous3.compactMap { perf -> Double? in
-            perf.sortedSets.filter { $0.type == .working }
-                .map { $0.weight }
-                .max()
-        }.reduce(0, +) / 3.0
+        let recentAvgWeight = averageTopWorkingWeight(in: recent3, divisor: 3.0)
+        let previousAvgWeight = averageTopWorkingWeight(in: previous3, divisor: 3.0)
         
         let weightChange = recentAvgWeight - previousAvgWeight
         let changePercent = previousAvgWeight > 0 ? (weightChange / previousAvgWeight) * 100 : 0
@@ -309,11 +296,7 @@ class ExerciseHistory {
                 .map { $0.weight }
                 .max() ?? 0
             
-            let point = ProgressionPoint(
-                date: perf.date,
-                weight: topWeight,
-                volume: perf.totalVolume
-            )
+            let point = ProgressionPoint(date: perf.date, weight: topWeight, volume: perf.totalVolume)
             progressionPoints.append(point)
         }
     }
@@ -323,6 +306,22 @@ class ExerciseHistory {
         let sorted = values.sorted()
         let mid = sorted.count / 2
         return sorted[mid]
+    }
+
+    private func topWorkingWeight(in performance: ExercisePerformance) -> Double? {
+        performance.sortedSets
+            .filter { $0.type == .working }
+            .map { $0.weight }
+            .max()
+    }
+
+    private func average(_ values: [Double]) -> Double {
+        values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
+    }
+
+    private func averageTopWorkingWeight(in performances: [ExercisePerformance], divisor: Double) -> Double {
+        let weights = performances.compactMap { topWorkingWeight(in: $0) }
+        return weights.reduce(0, +) / divisor
     }
     
     // MARK: - Fetch Descriptors
@@ -338,4 +337,3 @@ class ExerciseHistory {
         FetchDescriptor(sortBy: [SortDescriptor(\ExerciseHistory.lastUpdated, order: .reverse)])
     }
 }
-

@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 
-
 struct SuggestionReviewView: View {
     let sections: [ExerciseSuggestionSection]
     let onAcceptGroup: ([PrescriptionChange]) -> Void
@@ -29,13 +28,7 @@ struct SuggestionReviewView: View {
                             .fontDesign(.rounded)
                         
                         ForEach(section.groups, id: \.id) { group in
-                            SuggestionGroupRow(
-                                group: group,
-                                onAccept: { onAcceptGroup(group.changes) },
-                                onReject: { onRejectGroup(group.changes) },
-                                onDefer: onDeferGroup != nil ? { onDeferGroup?(group.changes) } : nil,
-                                showDecisionState: showDecisionState
-                            )
+                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group.changes) }, onReject: { onRejectGroup(group.changes) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group.changes) } : nil, showDecisionState: showDecisionState)
                         }
                     }
                 }
@@ -79,10 +72,7 @@ struct SuggestionGroupRow: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(group.changes, id: \.id) { change in
-                    ChangeDescriptionRow(
-                        change: change,
-                        showReasoning: shouldShowChangeReasoning(for: change)
-                    )
+                    ChangeDescriptionRow(change: change, showReasoning: shouldShowChangeReasoning(for: change))
                 }
             }
             
@@ -284,6 +274,10 @@ struct ChangeDescriptionRow: View {
             return restTimeModeDescription(newModeRaw: Int(new))
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return "Rest time: \(Int(previous))s → \(Int(new))s"
+            
+        // Structure
+        case .removeSet:
+            return "Working sets: \(Int(previous)) → \(Int(new))"
         }
     }
     
@@ -348,6 +342,12 @@ func applyChange(_ change: PrescriptionChange) {
         change.targetExercisePrescription?.restTimePolicy.activeMode = RestTimeMode(rawValue: Int(change.newValue ?? 0)) ?? .individual
     case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
         change.targetExercisePrescription?.restTimePolicy.allSameSeconds = Int(change.newValue ?? 0)
+    case .removeSet:
+        // Remove the last working set from the prescription.
+        if let prescription = change.targetExercisePrescription,
+           let lastWorkingSet = prescription.sortedSets.last(where: { $0.type == .working }) {
+            prescription.deleteSet(lastWorkingSet)
+        }
     }
 }
 

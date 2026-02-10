@@ -8,12 +8,7 @@ struct WorkoutsListView: View {
     @State private var isEditing = false
     
     private var editModeBinding: Binding<EditMode> {
-        Binding(
-            get: { isEditing ? .active : .inactive },
-            set: { newValue in
-                isEditing = newValue == .active
-            }
-        )
+        Binding(get: { isEditing ? .active : .inactive }, set: { newValue in isEditing = newValue == .active })
     }
 
     var body: some View {

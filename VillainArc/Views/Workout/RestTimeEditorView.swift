@@ -75,17 +75,11 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     }
     
     private func policyBinding(_ keyPath: ReferenceWritableKeyPath<RestTimePolicy, Int>) -> Binding<Int> {
-        Binding(
-            get: { restTimePolicy[keyPath: keyPath] },
-            set: { restTimePolicy[keyPath: keyPath] = $0 }
-        )
+        Binding(get: { restTimePolicy[keyPath: keyPath] }, set: { restTimePolicy[keyPath: keyPath] = $0 })
     }
     
     private func restSecondsBinding(for set: ExerciseType.SetType) -> Binding<Int> {
-        Binding(
-            get: { set.restSeconds },
-            set: { set.restSeconds = $0 }
-        )
+        Binding(get: { set.restSeconds }, set: { set.restSeconds = $0 })
     }
     
     private var modeFooterText: String {

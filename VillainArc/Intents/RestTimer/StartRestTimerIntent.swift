@@ -12,12 +12,7 @@ struct StartRestTimerIntent: AppIntent {
         Summary("Start rest timer for \(\.$duration)")
     }
 
-    @Parameter(
-        title: "Duration",
-        defaultUnit: .seconds,
-        supportsNegativeNumbers: false,
-        requestValueDialog: IntentDialog("How long should the rest timer be?")
-    )
+    @Parameter(title: "Duration", defaultUnit: .seconds, supportsNegativeNumbers: false, requestValueDialog: IntentDialog("How long should the rest timer be?"))
     var duration: Measurement<UnitDuration>
 
     @MainActor

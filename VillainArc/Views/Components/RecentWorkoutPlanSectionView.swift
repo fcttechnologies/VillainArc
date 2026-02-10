@@ -7,25 +7,10 @@ struct RecentWorkoutPlanSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button {
+            HomeSectionHeaderButton(title: "Workout Plans", accessibilityIdentifier: "allWorkoutPlansLink", accessibilityHint: "Shows all your workout plans.") {
                 appRouter.navigate(to: .workoutPlansList)
                 Task { await IntentDonations.donateShowWorkoutPlans() }
-            } label: {
-                HStack(spacing: 1) {
-                    Text("Workout Plans")
-                        .font(.title2)
-                        .fontDesign(.rounded)
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.secondary)
-                        .font(.title3)
-                }
-                .fontWeight(.semibold)
-                .accessibilityElement(children: .combine)
             }
-            .buttonStyle(.plain)
-            .padding(.leading, 10)
-            .accessibilityIdentifier("allWorkoutPlansLink")
-            .accessibilityHint("Shows all your workout plans.")
 
             if recentWorkoutPlan.isEmpty {
                 ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Click the '\(Image(systemName: "plus"))' to create a workout plan."))

@@ -26,9 +26,7 @@ struct VillainArcApp: App {
                         AppRouter.shared.handleSiriCancelWorkout(userActivity)
                     }
                 }
-                .onContinueUserActivity("com.villainarc.siri.endWorkout") { _ in
-                    // Just opens the app — user finishes via normal UI
-                }
+                .onContinueUserActivity("com.villainarc.siri.endWorkout") { _ in }
         }
         .modelContainer(SharedModelContainer.container)
     }

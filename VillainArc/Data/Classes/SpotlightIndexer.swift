@@ -18,11 +18,7 @@ enum SpotlightIndexer {
         attributes.displayName = displayTitle
         attributes.contentDescription = workoutSession.spotlightSummary
         attributes.keywords = workoutSession.sortedExercises.map(\.name) + ["Workout"]
-        let item = CSSearchableItem(
-            uniqueIdentifier: workoutSessionIdentifierPrefix + workoutSession.id.uuidString,
-            domainIdentifier: workoutSessionDomainIdentifier,
-            attributeSet: attributes
-        )
+        let item = CSSearchableItem(uniqueIdentifier: workoutSessionIdentifierPrefix + workoutSession.id.uuidString, domainIdentifier: workoutSessionDomainIdentifier, attributeSet: attributes)
         item.associateAppEntity(WorkoutSessionEntity(workoutSession: workoutSession), priority: 1)
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }
@@ -33,11 +29,7 @@ enum SpotlightIndexer {
         attributes.displayName = workoutPlan.title
         attributes.contentDescription = workoutPlan.spotlightSummary
         attributes.keywords = workoutPlan.sortedExercises.map(\.name) + ["Workout Plan"]
-        let item = CSSearchableItem(
-            uniqueIdentifier: workoutPlanIdentifierPrefix + workoutPlan.id.uuidString,
-            domainIdentifier: workoutPlanDomainIdentifier,
-            attributeSet: attributes
-        )
+        let item = CSSearchableItem(uniqueIdentifier: workoutPlanIdentifierPrefix + workoutPlan.id.uuidString, domainIdentifier: workoutPlanDomainIdentifier, attributeSet: attributes)
         item.associateAppEntity(WorkoutPlanEntity(workoutPlan: workoutPlan), priority: 1)
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }
@@ -49,11 +41,7 @@ enum SpotlightIndexer {
         attributes.alternateNames = exercise.aliases
         attributes.contentDescription = exercise.displayMuscles
         attributes.keywords = [exercise.name] + exercise.aliases + ["Exercise"]
-        let item = CSSearchableItem(
-            uniqueIdentifier: exerciseIdentifierPrefix + exercise.catalogID,
-            domainIdentifier: exerciseDomainIdentifier,
-            attributeSet: attributes
-        )
+        let item = CSSearchableItem(uniqueIdentifier: exerciseIdentifierPrefix + exercise.catalogID, domainIdentifier: exerciseDomainIdentifier, attributeSet: attributes)
         item.associateAppEntity(ExerciseEntity(exercise: exercise), priority: 1)
         CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
     }

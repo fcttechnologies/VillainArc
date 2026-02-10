@@ -54,29 +54,11 @@ extension WorkoutPlanEntity {
         summary = workoutPlan.spotlightSummary
         let exercises = workoutPlan.sortedExercises
         exerciseNames = exercises.map(\.name)
-        fullContent = WorkoutPlanFullContent(
-            id: workoutPlan.id,
-            title: workoutPlan.title,
-            summary: workoutPlan.spotlightSummary,
-            notes: workoutPlan.notes.isEmpty ? nil : workoutPlan.notes,
-            exercises: exercises.map { exercise in
-                WorkoutPlanFullContent.Exercise(
-                    index: exercise.index,
-                    name: exercise.name,
-                    notes: exercise.notes.isEmpty ? nil : exercise.notes,
-                    muscles: exercise.musclesTargeted.map(\.rawValue),
-                    sets: exercise.sortedSets.map { set in
-                        WorkoutPlanFullContent.Exercise.SetEntry(
-                            index: set.index,
-                            type: set.type.displayName,
-                            targetReps: set.targetReps,
-                            targetWeight: set.targetWeight,
-                            targetRestSeconds: set.targetRest
-                        )
-                    }
-                )
-            }
-        )
+        fullContent = WorkoutPlanFullContent(id: workoutPlan.id, title: workoutPlan.title, summary: workoutPlan.spotlightSummary, notes: workoutPlan.notes.isEmpty ? nil : workoutPlan.notes, exercises: exercises.map { exercise in
+            WorkoutPlanFullContent.Exercise(index: exercise.index, name: exercise.name, notes: exercise.notes.isEmpty ? nil : exercise.notes, muscles: exercise.musclesTargeted.map(\.rawValue), sets: exercise.sortedSets.map { set in
+                WorkoutPlanFullContent.Exercise.SetEntry(index: set.index, type: set.type.displayName, targetReps: set.targetReps, targetWeight: set.targetWeight, targetRestSeconds: set.targetRest)
+            })
+        })
     }
 }
 

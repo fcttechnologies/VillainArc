@@ -14,6 +14,7 @@ struct SuggestionGroup: Identifiable {
         switch policy {
         case .repRange: return "Rep Range"
         case .restTime: return "Rest Time"
+        case .structure: return "Volume"
         case nil: return "Settings"
         }
     }
@@ -44,21 +45,13 @@ func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSec
         // Group set changes by setID (one group per set).
         let bySet = Dictionary(grouping: setChanges) { $0.targetSetPrescription!.id }
         for (_, changes) in bySet {
-            groups.append(SuggestionGroup(
-                changes: sortedChanges(changes, policy: nil),
-                setPrescription: changes.first?.targetSetPrescription,
-                policy: nil
-            ))
+            groups.append(SuggestionGroup(changes: sortedChanges(changes, policy: nil), setPrescription: changes.first?.targetSetPrescription, policy: nil))
         }
         
         // Group exercise-level changes by policy (rep range vs rest time).
         let byPolicy = Dictionary(grouping: exerciseLevelChanges) { $0.changeType.policy }
         for (policy, changes) in byPolicy {
-            groups.append(SuggestionGroup(
-                changes: sortedChanges(changes, policy: policy),
-                setPrescription: nil,
-                policy: policy
-            ))
+            groups.append(SuggestionGroup(changes: sortedChanges(changes, policy: policy), setPrescription: nil, policy: policy))
         }
         
         // Sort: set groups by index, then exercise-level policies.
@@ -122,6 +115,8 @@ private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> I
         return 3
     case .changeSetType:
         return 4
+    case .removeSet:
+        return 5
     case .changeRepRangeMode,
          .increaseRepRangeLower, .decreaseRepRangeLower,
          .increaseRepRangeUpper, .decreaseRepRangeUpper,

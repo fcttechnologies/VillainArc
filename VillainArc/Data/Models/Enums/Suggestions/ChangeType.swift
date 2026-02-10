@@ -4,6 +4,7 @@ import FoundationModels
 enum ChangePolicy: String, Codable {
     case repRange
     case restTime
+    case structure
 }
 
 @Generable
@@ -16,6 +17,9 @@ enum ChangeType: String, Codable {
     case increaseRest = "Increase Rest"
     case decreaseRest = "Decrease Rest"
     case changeSetType = "Change Set Type"
+    
+    // Exercise-level structure
+    case removeSet = "Remove Set"                             // drop the last set (volume regression)
     
     // Exercise-level rep range (target exercise, not set)
     case increaseRepRangeLower = "Increase Rep Range Lower"   // e.g., 8 → 10
@@ -39,6 +43,8 @@ enum ChangeType: String, Codable {
             return .repRange
         case .changeRestTimeMode, .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return .restTime
+        case .removeSet:
+            return .structure
         default:
             return nil  // Set-level changes
         }

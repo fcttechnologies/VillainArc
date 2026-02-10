@@ -307,7 +307,5 @@ enum ExerciseCatalog {
         .init(id: "hip_abduction_machine", name: "Hip Abduction Machine", musclesTargeted: [.glutes, .abductors], equipmentType: .machine),
         .init(id: "machine_adductor", name: "Machine Adductor", musclesTargeted: [.adductors], equipmentType: .machine)
     ]
-    nonisolated static let byID: [String: ExerciseCatalogItem] = Dictionary(
-        uniqueKeysWithValues: all.map { ($0.id, $0) }
-    )
+    nonisolated static let byID: [String: ExerciseCatalogItem] = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
 }

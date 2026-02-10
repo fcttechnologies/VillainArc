@@ -124,10 +124,7 @@ extension AIExercisePrescriptionSnapshot {
             self.repRangeUpper = nil
             self.repRangeTarget = nil
         }
-        self.restTimePolicy = AIRestTimePolicy(
-            mode: AIRestTimeMode(from: prescription.restTimePolicy.activeMode),
-            allSameSeconds: prescription.restTimePolicy.allSameSeconds
-        )
+        self.restTimePolicy = AIRestTimePolicy(mode: AIRestTimeMode(from: prescription.restTimePolicy.activeMode), allSameSeconds: prescription.restTimePolicy.allSameSeconds)
         self.sets = prescription.sortedSets.map { AISetPrescriptionSnapshot(from: $0) }
     }
 }
@@ -154,6 +151,8 @@ struct AIOutcomeGroupInput: Equatable, Sendable {
     let triggerPerformance: AIExercisePerformanceSnapshot
     @Guide(description: "What the user actually performed in the evaluation session (this time).")
     let actualPerformance: AIExercisePerformanceSnapshot
+    @Guide(description: "How the user structures their sets: Straight Sets, Ascending Pyramid, Descending Pyramid, Ascending, Top Set Then Backoffs, or Unknown. Use this to focus evaluation on the right sets.")
+    let trainingStyle: TrainingStyle?
     @Guide(description: "Rule engine outcome for this group, if available. Nil means rules were inconclusive.")
     let ruleOutcome: AIOutcome?
     @Guide(description: "Rule engine confidence (0.0–1.0). Nil if rules were inconclusive.")

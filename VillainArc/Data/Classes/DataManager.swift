@@ -20,21 +20,9 @@ import SwiftData
         for (catalogID, duplicates) in grouped where duplicates.count > 1 {
             let primary = primaryExercise(from: duplicates)
             if let catalogItem = ExerciseCatalog.byID[catalogID] {
-                if primary.name != catalogItem.name {
-                    primary.name = catalogItem.name
-                    didChange = true
-                }
-                if primary.musclesTargeted != catalogItem.musclesTargeted {
-                    primary.musclesTargeted = catalogItem.musclesTargeted
-                    didChange = true
-                }
-                if primary.aliases != catalogItem.aliases {
-                    primary.aliases = catalogItem.aliases
-                    didChange = true
-                }
+                didChange = primary.applyCatalogItem(catalogItem) || didChange
             }
             didChange = mergeDuplicates(duplicates, keeping: primary, context: context) || didChange
-            didChange = primary.rebuildSearchData() || didChange
         }
 
         if didChange {
@@ -50,30 +38,7 @@ import SwiftData
 
         for catalogItem in ExerciseCatalog.all {
             if let existing = exercisesByCatalogID[catalogItem.id] {
-                var needsSearchIndex = false
-                if existing.name != catalogItem.name {
-                    existing.name = catalogItem.name
-                    didChange = true
-                    needsSearchIndex = true
-                }
-                if existing.musclesTargeted != catalogItem.musclesTargeted {
-                    existing.musclesTargeted = catalogItem.musclesTargeted
-                    didChange = true
-                    needsSearchIndex = true
-                }
-                if existing.aliases != catalogItem.aliases {
-                    existing.aliases = catalogItem.aliases
-                    didChange = true
-                    needsSearchIndex = true
-                }
-                if existing.equipmentType != catalogItem.equipmentType {
-                    existing.equipmentType = catalogItem.equipmentType
-                    didChange = true
-                    needsSearchIndex = true
-                }
-                if needsSearchIndex {
-                    didChange = existing.rebuildSearchData() || didChange
-                }
+                didChange = existing.applyCatalogItem(catalogItem) || didChange
             } else {
                 let newExercise = Exercise(from: catalogItem)
                 context.insert(newExercise)

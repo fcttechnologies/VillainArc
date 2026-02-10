@@ -21,19 +21,7 @@ struct DeferredSuggestionsView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    SuggestionReviewView(
-                        sections: sections,
-                        onAcceptGroup: { changes in
-                            acceptGroup(changes, context: context)
-                            refreshSections()
-                        },
-                        onRejectGroup: { changes in
-                            rejectGroup(changes, context: context)
-                            refreshSections()
-                        },
-                        onDeferGroup: nil,  // No defer option in pre-workout
-                        showDecisionState: true
-                    )
+                    SuggestionReviewView(sections: sections, onAcceptGroup: { changes in acceptGroup(changes, context: context); refreshSections() }, onRejectGroup: { changes in rejectGroup(changes, context: context); refreshSections() }, onDeferGroup: nil, showDecisionState: true)
                 }
                 .fontDesign(.rounded)
                 .padding()

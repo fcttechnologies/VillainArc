@@ -21,6 +21,15 @@ class SetPrescription {
         self.targetReps = targetReps
         self.targetRest = targetRest
     }
+
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(exercisePrescription: ExercisePrescription, setType: ExerciseSetType, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, index: Int? = nil) {
+        self.init(exercisePrescription: exercisePrescription, targetWeight: targetWeight, targetReps: targetReps, targetRest: targetRest)
+        self.type = setType
+        if let index {
+            self.index = index
+        }
+    }
     
     // Creation from sessinon performance
     init(exercisePrescription: ExercisePrescription, setPerformance: SetPerformance) {

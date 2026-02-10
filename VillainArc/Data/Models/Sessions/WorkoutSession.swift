@@ -32,7 +32,18 @@ class WorkoutSession {
     
     // New session
     init() {}
-    
+
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil, origin: SessionOrigin = .freeform) {
+        self.init()
+        self.title = title
+        self.notes = notes
+        self.statusValue = status
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.origin = origin
+    }
+
     // From workout plan
     init(from plan: WorkoutPlan) {
         title = plan.title

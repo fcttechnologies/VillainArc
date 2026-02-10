@@ -11,12 +11,7 @@ struct WorkoutPlansListView: View {
     @State private var previousFavoritesState = false
     
     private var editModeBinding: Binding<EditMode> {
-        Binding(
-            get: { isEditing ? .active : .inactive },
-            set: { newValue in
-                isEditing = newValue == .active
-            }
-        )
+        Binding(get: { isEditing ? .active : .inactive }, set: { newValue in isEditing = newValue == .active })
     }
     
     var filteredWorkoutPlans: [WorkoutPlan] {

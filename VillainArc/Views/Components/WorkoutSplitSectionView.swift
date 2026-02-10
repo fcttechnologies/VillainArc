@@ -13,24 +13,9 @@ struct WorkoutSplitSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button {
+            HomeSectionHeaderButton(title: "Workout Split", accessibilityIdentifier: "workoutSplitLink", accessibilityHint: "Shows your workout split settings.") {
                 appRouter.navigate(to: .splitList(autoPresentBuilder: false))
-            } label: {
-                HStack(spacing: 1) {
-                    Text("Workout Split")
-                        .font(.title2)
-                        .fontDesign(.rounded)
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.secondary)
-                        .font(.title3)
-                }
-                .fontWeight(.semibold)
-                .accessibilityElement(children: .combine)
             }
-            .buttonStyle(.plain)
-            .padding(.leading, 10)
-            .accessibilityIdentifier("workoutSplitLink")
-            .accessibilityHint("Shows your workout split settings.")
 
             content
         }
@@ -46,22 +31,15 @@ struct WorkoutSplitSectionView: View {
     @ViewBuilder
     private var content: some View {
         if splits.isEmpty {
-            splitUnavailableView(
-                title: "No Workout Split",
-                description: "Create a split to plan your training days.",
-                autoOpenBuilder: true
-            )
-            .accessibilityIdentifier("recentWorkoutSplitEmptyState")
+            splitUnavailableView(title: "No Workout Split", description: "Create a split to plan your training days.", autoOpenBuilder: true)
+                .accessibilityIdentifier("recentWorkoutSplitEmptyState")
         } else if let activeSplit {
             if let day = activeSplit.todaysSplitDay {
                 activeSplitCard(split: activeSplit, day: day)
                     .accessibilityIdentifier("recentWorkoutSplitActiveRow")
             } else {
-                splitUnavailableView(
-                    title: "No Split Day Configured",
-                    description: "Add days to your split to get started."
-                )
-                .accessibilityIdentifier("recentWorkoutSplitNoDayState")
+                splitUnavailableView(title: "No Split Day Configured", description: "Add days to your split to get started.")
+                    .accessibilityIdentifier("recentWorkoutSplitNoDayState")
             }
         } else {
             splitUnavailableView(

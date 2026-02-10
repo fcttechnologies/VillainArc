@@ -36,7 +36,22 @@ class SetPerformance {
         self.reps = reps
         self.restSeconds = restSeconds
     }
-    
+
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(exercise: ExercisePerformance, setType: ExerciseSetType, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0, index: Int? = nil, complete: Bool = false, completedAt: Date? = nil) {
+        self.init(exercise: exercise, weight: weight, reps: reps, restSeconds: restSeconds)
+        self.type = setType
+        if let index {
+            self.index = index
+        }
+        self.complete = complete
+        if let completedAt {
+            self.completedAt = completedAt
+        } else if complete {
+            self.completedAt = Date()
+        }
+    }
+
     // Adding set from plan
     init(exercise: ExercisePerformance, setPrescription: SetPrescription) {
         index = setPrescription.index

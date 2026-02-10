@@ -170,7 +170,9 @@ struct SplitBuilderView: View {
     private func createScratchSplit(mode: SplitMode) {
         Haptics.selection()
         
-        let split = WorkoutSplit(mode: mode)
+        let activeSplits = try? context.fetch(WorkoutSplit.active)
+        let shouldActivate = activeSplits?.isEmpty ?? true
+        let split = WorkoutSplit(mode: mode, isActive: shouldActivate)
         
         switch mode {
         case .weekly:
@@ -183,12 +185,6 @@ struct SplitBuilderView: View {
             ]
         }
         
-        // If no active split, make this one active
-        let activeSplits = try? context.fetch(WorkoutSplit.active)
-        if activeSplits?.isEmpty ?? true {
-            split.isActive = true
-        }
-        
         context.insert(split)
         saveContext(context: context)
         
@@ -198,37 +194,25 @@ struct SplitBuilderView: View {
     
     private func createSplit(days: [DayTemplate]) {
         Haptics.selection()
-        
-        let split = WorkoutSplit(mode: config.mode)
-        split.title = config.type.rawValue
+
+        let activeSplits = try? context.fetch(WorkoutSplit.active)
+        let shouldActivate = activeSplits?.isEmpty ?? true
+        let split = WorkoutSplit(title: config.type.rawValue, mode: config.mode, isActive: shouldActivate)
         
         switch config.mode {
         case .weekly:
             let weekdayMapping = SplitGenerator.mapToWeekdays(days: days, startingWeekday: config.startingWeekday, keepWeekendsFree: config.keepWeekendsFree)
             for weekday in 1...7 {
                 let template = weekdayMapping[weekday]!
-                let day = WorkoutSplitDay(weekday: weekday, split: split)
-                day.name = template.name
-                day.isRestDay = template.isRestDay
-                day.targetMuscles = template.muscles
+                let day = WorkoutSplitDay(weekday: weekday, split: split, name: template.name, isRestDay: template.isRestDay, targetMuscles: template.muscles)
                 split.days.append(day)
             }
         case .rotation:
             for (index, template) in days.enumerated() {
-                let day = WorkoutSplitDay(index: index, split: split)
-                day.name = template.name
-                day.isRestDay = template.isRestDay
-                day.targetMuscles = template.muscles
+                let day = WorkoutSplitDay(index: index, split: split, name: template.name, isRestDay: template.isRestDay, targetMuscles: template.muscles)
                 split.days.append(day)
             }
         }
-        
-        // If no active split, make this one active
-        let activeSplits = try? context.fetch(WorkoutSplit.active)
-        if activeSplits?.isEmpty ?? true {
-            split.isActive = true
-        }
-        
         context.insert(split)
         saveContext(context: context)
         
@@ -581,148 +565,40 @@ private struct SelectRestDaysView: View {
         switch config.type {
         case .fullBody:
             return [
-                RotationRestOption(
-                    id: "afterEachDay",
-                    title: "Rest day after workout",
-                    subtitle: "Full Body, Rest",
-                    style: .afterEachDay,
-                    accessibilityId: "splitBuilderRestAfterEach"
-                ),
-                RotationRestOption(
-                    id: "restForTwoDays",
-                    title: "Rest for two days after workout",
-                    subtitle: "Full Body, Rest, Rest",
-                    style: .restForTwoDays,
-                    accessibilityId: "splitBuilderRestForTwoDays"
-                ),
-                RotationRestOption(
-                    id: "none",
-                    title: "No rest days",
-                    subtitle: "Full Body",
-                    style: .none,
-                    accessibilityId: "splitBuilderRestNone"
-                )
+                RotationRestOption(id: "afterEachDay", title: "Rest day after workout", subtitle: "Full Body, Rest", style: .afterEachDay, accessibilityId: "splitBuilderRestAfterEach"),
+                RotationRestOption(id: "restForTwoDays", title: "Rest for two days after workout", subtitle: "Full Body, Rest, Rest", style: .restForTwoDays, accessibilityId: "splitBuilderRestForTwoDays"),
+                RotationRestOption(id: "none", title: "No rest days", subtitle: "Full Body", style: .none, accessibilityId: "splitBuilderRestNone")
             ]
         case .upperLower:
             return [
-                RotationRestOption(
-                    id: "afterEachDay",
-                    title: "Rest day in between",
-                    subtitle: "Upper, Rest, Lower, Rest",
-                    style: .afterEachDay,
-                    accessibilityId: "splitBuilderRestAfterEach"
-                ),
-                RotationRestOption(
-                    id: "afterCycle",
-                    title: "Rest day after cycle",
-                    subtitle: "Upper, Lower, Rest",
-                    style: .afterCycle,
-                    accessibilityId: "splitBuilderRestAfterCycle"
-                ),
-                RotationRestOption(
-                    id: "none",
-                    title: "No rest days",
-                    subtitle: "Upper, Lower",
-                    style: .none,
-                    accessibilityId: "splitBuilderRestNone"
-                )
+                RotationRestOption(id: "afterEachDay", title: "Rest day in between", subtitle: "Upper, Rest, Lower, Rest", style: .afterEachDay, accessibilityId: "splitBuilderRestAfterEach"),
+                RotationRestOption(id: "afterCycle", title: "Rest day after cycle", subtitle: "Upper, Lower, Rest", style: .afterCycle, accessibilityId: "splitBuilderRestAfterCycle"),
+                RotationRestOption(id: "none", title: "No rest days", subtitle: "Upper, Lower", style: .none, accessibilityId: "splitBuilderRestNone")
             ]
         case .pushPullLegs:
             return [
-                RotationRestOption(
-                    id: "afterEachDay",
-                    title: "Rest day in between",
-                    subtitle: "Push, Rest, Pull, Rest, Legs, Rest",
-                    style: .afterEachDay,
-                    accessibilityId: "splitBuilderRestInBetween"
-                ),
-                RotationRestOption(
-                    id: "afterCycle",
-                    title: "Rest day after cycle",
-                    subtitle: "Push, Pull, Legs, Rest",
-                    style: .afterCycle,
-                    accessibilityId: "splitBuilderRestAfterCycle"
-                ),
-                RotationRestOption(
-                    id: "none",
-                    title: "No rest days",
-                    subtitle: "Push, Pull, Legs",
-                    style: .none,
-                    accessibilityId: "splitBuilderRestNone"
-                )
+                RotationRestOption(id: "afterEachDay", title: "Rest day in between", subtitle: "Push, Rest, Pull, Rest, Legs, Rest", style: .afterEachDay, accessibilityId: "splitBuilderRestInBetween"),
+                RotationRestOption(id: "afterCycle", title: "Rest day after cycle", subtitle: "Push, Pull, Legs, Rest", style: .afterCycle, accessibilityId: "splitBuilderRestAfterCycle"),
+                RotationRestOption(id: "none", title: "No rest days", subtitle: "Push, Pull, Legs", style: .none, accessibilityId: "splitBuilderRestNone")
             ]
         case .hourglass:
             let labels = hourglassTrainingLabels()
             return [
-                RotationRestOption(
-                    id: "afterEachDay",
-                    title: "Rest day in between",
-                    subtitle: rotationSubtitle(labels: labels, style: .afterEachDay),
-                    style: .afterEachDay,
-                    accessibilityId: "splitBuilderRestInBetween"
-                ),
-                RotationRestOption(
-                    id: "afterCycle",
-                    title: "Rest day after cycle",
-                    subtitle: rotationSubtitle(labels: labels, style: .afterCycle),
-                    style: .afterCycle,
-                    accessibilityId: "splitBuilderRestAfterCycle"
-                ),
-                RotationRestOption(
-                    id: "none",
-                    title: "No rest days",
-                    subtitle: rotationSubtitle(labels: labels, style: .none),
-                    style: .none,
-                    accessibilityId: "splitBuilderRestNone"
-                )
+                RotationRestOption(id: "afterEachDay", title: "Rest day in between", subtitle: rotationSubtitle(labels: labels, style: .afterEachDay), style: .afterEachDay, accessibilityId: "splitBuilderRestInBetween"),
+                RotationRestOption(id: "afterCycle", title: "Rest day after cycle", subtitle: rotationSubtitle(labels: labels, style: .afterCycle), style: .afterCycle, accessibilityId: "splitBuilderRestAfterCycle"),
+                RotationRestOption(id: "none", title: "No rest days", subtitle: rotationSubtitle(labels: labels, style: .none), style: .none, accessibilityId: "splitBuilderRestNone")
             ]
         case .arnoldSplit:
             return [
-                RotationRestOption(
-                    id: "afterEachDay",
-                    title: "Rest day in between",
-                    subtitle: "Chest & Back, Rest, Shoulders & Arms, Rest, Legs, Rest",
-                    style: .afterEachDay,
-                    accessibilityId: "splitBuilderRestInBetween"
-                ),
-                RotationRestOption(
-                    id: "afterCycle",
-                    title: "Rest day after cycle",
-                    subtitle: "Chest & Back, Shoulders & Arms, Legs, Rest",
-                    style: .afterCycle,
-                    accessibilityId: "splitBuilderRestAfterCycle"
-                ),
-                RotationRestOption(
-                    id: "none",
-                    title: "No rest days",
-                    subtitle: "Chest & Back, Shoulders & Arms, Legs",
-                    style: .none,
-                    accessibilityId: "splitBuilderRestNone"
-                )
+                RotationRestOption(id: "afterEachDay", title: "Rest day in between", subtitle: "Chest & Back, Rest, Shoulders & Arms, Rest, Legs, Rest", style: .afterEachDay, accessibilityId: "splitBuilderRestInBetween"),
+                RotationRestOption(id: "afterCycle", title: "Rest day after cycle", subtitle: "Chest & Back, Shoulders & Arms, Legs, Rest", style: .afterCycle, accessibilityId: "splitBuilderRestAfterCycle"),
+                RotationRestOption(id: "none", title: "No rest days", subtitle: "Chest & Back, Shoulders & Arms, Legs", style: .none, accessibilityId: "splitBuilderRestNone")
             ]
         case .broSplit:
             return [
-                RotationRestOption(
-                    id: "afterEachDay",
-                    title: "Rest day in between",
-                    subtitle: "Chest, Rest, Back, Rest, Shoulders, Rest, Legs, Rest, Arms, Rest",
-                    style: .afterEachDay,
-                    accessibilityId: "splitBuilderRestInBetween"
-                ),
-                RotationRestOption(
-                    id: "afterCycle",
-                    title: "Rest day after cycle",
-                    subtitle: "Chest, Back, Shoulders, Legs, Arms, Rest",
-                    style: .afterCycle,
-                    accessibilityId: "splitBuilderRestAfterCycle"
-                ),
-                RotationRestOption(
-                    id: "none",
-                    title: "No rest days",
-                    subtitle: "Chest, Back, Shoulders, Legs, Arms",
-                    style: .none,
-                    accessibilityId: "splitBuilderRestNone"
-                )
+                RotationRestOption(id: "afterEachDay", title: "Rest day in between", subtitle: "Chest, Rest, Back, Rest, Shoulders, Rest, Legs, Rest, Arms, Rest", style: .afterEachDay, accessibilityId: "splitBuilderRestInBetween"),
+                RotationRestOption(id: "afterCycle", title: "Rest day after cycle", subtitle: "Chest, Back, Shoulders, Legs, Arms, Rest", style: .afterCycle, accessibilityId: "splitBuilderRestAfterCycle"),
+                RotationRestOption(id: "none", title: "No rest days", subtitle: "Chest, Back, Shoulders, Legs, Arms", style: .none, accessibilityId: "splitBuilderRestNone")
             ]
         }
     }

@@ -24,6 +24,16 @@ class WorkoutPlan {
     }
     
     init() {}
+
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(title: String = "New Workout Plan", notes: String = "", favorite: Bool = false, completed: Bool = false, lastUsed: Date? = nil) {
+        self.init()
+        self.title = title
+        self.notes = notes
+        self.favorite = favorite
+        self.completed = completed
+        self.lastUsed = lastUsed
+    }
     
     init(from session: WorkoutSession, completed: Bool = false) {
         title = session.title

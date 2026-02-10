@@ -34,11 +34,7 @@ struct OutcomeResolver {
         guard !eligible.isEmpty else { return }
 
         // Build performance lookups for this workout.
-        let perfByPrescriptionID = Dictionary(
-            uniqueKeysWithValues: workout.sortedExercises.compactMap { perf in
-                perf.prescription.map { ($0.id, perf) }
-            }
-        )
+        let perfByPrescriptionID = Dictionary(uniqueKeysWithValues: workout.sortedExercises.compactMap { perf in perf.prescription.map { ($0.id, perf) } })
         // Step 2: Group changes (same structure as SuggestionGrouping) and match performances.
         let groups = buildGroups(eligible: eligible, perfByPrescriptionID: perfByPrescriptionID)
 
@@ -82,47 +78,15 @@ struct OutcomeResolver {
         // Step 5: Merge phase — apply outcomes to each change.
         for (index, pair) in aiGroupInputs.enumerated() {
             let aiOutput = aiResults[index]
-
             for change in pair.group.changes {
-                let ruleSignal = ruleResults[change.id] ?? nil
-                let resolved = mergeOutcome(rule: ruleSignal, ai: aiOutput)
-                guard let resolved else { continue }
-
-                change.outcome = resolved.outcome
-                change.outcomeReason = resolved.reason
-                change.evaluatedAt = Date()
-                change.evaluatedInSession = workout
+                applyOutcomeIfPossible(change: change, ruleResults: ruleResults, aiOutput: aiOutput, workout: workout)
             }
         }
 
-        // Also handle groups that had no AI input (still apply rule-only results).
-        let groupsWithAI = Set(aiGroupInputs.map { ObjectIdentifier($0.group.prescription) })
+        // Apply rule-only results for any remaining pending changes.
         for group in groups {
-            // Skip if this group was already handled via AI path.
-            guard !groupsWithAI.contains(ObjectIdentifier(group.prescription)) || aiGroupInputs.isEmpty else {
-                // Check each change individually — some may not have been in the AI path.
-                for change in group.changes where change.outcome == .pending && change.evaluatedAt == nil {
-                    let ruleSignal = ruleResults[change.id] ?? nil
-                    let resolved = mergeOutcome(rule: ruleSignal, ai: nil)
-                    guard let resolved else { continue }
-
-                    change.outcome = resolved.outcome
-                    change.outcomeReason = resolved.reason
-                    change.evaluatedAt = Date()
-                    change.evaluatedInSession = workout
-                }
-                continue
-            }
-
-            for change in group.changes where change.outcome == .pending && change.evaluatedAt == nil {
-                let ruleSignal = ruleResults[change.id] ?? nil
-                let resolved = mergeOutcome(rule: ruleSignal, ai: nil)
-                guard let resolved else { continue }
-
-                change.outcome = resolved.outcome
-                change.outcomeReason = resolved.reason
-                change.evaluatedAt = Date()
-                change.evaluatedInSession = workout
+            for change in group.changes {
+                applyOutcomeIfPossible(change: change, ruleResults: ruleResults, aiOutput: nil, workout: workout)
             }
         }
 
@@ -177,25 +141,13 @@ struct OutcomeResolver {
             // Group set changes by set ID.
             let bySet = Dictionary(grouping: setChanges) { $0.targetSetPrescription!.id }
             for (_, changes) in bySet {
-                groups.append(OutcomeGroup(
-                    changes: changes,
-                    exercisePerf: exercisePerf,
-                    prescription: prescription,
-                    setPrescription: changes.first?.targetSetPrescription,
-                    policy: nil
-                ))
+                groups.append(OutcomeGroup(changes: changes, exercisePerf: exercisePerf, prescription: prescription, setPrescription: changes.first?.targetSetPrescription, policy: nil))
             }
 
             // Group exercise-level changes by policy.
             let byPolicy = Dictionary(grouping: exerciseLevelChanges) { $0.changeType.policy }
             for (policy, changes) in byPolicy {
-                groups.append(OutcomeGroup(
-                    changes: changes,
-                    exercisePerf: exercisePerf,
-                    prescription: prescription,
-                    setPrescription: nil,
-                    policy: policy
-                ))
+                groups.append(OutcomeGroup(changes: changes, exercisePerf: exercisePerf, prescription: prescription, setPrescription: nil, policy: policy))
             }
         }
 
@@ -206,14 +158,7 @@ struct OutcomeResolver {
 
     private static func buildAIGroupInput(group: OutcomeGroup, ruleResults: [UUID: OutcomeSignal?]) -> AIOutcomeGroupInput? {
         // Convert changes to AI-friendly format.
-        let aiChanges: [AIOutcomeChange] = group.changes.map { change in
-            AIOutcomeChange(
-                changeType: change.changeType,
-                previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
-                newValue: formattedChangeValue(change.newValue, changeType: change.changeType),
-                targetSetIndex: change.targetSetPrescription?.index
-            )
-        }
+        let aiChanges: [AIOutcomeChange] = group.changes.map { change in AIOutcomeChange(changeType: change.changeType, previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType), newValue: formattedChangeValue(change.newValue, changeType: change.changeType), targetSetIndex: change.targetSetPrescription?.index) }
         guard !aiChanges.isEmpty else { return nil }
 
         // Build prescription snapshot (the "before" state).
@@ -232,15 +177,11 @@ struct OutcomeResolver {
         // Aggregate rule outcome for the group — use the most common or most severe.
         let groupRuleSignal = aggregateRuleSignal(changes: group.changes, ruleResults: ruleResults)
 
-        return AIOutcomeGroupInput(
-            changes: aiChanges,
-            prescription: prescriptionSnapshot,
-            triggerPerformance: triggerSnapshot,
-            actualPerformance: actualSnapshot,
-            ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) },
-            ruleConfidence: groupRuleSignal?.confidence,
-            ruleReason: groupRuleSignal?.reason
-        )
+        // Detect training style from the current workout's completed sets.
+        let completeSets = group.exercisePerf.sortedSets
+        let style = MetricsCalculator.detectTrainingStyle(completeSets)
+
+        return AIOutcomeGroupInput(changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
     }
 
     /// Builds the prescription snapshot representing the state BEFORE changes were applied.
@@ -299,7 +240,8 @@ struct OutcomeResolver {
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
              .increaseRest, .decreaseRest,
-             .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
+             .increaseRestTimeSeconds, .decreaseRestTimeSeconds,
+             .removeSet:
             return String(roundedInt)
         case .changeSetType:
             if let type = ExerciseSetType(rawValue: roundedInt) {
@@ -331,29 +273,20 @@ struct OutcomeResolver {
         switch change.changeType {
         case .increaseWeight, .decreaseWeight:
             return withRevertedSet(snapshot: snapshot, change: change) { set in
-                AISetPrescriptionSnapshot(index: set.index, setType: set.setType,
-                                          targetWeight: oldValue ?? set.targetWeight,
-                                          targetReps: set.targetReps, targetRest: set.targetRest)
+                AISetPrescriptionSnapshot(index: set.index, setType: set.setType, targetWeight: oldValue ?? set.targetWeight, targetReps: set.targetReps, targetRest: set.targetRest)
             }
         case .increaseReps, .decreaseReps:
             return withRevertedSet(snapshot: snapshot, change: change) { set in
-                AISetPrescriptionSnapshot(index: set.index, setType: set.setType,
-                                          targetWeight: set.targetWeight,
-                                          targetReps: oldValue.map { Int($0) } ?? set.targetReps,
-                                          targetRest: set.targetRest)
+                AISetPrescriptionSnapshot(index: set.index, setType: set.setType, targetWeight: set.targetWeight, targetReps: oldValue.map { Int($0) } ?? set.targetReps, targetRest: set.targetRest)
             }
         case .increaseRest, .decreaseRest:
             return withRevertedSet(snapshot: snapshot, change: change) { set in
-                AISetPrescriptionSnapshot(index: set.index, setType: set.setType,
-                                          targetWeight: set.targetWeight, targetReps: set.targetReps,
-                                          targetRest: oldValue.map { Int($0) } ?? set.targetRest)
+                AISetPrescriptionSnapshot(index: set.index, setType: set.setType, targetWeight: set.targetWeight, targetReps: set.targetReps, targetRest: oldValue.map { Int($0) } ?? set.targetRest)
             }
         case .changeSetType:
             return withRevertedSet(snapshot: snapshot, change: change) { set in
                 let oldType = oldValue.flatMap { ExerciseSetType(rawValue: Int($0)) }.map { AIExerciseSetType(from: $0) } ?? set.setType
-                return AISetPrescriptionSnapshot(index: set.index, setType: oldType,
-                                                  targetWeight: set.targetWeight,
-                                                  targetReps: set.targetReps, targetRest: set.targetRest)
+                return AISetPrescriptionSnapshot(index: set.index, setType: oldType, targetWeight: set.targetWeight, targetReps: set.targetReps, targetRest: set.targetRest)
             }
         case .changeRepRangeMode:
             let oldMode: AIRepRangeMode?
@@ -362,10 +295,7 @@ struct OutcomeResolver {
             } else {
                 oldMode = snapshot.repRangeMode
             }
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: oldMode,
-                                                   repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper,
-                                                   repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy,
-                                                   sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: oldMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
         case .changeRestTimeMode:
             let oldMode: AIRestTimeMode
             if let raw = oldValue.map({ Int($0) }), let mode = RestTimeMode(rawValue: raw) {
@@ -374,32 +304,19 @@ struct OutcomeResolver {
                 oldMode = snapshot.restTimePolicy.mode
             }
             let oldPolicy = AIRestTimePolicy(mode: oldMode, allSameSeconds: snapshot.restTimePolicy.allSameSeconds)
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode,
-                                                   repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper,
-                                                   repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy,
-                                                   sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy, sets: snapshot.sets)
         case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode,
-                                                   repRangeLower: oldValue.map { Int($0) }, repRangeUpper: snapshot.repRangeUpper,
-                                                   repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy,
-                                                   sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: oldValue.map { Int($0) }, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
         case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode,
-                                                   repRangeLower: snapshot.repRangeLower, repRangeUpper: oldValue.map { Int($0) },
-                                                   repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy,
-                                                   sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: oldValue.map { Int($0) }, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode,
-                                                   repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper,
-                                                   repRangeTarget: oldValue.map { Int($0) }, restTimePolicy: snapshot.restTimePolicy,
-                                                   sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: oldValue.map { Int($0) }, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            let oldPolicy = AIRestTimePolicy(mode: snapshot.restTimePolicy.mode,
-                                              allSameSeconds: oldValue.map { Int($0) } ?? snapshot.restTimePolicy.allSameSeconds)
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode,
-                                                   repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper,
-                                                   repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy,
-                                                   sets: snapshot.sets)
+            let oldPolicy = AIRestTimePolicy(mode: snapshot.restTimePolicy.mode, allSameSeconds: oldValue.map { Int($0) } ?? snapshot.restTimePolicy.allSameSeconds)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy, sets: snapshot.sets)
+        case .removeSet:
+            // Volume change — snapshot doesn't need structural revert, the set count is captured in previousValue/newValue.
+            return snapshot
         }
     }
 
@@ -408,10 +325,7 @@ struct OutcomeResolver {
         let sets = snapshot.sets.map { set in
             set.index == targetIndex ? transform(set) : set
         }
-        return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode,
-                                               repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper,
-                                               repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy,
-                                               sets: sets)
+        return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: sets)
     }
 
     // MARK: - Merge
@@ -438,5 +352,19 @@ struct OutcomeResolver {
         }
 
         return ResolvedOutcome(outcome: ruleOutcome.outcome, reason: "[Rules] \(ruleOutcome.reason)")
+    }
+
+    private static func applyOutcomeIfPossible(change: PrescriptionChange, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, workout: WorkoutSession) {
+        guard change.outcome == .pending, change.evaluatedAt == nil else { return }
+        let ruleSignal = ruleResults[change.id] ?? nil
+        guard let resolved = mergeOutcome(rule: ruleSignal, ai: aiOutput) else { return }
+        applyResolvedOutcome(resolved, to: change, workout: workout)
+    }
+
+    private static func applyResolvedOutcome(_ resolved: ResolvedOutcome, to change: PrescriptionChange, workout: WorkoutSession) {
+        change.outcome = resolved.outcome
+        change.outcomeReason = resolved.reason
+        change.evaluatedAt = Date()
+        change.evaluatedInSession = workout
     }
 }

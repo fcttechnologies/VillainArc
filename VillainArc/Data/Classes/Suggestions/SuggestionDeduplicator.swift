@@ -173,6 +173,8 @@ struct SuggestionDeduplicator {
             return .restTimeMode
         case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
             return .restTimeSeconds
+        case .removeSet:
+            return .structure
         }
     }
 
@@ -191,6 +193,8 @@ struct SuggestionDeduplicator {
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget:
             return 3
+        case .removeSet:
+            return 4
         case .increaseRest, .decreaseRest:
             return 5
         case .changeRestTimeMode, .increaseRestTimeSeconds, .decreaseRestTimeSeconds:

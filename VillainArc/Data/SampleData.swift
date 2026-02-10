@@ -55,12 +55,7 @@ class PreviewDataContainer {
     // MARK: - Completed Plan (Push Day)
 
     private func loadCompletedPlan() {
-        let plan = WorkoutPlan()
-        plan.title = "Push Day"
-        plan.notes = "Chest and triceps focus"
-        plan.completed = true
-        plan.favorite = true
-        plan.lastUsed = date(2026, 1, 5, 8, 15)
+        let plan = WorkoutPlan(title: "Push Day", notes: "Chest and triceps focus", favorite: true, completed: true, lastUsed: date(2026, 1, 5, 8, 15))
         context.insert(plan)
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
@@ -106,11 +101,7 @@ class PreviewDataContainer {
             }
 
             for s in ex.sets {
-                let setPrescription = SetPrescription(exercisePrescription: prescription)
-                setPrescription.type = s.type
-                setPrescription.targetWeight = s.weight
-                setPrescription.targetReps = s.reps
-                setPrescription.targetRest = s.rest
+                let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest)
                 prescription.sets.append(setPrescription)
             }
 
@@ -121,12 +112,7 @@ class PreviewDataContainer {
     // MARK: - Completed Session (Chest Day)
 
     private func loadCompletedSession() {
-        let session = WorkoutSession()
-        session.title = "Chest Day"
-        session.notes = "Testing sample"
-        session.status = SessionStatus.done.rawValue
-        session.startedAt = date(2026, 1, 5, 8, 15)
-        session.endedAt = date(2026, 1, 5, 9, 5)
+        let session = WorkoutSession(title: "Chest Day", notes: "Testing sample", status: .done, startedAt: date(2026, 1, 5, 8, 15), endedAt: date(2026, 1, 5, 9, 5))
         context.insert(session)
 
         let postEffort = PostWorkoutEffort(rpe: 7, notes: "Felt strong")
@@ -156,8 +142,7 @@ class PreviewDataContainer {
 
         for (i, ex) in exercises.enumerated() {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
-            let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
-            performance.notes = ex.notes
+            let performance = ExercisePerformance(exercise: exercise, workoutSession: session, notes: ex.notes)
 
             if ex.id == "dumbbell_incline_bench_press" {
                 performance.repRange.activeMode = .range
@@ -170,13 +155,8 @@ class PreviewDataContainer {
             }
 
             for (j, s) in ex.sets.enumerated() {
-                let setPerf = SetPerformance(exercise: performance)
-                setPerf.type = s.type
-                setPerf.weight = s.weight
-                setPerf.reps = s.reps
-                setPerf.restSeconds = s.type == .warmup ? 60 : 90
-                setPerf.complete = true
-                setPerf.completedAt = session.startedAt.addingTimeInterval(Double((i * 3 + j + 1) * 120))
+                let completedAt = session.startedAt.addingTimeInterval(Double((i * 3 + j + 1) * 120))
+                let setPerf = SetPerformance(exercise: performance, setType: s.type, weight: s.weight, reps: s.reps, restSeconds: s.type == .warmup ? 60 : 90, index: j, complete: true, completedAt: completedAt)
                 performance.sets.append(setPerf)
             }
 
@@ -187,8 +167,7 @@ class PreviewDataContainer {
     // MARK: - Incomplete Session
 
     private func loadIncompleteSession() {
-        let session = WorkoutSession()
-        session.title = "Sample Workout"
+        let session = WorkoutSession(title: "Sample Workout")
         context.insert(session)
 
         let exercises: [(id: String, notes: String)] = [
@@ -208,17 +187,12 @@ class PreviewDataContainer {
 
         for ex in exercises {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
-            let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
-            performance.notes = ex.notes
+            let performance = ExercisePerformance(exercise: exercise, workoutSession: session, notes: ex.notes)
 
+            let weights = sampleWeights[ex.id] ?? []
             for index in 0..<3 {
-                let setPerf = SetPerformance(exercise: performance)
-                setPerf.type = index == 0 ? .warmup : .working
-                setPerf.restSeconds = index == 0 ? 60 : 90
-                setPerf.reps = sampleReps[index]
-                if let weights = sampleWeights[ex.id], index < weights.count {
-                    setPerf.weight = weights[index]
-                }
+                let weight = index < weights.count ? weights[index] : 0
+                let setPerf = SetPerformance(exercise: performance, setType: index == 0 ? .warmup : .working, weight: weight, reps: sampleReps[index], restSeconds: index == 0 ? 60 : 90, index: index)
                 performance.sets.append(setPerf)
             }
 
@@ -229,20 +203,16 @@ class PreviewDataContainer {
     // MARK: - Incomplete Plan
 
     private func loadIncompletePlan() {
-        let plan = WorkoutPlan()
-        plan.title = "Back Day"
+        let plan = WorkoutPlan(title: "Back Day")
         context.insert(plan)
 
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
         let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
 
-        let set1 = SetPrescription(exercisePrescription: prescription)
-        set1.type = .warmup
-        set1.targetRest = 60
+        let set1 = SetPrescription(exercisePrescription: prescription, setType: .warmup, targetRest: 60)
         prescription.sets.append(set1)
 
-        let set2 = SetPrescription(exercisePrescription: prescription)
-        set2.targetRest = 90
+        let set2 = SetPrescription(exercisePrescription: prescription, targetRest: 90)
         prescription.sets.append(set2)
 
         plan.exercises.append(prescription)
@@ -251,40 +221,28 @@ class PreviewDataContainer {
     // MARK: - Splits
 
     private func loadSampleSplits() {
-        let weeklySplit = WorkoutSplit(mode: .weekly)
-        weeklySplit.title = "PPL Split"
-        weeklySplit.isActive = true
+        let weeklySplit = WorkoutSplit(title: "PPL Split", mode: .weekly, isActive: true)
         weeklySplit.days = (1...7).map { weekday in
-            let day = WorkoutSplitDay(weekday: weekday, split: weeklySplit)
-            day.isRestDay = (weekday == 1 || weekday == 4)
-            return day
+            WorkoutSplitDay(weekday: weekday, split: weeklySplit, isRestDay: weekday == 1 || weekday == 4)
         }
         context.insert(weeklySplit)
 
-        let rotationSplit = WorkoutSplit(mode: .rotation)
-        rotationSplit.title = "Upper/Lower"
+        let rotationSplit = WorkoutSplit(title: "Upper/Lower", mode: .rotation)
         rotationSplit.days = [
-            WorkoutSplitDay(index: 0, split: rotationSplit),
-            WorkoutSplitDay(index: 1, split: rotationSplit),
-            WorkoutSplitDay(index: 2, split: rotationSplit)
+            WorkoutSplitDay(index: 0, split: rotationSplit, name: "Upper Body"),
+            WorkoutSplitDay(index: 1, split: rotationSplit, name: "Lower Body"),
+            WorkoutSplitDay(index: 2, split: rotationSplit, name: "Rest", isRestDay: true)
         ]
-        rotationSplit.days[0].name = "Upper Body"
-        rotationSplit.days[1].name = "Lower Body"
-        rotationSplit.days[2].name = "Rest"
-        rotationSplit.days[2].isRestDay = true
         context.insert(rotationSplit)
     }
 
     // MARK: - Session with Suggestions
     
     func loadSessionWithSuggestions() {
-        let session = WorkoutSession()
-        session.title = "Suggestions Test"
-        session.status = SessionStatus.pending.rawValue
+        let session = WorkoutSession(title: "Suggestions Test", status: .pending)
         context.insert(session)
         
-        let plan = WorkoutPlan()
-        plan.title = "Chest Growth"
+        let plan = WorkoutPlan(title: "Chest Growth")
         context.insert(plan)
         session.workoutPlan = plan
         
@@ -294,47 +252,20 @@ class PreviewDataContainer {
         plan.exercises.append(benchPrescription)
         
         // Set 1 changes
-        let s1 = SetPrescription(exercisePrescription: benchPrescription)
-        s1.type = .warmup
-        s1.targetWeight = 1135
-        s1.targetReps = 10
-        s1.index = 0
+        let s1 = SetPrescription(exercisePrescription: benchPrescription, setType: .warmup, targetWeight: 1135, targetReps: 10, index: 0)
         benchPrescription.sets.append(s1)
         
         // Set 2 changes
-        let s2 = SetPrescription(exercisePrescription: benchPrescription)
-        s2.type = .working
-        s2.targetWeight = 155
-        s2.targetReps = 8
-        s2.index = 1
+        let s2 = SetPrescription(exercisePrescription: benchPrescription, setType: .working, targetWeight: 155, targetReps: 8, index: 1)
         benchPrescription.sets.append(s2)
         
-        let change1 = PrescriptionChange()
-        change1.changeType = .increaseWeight
-        change1.previousValue = 135
-        change1.newValue = 145
-        change1.targetSetPrescription = s1
-        change1.targetExercisePrescription = benchPrescription
-        change1.catalogID = bench.catalogID
-        change1.changeReasoning = "Hit all reps last 3 sessions"
+        let change1 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .increaseWeight, previousValue: 135, newValue: 145, changeReasoning: "Hit all reps last 3 sessions")
         context.insert(change1)
         
-        let change2 = PrescriptionChange()
-        change2.changeType = .decreaseReps
-        change2.previousValue = 10
-        change2.newValue = 8
-        change2.targetSetPrescription = s1
-        change2.targetExercisePrescription = benchPrescription
-        change2.catalogID = bench.catalogID
+        let change2 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .decreaseReps, previousValue: 10, newValue: 8)
         context.insert(change2)
         
-        let change3 = PrescriptionChange()
-        change3.changeType = .increaseWeight
-        change3.previousValue = 155
-        change3.newValue = 160
-        change3.targetSetPrescription = s2
-        change3.targetExercisePrescription = benchPrescription
-        change3.catalogID = bench.catalogID
+        let change3 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s2, changeType: .increaseWeight, previousValue: 155, newValue: 160)
         context.insert(change3)
         
         // Exercise 2: Incline DB (Group: Rep Range)
@@ -344,29 +275,13 @@ class PreviewDataContainer {
         inclinePrescription.repRange.targetReps = 8
         plan.exercises.append(inclinePrescription)
         
-        let change4 = PrescriptionChange()
-        change4.changeType = .changeRepRangeMode
-        change4.previousValue = Double(RepRangeMode.target.rawValue)
-        change4.newValue = Double(RepRangeMode.range.rawValue)
-        change4.targetExercisePrescription = inclinePrescription
-        change4.catalogID = incline.catalogID
-        change4.changeReasoning = "Switching to range for hypertrophy phase"
+        let change4 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue), changeReasoning: "Switching to range for hypertrophy phase")
         context.insert(change4)
         
-        let change5 = PrescriptionChange()
-        change5.changeType = .increaseRepRangeLower
-        change5.previousValue = 8
-        change5.newValue = 10
-        change5.targetExercisePrescription = inclinePrescription
-        change5.catalogID = incline.catalogID
+        let change5 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
         context.insert(change5)
         
-        let change6 = PrescriptionChange()
-        change6.changeType = .increaseRepRangeUpper
-        change6.previousValue = 10
-        change6.newValue = 12
-        change6.targetExercisePrescription = inclinePrescription
-        change6.catalogID = incline.catalogID
+        let change6 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
         context.insert(change6)
         
         // Exercise 3: Flys (Group: Rest Time)
@@ -376,22 +291,14 @@ class PreviewDataContainer {
         flysPrescription.restTimePolicy.allSameSeconds = 60
         plan.exercises.append(flysPrescription)
         
-        let change7 = PrescriptionChange()
-        change7.changeType = .increaseRestTimeSeconds
-        change7.previousValue = 60
-        change7.newValue = 90
-        change7.targetExercisePrescription = flysPrescription
-        change7.catalogID = flys.catalogID
-        change7.changeReasoning = "Recovery needs increased"
+        let change7 = PrescriptionChange(catalogID: flys.catalogID, targetExercisePrescription: flysPrescription, changeType: .increaseRestTimeSeconds, previousValue: 60, newValue: 90, changeReasoning: "Recovery needs increased")
         context.insert(change7)
     }
 
     // MARK: - Suggestion Generation Scenario
 
     func loadSuggestionGenerationScenario() {
-        let plan = WorkoutPlan()
-        plan.title = "Progression Test Plan"
-        plan.completed = true
+        let plan = WorkoutPlan(title: "Progression Test Plan", completed: true)
         context.insert(plan)
 
         let planExercises: [(id: String, repRange: RepRangeMode, lower: Int, upper: Int, target: Int, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
@@ -426,12 +333,7 @@ class PreviewDataContainer {
             }
 
             for (setIndex, s) in ex.sets.enumerated() {
-                let setPrescription = SetPrescription(exercisePrescription: prescription)
-                setPrescription.index = setIndex
-                setPrescription.type = s.type
-                setPrescription.targetWeight = s.weight
-                setPrescription.targetReps = s.reps
-                setPrescription.targetRest = s.rest
+                let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest, index: setIndex)
                 prescription.sets.append(setPrescription)
             }
 
@@ -505,34 +407,16 @@ class PreviewDataContainer {
         ]
 
         for (sessionIndex, history) in historySessions.enumerated() {
-            let session = WorkoutSession()
-            session.title = "History Session \(sessionIndex + 1)"
-            session.status = SessionStatus.done.rawValue
-            session.startedAt = history.date
-            session.endedAt = history.date.addingTimeInterval(45 * 60)
+            let session = WorkoutSession(title: "History Session \(sessionIndex + 1)", status: .done, startedAt: history.date, endedAt: history.date.addingTimeInterval(45 * 60))
             context.insert(session)
 
             for (exerciseIndex, ex) in history.exercises.enumerated() {
                 let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
-                let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
-                performance.index = exerciseIndex
-                performance.repRange.activeMode = ex.repRange
-                if ex.repRange == .range {
-                    performance.repRange.lowerRange = ex.lower
-                    performance.repRange.upperRange = ex.upper
-                } else if ex.repRange == .target {
-                    performance.repRange.targetReps = ex.target
-                }
+                let performance = ExercisePerformance(exercise: exercise, workoutSession: session, index: exerciseIndex, repRangeMode: ex.repRange, lowerRange: ex.lower, upperRange: ex.upper, targetReps: ex.target)
 
                 for (setIndex, s) in ex.sets.enumerated() {
-                    let setPerf = SetPerformance(exercise: performance)
-                    setPerf.index = setIndex
-                    setPerf.type = s.type
-                    setPerf.weight = s.weight
-                    setPerf.reps = s.reps
-                    setPerf.restSeconds = s.type == .warmup ? 60 : 90
-                    setPerf.complete = true
-                    setPerf.completedAt = history.date.addingTimeInterval(Double((exerciseIndex * 3 + setIndex + 1) * 120))
+                    let completedAt = history.date.addingTimeInterval(Double((exerciseIndex * 3 + setIndex + 1) * 120))
+                    let setPerf = SetPerformance(exercise: performance, setType: s.type, weight: s.weight, reps: s.reps, restSeconds: s.type == .warmup ? 60 : 90, index: setIndex, complete: true, completedAt: completedAt)
                     performance.sets.append(setPerf)
                 }
 
@@ -615,10 +499,7 @@ func sampleCompletedSession() -> WorkoutSession {
         return session
     }
 
-    let fallback = WorkoutSession()
-    fallback.title = "Chest Day"
-    fallback.status = SessionStatus.done.rawValue
-    fallback.endedAt = .now
+    let fallback = WorkoutSession(title: "Chest Day", status: .done, endedAt: .now)
     sampleContainer.context.insert(fallback)
     return fallback
 }
@@ -630,7 +511,7 @@ func sampleIncompleteSession() -> WorkoutSession {
         return session
     }
 
-    let fallback = WorkoutSession()
+    let fallback = WorkoutSession(title: "New Workout")
     sampleContainerWithIncomplete.context.insert(fallback)
     return fallback
 }
@@ -643,9 +524,7 @@ func sampleCompletedPlan() -> WorkoutPlan {
         return plan
     }
 
-    let fallback = WorkoutPlan()
-    fallback.title = "Push Day"
-    fallback.completed = true
+    let fallback = WorkoutPlan(title: "Push Day", completed: true)
     sampleContainer.context.insert(fallback)
     return fallback
 }
@@ -657,8 +536,7 @@ func sampleIncompletePlan() -> WorkoutPlan {
         return plan
     }
 
-    let fallback = WorkoutPlan()
-    fallback.title = "Back Day"
+    let fallback = WorkoutPlan(title: "Back Day")
     sampleContainerWithIncomplete.context.insert(fallback)
     return fallback
 }
@@ -692,11 +570,9 @@ func sampleRotationSplit() -> WorkoutSplit {
         return split
     }
 
-    let fallback = WorkoutSplit(mode: .rotation)
-    fallback.title = "Upper/Lower"
+    let fallback = WorkoutSplit(title: "Upper/Lower", mode: .rotation)
     for i in 0..<3 {
-        let day = WorkoutSplitDay(index: i, split: fallback)
-        day.name = "Day \(i + 1)"
+        let day = WorkoutSplitDay(index: i, split: fallback, name: "Day \(i + 1)")
         fallback.days.append(day)
     }
     sampleContainer.context.insert(fallback)
@@ -710,8 +586,7 @@ func sampleSessionWithSuggestions() -> WorkoutSession {
         return session
     }
     // Should have been created
-    let fallback = WorkoutSession()
-    fallback.title = "Suggestions Test (Fallback)"
+    let fallback = WorkoutSession(title: "Suggestions Test (Fallback)")
     sampleContainerWithSuggestions.context.insert(fallback)
     return fallback
 }
@@ -725,9 +600,7 @@ func sampleSuggestionGenerationSession() -> WorkoutSession {
     if let session = (try? sampleContainerSuggestionGeneration.context.fetch(descriptor))?.first {
         return session
     }
-    let fallback = WorkoutSession()
-    fallback.title = "Suggestion Generation (Fallback)"
-    fallback.status = SessionStatus.summary.rawValue
+    let fallback = WorkoutSession(title: "Suggestion Generation (Fallback)", status: .summary)
     sampleContainerSuggestionGeneration.context.insert(fallback)
     return fallback
 }

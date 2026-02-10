@@ -34,9 +34,11 @@ struct WorkoutSummaryView: View {
     }
 
     private var totalVolume: Double {
-        workout.exercises.reduce(0) { total, exercise in
-            total + exercise.sets.reduce(0) { $0 + ($1.weight * Double($1.reps)) }
-        }
+        workout.exercises.reduce(0) { $0 + $1.totalVolume }
+    }
+
+    private var formattedTotalVolume: String {
+        "\(totalVolume.formatted(.number.precision(.fractionLength(0...1)))) lbs"
     }
 
     private var durationText: String {
@@ -61,10 +63,7 @@ struct WorkoutSummaryView: View {
     init(workout: WorkoutSession) {
         _workout = Bindable(wrappedValue: workout)
         let sessionID = workout.id
-        _sessionSuggestions = Query(
-            filter: #Predicate<PrescriptionChange> { $0.sessionFrom?.id == sessionID },
-            sort: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
+        _sessionSuggestions = Query(filter: #Predicate<PrescriptionChange> { $0.sessionFrom?.id == sessionID }, sort: [SortDescriptor(\.createdAt, order: .reverse)])
     }
 
     var body: some View {
@@ -98,10 +97,10 @@ struct WorkoutSummaryView: View {
                     }
 
                     if prEntries.isEmpty {
-                        summaryStat(title: "Total Volume", value: "\(totalVolume.formatted(.number.precision(.fractionLength(0...1)))) lbs")
+                        summaryStat(title: "Total Volume", value: formattedTotalVolume)
                     } else {
                         HStack(spacing: 12) {
-                            summaryStat(title: "Total Volume", value: "\(totalVolume.formatted(.number.precision(.fractionLength(0...1)))) lbs")
+                            summaryStat(title: "Total Volume", value: formattedTotalVolume)
                             summaryStat(title: "New PRs", value: "\(prEntries.reduce(0) { $0 + $1.types.count })")
                         }
                     }
@@ -133,23 +132,7 @@ struct WorkoutSummaryView: View {
                             } else {
                                 Text("Suggestions")
                                     .font(.headline)
-                                SuggestionReviewView(
-                                    sections: suggestionSections,
-                                    onAcceptGroup: { changes in
-                                        acceptGroup(changes, context: context)
-                                    },
-                                    onRejectGroup: { changes in
-                                        rejectGroup(changes, context: context)
-                                    },
-                                    onDeferGroup: { changes in
-                                        deferGroup(changes, context: context)
-                                    },
-                                    showDecisionState: true,
-                                    emptyState: SuggestionEmptyState(
-                                        title: "No Suggestions Yet",
-                                        message: "Keep logging workouts so we have enough information to give you detailed suggestions."
-                                    )
-                                )
+                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in acceptGroup(changes, context: context) }, onRejectGroup: { changes in rejectGroup(changes, context: context) }, onDeferGroup: { changes in deferGroup(changes, context: context) }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "Keep logging workouts so we have enough information to give you detailed suggestions."))
                             }
                         }
                     } else if !prEntries.isEmpty {
@@ -259,47 +242,49 @@ struct WorkoutSummaryView: View {
     }
 
     private func loadPRs() {
-        var entries: [PRItem] = []
-        for exercise in workout.sortedExercises {
-            guard let history = ExerciseHistoryUpdater.fetchHistory(for: exercise.catalogID, context: context) else { continue }
-
-            var types: [PRType] = []
-            var values: [PRType: Double] = [:]
-
-            if let current1RM = exercise.bestEstimated1RM {
-                let historical1RM = history.bestEstimated1RM
-                if historical1RM == 0 || current1RM > historical1RM {
-                    types.append(.estimated1RM)
-                    values[.estimated1RM] = current1RM
-                }
-            }
-
-            if let currentWeight = exercise.bestWeight {
-                let historicalWeight = history.bestWeight
-                if historicalWeight == 0 || currentWeight > historicalWeight {
-                    types.append(.maxWeight)
-                    values[.maxWeight] = currentWeight
-                }
-            }
-
-            let currentVolume = exercise.totalVolume
-            if currentVolume > 0 {
-                let historicalVolume = history.bestVolume
-                if historicalVolume == 0 || currentVolume > historicalVolume {
-                    types.append(.totalVolume)
-                    values[.totalVolume] = currentVolume
-                }
-            }
-
-            if !types.isEmpty {
-                entries.append(PRItem(
-                    exerciseName: exercise.name,
-                    types: types.sorted { $0.rawValue < $1.rawValue },
-                    values: values
-                ))
-            }
+        let entries: [PRItem] = workout.sortedExercises.compactMap { exercise in
+            guard let history = ExerciseHistoryUpdater.fetchHistory(for: exercise.catalogID, context: context) else { return nil }
+            return prEntry(for: exercise, history: history)
         }
         prEntries = entries
+    }
+
+    private func prEntry(for exercise: ExercisePerformance, history: ExerciseHistory) -> PRItem? {
+        let (types, values) = prTypesAndValues(for: exercise, history: history)
+        guard !types.isEmpty else { return nil }
+        return PRItem(exerciseName: exercise.name, types: types.sorted { $0.rawValue < $1.rawValue }, values: values)
+    }
+
+    private func prTypesAndValues(for exercise: ExercisePerformance, history: ExerciseHistory) -> (types: [PRType], values: [PRType: Double]) {
+        var types: [PRType] = []
+        var values: [PRType: Double] = [:]
+
+        if let current1RM = exercise.bestEstimated1RM {
+            let historical1RM = history.bestEstimated1RM
+            if historical1RM == 0 || current1RM > historical1RM {
+                types.append(.estimated1RM)
+                values[.estimated1RM] = current1RM
+            }
+        }
+
+        if let currentWeight = exercise.bestWeight {
+            let historicalWeight = history.bestWeight
+            if historicalWeight == 0 || currentWeight > historicalWeight {
+                types.append(.maxWeight)
+                values[.maxWeight] = currentWeight
+            }
+        }
+
+        let currentVolume = exercise.totalVolume
+        if currentVolume > 0 {
+            let historicalVolume = history.bestVolume
+            if historicalVolume == 0 || currentVolume > historicalVolume {
+                types.append(.totalVolume)
+                values[.totalVolume] = currentVolume
+            }
+        }
+
+        return (types, values)
     }
 
     private func prValueText(type: PRType, value: Double) -> String {

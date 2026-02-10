@@ -39,6 +39,27 @@ class ExercisePerformance {
         self.workoutSession = workoutSession
         addSet()
     }
+
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(exercise: Exercise, workoutSession: WorkoutSession, notes: String = "", index: Int? = nil, repRangeMode: RepRangeMode? = nil, lowerRange: Int = 0, upperRange: Int = 0, targetReps: Int = 0) {
+        self.init(exercise: exercise, workoutSession: workoutSession)
+        self.notes = notes
+        if let index {
+            self.index = index
+        }
+        if let repRangeMode {
+            repRange.activeMode = repRangeMode
+            switch repRangeMode {
+            case .range:
+                repRange.lowerRange = lowerRange
+                repRange.upperRange = upperRange
+            case .target:
+                repRange.targetReps = targetReps
+            case .notSet:
+                break
+            }
+        }
+    }
     
     // Adding exercise from plan
     init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
@@ -133,10 +154,7 @@ extension ExercisePerformance {
         let predicate = #Predicate<ExercisePerformance> { item in
             item.catalogID == catalogID && item.workoutSession?.status == done
         }
-        var descriptor = FetchDescriptor(
-            predicate: predicate,
-            sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)]
-        )
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.fetchLimit = 1
         return descriptor
     }
@@ -146,10 +164,7 @@ extension ExercisePerformance {
         let predicate = #Predicate<ExercisePerformance> { item in
             item.catalogID == catalogID && item.workoutSession?.status == done
         }
-        return FetchDescriptor(
-            predicate: predicate,
-            sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)]
-        )
+        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
     }
 
     static var completedAll: FetchDescriptor<ExercisePerformance> {
@@ -157,9 +172,6 @@ extension ExercisePerformance {
         let predicate = #Predicate<ExercisePerformance> { item in
             item.workoutSession?.status == done
         }
-        return FetchDescriptor(
-            predicate: predicate,
-            sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)]
-        )
+        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
     }
 }

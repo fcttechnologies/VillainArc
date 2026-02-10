@@ -22,16 +22,7 @@ struct ReplaceExerciseView: View {
 
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(
-                selectedExercises: $selectedExercises,
-                selectedExerciseIDs: $selectedExerciseIDs,
-                searchText: searchText,
-                muscleFilters: selectedMuscles,
-                favoritesOnly: favoritesOnly,
-                selectedOnly: false,
-                sortOption: exerciseSort,
-                singleSelection: true
-            )
+            FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: false, sortOption: exerciseSort, singleSelection: true)
             .navigationTitle("Replace Exercise")
             .navigationSubtitle(Text(selectedExercise?.name ?? "Select an exercise"))
             .navigationBarTitleDisplayMode(.inline)

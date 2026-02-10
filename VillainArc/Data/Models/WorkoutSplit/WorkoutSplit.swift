@@ -30,6 +30,13 @@ class WorkoutSplit {
         self.mode = mode
     }
 
+    // Test/sample initializer to reduce setup boilerplate.
+    convenience init(title: String = "", mode: SplitMode = .weekly, isActive: Bool = false) {
+        self.init(mode: mode)
+        self.title = title
+        self.isActive = isActive
+    }
+
     func missedDay() {
         weeklySplitOffset = wrappedWeeklyOffset(weeklySplitOffset - 1)
     }

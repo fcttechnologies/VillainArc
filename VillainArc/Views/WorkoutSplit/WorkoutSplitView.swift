@@ -150,10 +150,7 @@ struct WorkoutSplitView: View {
 
     private func createSplit(mode: SplitMode) {
         Haptics.selection()
-        let split = WorkoutSplit(mode: mode)
-        if splits.isEmpty {
-            split.isActive = true
-        }
+        let split = WorkoutSplit(mode: mode, isActive: splits.isEmpty)
 
         switch mode {
         case .weekly:
@@ -244,11 +241,7 @@ private struct ActiveSplitSummaryView: View {
             Haptics.selection()
             planPickerDay = day
         } label: {
-            ContentUnavailableView(
-                "No plan selected for this day",
-                systemImage: "list.bullet.clipboard",
-                description: Text("Tap to choose a workout plan.")
-            )
+            ContentUnavailableView("No plan selected for this day", systemImage: "list.bullet.clipboard", description: Text("Tap to choose a workout plan."))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("workoutSplitSelectPlanButton")

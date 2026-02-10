@@ -32,12 +32,12 @@ struct ExerciseHistoryUpdater {
     }
     
     /// Updates histories for all exercises affected by a deleted workout session.
-    /// Call this BEFORE deleting the workout session from context.
+    /// Call this AFTER deleting the workout session from context.
     static func updateHistoriesForDeletedWorkout(_ session: WorkoutSession, context: ModelContext) {
         let catalogIDs = Set(session.exercises.map { $0.catalogID })
         
-        // Note: Update must happen AFTER the session is deleted from context
-        // so the fetch won't include the deleted performances
+        // Update must happen after the session is deleted so the fetch
+        // won't include the deleted performances.
         for catalogID in catalogIDs {
             updateHistory(for: catalogID, context: context)
         }

@@ -355,31 +355,32 @@ struct WorkoutView: View {
         
         switch result {
         case .finished:
-            Haptics.selection()
-            restTimer.stop()
             saveContext(context: context)
             SpotlightIndexer.index(workoutSession: workout)
-            WorkoutActivityManager.end()
+            endWorkoutSession(shouldDismiss: false)
             Task {
                 await IntentDonations.donateFinishWorkout()
                 await IntentDonations.donateLastWorkoutSummary()
             }
         case .workoutDeleted:
-            Haptics.selection()
-            restTimer.stop()
             saveContext(context: context)
-            WorkoutActivityManager.end()
-            dismiss()
+            endWorkoutSession(shouldDismiss: true)
         }
     }
     
     private func deleteWorkout() {
-        Haptics.selection()
-        restTimer.stop()
         context.delete(workout)
         Task { await IntentDonations.donateCancelWorkout() }
+        endWorkoutSession(shouldDismiss: true)
+    }
+
+    private func endWorkoutSession(shouldDismiss: Bool) {
+        Haptics.selection()
+        restTimer.stop()
         WorkoutActivityManager.end()
-        dismiss()
+        if shouldDismiss {
+            dismiss()
+        }
     }
     
     private func deleteExercise(offsets: IndexSet) {

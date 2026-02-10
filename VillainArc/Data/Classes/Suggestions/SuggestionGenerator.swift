@@ -18,12 +18,7 @@ struct SuggestionGenerator {
 
             // Trigger AI if we don't know the training style
             if resolvedTrainingStyle == .unknown {
-                aiRequests[exercisePerf.id] = AIRequest(
-                    exerciseName: exercisePerf.name,
-                    catalogID: exercisePerf.catalogID,
-                    primaryMuscle: prescription.musclesTargeted.first?.rawValue ?? "Unknown",
-                    snapshot: AIExercisePerformanceSnapshot(performance: exercisePerf)
-                )
+                aiRequests[exercisePerf.id] = AIRequest(exerciseName: exercisePerf.name, catalogID: exercisePerf.catalogID, primaryMuscle: prescription.musclesTargeted.first?.rawValue ?? "Unknown", snapshot: AIExercisePerformanceSnapshot(performance: exercisePerf))
             }
         }
         
@@ -57,7 +52,7 @@ struct SuggestionGenerator {
             guard let prescription = exercisePerf.prescription else { continue }
             
             // Re-fetch logic (fast, cached by context)
-            let history = fetchHistory(catalogID: exercisePerf.catalogID, context: context)
+            let performanceHistory = fetchCompletedPerformances(catalogID: exercisePerf.catalogID, context: context)
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
 
             var resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)
@@ -68,14 +63,7 @@ struct SuggestionGenerator {
                 resolvedTrainingStyle = aiStyle
             }
 
-            let suggestionContext = ExerciseSuggestionContext(
-                session: session,
-                performance: exercisePerf,
-                prescription: prescription,
-                history: history,
-                plan: plan,
-                resolvedTrainingStyle: resolvedTrainingStyle
-            )
+            let suggestionContext = ExerciseSuggestionContext(session: session, performance: exercisePerf, prescription: prescription, history: performanceHistory, plan: plan, resolvedTrainingStyle: resolvedTrainingStyle)
 
             let candidateSuggestions = RuleEngine.evaluate(context: suggestionContext)
             allSuggestions.append(contentsOf: candidateSuggestions)
@@ -91,7 +79,7 @@ struct SuggestionGenerator {
         let snapshot: AIExercisePerformanceSnapshot
     }
 
-    private static func fetchHistory(catalogID: String, limit: Int? = nil, context: ModelContext) -> [ExercisePerformance] {
+    private static func fetchCompletedPerformances(catalogID: String, limit: Int? = nil, context: ModelContext) -> [ExercisePerformance] {
         // Pull the most recent completed sessions for this exercise.
         var descriptor = ExercisePerformance.matching(catalogID: catalogID)
         if let limit {

@@ -72,47 +72,13 @@ extension WorkoutSessionEntity {
         startedAt = workoutSession.startedAt
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
-        let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(
-            feeling: workoutSession.preStatus.feeling.displayName,
-            notes: workoutSession.preStatus.notes.isEmpty ? nil : workoutSession.preStatus.notes,
-            tookPreWorkout: workoutSession.preStatus.tookPreWorkout
-        )
-        let postEffort = workoutSession.postEffort.map { effort in
-            WorkoutSessionFullContent.PostWorkoutEffort(
-                rpe: effort.rpe,
-                notes: effort.notes.isEmpty ? nil : effort.notes
-            )
-        }
-        fullContent = WorkoutSessionFullContent(
-            id: workoutSession.id,
-            title: workoutSession.title,
-            summary: workoutSession.spotlightSummary,
-            notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes,
-            startedAt: workoutSession.startedAt,
-            endedAt: workoutSession.endedAt,
-            origin: workoutSession.origin.rawValue,
-            preStatus: preStatus,
-            postWorkoutEffort: postEffort,
-            exercises: exercises.map { exercise in
-                WorkoutSessionFullContent.Exercise(
-                    index: exercise.index,
-                    name: exercise.name,
-                    notes: exercise.notes.isEmpty ? nil : exercise.notes,
-                    muscles: exercise.musclesTargeted.map(\.rawValue),
-                    sets: exercise.sortedSets.map { set in
-                        WorkoutSessionFullContent.Exercise.SetEntry(
-                            index: set.index,
-                            type: set.type.displayName,
-                            reps: set.reps,
-                            weight: set.weight,
-                            restSeconds: set.restSeconds,
-                            complete: set.complete,
-                            completedAt: set.completedAt
-                        )
-                    }
-                )
-            }
-        )
+        let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(feeling: workoutSession.preStatus.feeling.displayName, notes: workoutSession.preStatus.notes.isEmpty ? nil : workoutSession.preStatus.notes, tookPreWorkout: workoutSession.preStatus.tookPreWorkout)
+        let postEffort = workoutSession.postEffort.map { effort in WorkoutSessionFullContent.PostWorkoutEffort(rpe: effort.rpe, notes: effort.notes.isEmpty ? nil : effort.notes) }
+        fullContent = WorkoutSessionFullContent(id: workoutSession.id, title: workoutSession.title, summary: workoutSession.spotlightSummary, notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes, startedAt: workoutSession.startedAt, endedAt: workoutSession.endedAt, origin: workoutSession.origin.rawValue, preStatus: preStatus, postWorkoutEffort: postEffort, exercises: exercises.map { exercise in
+            WorkoutSessionFullContent.Exercise(index: exercise.index, name: exercise.name, notes: exercise.notes.isEmpty ? nil : exercise.notes, muscles: exercise.musclesTargeted.map(\.rawValue), sets: exercise.sortedSets.map { set in
+                WorkoutSessionFullContent.Exercise.SetEntry(index: set.index, type: set.type.displayName, reps: set.reps, weight: set.weight, restSeconds: set.restSeconds, complete: set.complete, completedAt: set.completedAt)
+            })
+        })
     }
 }
 
@@ -169,13 +135,7 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
             let predicate = #Predicate<WorkoutSession> {
                 $0.status == done && $0.title.localizedStandardContains(trimmed)
             }
-            descriptor = FetchDescriptor(
-                predicate: predicate,
-                sortBy: [
-                    SortDescriptor(\WorkoutSession.startedAt, order: .reverse),
-                    SortDescriptor(\WorkoutSession.title)
-                ]
-            )
+            descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\WorkoutSession.startedAt, order: .reverse), SortDescriptor(\WorkoutSession.title)])
         }
         let sessions = (try? context.fetch(descriptor)) ?? []
         return sessions.map(WorkoutSessionEntity.init)

@@ -25,6 +25,8 @@ struct OutcomeRuleEngine {
             return evaluateRepRangeChange(change: change, regularSets: regularSets, exercisePerf: exercisePerf)
         case .changeSetType:
             return evaluateSetTypeChange(change: change, exercisePerf: exercisePerf)
+        case .removeSet:
+            return evaluateRemoveSetChange(change: change, exercisePerf: exercisePerf)
         default:
             return nil
         }
@@ -201,6 +203,29 @@ struct OutcomeRuleEngine {
             return OutcomeSignal(outcome: .good, confidence: 0.95, reason: "Set type matches the new target (\(newType)).")
         }
         return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual set type (\(setPerf.type)) doesn't match new target (\(newType)).")
+    }
+
+    // MARK: - Remove Set Change
+
+    private static func evaluateRemoveSetChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
+        guard let oldCount = change.previousValue.map({ Int($0) }),
+              let newCount = change.newValue.map({ Int($0) }) else { return nil }
+
+        let completedWorkingSets = exercisePerf.sortedSets.filter { $0.type == .working }
+        let actualCount = completedWorkingSets.count
+
+        // If user completed the reduced number of sets (or fewer), the volume reduction was appropriate.
+        if actualCount <= newCount {
+            return OutcomeSignal(outcome: .good, confidence: 0.85, reason: "User completed \(actualCount) working sets, matching or below the suggested \(newCount).")
+        }
+
+        // If user completed the original prescribed count, they ignored the suggestion.
+        if actualCount >= oldCount {
+            return OutcomeSignal(outcome: .ignored, confidence: 0.85, reason: "User completed \(actualCount) working sets, same as the original \(oldCount) — volume reduction not followed.")
+        }
+
+        // In between: partial adherence.
+        return OutcomeSignal(outcome: .good, confidence: 0.6, reason: "User completed \(actualCount) working sets, between old (\(oldCount)) and suggested (\(newCount)).")
     }
 
     // MARK: - Rule Helpers
