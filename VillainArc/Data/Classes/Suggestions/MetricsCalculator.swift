@@ -1,91 +1,59 @@
 import Foundation
+import FoundationModels
 
-enum SetEligibility {
-    case workingSet
-    case supportSet
-    case warmupSet
-}
-
-enum TrainingStyle {
-    case straightSets        // all weights within ~10% of average
-    case ascendingPyramid    // weight peaks in middle, not first or last
-    case descendingPyramid   // heaviest first, weight drops each set
-    case ascending           // weights ramp up monotonically, heaviest is last
-    case topSetBackoffs      // 1-3 heavy sets at top, remaining are clearly lighter
-    case unknown
-}
-
-extension ExerciseSetType {
-    var eligibility: SetEligibility {
-        switch self {
-        case .working:
-            return .workingSet
-        case .dropSet:
-            return .supportSet
-        case .warmup:
-            return .warmupSet
-        }
-    }
-
-    var shouldDriveProgression: Bool {
-        eligibility == .workingSet
-    }
+@Generable
+enum TrainingStyle: String {
+    case straightSets = "Straight Sets"        // all weights within ~10% of average
+    case ascendingPyramid = "Ascending Pyramid" // weight peaks in middle, not first or last
+    case descendingPyramid = "Descending Pyramid" // heaviest first, weight drops each set
+    case ascending = "Ascending"               // weights ramp up monotonically, heaviest is last
+    case topSetBackoffs = "Top Set Then Backoffs" // 1-3 heavy sets at top, remaining are clearly lighter
+    case unknown = "Unknown"
 }
 
 struct MetricsCalculator {
     static func selectProgressionSets(from performance: ExercisePerformance, overrideStyle: TrainingStyle? = nil) -> [SetPerformance] {
-        // Picks the best 1–2 working sets to drive progression rules.
+        // Picks the working sets that drive progression rules.
         let sets = performance.sortedSets
         guard !sets.isEmpty else { return [] }
 
         let regularSets = sets.filter { $0.type == .working }
-        if regularSets.count >= 2 {
-            // If user labels sets properly, take the heaviest regular sets.
-            return Array(regularSets.sorted { $0.weight > $1.weight }.prefix(2))
+        if !regularSets.isEmpty {
+            // If user labels sets properly, use all regular sets.
+            return regularSets
         }
 
-        if regularSets.isEmpty {
-            // If set types are unreliable, infer training style by weight pattern.
-            let style = overrideStyle ?? detectTrainingStyle(sets)
-            return setsForStyle(style, from: sets)
-        }
-
-        // If there are some regular sets but fewer than 2, backfill with heaviest non-warmups.
-        var selected = regularSets
-        if selected.count < 2 {
-            let nonWarmup = sets.filter { $0.type != .warmup }
-            let additional = nonWarmup
-                .filter { candidate in
-                    !selected.contains { $0.id == candidate.id }
-                }
-                .sorted { $0.weight > $1.weight }
-            selected.append(contentsOf: Array(additional.prefix(2 - selected.count)))
-        }
-
-        return selected
+        // If set types are unreliable, infer training style by weight pattern.
+        let style = overrideStyle ?? detectTrainingStyle(sets)
+        return setsForStyle(style, from: sets)
     }
 
     private static func setsForStyle(_ style: TrainingStyle, from sets: [SetPerformance]) -> [SetPerformance] {
         switch style {
         case .straightSets:
-            return Array(sets.prefix(2))
+            return sets
         case .ascendingPyramid:
             let maxWeight = sets.map { $0.weight }.max() ?? 0
-            let topSets = sets.filter { $0.weight >= maxWeight * 0.95 }
-            return Array(topSets.sorted { $0.index < $1.index }.prefix(2))
+            return sets.filter { $0.weight >= maxWeight * 0.95 }
+                .sorted { $0.index < $1.index }
         case .descendingPyramid:
-            return Array(sets.prefix(2))
+            // Heaviest sets are at the front; include all sets near top weight.
+            let maxWeight = sets.map { $0.weight }.max() ?? 0
+            return sets.filter { $0.weight >= maxWeight * 0.9 }
+                .sorted { $0.index < $1.index }
         case .ascending:
-            // Heaviest sets are at the end.
-            return Array(sets.suffix(2).reversed())
+            // Heaviest sets are at the end; include all sets near top weight.
+            let maxWeight = sets.map { $0.weight }.max() ?? 0
+            return sets.filter { $0.weight >= maxWeight * 0.9 }
+                .sorted { $0.index < $1.index }
         case .topSetBackoffs:
             // Pick the heavy cluster: sets within 10% of max weight.
             let maxWeight = sets.map { $0.weight }.max() ?? 0
-            guard maxWeight > 0 else { return Array(sets.prefix(2)) }
-            let heavyCluster = sets.filter { $0.weight >= maxWeight * 0.9 }
-            return Array(heavyCluster.sorted { $0.weight > $1.weight }.prefix(3))
+            guard maxWeight > 0 else { return sets }
+            return sets.filter { $0.weight >= maxWeight * 0.9 }
+                .sorted { $0.weight > $1.weight }
         case .unknown:
-            return Array(sets.sorted { $0.weight > $1.weight }.prefix(2))
+            return sets.sorted { $0.weight > $1.weight }
         }
     }
 

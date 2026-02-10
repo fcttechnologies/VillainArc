@@ -36,33 +36,6 @@ enum AIExerciseSetType: String, Equatable, Sendable {
     }
 }
 
-@Generable
-enum AITrainingStyleClassification: String, Equatable, Sendable {
-    case straightSets = "Straight Sets"
-    case ascendingPyramid = "Ascending Pyramid"
-    case descendingPyramid = "Descending Pyramid"
-    case ascending = "Ascending"
-    case topSetBackoffs = "Top Set Then Backoffs"
-    case unknown = "Unknown"
-    
-    var trainingStyle: TrainingStyle {
-        switch self {
-        case .straightSets:
-            return .straightSets
-        case .ascendingPyramid:
-            return .ascendingPyramid
-        case .descendingPyramid:
-            return .descendingPyramid
-        case .ascending:
-            return .ascending
-        case .topSetBackoffs:
-            return .topSetBackoffs
-        case .unknown:
-            return .unknown
-        }
-    }
-}
-
 // MARK: - AI Input
 
 @Generable
@@ -80,22 +53,8 @@ struct AIInferenceInput: Equatable, Sendable {
 
 @Generable
 struct AIInferenceOutput: Equatable, Sendable {
-    @Guide(description: "Classified rep range mode and values. Nil if unable to determine.")
-    let repRangeClassification: AIRepRangeClassification?
     @Guide(description: "Classified training style. Nil if unable to determine.")
-    let trainingStyleClassification: AITrainingStyleClassification?
-}
-
-@Generable
-struct AIRepRangeClassification: Equatable, Sendable {
-    @Guide(description: "Classified rep range mode: Target or Range only.")
-    let mode: AIRepRangeMode
-    @Guide(description: "Lower bound of rep range (when mode is Range). 0 if not applicable.")
-    let lowerRange: Int
-    @Guide(description: "Upper bound of rep range (when mode is Range). 0 if not applicable.")
-    let upperRange: Int
-    @Guide(description: "Target reps (when mode is Target). 0 if not applicable.")
-    let targetReps: Int
+    let trainingStyleClassification: TrainingStyle?
 }
 
 // MARK: - Performance Snapshots (used as input and tool return type)
@@ -149,7 +108,7 @@ struct AIExercisePerformanceSnapshot: Equatable, Sendable {
 struct AISetPerformanceSnapshot: Equatable, Sendable {
     @Guide(description: "0-based set index within the exercise.")
     let index: Int
-    @Guide(description: "Type of set: warmup, regular, superSet, dropSet, or failure.")
+    @Guide(description: "Type of set: warmup, regular, or dropSet.")
     let setType: AIExerciseSetType
     @Guide(description: "Actual weight used for the set.")
     let weight: Double

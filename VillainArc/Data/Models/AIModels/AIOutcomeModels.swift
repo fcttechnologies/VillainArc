@@ -30,57 +30,12 @@ enum AIOutcome: String, Equatable, Sendable {
     }
 }
 
-// MARK: - AI Change Type (supported for outcome evaluation)
-
-@Generable
-enum AIOutcomeChangeType: String, Equatable, Sendable {
-    case increaseWeight = "Increase Weight"
-    case decreaseWeight = "Decrease Weight"
-    case increaseReps = "Increase Reps"
-    case decreaseReps = "Decrease Reps"
-    case increaseRest = "Increase Rest"
-    case decreaseRest = "Decrease Rest"
-    case changeRestTimeMode = "Change Rest Time Mode"
-    case increaseRestTimeSeconds = "Increase Rest Time Seconds"
-    case decreaseRestTimeSeconds = "Decrease Rest Time Seconds"
-    case changeSetType = "Change Set Type"
-    case changeRepRangeMode = "Change Rep Range Mode"
-    case increaseRepRangeLower = "Increase Rep Range Lower"
-    case decreaseRepRangeLower = "Decrease Rep Range Lower"
-    case increaseRepRangeUpper = "Increase Rep Range Upper"
-    case decreaseRepRangeUpper = "Decrease Rep Range Upper"
-    case increaseRepRangeTarget = "Increase Rep Range Target"
-    case decreaseRepRangeTarget = "Decrease Rep Range Target"
-
-    init?(from changeType: ChangeType) {
-        switch changeType {
-        case .increaseWeight: self = .increaseWeight
-        case .decreaseWeight: self = .decreaseWeight
-        case .increaseReps: self = .increaseReps
-        case .decreaseReps: self = .decreaseReps
-        case .increaseRest: self = .increaseRest
-        case .decreaseRest: self = .decreaseRest
-        case .changeRestTimeMode: self = .changeRestTimeMode
-        case .increaseRestTimeSeconds: self = .increaseRestTimeSeconds
-        case .decreaseRestTimeSeconds: self = .decreaseRestTimeSeconds
-        case .changeSetType: self = .changeSetType
-        case .changeRepRangeMode: self = .changeRepRangeMode
-        case .increaseRepRangeLower: self = .increaseRepRangeLower
-        case .decreaseRepRangeLower: self = .decreaseRepRangeLower
-        case .increaseRepRangeUpper: self = .increaseRepRangeUpper
-        case .decreaseRepRangeUpper: self = .decreaseRepRangeUpper
-        case .increaseRepRangeTarget: self = .increaseRepRangeTarget
-        case .decreaseRepRangeTarget: self = .decreaseRepRangeTarget
-        }
-    }
-}
-
 // MARK: - Individual Change Description
 
 @Generable
 struct AIOutcomeChange: Equatable, Sendable {
     @Guide(description: "Type of change that was suggested.")
-    let changeType: AIOutcomeChangeType
+    let changeType: ChangeType
     @Guide(description: "Previous value before the change (e.g., \"135.0\" for weight, \"10\" for reps, \"90\" for rest seconds, \"Warm Up Set\" for set type, \"Range\" for rep range mode).")
     let previousValue: String?
     @Guide(description: "New value after the change (e.g., \"140.0\" for weight, \"12\" for reps, \"120\" for rest seconds, \"Regular Set\" for set type, \"Target\" for rep range mode).")

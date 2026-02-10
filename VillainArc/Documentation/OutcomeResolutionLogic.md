@@ -135,5 +135,5 @@ This aggregation is for AI context only. Final merge still uses each change's ow
 
 - Resolver orchestrator: `Data/Classes/Suggestions/OutcomeResolver.swift`
 - Deterministic rule evaluator: `Data/Classes/Suggestions/OutcomeRuleEngine.swift`
-- AI outcome models: `Data/Classes/Suggestions/AIOutcomeModels.swift`
+- AI outcome models: `Data/Models/AIModels/AIOutcomeModels.swift`
 - AI outcome inference: `Data/Classes/Suggestions/AIOutcomeInferrer.swift`

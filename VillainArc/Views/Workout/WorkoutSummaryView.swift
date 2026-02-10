@@ -305,7 +305,7 @@ struct WorkoutSummaryView: View {
     private func prValueText(type: PRType, value: Double) -> String {
         switch type {
         case .estimated1RM:
-            return "Estimated 1RM: \(formatWeight(value))"
+            return "New Estimated 1RM: \(formatWeight(value))"
         case .maxWeight:
             return "Max Weight: \(formatWeight(value))"
         case .totalVolume:

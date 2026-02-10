@@ -206,10 +206,9 @@ struct OutcomeResolver {
 
     private static func buildAIGroupInput(group: OutcomeGroup, ruleResults: [UUID: OutcomeSignal?]) -> AIOutcomeGroupInput? {
         // Convert changes to AI-friendly format.
-        let aiChanges: [AIOutcomeChange] = group.changes.compactMap { change in
-            guard let aiType = AIOutcomeChangeType(from: change.changeType) else { return nil }
-            return AIOutcomeChange(
-                changeType: aiType,
+        let aiChanges: [AIOutcomeChange] = group.changes.map { change in
+            AIOutcomeChange(
+                changeType: change.changeType,
                 previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
                 newValue: formattedChangeValue(change.newValue, changeType: change.changeType),
                 targetSetIndex: change.targetSetPrescription?.index

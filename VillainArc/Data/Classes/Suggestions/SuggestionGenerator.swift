@@ -13,14 +13,11 @@ struct SuggestionGenerator {
         for exercisePerf in session.sortedExercises {
             guard let prescription = exercisePerf.prescription else { continue }
             
-            let history = fetchHistory(catalogID: exercisePerf.catalogID, limit: 10, context: context)
-            let isNewExercise = history.count < 10
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
             let resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)
-            let needsRepRange = prescription.repRange.activeMode == .notSet
 
-            // Trigger AI if we don't know the style OR it's a new exercise (so we need rep range help)
-            if resolvedTrainingStyle == .unknown || (needsRepRange && isNewExercise) {
+            // Trigger AI if we don't know the training style
+            if resolvedTrainingStyle == .unknown {
                 aiRequests[exercisePerf.id] = AIRequest(
                     exerciseName: exercisePerf.name,
                     catalogID: exercisePerf.catalogID,
@@ -34,7 +31,7 @@ struct SuggestionGenerator {
         let aiResults = await withTaskGroup(of: (UUID, AIInferenceOutput?).self) { group in
             for (id, request) in aiRequests {
                 group.addTask {
-                    let result = await AIConfigurationInferrer.infer(
+                    let result = await AITrainingStyleClassifier.infer(
                         exerciseName: request.exerciseName,
                         catalogID: request.catalogID,
                         primaryMuscle: request.primaryMuscle,
@@ -62,28 +59,13 @@ struct SuggestionGenerator {
             // Re-fetch logic (fast, cached by context)
             let history = fetchHistory(catalogID: exercisePerf.catalogID, context: context)
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
-            let needsRepRange = prescription.repRange.activeMode == .notSet
-            let isNewExercise = history.count < 10
 
             var resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)
             let aiResult = aiResults[exercisePerf.id]
             
             if resolvedTrainingStyle == .unknown,
-               let aiStyle = aiResult?.trainingStyleClassification?.trainingStyle {
+               let aiStyle = aiResult?.trainingStyleClassification {
                 resolvedTrainingStyle = aiStyle
-            }
-
-            var inferredRepRangeCandidate: RepRangeCandidateKind?
-            if needsRepRange {
-                if isNewExercise {
-                    // New/Weak history: Trust AI
-                    if let aiClassification = aiResult?.repRangeClassification {
-                        inferredRepRangeCandidate = RuleEngine.repRangeCandidate(from: aiClassification)
-                    }
-                } else {
-                    // Established history: Trust the most frequent mode from history
-                    inferredRepRangeCandidate = RuleEngine.repRangeCandidate(from: history)
-                }
             }
 
             let suggestionContext = ExerciseSuggestionContext(
@@ -92,15 +74,14 @@ struct SuggestionGenerator {
                 prescription: prescription,
                 history: history,
                 plan: plan,
-                resolvedTrainingStyle: resolvedTrainingStyle,
-                inferredRepRangeCandidate: inferredRepRangeCandidate
+                resolvedTrainingStyle: resolvedTrainingStyle
             )
 
             let candidateSuggestions = RuleEngine.evaluate(context: suggestionContext)
             allSuggestions.append(contentsOf: candidateSuggestions)
         }
 
-        return SuggestionDeduplicator.process(suggestions: allSuggestions, context: context)
+        return SuggestionDeduplicator.process(suggestions: allSuggestions)
     }
     
     private struct AIRequest: Sendable {

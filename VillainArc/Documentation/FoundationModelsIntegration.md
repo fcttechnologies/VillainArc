@@ -11,7 +11,7 @@ VillainArc uses Foundation Models in two independent flows:
 
 ### Models
 
-File: `Data/Classes/Suggestions/AISuggestionModels.swift`
+File: `Data/Models/AIModels/AISuggestionModels.swift`
 
 Primary types:
 
@@ -19,18 +19,17 @@ Primary types:
 - `AIExercisePerformanceSnapshot`
 - `AISetPerformanceSnapshot`
 - `AIInferenceOutput`
-- `AIRepRangeClassification`
-- `AITrainingStyleClassification`
+- `TrainingStyle`
 
 ### Tooling
 
-File: `Data/Classes/Suggestions/AISuggestionTools.swift`
+File: `Data/Classes/Suggestions/AITrainingStyleTools.swift`
 
 - `RecentExercisePerformancesTool` allows the model to request additional recent history.
 
 ### Inferrer
 
-File: `Data/Classes/Suggestions/AIConfigurationInferrer.swift`
+File: `Data/Classes/Suggestions/AITrainingStyleClassifier.swift`
 
 - Builds prompt + instructions.
 - Starts a fresh `LanguageModelSession` per request.
@@ -42,18 +41,18 @@ File: `Data/Classes/Suggestions/SuggestionGenerator.swift`
 
 - AI requests are prepared on main actor.
 - Inference runs in parallel via `TaskGroup`.
-- AI output is used to supplement deterministic rules for unknown training style and missing rep range.
+- AI output is used to supplement deterministic rules for unknown training style.
 
 ## 2) Outcome Inference (Change Outcome Resolution)
 
 ### Models
 
-File: `Data/Classes/Suggestions/AIOutcomeModels.swift`
+File: `Data/Models/AIModels/AIOutcomeModels.swift`
 
 Primary types:
 
 - `AIOutcome`
-- `AIOutcomeChangeType`
+- `ChangeType`
 - `AIOutcomeChange`
 - `AIExercisePrescriptionSnapshot`
 - `AISetPrescriptionSnapshot`
@@ -100,11 +99,11 @@ Flow:
 
 ## 4) File Map
 
-- Config models: `Data/Classes/Suggestions/AISuggestionModels.swift`
-- Config tools: `Data/Classes/Suggestions/AISuggestionTools.swift`
-- Config inferrer: `Data/Classes/Suggestions/AIConfigurationInferrer.swift`
+- Config models: `Data/Models/AIModels/AISuggestionModels.swift`
+- Config tools: `Data/Classes/Suggestions/AITrainingStyleTools.swift`
+- Config inferrer: `Data/Classes/Suggestions/AITrainingStyleClassifier.swift`
 - Config pipeline usage: `Data/Classes/Suggestions/SuggestionGenerator.swift`
 
-- Outcome models: `Data/Classes/Suggestions/AIOutcomeModels.swift`
+- Outcome models: `Data/Models/AIModels/AIOutcomeModels.swift`
 - Outcome inferrer: `Data/Classes/Suggestions/AIOutcomeInferrer.swift`
 - Outcome pipeline usage: `Data/Classes/Suggestions/OutcomeResolver.swift`
