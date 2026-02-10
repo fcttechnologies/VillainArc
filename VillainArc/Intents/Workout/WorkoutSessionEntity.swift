@@ -11,7 +11,7 @@ struct WorkoutSessionFullContent: Codable {
     }
 
     struct PostWorkoutEffort: Codable {
-        let rpe: Int
+        let effort: Int
         let notes: String?
     }
 
@@ -73,7 +73,7 @@ extension WorkoutSessionEntity {
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
         let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(feeling: workoutSession.preStatus.feeling.displayName, notes: workoutSession.preStatus.notes.isEmpty ? nil : workoutSession.preStatus.notes, tookPreWorkout: workoutSession.preStatus.tookPreWorkout)
-        let postEffort = workoutSession.postEffort.map { effort in WorkoutSessionFullContent.PostWorkoutEffort(rpe: effort.rpe, notes: effort.notes.isEmpty ? nil : effort.notes) }
+        let postEffort = workoutSession.postEffort.map { effort in WorkoutSessionFullContent.PostWorkoutEffort(effort: effort.effort, notes: effort.notes.isEmpty ? nil : effort.notes) }
         fullContent = WorkoutSessionFullContent(id: workoutSession.id, title: workoutSession.title, summary: workoutSession.spotlightSummary, notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes, startedAt: workoutSession.startedAt, endedAt: workoutSession.endedAt, origin: workoutSession.origin.rawValue, preStatus: preStatus, postWorkoutEffort: postEffort, exercises: exercises.map { exercise in
             WorkoutSessionFullContent.Exercise(index: exercise.index, name: exercise.name, notes: exercise.notes.isEmpty ? nil : exercise.notes, muscles: exercise.musclesTargeted.map(\.rawValue), sets: exercise.sortedSets.map { set in
                 WorkoutSessionFullContent.Exercise.SetEntry(index: set.index, type: set.type.displayName, reps: set.reps, weight: set.weight, restSeconds: set.restSeconds, complete: set.complete, completedAt: set.completedAt)

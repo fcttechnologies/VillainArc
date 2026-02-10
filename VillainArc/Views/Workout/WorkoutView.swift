@@ -98,7 +98,7 @@ struct WorkoutView: View {
                     }
             }
             .sheet(isPresented: $showPreWorkoutSheet) {
-                PreWorkoutMoodView(status: workout.preStatus)
+                PreWorkoutStatusView(status: workout.preStatus)
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
                         if workout.preStatus.feeling == .notSet {

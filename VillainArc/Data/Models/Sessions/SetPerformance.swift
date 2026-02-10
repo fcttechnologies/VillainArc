@@ -9,6 +9,7 @@ class SetPerformance {
     var weight: Double = 0
     var reps: Int = 0
     var restSeconds: Int = 0
+    var rpe: Int = 0
     var complete: Bool = false
     var completedAt: Date?
     var exercise: ExercisePerformance?

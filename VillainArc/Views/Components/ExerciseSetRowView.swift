@@ -26,6 +26,7 @@ struct ExerciseSetRowView: View {
     private let restTimer = RestTimerState.shared
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
+    @State private var showRPEPicker = false
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
@@ -40,6 +41,9 @@ struct ExerciseSetRowView: View {
                         Haptics.selection()
                         saveContext(context: context)
                         WorkoutActivityManager.update()
+                        if newValue == .warmup {
+                            set.rpe = 0
+                        }
                     }
                 })) {
                     ForEach(ExerciseSetType.allCases, id: \.self) { type in
@@ -48,6 +52,11 @@ struct ExerciseSetRowView: View {
                     }
                 }
                 Divider()
+                if set.type != .warmup {
+                    Button("RPE\(set.rpe > 0 ? " (\(set.rpe))" : "")", systemImage: "flame.fill") {
+                        showRPEPicker = true
+                    }
+                }
                 if exercise.sets.count > 1 {
                     Button("Delete Set", systemImage: "trash", role: .destructive) {
                         deleteSet()
@@ -145,6 +154,13 @@ struct ExerciseSetRowView: View {
         .onChange(of: set.weight) {
             scheduleSave(context: context)
             WorkoutActivityManager.update()
+        }
+        .sheet(isPresented: $showRPEPicker) {
+            RPEPickerView(rpe: $set.rpe)
+                .presentationDetents([.fraction(0.25)])
+                .onChange(of: set.rpe) {
+                    saveContext(context: context)
+                }
         }
         .alert("Replace Rest Timer?", isPresented: $showOverrideTimerAlert) {
             Button("Replace", role: .destructive) {
