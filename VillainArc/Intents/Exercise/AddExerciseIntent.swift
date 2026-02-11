@@ -29,7 +29,6 @@ struct AddExerciseIntent: AppIntent {
             workout.addExercise(resolvedExercise)
             resolvedExercise.updateLastUsed()
             SpotlightIndexer.index(exercise: resolvedExercise)
-            ExerciseHistoryUpdater.createIfNeeded(for: resolvedExercise.catalogID, context: context)
             saveContext(context: context)
             WorkoutActivityManager.update(for: workout)
             return .result(dialog: "Added \(resolvedExercise.name) to your workout.")

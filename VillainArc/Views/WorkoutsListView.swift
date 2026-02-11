@@ -92,7 +92,6 @@ struct WorkoutsListView: View {
         for workout in workoutsToDelete {
             context.delete(workout)
         }
-        saveContext(context: context)
         
         // Update exercise histories for affected exercises
         for catalogID in affectedCatalogIDs {
@@ -117,7 +116,6 @@ struct WorkoutsListView: View {
         for workout in workouts {
             context.delete(workout)
         }
-        saveContext(context: context)
         
         // Update exercise histories for affected exercises
         // This will delete histories where no performances remain

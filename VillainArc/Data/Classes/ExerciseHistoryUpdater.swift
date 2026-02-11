@@ -87,21 +87,6 @@ struct ExerciseHistoryUpdater {
         print("✅ ExerciseHistoryUpdater: Updated history for \(catalogID) - \(history.totalSessions) sessions")
     }
     
-    /// Recalculates ALL exercise histories (useful for migration or data fixes)
-    static func rebuildAllHistories(context: ModelContext) async {
-        // Get all unique catalogIDs from completed performances
-        let allPerformances = (try? context.fetch(ExercisePerformance.completedAll)) ?? []
-        let catalogIDs = Set(allPerformances.map { $0.catalogID })
-        
-        print("🔄 ExerciseHistoryUpdater: Rebuilding histories for \(catalogIDs.count) exercises...")
-        
-        for catalogID in catalogIDs {
-            updateHistory(for: catalogID, context: context)
-        }
-        
-        print("✅ ExerciseHistoryUpdater: Rebuild complete")
-    }
-    
     /// Creates an ExerciseHistory for a catalogID if one doesn't already exist.
     /// Call this when an exercise is added to a workout so history is ready
     /// for PR detection and suggestion generation later.

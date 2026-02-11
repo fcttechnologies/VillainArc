@@ -293,6 +293,7 @@ struct WorkoutSummaryView: View {
 
     private func loadPRs() {
         let entries: [PRItem] = workout.sortedExercises.compactMap { exercise in
+            ExerciseHistoryUpdater.createIfNeeded(for: exercise.catalogID, context: context)
             guard let history = ExerciseHistoryUpdater.fetchHistory(for: exercise.catalogID, context: context) else { return nil }
             return prEntry(for: exercise, history: history)
         }

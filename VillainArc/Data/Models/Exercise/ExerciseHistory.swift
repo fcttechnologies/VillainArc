@@ -332,8 +332,4 @@ class ExerciseHistory {
         }
         return FetchDescriptor(predicate: predicate)
     }
-    
-    static var all: FetchDescriptor<ExerciseHistory> {
-        FetchDescriptor(sortBy: [SortDescriptor(\ExerciseHistory.lastUpdated, order: .reverse)])
-    }
 }

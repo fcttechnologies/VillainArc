@@ -142,14 +142,12 @@ struct AddExerciseView: View {
                 workout.addExercise(exercise)
                 exercise.updateLastUsed()
                 SpotlightIndexer.index(exercise: exercise)
-                ExerciseHistoryUpdater.createIfNeeded(for: exercise.catalogID, context: context)
             }
         } else if let plan {
             for exercise in selectedExercises {
                 plan.addExercise(exercise)
                 exercise.updateLastUsed()
                 SpotlightIndexer.index(exercise: exercise)
-                ExerciseHistoryUpdater.createIfNeeded(for: exercise.catalogID, context: context)
             }
         }
         let donatedExercises = selectedExercises

@@ -45,7 +45,6 @@ struct AddExercisesIntent: AppIntent {
             workout.addExercise(exercise)
             exercise.updateLastUsed()
             SpotlightIndexer.index(exercise: exercise)
-            ExerciseHistoryUpdater.createIfNeeded(for: exercise.catalogID, context: context)
         }
         saveContext(context: context)
         let count = resolvedExercises.count

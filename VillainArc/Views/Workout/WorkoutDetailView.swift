@@ -111,8 +111,17 @@ struct WorkoutDetailView: View {
     private func deleteWorkout() {
         Haptics.selection()
         SpotlightIndexer.deleteWorkoutSession(id: workout.id)
+        // Collect all affected catalogIDs before deleting
+        var affectedCatalogIDs = Set<String>()
+        affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
         context.delete(workout)
-        saveContext(context: context)
+        
+        // Update exercise histories for affected exercises
+        // This will delete histories where no performances remain
+        for catalogID in affectedCatalogIDs {
+            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
+        }
+        
         dismiss()
     }
 
