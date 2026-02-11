@@ -5,6 +5,7 @@ import AppIntents
 struct WorkoutPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Query private var splits: [WorkoutSplit]
     @Bindable var plan: WorkoutPlan
     private let router = AppRouter.shared
     private let onSelect: (() -> Void)?
@@ -17,6 +18,14 @@ struct WorkoutPlanDetailView: View {
         self.plan = plan
         self.showsUseOnly = showsUseOnly
         self.onSelect = onSelect
+    }
+
+    private var isTodaysActiveSplitPlan: Bool {
+        guard let activeSplit = splits.first(where: { $0.isActive }),
+              let todaysPlan = activeSplit.todaysSplitDay?.workoutPlan else {
+            return false
+        }
+        return todaysPlan.id == plan.id
     }
 
     var body: some View {
@@ -121,6 +130,7 @@ struct WorkoutPlanDetailView: View {
                     Haptics.selection()
                     plan.favorite.toggle()
                     saveContext(context: context)
+                    Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
                 }
                 .tint(plan.favorite ? .yellow : .primary)
                 .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
@@ -132,7 +142,12 @@ struct WorkoutPlanDetailView: View {
                 if onSelect == nil {
                     Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
                         router.startWorkoutSession(from: plan)
-                        Task { await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan) }
+                        Task {
+                            await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan)
+                            if isTodaysActiveSplitPlan {
+                                await IntentDonations.donateStartTodaysWorkout()
+                            }
+                        }
                         dismiss()
                     }
                     .accessibilityIdentifier("workoutPlanDetailStartWorkoutButton")
@@ -154,9 +169,11 @@ struct WorkoutPlanDetailView: View {
 
     private func deleteWorkoutPlan() {
         Haptics.selection()
+        let deletedPlan = plan
         SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
         context.delete(plan)
         saveContext(context: context)
+        Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()
     }
 }

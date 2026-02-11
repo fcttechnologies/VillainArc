@@ -19,6 +19,22 @@ enum IntentDonations {
         intent.workout = WorkoutSessionEntity(workoutSession: workout)
         _ = try? await intent.donate()
     }
+
+    static func donateSaveWorkoutAsPlan(workout: WorkoutSession) async {
+        let intent = SaveWorkoutAsPlanIntent()
+        intent.workout = WorkoutSessionEntity(workoutSession: workout)
+        _ = try? await intent.donate()
+    }
+
+    static func donateDeleteWorkout(workout: WorkoutSession) async {
+        let intent = DeleteWorkoutIntent()
+        intent.workout = WorkoutSessionEntity(workoutSession: workout)
+        _ = try? await intent.donate()
+    }
+
+    static func donateDeleteAllWorkouts() async {
+        _ = try? await DeleteAllWorkoutsIntent().donate()
+    }
     
     static func donateShowWorkoutHistory() async {
         _ = try? await ShowWorkoutHistoryIntent().donate()
@@ -30,6 +46,22 @@ enum IntentDonations {
 
     static func donateOpenWorkoutPlan(workoutPlan: WorkoutPlan) async {
         let intent = OpenWorkoutPlanIntent()
+        intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
+        _ = try? await intent.donate()
+    }
+
+    static func donateDeleteWorkoutPlan(workoutPlan: WorkoutPlan) async {
+        let intent = DeleteWorkoutPlanIntent()
+        intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
+        _ = try? await intent.donate()
+    }
+
+    static func donateDeleteAllWorkoutPlans() async {
+        _ = try? await DeleteAllWorkoutPlansIntent().donate()
+    }
+
+    static func donateToggleWorkoutPlanFavorite(workoutPlan: WorkoutPlan) async {
+        let intent = ToggleWorkoutPlanFavoriteIntent()
         intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
         _ = try? await intent.donate()
     }
@@ -101,6 +133,12 @@ enum IntentDonations {
     static func donateReplaceExercise(newExercise: Exercise) async {
         let intent = ReplaceExerciseIntent()
         intent.newExercise = ExerciseEntity(exercise: newExercise)
+        _ = try? await intent.donate()
+    }
+
+    static func donateToggleExerciseFavorite(exercise: Exercise) async {
+        let intent = ToggleExerciseFavoriteIntent()
+        intent.exercise = ExerciseEntity(exercise: exercise)
         _ = try? await intent.donate()
     }
 }

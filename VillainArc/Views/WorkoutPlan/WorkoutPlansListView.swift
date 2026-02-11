@@ -32,6 +32,7 @@ struct WorkoutPlansListView: View {
                         Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.slash.fill" : "star.fill") {
                             plan.favorite.toggle()
                             saveContext(context: context)
+                            Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
                         }
                         .tint(.yellow)
                     }
@@ -115,6 +116,9 @@ struct WorkoutPlansListView: View {
             context.delete(plan)
         }
         saveContext(context: context)
+        if workoutPlansToDelete.count == 1, let plan = workoutPlansToDelete.first {
+            Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: plan) }
+        }
         if workoutPlans.isEmpty {
             isEditing = false
             favoritesOnly = false
@@ -128,6 +132,7 @@ struct WorkoutPlansListView: View {
             context.delete(plan)
         }
         saveContext(context: context)
+        Task { await IntentDonations.donateDeleteAllWorkoutPlans() }
         isEditing = false
         favoritesOnly = false
     }

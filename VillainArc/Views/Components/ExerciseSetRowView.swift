@@ -136,6 +136,7 @@ struct ExerciseSetRowView: View {
                     handleAutoStartTimer()
                     saveContext(context: context)
                     WorkoutActivityManager.update()
+                    Task { await IntentDonations.donateCompleteActiveSet() }
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)

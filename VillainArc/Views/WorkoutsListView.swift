@@ -97,6 +97,10 @@ struct WorkoutsListView: View {
         for catalogID in affectedCatalogIDs {
             ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
         }
+
+        if workoutsToDelete.count == 1, let workout = workoutsToDelete.first {
+            Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
+        }
         
         if workouts.isEmpty {
             isEditing = false
@@ -122,6 +126,8 @@ struct WorkoutsListView: View {
         for catalogID in affectedCatalogIDs {
             ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
         }
+
+        Task { await IntentDonations.donateDeleteAllWorkouts() }
         
         isEditing = false
     }

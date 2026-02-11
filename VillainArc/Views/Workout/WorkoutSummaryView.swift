@@ -373,6 +373,7 @@ struct WorkoutSummaryView: View {
         workout.workoutPlan = plan
         saveContext(context: context)
         SpotlightIndexer.index(workoutPlan: plan)
+        Task { await IntentDonations.donateSaveWorkoutAsPlan(workout: workout) }
     }
 
     @MainActor

@@ -73,11 +73,19 @@ struct WorkoutDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Options", systemImage: "ellipsis") {
-                    Button("Save as Workout Plan", systemImage: "list.clipboard") {
-                        saveWorkoutAsPlan()
+                    if let linkedPlan = workout.workoutPlan {
+                        Button("Open Workout Plan", systemImage: "arrowshape.turn.up.right") {
+                            openWorkoutPlan(linkedPlan)
+                        }
+                        .accessibilityIdentifier("workoutDetailOpenWorkoutPlanButton")
+                        .accessibilityHint("Opens the linked workout plan.")
+                    } else {
+                        Button("Save as Workout Plan", systemImage: "list.clipboard") {
+                            saveWorkoutAsPlan()
+                        }
+                        .accessibilityIdentifier("workoutDetailSaveWorkoutPlanButton")
+                        .accessibilityHint("Saves this workout as a workout plan.")
                     }
-                    .accessibilityIdentifier("workoutDetailSaveWorkoutPlanButton")
-                    .accessibilityHint("Saves this workout as a workout plan.")
                     Button("Delete Workout", systemImage: "trash", role: .destructive) {
                         showDeleteWorkoutConfirmation = true
                     }
@@ -110,6 +118,7 @@ struct WorkoutDetailView: View {
 
     private func deleteWorkout() {
         Haptics.selection()
+        let deletedWorkout = workout
         SpotlightIndexer.deleteWorkoutSession(id: workout.id)
         // Collect all affected catalogIDs before deleting
         var affectedCatalogIDs = Set<String>()
@@ -121,16 +130,27 @@ struct WorkoutDetailView: View {
         for catalogID in affectedCatalogIDs {
             ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
         }
+
+        Task { await IntentDonations.donateDeleteWorkout(workout: deletedWorkout) }
         
         dismiss()
     }
 
     private func saveWorkoutAsPlan() {
+        guard workout.workoutPlan == nil else { return }
         Haptics.selection()
         let plan = WorkoutPlan(from: workout)
         context.insert(plan)
+        workout.workoutPlan = plan
         saveContext(context: context)
         newWorkoutPlan = plan
+    }
+
+    private func openWorkoutPlan(_ plan: WorkoutPlan) {
+        Haptics.selection()
+        router.popToRoot()
+        router.navigate(to: .workoutPlanDetail(plan, false))
+        Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
     }
 }
 

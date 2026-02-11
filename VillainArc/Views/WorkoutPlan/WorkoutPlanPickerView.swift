@@ -66,6 +66,7 @@ struct WorkoutPlanPickerView: View {
         let plan = WorkoutPlan()
         context.insert(plan)
         saveContext(context: context)
+        Task { await IntentDonations.donateCreateWorkoutPlan() }
         newWorkoutPlanID = plan.id
         newWorkoutPlan = plan
     }

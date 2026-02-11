@@ -170,6 +170,7 @@ struct FilteredExerciseListView: View {
                 SpotlightIndexer.index(exercise: exercise)
             }
             saveContext(context: context)
+            Task { await IntentDonations.donateToggleExerciseFavorite(exercise: exercise) }
         } label: {
             if exercise.favorite {
                 Label("Unfavorite", systemImage: "star.slash")
