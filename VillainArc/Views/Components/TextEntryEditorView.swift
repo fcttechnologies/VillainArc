@@ -2,21 +2,21 @@ import SwiftUI
 
 struct TextEntryEditorView: View {
     let title: String
-    let placeholder: String
+    let promptText: String
     let accessibilityIdentifier: String?
     @Binding var text: String
     @FocusState private var isFocused
 
-    init(title: String, placeholder: String, text: Binding<String>, accessibilityIdentifier: String? = nil) {
+    init(title: String, promptText: String, text: Binding<String>, accessibilityIdentifier: String? = nil) {
         self.title = title
-        self.placeholder = placeholder
+        self.promptText = promptText
         self._text = text
         self.accessibilityIdentifier = accessibilityIdentifier
     }
 
     var body: some View {
         ScrollView {
-            TextField(placeholder, text: $text)
+            TextField(promptText, text: $text)
                 .font(.title3)
                 .fontWeight(.semibold)
                 .focused($isFocused)
@@ -43,5 +43,5 @@ struct TextEntryEditorView: View {
 
 #Preview {
     @Previewable @State var text = "Notes"
-    TextEntryEditorView(title: "Notes", placeholder: "Workout Notes", text: $text)
+    TextEntryEditorView(title: "Notes", promptText: "Workout Notes", text: $text)
 }
