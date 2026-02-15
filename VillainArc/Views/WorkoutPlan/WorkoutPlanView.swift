@@ -107,7 +107,7 @@ struct WorkoutPlanView: View {
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", placeholder: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField)
+                TextEntryEditorView(title: "Notes", promptText: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: plan.notes) {
                         scheduleSave(context: context)
@@ -124,7 +124,7 @@ struct WorkoutPlanView: View {
                 activity.appEntityIdentifier = .init(for: entity)
             }
             .sheet(isPresented: $showTitleEditorSheet) {
-                TextEntryEditorView(title: "Title", placeholder: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)
+                TextEntryEditorView(title: "Title", promptText: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)
                     .presentationDetents([.fraction(0.2)])
                     .onChange(of: plan.title) {
                         scheduleSave(context: context)

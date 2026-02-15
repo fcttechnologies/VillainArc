@@ -79,7 +79,7 @@ struct WorkoutSplitCreationView: View {
         }
         .navigationBarBackButtonHidden(isSwapMode)
         .sheet(isPresented: $showSplitTitleEditor) {
-            TextEntryEditorView(title: "Split Name", placeholder: "Workout Split", text: $split.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitTitleEditorField)
+            TextEntryEditorView(title: "Split Name", promptText: "Workout Split", text: $split.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitTitleEditorField)
                 .presentationDetents([.fraction(0.2)])
                 .onChange(of: split.title) {
                     scheduleSave(context: context)
