@@ -7,6 +7,8 @@ class RepRangePolicy {
     var lowerRange: Int = 8
     var upperRange: Int = 12
     var targetReps: Int = 8
+    var exercisePerformance: ExercisePerformance?
+    var exercisePrescription: ExercisePrescription?
     
     var displayText: String {
         switch activeMode {
@@ -21,10 +23,10 @@ class RepRangePolicy {
     
     init() {}
 
-    init(copying source: RepRangePolicy) {
-        activeMode = source.activeMode
-        lowerRange = source.lowerRange
-        upperRange = source.upperRange
-        targetReps = source.targetReps
+    init(copying source: RepRangePolicy?) {
+        activeMode = source?.activeMode ?? .notSet
+        lowerRange = source?.lowerRange ?? 8
+        upperRange = source?.upperRange ?? 12
+        targetReps = source?.targetReps ?? 8
     }
 }

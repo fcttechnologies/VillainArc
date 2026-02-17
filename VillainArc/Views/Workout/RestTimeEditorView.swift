@@ -9,7 +9,20 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     @State private var copiedSeconds: Int? = nil
     
     private var restTimePolicy: RestTimePolicy {
-        exercise.restTimePolicy
+        exercise.restTimePolicy ?? RestTimePolicy()
+    }
+    
+    private var restModeBinding: Binding<RestTimeMode> {
+        Binding<RestTimeMode>(
+            get: { restTimePolicy.activeMode },
+            set: { newValue in
+                if exercise.restTimePolicy == nil {
+                    exercise.restTimePolicy = RestTimePolicy()
+                }
+                exercise.restTimePolicy?.activeMode = newValue
+                saveContext(context: context)
+            }
+        )
     }
     
     var body: some View {
@@ -22,7 +35,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
             }
             
             Section {
-                Picker("Mode", selection: $exercise.restTimePolicy.activeMode) {
+                Picker("Mode", selection: restModeBinding) {
                     ForEach(RestTimeMode.allCases, id: \.self) { mode in
                         Text(mode.displayName)
                             .tag(mode)
@@ -64,7 +77,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
             CloseButton()
         }
         .accessibilityIdentifier("restTimeEditorForm")
-        .onChange(of: restTimePolicy.activeMode) {
+        .onChange(of: restModeBinding.wrappedValue) {
             Haptics.selection()
             collapsePickers()
             saveContext(context: context)
@@ -197,3 +210,4 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     RestTimeEditorView(exercise: sampleIncompleteSession().sortedExercises.first!)
         .sampleDataContainerIncomplete()
 }
+

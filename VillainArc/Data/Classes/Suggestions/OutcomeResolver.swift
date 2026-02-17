@@ -112,7 +112,7 @@ struct OutcomeResolver {
         }
 
         for prescription in prescriptions {
-            for change in prescription.changes {
+            for change in prescription.changes ?? [] {
                 appendIfEligible(change)
             }
         }

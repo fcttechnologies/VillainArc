@@ -105,9 +105,6 @@ struct AddExerciseView: View {
                     .presentationBackground(Color(.systemBackground))
                     .presentationDetents([.fraction(0.3)])
                 }
-                .task {
-                    DataManager.dedupeCatalogExercisesIfNeeded(context: context)
-                }
                 .onChange(of: favoritesOnly) {
                     Haptics.selection()
                 }

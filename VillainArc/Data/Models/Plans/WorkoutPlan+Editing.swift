@@ -13,7 +13,7 @@ extension WorkoutPlan {
         // Copy exercises with same IDs
         for exercise in sortedExercises {
             let exerciseCopy = ExercisePrescription(copying: exercise, workoutPlan: copy)
-            copy.exercises.append(exerciseCopy)
+            copy.exercises?.append(exerciseCopy)
         }
         
         context.insert(copy)
@@ -95,50 +95,52 @@ extension WorkoutPlan {
     
     private func detectExerciseChanges(original: ExercisePrescription, copy: ExercisePrescription, context: ModelContext) {
         // Rep Range Mode
-        if original.repRange.activeMode != copy.repRange.activeMode {
-            createChange(type: .changeRepRangeMode, previousValue: Double(original.repRange.activeMode.rawValue), newValue: Double(copy.repRange.activeMode.rawValue), exercise: original, set: nil, context: context)
+        guard original.repRange != nil, copy.repRange != nil else { return }
+        if original.repRange!.activeMode != copy.repRange!.activeMode {
+            createChange(type: .changeRepRangeMode, previousValue: Double(original.repRange!.activeMode.rawValue), newValue: Double(copy.repRange!.activeMode.rawValue), exercise: original, set: nil, context: context)
             markMatchingPendingChanges(exercise: original, changeType: .changeRepRangeMode)
         }
         
         // Rep Range Lower
-        if original.repRange.lowerRange != copy.repRange.lowerRange {
-            let changeType: ChangeType = copy.repRange.lowerRange > original.repRange.lowerRange
+        if original.repRange!.lowerRange != copy.repRange!.lowerRange {
+            let changeType: ChangeType = copy.repRange!.lowerRange > original.repRange!.lowerRange
                 ? .increaseRepRangeLower
                 : .decreaseRepRangeLower
-            createChange(type: changeType, previousValue: Double(original.repRange.lowerRange), newValue: Double(copy.repRange.lowerRange), exercise: original, set: nil, context: context)
+            createChange(type: changeType, previousValue: Double(original.repRange!.lowerRange), newValue: Double(copy.repRange!.lowerRange), exercise: original, set: nil, context: context)
             markMatchingPendingChanges(exercise: original, changeTypes: [.increaseRepRangeLower, .decreaseRepRangeLower])
         }
         
         // Rep Range Upper
-        if original.repRange.upperRange != copy.repRange.upperRange {
-            let changeType: ChangeType = copy.repRange.upperRange > original.repRange.upperRange
+        if original.repRange!.upperRange != copy.repRange!.upperRange {
+            let changeType: ChangeType = copy.repRange!.upperRange > original.repRange!.upperRange
                 ? .increaseRepRangeUpper
                 : .decreaseRepRangeUpper
-            createChange(type: changeType, previousValue: Double(original.repRange.upperRange), newValue: Double(copy.repRange.upperRange), exercise: original, set: nil, context: context)
+            createChange(type: changeType, previousValue: Double(original.repRange!.upperRange), newValue: Double(copy.repRange!.upperRange), exercise: original, set: nil, context: context)
             markMatchingPendingChanges(exercise: original, changeTypes: [.increaseRepRangeUpper, .decreaseRepRangeUpper])
         }
         
-        // Rest Time Mode
-        if original.restTimePolicy.activeMode != copy.restTimePolicy.activeMode {
-            createChange(type: .changeRestTimeMode, previousValue: Double(original.restTimePolicy.activeMode.rawValue), newValue: Double(copy.restTimePolicy.activeMode.rawValue), exercise: original, set: nil, context: context)
-            markMatchingPendingChanges(exercise: original, changeType: .changeRestTimeMode)
-        }
-        
         // Rep Range Target (when mode is .target)
-        if original.repRange.targetReps != copy.repRange.targetReps {
-            let changeType: ChangeType = copy.repRange.targetReps > original.repRange.targetReps
+        if original.repRange!.targetReps != copy.repRange!.targetReps {
+            let changeType: ChangeType = copy.repRange!.targetReps > original.repRange!.targetReps
                 ? .increaseRepRangeTarget
                 : .decreaseRepRangeTarget
-            createChange(type: changeType, previousValue: Double(original.repRange.targetReps), newValue: Double(copy.repRange.targetReps), exercise: original, set: nil, context: context)
+            createChange(type: changeType, previousValue: Double(original.repRange!.targetReps), newValue: Double(copy.repRange!.targetReps), exercise: original, set: nil, context: context)
             markMatchingPendingChanges(exercise: original, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget])
         }
         
+        guard original.restTimePolicy != nil, copy.restTimePolicy != nil else { return }
+        // Rest Time Mode
+        if original.restTimePolicy!.activeMode != copy.restTimePolicy!.activeMode {
+            createChange(type: .changeRestTimeMode, previousValue: Double(original.restTimePolicy!.activeMode.rawValue), newValue: Double(copy.restTimePolicy!.activeMode.rawValue), exercise: original, set: nil, context: context)
+            markMatchingPendingChanges(exercise: original, changeType: .changeRestTimeMode)
+        }
+        
         // Rest Time Seconds (when mode is .allSame)
-        if original.restTimePolicy.allSameSeconds != copy.restTimePolicy.allSameSeconds {
-            let changeType: ChangeType = copy.restTimePolicy.allSameSeconds > original.restTimePolicy.allSameSeconds
+        if original.restTimePolicy!.allSameSeconds != copy.restTimePolicy!.allSameSeconds {
+            let changeType: ChangeType = copy.restTimePolicy!.allSameSeconds > original.restTimePolicy!.allSameSeconds
                 ? .increaseRestTimeSeconds
                 : .decreaseRestTimeSeconds
-            createChange(type: changeType, previousValue: Double(original.restTimePolicy.allSameSeconds), newValue: Double(copy.restTimePolicy.allSameSeconds), exercise: original, set: nil, context: context)
+            createChange(type: changeType, previousValue: Double(original.restTimePolicy!.allSameSeconds), newValue: Double(copy.restTimePolicy!.allSameSeconds), exercise: original, set: nil, context: context)
             markMatchingPendingChanges(exercise: original, changeTypes: [.increaseRestTimeSeconds, .decreaseRestTimeSeconds])
         }
     }
@@ -192,17 +194,17 @@ extension WorkoutPlan {
 extension WorkoutPlan {
     // Called when an exercise is deleted. Marks ALL its pending changes.
     private func markPendingAsUserOverride(exercise: ExercisePrescription) {
-        for change in exercise.changes {
+        for change in exercise.changes ?? [] {
             markChangeAsUserOverride(change)
         }
-        for set in exercise.sets {
+        for set in exercise.sets ?? [] {
             markPendingAsUserOverride(set: set)
         }
     }
     
     // Called when a set is deleted. Marks ALL its pending changes.
     private func markPendingAsUserOverride(set: SetPrescription) {
-        for change in set.changes {
+        for change in set.changes ?? [] {
             markChangeAsUserOverride(change)
         }
     }
@@ -225,7 +227,7 @@ extension WorkoutPlan {
     }
     
     private func markMatchingPendingChanges(exercise: ExercisePrescription, changeTypes: [ChangeType]) {
-        for change in exercise.changes where changeTypes.contains(change.changeType) {
+        for change in exercise.changes ?? [] where changeTypes.contains(change.changeType) {
             markChangeAsUserOverride(change)
         }
     }
@@ -236,7 +238,7 @@ extension WorkoutPlan {
     }
     
     private func markMatchingPendingChanges(set: SetPrescription, changeTypes: [ChangeType]) {
-        for change in set.changes where changeTypes.contains(change.changeType) {
+        for change in set.changes ?? [] where changeTypes.contains(change.changeType) {
             markChangeAsUserOverride(change)
         }
     }
@@ -248,7 +250,10 @@ extension WorkoutPlan {
         applyPlanMetadata(to: original)
         
         let copyExercises = Dictionary(uniqueKeysWithValues: sortedExercises.map { ($0.id, $0) })
-        let originalExerciseIDs = Set(original.exercises.map { $0.id })
+        var originalExerciseIDs: Set<UUID> = []
+        for exercise in original.exercises ?? [] {
+            originalExerciseIDs.insert(exercise.id)
+        }
         
         moveNewExercises(to: original, originalExerciseIDs: originalExerciseIDs)
         updateExistingExercises(in: original, copyExercises: copyExercises, context: context)
@@ -266,12 +271,12 @@ extension WorkoutPlan {
     private func moveNewExercises(to original: WorkoutPlan, originalExerciseIDs: Set<UUID>) {
         for copyExercise in sortedExercises where !originalExerciseIDs.contains(copyExercise.id) {
             copyExercise.workoutPlan = original
-            original.exercises.append(copyExercise)
+            original.exercises?.append(copyExercise)
         }
     }
 
     private func updateExistingExercises(in original: WorkoutPlan, copyExercises: [UUID: ExercisePrescription], context: ModelContext) {
-        for origExercise in original.exercises {
+        for origExercise in original.exercises ?? [] {
             guard let copyExercise = copyExercises[origExercise.id] else {
                 continue
             }
@@ -283,32 +288,36 @@ extension WorkoutPlan {
     private func applyExerciseValues(from copyExercise: ExercisePrescription, to originalExercise: ExercisePrescription) {
         originalExercise.index = copyExercise.index
         originalExercise.notes = copyExercise.notes
-        originalExercise.repRange.activeMode = copyExercise.repRange.activeMode
-        originalExercise.repRange.lowerRange = copyExercise.repRange.lowerRange
-        originalExercise.repRange.upperRange = copyExercise.repRange.upperRange
-        originalExercise.repRange.targetReps = copyExercise.repRange.targetReps
-        originalExercise.restTimePolicy.activeMode = copyExercise.restTimePolicy.activeMode
-        originalExercise.restTimePolicy.allSameSeconds = copyExercise.restTimePolicy.allSameSeconds
+        guard originalExercise.repRange != nil, copyExercise.repRange != nil, originalExercise.restTimePolicy != nil, copyExercise.restTimePolicy != nil else { return }
+        originalExercise.repRange!.activeMode = copyExercise.repRange!.activeMode
+        originalExercise.repRange!.lowerRange = copyExercise.repRange!.lowerRange
+        originalExercise.repRange!.upperRange = copyExercise.repRange!.upperRange
+        originalExercise.repRange!.targetReps = copyExercise.repRange!.targetReps
+        originalExercise.restTimePolicy!.activeMode = copyExercise.restTimePolicy!.activeMode
+        originalExercise.restTimePolicy!.allSameSeconds = copyExercise.restTimePolicy!.allSameSeconds
     }
 
     private func syncSets(from copyExercise: ExercisePrescription, to originalExercise: ExercisePrescription, context: ModelContext) {
         let copySets = Dictionary(uniqueKeysWithValues: copyExercise.sortedSets.map { ($0.id, $0) })
-        let originalSetIDs = Set(originalExercise.sets.map { $0.id })
+        var originalSetIDs: Set<UUID> = []
+        for set in originalExercise.sets ?? [] {
+            originalSetIDs.insert(set.id)
+        }
         
         for copySet in copyExercise.sortedSets where !originalSetIDs.contains(copySet.id) {
             copySet.exercise = originalExercise
-            originalExercise.sets.append(copySet)
+            originalExercise.sets?.append(copySet)
         }
         
-        for origSet in originalExercise.sets {
+        for origSet in originalExercise.sets ?? [] {
             if let copySet = copySets[origSet.id] {
                 applySetValues(from: copySet, to: origSet)
             }
         }
         
-        let setsToDelete = originalExercise.sets.filter { copySets[$0.id] == nil }
-        for set in setsToDelete {
-            originalExercise.sets.removeAll { $0.id == set.id }
+        let setsToDelete = originalExercise.sets?.filter { copySets[$0.id] == nil }
+        for set in setsToDelete ?? [] {
+            originalExercise.sets?.removeAll { $0.id == set.id }
             context.delete(set)
         }
         
@@ -324,9 +333,9 @@ extension WorkoutPlan {
     }
 
     private func deleteRemovedExercises(from original: WorkoutPlan, copyExercises: [UUID: ExercisePrescription], context: ModelContext) {
-        let exercisesToDelete = original.exercises.filter { copyExercises[$0.id] == nil }
+        let exercisesToDelete = original.exercises?.filter { copyExercises[$0.id] == nil } ?? []
         for exercise in exercisesToDelete {
-            original.exercises.removeAll { $0.id == exercise.id }
+            original.exercises?.removeAll { $0.id == exercise.id }
             context.delete(exercise)
         }
     }

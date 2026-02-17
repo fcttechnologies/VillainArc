@@ -127,7 +127,7 @@ struct WorkoutSplitCreationView: View {
                                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationSetCurrentDayButton(day))
                                 .accessibilityHint(AccessibilityText.workoutSplitRotationSetCurrentDayHint)
                             }
-                            if split.days.count > 1 {
+                            if (split.days?.count ?? 0) > 1 {
                                 Button("Delete Day", systemImage: "trash", role: .destructive) {
                                     deleteDay(day)
                                 }
@@ -265,8 +265,8 @@ struct WorkoutSplitCreationView: View {
     private var addDayCapsule: some View {
         Button {
             Haptics.selection()
-            let newDay = WorkoutSplitDay(index: split.days.count, split: split)
-            split.days.append(newDay)
+            let newDay = WorkoutSplitDay(index: split.days?.count ?? 0, split: split)
+            split.days?.append(newDay)
             withAnimation(.smooth) {
                 selectedSplitDay = newDay
             }
@@ -431,7 +431,7 @@ struct WorkoutSplitCreationView: View {
     }
 
     private var canSwapRotationDays: Bool {
-        split.days.count > 2
+        (split.days?.count ?? 0) > 2
     }
 
     private func startSwapMode() {
@@ -536,7 +536,7 @@ struct WorkoutSplitCreationView: View {
     private func rotateWeekly(by delta: Int) {
         let wrappedDelta = delta % 7
         guard wrappedDelta != 0 else { return }
-        for day in split.days {
+        for day in split.days ?? [] {
             let adjusted = day.weekday + wrappedDelta
             let wrapped = ((adjusted - 1) % 7 + 7) % 7 + 1
             day.weekday = wrapped
@@ -544,11 +544,11 @@ struct WorkoutSplitCreationView: View {
     }
 
     private func rotateRotation(by delta: Int) {
-        let count = split.days.count
+        let count = split.days?.count ?? 0
         guard count > 1 else { return }
         let wrappedDelta = delta % count
         guard wrappedDelta != 0 else { return }
-        for day in split.days {
+        for day in split.days ?? [] {
             let adjusted = day.index + wrappedDelta
             let wrapped = ((adjusted % count) + count) % count
             day.index = wrapped

@@ -3,7 +3,7 @@ import Foundation
 
 enum SharedModelContainer {
 
-    static let appGroupID = "group.com.fcttechnologies.VillainArc"
+    static let appGroupID = "group.com.fcttechnologies.VillainArc.cont"
 
     static let schema = Schema([
         WorkoutSession.self,
@@ -26,14 +26,20 @@ enum SharedModelContainer {
 
     static let container: ModelContainer = {
         do {
-            let configuration: ModelConfiguration
-            if let url = FileManager.default
+            guard let url = FileManager.default
                 .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
-                .appendingPathComponent("VillainArc.store") {
-                configuration = ModelConfiguration(schema: schema, url: url)
-            } else {
-                configuration = ModelConfiguration(schema: schema)
+                .appendingPathComponent("VillainArc.store")
+            else {
+                fatalError("App Group container URL not found for \(appGroupID). Check App Groups capability + entitlements.")
             }
+
+            let configuration = ModelConfiguration(
+                nil,
+                schema: schema,
+                url: url,
+                allowsSave: true,
+                cloudKitDatabase: .automatic
+            )
 
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {

@@ -15,18 +15,20 @@ class WorkoutSession {
         get { SessionStatus(rawValue: status) ?? .active }
         set { status = newValue.rawValue }
     }
-    @Relationship(deleteRule: .cascade)
-    var preStatus: PreWorkoutStatus = PreWorkoutStatus()
+    @Relationship(deleteRule: .cascade, inverse: \PreWorkoutStatus.workoutSession)
+    var preStatus: PreWorkoutStatus? = PreWorkoutStatus()
     var postEffort: Int = 0
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.workoutSessions)
     var workoutPlan: WorkoutPlan?
     @Relationship(deleteRule: .cascade, inverse: \ExercisePerformance.workoutSession)
-    var exercises: [ExercisePerformance] = []
-    @Relationship(deleteRule: .nullify)
+    var exercises: [ExercisePerformance]? = [ExercisePerformance]()
+    @Relationship(deleteRule: .nullify, inverse: \ExercisePerformance.activeInSession)
     var activeExercise: ExercisePerformance?
+    var createdPrescriptionChanges: [PrescriptionChange]? = [PrescriptionChange]()
+    var evaluatedPrescriptionChanges: [PrescriptionChange]? = [PrescriptionChange]()
     
     var sortedExercises: [ExercisePerformance] {
-        exercises.sorted { $0.index < $1.index }
+        (exercises ?? []).sorted { $0.index < $1.index }
     }
     
     // New session
@@ -53,7 +55,7 @@ class WorkoutSession {
     }
     
     func addExercise(_ exercise: Exercise) {
-        exercises.append(ExercisePerformance(exercise: exercise, workoutSession: self))
+        exercises?.append(ExercisePerformance(exercise: exercise, workoutSession: self))
     }
     
     func moveExercise(from source: IndexSet, to destination: Int) {
@@ -65,7 +67,7 @@ class WorkoutSession {
     }
 
     func deleteExercise(_ exercise: ExercisePerformance) {
-        exercises.removeAll(where: { $0 == exercise })
+        exercises?.removeAll(where: { $0 == exercise })
         for (index, exercise) in sortedExercises.enumerated() {
             exercise.index = index
         }
@@ -119,8 +121,8 @@ extension WorkoutSession {
         var emptySets: [SetPerformance] = []
         var loggedSets: [SetPerformance] = []
 
-        for exercise in exercises {
-            for set in exercise.sets where !set.complete {
+        for exercise in exercises ?? [] {
+            for set in exercise.sets ?? [] where !set.complete {
                 if set.reps == 0 && set.weight == 0 {
                     emptySets.append(set)
                 } else {
@@ -134,7 +136,7 @@ extension WorkoutSession {
 
     var exerciseSummary: String {
         let exerciseSummaries = sortedExercises.map { exercise in
-            let setCount = exercise.sets.count
+            let setCount = exercise.sets?.count ?? 0
             let setWord = setCount == 1 ? "set" : "sets"
             return "\(setCount) \(setWord) of \(exercise.name)"
         }
@@ -143,7 +145,7 @@ extension WorkoutSession {
     
     var spotlightSummary: String {
         let exerciseSummaries = sortedExercises.map { exercise in
-            "\(exercise.sets.count)x \(exercise.name)"
+            "\(String(describing: exercise.sets?.count))x \(exercise.name)"
         }
         return exerciseSummaries.joined(separator: ", ")
     }
@@ -230,12 +232,12 @@ extension WorkoutSession {
     }
     
     private func pruneEmptyExercises(context: ModelContext) -> Bool {
-        let emptyExercises = exercises.filter { $0.sets.isEmpty }
+        let emptyExercises = exercises?.filter { $0.sets?.isEmpty ?? true } ?? []
         for exercise in emptyExercises {
             deleteExercise(exercise)
             context.delete(exercise)
         }
-        if exercises.isEmpty {
+        if exercises?.isEmpty ?? true {
             context.delete(self)
             return true
         }

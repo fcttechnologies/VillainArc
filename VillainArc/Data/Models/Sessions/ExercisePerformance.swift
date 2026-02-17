@@ -11,18 +11,20 @@ class ExercisePerformance {
     var notes: String = ""
     var musclesTargeted: [Muscle] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
-    @Relationship(deleteRule: .cascade)
-    var repRange: RepRangePolicy = RepRangePolicy()
-    @Relationship(deleteRule: .cascade)
-    var restTimePolicy: RestTimePolicy = RestTimePolicy()
+    @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePerformance)
+    var repRange: RepRangePolicy? = RepRangePolicy()
+    @Relationship(deleteRule: .cascade, inverse: \RestTimePolicy.exercisePerformance)
+    var restTimePolicy: RestTimePolicy? = RestTimePolicy()
     var workoutSession: WorkoutSession?
-    @Relationship(deleteRule: .nullify)
+    var activeInSession: WorkoutSession?
+    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.performances)
     var prescription: ExercisePrescription?
+    var sourceChanges: [PrescriptionChange]? = [PrescriptionChange]()
     @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise)
-    var sets: [SetPerformance] = []
+    var sets: [SetPerformance]? = [SetPerformance]()
     
     var sortedSets: [SetPerformance] {
-        sets.sorted { $0.index < $1.index }
+        (sets ?? []).sorted { $0.index < $1.index }
     }
     
     var displayMuscle: String {
@@ -31,7 +33,7 @@ class ExercisePerformance {
     
     // Adding exercise in session
     init(exercise: Exercise, workoutSession: WorkoutSession) {
-        index = workoutSession.exercises.count
+        index = workoutSession.exercises?.count ?? 0
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
@@ -47,7 +49,7 @@ class ExercisePerformance {
         if let index {
             self.index = index
         }
-        if let repRangeMode {
+        if let repRangeMode, let repRange = self.repRange {
             repRange.activeMode = repRangeMode
             switch repRangeMode {
             case .range:
@@ -81,14 +83,14 @@ class ExercisePerformance {
            nextSet.type == .dropSet {
             return 0
         }
-        return restTimePolicy.seconds(for: set)
+        return restTimePolicy?.seconds(for: set) ?? 0
     }
 
     func addSet() {
         if let previous = sortedSets.last {
-            sets.append(SetPerformance(exercise: self, weight: previous.weight, reps: previous.reps, restSeconds: previous.restSeconds))
+            sets?.append(SetPerformance(exercise: self, weight: previous.weight, reps: previous.reps, restSeconds: previous.restSeconds))
         } else {
-            sets.append(SetPerformance(exercise: self, restSeconds: RestTimePolicy.defaultRestSeconds))
+            sets?.append(SetPerformance(exercise: self, restSeconds: RestTimePolicy.defaultRestSeconds))
         }
     }
 
@@ -99,16 +101,16 @@ class ExercisePerformance {
         equipmentType = exercise.equipmentType
         prescription = nil
         if !keepSets {
-            for set in sets {
+            for set in sets ?? [] {
                 modelContext?.delete(set)
             }
-            sets.removeAll()
+            sets?.removeAll()
             addSet()
         }
     }
 
     func deleteSet(_ set: SetPerformance) {
-        sets.removeAll(where: { $0 == set })
+        sets?.removeAll(where: { $0 == set })
         reindexSets()
     }
 
@@ -124,16 +126,16 @@ extension ExercisePerformance: RestTimeEditable {}
 
 extension ExercisePerformance {
     var bestEstimated1RM: Double? {
-        sets.compactMap(\.estimated1RM).max()
+        sets?.compactMap(\.estimated1RM).max()
     }
 
     var bestWeight: Double? {
-        let maxWeight = sets.map(\.weight).max() ?? 0
+        let maxWeight = sets?.map(\.weight).max() ?? 0
         return maxWeight > 0 ? maxWeight : nil
     }
 
     var totalVolume: Double {
-        sets.reduce(0) { $0 + $1.volume }
+        sets?.reduce(0) { $0 + $1.volume } ?? 0
     }
 
     static func historicalBestEstimated1RM(in performances: [ExercisePerformance]) -> Double? {

@@ -231,7 +231,7 @@ struct OutcomeRuleEngine {
     // MARK: - Rule Helpers
 
     private static func evaluateRepsInRange(actualReps: Int, exercisePerf: ExercisePerformance, context: String) -> OutcomeSignal? {
-        let policy = exercisePerf.repRange
+        let policy = exercisePerf.repRange ?? RepRangePolicy()
 
         // Shared intensity classifier used by multiple rules.
         switch policy.activeMode {
@@ -283,7 +283,7 @@ struct OutcomeRuleEngine {
 
     // Computes the range that should be considered "new target state" for this change.
     private static func effectiveNewRepRange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> (floor: Int?, ceiling: Int?) {
-        let policy = exercisePerf.repRange
+        let policy = exercisePerf.repRange ?? RepRangePolicy()
 
         switch change.changeType {
         case .changeRepRangeMode:

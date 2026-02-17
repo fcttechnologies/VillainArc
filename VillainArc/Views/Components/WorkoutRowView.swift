@@ -27,7 +27,7 @@ struct WorkoutRowView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(workout.sortedExercises) { exercise in
                         HStack(alignment: .center, spacing: 3) {
-                            Text("\(exercise.sets.count)x")
+                            Text("\(exercise.sets?.count ?? 0)x")
                             Text(exercise.name)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)

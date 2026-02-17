@@ -76,7 +76,7 @@ struct AIExercisePerformanceSnapshot: Equatable, Sendable {
     
     init(performance: ExercisePerformance) {
         self.date = Self.iso8601String(from: performance.date)
-        let policy = performance.repRange
+        let policy = performance.repRange ?? RepRangePolicy()
         switch policy.activeMode {
         case .range:
             self.repRangeMode = .range

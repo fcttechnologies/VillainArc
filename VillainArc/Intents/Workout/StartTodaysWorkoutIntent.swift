@@ -16,7 +16,7 @@ struct StartTodaysWorkoutIntent: AppIntent {
         }
         
         // Check split has days
-        guard !split.days.isEmpty else {
+        guard !(split.days?.isEmpty ?? true) else {
             throw StartTodaysWorkoutError.noDaysInSplit
         }
         

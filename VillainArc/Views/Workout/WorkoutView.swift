@@ -98,11 +98,11 @@ struct WorkoutView: View {
                     }
             }
             .sheet(isPresented: $showPreWorkoutSheet) {
-                PreWorkoutStatusView(status: workout.preStatus)
+                PreWorkoutStatusView(status: workout.preStatus ?? PreWorkoutStatus())
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
-                        if workout.preStatus.feeling == .notSet {
-                            workout.preStatus.feeling = .okay
+                        if workout.preStatus?.feeling == .notSet {
+                            workout.preStatus?.feeling = .okay
                             saveContext(context: context)
                         }
                     }
@@ -139,7 +139,7 @@ struct WorkoutView: View {
                 activity.appEntityIdentifier = .init(for: entity)
             }
             .task {
-                if workout.preStatus.feeling == .notSet {
+                if workout.preStatus?.feeling == .notSet {
                     showPreWorkoutSheet = true
                 }
             }
@@ -153,7 +153,7 @@ struct WorkoutView: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal) {
                 HStack(spacing: 0) {
-                    if workout.exercises.isEmpty {
+                    if workout.exercises?.isEmpty ?? true {
                         ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Click the '\(Image(systemName: "plus"))' icon to add some exercises."))
                             .containerRelativeFrame(.horizontal)
                             .accessibilityIdentifier("workoutExercisesEmptyState")
@@ -172,7 +172,7 @@ struct WorkoutView: View {
             }
             .scrollIndicators(.hidden)
             .scrollTargetBehavior(.paging)
-            .scrollDisabled(workout.exercises.isEmpty)
+            .scrollDisabled(workout.exercises?.isEmpty ?? true)
             .scrollPosition(id: $workout.activeExercise)
             .accessibilityIdentifier("workoutExercisePager")
             .onAppear {
@@ -258,7 +258,7 @@ struct WorkoutView: View {
     @ViewBuilder
     private var workoutOptionsToolbarLabel: some View {
         Group {
-            if workout.exercises.isEmpty {
+            if workout.exercises?.isEmpty ?? true {
                 Button("Cancel Workout", systemImage: "xmark", role: .close) {
                     deleteWorkout()
                 }
@@ -407,7 +407,7 @@ struct WorkoutView: View {
             workout.activeExercise = workout.sortedExercises.first
         }
 
-        if workout.exercises.isEmpty {
+        if workout.exercises?.isEmpty ?? true {
             showExerciseListView = false
         }
         WorkoutActivityManager.update(for: workout)

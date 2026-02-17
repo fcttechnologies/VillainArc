@@ -57,7 +57,7 @@ struct ExerciseSetRowView: View {
                         showRPEPicker = true
                     }
                 }
-                if exercise.sets.count > 1 {
+                if (exercise.sets?.count ?? 0) > 1 {
                     Button("Delete Set", systemImage: "trash", role: .destructive) {
                         deleteSet()
                     }

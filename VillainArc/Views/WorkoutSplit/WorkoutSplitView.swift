@@ -307,7 +307,7 @@ private struct SplitRowView: View {
         case .weekly:
             return "Weekly"
         case .rotation:
-            return "Rotation · \(split.days.count) day cycle"
+            return "Rotation · \(split.days?.count ?? 0) day cycle"
         }
     }
 

@@ -42,7 +42,7 @@ struct RuleEngine {
 
     private static func doubleProgressionRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Range mode progression: hit upper bound for 2 sessions -> increase weight, reset to lower bound.
-        let repRange = context.prescription.repRange
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let lower = repRange.lowerRange
         let upper = repRange.upperRange
@@ -92,7 +92,7 @@ struct RuleEngine {
 
     private static func doubleProgressionTarget(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Target mode progression: exceed target by 1+ for 2 sessions -> increase weight.
-        let repRange = context.prescription.repRange
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return [] }
         let target = repRange.targetReps
         let recent = recentPerformances(context)
@@ -131,7 +131,7 @@ struct RuleEngine {
 
     private static func steadyRepIncreaseWithinRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Range mode progression: repeat the same reps at the same weight for 2 sessions -> increase reps by 1.
-        let repRange = context.prescription.repRange
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let lower = repRange.lowerRange
         let upper = repRange.upperRange
@@ -197,7 +197,7 @@ struct RuleEngine {
 
         // Check overshoot in BOTH of the last two sessions.
         let lastTwo = Array(recent.prefix(2))
-        let repRange = context.prescription.repRange
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode != .notSet else { return [] }
 
         let overshootMet: Bool
@@ -255,7 +255,7 @@ struct RuleEngine {
 
     private static func belowRangeWeightDecrease(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Range mode safety: below lower bound in 2 of last 3 -> reduce weight.
-        let repRange = context.prescription.repRange
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let lower = repRange.lowerRange
         let recent = recentPerformances(context)
@@ -425,8 +425,9 @@ struct RuleEngine {
                 guard effectiveRest > 0 else { continue }
 
                 guard let setPrescription = targetSet(for: currentSet, prescription: context.prescription) else { continue }
-                let targetRest = restPolicy.activeMode == .allSame
-                    ? restPolicy.allSameSeconds
+                let policy = restPolicy ?? RestTimePolicy()
+                let targetRest = policy.activeMode == .allSame
+                    ? policy.allSameSeconds
                     : setPrescription.targetRest
 
                 let actualRest = currentSet.restSeconds
@@ -452,8 +453,8 @@ struct RuleEngine {
 
         let reason = "Your rest periods are shorter than prescribed and reps drop across sets. Increasing rest should help you stay in range."
 
-        if restPolicy.activeMode == .allSame {
-            let current = restPolicy.allSameSeconds
+        if restPolicy?.activeMode == .allSame {
+            let current = restPolicy?.allSameSeconds ?? 0
             let newValue = current + restIncrement
             return [makeExerciseChange(context: context, changeType: .increaseRestTimeSeconds, previousValue: Double(current), newValue: Double(newValue), reasoning: reason)]
         }
@@ -506,8 +507,8 @@ struct RuleEngine {
         let reason = "Progress has plateaued and you're struggling to hit targets. Adding rest may help recovery and performance."
 
         // If rest is all-same, update the policy; otherwise update progression sets.
-        if context.prescription.restTimePolicy.activeMode == .allSame {
-            let current = context.prescription.restTimePolicy.allSameSeconds
+        if context.prescription.restTimePolicy?.activeMode == .allSame {
+            let current = context.prescription.restTimePolicy?.allSameSeconds ?? 0
             let newValue = current + increment
             return [makeExerciseChange(context: context, changeType: .increaseRestTimeSeconds, previousValue: Double(current), newValue: Double(newValue), reasoning: reason)]
         }
@@ -588,7 +589,7 @@ struct RuleEngine {
         guard recent.count >= 2 else { return [] }
 
         let lastTwo = Array(recent.prefix(2))
-        let repRange = context.prescription.repRange
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode != .notSet else { return [] }
         let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
@@ -775,7 +776,7 @@ struct RuleEngine {
     }
 
     private static func repFloor(_ context: ExerciseSuggestionContext) -> Int? {
-        let policy = context.prescription.repRange
+        let policy = context.prescription.repRange ?? RepRangePolicy()
         switch policy.activeMode {
         case .range:
             return policy.lowerRange

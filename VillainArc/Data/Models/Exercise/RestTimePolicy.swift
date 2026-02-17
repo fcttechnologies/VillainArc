@@ -12,15 +12,17 @@ class RestTimePolicy {
     var warmupSeconds = RestTimePolicy.defaultDropsetSeconds
     var workingSeconds = RestTimePolicy.defaultRestSeconds
     var dropSetSeconds = RestTimePolicy.defaultDropsetSeconds
+    var exercisePerformance: ExercisePerformance?
+    var exercisePrescription: ExercisePrescription?
     
     init() {}
 
-    init(copying source: RestTimePolicy) {
-        activeMode = source.activeMode
-        allSameSeconds = source.allSameSeconds
-        warmupSeconds = source.warmupSeconds
-        workingSeconds = source.workingSeconds
-        dropSetSeconds = source.dropSetSeconds
+    init(copying source: RestTimePolicy?) {
+        activeMode = source?.activeMode ?? .allSame
+        allSameSeconds = source?.allSameSeconds ?? RestTimePolicy.defaultRestSeconds
+        warmupSeconds = source?.warmupSeconds ?? RestTimePolicy.defaultDropsetSeconds
+        workingSeconds = source?.workingSeconds ?? RestTimePolicy.defaultRestSeconds
+        dropSetSeconds = source?.dropSetSeconds ?? RestTimePolicy.defaultDropsetSeconds
         
     }
     

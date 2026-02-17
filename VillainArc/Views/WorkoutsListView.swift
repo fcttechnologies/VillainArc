@@ -85,7 +85,7 @@ struct WorkoutsListView: View {
         // Collect affected catalogIDs before deleting
         var affectedCatalogIDs = Set<String>()
         for workout in workoutsToDelete {
-            affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
+            affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
         }
         
         SpotlightIndexer.deleteWorkoutSessions(ids: workoutsToDelete.map(\.id))
@@ -113,7 +113,7 @@ struct WorkoutsListView: View {
         // Collect all affected catalogIDs before deleting
         var affectedCatalogIDs = Set<String>()
         for workout in workouts {
-            affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
+            affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
         }
         
         SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))

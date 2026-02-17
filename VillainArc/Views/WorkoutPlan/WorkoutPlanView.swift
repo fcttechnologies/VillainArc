@@ -321,12 +321,12 @@ private struct WorkoutPlanExerciseView: View {
                         Haptics.selection()
                         showRepRangeEditor = true
                     } label: {
-                        Text(exercise.repRange.displayText)
+                        Text(exercise.repRange?.displayText ?? "")
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Rep range")
-                    .accessibilityValue(exercise.repRange.displayText)
+                    .accessibilityValue(exercise.repRange?.displayText ?? "")
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRepRangeButton(exercise))
                     .accessibilityHint("Edits the rep range.")
                 }
@@ -352,7 +352,7 @@ private struct WorkoutPlanExerciseView: View {
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .sheet(isPresented: $showRepRangeEditor) {
-            RepRangeEditorView(repRange: exercise.repRange, catalogID: exercise.catalogID)
+            RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showRestTimeEditor) {
@@ -389,7 +389,7 @@ private struct WorkoutPlanSetRowView: View {
                     }
                 }
                 Divider()
-                if exercise.sets.count > 1 {
+                if (exercise.sets?.count ?? 0) > 1 {
                     Button("Delete Set", systemImage: "trash", role: .destructive) {
                         deleteSet()
                     }

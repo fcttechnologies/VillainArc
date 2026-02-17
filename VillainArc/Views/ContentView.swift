@@ -54,7 +54,7 @@ struct ContentView: View {
                 }
             }
             .task {
-                DataManager.seedExercisesIfNeeded(context: context)
+                await DataManager.seedExercisesIfNeeded(context: context)
                 router.checkForUnfinishedData()
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {

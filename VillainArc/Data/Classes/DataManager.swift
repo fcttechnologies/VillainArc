@@ -1,8 +1,17 @@
 import SwiftUI
 import SwiftData
+import CoreData
 
 @MainActor class DataManager {
-    static func seedExercisesIfNeeded(context: ModelContext) {
+    private static var hasWaitedForCloudKitImport = false
+
+    static func seedExercisesIfNeeded(context: ModelContext) async {
+        // Wait for CloudKit import to complete before seeding
+        if !hasWaitedForCloudKitImport {
+            await waitForCloudKitImport()
+            hasWaitedForCloudKitImport = true
+        }
+
         let storedVersion = UserDefaults.standard.integer(forKey: "exerciseCatalogVersion")
         guard ExerciseCatalog.catalogVersion != storedVersion else {
             return
@@ -12,22 +21,42 @@ import SwiftData
         UserDefaults.standard.set(ExerciseCatalog.catalogVersion, forKey: "exerciseCatalogVersion")
     }
 
-    static func dedupeCatalogExercisesIfNeeded(context: ModelContext) {
-        let catalogExercises = (try? context.fetch(Exercise.catalogExercises)) ?? []
-        let grouped = Dictionary(grouping: catalogExercises, by: \.catalogID)
-        var didChange = false
+    private static func waitForCloudKitImport() async {
+        // Use modern async notifications (Swift 6 concurrency compliant)
+        let importCompleted = await withTaskGroup(of: Bool.self) { group -> Bool in
+            // Task 1: Wait for CloudKit import notification
+            group.addTask {
+                for await notification in NotificationCenter.default.notifications(
+                    named: NSPersistentCloudKitContainer.eventChangedNotification
+                ) {
+                    guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
+                        as? NSPersistentCloudKitContainer.Event else { continue }
 
-        for (catalogID, duplicates) in grouped where duplicates.count > 1 {
-            let primary = primaryExercise(from: duplicates)
-            if let catalogItem = ExerciseCatalog.byID[catalogID] {
-                didChange = primary.applyCatalogItem(catalogItem) || didChange
+                    // Wait for import to complete
+                    if event.type == .import && event.endDate != nil {
+                        return true  // Import completed
+                    }
+                }
+                return false
             }
-            didChange = mergeDuplicates(duplicates, keeping: primary, context: context) || didChange
+
+            // Task 2: 5-second timeout
+            group.addTask {
+                try? await Task.sleep(for: .seconds(10))
+                return false  // Timeout
+            }
+
+            // Wait for first task to complete, then cancel the other
+            let result = await group.next() ?? false
+            group.cancelAll()
+            return result
         }
 
-        if didChange {
-            saveContext(context: context)
-            print("Exercises deduped.")
+        // Single clean log message
+        if importCompleted {
+            print("✅ CloudKit import complete - safe to seed exercises")
+        } else {
+            print("⏱️ CloudKit import timeout - proceeding with seed")
         }
     }
 
@@ -51,43 +80,6 @@ import SwiftData
         }
     }
 
-    private static func mergeDuplicates(_ duplicates: [Exercise], keeping primary: Exercise, context: ModelContext) -> Bool {
-        var didChange = false
-        for duplicate in duplicates where duplicate !== primary {
-            if duplicate.favorite && !primary.favorite {
-                primary.favorite = true
-                didChange = true
-            }
-            if let duplicateLastUsed = duplicate.lastUsed {
-                if let primaryLastUsed = primary.lastUsed {
-                    if duplicateLastUsed > primaryLastUsed {
-                        primary.lastUsed = duplicateLastUsed
-                        didChange = true
-                    }
-                } else {
-                    primary.lastUsed = duplicateLastUsed
-                    didChange = true
-                }
-            }
-            context.delete(duplicate)
-            didChange = true
-        }
-        return didChange
-    }
-
-    private static func primaryExercise(from duplicates: [Exercise]) -> Exercise {
-        duplicates.max { left, right in
-            let leftDate = left.lastUsed ?? .distantPast
-            let rightDate = right.lastUsed ?? .distantPast
-            if leftDate != rightDate {
-                return leftDate < rightDate
-            }
-            if left.favorite != right.favorite {
-                return !left.favorite && right.favorite
-            }
-            return false
-        } ?? duplicates[0]
-    }
 }
 
 @MainActor

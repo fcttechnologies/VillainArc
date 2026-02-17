@@ -89,7 +89,7 @@ struct TrainingSummaryIntent: AppIntent {
             return .result(dialog: "You don't have an active workout split.")
         }
 
-        guard !split.days.isEmpty else {
+        guard !(split.days?.isEmpty ?? true) else {
             return .result(dialog: "Your split doesn't have any days set up yet.")
         }
 

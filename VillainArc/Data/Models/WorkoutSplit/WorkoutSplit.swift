@@ -15,14 +15,14 @@ class WorkoutSplit {
     var rotationLastUpdatedDate: Date? = nil
     
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSplitDay.split)
-    var days: [WorkoutSplitDay] = []
+    var days: [WorkoutSplitDay]? = [WorkoutSplitDay]()
     
     var sortedDays: [WorkoutSplitDay] {
         switch mode {
         case .weekly:
-            return days.sorted(by: { $0.weekday < $1.weekday })
+            return (days ?? []).sorted(by: { $0.weekday < $1.weekday })
         case .rotation:
-            return days.sorted(by: { $0.index < $1.index })
+            return (days ?? []).sorted(by: { $0.index < $1.index })
         }
     }
     
@@ -58,16 +58,16 @@ class WorkoutSplit {
         let cal = Calendar.current
         let startToday = cal.startOfDay(for: today)
         rotationLastUpdatedDate = startToday
-        guard !days.isEmpty else { return }
+        guard !(days?.isEmpty ?? true) else { return }
         let delta = advanced ? 1 : -1
-        let count = days.count
+        let count = days?.count ?? 0
         let normalized = ((rotationCurrentIndex + delta) % count + count) % count
         rotationCurrentIndex = normalized
     }
     
     @MainActor
     func refreshRotationIfNeeded(today: Date = .now, context: ModelContext) {
-        guard mode == .rotation && !days.isEmpty else { return }
+        guard mode == .rotation && !(days?.isEmpty ?? true) else { return }
         let cal = Calendar.current
         let last = rotationLastUpdatedDate ?? today
         let startLast = cal.startOfDay(for: last)
@@ -75,7 +75,7 @@ class WorkoutSplit {
         let delta = cal.dateComponents([.day], from: startLast, to: startToday).day ?? 0
         var didUpdate = false
         if delta > 0 {
-            rotationCurrentIndex = (rotationCurrentIndex + delta) % days.count
+            rotationCurrentIndex = (rotationCurrentIndex + delta) % (days?.count ?? 0)
             rotationLastUpdatedDate = startToday
             didUpdate = true
         } else if rotationLastUpdatedDate == nil || startLast != startToday {
@@ -91,7 +91,7 @@ class WorkoutSplit {
         let ordered = sortedDays
         guard let deletedIndex = ordered.firstIndex(of: day) else { return }
 
-        days.removeAll { $0 == day }
+        days?.removeAll { $0 == day }
 
         let reordered = sortedDays
         for (newIndex, splitDay) in reordered.enumerated() {
@@ -142,7 +142,7 @@ class WorkoutSplit {
         switch mode {
         case .weekly:
             guard let weekday = dayIndex(for: date, calendar: calendar) else { return nil }
-            return days.first { $0.weekday == weekday }
+            return days?.first { $0.weekday == weekday }
         case .rotation:
             guard let position = dayIndex(for: date, calendar: calendar) else { return nil }
             let ordered = sortedDays

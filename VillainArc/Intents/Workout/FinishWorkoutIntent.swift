@@ -14,7 +14,7 @@ struct FinishWorkoutIntent: AppIntent {
             throw FinishWorkoutError.noWorkoutSession
         }
         
-        guard !workoutSession.exercises.isEmpty else {
+        guard !(workoutSession.exercises?.isEmpty ?? false) else {
             throw FinishWorkoutError.noExercises
         }
 

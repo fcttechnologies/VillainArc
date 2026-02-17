@@ -122,7 +122,7 @@ struct WorkoutDetailView: View {
         SpotlightIndexer.deleteWorkoutSession(id: workout.id)
         // Collect all affected catalogIDs before deleting
         var affectedCatalogIDs = Set<String>()
-        affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
+        affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
         context.delete(workout)
         
         // Update exercise histories for affected exercises

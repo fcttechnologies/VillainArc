@@ -129,8 +129,16 @@ private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> I
 
 
 func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [PrescriptionChange] {
-    let exerciseIDs = Set(plan.exercises.map { $0.id })
-    let setIDs = Set(plan.exercises.flatMap { $0.sets.map { $0.id } })
+    var exerciseIDs: Set<UUID> = []
+    for exercise in plan.exercises ?? [] {
+        exerciseIDs.insert(exercise.id)
+    }
+    var setIDs: Set<UUID> = []
+    for exercise in plan.exercises ?? []{
+        for set in exercise.sets ?? [] {
+            setIDs.insert(set.id)
+        }
+    }
     
     let descriptor = FetchDescriptor<PrescriptionChange>()
     guard let allChanges = try? context.fetch(descriptor) else { return [] }

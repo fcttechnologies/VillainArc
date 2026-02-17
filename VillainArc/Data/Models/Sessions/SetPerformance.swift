@@ -13,8 +13,9 @@ class SetPerformance {
     var complete: Bool = false
     var completedAt: Date?
     var exercise: ExercisePerformance?
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.performances)
     var prescription: SetPrescription?
+    var sourceChanges: [PrescriptionChange]? = [PrescriptionChange]()
 
     var effectiveRestSeconds: Int {
         exercise?.effectiveRestSeconds(after: self) ?? restSeconds
@@ -31,7 +32,7 @@ class SetPerformance {
 
     // Adding set in session
     init(exercise: ExercisePerformance, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0) {
-        index = exercise.sets.count
+        index = exercise.sets?.count ?? 0
         self.exercise = exercise
         self.weight = weight
         self.reps = reps

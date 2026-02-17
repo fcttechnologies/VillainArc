@@ -26,15 +26,21 @@ struct WorkoutSummaryView: View {
     @State private var isGeneratingSuggestions = false
 
     private var totalExercises: Int {
-        workout.exercises.count
+        workout.exercises?.count ?? 0
     }
 
     private var totalSets: Int {
-        workout.exercises.reduce(0) { $0 + $1.sets.count }
+        var count: Int = 0
+        for exercise in workout.exercises ?? [] {
+            for _ in exercise.sets ?? [] {
+                count += 1
+            }
+        }
+        return count
     }
 
     private var totalVolume: Double {
-        workout.exercises.reduce(0) { $0 + $1.totalVolume }
+        workout.exercises?.reduce(0) { $0 + $1.totalVolume } ?? 0
     }
 
     private var formattedTotalVolume: String {

@@ -129,12 +129,12 @@ struct ExerciseView: View {
                         Haptics.selection()
                         showRepRangeEditor = true
                     } label: {
-                        Text(exercise.repRange.displayText)
+                        Text(exercise.repRange?.displayText ?? "")
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Rep range")
-                    .accessibilityValue(exercise.repRange.displayText)
+                    .accessibilityValue(exercise.repRange?.displayText ?? "")
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRepRangeButton(exercise))
                     .accessibilityHint("Edits the rep range.")
                 }
@@ -181,7 +181,7 @@ struct ExerciseView: View {
             }
         }
         .sheet(isPresented: $showRepRangeEditor) {
-            RepRangeEditorView(repRange: exercise.repRange, catalogID: exercise.catalogID)
+            RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showRestTimeEditor) {

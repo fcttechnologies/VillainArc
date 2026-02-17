@@ -97,6 +97,6 @@ struct PreWorkoutStatusView: View {
 }
 
 #Preview {
-    PreWorkoutStatusView(status: sampleIncompleteSession().preStatus)
+    PreWorkoutStatusView(status: sampleIncompleteSession().preStatus ?? PreWorkoutStatus())
         .sampleDataContainerIncomplete()
 }

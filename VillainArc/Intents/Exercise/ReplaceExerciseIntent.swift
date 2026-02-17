@@ -33,7 +33,7 @@ struct ReplaceExerciseIntent: AppIntent {
         }
 
         let oldName = activeExercise.name
-        let hasSets = !activeExercise.sets.isEmpty
+        let hasSets = !activeExercise.sets!.isEmpty
 
         let keepSets: Bool
         if hasSets {

@@ -10,19 +10,20 @@ class ExercisePrescription {
     var notes: String = ""
     var musclesTargeted: [Muscle] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
-    @Relationship(deleteRule: .cascade)
-    var repRange: RepRangePolicy = RepRangePolicy()
-    @Relationship(deleteRule: .cascade)
-    var restTimePolicy: RestTimePolicy = RestTimePolicy()
+    @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePrescription)
+    var repRange: RepRangePolicy? = RepRangePolicy()
+    @Relationship(deleteRule: .cascade, inverse: \RestTimePolicy.exercisePrescription)
+    var restTimePolicy: RestTimePolicy? = RestTimePolicy()
     var workoutPlan: WorkoutPlan?
+    var performances: [ExercisePerformance]? = [ExercisePerformance]()
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
-    var sets: [SetPrescription] = []
+    var sets: [SetPrescription]? = [SetPrescription]()
     
     @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetExercisePrescription)
-    var changes: [PrescriptionChange] = []
+    var changes: [PrescriptionChange]? = [PrescriptionChange]()
     
     var sortedSets: [SetPrescription] {
-        sets.sorted { $0.index < $1.index }
+        (sets ?? []).sorted { $0.index < $1.index }
     }
 
     var displayMuscle: String {
@@ -31,7 +32,7 @@ class ExercisePrescription {
     
     // Adding exercise in workout plan creation
     init(exercise: Exercise, workoutPlan: WorkoutPlan) {
-        index = workoutPlan.exercises.count
+        index = workoutPlan.exercises?.count ?? 0
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
@@ -73,14 +74,14 @@ class ExercisePrescription {
 
     func addSet() {
         if let previous = sortedSets.last {
-            sets.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest))
+            sets?.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest))
         } else {
-            sets.append(SetPrescription(exercisePrescription: self, targetRest: RestTimePolicy.defaultRestSeconds))
+            sets?.append(SetPrescription(exercisePrescription: self, targetRest: RestTimePolicy.defaultRestSeconds))
         }
     }
     
     func deleteSet(_ set: SetPrescription) {
-        sets.removeAll(where: { $0 == set })
+        sets?.removeAll(where: { $0 == set })
         reindexSets()
     }
     

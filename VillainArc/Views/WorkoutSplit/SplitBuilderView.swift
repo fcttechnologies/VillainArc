@@ -205,12 +205,12 @@ struct SplitBuilderView: View {
             for weekday in 1...7 {
                 let template = weekdayMapping[weekday]!
                 let day = WorkoutSplitDay(weekday: weekday, split: split, name: template.name, isRestDay: template.isRestDay, targetMuscles: template.muscles)
-                split.days.append(day)
+                split.days?.append(day)
             }
         case .rotation:
             for (index, template) in days.enumerated() {
                 let day = WorkoutSplitDay(index: index, split: split, name: template.name, isRestDay: template.isRestDay, targetMuscles: template.muscles)
-                split.days.append(day)
+                split.days?.append(day)
             }
         }
         context.insert(split)

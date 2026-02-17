@@ -11,16 +11,19 @@ class WorkoutPlan {
     var isEditing: Bool = false
     var lastUsed: Date?
     @Relationship(deleteRule: .cascade, inverse: \ExercisePrescription.workoutPlan)
-    var exercises: [ExercisePrescription] = []
+    var exercises: [ExercisePrescription]? = [ExercisePrescription]()
     @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
-    var splitDays: [WorkoutSplitDay] = []
+    var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
+    var workoutSessions: [WorkoutSession]? = [WorkoutSession]()
+    var targetedChanges: [PrescriptionChange]? = [PrescriptionChange]()
+    var editingCopies: [WorkoutPlan]? = [WorkoutPlan]()
     
     // Reference to original plan when this is an editing copy (nil on originals)
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.editingCopies)
     var originalPlan: WorkoutPlan?
     
     var sortedExercises: [ExercisePrescription] {
-        exercises.sorted { $0.index < $1.index }
+        (exercises ?? []).sorted { $0.index < $1.index }
     }
     
     init() {}
@@ -71,11 +74,11 @@ class WorkoutPlan {
     }
     
     func addExercise(_ exercise: Exercise) {
-        exercises.append(ExercisePrescription(exercise: exercise, workoutPlan: self))
+        exercises?.append(ExercisePrescription(exercise: exercise, workoutPlan: self))
     }
     
     func deleteExercise(_ exercise: ExercisePrescription) {
-        exercises.removeAll { $0 == exercise }
+        exercises?.removeAll { $0 == exercise }
         reindexExercises()
     }
     
@@ -93,7 +96,7 @@ class WorkoutPlan {
 extension WorkoutPlan {
     var spotlightSummary: String {
         let exerciseSummaries = sortedExercises.map { exercise in
-            "\(exercise.sets.count)x \(exercise.name)"
+            "\(String(describing: exercise.sets?.count))x \(exercise.name)"
         }
         return exerciseSummaries.joined(separator: ",")
     }

@@ -67,7 +67,7 @@ extension WorkoutSessionEntity {
         startedAt = workoutSession.startedAt
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
-        let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(feeling: workoutSession.preStatus.feeling.displayName, notes: workoutSession.preStatus.notes.isEmpty ? nil : workoutSession.preStatus.notes, tookPreWorkout: workoutSession.preStatus.tookPreWorkout)
+        let preStatus = WorkoutSessionFullContent.PreWorkoutStatus(feeling: workoutSession.preStatus?.feeling.displayName ?? "", notes: ((workoutSession.preStatus?.notes.isEmpty) != nil) ? nil : workoutSession.preStatus?.notes, tookPreWorkout: workoutSession.preStatus?.tookPreWorkout ?? false)
         fullContent = WorkoutSessionFullContent(id: workoutSession.id, title: workoutSession.title, summary: workoutSession.spotlightSummary, notes: workoutSession.notes.isEmpty ? nil : workoutSession.notes, startedAt: workoutSession.startedAt, endedAt: workoutSession.endedAt, origin: workoutSession.origin.rawValue, preStatus: preStatus, postWorkoutEffort: workoutSession.postEffort, exercises: exercises.map { exercise in
             WorkoutSessionFullContent.Exercise(index: exercise.index, name: exercise.name, notes: exercise.notes.isEmpty ? nil : exercise.notes, muscles: exercise.musclesTargeted.map(\.rawValue), sets: exercise.sortedSets.map { set in
                 WorkoutSessionFullContent.Exercise.SetEntry(index: set.index, type: set.type.displayName, reps: set.reps, weight: set.weight, restSeconds: set.restSeconds, complete: set.complete, completedAt: set.completedAt)

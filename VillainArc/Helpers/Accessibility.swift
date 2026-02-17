@@ -457,7 +457,7 @@ enum AccessibilityText {
     }
 
     static func workoutRowValue(for workout: WorkoutSession) -> String {
-        let count = workout.exercises.count
+        let count = workout.exercises?.count ?? 0
         return count == 1 ? "1 exercise" : "\(count) exercises"
     }
 

@@ -60,10 +60,10 @@ class ExerciseHistory {
     
     // Weight progression points (last 10 sessions for charting)
     @Relationship(deleteRule: .cascade, inverse: \ProgressionPoint.exerciseHistory)
-    var progressionPoints: [ProgressionPoint] = []
+    var progressionPoints: [ProgressionPoint]? = [ProgressionPoint]()
     
     var sortedProgressionPoints: [ProgressionPoint] {
-        progressionPoints.sorted { $0.date > $1.date }
+        (progressionPoints ?? []).sorted { $0.date > $1.date }
     }
     
     init(catalogID: String) {
@@ -143,7 +143,7 @@ class ExerciseHistory {
         typicalRepRangeUpper = 0
         typicalRestSeconds = 0
         progressionTrend = .insufficient
-        progressionPoints.removeAll()
+        progressionPoints?.removeAll()
     }
     
     private func calculatePRs(from performances: [ExercisePerformance]) {
@@ -187,7 +187,7 @@ class ExerciseHistory {
         // Best reps at each weight
         var repsMap: [Double: Int] = [:]
         for perf in performances {
-            for set in perf.sets where set.complete {
+            for set in perf.sets ?? [] where set.complete {
                 let weight = set.weight
                 let reps = set.reps
                 if reps > (repsMap[weight] ?? 0) {
@@ -287,7 +287,7 @@ class ExerciseHistory {
     
     private func storeProgressionData(from performances: [ExercisePerformance]) {
         // Clear existing progression points
-        progressionPoints.removeAll()
+        progressionPoints?.removeAll()
         
         let last10 = Array(performances.prefix(10))
         
@@ -297,7 +297,7 @@ class ExerciseHistory {
                 .max() ?? 0
             
             let point = ProgressionPoint(date: perf.date, weight: topWeight, volume: perf.totalVolume)
-            progressionPoints.append(point)
+            progressionPoints?.append(point)
         }
     }
     

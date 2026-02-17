@@ -106,7 +106,7 @@ enum AIRestTimeMode: String, Equatable, Sendable {
 extension AIExercisePrescriptionSnapshot {
     init(from prescription: ExercisePrescription) {
         self.exerciseName = prescription.name
-        let policy = prescription.repRange
+        let policy = prescription.repRange ?? RepRangePolicy()
         switch policy.activeMode {
         case .range:
             self.repRangeMode = .range
@@ -124,7 +124,7 @@ extension AIExercisePrescriptionSnapshot {
             self.repRangeUpper = nil
             self.repRangeTarget = nil
         }
-        self.restTimePolicy = AIRestTimePolicy(mode: AIRestTimeMode(from: prescription.restTimePolicy.activeMode), allSameSeconds: prescription.restTimePolicy.allSameSeconds)
+        self.restTimePolicy = AIRestTimePolicy(mode: AIRestTimeMode(from: prescription.restTimePolicy?.activeMode ?? .allSame), allSameSeconds: prescription.restTimePolicy?.allSameSeconds ?? 0)
         self.sets = prescription.sortedSets.map { AISetPrescriptionSnapshot(from: $0) }
     }
 }

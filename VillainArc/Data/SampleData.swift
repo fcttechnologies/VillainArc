@@ -86,25 +86,25 @@ class PreviewDataContainer {
             prescription.notes = ex.notes
 
             if ex.id == "dumbbell_incline_bench_press" {
-                prescription.repRange.activeMode = .range
-                prescription.repRange.lowerRange = 8
-                prescription.repRange.upperRange = 10
+                prescription.repRange?.activeMode = .range
+                prescription.repRange?.lowerRange = 8
+                prescription.repRange?.upperRange = 10
             } else if ex.id == "cable_bench_chest_fly" {
-                prescription.repRange.activeMode = .range
-                prescription.repRange.lowerRange = 12
-                prescription.repRange.upperRange = 15
+                prescription.repRange?.activeMode = .range
+                prescription.repRange?.lowerRange = 12
+                prescription.repRange?.upperRange = 15
             } else if ex.id == "cable_bar_pushdown" {
-                prescription.repRange.activeMode = .range
-                prescription.repRange.lowerRange = 10
-                prescription.repRange.upperRange = 12
+                prescription.repRange?.activeMode = .range
+                prescription.repRange?.lowerRange = 10
+                prescription.repRange?.upperRange = 12
             }
 
             for s in ex.sets {
                 let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest)
-                prescription.sets.append(setPrescription)
+                prescription.sets?.append(setPrescription)
             }
 
-            plan.exercises.append(prescription)
+            plan.exercises?.append(prescription)
         }
     }
 
@@ -143,22 +143,22 @@ class PreviewDataContainer {
             let performance = ExercisePerformance(exercise: exercise, workoutSession: session, notes: ex.notes)
 
             if ex.id == "dumbbell_incline_bench_press" {
-                performance.repRange.activeMode = .range
-                performance.repRange.lowerRange = 8
-                performance.repRange.upperRange = 10
+                performance.repRange?.activeMode = .range
+                performance.repRange?.lowerRange = 8
+                performance.repRange?.upperRange = 10
             } else if ex.id == "cable_bench_chest_fly" {
-                performance.repRange.activeMode = .range
-                performance.repRange.lowerRange = 12
-                performance.repRange.upperRange = 15
+                performance.repRange?.activeMode = .range
+                performance.repRange?.lowerRange = 12
+                performance.repRange?.upperRange = 15
             }
 
             for (j, s) in ex.sets.enumerated() {
                 let completedAt = session.startedAt.addingTimeInterval(Double((i * 3 + j + 1) * 120))
                 let setPerf = SetPerformance(exercise: performance, setType: s.type, weight: s.weight, reps: s.reps, restSeconds: s.type == .warmup ? 60 : 90, index: j, complete: true, completedAt: completedAt)
-                performance.sets.append(setPerf)
+                performance.sets?.append(setPerf)
             }
 
-            session.exercises.append(performance)
+            session.exercises?.append(performance)
         }
     }
 
@@ -191,10 +191,10 @@ class PreviewDataContainer {
             for index in 0..<3 {
                 let weight = index < weights.count ? weights[index] : 0
                 let setPerf = SetPerformance(exercise: performance, setType: index == 0 ? .warmup : .working, weight: weight, reps: sampleReps[index], restSeconds: index == 0 ? 60 : 90, index: index)
-                performance.sets.append(setPerf)
+                performance.sets?.append(setPerf)
             }
 
-            session.exercises.append(performance)
+            session.exercises?.append(performance)
         }
     }
 
@@ -208,12 +208,12 @@ class PreviewDataContainer {
         let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
 
         let set1 = SetPrescription(exercisePrescription: prescription, setType: .warmup, targetRest: 60)
-        prescription.sets.append(set1)
+        prescription.sets?.append(set1)
 
         let set2 = SetPrescription(exercisePrescription: prescription, targetRest: 90)
-        prescription.sets.append(set2)
+        prescription.sets?.append(set2)
 
-        plan.exercises.append(prescription)
+        plan.exercises?.append(prescription)
     }
 
     // MARK: - Splits
@@ -247,15 +247,15 @@ class PreviewDataContainer {
         // Exercise 1: Bench Press (Groups: Set 1, Set 2)
         let bench = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
         let benchPrescription = ExercisePrescription(exercise: bench, workoutPlan: plan)
-        plan.exercises.append(benchPrescription)
+        plan.exercises?.append(benchPrescription)
         
         // Set 1 changes
         let s1 = SetPrescription(exercisePrescription: benchPrescription, setType: .warmup, targetWeight: 1135, targetReps: 10, index: 0)
-        benchPrescription.sets.append(s1)
+        benchPrescription.sets?.append(s1)
         
         // Set 2 changes
         let s2 = SetPrescription(exercisePrescription: benchPrescription, setType: .working, targetWeight: 155, targetReps: 8, index: 1)
-        benchPrescription.sets.append(s2)
+        benchPrescription.sets?.append(s2)
         
         let change1 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .increaseWeight, previousValue: 135, newValue: 145, changeReasoning: "Hit all reps last 3 sessions")
         context.insert(change1)
@@ -269,9 +269,9 @@ class PreviewDataContainer {
         // Exercise 2: Incline DB (Group: Rep Range)
         let incline = Exercise(from: ExerciseCatalog.byID["dumbbell_incline_bench_press"]!)
         let inclinePrescription = ExercisePrescription(exercise: incline, workoutPlan: plan)
-        inclinePrescription.repRange.activeMode = .target
-        inclinePrescription.repRange.targetReps = 8
-        plan.exercises.append(inclinePrescription)
+        inclinePrescription.repRange?.activeMode = .target
+        inclinePrescription.repRange?.targetReps = 8
+        plan.exercises?.append(inclinePrescription)
         
         let change4 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue), changeReasoning: "Switching to range for hypertrophy phase")
         context.insert(change4)
@@ -285,9 +285,9 @@ class PreviewDataContainer {
         // Exercise 3: Flys (Group: Rest Time)
         let flys = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
         let flysPrescription = ExercisePrescription(exercise: flys, workoutPlan: plan)
-        flysPrescription.restTimePolicy.activeMode = .allSame
-        flysPrescription.restTimePolicy.allSameSeconds = 60
-        plan.exercises.append(flysPrescription)
+        flysPrescription.restTimePolicy?.activeMode = .allSame
+        flysPrescription.restTimePolicy?.allSameSeconds = 60
+        plan.exercises?.append(flysPrescription)
         
         let change7 = PrescriptionChange(catalogID: flys.catalogID, targetExercisePrescription: flysPrescription, changeType: .increaseRestTimeSeconds, previousValue: 60, newValue: 90, changeReasoning: "Recovery needs increased")
         context.insert(change7)
@@ -322,20 +322,20 @@ class PreviewDataContainer {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
             let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
             prescription.index = index
-            prescription.repRange.activeMode = ex.repRange
+            prescription.repRange?.activeMode = ex.repRange
             if ex.repRange == .range {
-                prescription.repRange.lowerRange = ex.lower
-                prescription.repRange.upperRange = ex.upper
+                prescription.repRange?.lowerRange = ex.lower
+                prescription.repRange?.upperRange = ex.upper
             } else if ex.repRange == .target {
-                prescription.repRange.targetReps = ex.target
+                prescription.repRange?.targetReps = ex.target
             }
 
             for (setIndex, s) in ex.sets.enumerated() {
                 let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest, index: setIndex)
-                prescription.sets.append(setPrescription)
+                prescription.sets?.append(setPrescription)
             }
 
-            plan.exercises.append(prescription)
+            plan.exercises?.append(prescription)
         }
 
         let historySessions: [(date: Date, exercises: [(id: String, repRange: RepRangeMode, lower: Int, upper: Int, target: Int, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])])] = [
@@ -415,10 +415,10 @@ class PreviewDataContainer {
                 for (setIndex, s) in ex.sets.enumerated() {
                     let completedAt = history.date.addingTimeInterval(Double((exerciseIndex * 3 + setIndex + 1) * 120))
                     let setPerf = SetPerformance(exercise: performance, setType: s.type, weight: s.weight, reps: s.reps, restSeconds: s.type == .warmup ? 60 : 90, index: setIndex, complete: true, completedAt: completedAt)
-                    performance.sets.append(setPerf)
+                    performance.sets?.append(setPerf)
                 }
 
-                session.exercises.append(performance)
+                session.exercises?.append(performance)
             }
         }
 
@@ -571,7 +571,7 @@ func sampleRotationSplit() -> WorkoutSplit {
     let fallback = WorkoutSplit(title: "Upper/Lower", mode: .rotation)
     for i in 0..<3 {
         let day = WorkoutSplitDay(index: i, split: fallback, name: "Day \(i + 1)")
-        fallback.days.append(day)
+        fallback.days?.append(day)
     }
     sampleContainer.context.insert(fallback)
     return fallback

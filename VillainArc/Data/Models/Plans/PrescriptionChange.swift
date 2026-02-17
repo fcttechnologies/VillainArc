@@ -25,14 +25,14 @@ class PrescriptionChange {
     var catalogID: String = ""
     
     // When/where triggered
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSession.createdPrescriptionChanges)
     var sessionFrom: WorkoutSession?
     var createdAt: Date = Date()              // When suggestion was created
     
     // Evidence (what led to this suggestion)
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \ExercisePerformance.sourceChanges)
     var sourceExercisePerformance: ExercisePerformance?
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \SetPerformance.sourceChanges)
     var sourceSetPerformance: SetPerformance?
     
     // Target (what prescription this affects)
@@ -40,7 +40,7 @@ class PrescriptionChange {
     var targetExercisePrescription: ExercisePrescription?
     @Relationship(deleteRule: .nullify)
     var targetSetPrescription: SetPrescription?
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.targetedChanges)
     var targetPlan: WorkoutPlan?              // Which plan (context matters)
     
     // The Change
@@ -55,7 +55,7 @@ class PrescriptionChange {
     // Outcome (how it went)
     var outcome: Outcome = Outcome.pending
     var outcomeReason: String?                // WHY this outcome (for learning)
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSession.evaluatedPrescriptionChanges)
     var evaluatedInSession: WorkoutSession?   // Which session evaluated
     var evaluatedAt: Date?                    // When outcome was determined
     

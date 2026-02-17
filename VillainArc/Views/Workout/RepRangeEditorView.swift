@@ -152,7 +152,7 @@ struct RepRangeEditorView: View {
 
         let workoutExercises = fetchExercises(catalogID: catalogID)
         for exercise in workoutExercises {
-            guard let kind = suggestionKind(from: exercise.repRange) else { continue }
+            guard let kind = suggestionKind(from: exercise.repRange ?? RepRangePolicy()) else { continue }
             candidates.append(RepRangeCandidate(kind: kind, date: exercise.date))
         }
 

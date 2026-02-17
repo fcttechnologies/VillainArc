@@ -15,7 +15,6 @@ struct AddExercisesIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        DataManager.dedupeCatalogExercisesIfNeeded(context: context)
 
         guard !exercises.isEmpty else {
             return .result(dialog: "No exercises selected.")

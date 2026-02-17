@@ -15,7 +15,6 @@ struct AddExerciseIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        DataManager.dedupeCatalogExercisesIfNeeded(context: context)
 
         let exerciseID = exercise.id
         let predicate = #Predicate<Exercise> { $0.catalogID == exerciseID }

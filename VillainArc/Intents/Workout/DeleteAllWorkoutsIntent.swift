@@ -28,7 +28,7 @@ struct DeleteAllWorkoutsIntent: AppIntent {
 
         var affectedCatalogIDs = Set<String>()
         for workout in workouts {
-            affectedCatalogIDs.formUnion(workout.exercises.map { $0.catalogID })
+            affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
         }
 
         SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))

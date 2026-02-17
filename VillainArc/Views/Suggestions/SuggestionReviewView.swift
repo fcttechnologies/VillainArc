@@ -302,7 +302,7 @@ struct ChangeDescriptionRow: View {
         }
         switch newMode {
         case .allSame:
-            return "Switch to All Same (\(exercise.restTimePolicy.allSameSeconds)s)"
+            return "Switch to All Same (\(exercise.restTimePolicy?.allSameSeconds ?? 0)s)"
         case .individual:
             return "Switch to Individual rest"
         case .byType:
@@ -331,17 +331,17 @@ func applyChange(_ change: PrescriptionChange) {
     case .changeSetType:
         change.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue ?? 0)) ?? .working
     case .increaseRepRangeLower, .decreaseRepRangeLower:
-        change.targetExercisePrescription?.repRange.lowerRange = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.repRange?.lowerRange = Int(change.newValue ?? 0)
     case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-        change.targetExercisePrescription?.repRange.upperRange = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.repRange?.upperRange = Int(change.newValue ?? 0)
     case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-        change.targetExercisePrescription?.repRange.targetReps = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue ?? 0)
     case .changeRepRangeMode:
-        change.targetExercisePrescription?.repRange.activeMode = RepRangeMode(rawValue: Int(change.newValue ?? 0)) ?? .notSet
+        change.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue ?? 0)) ?? .notSet
     case .changeRestTimeMode:
-        change.targetExercisePrescription?.restTimePolicy.activeMode = RestTimeMode(rawValue: Int(change.newValue ?? 0)) ?? .individual
+        change.targetExercisePrescription?.restTimePolicy?.activeMode = RestTimeMode(rawValue: Int(change.newValue ?? 0)) ?? .individual
     case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-        change.targetExercisePrescription?.restTimePolicy.allSameSeconds = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.restTimePolicy?.allSameSeconds = Int(change.newValue ?? 0)
     case .removeSet:
         // Remove the last working set from the prescription.
         if let prescription = change.targetExercisePrescription,
