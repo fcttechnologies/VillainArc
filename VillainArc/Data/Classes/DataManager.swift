@@ -3,15 +3,25 @@ import SwiftData
 import CoreData
 
 @MainActor class DataManager {
-    private static var hasWaitedForCloudKitImport = false
 
+    // MARK: - Onboarding Methods (First Launch)
+
+    /// Public version for onboarding - waits for CloudKit import with error handling
+    static func waitForCloudKitImportPublic() async throws {
+        await waitForCloudKitImport()
+    }
+
+    /// Onboarding-specific seeding - assumes CloudKit import already completed
+    /// OnboardingManager handles the CloudKit wait before calling this
+    static func seedExercisesForOnboarding(context: ModelContext) async throws {
+        syncExercises(context: context)
+        UserDefaults.standard.set(ExerciseCatalog.catalogVersion, forKey: "exerciseCatalogVersion")
+    }
+
+    // MARK: - Returning User Methods (Fast Path)
+
+    /// Fast path for returning users - only checks catalog version
     static func seedExercisesIfNeeded(context: ModelContext) async {
-        // Wait for CloudKit import to complete before seeding
-        if !hasWaitedForCloudKitImport {
-            await waitForCloudKitImport()
-            hasWaitedForCloudKitImport = true
-        }
-
         let storedVersion = UserDefaults.standard.integer(forKey: "exerciseCatalogVersion")
         guard ExerciseCatalog.catalogVersion != storedVersion else {
             return
@@ -22,41 +32,21 @@ import CoreData
     }
 
     private static func waitForCloudKitImport() async {
-        // Use modern async notifications (Swift 6 concurrency compliant)
-        let importCompleted = await withTaskGroup(of: Bool.self) { group -> Bool in
-            // Task 1: Wait for CloudKit import notification
-            group.addTask {
-                for await notification in NotificationCenter.default.notifications(
-                    named: NSPersistentCloudKitContainer.eventChangedNotification
-                ) {
-                    guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
-                        as? NSPersistentCloudKitContainer.Event else { continue }
+        // Wait for CloudKit import notification (no timeout in onboarding context)
+        // OnboardingManager already verified WiFi + CloudKit availability
+        for await notification in NotificationCenter.default.notifications(named: NSPersistentCloudKitContainer.eventChangedNotification) {
+            guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
+                as? NSPersistentCloudKitContainer.Event else { continue }
 
-                    // Wait for import to complete
-                    if event.type == .import && event.endDate != nil {
-                        return true  // Import completed
-                    }
+            // Wait for import to complete
+            if event.type == .import && event.endDate != nil {
+                if let error = event.error {
+                    print("⚠️ CloudKit import completed with error: \(error)")
+                } else {
+                    print("✅ CloudKit import complete - safe to seed exercises")
                 }
-                return false
+                return  // Import completed
             }
-
-            // Task 2: 5-second timeout
-            group.addTask {
-                try? await Task.sleep(for: .seconds(10))
-                return false  // Timeout
-            }
-
-            // Wait for first task to complete, then cancel the other
-            let result = await group.next() ?? false
-            group.cancelAll()
-            return result
-        }
-
-        // Single clean log message
-        if importCompleted {
-            print("✅ CloudKit import complete - safe to seed exercises")
-        } else {
-            print("⏱️ CloudKit import timeout - proceeding with seed")
         }
     }
 
