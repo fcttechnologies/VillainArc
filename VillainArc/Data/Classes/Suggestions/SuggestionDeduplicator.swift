@@ -2,18 +2,13 @@ import Foundation
 
 struct SuggestionDeduplicator {
     static func process(suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        // Resolves conflicts by priority.
         guard !suggestions.isEmpty else { return [] }
 
-        // Resolve logical conflicts between different strategies.
         let filtered = resolveLogicalConflicts(suggestions)
-
-        // Ensure we don't emit conflicting changes for the same target property.
         return resolveConflicts(filtered)
     }
 
     private static func resolveLogicalConflicts(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        // Group by exercise to check for conflicts within each exercise.
         let grouped = Dictionary(grouping: suggestions) {
             $0.targetExercisePrescription?.id ?? UUID()
         }
@@ -22,83 +17,32 @@ struct SuggestionDeduplicator {
 
         for (_, exerciseSuggestions) in grouped {
             let filtered = filterConflictingStrategies(exerciseSuggestions)
-            resolved.append(contentsOf: filterPolicyConflicts(filtered))
+            resolved.append(contentsOf: filtered)
         }
 
         return resolved
     }
 
     private static func filterConflictingStrategies(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        // Strategy conflict 1: Weight progression vs Rest increase
-        // If user is progressing (increasing weight), they don't need rest optimization
-        let hasWeightIncrease = suggestions.contains {
-            $0.changeType == .increaseWeight
-        }
-        let hasRestIncrease = suggestions.contains {
-            $0.changeType == .increaseRest || $0.changeType == .increaseRestTimeSeconds
-        }
+        let hasWeightIncrease = suggestions.contains { $0.changeType == .increaseWeight }
+        let hasRestIncrease = suggestions.contains { $0.changeType == .increaseRest }
 
         if hasWeightIncrease && hasRestIncrease {
-            // Progression takes priority over optimization
-            // Keep weight increases, remove rest increases
-            return suggestions.filter {
-                $0.changeType != .increaseRest &&
-                $0.changeType != .increaseRestTimeSeconds
-            }
+            return suggestions.filter { $0.changeType != .increaseRest }
         }
 
-        // Strategy conflict 2: Weight increase vs Weight decrease (safety vs progression)
-        // This should be rare due to rule logic, but handle it defensively
-        let hasWeightDecrease = suggestions.contains {
-            $0.changeType == .decreaseWeight
-        }
+        let hasWeightDecrease = suggestions.contains { $0.changeType == .decreaseWeight }
 
         if hasWeightIncrease && hasWeightDecrease {
-            // Safety takes priority - keep decrease, remove increase
-            return suggestions.filter {
-                $0.changeType != .increaseWeight
-            }
+            return suggestions.filter { $0.changeType != .increaseWeight }
         }
 
-        // No conflicts, return all
         return suggestions
     }
 
-    private static func filterPolicyConflicts(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        // Avoid mixing exercise-level rest policy changes with set-level rest adjustments.
-        let restPolicyChanges: Set<ChangeType> = [
-            .changeRestTimeMode,
-            .increaseRestTimeSeconds,
-            .decreaseRestTimeSeconds
-        ]
-        let restSetChanges: Set<ChangeType> = [
-            .increaseRest,
-            .decreaseRest
-        ]
-
-        let hasRestModeChange = suggestions.contains { $0.changeType == .changeRestTimeMode }
-        let hasRestTimeSecondsChange = suggestions.contains { restPolicyChanges.contains($0.changeType) }
-
-        var filtered = suggestions
-
-        if hasRestModeChange {
-            // Switching rest time mode supersedes any all-same rest seconds change.
-            filtered = filtered.filter { $0.changeType != .increaseRestTimeSeconds && $0.changeType != .decreaseRestTimeSeconds }
-        }
-
-        if hasRestModeChange || hasRestTimeSecondsChange {
-            // If an exercise-level rest policy change exists, drop per-set rest changes.
-            filtered = filtered.filter { !restSetChanges.contains($0.changeType) }
-        }
-
-        return filtered
-    }
-
     private static func resolveConflicts(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        // If multiple changes target the same property, keep the highest-priority one.
         guard suggestions.count > 1 else { return suggestions }
 
-        // Group by (target id + property).
         var grouped: [ConflictKey: [PrescriptionChange]] = [:]
         for suggestion in suggestions {
             guard let key = conflictKey(for: suggestion) else { continue }
@@ -119,17 +63,14 @@ struct SuggestionDeduplicator {
                 if lhsPriority != rhsPriority {
                     return lhsPriority < rhsPriority
                 }
-                // Prefer deterministic rule suggestions over AI when priorities match.
                 if lhs.source != rhs.source {
                     return lhs.source == .rules
                 }
-                // If priority ties, keep the larger magnitude change.
                 let lhsMagnitude = abs((lhs.newValue ?? 0) - (lhs.previousValue ?? 0))
                 let rhsMagnitude = abs((rhs.newValue ?? 0) - (rhs.previousValue ?? 0))
                 if lhsMagnitude != rhsMagnitude {
                     return lhsMagnitude > rhsMagnitude
                 }
-                // Final tie-breaker for deterministic ordering.
                 return lhs.createdAt < rhs.createdAt
             }
 
@@ -169,10 +110,6 @@ struct SuggestionDeduplicator {
             return .repRangeTarget
         case .changeRepRangeMode:
             return .repRangeMode
-        case .changeRestTimeMode:
-            return .restTimeMode
-        case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            return .restTimeSeconds
         case .removeSet:
             return .structure
         }
@@ -197,8 +134,6 @@ struct SuggestionDeduplicator {
             return 4
         case .increaseRest, .decreaseRest:
             return 5
-        case .changeRestTimeMode, .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            return 5
         }
     }
 }
@@ -212,8 +147,6 @@ private enum ChangeProperty: Hashable {
     case repRangeLower
     case repRangeUpper
     case repRangeTarget
-    case restTimeMode
-    case restTimeSeconds
     case structure
 }
 

@@ -409,7 +409,6 @@ struct RuleEngine {
         let lastTwo = Array(recent.prefix(2))
         let repFloor = repFloor(context)
 
-        let restPolicy = context.prescription.restTimePolicy
         let restIncrement = 15
 
         func triggerSetIndices(in performance: ExercisePerformance) -> [Int] {
@@ -425,10 +424,7 @@ struct RuleEngine {
                 guard effectiveRest > 0 else { continue }
 
                 guard let setPrescription = targetSet(for: currentSet, prescription: context.prescription) else { continue }
-                let policy = restPolicy ?? RestTimePolicy()
-                let targetRest = policy.activeMode == .allSame
-                    ? policy.allSameSeconds
-                    : setPrescription.targetRest
+                let targetRest = setPrescription.targetRest
 
                 let actualRest = currentSet.restSeconds
                 guard actualRest < targetRest - 15 else { continue }
@@ -452,12 +448,6 @@ struct RuleEngine {
         guard !currentTriggered.isEmpty else { return [] }
 
         let reason = "Your rest periods are shorter than prescribed and reps drop across sets. Increasing rest should help you stay in range."
-
-        if restPolicy?.activeMode == .allSame {
-            let current = restPolicy?.allSameSeconds ?? 0
-            let newValue = current + restIncrement
-            return [makeExerciseChange(context: context, changeType: .increaseRestTimeSeconds, previousValue: Double(current), newValue: Double(newValue), reasoning: reason)]
-        }
 
         var changes: [PrescriptionChange] = []
         for index in currentTriggered {
@@ -505,13 +495,6 @@ struct RuleEngine {
 
         let increment = 15
         let reason = "Progress has plateaued and you're struggling to hit targets. Adding rest may help recovery and performance."
-
-        // If rest is all-same, update the policy; otherwise update progression sets.
-        if context.prescription.restTimePolicy?.activeMode == .allSame {
-            let current = context.prescription.restTimePolicy?.allSameSeconds ?? 0
-            let newValue = current + increment
-            return [makeExerciseChange(context: context, changeType: .increaseRestTimeSeconds, previousValue: Double(current), newValue: Double(newValue), reasoning: reason)]
-        }
 
         let progressionSets = selectProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }

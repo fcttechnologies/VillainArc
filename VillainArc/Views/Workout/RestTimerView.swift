@@ -7,7 +7,7 @@ struct RestTimerView: View {
     @Environment(\.modelContext) private var context
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
-    @State private var selectedSeconds = RestTimePolicy.defaultRestSeconds
+    @State private var selectedSeconds = RestTimeDefaults.restSeconds
     @Bindable var workout: WorkoutSession
     
     var body: some View {

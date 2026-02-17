@@ -3,7 +3,6 @@ import FoundationModels
 
 enum ChangePolicy: String, Codable {
     case repRange
-    case restTime
     case structure
 }
 
@@ -17,23 +16,19 @@ enum ChangeType: String, Codable {
     case increaseRest = "Increase Rest"
     case decreaseRest = "Decrease Rest"
     case changeSetType = "Change Set Type"
-    
+
     // Exercise-level structure
-    case removeSet = "Remove Set"                             // drop the last set (volume regression)
-    
+    case removeSet = "Remove Set"
+
     // Exercise-level rep range (target exercise, not set)
-    case increaseRepRangeLower = "Increase Rep Range Lower"   // e.g., 8 → 10
-    case decreaseRepRangeLower = "Decrease Rep Range Lower"   // e.g., 8 → 6
-    case increaseRepRangeUpper = "Increase Rep Range Upper"   // e.g., 12 → 15
-    case decreaseRepRangeUpper = "Decrease Rep Range Upper"   // e.g., 12 → 10
-    case increaseRepRangeTarget = "Increase Rep Range Target" // e.g., target 8 → 10 (when mode is .target)
-    case decreaseRepRangeTarget = "Decrease Rep Range Target" // e.g., target 10 → 8
-    case changeRepRangeMode = "Change Rep Range Mode"         // e.g., .range → .target (use newValue for mode raw value)
-    case changeRestTimeMode = "Change Rest Time Mode"
-    case increaseRestTimeSeconds = "Increase Rest Time Seconds" // allSameSeconds increase
-    case decreaseRestTimeSeconds = "Decrease Rest Time Seconds" // allSameSeconds decrease
-    
-    // Returns the policy category for grouping exercise-level changes
+    case increaseRepRangeLower = "Increase Rep Range Lower"
+    case decreaseRepRangeLower = "Decrease Rep Range Lower"
+    case increaseRepRangeUpper = "Increase Rep Range Upper"
+    case decreaseRepRangeUpper = "Decrease Rep Range Upper"
+    case increaseRepRangeTarget = "Increase Rep Range Target"
+    case decreaseRepRangeTarget = "Decrease Rep Range Target"
+    case changeRepRangeMode = "Change Rep Range Mode"
+
     var policy: ChangePolicy? {
         switch self {
         case .increaseRepRangeLower, .decreaseRepRangeLower,
@@ -41,12 +36,10 @@ enum ChangeType: String, Codable {
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
              .changeRepRangeMode:
             return .repRange
-        case .changeRestTimeMode, .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            return .restTime
         case .removeSet:
             return .structure
         default:
-            return nil  // Set-level changes
+            return nil
         }
     }
 }

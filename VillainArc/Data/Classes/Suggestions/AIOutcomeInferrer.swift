@@ -77,7 +77,7 @@ struct AIOutcomeInferrer {
            - **Ascending Pyramid / Ascending**: Focus on the peak-weight sets. Earlier lighter sets are ramp-up sets.
            - **Descending Pyramid**: Focus on the first (heaviest) sets. Later lighter sets are expected drop-off.
            - **Straight Sets**: All working sets matter equally.
-        7. For rest-related changes (`increaseRest`, `decreaseRest`, `increaseRestTimeSeconds`, `decreaseRestTimeSeconds`), do not rely on adherence alone:
+        7. For rest-related changes (`increaseRest`, `decreaseRest`), do not rely on adherence alone:
            - First verify rest was actually followed (within tolerance).
            - Then evaluate effectiveness versus triggerPerformance at comparable weight:
              - Did rep drop across sets improve? (e.g., set 1 to set 3 rep difference shrank by 1+ rep)

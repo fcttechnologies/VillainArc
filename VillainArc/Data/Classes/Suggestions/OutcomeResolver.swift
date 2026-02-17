@@ -240,7 +240,6 @@ struct OutcomeResolver {
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
              .increaseRest, .decreaseRest,
-             .increaseRestTimeSeconds, .decreaseRestTimeSeconds,
              .removeSet:
             return String(roundedInt)
         case .changeSetType:
@@ -250,11 +249,6 @@ struct OutcomeResolver {
             return String(roundedInt)
         case .changeRepRangeMode:
             if let mode = RepRangeMode(rawValue: roundedInt) {
-                return mode.displayName
-            }
-            return String(roundedInt)
-        case .changeRestTimeMode:
-            if let mode = RestTimeMode(rawValue: roundedInt) {
                 return mode.displayName
             }
             return String(roundedInt)
@@ -295,25 +289,13 @@ struct OutcomeResolver {
             } else {
                 oldMode = snapshot.repRangeMode
             }
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: oldMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
-        case .changeRestTimeMode:
-            let oldMode: AIRestTimeMode
-            if let raw = oldValue.map({ Int($0) }), let mode = RestTimeMode(rawValue: raw) {
-                oldMode = AIRestTimeMode(from: mode)
-            } else {
-                oldMode = snapshot.restTimePolicy.mode
-            }
-            let oldPolicy = AIRestTimePolicy(mode: oldMode, allSameSeconds: snapshot.restTimePolicy.allSameSeconds)
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy, sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: oldMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
         case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: oldValue.map { Int($0) }, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: oldValue.map { Int($0) }, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
         case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: oldValue.map { Int($0) }, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: oldValue.map { Int($0) }, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: oldValue.map { Int($0) }, restTimePolicy: snapshot.restTimePolicy, sets: snapshot.sets)
-        case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            let oldPolicy = AIRestTimePolicy(mode: snapshot.restTimePolicy.mode, allSameSeconds: oldValue.map { Int($0) } ?? snapshot.restTimePolicy.allSameSeconds)
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: oldPolicy, sets: snapshot.sets)
+            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: oldValue.map { Int($0) }, sets: snapshot.sets)
         case .removeSet:
             // Volume change — snapshot doesn't need structural revert, the set count is captured in previousValue/newValue.
             return snapshot
@@ -325,7 +307,7 @@ struct OutcomeResolver {
         let sets = snapshot.sets.map { set in
             set.index == targetIndex ? transform(set) : set
         }
-        return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, restTimePolicy: snapshot.restTimePolicy, sets: sets)
+        return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: sets)
     }
 
     // MARK: - Merge

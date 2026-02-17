@@ -57,11 +57,13 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
     // Exercise 3: Flys with rest time suggestion.
     let flysExercise = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
     let flys = ExercisePrescription(exercise: flysExercise, workoutPlan: plan)
-    flys.restTimePolicy.activeMode = .allSame
-    flys.restTimePolicy.allSameSeconds = 60
+    if let firstSet = flys.sortedSets.first {
+        firstSet.targetRest = 60
+    }
     plan.exercises.append(flys)
 
-    let change7 = PrescriptionChange(source: .rules, catalogID: flys.catalogID, targetExercisePrescription: flys, changeType: .increaseRestTimeSeconds, previousValue: 60, newValue: 90)
+    let flysSet = flys.sortedSets.first!
+    let change7 = PrescriptionChange(source: .rules, catalogID: flys.catalogID, targetExercisePrescription: flys, targetSetPrescription: flysSet, changeType: .increaseRest, previousValue: 60, newValue: 90)
     context.insert(change7)
 
     for (index, exercise) in plan.exercises.enumerated() {

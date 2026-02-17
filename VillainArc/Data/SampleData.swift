@@ -17,7 +17,6 @@ class PreviewDataContainer {
             SetPerformance.self,
             Exercise.self,
             RepRangePolicy.self,
-            RestTimePolicy.self,
             RestTimeHistory.self,
             WorkoutPlan.self,
             ExercisePrescription.self,
@@ -285,11 +284,11 @@ class PreviewDataContainer {
         // Exercise 3: Flys (Group: Rest Time)
         let flys = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
         let flysPrescription = ExercisePrescription(exercise: flys, workoutPlan: plan)
-        flysPrescription.restTimePolicy?.activeMode = .allSame
-        flysPrescription.restTimePolicy?.allSameSeconds = 60
+        let flysSet1 = SetPrescription(exercisePrescription: flysPrescription, setType: .working, targetWeight: 30, targetReps: 12, targetRest: 60, index: 0)
+        flysPrescription.sets?.append(flysSet1)
         plan.exercises?.append(flysPrescription)
         
-        let change7 = PrescriptionChange(catalogID: flys.catalogID, targetExercisePrescription: flysPrescription, changeType: .increaseRestTimeSeconds, previousValue: 60, newValue: 90, changeReasoning: "Recovery needs increased")
+        let change7 = PrescriptionChange(catalogID: flys.catalogID, targetExercisePrescription: flysPrescription, targetSetPrescription: flysSet1, changeType: .increaseRest, previousValue: 60, newValue: 90, changeReasoning: "Recovery needs increased")
         context.insert(change7)
     }
 

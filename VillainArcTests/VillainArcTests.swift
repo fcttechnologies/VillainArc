@@ -160,7 +160,10 @@ struct VillainArcTests {
         guard let flysRuleChange else { return }
         flysRuleChange.decision = .deferred
 
-        let acceptedChange = PrescriptionChange(source: .rules, catalogID: data.flys.catalogID, targetExercisePrescription: data.flys, changeType: .changeRestTimeMode, previousValue: Double(RestTimeMode.allSame.rawValue), newValue: Double(RestTimeMode.individual.rawValue), decision: .accepted)
+        let flysSet = data.flys.sortedSets.first
+        #expect(flysSet != nil)
+        guard let flysSet else { return }
+        let acceptedChange = PrescriptionChange(source: .rules, catalogID: data.flys.catalogID, targetExercisePrescription: data.flys, targetSetPrescription: flysSet, changeType: .increaseRest, previousValue: Double(flysSet.targetRest), newValue: Double(flysSet.targetRest + 15), decision: .accepted)
         context.insert(acceptedChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)

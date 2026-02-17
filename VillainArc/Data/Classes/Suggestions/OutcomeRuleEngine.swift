@@ -6,8 +6,7 @@ struct OutcomeRuleEngine {
 
     /// Routes each change type to the matching rule evaluator.
     static func evaluate(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        let sets = exercisePerf.sortedSets
-        let regularSets = sets.filter { $0.type == .working }
+        let regularSets = exercisePerf.sortedSets.filter { $0.type == .working }
 
         switch change.changeType {
         case .increaseWeight, .decreaseWeight:
@@ -16,8 +15,6 @@ struct OutcomeRuleEngine {
             return evaluateRepsChange(change: change, exercisePerf: exercisePerf)
         case .increaseRest, .decreaseRest:
             return evaluateSetRestChange(change: change, exercisePerf: exercisePerf)
-        case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            return evaluateExerciseRestChange(change: change, exercisePerf: exercisePerf, completeSets: sets)
         case .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
@@ -27,8 +24,6 @@ struct OutcomeRuleEngine {
             return evaluateSetTypeChange(change: change, exercisePerf: exercisePerf)
         case .removeSet:
             return evaluateRemoveSetChange(change: change, exercisePerf: exercisePerf)
-        default:
-            return nil
         }
     }
 
@@ -125,33 +120,6 @@ struct OutcomeRuleEngine {
             actualReps: setPerf.reps,
             exercisePerf: exercisePerf,
             context: "rest change to \(newRest)s"
-        )
-    }
-
-    // MARK: - Exercise-Level Rest Change
-
-    private static func evaluateExerciseRestChange(change: PrescriptionChange, exercisePerf: ExercisePerformance, completeSets: [SetPerformance]) -> OutcomeSignal? {
-        guard let newRest = change.newValue.map({ Int($0) }) else { return nil }
-
-        // Exercise-level rest rules use average rest across completed sets.
-        let restValues = completeSets.map { $0.restSeconds }
-        guard !restValues.isEmpty else { return nil }
-        let avgRest = restValues.reduce(0, +) / restValues.count
-
-        // Same exercise-level rest adherence window: ±15s.
-        guard abs(avgRest - newRest) <= 15 else {
-            return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Average rest (\(avgRest)s) not close to new target (\(newRest)s).")
-        }
-
-        // Use average reps from regular sets as the outcome signal for intensity.
-        let regularSets = completeSets.filter { $0.type == .working }
-        guard let avgReps = regularSets.isEmpty ? nil : regularSets.map(\.reps).reduce(0, +) / regularSets.count else {
-            return nil
-        }
-        return evaluateRepsInRange(
-            actualReps: avgReps,
-            exercisePerf: exercisePerf,
-            context: "exercise rest change to \(newRest)s"
         )
     }
 

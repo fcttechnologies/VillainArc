@@ -269,12 +269,6 @@ struct ChangeDescriptionRow: View {
         case .changeRepRangeMode:
             return repRangeModeDescription(newModeRaw: Int(new))
             
-        // Rest Time
-        case .changeRestTimeMode:
-            return restTimeModeDescription(newModeRaw: Int(new))
-        case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-            return "Rest time: \(Int(previous))s → \(Int(new))s"
-            
         // Structure
         case .removeSet:
             return "Working sets: \(Int(previous)) → \(Int(new))"
@@ -295,20 +289,6 @@ struct ChangeDescriptionRow: View {
         }
     }
     
-    private func restTimeModeDescription(newModeRaw: Int) -> String {
-        guard let newMode = RestTimeMode(rawValue: newModeRaw),
-              let exercise = change.targetExercisePrescription else {
-            return "Change rest time mode"
-        }
-        switch newMode {
-        case .allSame:
-            return "Switch to All Same (\(exercise.restTimePolicy?.allSameSeconds ?? 0)s)"
-        case .individual:
-            return "Switch to Individual rest"
-        case .byType:
-            return "Switch to By Type"
-        }
-    }
     
     private func formatValue(_ value: Double) -> String {
         if value.truncatingRemainder(dividingBy: 1) == 0 {
@@ -338,10 +318,6 @@ func applyChange(_ change: PrescriptionChange) {
         change.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue ?? 0)
     case .changeRepRangeMode:
         change.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue ?? 0)) ?? .notSet
-    case .changeRestTimeMode:
-        change.targetExercisePrescription?.restTimePolicy?.activeMode = RestTimeMode(rawValue: Int(change.newValue ?? 0)) ?? .individual
-    case .increaseRestTimeSeconds, .decreaseRestTimeSeconds:
-        change.targetExercisePrescription?.restTimePolicy?.allSameSeconds = Int(change.newValue ?? 0)
     case .removeSet:
         // Remove the last working set from the prescription.
         if let prescription = change.targetExercisePrescription,

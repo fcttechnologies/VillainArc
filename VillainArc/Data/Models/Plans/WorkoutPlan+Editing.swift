@@ -71,7 +71,7 @@ extension WorkoutPlan {
                 continue
             }
             
-            // Detect exercise-level changes (rep range, rest time mode)
+            // Detect exercise-level changes (rep range)
             detectExerciseChanges(original: origExercise, copy: copyExercise, context: context)
             
             // Check sets
@@ -128,21 +128,6 @@ extension WorkoutPlan {
             markMatchingPendingChanges(exercise: original, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget])
         }
         
-        guard original.restTimePolicy != nil, copy.restTimePolicy != nil else { return }
-        // Rest Time Mode
-        if original.restTimePolicy!.activeMode != copy.restTimePolicy!.activeMode {
-            createChange(type: .changeRestTimeMode, previousValue: Double(original.restTimePolicy!.activeMode.rawValue), newValue: Double(copy.restTimePolicy!.activeMode.rawValue), exercise: original, set: nil, context: context)
-            markMatchingPendingChanges(exercise: original, changeType: .changeRestTimeMode)
-        }
-        
-        // Rest Time Seconds (when mode is .allSame)
-        if original.restTimePolicy!.allSameSeconds != copy.restTimePolicy!.allSameSeconds {
-            let changeType: ChangeType = copy.restTimePolicy!.allSameSeconds > original.restTimePolicy!.allSameSeconds
-                ? .increaseRestTimeSeconds
-                : .decreaseRestTimeSeconds
-            createChange(type: changeType, previousValue: Double(original.restTimePolicy!.allSameSeconds), newValue: Double(copy.restTimePolicy!.allSameSeconds), exercise: original, set: nil, context: context)
-            markMatchingPendingChanges(exercise: original, changeTypes: [.increaseRestTimeSeconds, .decreaseRestTimeSeconds])
-        }
     }
     
     // MARK: Set-Level Changes
@@ -288,13 +273,11 @@ extension WorkoutPlan {
     private func applyExerciseValues(from copyExercise: ExercisePrescription, to originalExercise: ExercisePrescription) {
         originalExercise.index = copyExercise.index
         originalExercise.notes = copyExercise.notes
-        guard originalExercise.repRange != nil, copyExercise.repRange != nil, originalExercise.restTimePolicy != nil, copyExercise.restTimePolicy != nil else { return }
+        guard originalExercise.repRange != nil, copyExercise.repRange != nil else { return }
         originalExercise.repRange!.activeMode = copyExercise.repRange!.activeMode
         originalExercise.repRange!.lowerRange = copyExercise.repRange!.lowerRange
         originalExercise.repRange!.upperRange = copyExercise.repRange!.upperRange
         originalExercise.repRange!.targetReps = copyExercise.repRange!.targetReps
-        originalExercise.restTimePolicy!.activeMode = copyExercise.restTimePolicy!.activeMode
-        originalExercise.restTimePolicy!.allSameSeconds = copyExercise.restTimePolicy!.allSameSeconds
     }
 
     private func syncSets(from copyExercise: ExercisePrescription, to originalExercise: ExercisePrescription, context: ModelContext) {

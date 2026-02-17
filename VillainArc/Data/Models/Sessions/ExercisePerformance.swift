@@ -13,8 +13,6 @@ class ExercisePerformance {
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePerformance)
     var repRange: RepRangePolicy? = RepRangePolicy()
-    @Relationship(deleteRule: .cascade, inverse: \RestTimePolicy.exercisePerformance)
-    var restTimePolicy: RestTimePolicy? = RestTimePolicy()
     var workoutSession: WorkoutSession?
     var activeInSession: WorkoutSession?
     @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.performances)
@@ -72,7 +70,6 @@ class ExercisePerformance {
         musclesTargeted = exercisePrescription.musclesTargeted
         equipmentType = exercisePrescription.equipmentType
         repRange = RepRangePolicy(copying: exercisePrescription.repRange)
-        restTimePolicy = RestTimePolicy(copying: exercisePrescription.restTimePolicy)
         self.workoutSession = workoutSession
         prescription = exercisePrescription
         sets = exercisePrescription.sortedSets.map { SetPerformance(exercise: self, setPrescription: $0) }
@@ -83,14 +80,14 @@ class ExercisePerformance {
            nextSet.type == .dropSet {
             return 0
         }
-        return restTimePolicy?.seconds(for: set) ?? 0
+        return set.restSeconds
     }
 
     func addSet() {
         if let previous = sortedSets.last {
             sets?.append(SetPerformance(exercise: self, weight: previous.weight, reps: previous.reps, restSeconds: previous.restSeconds))
         } else {
-            sets?.append(SetPerformance(exercise: self, restSeconds: RestTimePolicy.defaultRestSeconds))
+            sets?.append(SetPerformance(exercise: self, restSeconds: RestTimeDefaults.restSeconds))
         }
     }
 

@@ -220,13 +220,6 @@ struct ExerciseView: View {
         restTimeUpdateSeconds = newRestSeconds
         showRestTimeUpdateAlert = true
     }
-
-    private var restTimeUpdateDeltaText: String {
-        let delta = restTimeUpdateDeltaSeconds
-        let magnitude = secondsToTime(abs(delta))
-        return delta < 0 ? "-\(magnitude)" : "+\(magnitude)"
-    }
-
 }
 
 #Preview {

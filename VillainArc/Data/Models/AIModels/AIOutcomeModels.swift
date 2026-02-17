@@ -1,8 +1,6 @@
 import Foundation
 import FoundationModels
 
-// MARK: - AI Outcome Enum
-
 @Generable
 enum AIOutcome: String, Equatable, Sendable {
     case good = "Good"
@@ -30,8 +28,6 @@ enum AIOutcome: String, Equatable, Sendable {
     }
 }
 
-// MARK: - Individual Change Description
-
 @Generable
 struct AIOutcomeChange: Equatable, Sendable {
     @Guide(description: "Type of change that was suggested.")
@@ -43,8 +39,6 @@ struct AIOutcomeChange: Equatable, Sendable {
     @Guide(description: "0-based index of the target set, if this is a set-level change. Nil for exercise-level changes.")
     let targetSetIndex: Int?
 }
-
-// MARK: - Prescription Snapshot
 
 @Generable
 struct AIExercisePrescriptionSnapshot: Equatable, Sendable {
@@ -58,8 +52,6 @@ struct AIExercisePrescriptionSnapshot: Equatable, Sendable {
     let repRangeUpper: Int?
     @Guide(description: "Target reps (when mode is Target). Nil if not applicable.")
     let repRangeTarget: Int?
-    @Guide(description: "Rest time policy for the exercise.")
-    let restTimePolicy: AIRestTimePolicy
     @Guide(description: "Prescribed sets for this exercise.")
     let sets: [AISetPrescriptionSnapshot]
 }
@@ -77,31 +69,6 @@ struct AISetPrescriptionSnapshot: Equatable, Sendable {
     @Guide(description: "Target rest seconds for this set.")
     let targetRest: Int
 }
-
-@Generable
-struct AIRestTimePolicy: Equatable, Sendable {
-    @Guide(description: "Rest time mode: allSame means one rest value for all sets, individual means per-set rest values.")
-    let mode: AIRestTimeMode
-    @Guide(description: "Rest seconds when mode is allSame.")
-    let allSameSeconds: Int
-}
-
-@Generable
-enum AIRestTimeMode: String, Equatable, Sendable {
-    case allSame = "All Same"
-    case individual = "Individual"
-    case byType = "By Type"
-
-    init(from mode: RestTimeMode) {
-        switch mode {
-        case .allSame: self = .allSame
-        case .individual: self = .individual
-        case .byType: self = .byType
-        }
-    }
-}
-
-// MARK: - Snapshot Builders
 
 extension AIExercisePrescriptionSnapshot {
     init(from prescription: ExercisePrescription) {
@@ -124,7 +91,6 @@ extension AIExercisePrescriptionSnapshot {
             self.repRangeUpper = nil
             self.repRangeTarget = nil
         }
-        self.restTimePolicy = AIRestTimePolicy(mode: AIRestTimeMode(from: prescription.restTimePolicy?.activeMode ?? .allSame), allSameSeconds: prescription.restTimePolicy?.allSameSeconds ?? 0)
         self.sets = prescription.sortedSets.map { AISetPrescriptionSnapshot(from: $0) }
     }
 }
@@ -138,8 +104,6 @@ extension AISetPrescriptionSnapshot {
         self.targetRest = set.targetRest
     }
 }
-
-// MARK: - AI Group Input
 
 @Generable
 struct AIOutcomeGroupInput: Equatable, Sendable {
@@ -160,8 +124,6 @@ struct AIOutcomeGroupInput: Equatable, Sendable {
     @Guide(description: "Rule engine reasoning. Nil if rules were inconclusive.")
     let ruleReason: String?
 }
-
-// MARK: - AI Output
 
 @Generable
 struct AIOutcomeInferenceOutput: Equatable, Sendable {

@@ -8,6 +8,5 @@ protocol RestTimeEditableSet: AnyObject, Observable {
 
 protocol RestTimeEditable: AnyObject, Observable {
     associatedtype SetType: RestTimeEditableSet
-    var restTimePolicy: RestTimePolicy? { get set }
     var sortedSets: [SetType] { get }
 }

@@ -62,3 +62,4 @@ extension SetPrescription: RestTimeEditableSet {
         set { targetRest = newValue }
     }
 }
+

@@ -12,8 +12,6 @@ class ExercisePrescription {
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePrescription)
     var repRange: RepRangePolicy? = RepRangePolicy()
-    @Relationship(deleteRule: .cascade, inverse: \RestTimePolicy.exercisePrescription)
-    var restTimePolicy: RestTimePolicy? = RestTimePolicy()
     var workoutPlan: WorkoutPlan?
     var performances: [ExercisePerformance]? = [ExercisePerformance]()
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
@@ -50,7 +48,6 @@ class ExercisePrescription {
         musclesTargeted = exercisePerformance.musclesTargeted
         equipmentType = exercisePerformance.equipmentType
         repRange = RepRangePolicy(copying: exercisePerformance.repRange)
-        restTimePolicy = RestTimePolicy(copying: exercisePerformance.restTimePolicy)
         self.workoutPlan = workoutPlan
         exercisePerformance.prescription = self
         sets = exercisePerformance.sortedSets.map { SetPrescription(exercisePrescription: self, setPerformance: $0) }
@@ -66,7 +63,6 @@ class ExercisePrescription {
         musclesTargeted = original.musclesTargeted
         equipmentType = original.equipmentType
         repRange = RepRangePolicy(copying: original.repRange)
-        restTimePolicy = RestTimePolicy(copying: original.restTimePolicy)
         self.workoutPlan = workoutPlan
         // Copy sets with same IDs - NO changes copied (changes stay on original)
         sets = original.sortedSets.map { SetPrescription(copying: $0, exercise: self) }
@@ -76,7 +72,7 @@ class ExercisePrescription {
         if let previous = sortedSets.last {
             sets?.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest))
         } else {
-            sets?.append(SetPrescription(exercisePrescription: self, targetRest: RestTimePolicy.defaultRestSeconds))
+            sets?.append(SetPrescription(exercisePrescription: self, targetRest: RestTimeDefaults.restSeconds))
         }
     }
     
@@ -93,3 +89,4 @@ class ExercisePrescription {
 }
 
 extension ExercisePrescription: RestTimeEditable {}
+
