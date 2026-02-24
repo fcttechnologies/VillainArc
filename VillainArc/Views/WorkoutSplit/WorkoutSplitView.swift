@@ -8,13 +8,18 @@ struct WorkoutSplitView: View {
     private let appRouter = AppRouter.shared
     @State private var planPickerDay: WorkoutSplitDay?
     @State private var showSplitBuilder = false
+    @State private var pendingDeletionIDs: Set<PersistentIdentifier> = []
+
+    private var visibleSplits: [WorkoutSplit] {
+        splits.filter { !pendingDeletionIDs.contains($0.persistentModelID) }
+    }
 
     private var activeSplit: WorkoutSplit? {
-        splits.first { $0.isActive }
+        visibleSplits.first { $0.isActive }
     }
 
     private var inactiveSplits: [WorkoutSplit] {
-        splits.filter { !$0.isActive }
+        visibleSplits.filter { !$0.isActive }
     }
 
     init(autoPresentBuilder: Bool = false) {
@@ -23,10 +28,10 @@ struct WorkoutSplitView: View {
 
     var body: some View {
         List {
-            if !splits.isEmpty {
+            if !visibleSplits.isEmpty {
                 Section {
                     if let activeSplit {
-                        SplitRowView(split: activeSplit, allSplits: splits)
+                        SplitRowView(split: activeSplit, allSplits: visibleSplits)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveRow)
                             .accessibilityHint(AccessibilityText.workoutSplitRowHint)
                         ActiveSplitSummaryView(split: activeSplit, planPickerDay: $planPickerDay)
@@ -40,9 +45,20 @@ struct WorkoutSplitView: View {
                 if !inactiveSplits.isEmpty {
                     Section {
                         ForEach(inactiveSplits) { split in
-                            SplitRowView(split: split, allSplits: splits)
-                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitInactiveRow(split))
-                                .accessibilityHint(AccessibilityText.workoutSplitRowHint)
+                            InactiveSplitRowView(
+                                title: split.title.isEmpty ? "Untitled Split" : split.title,
+                                subtitle: inactiveSubtitle(for: split),
+                                onOpen: {
+                                    appRouter.navigate(to: .splitDettail(split))
+                                },
+                                onSetActive: {
+                                    withAnimation(.smooth) {
+                                        setActive(split)
+                                    }
+                                }
+                            )
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitInactiveRow(split))
+                            .accessibilityHint(AccessibilityText.workoutSplitRowHint)
                         }
                         .onDelete(perform: deleteInactiveSplits)
                     } header: {
@@ -77,7 +93,7 @@ struct WorkoutSplitView: View {
         }
         .listStyle(.plain)
         .overlay {
-            if splits.isEmpty {
+            if visibleSplits.isEmpty {
                 ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine."))
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
             }
@@ -152,7 +168,7 @@ struct WorkoutSplitView: View {
 
     private func createSplit(mode: SplitMode) {
         Haptics.selection()
-        let split = WorkoutSplit(mode: mode, isActive: splits.isEmpty)
+        let split = WorkoutSplit(mode: mode, isActive: visibleSplits.isEmpty)
 
         switch mode {
         case .weekly:
@@ -172,9 +188,45 @@ struct WorkoutSplitView: View {
     private func deleteInactiveSplits(at offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
-        let splitsToDelete = offsets.map { inactiveSplits[$0] }
-        for split in splitsToDelete {
-            context.delete(split)
+
+        let currentInactiveSplits = inactiveSplits
+        let splitsToDelete: [WorkoutSplit] = offsets.compactMap { index -> WorkoutSplit? in
+            guard currentInactiveSplits.indices.contains(index) else { return nil }
+            return currentInactiveSplits[index]
+        }
+
+        guard !splitsToDelete.isEmpty else { return }
+
+        pendingDeletionIDs.formUnion(splitsToDelete.map { $0.persistentModelID })
+
+        DispatchQueue.main.async {
+            for split in splitsToDelete {
+                context.delete(split)
+            }
+            saveContext(context: context)
+        }
+    }
+
+    private func inactiveSubtitle(for split: WorkoutSplit) -> String {
+        switch split.mode {
+        case .weekly:
+            return "Weekly"
+        case .rotation:
+            return "Rotation · \(split.days?.count ?? 0) day cycle"
+        }
+    }
+
+    private func setActive(_ split: WorkoutSplit) {
+        Haptics.selection()
+        for item in visibleSplits where item !== split {
+            if item.isActive {
+                item.isActive = false
+            }
+        }
+        split.isActive = true
+        if split.mode == .rotation {
+            split.rotationCurrentIndex = 0
+            split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
         }
         saveContext(context: context)
     }
@@ -250,6 +302,40 @@ private struct ActiveSplitSummaryView: View {
         .accessibilityLabel(AccessibilityText.workoutSplitSelectPlanLabel)
         .accessibilityValue(AccessibilityText.workoutSplitSelectPlanValue)
         .accessibilityHint(AccessibilityText.workoutSplitSelectPlanHint)
+    }
+}
+
+private struct InactiveSplitRowView: View {
+    let title: String
+    let subtitle: String
+    let onOpen: () -> Void
+    let onSetActive: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.title3)
+                        .bold()
+                        .lineLimit(1)
+                    Text(subtitle)
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
+                }
+                Spacer()
+                Button("Set Active", systemImage: "checkmark.circle") {
+                    onSetActive()
+                }
+                .buttonStyle(.glassProminent)
+                .fontWeight(.semibold)
+                .labelStyle(.titleOnly)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSetActiveButton)
+                .accessibilityHint(AccessibilityText.workoutSplitSetActiveHint)
+            }
+            .fontDesign(.rounded)
+        }
     }
 }
 
