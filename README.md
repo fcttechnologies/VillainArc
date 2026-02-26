@@ -1,6 +1,6 @@
-# VillainArc
+# Villain Arc
 
-VillainArc is an iOS strength training app focused on structured progression.
+Villain Arc is an iOS strength training app focused on structured progression.
 It combines workout planning, live workout logging, and intelligent suggestions in a product designed for daily use and long-term evolution.
 
 ## Status
