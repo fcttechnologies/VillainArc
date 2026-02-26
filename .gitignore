@@ -1,3 +1,7 @@
 **/xcuserdata/
 **/*.xcuserstate
 .DS_Store
+
+# local build/output artifacts
+build/
+screenshots/
