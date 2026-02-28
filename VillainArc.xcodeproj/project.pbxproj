@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		354CA66B2F535701005622B1 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66A2F535701005622B1 /* README.md */; };
+		354CA6752F53570D005622B1 /* va-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66D2F53570D005622B1 /* va-02.png */; };
+		354CA6762F53570D005622B1 /* va-07.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA6722F53570D005622B1 /* va-07.png */; };
+		354CA6772F53570D005622B1 /* va-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66C2F53570D005622B1 /* va-01.png */; };
+		354CA6782F53570D005622B1 /* va-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66E2F53570D005622B1 /* va-03.png */; };
+		354CA6792F53570D005622B1 /* va-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA6702F53570D005622B1 /* va-05.png */; };
+		354CA67A2F53570D005622B1 /* va-06.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA6712F53570D005622B1 /* va-06.png */; };
+		354CA67B2F53570D005622B1 /* va-04.png in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66F2F53570D005622B1 /* va-04.png */; };
 		FD68290A2F31190700C83480 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD6829092F31190700C83480 /* Intents.framework */; };
 		FD6829112F31190700C83480 /* VillainArcIntentsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD93E5E62F3051FD009569BB /* WidgetKit.framework */; };
@@ -64,6 +72,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		354CA66A2F535701005622B1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		354CA66C2F53570D005622B1 /* va-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-01.png"; sourceTree = "<group>"; };
+		354CA66D2F53570D005622B1 /* va-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-02.png"; sourceTree = "<group>"; };
+		354CA66E2F53570D005622B1 /* va-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-03.png"; sourceTree = "<group>"; };
+		354CA66F2F53570D005622B1 /* va-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-04.png"; sourceTree = "<group>"; };
+		354CA6702F53570D005622B1 /* va-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-05.png"; sourceTree = "<group>"; };
+		354CA6712F53570D005622B1 /* va-06.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-06.png"; sourceTree = "<group>"; };
+		354CA6722F53570D005622B1 /* va-07.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "va-07.png"; sourceTree = "<group>"; };
 		FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VillainArcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VillainArcIntentsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829092F31190700C83480 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
@@ -226,6 +242,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		354CA6732F53570D005622B1 /* iphone65 */ = {
+			isa = PBXGroup;
+			children = (
+				354CA66C2F53570D005622B1 /* va-01.png */,
+				354CA66D2F53570D005622B1 /* va-02.png */,
+				354CA66E2F53570D005622B1 /* va-03.png */,
+				354CA66F2F53570D005622B1 /* va-04.png */,
+				354CA6702F53570D005622B1 /* va-05.png */,
+				354CA6712F53570D005622B1 /* va-06.png */,
+				354CA6722F53570D005622B1 /* va-07.png */,
+			);
+			path = iphone65;
+			sourceTree = "<group>";
+		};
+		354CA6742F53570D005622B1 /* appstore-screenshots */ = {
+			isa = PBXGroup;
+			children = (
+				354CA6732F53570D005622B1 /* iphone65 */,
+			);
+			path = "appstore-screenshots";
+			sourceTree = "<group>";
+		};
 		FD93E5E52F3051FD009569BB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -239,7 +277,9 @@
 		FDA193872F16D14500CA57C5 = {
 			isa = PBXGroup;
 			children = (
+				354CA66A2F535701005622B1 /* README.md */,
 				FD93E5FA2F305206009569BB /* VillainArcWidgetExtensionExtension.entitlements */,
+				354CA6742F53570D005622B1 /* appstore-screenshots */,
 				FDA193A12F16F90000CA57C5 /* .gitignore */,
 				FDA193922F16D14500CA57C5 /* VillainArc */,
 				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
@@ -430,6 +470,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				354CA6752F53570D005622B1 /* va-02.png in Resources */,
+				354CA6762F53570D005622B1 /* va-07.png in Resources */,
+				354CA6772F53570D005622B1 /* va-01.png in Resources */,
+				354CA6782F53570D005622B1 /* va-03.png in Resources */,
+				354CA6792F53570D005622B1 /* va-05.png in Resources */,
+				354CA67A2F53570D005622B1 /* va-06.png in Resources */,
+				354CA67B2F53570D005622B1 /* va-04.png in Resources */,
+				354CA66B2F535701005622B1 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -543,7 +591,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcIntentsExtension/VillainArcIntentsExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
@@ -578,7 +626,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcIntentsExtension/VillainArcIntentsExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
@@ -615,7 +663,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
@@ -652,7 +700,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
@@ -812,7 +860,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArc/VillainArc.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -856,7 +904,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArc/VillainArc.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
