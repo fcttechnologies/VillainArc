@@ -98,7 +98,7 @@ extension WorkoutPlan {
         let exerciseSummaries = sortedExercises.map { exercise in
             "\(String(describing: exercise.sets?.count))x \(exercise.name)"
         }
-        return exerciseSummaries.joined(separator: ",")
+        return exerciseSummaries.joined(separator: ", ")
     }
     
     static var incomplete: FetchDescriptor<WorkoutPlan> {
