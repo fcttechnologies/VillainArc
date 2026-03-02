@@ -110,14 +110,12 @@ struct TrainingSummaryIntent: AppIntent {
             if !musclesSummary.isEmpty {
                 return .result(dialog: "You are hitting: \(musclesSummary).")
             }
-            return .result(dialog: "No workout plan assigned for \(dayLabel.lowercased()).")
+
+            let splitDayTitle = splitDay.name.isEmpty ? "Workout" : splitDay.name
+            return .result(dialog: "\(dayLabel) training is \(splitDayTitle).")
         }
 
         let summary = workoutPlan.spotlightSummary
-        if summary.isEmpty {
-            return .result(dialog: "\(dayLabel) training is \(workoutPlan.title).")
-        }
-
         return .result(dialog: "\(dayLabel) training: \(summary).")
     }
 }
