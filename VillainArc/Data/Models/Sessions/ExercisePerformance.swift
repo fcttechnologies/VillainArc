@@ -97,6 +97,13 @@ class ExercisePerformance {
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
         prescription = nil
+
+        // This exercise is no longer tied to the original plan prescription.
+        // Clear any per-set prescription links so stale targets don't show.
+        for set in sets ?? [] {
+            set.prescription = nil
+        }
+
         if !keepSets {
             for set in sets ?? [] {
                 modelContext?.delete(set)

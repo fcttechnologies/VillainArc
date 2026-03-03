@@ -3,7 +3,6 @@ import SwiftData
 
 struct ExerciseView: View {
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
-    @Query private var previousExercise: [ExercisePerformance]
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
     let onDeleteExercise: (() -> Void)?
@@ -19,8 +18,6 @@ struct ExerciseView: View {
     init(exercise: ExercisePerformance, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
         self.onDeleteExercise = onDeleteExercise
-
-        _previousExercise = Query(ExercisePerformance.lastCompleted(for: exercise))
     }
 
     private var isPlanSession: Bool {
@@ -28,21 +25,36 @@ struct ExerciseView: View {
     }
 
     private var previousSets: [SetPerformance] {
-        return previousExercise.first?.sortedSets ?? []
+        (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
+    }
+
+    private var shouldUseTargetReference: Bool {
+        guard isPlanSession else { return false }
+        return exercise.sortedSets.contains { set in
+            guard let prescription = set.prescription else { return false }
+            return prescription.targetReps > 0 || prescription.targetWeight > 0
+        }
+    }
+
+    private func targetReferenceData(for set: SetPerformance) -> SetReferenceData? {
+        guard let prescription = set.prescription else { return nil }
+        let reps = prescription.targetReps > 0 ? prescription.targetReps : nil
+        let weight = prescription.targetWeight > 0 ? prescription.targetWeight : nil
+        guard reps != nil || weight != nil else { return nil }
+        return SetReferenceData(reps: reps, weight: weight, actionLabel: "Use Target")
+    }
+
+    private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
+        guard set.index < previousSets.count else { return nil }
+        let prevSet = previousSets[set.index]
+        return SetReferenceData(reps: prevSet.reps, weight: prevSet.weight, actionLabel: "Use Previous")
     }
 
     private func referenceData(for set: SetPerformance) -> SetReferenceData? {
-        if isPlanSession {
-            guard let prescription = set.prescription else { return nil }
-            let reps = prescription.targetReps > 0 ? prescription.targetReps : nil
-            let weight = prescription.targetWeight > 0 ? prescription.targetWeight : nil
-            guard reps != nil || weight != nil else { return nil }
-            return SetReferenceData(reps: reps, weight: weight, actionLabel: "Use Target")
-        } else {
-            guard set.index < previousSets.count else { return nil }
-            let prevSet = previousSets[set.index]
-            return SetReferenceData(reps: prevSet.reps, weight: prevSet.weight, actionLabel: "Use Previous")
+        if shouldUseTargetReference {
+            return targetReferenceData(for: set) ?? previousReferenceData(for: set)
         }
+        return previousReferenceData(for: set)
     }
 
     var body: some View {
@@ -59,7 +71,7 @@ struct ExerciseView: View {
                             .gridColumnAlignment(.leading)
                         Text("Weight")
                             .gridColumnAlignment(.leading)
-                        Text(isPlanSession ? "Target" : "Previous")
+                        Text(shouldUseTargetReference ? "Target" : "Previous")
                         Text(" ")
                     }
                     .font(.title3)
