@@ -13,11 +13,11 @@ struct VillainArcTests {
         let data = makePlanWithRuleSuggestions(in: context)
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let copyBench = editCopy.exercises.first { $0.id == data.bench.id }
+        let copyBench = (editCopy.exercises ?? []).first { $0.id == data.bench.id }
         #expect(copyBench != nil)
         guard let copyBench else { return }
 
-        let copySet1 = copyBench.sets.first { $0.id == data.benchSet1.id }
+        let copySet1 = (copyBench.sets ?? []).first { $0.id == data.benchSet1.id }
         #expect(copySet1 != nil)
         guard let copySet1 else { return }
 
@@ -61,18 +61,18 @@ struct VillainArcTests {
         let data = makePlanWithRuleSuggestions(in: context)
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let copyBench = editCopy.exercises.first { $0.id == data.bench.id }
+        let copyBench = (editCopy.exercises ?? []).first { $0.id == data.bench.id }
         #expect(copyBench != nil)
         guard let copyBench else { return }
 
-        let copySet2 = copyBench.sets.first { $0.id == data.benchSet2.id }
+        let copySet2 = (copyBench.sets ?? []).first { $0.id == data.benchSet2.id }
         #expect(copySet2 != nil)
         guard let copySet2 else { return }
 
         copyBench.deleteSet(copySet2)
         editCopy.finishEditing(context: context)
 
-        #expect(data.bench.sets.contains { $0.id == data.benchSet2.id } == false)
+        #expect((data.bench.sets ?? []).contains { $0.id == data.benchSet2.id } == false)
 
         let ruleChangeForSet2 = data.changes.first {
             $0.changeType == .increaseWeight &&
@@ -95,11 +95,11 @@ struct VillainArcTests {
         context.insert(deferredDecrease)
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let copyBench = editCopy.exercises.first { $0.id == data.bench.id }
+        let copyBench = (editCopy.exercises ?? []).first { $0.id == data.bench.id }
         #expect(copyBench != nil)
         guard let copyBench else { return }
 
-        let copySet1 = copyBench.sets.first { $0.id == data.benchSet1.id }
+        let copySet1 = (copyBench.sets ?? []).first { $0.id == data.benchSet1.id }
         #expect(copySet1 != nil)
         guard let copySet1 else { return }
 
@@ -137,11 +137,13 @@ struct VillainArcTests {
         context.insert(setChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let copyIncline = editCopy.exercises.first { $0.id == data.incline.id }
+        let copyIncline = (editCopy.exercises ?? []).first { $0.id == data.incline.id }
         #expect(copyIncline != nil)
         guard let copyIncline else { return }
 
-        copyIncline.repRange.targetReps = copyIncline.repRange.targetReps + 2
+        if let repRange = copyIncline.repRange {
+            repRange.targetReps = repRange.targetReps + 2
+        }
         editCopy.finishEditing(context: context)
 
         #expect(setChange.decision == .accepted)
@@ -167,7 +169,7 @@ struct VillainArcTests {
         context.insert(acceptedChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let copyFlys = editCopy.exercises.first { $0.id == data.flys.id }
+        let copyFlys = (editCopy.exercises ?? []).first { $0.id == data.flys.id }
         #expect(copyFlys != nil)
         guard let copyFlys else { return }
 
@@ -199,7 +201,7 @@ struct VillainArcTests {
         editCopy.addExercise(newExercise)
         editCopy.finishEditing(context: context)
 
-        #expect(data.plan.exercises.contains { $0.catalogID == newExercise.catalogID })
+        #expect((data.plan.exercises ?? []).contains { $0.catalogID == newExercise.catalogID })
 
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(allChanges.count == initialChanges.count)
@@ -217,14 +219,14 @@ struct VillainArcTests {
         let initialChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let copyFlys = editCopy.exercises.first { $0.id == data.flys.id }
+        let copyFlys = (editCopy.exercises ?? []).first { $0.id == data.flys.id }
         #expect(copyFlys != nil)
         guard let copyFlys else { return }
 
         editCopy.deleteExercise(copyFlys)
         editCopy.finishEditing(context: context)
 
-        #expect(data.plan.exercises.contains { $0.id == data.flys.id } == false)
+        #expect((data.plan.exercises ?? []).contains { $0.id == data.flys.id } == false)
 
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(allChanges.count == initialChanges.count)
@@ -242,7 +244,7 @@ struct VillainArcTests {
         let initialChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
 
         let editCopy = data.plan.createEditingCopy(context: context)
-        let count = editCopy.exercises.count
+        let count = (editCopy.exercises ?? []).count
         #expect(count >= 3)
         if count < 3 { return }
 

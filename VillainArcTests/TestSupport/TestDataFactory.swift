@@ -25,16 +25,18 @@ enum TestDataFactory {
         let exercise = Exercise(from: ExerciseCatalog.byID[catalogID]!)
         let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
         prescription.sets = []
-        prescription.repRange.activeMode = repRangeMode
-        prescription.repRange.lowerRange = lowerRange
-        prescription.repRange.upperRange = upperRange
+        if let repRange = prescription.repRange {
+            repRange.activeMode = repRangeMode
+            repRange.lowerRange = lowerRange
+            repRange.upperRange = upperRange
+        }
 
         for i in 0..<workingSets {
             let set = SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: targetWeight, targetReps: targetReps, targetRest: targetRest, index: i)
-            prescription.sets.append(set)
+            prescription.sets?.append(set)
         }
 
-        plan.exercises.append(prescription)
+        plan.exercises?.append(prescription)
         return (plan, prescription)
     }
 
@@ -45,19 +47,19 @@ enum TestDataFactory {
         sets: [(weight: Double, reps: Int, rest: Int, type: ExerciseSetType)]
     ) -> ExercisePerformance {
         let perf = ExercisePerformance(workoutSession: session, exercisePrescription: prescription)
-        for set in perf.sets {
+        for set in perf.sets ?? [] {
             context.delete(set)
         }
-        perf.sets.removeAll()
+        perf.sets?.removeAll()
 
         for (index, config) in sets.enumerated() {
             let setPerf = SetPerformance(exercise: perf, setType: config.type, weight: config.weight, reps: config.reps, restSeconds: config.rest, index: index, complete: true)
             context.insert(setPerf)
-            perf.sets.append(setPerf)
+            perf.sets?.append(setPerf)
         }
 
         context.insert(perf)
-        session.exercises.append(perf)
+        session.exercises?.append(perf)
         return perf
     }
 

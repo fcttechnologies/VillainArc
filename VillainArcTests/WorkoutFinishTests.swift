@@ -14,12 +14,12 @@ struct WorkoutFinishTests {
 
         let exercise = ExercisePerformance(exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!), workoutSession: session)
         context.insert(exercise)
-        session.exercises.append(exercise)
+        session.exercises?.append(exercise)
         // Remove the auto-added set from init
-        for set in exercise.sets {
+        for set in exercise.sets ?? [] {
             context.delete(set)
         }
-        exercise.sets.removeAll()
+        exercise.sets?.removeAll()
 
         for (i, config) in exerciseConfigs.enumerated() {
             let set = SetPerformance(exercise: exercise, weight: config.weight, reps: config.reps)
@@ -29,7 +29,7 @@ struct WorkoutFinishTests {
                 set.completedAt = Date()
             }
             context.insert(set)
-            exercise.sets.append(set)
+            exercise.sets?.append(set)
         }
 
         return session
@@ -43,26 +43,26 @@ struct WorkoutFinishTests {
         // Exercise 1: all sets complete
         let exercise1 = ExercisePerformance(exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!), workoutSession: session)
         context.insert(exercise1)
-        session.exercises.append(exercise1)
-        for set in exercise1.sets { context.delete(set) }
-        exercise1.sets.removeAll()
+        session.exercises?.append(exercise1)
+        for set in exercise1.sets ?? [] { context.delete(set) }
+        exercise1.sets?.removeAll()
         let set1 = SetPerformance(exercise: exercise1, weight: 135, reps: 10)
         set1.complete = true
         set1.completedAt = Date()
         context.insert(set1)
-        exercise1.sets.append(set1)
+        exercise1.sets?.append(set1)
 
         // Exercise 2: only empty (incomplete) sets
         let exercise2 = ExercisePerformance(exercise: Exercise(from: ExerciseCatalog.byID["barbell_squat"]!), workoutSession: session)
         exercise2.index = 1
         context.insert(exercise2)
-        session.exercises.append(exercise2)
-        for set in exercise2.sets { context.delete(set) }
-        exercise2.sets.removeAll()
+        session.exercises?.append(exercise2)
+        for set in exercise2.sets ?? [] { context.delete(set) }
+        exercise2.sets?.removeAll()
         let set2 = SetPerformance(exercise: exercise2, weight: 0, reps: 0)
         set2.complete = false
         context.insert(set2)
-        exercise2.sets.append(set2)
+        exercise2.sets?.append(set2)
 
         return session
     }
@@ -101,7 +101,7 @@ struct WorkoutFinishTests {
             (weight: 0, reps: 0, complete: false),     // empty
         ])
 
-        let exercise = session.exercises.first!
+        let exercise = (session.exercises?.first)!
         let loggedSet = exercise.sortedSets[1]
         let emptySet = exercise.sortedSets[2]
 
@@ -113,7 +113,7 @@ struct WorkoutFinishTests {
         #expect(result == .finished)
         #expect(loggedSet.complete)
         #expect(loggedSet.completedAt != nil)
-        #expect(!exercise.sets.contains(emptySet))
+        #expect(!(exercise.sets ?? []).contains(emptySet))
         #expect(session.statusValue == .summary)
         #expect(session.endedAt != nil)
     }
@@ -128,7 +128,7 @@ struct WorkoutFinishTests {
             (weight: 145, reps: 8, complete: false),  // logged
         ])
 
-        let exercise = session.exercises.first!
+        let exercise = (session.exercises?.first)!
         let loggedSet = exercise.sortedSets[1]
 
         let result = session.finish(action: .markLoggedComplete, context: context)
@@ -136,7 +136,7 @@ struct WorkoutFinishTests {
         #expect(result == .finished)
         #expect(loggedSet.complete)
         #expect(loggedSet.completedAt != nil)
-        #expect(exercise.sets.count == 2)
+        #expect((exercise.sets?.count ?? 0) == 2)
         #expect(session.statusValue == .summary)
     }
 
@@ -153,13 +153,13 @@ struct WorkoutFinishTests {
             (weight: 0, reps: 0, complete: false),     // empty
         ])
 
-        let exercise = session.exercises.first!
+        let exercise = (session.exercises?.first)!
 
         let result = session.finish(action: .deleteUnfinished, context: context)
 
         #expect(result == .finished)
-        #expect(exercise.sets.count == 1)
-        #expect(exercise.sets.first?.complete == true)
+        #expect((exercise.sets?.count ?? 0) == 1)
+        #expect(exercise.sets?.first?.complete == true)
         #expect(session.statusValue == .summary)
     }
 
@@ -192,14 +192,14 @@ struct WorkoutFinishTests {
             (weight: 0, reps: 0, complete: false),     // empty — should be deleted
         ])
 
-        let exercise = session.exercises.first!
+        let exercise = (session.exercises?.first)!
         let loggedSet = exercise.sortedSets[1]
 
         let result = session.finish(action: .deleteEmpty, context: context)
 
         #expect(result == .finished)
-        #expect(exercise.sets.count == 2)
-        #expect(exercise.sets.contains(loggedSet))
+        #expect((exercise.sets?.count ?? 0) == 2)
+        #expect((exercise.sets ?? []).contains(loggedSet))
         #expect(session.statusValue == .summary)
     }
 
@@ -227,14 +227,14 @@ struct WorkoutFinishTests {
         let context = ModelContext(container)
 
         let session = makeMultiExerciseSession(context: context)
-        #expect(session.exercises.count == 2)
+        #expect((session.exercises?.count ?? 0) == 2)
 
         // deleteEmpty will remove the empty set from exercise2, leaving it with 0 sets
         let result = session.finish(action: .deleteEmpty, context: context)
 
         #expect(result == .finished)
-        #expect(session.exercises.count == 1)
-        #expect(session.exercises.first?.catalogID == "barbell_bench_press")
+        #expect((session.exercises?.count ?? 0) == 1)
+        #expect(session.exercises?.first?.catalogID == "barbell_bench_press")
         #expect(session.statusValue == .summary)
     }
 
@@ -263,7 +263,7 @@ struct WorkoutFinishTests {
         let session = makeSession(context: context, exerciseConfigs: [
             (weight: 135, reps: 10, complete: true),
         ])
-        session.activeExercise = session.exercises.first
+        session.activeExercise = session.exercises?.first
 
         let result = session.finish(action: .finish, context: context)
 

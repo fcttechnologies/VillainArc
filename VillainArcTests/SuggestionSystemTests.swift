@@ -94,7 +94,7 @@ struct SuggestionSystemTests {
             targetReps: 8,
             repRangeMode: .target
         )
-        prescription.repRange.targetReps = 8
+        prescription.repRange?.targetReps = 8
         prescription.musclesTargeted = [.chest]
         prescription.equipmentType = .barbell
 
