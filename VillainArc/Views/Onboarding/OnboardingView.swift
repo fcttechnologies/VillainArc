@@ -7,32 +7,24 @@ struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
-        ZStack {
-            Color(.systemBackground)
-                .ignoresSafeArea()
+        VStack(spacing: 40) {
+            Text("Setting up Villain Arc")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .padding(.top, 20)
 
-            VStack(spacing: 32) {
-                // App Icon/Logo
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 80))
-                    .foregroundStyle(.primary)
-
-                Text("VillainArc")
-                    .font(.largeTitle.bold())
-
-                Spacer()
-
-                // State-specific content
+            Group {
                 if let manager {
                     stateView(for: manager.state, manager: manager)
                 } else {
                     ProgressView()
+                        .frame(maxWidth: .infinity)
                 }
-
-                Spacer()
             }
-            .padding(40)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .task {
             if manager == nil {
                 manager = OnboardingManager(modelContext: modelContext)
@@ -73,8 +65,8 @@ struct OnboardingView: View {
                 Button("Retry") {
                     Task { await manager.retry() }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(.glassProminent)
+                .buttonSizing(.flexible)
             }
 
         case .noiCloud:
@@ -94,16 +86,18 @@ struct OnboardingView: View {
                     Button("Continue Without iCloud") {
                         Task { await manager.continueWithoutiCloud() }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                    .buttonStyle(.glassProminent)
+                    .buttonSizing(.flexible)
+                    .fontWeight(.semibold)
 
                     Button("Enable iCloud in Settings") {
                         if let url = URL(string: "App-prefs:CASTLE") {
                             UIApplication.shared.open(url)
                         }
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                    .buttonStyle(.glass)
+                    .buttonSizing(.flexible)
+                    .fontWeight(.semibold)
                 }
             }
 
@@ -123,8 +117,9 @@ struct OnboardingView: View {
                 Button("Retry") {
                     Task { await manager.retry() }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(.glassProminent)
+                .fontWeight(.semibold)
+                .buttonSizing(.flexible)
             }
 
         case .syncing:
@@ -195,8 +190,9 @@ struct OnboardingView: View {
                 Button("Retry") {
                     Task { await manager.retry() }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(.glassProminent)
+                .fontWeight(.semibold)
+                .buttonSizing(.flexible)
             }
         }
     }

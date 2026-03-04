@@ -4,6 +4,14 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var context
     @State private var router = AppRouter.shared
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    private var onboardingBinding: Binding<Bool> {
+        Binding(
+            get: { !hasCompletedOnboarding },
+            set: { _ in }
+        )
+    }
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -53,9 +61,15 @@ struct ContentView: View {
                     .accessibilityHint(AccessibilityText.homeOptionsMenuHint)
                 }
             }
-            .task {
+            .task(id: hasCompletedOnboarding) {
+                guard hasCompletedOnboarding else { return }
                 await DataManager.seedExercisesIfNeeded(context: context)
                 router.checkForUnfinishedData()
+            }
+            .sheet(isPresented: onboardingBinding) {
+                OnboardingView()
+                    .presentationDetents([.fraction(0.5)])
+                    .interactiveDismissDisabled(true)
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutSessionContainer(workout: $0)
