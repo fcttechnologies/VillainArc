@@ -27,34 +27,22 @@ enum SpotlightIndexer {
     static func reindexAll(context: ModelContext) {
         let completedWorkouts = (try? context.fetch(WorkoutSession.completedSession)) ?? []
         let completedPlans = (try? context.fetch(WorkoutPlan.all)) ?? []
-        let allExercises = (try? context.fetch(Exercise.all)) ?? []
-
-        let exercisesToIndex = allExercises.filter { $0.lastUsed != nil }
+        let exercisesToIndex = (try? context.fetch(Exercise.spotlightEligible)) ?? []
 
         let allItems = completedWorkouts.map(makeSearchableItem(for:))
             + completedPlans.map(makeSearchableItem(for:))
             + exercisesToIndex.map(makeSearchableItem(for:))
 
         let domains = [workoutSessionDomainIdentifier, workoutPlanDomainIdentifier, exerciseDomainIdentifier]
+        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: domains, completionHandler: nil)
 
-        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: domains) { deleteError in
-            if let deleteError {
-                print("⚠️ Spotlight deindex failed before rebuild: \(deleteError)")
-            }
-
-            guard !allItems.isEmpty else {
-                print("ℹ️ Spotlight rebuild skipped indexing (no items found)")
-                return
-            }
-
-            CSSearchableIndex.default().indexSearchableItems(allItems) { indexError in
-                if let indexError {
-                    print("⚠️ Spotlight rebuild indexing failed: \(indexError)")
-                } else {
-                    print("✅ Spotlight rebuilt: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises")
-                }
-            }
+        guard !allItems.isEmpty else {
+            print("ℹ️ Spotlight rebuild skipped indexing (no items found)")
+            return
         }
+
+        CSSearchableIndex.default().indexSearchableItems(allItems, completionHandler: nil)
+        print("✅ Spotlight rebuild queued: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises")
     }
 
     static func deleteWorkoutSession(id: UUID) {

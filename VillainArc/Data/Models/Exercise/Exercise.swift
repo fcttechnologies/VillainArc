@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 class Exercise {
+    #Index<Exercise>([\.lastUsed])
+
     var catalogID: String = ""
     var name: String = ""
     var musclesTargeted: [Muscle] = []
@@ -110,5 +112,10 @@ extension Exercise {
     
     static var all: FetchDescriptor<Exercise> {
         FetchDescriptor(sortBy: Exercise.recentsSort)
+    }
+
+    static var spotlightEligible: FetchDescriptor<Exercise> {
+        let predicate = #Predicate<Exercise> { $0.lastUsed != nil }
+        return FetchDescriptor(predicate: predicate, sortBy: recentsSort)
     }
 }
