@@ -98,7 +98,8 @@ class WorkoutPlan {
 extension WorkoutPlan {
     var spotlightSummary: String {
         let exerciseSummaries = sortedExercises.map { exercise in
-            "\(String(describing: exercise.sets?.count))x \(exercise.name)"
+            let setCount = exercise.sets?.count ?? 0
+            return "\(setCount)x \(exercise.name)"
         }
         return exerciseSummaries.joined(separator: ", ")
     }
