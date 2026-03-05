@@ -4,9 +4,6 @@ import CoreData
 
 @MainActor class DataManager {
 
-    private static var spotlightObserverTask: Task<Void, Never>?
-    private static var didRunInitialSpotlightRebuild = false
-
     // MARK: - Onboarding Methods (First Launch)
 
     /// Public version for onboarding - waits for CloudKit import with error handling
@@ -32,26 +29,6 @@ import CoreData
 
         syncExercises(context: context)
         UserDefaults.standard.set(ExerciseCatalog.catalogVersion, forKey: "exerciseCatalogVersion")
-    }
-
-    static func startSpotlightRebuildPipeline(context: ModelContext) {
-        if !didRunInitialSpotlightRebuild {
-            SpotlightIndexer.reindexAll(context: context)
-            didRunInitialSpotlightRebuild = true
-        }
-
-        guard spotlightObserverTask == nil else { return }
-
-        spotlightObserverTask = Task { @MainActor in
-            for await notification in NotificationCenter.default.notifications(named: NSPersistentCloudKitContainer.eventChangedNotification) {
-                guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
-                    as? NSPersistentCloudKitContainer.Event else { continue }
-
-                // Rebuild after CloudKit imports finish so restored entities are searchable.
-                guard event.type == .import, event.endDate != nil else { continue }
-                SpotlightIndexer.reindexAll(context: context)
-            }
-        }
     }
 
     private static func waitForCloudKitImport() async {

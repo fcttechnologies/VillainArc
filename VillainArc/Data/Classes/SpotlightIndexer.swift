@@ -29,17 +29,7 @@ enum SpotlightIndexer {
         let completedPlans = (try? context.fetch(WorkoutPlan.all)) ?? []
         let allExercises = (try? context.fetch(Exercise.all)) ?? []
 
-        var referencedCatalogIDs = Set<String>()
-        for workout in completedWorkouts {
-            referencedCatalogIDs.formUnion(workout.sortedExercises.map(\.catalogID))
-        }
-        for plan in completedPlans {
-            referencedCatalogIDs.formUnion(plan.sortedExercises.map(\.catalogID))
-        }
-
-        let exercisesToIndex = allExercises.filter { exercise in
-            exercise.isCustom || exercise.favorite || exercise.lastUsed != nil || referencedCatalogIDs.contains(exercise.catalogID)
-        }
+        let exercisesToIndex = allExercises.filter { $0.lastUsed != nil }
 
         let allItems = completedWorkouts.map(makeSearchableItem(for:))
             + completedPlans.map(makeSearchableItem(for:))

@@ -74,6 +74,7 @@ class OnboardingManager {
         state = .seeding
         do {
             try await DataManager.seedExercisesForOnboarding(context: modelContext)
+            SpotlightIndexer.reindexAll(context: modelContext)
         } catch {
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
             return
@@ -94,6 +95,7 @@ class OnboardingManager {
         do {
             // Seed exercises locally only
             try await DataManager.seedExercisesForOnboarding(context: modelContext)
+            SpotlightIndexer.reindexAll(context: modelContext)
             state = .ready
         } catch {
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
