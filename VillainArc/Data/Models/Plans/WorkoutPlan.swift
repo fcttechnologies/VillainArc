@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 class WorkoutPlan {
-    #Index<WorkoutPlan>([\.id], [\.completed, \.isEditing, \.lastUsed])
+    #Index<WorkoutPlan>([\.id], [\.completed], [\.isEditing], [\.lastUsed])
 
     var id: UUID = UUID()
     var title: String = "New Workout Plan"

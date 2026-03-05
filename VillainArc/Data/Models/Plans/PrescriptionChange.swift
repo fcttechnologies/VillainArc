@@ -20,7 +20,7 @@ import SwiftData
 /// - `targetPlan` tracks context (same exercise, different plans may progress differently)
 @Model
 class PrescriptionChange {
-    #Index<PrescriptionChange>([\.decision, \.createdAt], [\.catalogID, \.changeType])
+    #Index<PrescriptionChange>([\.catalogID], [\.createdAt])
 
     var id: UUID = UUID()
     var source: SuggestionSource = SuggestionSource.rules

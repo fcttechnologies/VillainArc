@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 class Exercise {
-    #Index<Exercise>([\.catalogID], [\.favorite, \.lastUsed], [\.lastUsed])
+    #Index<Exercise>([\.catalogID], [\.favorite], [\.lastUsed])
 
     var catalogID: String = ""
     var name: String = ""
