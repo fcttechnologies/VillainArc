@@ -33,9 +33,6 @@ enum SpotlightIndexer {
             + completedPlans.map(makeSearchableItem(for:))
             + exercisesToIndex.map(makeSearchableItem(for:))
 
-        let domains = [workoutSessionDomainIdentifier, workoutPlanDomainIdentifier, exerciseDomainIdentifier]
-        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: domains, completionHandler: nil)
-
         guard !allItems.isEmpty else {
             print("ℹ️ Spotlight rebuild skipped indexing (no items found)")
             return

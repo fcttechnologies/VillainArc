@@ -21,6 +21,8 @@ import SwiftData
 /// One ExerciseHistory per unique catalogID.
 @Model
 class ExerciseHistory {
+    #Index<ExerciseHistory>([\.catalogID])
+
     var catalogID: String = ""
     
     // Last updated tracking

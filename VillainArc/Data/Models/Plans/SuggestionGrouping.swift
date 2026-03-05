@@ -118,12 +118,15 @@ func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [Pre
         }
     }
 
-    let descriptor = FetchDescriptor<PrescriptionChange>()
-    guard let allChanges = try? context.fetch(descriptor) else { return [] }
+    let pending = Decision.pending
+    let deferred = Decision.deferred
+    let descriptor = FetchDescriptor<PrescriptionChange>(predicate: #Predicate<PrescriptionChange> {
+        $0.decision == pending || $0.decision == deferred
+    })
+    guard let pendingChanges = try? context.fetch(descriptor) else { return [] }
 
-    return allChanges.filter { change in
-        (change.decision == .deferred || change.decision == .pending) &&
-        (exerciseIDs.contains(change.targetExercisePrescription?.id ?? UUID()) ||
-         setIDs.contains(change.targetSetPrescription?.id ?? UUID()))
+    return pendingChanges.filter { change in
+        exerciseIDs.contains(change.targetExercisePrescription?.id ?? UUID()) ||
+        setIDs.contains(change.targetSetPrescription?.id ?? UUID())
     }
 }

@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 class ExercisePerformance {
+    #Index<ExercisePerformance>([\.catalogID, \.date])
+
     var id: UUID = UUID()
     var index: Int = 0
     var date: Date = Date()

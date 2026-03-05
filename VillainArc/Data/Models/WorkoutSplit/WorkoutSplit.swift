@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 class WorkoutSplit {
+    #Index<WorkoutSplit>([\.isActive])
+
     var title: String = ""
     var mode: SplitMode = SplitMode.weekly
     var isActive: Bool = false

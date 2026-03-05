@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 class RestTimeHistory {
+    #Index<RestTimeHistory>([\.seconds], [\.lastUsed])
+
     var seconds: Int = 0
     var lastUsed: Date = Date()
     
