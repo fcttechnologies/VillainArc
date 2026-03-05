@@ -1,6 +1,7 @@
 import CoreSpotlight
 import UniformTypeIdentifiers
 import AppIntents
+import SwiftData
 
 @MainActor
 enum SpotlightIndexer {
@@ -12,38 +13,58 @@ enum SpotlightIndexer {
     private static let exerciseDomainIdentifier = "com.villainarc.exercise"
 
     static func index(workoutSession: WorkoutSession) {
-        let attributes = CSSearchableItemAttributeSet(contentType: .item)
-        let displayTitle = "\(workoutSession.title) (Workout)"
-        attributes.title = displayTitle
-        attributes.displayName = displayTitle
-        attributes.contentDescription = workoutSession.spotlightSummary
-        attributes.keywords = workoutSession.sortedExercises.map(\.name) + ["Workout"]
-        let item = CSSearchableItem(uniqueIdentifier: workoutSessionIdentifierPrefix + workoutSession.id.uuidString, domainIdentifier: workoutSessionDomainIdentifier, attributeSet: attributes)
-        item.associateAppEntity(WorkoutSessionEntity(workoutSession: workoutSession), priority: 1)
-        CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
+        CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: workoutSession)], completionHandler: nil)
     }
 
     static func index(workoutPlan: WorkoutPlan) {
-        let attributes = CSSearchableItemAttributeSet(contentType: .item)
-        attributes.title = workoutPlan.title
-        attributes.displayName = workoutPlan.title
-        attributes.contentDescription = workoutPlan.spotlightSummary
-        attributes.keywords = workoutPlan.sortedExercises.map(\.name) + ["Workout Plan"]
-        let item = CSSearchableItem(uniqueIdentifier: workoutPlanIdentifierPrefix + workoutPlan.id.uuidString, domainIdentifier: workoutPlanDomainIdentifier, attributeSet: attributes)
-        item.associateAppEntity(WorkoutPlanEntity(workoutPlan: workoutPlan), priority: 1)
-        CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
+        CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: workoutPlan)], completionHandler: nil)
     }
 
     static func index(exercise: Exercise) {
-        let attributes = CSSearchableItemAttributeSet(contentType: .item)
-        attributes.title = exercise.name
-        attributes.displayName = exercise.name
-        attributes.alternateNames = exercise.aliases
-        attributes.contentDescription = exercise.displayMuscles
-        attributes.keywords = [exercise.name] + exercise.aliases + ["Exercise"]
-        let item = CSSearchableItem(uniqueIdentifier: exerciseIdentifierPrefix + exercise.catalogID, domainIdentifier: exerciseDomainIdentifier, attributeSet: attributes)
-        item.associateAppEntity(ExerciseEntity(exercise: exercise), priority: 1)
-        CSSearchableIndex.default().indexSearchableItems([item], completionHandler: nil)
+        CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: exercise)], completionHandler: nil)
+    }
+
+    static func reindexAll(context: ModelContext) {
+        let completedWorkouts = (try? context.fetch(WorkoutSession.completedSession)) ?? []
+        let completedPlans = (try? context.fetch(WorkoutPlan.all)) ?? []
+        let allExercises = (try? context.fetch(Exercise.all)) ?? []
+
+        var referencedCatalogIDs = Set<String>()
+        for workout in completedWorkouts {
+            referencedCatalogIDs.formUnion(workout.sortedExercises.map(\.catalogID))
+        }
+        for plan in completedPlans {
+            referencedCatalogIDs.formUnion(plan.sortedExercises.map(\.catalogID))
+        }
+
+        let exercisesToIndex = allExercises.filter { exercise in
+            exercise.isCustom || exercise.favorite || exercise.lastUsed != nil || referencedCatalogIDs.contains(exercise.catalogID)
+        }
+
+        let allItems = completedWorkouts.map(makeSearchableItem(for:))
+            + completedPlans.map(makeSearchableItem(for:))
+            + exercisesToIndex.map(makeSearchableItem(for:))
+
+        let domains = [workoutSessionDomainIdentifier, workoutPlanDomainIdentifier, exerciseDomainIdentifier]
+
+        CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: domains) { deleteError in
+            if let deleteError {
+                print("⚠️ Spotlight deindex failed before rebuild: \(deleteError)")
+            }
+
+            guard !allItems.isEmpty else {
+                print("ℹ️ Spotlight rebuild skipped indexing (no items found)")
+                return
+            }
+
+            CSSearchableIndex.default().indexSearchableItems(allItems) { indexError in
+                if let indexError {
+                    print("⚠️ Spotlight rebuild indexing failed: \(indexError)")
+                } else {
+                    print("✅ Spotlight rebuilt: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises")
+                }
+            }
+        }
     }
 
     static func deleteWorkoutSession(id: UUID) {
@@ -64,6 +85,41 @@ enum SpotlightIndexer {
 
     static func deleteExercise(catalogID: String) {
         delete(identifiers: [exerciseIdentifierPrefix + catalogID])
+    }
+
+    private static func makeSearchableItem(for workoutSession: WorkoutSession) -> CSSearchableItem {
+        let attributes = CSSearchableItemAttributeSet(contentType: .item)
+        let displayTitle = "\(workoutSession.title) (Workout)"
+        attributes.title = displayTitle
+        attributes.displayName = displayTitle
+        attributes.contentDescription = workoutSession.spotlightSummary
+        attributes.keywords = workoutSession.sortedExercises.map(\.name) + ["Workout"]
+        let item = CSSearchableItem(uniqueIdentifier: workoutSessionIdentifierPrefix + workoutSession.id.uuidString, domainIdentifier: workoutSessionDomainIdentifier, attributeSet: attributes)
+        item.associateAppEntity(WorkoutSessionEntity(workoutSession: workoutSession), priority: 1)
+        return item
+    }
+
+    private static func makeSearchableItem(for workoutPlan: WorkoutPlan) -> CSSearchableItem {
+        let attributes = CSSearchableItemAttributeSet(contentType: .item)
+        attributes.title = workoutPlan.title
+        attributes.displayName = workoutPlan.title
+        attributes.contentDescription = workoutPlan.spotlightSummary
+        attributes.keywords = workoutPlan.sortedExercises.map(\.name) + ["Workout Plan"]
+        let item = CSSearchableItem(uniqueIdentifier: workoutPlanIdentifierPrefix + workoutPlan.id.uuidString, domainIdentifier: workoutPlanDomainIdentifier, attributeSet: attributes)
+        item.associateAppEntity(WorkoutPlanEntity(workoutPlan: workoutPlan), priority: 1)
+        return item
+    }
+
+    private static func makeSearchableItem(for exercise: Exercise) -> CSSearchableItem {
+        let attributes = CSSearchableItemAttributeSet(contentType: .item)
+        attributes.title = exercise.name
+        attributes.displayName = exercise.name
+        attributes.alternateNames = exercise.aliases
+        attributes.contentDescription = exercise.displayMuscles
+        attributes.keywords = [exercise.name] + exercise.aliases + ["Exercise"]
+        let item = CSSearchableItem(uniqueIdentifier: exerciseIdentifierPrefix + exercise.catalogID, domainIdentifier: exerciseDomainIdentifier, attributeSet: attributes)
+        item.associateAppEntity(ExerciseEntity(exercise: exercise), priority: 1)
+        return item
     }
 
     private static func delete(identifiers: [String]) {

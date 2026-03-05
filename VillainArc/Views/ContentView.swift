@@ -64,6 +64,7 @@ struct ContentView: View {
             .task(id: hasCompletedOnboarding) {
                 guard hasCompletedOnboarding else { return }
                 await DataManager.seedExercisesIfNeeded(context: context)
+                DataManager.startSpotlightRebuildPipeline(context: context)
                 router.checkForUnfinishedData()
             }
             .sheet(isPresented: onboardingBinding) {
