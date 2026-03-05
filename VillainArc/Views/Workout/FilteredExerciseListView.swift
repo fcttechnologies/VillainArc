@@ -89,8 +89,10 @@ struct FilteredExerciseListView: View {
     }
     
     var body: some View {
-        List {
-            ForEach(filteredExercises) { exercise in
+        let visibleExercises = filteredExercises
+
+        return List {
+            ForEach(visibleExercises) { exercise in
                 if selectedExerciseIDs.contains(exercise.catalogID) {
                     Button {
                         Haptics.selection()
@@ -134,7 +136,7 @@ struct FilteredExerciseListView: View {
         .scrollDismissesKeyboard(.immediately)
         .accessibilityIdentifier("filteredExerciseList")
         .overlay {
-            if filteredExercises.isEmpty {
+            if visibleExercises.isEmpty {
                 emptyStateView
             }
         }
@@ -206,7 +208,7 @@ struct FilteredExerciseListView: View {
             return true
         }
         
-        let haystackTokens = exerciseSearchTokens(for: exercise)
+        let haystackTokens = cachedExerciseSearchTokens(for: exercise)
         
         return queryTokens.allSatisfy { queryToken in
             let maxDistance = maximumFuzzyDistance(for: queryToken)

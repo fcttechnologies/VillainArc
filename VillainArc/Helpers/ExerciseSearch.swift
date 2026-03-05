@@ -124,11 +124,26 @@ private nonisolated func tokenMatchScore(for token: String, in tokens: [String],
     return nil
 }
 
+@MainActor
+func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
+    if !exercise.searchTokens.isEmpty {
+        return exercise.searchTokens
+    }
+    return exerciseSearchTokens(for: exercise)
+}
+
 private nonisolated func phraseMatch(phraseTokens: [String], in tokens: [String]) -> Bool {
     guard !phraseTokens.isEmpty, tokens.count >= phraseTokens.count else { return false }
     let maxStart = tokens.count - phraseTokens.count
     for start in 0...maxStart {
-        if Array(tokens[start..<(start + phraseTokens.count)]) == phraseTokens {
+        var matches = true
+        for offset in phraseTokens.indices {
+            if tokens[start + offset] != phraseTokens[offset] {
+                matches = false
+                break
+            }
+        }
+        if matches {
             return true
         }
     }

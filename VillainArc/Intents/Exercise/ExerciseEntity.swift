@@ -95,7 +95,7 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
     @MainActor
     private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
         guard !queryTokens.isEmpty else { return true }
-        let haystackTokens = exerciseSearchTokens(for: exercise)
+        let haystackTokens = cachedExerciseSearchTokens(for: exercise)
 
         return queryTokens.allSatisfy { queryToken in
             let maxDistance = maximumFuzzyDistance(for: queryToken)
