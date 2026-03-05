@@ -4,6 +4,37 @@ import Testing
 @testable import VillainArc
 
 struct ExerciseReplacementTests {
+    @Test @MainActor
+    // Starting a workout from a plan should prefill set values from each target set.
+    func startFromPlanCopiesTargetValuesIntoSetPerformance() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+
+        let plan = WorkoutPlan(title: "Pull Day")
+        context.insert(plan)
+
+        let row = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
+        let prescription = ExercisePrescription(exercise: row, workoutPlan: plan)
+        prescription.sets = [
+            SetPrescription(exercisePrescription: prescription, setType: .warmup, targetWeight: 95, targetReps: 10, targetRest: 60, index: 0),
+            SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, index: 1)
+        ]
+        plan.exercises = [prescription]
+
+        let session = WorkoutSession(from: plan)
+        context.insert(session)
+
+        guard let performance = session.sortedExercises.first else {
+            Issue.record("Expected one exercise in the session")
+            return
+        }
+        let sets = performance.sortedSets
+        #expect(sets.count == 2)
+        #expect(sets[0].weight == 95)
+        #expect(sets[0].reps == 10)
+        #expect(sets[1].weight == 135)
+        #expect(sets[1].reps == 8)
+    }
 
     @Test @MainActor
     // Replacing an exercise should detach all plan targets from the current performance.

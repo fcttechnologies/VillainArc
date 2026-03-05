@@ -58,6 +58,8 @@ class SetPerformance {
     init(exercise: ExercisePerformance, setPrescription: SetPrescription) {
         index = setPrescription.index
         type = setPrescription.type
+        weight = setPrescription.targetWeight
+        reps = setPrescription.targetReps
         restSeconds = setPrescription.targetRest
         self.exercise = exercise
         prescription = setPrescription
@@ -65,4 +67,3 @@ class SetPerformance {
 }
 
 extension SetPerformance: RestTimeEditableSet {}
-

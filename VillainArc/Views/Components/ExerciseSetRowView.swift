@@ -20,6 +20,11 @@ struct SetReferenceData {
 }
 
 struct ExerciseSetRowView: View {
+    private enum Field {
+        case reps
+        case weight
+    }
+    
     @Bindable var set: SetPerformance
     @Bindable var exercise: ExercisePerformance
     @Environment(\.modelContext) private var context
@@ -27,6 +32,7 @@ struct ExerciseSetRowView: View {
     @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
     @State private var showRPEPicker = false
+    @FocusState private var focusedField: Field?
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
@@ -77,12 +83,14 @@ struct ExerciseSetRowView: View {
 
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
+                .focused($focusedField, equals: .reps)
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
                 .accessibilityLabel("Reps")
             TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
+                .focused($focusedField, equals: .weight)
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
@@ -148,6 +156,10 @@ struct ExerciseSetRowView: View {
             }
         }
         .animation(.bouncy, value: set.complete)
+        .onChange(of: focusedField) { _, field in
+            guard field != nil else { return }
+            selectAllFocusedText()
+        }
         .onChange(of: set.reps) {
             scheduleSave(context: context)
             WorkoutActivityManager.update()

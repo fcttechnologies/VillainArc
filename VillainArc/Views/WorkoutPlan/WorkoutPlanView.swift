@@ -368,9 +368,15 @@ private struct WorkoutPlanExerciseView: View {
 }
 
 private struct WorkoutPlanSetRowView: View {
+    private enum Field {
+        case reps
+        case weight
+    }
+    
     @Environment(\.modelContext) private var context
     @Bindable var set: SetPrescription
     @Bindable var exercise: ExercisePrescription
+    @FocusState private var focusedField: Field?
     
     var body: some View {
         Group {
@@ -408,13 +414,19 @@ private struct WorkoutPlanSetRowView: View {
             
             TextField("Reps", value: $set.targetReps, format: .number)
                 .keyboardType(.numberPad)
+                .focused($focusedField, equals: .reps)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetRepsField(exercise, set: set))
                 .accessibilityLabel("Reps")
             
             TextField("Weight", value: $set.targetWeight, format: .number)
                 .keyboardType(.decimalPad)
+                .focused($focusedField, equals: .weight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetWeightField(exercise, set: set))
                 .accessibilityLabel("Weight")
+        }
+        .onChange(of: focusedField) { _, field in
+            guard field != nil else { return }
+            selectAllFocusedText()
         }
         .onChange(of: set.targetReps) {
             scheduleSave(context: context)
