@@ -7,58 +7,56 @@ struct ExerciseSearchMatch {
 
 @MainActor
 func exerciseSearchTokens(for exercise: Exercise) -> [String] {
-    let combined = ([exercise.name] + exercise.aliases).joined(separator: " ")
-    let baseTokens = normalizedTokens(for: combined)
-    return expandedTokens(from: baseTokens)
+    let nameAndAliases = ([exercise.name] + exercise.aliases).joined(separator: " ")
+    var seen = Set<String>()
+    var tokens: [String] = []
+
+    func add(_ string: String) {
+        for token in normalizedTokens(for: string) {
+            guard !token.isEmpty, seen.insert(token).inserted else { continue }
+            tokens.append(token)
+        }
+    }
+
+    add(nameAndAliases)
+    add(exercise.equipmentType.rawValue)
+    if let primaryMuscle = exercise.musclesTargeted.first {
+        add(primaryMuscle.rawValue)
+    }
+
+    return tokens
 }
 
 @MainActor
 func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     guard !queryTokens.isEmpty else { return 0 }
 
-    let baseNameTokens = normalizedTokens(for: exercise.name)
-    let baseAliasTokens = exercise.aliases.map { normalizedTokens(for: $0) }
-    let nameTokens = expandedTokens(from: baseNameTokens)
-    let aliasTokenGroups = baseAliasTokens.map { expandedTokens(from: $0) }
+    let nameTokens = normalizedTokens(for: exercise.name)
+    let aliasTokenGroups = exercise.aliases.map { normalizedTokens(for: $0) }
     let aliasTokens = aliasTokenGroups.flatMap { $0 }
-    let muscleTokenGroups = exercise.musclesTargeted.map { normalizedTokens(for: $0.rawValue) }
-    let muscleTokens = muscleTokenGroups.flatMap { $0 }
+    let equipmentTokens = normalizedTokens(for: exercise.equipmentType.rawValue)
+    let primaryMuscleTokens = exercise.musclesTargeted.first.map { normalizedTokens(for: $0.rawValue) } ?? []
 
     var score = 0
-    var nameAliasMatchCount = 0
-    var unmatchedTokens: [String] = []
     for token in queryTokens {
-        if let tokenScore = tokenMatchScore(for: token, in: nameTokens, exact: 4, prefix: 3) {
-            score += tokenScore
-            nameAliasMatchCount += 1
-            continue
-        }
-        if let tokenScore = tokenMatchScore(for: token, in: aliasTokens, exact: 3, prefix: 2) {
-            score += tokenScore
-            nameAliasMatchCount += 1
-            continue
-        }
-        unmatchedTokens.append(token)
-    }
-
-    if !unmatchedTokens.isEmpty {
-        if nameAliasMatchCount > 0 {
-            return 0
-        }
-        if queryTokens.count == 1, let tokenScore = tokenMatchScore(for: queryTokens[0], in: muscleTokens, exact: 1, prefix: 0) {
-            score += tokenScore
-        } else if queryTokens.count > 1, muscleTokenGroups.contains(where: { phraseMatch(phraseTokens: queryTokens, in: $0) }) {
-            score += 1
+        if let s = tokenMatchScore(for: token, in: nameTokens, exact: 4, prefix: 3) {
+            score += s
+        } else if let s = tokenMatchScore(for: token, in: aliasTokens, exact: 3, prefix: 2) {
+            score += s
+        } else if let s = tokenMatchScore(for: token, in: equipmentTokens, exact: 2, prefix: 1) {
+            score += s
+        } else if let s = tokenMatchScore(for: token, in: primaryMuscleTokens, exact: 1, prefix: 0) {
+            score += s
         } else {
             return 0
         }
     }
 
     if queryTokens.count > 1 {
-        if phraseMatch(phraseTokens: queryTokens, in: baseNameTokens) {
+        if phraseMatch(phraseTokens: queryTokens, in: nameTokens) {
             score += 6
         }
-        if baseAliasTokens.contains(where: { phraseMatch(phraseTokens: queryTokens, in: $0) }) {
+        if aliasTokenGroups.contains(where: { phraseMatch(phraseTokens: queryTokens, in: $0) }) {
             score += 4
         }
     }
@@ -77,40 +75,6 @@ func exerciseSearchMatches(in exercises: [Exercise], queryTokens: [String]) -> [
         let score = exerciseSearchScore(for: exercise, queryTokens: queryTokens)
         return score > 0 ? ExerciseSearchMatch(exercise: exercise, score: score) : nil
     }
-}
-
-private nonisolated func expandedTokens(from baseTokens: [String]) -> [String] {
-    var tokens: [String] = []
-    var seen = Set<String>()
-
-    func appendToken(_ token: String) {
-        guard !token.isEmpty, !seen.contains(token) else { return }
-        seen.insert(token)
-        tokens.append(token)
-    }
-
-    baseTokens.forEach(appendToken)
-    let baseSet = Set(baseTokens)
-
-    for (abbreviation, fullWord) in Exercise.singleWordAbbreviations {
-        if baseSet.contains(abbreviation) {
-            appendToken(fullWord)
-        }
-        if baseSet.contains(fullWord) {
-            appendToken(abbreviation)
-        }
-    }
-
-    for (abbreviation, words) in Exercise.phraseAbbreviations {
-        if baseSet.contains(abbreviation) {
-            words.forEach(appendToken)
-        }
-        if words.allSatisfy({ baseSet.contains($0) }) {
-            appendToken(abbreviation)
-        }
-    }
-
-    return tokens
 }
 
 private nonisolated func tokenMatchScore(for token: String, in tokens: [String], exact: Int, prefix: Int) -> Int? {

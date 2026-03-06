@@ -202,7 +202,7 @@ struct WorkoutView: View {
                             .bold()
                             .lineLimit(1)
                         HStack(alignment: .bottom) {
-                            Text(exercise.displayMuscle)
+                            Text(exercise.equipmentType.rawValue)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
                                 .font(.headline)

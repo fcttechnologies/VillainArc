@@ -16,12 +16,6 @@ class Exercise {
     var searchTokens: [String] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
 
-    var displayMuscles: String {
-        let majors = musclesTargeted.filter(\.isMajor)
-        let muscles = majors.isEmpty ? Array(musclesTargeted.prefix(1)) : majors
-        return ListFormatter.localizedString(byJoining: muscles.map(\.rawValue))
-    }
-
     @MainActor
     init(from catalogItem: ExerciseCatalogItem) {
         catalogID = catalogItem.id
@@ -86,15 +80,6 @@ class Exercise {
         return didChange
     }
 
-    static let singleWordAbbreviations: [String: String] = [
-        "db": "dumbbell",
-        "bb": "barbell"
-    ]
-
-    static let phraseAbbreviations: [String: [String]] = [
-        "ohp": ["overhead", "press"],
-        "rdl": ["romanian", "deadlift"]
-    ]
 }
 
 extension Exercise {

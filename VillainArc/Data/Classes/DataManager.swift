@@ -22,7 +22,7 @@ import CoreData
 
     /// Fast path for returning users - only checks catalog version
     static func seedExercisesIfNeeded(context: ModelContext) async {
-        let storedVersion = UserDefaults.standard.integer(forKey: "exerciseCatalogVersion")
+        let storedVersion = UserDefaults.standard.string(forKey: "exerciseCatalogVersion")
         guard ExerciseCatalog.catalogVersion != storedVersion else {
             return
         }

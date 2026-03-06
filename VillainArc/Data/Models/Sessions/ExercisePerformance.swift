@@ -27,10 +27,6 @@ class ExercisePerformance {
         (sets ?? []).sorted { $0.index < $1.index }
     }
     
-    var displayMuscle: String {
-        return musclesTargeted.first?.rawValue ?? ""
-    }
-    
     // Adding exercise in session
     init(exercise: Exercise, workoutSession: WorkoutSession) {
         index = workoutSession.exercises?.count ?? 0

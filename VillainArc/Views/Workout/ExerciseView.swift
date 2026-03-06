@@ -134,7 +134,7 @@ struct ExerciseView: View {
                 .lineLimit(1)
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(exercise.displayMuscle)
+                    Text(exercise.equipmentType.rawValue)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
                     Button {

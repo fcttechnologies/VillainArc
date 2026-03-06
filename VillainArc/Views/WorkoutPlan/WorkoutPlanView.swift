@@ -173,7 +173,7 @@ struct WorkoutPlanView: View {
                         .bold()
                         .lineLimit(1)
                     HStack(alignment: .bottom) {
-                        Text(exercise.displayMuscle)
+                        Text(exercise.equipmentType.rawValue)
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                             .font(.headline)
@@ -314,7 +314,7 @@ private struct WorkoutPlanExerciseView: View {
                 .lineLimit(1)
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(exercise.displayMuscle)
+                    Text(exercise.equipmentType.rawValue)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
                     Button {

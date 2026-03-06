@@ -90,7 +90,7 @@ enum SpotlightIndexer {
         attributes.title = exercise.name
         attributes.displayName = exercise.name
         attributes.alternateNames = exercise.aliases
-        attributes.contentDescription = exercise.displayMuscles
+        attributes.contentDescription = exercise.equipmentType.rawValue
         attributes.keywords = [exercise.name] + exercise.aliases + ["Exercise"]
         let item = CSSearchableItem(uniqueIdentifier: exerciseIdentifierPrefix + exercise.catalogID, domainIdentifier: exerciseDomainIdentifier, attributeSet: attributes)
         item.associateAppEntity(ExerciseEntity(exercise: exercise), priority: 1)

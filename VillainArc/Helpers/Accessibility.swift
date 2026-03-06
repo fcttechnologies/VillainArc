@@ -520,26 +520,18 @@ enum AccessibilityText {
         } else {
             setsText = exerciseSetCountText(totalSets)
         }
-        guard !exercise.displayMuscle.isEmpty else {
-            return setsText
-        }
-        return "\(exercise.displayMuscle), \(setsText)"
+        return "\(exercise.equipmentType.rawValue), \(setsText)"
     }
 
     static func workoutPlanExerciseListValue(for exercise: ExercisePrescription) -> String {
         let setsText = exerciseSetCountText(exercise.sortedSets.count)
-        guard !exercise.displayMuscle.isEmpty else {
-            return setsText
-        }
-        return "\(exercise.displayMuscle), \(setsText)"
+        return "\(exercise.equipmentType.rawValue), \(setsText)"
     }
 
     static func exerciseCatalogValue(for exercise: Exercise, isSelected: Bool) -> String {
         var parts: [String] = []
 
-        if !exercise.displayMuscles.isEmpty {
-            parts.append(exercise.displayMuscles)
-        }
+        parts.append(exercise.equipmentType.rawValue)
 
         if exercise.favorite {
             parts.append("Favorite")

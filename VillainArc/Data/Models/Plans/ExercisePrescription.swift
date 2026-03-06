@@ -24,10 +24,6 @@ class ExercisePrescription {
         (sets ?? []).sorted { $0.index < $1.index }
     }
 
-    var displayMuscle: String {
-        return musclesTargeted.first?.rawValue ?? ""
-    }
-    
     // Adding exercise in workout plan creation
     init(exercise: Exercise, workoutPlan: WorkoutPlan) {
         index = workoutPlan.exercises?.count ?? 0

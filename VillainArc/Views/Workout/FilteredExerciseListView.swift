@@ -148,7 +148,7 @@ struct FilteredExerciseListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(exercise.name)
                     .font(.headline)
-                Text(exercise.displayMuscles)
+                Text(exercise.equipmentType.rawValue)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)

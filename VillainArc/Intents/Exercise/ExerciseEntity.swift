@@ -8,15 +8,12 @@ struct ExerciseEntity: AppEntity, IndexedEntity, Identifiable {
 
     let id: String
     let name: String
-    let muscles: String
+    let equipment: String
     let aliases: [String]
 
     var displayRepresentation: DisplayRepresentation {
         let synonyms = aliases.map { LocalizedStringResource(stringLiteral: $0) }
-        if muscles.isEmpty {
-            return DisplayRepresentation(title: "\(name)", synonyms: synonyms)
-        }
-        return DisplayRepresentation(title: "\(name)", subtitle: "\(muscles)", synonyms: synonyms)
+        return DisplayRepresentation(title: "\(name)", subtitle: "\(equipment)", synonyms: synonyms)
     }
 
 }
@@ -25,7 +22,7 @@ extension ExerciseEntity {
     init(exercise: Exercise) {
         id = exercise.catalogID
         name = exercise.name
-        muscles = exercise.displayMuscles
+        equipment = exercise.equipmentType.rawValue
         aliases = exercise.aliases
     }
 }
@@ -33,7 +30,7 @@ extension ExerciseEntity {
 extension ExerciseEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         ProxyRepresentation { entity in
-            entity.muscles.isEmpty ? entity.name : "\(entity.name) — \(entity.muscles)"
+            "\(entity.name) — \(entity.equipment)"
         }
     }
 }

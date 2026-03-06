@@ -104,22 +104,24 @@ struct MetricsCalculator {
 
     static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType) -> Double {
         switch equipmentType {
-        case .dumbbellSingle:
+        case .dumbbellSingle, .kettlebellSingle:
             return currentWeight < 15 ? 2.5 : 5.0
-        case .dumbbells:
+        case .dumbbells, .kettlebell:
             let perHand = max(0, currentWeight / 2)
             return perHand < 15 ? 5.0 : 10.0
         case .cableSingle:
             return currentWeight < 30 ? 2.5 : 5.0
-        case .cables:
+        case .cables, .rope:
             return currentWeight < 60 ? 5.0 : 10.0
-        case .machine, .smithMachine:
+        case .machine, .smithMachine, .machineAssisted:
             return currentWeight < 100 ? 5.0 : 10.0
-        case .barbell:
+        case .barbell, .ezBar, .landmine:
             break
-        case .bodyweight:
+        case .bodyweight, .band, .plate, .weightedBall:
             if currentWeight <= 0 { return 0 }
             return currentWeight < 25 ? 2.5 : 5.0
+        case .other:
+            break
         }
 
         return muscleBasedIncrement(for: currentWeight, primaryMuscle: primaryMuscle)
