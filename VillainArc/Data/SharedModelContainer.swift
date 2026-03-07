@@ -3,7 +3,7 @@ import Foundation
 
 enum SharedModelContainer {
 
-    static let appGroupID = "group.com.fcttechnologies.VillainArc.cont"
+    static let appGroupID = "group.com.fcttechnologies.VillainArcCont"
     static let sharedDefaults: UserDefaults = {
         guard let defaults = UserDefaults(suiteName: appGroupID) else {
             fatalError("App Group defaults not found for \(appGroupID). Check App Groups capability + entitlements.")
@@ -44,7 +44,7 @@ enum SharedModelContainer {
                 schema: schema,
                 url: url,
                 allowsSave: true,
-                cloudKitDatabase: .automatic
+                cloudKitDatabase: .private("iCloud.com.fcttechnologies.VillainArcCont")
             )
 
             return try ModelContainer(for: schema, configurations: [configuration])

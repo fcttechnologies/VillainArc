@@ -101,6 +101,6 @@ extension Exercise {
 
     static var spotlightEligible: FetchDescriptor<Exercise> {
         let predicate = #Predicate<Exercise> { $0.lastUsed != nil }
-        return FetchDescriptor(predicate: predicate, sortBy: recentsSort)
+        return FetchDescriptor(predicate: predicate)
     }
 }

@@ -46,6 +46,14 @@ struct WorkoutPlansListView: View {
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
         .navigationBarBackButtonHidden(isEditing)
+        .alert("Delete All Workout Plans?", isPresented: $showDeleteAllConfirmation) {
+            Button("Delete All", role: .destructive) {
+                deleteAllWorkoutPlans()
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllConfirmButton)
+        } message: {
+            Text("Are you sure you want to delete all workout plans?")
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if isEditing {
@@ -56,14 +64,6 @@ struct WorkoutPlansListView: View {
                     .labelStyle(.titleOnly)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllButton)
                     .accessibilityHint(AccessibilityText.workoutPlansDeleteAllHint)
-                    .confirmationDialog("Delete All Workout Plans?", isPresented: $showDeleteAllConfirmation) {
-                        Button("Delete All", role: .destructive) {
-                            deleteAllWorkoutPlans()
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllConfirmButton)
-                    } message: {
-                        Text("Are you sure you want to delete all workout plans?")
-                    }
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {

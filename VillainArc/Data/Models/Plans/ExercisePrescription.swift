@@ -17,7 +17,7 @@ class ExercisePrescription {
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
     var sets: [SetPrescription]? = [SetPrescription]()
     
-    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetExercisePrescription)
+    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.targetExercisePrescription)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
     
     var sortedSets: [SetPrescription] {
@@ -72,6 +72,21 @@ class ExercisePrescription {
         }
     }
     
+    func replaceWith(_ exercise: Exercise, keepSets: Bool) {
+        catalogID = exercise.catalogID
+        name = exercise.name
+        musclesTargeted = exercise.musclesTargeted
+        equipmentType = exercise.equipmentType
+
+        if !keepSets {
+            for set in sets ?? [] {
+                modelContext?.delete(set)
+            }
+            sets?.removeAll()
+            addSet()
+        }
+    }
+
     func deleteSet(_ set: SetPrescription) {
         sets?.removeAll(where: { $0 == set })
         reindexSets()
@@ -85,4 +100,3 @@ class ExercisePrescription {
 }
 
 extension ExercisePrescription: RestTimeEditable {}
-

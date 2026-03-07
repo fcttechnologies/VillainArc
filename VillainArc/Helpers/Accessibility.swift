@@ -134,6 +134,14 @@ enum AccessibilityIdentifiers {
         "workoutPlanExerciseAddSetButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
 
+    static func workoutPlanExerciseReplaceButton(_ exercise: ExercisePrescription) -> String {
+        "workoutPlanExerciseReplaceButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
+    }
+
+    static func workoutPlanExerciseDeleteButton(_ exercise: ExercisePrescription) -> String {
+        "workoutPlanExerciseDeleteButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
+    }
+
     static func exerciseSetMenu(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
         "exerciseSetMenu-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }

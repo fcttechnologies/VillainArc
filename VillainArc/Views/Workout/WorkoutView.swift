@@ -6,7 +6,7 @@ struct WorkoutView: View {
     @Bindable var workout: WorkoutSession
     private let restTimer = RestTimerState.shared
     
-    @State private var showExerciseListView = false
+    @State private var showExerciseEditSheet = false
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
     @State private var showDeleteWorkoutAlert = false
@@ -28,13 +28,7 @@ struct WorkoutView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
-                if showExerciseListView {
-                    exerciseListView
-                } else {
-                    exerciseTabView
-                }
-            }
+            exerciseTabView
             .navigationTitle(workout.title)
             .navigationSubtitle(Text(workout.startedAt, style: .date))
             .toolbarTitleMenu {
@@ -51,7 +45,6 @@ struct WorkoutView: View {
                 .accessibilityHint("Updates your pre-workout energy.")
             }
             .toolbarTitleDisplayMode(.inline)
-            .animation(.bouncy, value: showExerciseListView)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -77,7 +70,20 @@ struct WorkoutView: View {
                     .accessibilityHint("Adds an exercise.")
                 }
             }
-            .animation(.smooth, value: showExerciseListView)
+            .sheet(isPresented: $showExerciseEditSheet) {
+                NavigationStack {
+                    exerciseListView
+                        .navigationTitle("Edit Exercises")
+                        .toolbarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button(role: .confirm) {
+                                    showExerciseEditSheet = false
+                                }
+                            }
+                        }
+                }
+            }
             .sheet(isPresented: $showAddExerciseSheet, onDismiss: handleAddExerciseSheetDismiss) {
                 AddExerciseView(workout: workout)
                     .interactiveDismissDisabled()
@@ -191,10 +197,9 @@ struct WorkoutView: View {
             ForEach(workout.sortedExercises) { exercise in
                 let totalSets = exercise.sortedSets.count
                 let completedSets = exercise.sortedSets.filter { $0.complete }.count
-                let isAllSetsComplete = totalSets > 0 && completedSets == totalSets
                 Button {
                     workout.activeExercise = exercise
-                    showExerciseListView = false
+                    showExerciseEditSheet = false
                 } label: {
                     VStack(alignment: .leading) {
                         Text(exercise.name)
@@ -213,7 +218,6 @@ struct WorkoutView: View {
                         }
                     }
                 }
-                .opacity(isAllSetsComplete ? 0.4 : 1)
                 .buttonStyle(.borderless)
                 .tint(.primary)
                 .listRowSeparator(.hidden)
@@ -226,7 +230,6 @@ struct WorkoutView: View {
             .onMove(perform: moveExercise)
         }
         .scrollIndicators(.hidden)
-        .listStyle(.plain)
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier("workoutExerciseList")
     }
@@ -266,20 +269,11 @@ struct WorkoutView: View {
                 .accessibilityLabel("Delete Workout")
                 .accessibilityIdentifier("workoutDeleteEmptyButton")
                 .accessibilityHint("Deletes this workout.")
-            } else if showExerciseListView {
-                Button("Done Editing", systemImage: "checkmark") {
-                    Haptics.selection()
-                    showExerciseListView = false
-                }
-                .labelStyle(.iconOnly)
-                .tint(.blue)
-                .accessibilityIdentifier("workoutDoneEditingButton")
-                .accessibilityHint("Finishes editing the list of exercises.")
             } else {
                 Menu("Workout Options", systemImage: "ellipsis") {
                     Button("Edit Exercises", systemImage: "pencil") {
                         Haptics.selection()
-                        showExerciseListView = true
+                        showExerciseEditSheet = true
                     }
                     .accessibilityIdentifier("workoutEditExercisesButton")
                     .accessibilityHint("Show the list of exercises.")
@@ -408,7 +402,7 @@ struct WorkoutView: View {
         }
 
         if workout.exercises?.isEmpty ?? true {
-            showExerciseListView = false
+            showExerciseEditSheet = false
         }
         WorkoutActivityManager.update(for: workout)
     }
@@ -441,7 +435,7 @@ struct WorkoutView: View {
     private func prepareForAddExerciseSheet() {
         let count = workout.sortedExercises.count
         let isActiveLast = workout.activeExercise?.index == count - 1
-        if !showExerciseListView, activeExerciseAllSetsComplete(), isActiveLast {
+        if activeExerciseAllSetsComplete(), isActiveLast {
             autoAdvanceTargetIndex = count
         } else {
             autoAdvanceTargetIndex = nil

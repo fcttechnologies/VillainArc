@@ -263,46 +263,25 @@ struct VillainArcTests {
     }
 
     @Test @MainActor
-    // Deleting a plan marks unresolved linked suggestions as overridden instead of leaving them pending.
-    func deletingPlanMarksPendingAndDeferredLinkedChangesAsUserModified() throws {
+    // Deleting a plan cascade-deletes all linked prescription changes.
+    func deletingPlanDeletesLinkedChanges() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
 
-        let pendingSetChange = data.changes.first {
-            $0.changeType == .increaseWeight &&
-            $0.targetSetPrescription?.id == data.benchSet1.id
-        }
-        let deferredExerciseChange = data.changes.first {
-            $0.changeType == .changeRepRangeMode &&
-            $0.targetExercisePrescription?.id == data.incline.id
-        }
-        let acceptedChange = data.changes.first {
-            $0.changeType == .increaseRest &&
-            $0.targetSetPrescription?.id == data.flys.sortedSets.first?.id
-        }
-
-        #expect(pendingSetChange != nil)
-        #expect(deferredExerciseChange != nil)
-        #expect(acceptedChange != nil)
-        guard let pendingSetChange, let deferredExerciseChange, let acceptedChange else { return }
-
-        deferredExerciseChange.decision = .deferred
-        acceptedChange.decision = .accepted
+        let initialChangeCount = data.changes.count
+        #expect(initialChangeCount > 0)
 
         data.plan.deleteWithSuggestionCleanup(context: context)
+        try context.save()
 
-        #expect(pendingSetChange.decision == .userOverride)
-        #expect(pendingSetChange.outcome == .userModified)
-        #expect(deferredExerciseChange.decision == .userOverride)
-        #expect(deferredExerciseChange.outcome == .userModified)
-        #expect(acceptedChange.decision == .accepted)
-        #expect(acceptedChange.outcome == .userModified)
+        let remainingChanges = try context.fetch(FetchDescriptor<PrescriptionChange>())
+        #expect(remainingChanges.isEmpty)
     }
 
     @Test @MainActor
-    // Plan-level targeted changes should also be invalidated when the plan is deleted.
-    func deletingPlanMarksTargetPlanOnlyChangesAsUserModified() throws {
+    // Plan-level targeted changes are also cascade-deleted when the plan is deleted.
+    func deletingPlanDeletesTargetPlanOnlyChanges() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
@@ -319,9 +298,10 @@ struct VillainArcTests {
         context.insert(planLevelChange)
 
         data.plan.deleteWithSuggestionCleanup(context: context)
+        try context.save()
 
-        #expect(planLevelChange.decision == .userOverride)
-        #expect(planLevelChange.outcome == .userModified)
+        let remainingChanges = try context.fetch(FetchDescriptor<PrescriptionChange>())
+        #expect(remainingChanges.isEmpty)
     }
 
     @Test @MainActor

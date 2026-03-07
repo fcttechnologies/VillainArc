@@ -54,6 +54,7 @@ class WorkoutSession {
         origin = .plan
         workoutPlan = plan
         exercises = plan.sortedExercises.map { ExercisePerformance(workoutSession: self, exercisePrescription: $0) }
+        plan.lastUsed = .now
     }
     
     func addExercise(_ exercise: Exercise) {

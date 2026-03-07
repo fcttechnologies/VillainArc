@@ -14,8 +14,6 @@ struct WorkoutSplitCreationView: View {
     @State private var isSwapMode = false
     @State private var swapFirstDay: WorkoutSplitDay?
     @State private var swapSecondDay: WorkoutSplitDay?
-    @Namespace private var capsuleNamespace
-    
     private let weekdayInitials = ["S", "M", "T", "W", "T", "F", "S"]
     
     private var currentWeekday: Int {
@@ -152,31 +150,34 @@ struct WorkoutSplitCreationView: View {
         let isToday = day.weekday == currentWeekday
         let initial = weekdayInitials[day.weekday - 1]
         let isSwapSelected = swapSelectionContains(day)
-        
+
         Button {
             handleCapsuleTap(day)
         } label: {
-            VStack(spacing: 8) {
-                Text(initial)
-                    .font(.headline)
-                    .foregroundStyle(isSelected ? .white : (colorScheme == .dark ? .white : .black))
-                
-                Circle()
-                    .fill(.white)
-                    .frame(width: 6, height: 6)
-                    .opacity(isToday ? 1 : 0)
-            }
-            .frame(width: 36, height: 56)
-            .background {
-                if isSelected {
-                    Capsule()
-                        .fill(.blue.gradient)
-                        .matchedGeometryEffect(id: "selectedCapsule", in: capsuleNamespace)
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? AnyShapeStyle(Color.blue.gradient) : AnyShapeStyle(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6)))
+                        .shadow(color: isSelected ? Color.blue.opacity(0.45) : .clear, radius: 8, x: 0, y: 4)
+                    Text(initial)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : Color.secondary)
                 }
+                .frame(width: 34, height: 34)
+                .padding(.top, 6)
+
+                Spacer()
+
+                Circle()
+                    .fill(isToday ? Color.secondary.opacity(0.5) : Color.clear)
+                    .frame(width: 4, height: 4)
+                    .padding(.bottom, 7)
             }
-            .overlay {
+            .frame(width: 44, height: 62)
+            .background {
                 Capsule()
-                    .strokeBorder(isSelected ? .clear : Color.gray.opacity(0.5), lineWidth: 1)
+                    .fill(colorScheme == .dark ? Color(.secondarySystemBackground) : Color(.systemBackground))
+                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.25 : 0.08), radius: 6, x: 0, y: 2)
             }
             .overlay {
                 if isSwapMode && isSwapSelected {
@@ -214,27 +215,30 @@ struct WorkoutSplitCreationView: View {
         let capsule = Button {
             handleCapsuleTap(day)
         } label: {
-            VStack(spacing: 8) {
-                Text("\(dayNumber)")
-                    .font(.headline)
-                    .foregroundStyle(isSelected ? .white : (colorScheme == .dark ? .white : .black))
-                
-                Circle()
-                    .fill(.white)
-                    .frame(width: 6, height: 6)
-                    .opacity(isCurrentDay ? 1 : 0)
-            }
-            .frame(width: 36, height: 56)
-            .background {
-                if isSelected {
-                    Capsule()
-                        .fill(.blue.gradient)
-                        .matchedGeometryEffect(id: "selectedCapsule", in: capsuleNamespace)
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? AnyShapeStyle(Color.blue.gradient) : AnyShapeStyle(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6)))
+                        .shadow(color: isSelected ? Color.blue.opacity(0.45) : .clear, radius: 8, x: 0, y: 4)
+                    Text("\(dayNumber)")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : Color.secondary)
                 }
+                .frame(width: 34, height: 34)
+                .padding(.top, 6)
+
+                Spacer()
+
+                Circle()
+                    .fill(isCurrentDay ? Color.secondary.opacity(0.5) : Color.clear)
+                    .frame(width: 4, height: 4)
+                    .padding(.bottom, 7)
             }
-            .overlay {
+            .frame(width: 44, height: 62)
+            .background {
                 Capsule()
-                    .strokeBorder(isSelected ? .clear : Color.gray.opacity(0.5), lineWidth: 1)
+                    .fill(colorScheme == .dark ? Color(.secondarySystemBackground) : Color(.systemBackground))
+                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.25 : 0.08), radius: 6, x: 0, y: 2)
             }
             .overlay {
                 if isSwapMode && isSwapSelected {
@@ -272,14 +276,30 @@ struct WorkoutSplitCreationView: View {
             }
             saveContext(context: context)
         } label: {
-            Image(systemName: "plus")
-                .font(.headline)
-                .foregroundStyle(colorScheme == .dark ? .white : .black)
-                .frame(width: 36, height: 56)
-                .overlay {
-                    Capsule()
-                        .strokeBorder(Color.gray.opacity(0.5), lineWidth: 1)
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6))
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.secondary)
                 }
+                .frame(width: 34, height: 34)
+                .padding(.top, 6)
+
+                Spacer()
+
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 4, height: 4)
+                    .padding(.bottom, 7)
+            }
+            .frame(width: 44, height: 62)
+            .background {
+                Capsule()
+                    .fill(colorScheme == .dark ? Color(.secondarySystemBackground) : Color(.systemBackground))
+                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.25 : 0.08), radius: 6, x: 0, y: 2)
+            }
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitAddRotationDayCapsule)

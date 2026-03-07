@@ -42,7 +42,6 @@ class PrescriptionChange {
     var targetExercisePrescription: ExercisePrescription?
     @Relationship(deleteRule: .nullify)
     var targetSetPrescription: SetPrescription?
-    @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.targetedChanges)
     var targetPlan: WorkoutPlan?              // Which plan (context matters)
     
     // The Change

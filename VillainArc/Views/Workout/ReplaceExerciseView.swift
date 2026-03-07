@@ -4,7 +4,6 @@ import SwiftData
 struct ReplaceExerciseView: View {
     @Environment(\.dismiss) private var dismiss
 
-    let exercise: ExercisePerformance
     let onReplace: (Exercise, Bool) -> Void
 
     @State private var searchText = ""
@@ -104,6 +103,6 @@ struct ReplaceExerciseView: View {
 }
 
 #Preview {
-    ReplaceExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!) { _, _ in }
+    ReplaceExerciseView { _, _ in }
         .sampleDataContainerIncomplete()
 }

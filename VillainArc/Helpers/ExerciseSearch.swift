@@ -5,8 +5,7 @@ struct ExerciseSearchMatch {
     let score: Int
 }
 
-@MainActor
-func exerciseSearchTokens(for exercise: Exercise) -> [String] {
+nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
     let nameAndAliases = ([exercise.name] + exercise.aliases).joined(separator: " ")
     var seen = Set<String>()
     var tokens: [String] = []

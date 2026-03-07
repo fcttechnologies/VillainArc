@@ -11,7 +11,7 @@ class SetPrescription {
     var targetRest: Int = 0
     var exercise: ExercisePrescription?
     var performances: [SetPerformance]? = [SetPerformance]()
-    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetSetPrescription)
+    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.targetSetPrescription)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
     
     // Adding set in workout plan creation
@@ -62,4 +62,3 @@ extension SetPrescription: RestTimeEditableSet {
         set { targetRest = newValue }
     }
 }
-

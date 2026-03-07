@@ -203,7 +203,7 @@ struct ExerciseView: View {
                 }
         }
         .sheet(isPresented: $showReplaceExerciseSheet) {
-            ReplaceExerciseView(exercise: exercise) { newExercise, keepSets in
+            ReplaceExerciseView { newExercise, keepSets in
                 exercise.replaceWith(newExercise, keepSets: keepSets)
                 saveContext(context: context)
                 WorkoutActivityManager.update()
