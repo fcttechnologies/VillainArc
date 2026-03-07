@@ -9,21 +9,21 @@ import SwiftData
     /// Onboarding-specific seeding - assumes CloudKit import already completed
     /// OnboardingManager handles the CloudKit wait before calling this
     @discardableResult
-    static func seedExercisesForOnboarding(context: ModelContext) async throws -> Bool {
-        try syncExercisesAndPersist(context: context)
+    static func seedExercisesForOnboarding() async throws -> Bool {
+        try syncExercisesAndPersist()
     }
 
     // MARK: - Returning User Methods (Fast Path)
 
     /// Fast path for returning users - only checks catalog version
     @discardableResult
-    static func seedExercisesIfNeeded(context: ModelContext) async throws -> Bool {
+    static func seedExercisesIfNeeded() async throws -> Bool {
         let storedVersion = SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey)
         guard ExerciseCatalog.catalogVersion != storedVersion else {
             return false
         }
 
-        return try syncExercisesAndPersist(context: context)
+        return try syncExercisesAndPersist()
     }
 
     static func hasCompletedInitialBootstrap() -> Bool {
@@ -35,10 +35,11 @@ import SwiftData
     }
 
     @discardableResult
-    private static func syncExercisesAndPersist(context: ModelContext) throws -> Bool {
+    private static func syncExercisesAndPersist() throws -> Bool {
+        let context = SharedModelContainer.container.mainContext
         let didChange = try syncExercises(context: context)
         if didChange {
-            try saveContextOrThrow(context: context)
+            try context.save()
             print("Exercises synced.")
         }
         SharedModelContainer.sharedDefaults.set(ExerciseCatalog.catalogVersion, forKey: exerciseCatalogVersionKey)
@@ -73,10 +74,6 @@ func saveContext(context: ModelContext) {
     }
 }
 
-@MainActor
-func saveContextOrThrow(context: ModelContext) throws {
-    try context.save()
-}
 
 @MainActor
 private var pendingSaveTask: Task<Void, Never>?

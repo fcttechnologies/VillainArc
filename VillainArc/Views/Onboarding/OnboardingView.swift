@@ -58,12 +58,12 @@ struct OnboardingView: View {
             ProfileNameStepView(manager: manager, path: $path)
                 .navigationDestination(for: UserProfileOnboardingStep.self) { step in
                     switch step {
-                    case .name:
-                        ProfileNameStepView(manager: manager, path: $path)
                     case .birthday:
                         ProfileBirthdayStepView(manager: manager, path: $path)
                     case .height:
                         ProfileHeightStepView(manager: manager, path: $path)
+                    case .name:
+                        EmptyView()
                     }
                 }
         }

@@ -1,14 +1,12 @@
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var context
     @State private var router = AppRouter.shared
-    @State private var onboardingManager: OnboardingManager?
+    @State private var onboardingManager = OnboardingManager()
 
     private var onboardingBinding: Binding<Bool> {
         Binding(
-            get: { onboardingManager?.state.shouldPresentSheet ?? false },
+            get: { onboardingManager.state.shouldPresentSheet },
             set: { _ in }
         )
     }
@@ -62,22 +60,17 @@ struct ContentView: View {
                 }
             }
             .task {
-                guard onboardingManager == nil else { return }
-                let manager = OnboardingManager(modelContext: context)
-                onboardingManager = manager
-                await manager.startOnboarding()
+                await onboardingManager.startOnboarding()
             }
-            .onChange(of: onboardingManager?.state) { _, newState in
+            .onChange(of: onboardingManager.state) { _, newState in
                 guard newState == .ready else { return }
                 router.checkForUnfinishedData()
             }
             .sheet(isPresented: onboardingBinding) {
-                if let onboardingManager {
-                    OnboardingView(manager: onboardingManager)
-                        .presentationDetents([.fraction(0.5)])
-                        .presentationBackground(Color(.systemBackground))
-                        .interactiveDismissDisabled(true)
-                }
+                OnboardingView(manager: onboardingManager)
+                    .presentationDetents([.fraction(0.5)])
+                    .presentationBackground(Color(.systemBackground))
+                    .interactiveDismissDisabled(true)
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutSessionContainer(workout: $0)

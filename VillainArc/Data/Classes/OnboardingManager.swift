@@ -31,13 +31,14 @@ enum OnboardingState: Equatable {
 class OnboardingManager {
     var state: OnboardingState = .launching
     var profile: UserProfile?
-    private let modelContext: ModelContext
+    private var context: ModelContext { SharedModelContainer.container.mainContext }
+    private let networkMonitor = NetworkMonitor()
     private var cloudKitObservationTask: Task<Void, Never>?
     private var cloudKitWaiters: [CheckedContinuation<Void, Never>] = []
     private var hasObservedCloudKitImportCompletion = false
+    private var networkRetryTask: Task<Void, Never>?
 
-    init(modelContext: ModelContext) {
-        self.modelContext = modelContext
+    init() {
         startCloudKitImportObservation()
     }
 
@@ -49,12 +50,10 @@ class OnboardingManager {
 
         state = .checking
 
-        // Step 1: Check WiFi
-        let networkMonitor = NetworkMonitor()
-        try? await Task.sleep(for: .milliseconds(500)) // Give monitor time to update
-
-        guard networkMonitor.isConnected else {
+        // Step 1: Check network
+        guard await NetworkMonitor.checkConnectivity() else {
             state = .noWiFi
+            startNetworkMonitoring()
             return
         }
 
@@ -90,9 +89,9 @@ class OnboardingManager {
         // Step 5: Seed exercises
         state = .seeding
         do {
-            let didChange = try await DataManager.seedExercisesForOnboarding(context: modelContext)
+            let didChange = try await DataManager.seedExercisesForOnboarding()
             if didChange {
-                SpotlightIndexer.reindexAll(context: modelContext)
+                SpotlightIndexer.reindexAll(context: context)
             }
         } catch {
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
@@ -108,6 +107,8 @@ class OnboardingManager {
     }
 
     func retry() async {
+        networkRetryTask?.cancel()
+        networkRetryTask = nil
         await startOnboarding()
     }
 
@@ -117,9 +118,9 @@ class OnboardingManager {
 
         do {
             // Seed exercises locally only
-            let didChange = try await DataManager.seedExercisesForOnboarding(context: modelContext)
+            let didChange = try await DataManager.seedExercisesForOnboarding()
             if didChange {
-                SpotlightIndexer.reindexAll(context: modelContext)
+                SpotlightIndexer.reindexAll(context: context)
             }
             let profile = try ensureProfile()
             routeFromProfile(profile)
@@ -146,7 +147,7 @@ class OnboardingManager {
         profile.heightInches = inches
 
         do {
-            try saveContextOrThrow(context: modelContext)
+            try context.save()
         } catch {
             state = .error("Failed to save your height: \(error.localizedDescription)")
             return
@@ -158,8 +159,12 @@ class OnboardingManager {
         }
 
         state = .finishing
-        try? await Task.sleep(for: .seconds(1.5))
-        state = .ready
+        do {
+            try await Task.sleep(for: .seconds(1.5))
+        } catch {
+            // Cancelled — proceed immediately
+        }
+        transitionToReady()
     }
 
     func profileStepPath() -> [UserProfileOnboardingStep] {
@@ -174,9 +179,9 @@ class OnboardingManager {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 do {
-                    let didChange = try await DataManager.seedExercisesIfNeeded(context: self.modelContext)
+                    let didChange = try await DataManager.seedExercisesIfNeeded()
                     if didChange {
-                        SpotlightIndexer.reindexAll(context: self.modelContext)
+                        SpotlightIndexer.reindexAll(context: context)
                     }
                 } catch {
                     print("Background exercise sync failed: \(error)")
@@ -199,8 +204,8 @@ class OnboardingManager {
         }
 
         let newProfile = UserProfile()
-        modelContext.insert(newProfile)
-        try saveContextOrThrow(context: modelContext)
+        context.insert(newProfile)
+        try context.save()
         profile = newProfile
         return newProfile
     }
@@ -208,7 +213,16 @@ class OnboardingManager {
     private func fetchProfiles() throws -> [UserProfile] {
         var descriptor = UserProfile.all
         descriptor.fetchLimit = 1
-        return try modelContext.fetch(descriptor)
+        return try context.fetch(descriptor)
+    }
+
+    private func transitionToReady() {
+        cloudKitObservationTask?.cancel()
+        cloudKitObservationTask = nil
+        networkRetryTask?.cancel()
+        networkRetryTask = nil
+        networkMonitor.stop()
+        state = .ready
     }
 
     private func routeFromProfile(_ profile: UserProfile) {
@@ -216,13 +230,13 @@ class OnboardingManager {
         if let missingStep = profile.firstMissingStep {
             state = .profile(missingStep)
         } else {
-            state = .ready
+            transitionToReady()
         }
     }
 
     private func persistProfileAndAdvance() async -> Bool {
         do {
-            try saveContextOrThrow(context: modelContext)
+            try context.save()
         } catch {
             state = .error("Failed to save your profile: \(error.localizedDescription)")
             return false
@@ -231,6 +245,27 @@ class OnboardingManager {
         guard let profile else { return false }
         routeFromProfile(profile)
         return true
+    }
+
+    private func startNetworkMonitoring() {
+        networkRetryTask?.cancel()
+        networkRetryTask = Task { [weak self] in
+            guard let self else { return }
+            while case .noWiFi = self.state, !Task.isCancelled {
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    withObservationTracking {
+                        _ = self.networkMonitor.isConnected
+                    } onChange: {
+                        continuation.resume()
+                    }
+                }
+                guard !Task.isCancelled, case .noWiFi = self.state else { break }
+                if self.networkMonitor.isConnected {
+                    await self.startOnboarding()
+                    break
+                }
+            }
+        }
     }
 
     private func startCloudKitImportObservation() {
@@ -257,8 +292,6 @@ class OnboardingManager {
     }
 
     private func waitForCloudKitImportCompletion() async {
-        startCloudKitImportObservation()
-
         if hasObservedCloudKitImportCompletion {
             return
         }

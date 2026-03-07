@@ -6,10 +6,8 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
     case birthday
     case height
 
-    static let allSteps = UserProfileOnboardingStep.allCases
-
     static func navigationPath(to step: UserProfileOnboardingStep) -> [UserProfileOnboardingStep] {
-        Array(allSteps.prefix(step.rawValue + 1).dropFirst())
+        Array(allCases.prefix(step.rawValue + 1).dropFirst())
     }
 }
 
