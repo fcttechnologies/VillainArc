@@ -45,7 +45,9 @@ class UserProfile {
 }
 
 extension UserProfile {
-    static var all: FetchDescriptor<UserProfile> {
-        FetchDescriptor(sortBy: [SortDescriptor(\UserProfile.dateJoined)])
+    static var single: FetchDescriptor<UserProfile> {
+        var descriptor = FetchDescriptor<UserProfile>()
+        descriptor.fetchLimit = 1
+        return descriptor
     }
 }

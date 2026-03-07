@@ -4,7 +4,6 @@ struct OnboardingView: View {
     @Bindable var manager: OnboardingManager
     @Environment(\.scenePhase) private var scenePhase
     @State private var path: [UserProfileOnboardingStep] = []
-    @State private var wasShowingProfileFlow = false
 
     var body: some View {
         Group {
@@ -18,16 +17,10 @@ struct OnboardingView: View {
             }
         }
         .onChange(of: manager.state, initial: true) { oldState, newState in
-            let wasProfile = isProfileState(oldState)
-            let isProfile = isProfileState(newState)
-
-            if isProfile && !wasProfile {
-                syncProfilePathIfNeeded(force: true)
-                return
-            }
-
-            if !isProfile {
-                wasShowingProfileFlow = false
+            if case .profile = newState {
+                syncProfilePathIfNeeded()
+            } else if isProfileState(oldState) {
+                path = []
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -58,12 +51,12 @@ struct OnboardingView: View {
             ProfileNameStepView(manager: manager, path: $path)
                 .navigationDestination(for: UserProfileOnboardingStep.self) { step in
                     switch step {
+                    case .name:
+                        ProfileNameStepView(manager: manager, path: $path)
                     case .birthday:
                         ProfileBirthdayStepView(manager: manager, path: $path)
                     case .height:
                         ProfileHeightStepView(manager: manager, path: $path)
-                    case .name:
-                        EmptyView()
                     }
                 }
         }
@@ -76,11 +69,10 @@ struct OnboardingView: View {
         return false
     }
 
-    private func syncProfilePathIfNeeded(force: Bool) {
-        guard case .profile = manager.state else { return }
-        guard force || !wasShowingProfileFlow else { return }
-        path = manager.profileStepPath()
-        wasShowingProfileFlow = true
+    private func syncProfilePathIfNeeded() {
+        let targetPath = manager.profileStepPath()
+        guard path != targetPath else { return }
+        path = targetPath
     }
 
     private var shouldRetryWhenBecomingActive: Bool {

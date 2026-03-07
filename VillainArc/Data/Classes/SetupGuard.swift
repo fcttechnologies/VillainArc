@@ -8,11 +8,7 @@ enum SetupGuard {
             throw SetupGuardError.onboardingNotComplete
         }
 
-        var descriptor = UserProfile.all
-        descriptor.fetchLimit = 1
-
-        guard let profile = try context.fetch(descriptor).first,
-              profile.firstMissingStep == nil else {
+        guard let profile = try context.fetch(UserProfile.single).first, profile.firstMissingStep == nil else {
             throw SetupGuardError.onboardingNotComplete
         }
     }

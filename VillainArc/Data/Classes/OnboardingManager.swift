@@ -176,8 +176,7 @@ class OnboardingManager {
 
     private func handleReturningLaunch() async {
         if DataManager.catalogNeedsSync() {
-            Task { @MainActor [weak self] in
-                guard let self else { return }
+            Task { @MainActor in
                 do {
                     let didChange = try await DataManager.seedExercisesIfNeeded()
                     if didChange {
@@ -205,15 +204,14 @@ class OnboardingManager {
 
         let newProfile = UserProfile()
         context.insert(newProfile)
+        print("New profile created")
         try context.save()
         profile = newProfile
         return newProfile
     }
 
     private func fetchProfiles() throws -> [UserProfile] {
-        var descriptor = UserProfile.all
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor)
+        return try context.fetch(UserProfile.single)
     }
 
     private func transitionToReady() {
