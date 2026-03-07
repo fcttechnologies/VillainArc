@@ -36,8 +36,9 @@ struct CompleteActiveSetIntent: AppIntent {
         Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
     }
 
+    @MainActor
     private var autoStartRestTimerEnabled: Bool {
-        let defaults = UserDefaults.standard
+        let defaults = SharedModelContainer.sharedDefaults
         if defaults.object(forKey: "autoStartRestTimer") == nil {
             return true
         }

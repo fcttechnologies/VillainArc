@@ -1,57 +1,52 @@
 import SwiftUI
 import SwiftData
-import CoreData
 
 @MainActor class DataManager {
+    static let exerciseCatalogVersionKey = "exerciseCatalogVersion"
 
     // MARK: - Onboarding Methods (First Launch)
 
-    /// Public version for onboarding - waits for CloudKit import with error handling
-    static func waitForCloudKitImportPublic() async throws {
-        await waitForCloudKitImport()
-    }
-
     /// Onboarding-specific seeding - assumes CloudKit import already completed
     /// OnboardingManager handles the CloudKit wait before calling this
-    static func seedExercisesForOnboarding(context: ModelContext) async throws {
-        syncExercises(context: context)
-        UserDefaults.standard.set(ExerciseCatalog.catalogVersion, forKey: "exerciseCatalogVersion")
+    @discardableResult
+    static func seedExercisesForOnboarding(context: ModelContext) async throws -> Bool {
+        try syncExercisesAndPersist(context: context)
     }
 
     // MARK: - Returning User Methods (Fast Path)
 
     /// Fast path for returning users - only checks catalog version
-    static func seedExercisesIfNeeded(context: ModelContext) async {
-        let storedVersion = UserDefaults.standard.string(forKey: "exerciseCatalogVersion")
+    @discardableResult
+    static func seedExercisesIfNeeded(context: ModelContext) async throws -> Bool {
+        let storedVersion = SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey)
         guard ExerciseCatalog.catalogVersion != storedVersion else {
-            return
+            return false
         }
 
-        syncExercises(context: context)
-        UserDefaults.standard.set(ExerciseCatalog.catalogVersion, forKey: "exerciseCatalogVersion")
+        return try syncExercisesAndPersist(context: context)
     }
 
-    private static func waitForCloudKitImport() async {
-        // Wait for CloudKit import notification (no timeout in onboarding context)
-        // OnboardingManager already verified WiFi + CloudKit availability
-        for await notification in NotificationCenter.default.notifications(named: NSPersistentCloudKitContainer.eventChangedNotification) {
-            guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
-                as? NSPersistentCloudKitContainer.Event else { continue }
+    static func hasCompletedInitialBootstrap() -> Bool {
+        SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != nil
+    }
 
-            // Wait for import to complete
-            if event.type == .import && event.endDate != nil {
-                if let error = event.error {
-                    print("⚠️ CloudKit import completed with error: \(error)")
-                } else {
-                    print("✅ CloudKit import complete - safe to seed exercises")
-                }
-                return  // Import completed
-            }
+    static func catalogNeedsSync() -> Bool {
+        SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != ExerciseCatalog.catalogVersion
+    }
+
+    @discardableResult
+    private static func syncExercisesAndPersist(context: ModelContext) throws -> Bool {
+        let didChange = try syncExercises(context: context)
+        if didChange {
+            try saveContextOrThrow(context: context)
+            print("Exercises synced.")
         }
+        SharedModelContainer.sharedDefaults.set(ExerciseCatalog.catalogVersion, forKey: exerciseCatalogVersionKey)
+        return didChange
     }
 
-    private static func syncExercises(context: ModelContext) {
-        let catalogExercises = (try? context.fetch(Exercise.catalogExercises)) ?? []
+    private static func syncExercises(context: ModelContext) throws -> Bool {
+        let catalogExercises = try context.fetch(Exercise.catalogExercises)
         let exercisesByCatalogID = Dictionary(catalogExercises.map { ($0.catalogID, $0) }, uniquingKeysWith: { first, _ in first })
         var didChange = false
 
@@ -64,10 +59,7 @@ import CoreData
                 didChange = true
             }
         }
-        if didChange {
-            saveContext(context: context)
-            print("Exercises synced.")
-        }
+        return didChange
     }
 
 }
@@ -79,6 +71,11 @@ func saveContext(context: ModelContext) {
     } catch {
         print("Failed to save context: \(error)")
     }
+}
+
+@MainActor
+func saveContextOrThrow(context: ModelContext) throws {
+    try context.save()
 }
 
 @MainActor

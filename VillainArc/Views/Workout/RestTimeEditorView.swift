@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
-    @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
+    @AppStorage("autoStartRestTimer", store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExerciseType
 

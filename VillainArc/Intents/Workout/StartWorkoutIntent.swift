@@ -9,6 +9,7 @@ struct StartWorkoutIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
+        try SetupGuard.requireReady(context: context)
         if let _ = try? context.fetch(WorkoutPlan.incomplete).first {
             throw StartWorkoutError.workoutPlanIsActive
         }

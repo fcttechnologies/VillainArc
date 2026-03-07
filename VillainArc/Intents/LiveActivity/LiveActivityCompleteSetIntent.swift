@@ -30,8 +30,9 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
         return .result()
     }
 
+    @MainActor
     private var autoStartRestTimerEnabled: Bool {
-        let defaults = UserDefaults.standard
+        let defaults = SharedModelContainer.sharedDefaults
         if defaults.object(forKey: "autoStartRestTimer") == nil {
             return true
         }

@@ -139,6 +139,7 @@
 				Data/Models/Sessions/PreWorkoutStatus.swift,
 				Data/Models/Sessions/SetPerformance.swift,
 				Data/Models/Sessions/WorkoutSession.swift,
+				Data/Models/UserProfile.swift,
 				Data/Models/WorkoutSplit/WorkoutSplit.swift,
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
 				Data/Protocols/RestTimeEditable.swift,
@@ -834,7 +835,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -878,7 +879,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

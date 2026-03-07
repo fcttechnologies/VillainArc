@@ -27,7 +27,7 @@ final class RestTimerState {
     var startedSeconds: Int
     
     init() {
-        let defaults = UserDefaults.standard
+        let defaults = SharedModelContainer.sharedDefaults
         let storedEndDate = defaults.double(forKey: StorageKey.endDate)
         let storedRemaining = defaults.integer(forKey: StorageKey.remainingSeconds)
         let storedPaused = defaults.bool(forKey: StorageKey.isPaused)
@@ -209,7 +209,7 @@ final class RestTimerState {
     }
     
     private func persist() {
-        let defaults = UserDefaults.standard
+        let defaults = SharedModelContainer.sharedDefaults
         if let endDate {
             defaults.set(endDate.timeIntervalSince1970, forKey: StorageKey.endDate)
         } else {

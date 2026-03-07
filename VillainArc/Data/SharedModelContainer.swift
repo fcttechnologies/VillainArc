@@ -4,6 +4,12 @@ import Foundation
 enum SharedModelContainer {
 
     static let appGroupID = "group.com.fcttechnologies.VillainArc.cont"
+    static let sharedDefaults: UserDefaults = {
+        guard let defaults = UserDefaults(suiteName: appGroupID) else {
+            fatalError("App Group defaults not found for \(appGroupID). Check App Groups capability + entitlements.")
+        }
+        return defaults
+    }()
 
     static let schema = Schema([
         WorkoutSession.self,
@@ -11,6 +17,7 @@ enum SharedModelContainer {
         ExercisePerformance.self,
         SetPerformance.self,
         Exercise.self,
+        UserProfile.self,
         ExerciseHistory.self,
         ProgressionPoint.self,
         RepRangePolicy.self,

@@ -196,7 +196,7 @@
 ### `VillainArc/Data/Classes/DataManager.swift`
 - Does: Catalog bootstrap/dedupe (`DataManager`) plus shared persistence helpers (`saveContext`, `scheduleSave`).
 - Called by: `ContentView` (`seedExercisesIfNeeded`), `AddExerciseView` (`dedupeCatalogExercisesIfNeeded`), exercise intents, and many views/models/router through `saveContext`/`scheduleSave`.
-- Calls: `UserDefaults.standard` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
+- Calls: app-group `UserDefaults` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
 
 ### `VillainArc/Data/Classes/Suggestions/SuggestionGenerator.swift`
 - Does: Generates `PrescriptionChange` suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference.

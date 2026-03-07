@@ -4,11 +4,11 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var context
     @State private var router = AppRouter.shared
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var onboardingManager: OnboardingManager?
 
     private var onboardingBinding: Binding<Bool> {
         Binding(
-            get: { !hasCompletedOnboarding },
+            get: { onboardingManager?.state.shouldPresentSheet ?? false },
             set: { _ in }
         )
     }
@@ -61,15 +61,23 @@ struct ContentView: View {
                     .accessibilityHint(AccessibilityText.homeOptionsMenuHint)
                 }
             }
-            .task(id: hasCompletedOnboarding) {
-                guard hasCompletedOnboarding else { return }
-                await DataManager.seedExercisesIfNeeded(context: context)
+            .task {
+                guard onboardingManager == nil else { return }
+                let manager = OnboardingManager(modelContext: context)
+                onboardingManager = manager
+                await manager.startOnboarding()
+            }
+            .onChange(of: onboardingManager?.state) { _, newState in
+                guard newState == .ready else { return }
                 router.checkForUnfinishedData()
             }
             .sheet(isPresented: onboardingBinding) {
-                OnboardingView()
-                    .presentationDetents([.fraction(0.5)])
-                    .interactiveDismissDisabled(true)
+                if let onboardingManager {
+                    OnboardingView(manager: onboardingManager)
+                        .presentationDetents([.fraction(0.5)])
+                        .presentationBackground(Color(.systemBackground))
+                        .interactiveDismissDisabled(true)
+                }
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutSessionContainer(workout: $0)

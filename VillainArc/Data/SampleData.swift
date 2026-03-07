@@ -16,6 +16,7 @@ class PreviewDataContainer {
             ExercisePerformance.self,
             SetPerformance.self,
             Exercise.self,
+            UserProfile.self,
             RepRangePolicy.self,
             RestTimeHistory.self,
             WorkoutPlan.self,

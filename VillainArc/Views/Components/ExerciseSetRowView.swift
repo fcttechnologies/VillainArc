@@ -29,7 +29,7 @@ struct ExerciseSetRowView: View {
     @Bindable var exercise: ExercisePerformance
     @Environment(\.modelContext) private var context
     private let restTimer = RestTimerState.shared
-    @AppStorage("autoStartRestTimer") private var autoStartRestTimer = true
+    @AppStorage("autoStartRestTimer", store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
     @State private var showRPEPicker = false
     @FocusState private var focusedField: Field?
