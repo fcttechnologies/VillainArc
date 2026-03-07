@@ -3,6 +3,20 @@ import SwiftUI
 
 @MainActor
 extension WorkoutPlan {
+    func deleteWithSuggestionCleanup(context: ModelContext) {
+        markPendingChangesAsUserOverrideForDeletion()
+        context.delete(self)
+    }
+
+    private func markPendingChangesAsUserOverrideForDeletion() {
+        for change in targetedChanges ?? [] {
+            markChangeAsUserOverride(change)
+        }
+
+        for exercise in exercises ?? [] {
+            markPendingAsUserOverride(exercise: exercise)
+        }
+    }
     
     // Creates a copy for editing. User edits the copy, original stays untouched until save.
     func createEditingCopy(context: ModelContext) -> WorkoutPlan {
@@ -21,11 +35,12 @@ extension WorkoutPlan {
     }
     
     // Called on the COPY when user taps Done/Save.
-    // Detects changes, applies to original, deletes copy.
-    func finishEditing(context: ModelContext) {
+    // Detects changes and applies them to the original.
+    @discardableResult
+    func applyEditingChanges(context: ModelContext) -> WorkoutPlan? {
         guard let original = originalPlan else {
             // This is not a copy, shouldn't happen
-            return
+            return nil
         }
         
         // 1. Detect changes and create PrescriptionChange records
@@ -33,6 +48,15 @@ extension WorkoutPlan {
         
         // 2. Apply modifications to original
         applyToOriginal(original, context: context)
+        return original
+    }
+
+    // Called on the COPY when user taps Done/Save.
+    // Detects changes, applies to original, deletes copy.
+    func finishEditing(context: ModelContext) {
+        guard applyEditingChanges(context: context) != nil else {
+            return
+        }
         
         // 3. Delete self (the copy)
         context.delete(self)
@@ -47,7 +71,7 @@ extension WorkoutPlan {
     func deletePlanEntirely(context: ModelContext) {
         if let original = originalPlan {
             SpotlightIndexer.deleteWorkoutPlan(id: original.id)
-            context.delete(original)
+            original.deleteWithSuggestionCleanup(context: context)
         }
         context.delete(self)
     }

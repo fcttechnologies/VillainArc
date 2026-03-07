@@ -13,6 +13,7 @@ struct WorkoutPlanView: View {
     @State private var showExerciseListView = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
+    @State private var deletePresentedPlanOnDisappear = false
     
     init(plan: WorkoutPlan) {
         self.plan = plan
@@ -37,7 +38,6 @@ struct WorkoutPlanView: View {
                 }
             }
             .toolbarTitleDisplayMode(.inline)
-            .scrollDismissesKeyboard(.immediately)
             .animation(.smooth, value: showExerciseListView)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -67,9 +67,10 @@ struct WorkoutPlanView: View {
                         Haptics.selection()
                         if plan.originalPlan != nil {
                             // Editing existing plan - detect changes and apply
-                            plan.finishEditing(context: context)
+                            guard let original = plan.applyEditingChanges(context: context) else { return }
                             saveContext(context: context)
-                            SpotlightIndexer.index(workoutPlan: plan.originalPlan!)
+                            SpotlightIndexer.index(workoutPlan: original)
+                            deletePresentedPlanOnDisappear = true
                         } else {
                             // Creating new plan
                             plan.completed = true
@@ -136,6 +137,12 @@ struct WorkoutPlanView: View {
                         saveContext(context: context)
                     }
             }
+            .onDisappear {
+                guard deletePresentedPlanOnDisappear else { return }
+                context.delete(plan)
+                saveContext(context: context)
+                deletePresentedPlanOnDisappear = false
+            }
         }
     }
     
@@ -153,6 +160,7 @@ struct WorkoutPlanView: View {
                             .accessibilityIdentifier("workoutPlanExerciseView-\(exercise.catalogID)-\(exercise.index)")
                     }
                 }
+                Spacer(minLength: 75)
             }
         }
         .scrollIndicators(.hidden)
@@ -236,21 +244,13 @@ struct WorkoutPlanView: View {
     
     private func deleteWorkoutPlanAndDismiss() {
         Haptics.selection()
-        context.delete(plan)
-        saveContext(context: context)
+        deletePresentedPlanOnDisappear = true
         dismiss()
     }
     
     private func cancelEditingAndDismiss() {
         Haptics.selection()
-        if plan.originalPlan != nil {
-            // Editing existing - delete the copy, original unchanged
-            plan.cancelEditing(context: context)
-        } else {
-            // Creating new - delete incomplete plan
-            context.delete(plan)
-            saveContext(context: context)
-        }
+        deletePresentedPlanOnDisappear = true
         dismiss()
     }
 }

@@ -261,4 +261,105 @@ struct VillainArcTests {
         let userChanges = allChanges.filter { $0.source == .user }
         #expect(userChanges.isEmpty)
     }
+
+    @Test @MainActor
+    // Deleting a plan marks unresolved linked suggestions as overridden instead of leaving them pending.
+    func deletingPlanMarksPendingAndDeferredLinkedChangesAsUserModified() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let pendingSetChange = data.changes.first {
+            $0.changeType == .increaseWeight &&
+            $0.targetSetPrescription?.id == data.benchSet1.id
+        }
+        let deferredExerciseChange = data.changes.first {
+            $0.changeType == .changeRepRangeMode &&
+            $0.targetExercisePrescription?.id == data.incline.id
+        }
+        let acceptedChange = data.changes.first {
+            $0.changeType == .increaseRest &&
+            $0.targetSetPrescription?.id == data.flys.sortedSets.first?.id
+        }
+
+        #expect(pendingSetChange != nil)
+        #expect(deferredExerciseChange != nil)
+        #expect(acceptedChange != nil)
+        guard let pendingSetChange, let deferredExerciseChange, let acceptedChange else { return }
+
+        deferredExerciseChange.decision = .deferred
+        acceptedChange.decision = .accepted
+
+        data.plan.deleteWithSuggestionCleanup(context: context)
+
+        #expect(pendingSetChange.decision == .userOverride)
+        #expect(pendingSetChange.outcome == .userModified)
+        #expect(deferredExerciseChange.decision == .userOverride)
+        #expect(deferredExerciseChange.outcome == .userModified)
+        #expect(acceptedChange.decision == .accepted)
+        #expect(acceptedChange.outcome == .userModified)
+    }
+
+    @Test @MainActor
+    // Plan-level targeted changes should also be invalidated when the plan is deleted.
+    func deletingPlanMarksTargetPlanOnlyChangesAsUserModified() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let planLevelChange = PrescriptionChange(
+            source: .rules,
+            catalogID: data.bench.catalogID,
+            targetPlan: data.plan,
+            changeType: .increaseWeight,
+            previousValue: 135,
+            newValue: 140,
+            decision: .deferred
+        )
+        context.insert(planLevelChange)
+
+        data.plan.deleteWithSuggestionCleanup(context: context)
+
+        #expect(planLevelChange.decision == .userOverride)
+        #expect(planLevelChange.outcome == .userModified)
+    }
+
+    @Test @MainActor
+    // Deleting a source performance preserves prescription changes and nullifies the source link.
+    func deletingExercisePerformancePreservesSourceChanges() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context)
+        let session = TestDataFactory.makeSession(context: context)
+        let performance = TestDataFactory.makePerformance(context: context, session: session, prescription: prescription, sets: [
+            (weight: 135, reps: 8, rest: 90, type: .working)
+        ])
+
+        let setPerformance = performance.sortedSets.first
+        let setPrescription = prescription.sortedSets.first
+        #expect(setPerformance != nil)
+        #expect(setPrescription != nil)
+        guard let setPerformance, let setPrescription else { return }
+
+        let change = PrescriptionChange(
+            source: .rules,
+            catalogID: prescription.catalogID,
+            sourceExercisePerformance: performance,
+            sourceSetPerformance: setPerformance,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            changeType: .increaseWeight,
+            previousValue: 135,
+            newValue: 140
+        )
+        context.insert(change)
+
+        context.delete(performance)
+        saveContext(context: context)
+
+        let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        let survivingChange = remainingChanges.first { $0.id == change.id }
+        #expect(survivingChange != nil)
+        #expect(survivingChange?.sourceExercisePerformance == nil)
+        #expect(survivingChange?.sourceSetPerformance == nil)
+    }
 }

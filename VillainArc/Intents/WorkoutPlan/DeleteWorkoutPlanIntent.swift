@@ -38,7 +38,7 @@ struct DeleteWorkoutPlanIntent: AppIntent {
         }
 
         SpotlightIndexer.deleteWorkoutPlan(id: storedPlan.id)
-        context.delete(storedPlan)
+        storedPlan.deleteWithSuggestionCleanup(context: context)
         saveContext(context: context)
         return .result(dialog: "Workout plan deleted.")
     }

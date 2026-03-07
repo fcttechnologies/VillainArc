@@ -171,7 +171,7 @@ struct WorkoutPlanDetailView: View {
         Haptics.selection()
         let deletedPlan = plan
         SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
-        context.delete(plan)
+        plan.deleteWithSuggestionCleanup(context: context)
         saveContext(context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()

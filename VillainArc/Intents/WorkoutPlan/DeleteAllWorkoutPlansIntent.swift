@@ -28,7 +28,7 @@ struct DeleteAllWorkoutPlansIntent: AppIntent {
 
         SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
         for plan in workoutPlans {
-            context.delete(plan)
+            plan.deleteWithSuggestionCleanup(context: context)
         }
         saveContext(context: context)
         return .result(dialog: "Deleted \(label).")
