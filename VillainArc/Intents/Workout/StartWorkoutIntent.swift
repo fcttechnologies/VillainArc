@@ -28,7 +28,7 @@ enum StartWorkoutError: Error, CustomLocalizedStringResourceConvertible {
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .workoutPlanIsActive:
-            return "You are currently creating a workout plan. Finish that first."
+            return "You are currently working on a workout plan. Finish that first."
         case .workoutIsActive:
             return "You're already working out. Resume it first or cancel it."
         }

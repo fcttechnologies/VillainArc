@@ -26,6 +26,22 @@ final class AppRouter {
     private var context: ModelContext {
         SharedModelContainer.container.mainContext
     }
+
+    private var hasPresentedFlow: Bool {
+        activeWorkoutSession != nil || activeWorkoutPlan != nil
+    }
+
+    private func hasPersistedIncompleteWorkoutSession() -> Bool {
+        (try? context.fetch(WorkoutSession.incomplete).first) != nil
+    }
+
+    private func hasPersistedActivePlanWork() -> Bool {
+        (try? context.fetch(WorkoutPlan.incomplete).first) != nil
+    }
+
+    private func hasActiveFlow() -> Bool {
+        hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork()
+    }
     
     func navigate(to destination: Destination) {
         path.append(destination)
@@ -36,6 +52,7 @@ final class AppRouter {
     }
 
     func startWorkoutSession() {
+        guard !hasActiveFlow() else { return }
         Haptics.selection()
         let newWorkout = WorkoutSession()
         context.insert(newWorkout)
@@ -44,6 +61,7 @@ final class AppRouter {
     }
     
     func createWorkoutPlan() {
+        guard !hasActiveFlow() else { return }
         Haptics.selection()
         let newWorkoutPlan = WorkoutPlan()
         context.insert(newWorkoutPlan)
@@ -52,6 +70,7 @@ final class AppRouter {
     }
     
     func startWorkoutSession(from plan: WorkoutPlan) {
+        guard !hasActiveFlow() else { return }
         Haptics.selection()
         let workoutSession = WorkoutSession(from: plan)
         
@@ -77,16 +96,18 @@ final class AppRouter {
     }
     
     func checkForUnfinishedData() {
+        guard !hasPresentedFlow else { return }
         if let unfinishedWorkoutSession = try? context.fetch(WorkoutSession.incomplete).first {
             resumeWorkoutSession(unfinishedWorkoutSession)
+            return
         }
-        if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
+        if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.resumableIncomplete).first {
             resumeWorkoutPlanCreation(unfinishedWorkoutPlan)
         }
     }
 
     func handleSiriWorkout(_ userActivity: NSUserActivity) {
-        guard activeWorkoutSession == nil, activeWorkoutPlan == nil else { return }
+        guard !hasActiveFlow() else { return }
         startWorkoutSession()
     }
 
@@ -100,7 +121,7 @@ final class AppRouter {
     }
 
     func handleSpotlight(_ userActivity: NSUserActivity) {
-        guard activeWorkoutSession == nil, activeWorkoutPlan == nil else {
+        guard !hasActiveFlow() else {
             return
         }
         guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {

@@ -17,13 +17,9 @@ class WorkoutPlan {
     @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
     var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
     var workoutSessions: [WorkoutSession]? = [WorkoutSession]()
+    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.targetPlan)
     var targetedChanges: [PrescriptionChange]? = [PrescriptionChange]()
-    var editingCopies: [WorkoutPlan]? = [WorkoutPlan]()
-    
-    // Reference to original plan when this is an editing copy (nil on originals)
-    @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.editingCopies)
-    var originalPlan: WorkoutPlan?
-    
+
     var sortedExercises: [ExercisePrescription] {
         (exercises ?? []).sorted { $0.index < $1.index }
     }
@@ -111,6 +107,13 @@ extension WorkoutPlan {
         return descriptor
     }
 
+    static var resumableIncomplete: FetchDescriptor<WorkoutPlan> {
+        let predicate = #Predicate<WorkoutPlan> { !$0.completed && !$0.isEditing }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
     static var completedPredicate: Predicate<WorkoutPlan> {
         #Predicate<WorkoutPlan> { $0.completed && !$0.isEditing }
     }
@@ -125,7 +128,12 @@ extension WorkoutPlan {
     static var all: FetchDescriptor<WorkoutPlan> {
         return FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
     }
-    
+
+    static var editingCopies: FetchDescriptor<WorkoutPlan> {
+        let predicate = #Predicate<WorkoutPlan> { $0.isEditing }
+        return FetchDescriptor(predicate: predicate)
+    }
+
     static var recent: FetchDescriptor<WorkoutPlan> {
         var descriptor = FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
         descriptor.fetchLimit = 1

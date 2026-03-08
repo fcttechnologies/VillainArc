@@ -7,28 +7,28 @@ struct WorkoutPlanView: View {
     @Environment(\.dismiss) private var dismiss
     
     @Bindable var plan: WorkoutPlan
-    
+    private let originalPlan: WorkoutPlan?
+
     @State private var showAddExerciseSheet = false
     @State private var showCancelWorkoutPlanConfirmation = false
-    @State private var showExerciseListView = false
+    @State private var showExerciseEditSheet = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
-    @State private var deletePresentedPlanOnDisappear = false
-    
-    init(plan: WorkoutPlan) {
+    @State private var showDeletePlanConfirmation = false
+
+    init(plan: WorkoutPlan, originalPlan: WorkoutPlan? = nil) {
         self.plan = plan
+        self.originalPlan = originalPlan
     }
-    
+
+    private var isEditingExistingPlan: Bool {
+        originalPlan != nil
+    }
+
     var body: some View {
         NavigationStack {
-            Group {
-                if showExerciseListView {
-                    exerciseListView
-                } else {
-                    planDetailView
-                }
-            }
-            .navigationTitle(plan.originalPlan != nil ? "Edit Plan" : plan.title)
+            planDetailView
+            .navigationTitle(plan.title)
             .toolbarTitleMenu {
                 Button("Change Title", systemImage: "pencil") {
                     showTitleEditorSheet = true
@@ -38,13 +38,14 @@ struct WorkoutPlanView: View {
                 }
             }
             .toolbarTitleDisplayMode(.inline)
-            .animation(.smooth, value: showExerciseListView)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel", systemImage: "xmark", role: .cancel) {
                         Haptics.selection()
-                        if plan.isEditing {
+                        if isEditingExistingPlan {
                             cancelEditingAndDismiss()
+                        } else if plan.completed {
+                            dismiss()
                         } else if plan.sortedExercises.isEmpty {
                             deleteWorkoutPlanAndDismiss()
                         } else {
@@ -63,20 +64,21 @@ struct WorkoutPlanView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(plan.originalPlan != nil ? "Done" : "Save") {
+                    Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
                         Haptics.selection()
-                        if plan.originalPlan != nil {
-                            // Editing existing plan - detect changes and apply
-                            guard let original = plan.applyEditingChanges(context: context) else { return }
+                        if let originalPlan {
+                            originalPlan.applyEditingCopy(plan, context: context)
+                            context.delete(plan)
                             saveContext(context: context)
-                            SpotlightIndexer.index(workoutPlan: original)
-                            deletePresentedPlanOnDisappear = true
-                        } else {
-                            // Creating new plan
-                            plan.completed = true
-                            saveContext(context: context)
-                            SpotlightIndexer.index(workoutPlan: plan)
+                            SpotlightIndexer.index(workoutPlan: originalPlan)
+                            dismiss()
+                            return
                         }
+                        if !plan.completed {
+                            plan.completed = true
+                        }
+                        try? context.save()
+                        SpotlightIndexer.index(workoutPlan: plan)
                         dismiss()
                     }
                     .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
@@ -84,13 +86,12 @@ struct WorkoutPlanView: View {
                 }
                 ToolbarItem(placement: .bottomBar) {
                     if !plan.sortedExercises.isEmpty {
-                        Button(showExerciseListView ? "Done Editing" : "Edit Exercises", systemImage: showExerciseListView ? "checkmark" : "pencil") {
+                        Button("Edit Exercises", systemImage: "pencil") {
                             Haptics.selection()
-                            showExerciseListView.toggle()
+                            showExerciseEditSheet = true
                         }
-                        .tint(showExerciseListView ? .blue : .primary)
                         .accessibilityIdentifier("workoutPlanEditExercisesButton")
-                        .accessibilityHint(showExerciseListView ? "Finishes editing the list of exercises." : "Shows the list of exercises.")
+                        .accessibilityHint("Shows the list of exercises.")
                     }
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -101,6 +102,20 @@ struct WorkoutPlanView: View {
                     }
                     .accessibilityIdentifier("workoutPlanAddExerciseButton")
                     .accessibilityHint("Adds an exercise.")
+                }
+            }
+            .sheet(isPresented: $showExerciseEditSheet) {
+                NavigationStack {
+                    exerciseListView
+                        .navigationTitle("Edit Exercises")
+                        .toolbarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button(role: .confirm) {
+                                    showExerciseEditSheet = false
+                                }
+                            }
+                        }
                 }
             }
             .sheet(isPresented: $showAddExerciseSheet) {
@@ -137,11 +152,12 @@ struct WorkoutPlanView: View {
                         saveContext(context: context)
                     }
             }
-            .onDisappear {
-                guard deletePresentedPlanOnDisappear else { return }
-                context.delete(plan)
-                saveContext(context: context)
-                deletePresentedPlanOnDisappear = false
+            .alert("Delete Plan?", isPresented: $showDeletePlanConfirmation) {
+                Button("Delete Plan", role: .destructive) {
+                    deleteWorkoutPlanAndDismiss()
+                }
+            } message: {
+                Text("Removing the last exercise will delete this plan.")
             }
         }
     }
@@ -156,7 +172,7 @@ struct WorkoutPlanView: View {
             } else {
                 LazyVStack(spacing: 60) {
                     ForEach(plan.sortedExercises) { exercise in
-                        WorkoutPlanExerciseView(exercise: exercise)
+                        WorkoutPlanExerciseView(exercise: exercise, onDelete: { deleteExercise(exercise) })
                             .accessibilityIdentifier("workoutPlanExerciseView-\(exercise.catalogID)-\(exercise.index)")
                     }
                 }
@@ -200,7 +216,6 @@ struct WorkoutPlanView: View {
             .onMove(perform: moveExercise)
         }
         .scrollIndicators(.hidden)
-        .listStyle(.plain)
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier("workoutPlanExerciseList")
     }
@@ -209,48 +224,66 @@ struct WorkoutPlanView: View {
         guard !offsets.isEmpty else { return }
         // Check if deleting these would leave us with no exercises
         if plan.sortedExercises.count - offsets.count == 0 {
-            if plan.originalPlan != nil {
-                // Editing existing - delete both copy and original
-                plan.deletePlanEntirely(context: context)
+            if isEditingExistingPlan || plan.completed {
+                showDeletePlanConfirmation = true
             } else {
-                // Creating new - just delete the plan
-                deleteWorkoutPlanAndDismiss()
+                deleteExercises(at: offsets)
             }
-            dismiss()
             return
         }
         deleteExercises(at: offsets)
     }
-    
+
+    private func deleteExercise(_ exercise: ExercisePrescription) {
+        if plan.sortedExercises.count == 1, isEditingExistingPlan || plan.completed {
+            showDeletePlanConfirmation = true
+            return
+        }
+        Haptics.selection()
+        plan.deleteExercise(exercise)
+        context.delete(exercise)
+        saveContext(context: context)
+    }
+
     private func deleteExercises(at offsets: IndexSet) {
         Haptics.selection()
         let exercisesToDelete = offsets.map { plan.sortedExercises[$0] }
-        
         for exercise in exercisesToDelete {
             plan.deleteExercise(exercise)
             context.delete(exercise)
         }
         saveContext(context: context)
-        
         if plan.sortedExercises.isEmpty {
-            showExerciseListView = false
+            showExerciseEditSheet = false
         }
     }
-    
+
     private func moveExercise(from source: IndexSet, to destination: Int) {
         plan.moveExercise(from: source, to: destination)
         saveContext(context: context)
     }
-    
+
     private func deleteWorkoutPlanAndDismiss() {
         Haptics.selection()
-        deletePresentedPlanOnDisappear = true
+        if let originalPlan {
+            SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
+            originalPlan.deleteWithSuggestionCleanup(context: context)
+            context.delete(plan)
+            try? context.save()
+            dismiss()
+            return
+        }
+        if plan.completed {
+            SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
+        }
+        context.delete(plan)
+        try? context.save()
         dismiss()
     }
-    
+
     private func cancelEditingAndDismiss() {
-        Haptics.selection()
-        deletePresentedPlanOnDisappear = true
+        context.delete(plan)
+        try? context.save()
         dismiss()
     }
 }
@@ -258,15 +291,17 @@ struct WorkoutPlanView: View {
 private struct WorkoutPlanExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePrescription
-    
+    let onDelete: (() -> Void)?
+
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
-    
+    @State private var showReplaceExerciseSheet = false
+
     var body: some View {
         VStack(spacing: 12) {
             headerView
                 .padding(.horizontal)
-            
+
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
                     Text("Set")
@@ -278,7 +313,7 @@ private struct WorkoutPlanExerciseView: View {
                 .font(.title3)
                 .bold()
                 .accessibilityHidden(true)
-                
+
                 ForEach(exercise.sortedSets) { set in
                     GridRow {
                         WorkoutPlanSetRowView(set: set, exercise: exercise)
@@ -288,7 +323,7 @@ private struct WorkoutPlanExerciseView: View {
                 }
             }
             .padding(.horizontal)
-            
+
             Button {
                 addSet()
             } label: {
@@ -305,7 +340,7 @@ private struct WorkoutPlanExerciseView: View {
             .accessibilityHint("Adds a new set.")
         }
     }
-    
+
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(exercise.name)
@@ -341,7 +376,7 @@ private struct WorkoutPlanExerciseView: View {
                 .font(.title)
                 .tint(.primary)
             }
-            
+
             TextField("Notes", text: $exercise.notes)
                 .padding(.top, 8)
                 .onChange(of: exercise.notes) {
@@ -351,15 +386,45 @@ private struct WorkoutPlanExerciseView: View {
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
-        .sheet(isPresented: $showRepRangeEditor) {
+        .contextMenu {
+            Button {
+                Haptics.selection()
+                showReplaceExerciseSheet = true
+            } label: {
+                Label("Replace Exercise", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseReplaceButton(exercise))
+            .accessibilityHint("Replaces this exercise with another.")
+            if let onDelete {
+                Button(role: .destructive) {
+                    Haptics.selection()
+                    onDelete()
+                } label: {
+                    Label("Delete Exercise", systemImage: "trash")
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseDeleteButton(exercise))
+                .accessibilityHint("Deletes this exercise.")
+            }
+        }
+        .sheet(isPresented: $showRepRangeEditor, onDismiss: {
+            saveContext(context: context)
+        }) {
             RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: $showRestTimeEditor) {
+        .sheet(isPresented: $showRestTimeEditor, onDismiss: {
+            saveContext(context: context)
+        }) {
             RestTimeEditorView(exercise: exercise)
         }
+        .sheet(isPresented: $showReplaceExerciseSheet) {
+            ReplaceExerciseView { newExercise, keepSets in
+                exercise.replaceWith(newExercise, keepSets: keepSets)
+                saveContext(context: context)
+            }
+        }
     }
-    
+
     private func addSet() {
         Haptics.selection()
         exercise.addSet()
@@ -372,12 +437,12 @@ private struct WorkoutPlanSetRowView: View {
         case reps
         case weight
     }
-    
+
     @Environment(\.modelContext) private var context
     @Bindable var set: SetPrescription
     @Bindable var exercise: ExercisePrescription
     @FocusState private var focusedField: Field?
-    
+
     var body: some View {
         Group {
             Menu {
@@ -411,13 +476,13 @@ private struct WorkoutPlanSetRowView: View {
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
             .accessibilityValue(AccessibilityText.exerciseSetMenuValue(for: set))
             .accessibilityHint("Opens set options.")
-            
+
             TextField("Reps", value: $set.targetReps, format: .number)
                 .keyboardType(.numberPad)
                 .focused($focusedField, equals: .reps)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetRepsField(exercise, set: set))
                 .accessibilityLabel("Reps")
-            
+
             TextField("Weight", value: $set.targetWeight, format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
@@ -435,7 +500,7 @@ private struct WorkoutPlanSetRowView: View {
             scheduleSave(context: context)
         }
     }
-    
+
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)

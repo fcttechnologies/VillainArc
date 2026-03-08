@@ -10,6 +10,7 @@ struct VillainArcApp: App {
         WindowGroup {
             ContentView()
                 .task {
+                    cleanupEditingWorkoutPlanCopies()
                     VillainArcShortcuts.updateAppShortcutParameters()
                 }
                 .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
@@ -30,5 +31,16 @@ struct VillainArcApp: App {
                 .onContinueUserActivity("com.villainarc.siri.endWorkout") { _ in }
         }
         .modelContainer(SharedModelContainer.container)
+    }
+
+    @MainActor
+    private func cleanupEditingWorkoutPlanCopies() {
+        let context = ModelContext(SharedModelContainer.container)
+        let editingCopies = (try? context.fetch(WorkoutPlan.editingCopies)) ?? []
+        guard !editingCopies.isEmpty else { return }
+        for copy in editingCopies {
+            context.delete(copy)
+        }
+        saveContext(context: context)
     }
 }

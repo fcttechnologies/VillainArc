@@ -155,8 +155,8 @@ struct WorkoutPlanDetailView: View {
                 }
             }
         }
-        .fullScreenCover(item: $editingCopy) {
-            WorkoutPlanView(plan: $0)
+        .fullScreenCover(item: $editingCopy) { copy in
+            WorkoutPlanView(plan: copy, originalPlan: plan)
         }
         .userActivity("com.villainarc.workoutPlan.view", element: plan) { plan, activity in
             activity.title = plan.title
