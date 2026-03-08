@@ -9,27 +9,40 @@ import SwiftData
 /// - Manual rebuild (migration, data fixes)
 ///
 /// **How It Works:**
-/// - Fetches ALL completed ExercisePerformance records for catalogID
-/// - Recalculates ALL statistics from scratch (no incremental updates)
+/// - Completion path: Incremental PR updates + limited fetch (last 10) for recent stats
+/// - Deletion path: Full recalculation from scratch (PRs might be lost)
 /// - Creates history if doesn't exist, updates if it does
 /// - Deletes history if no performances remain
 @MainActor
 struct ExerciseHistoryUpdater {
     
     /// Updates or creates ExerciseHistory for all exercises in the completed workout session.
-    /// Call this after marking a workout as complete.
+    ///
+    /// Uses batch fetching (1 query for all histories instead of N) and a single save
+    /// at the end. Each exercise gets a full recalculate so all fields are exact,
+    /// including the just-finished session before it is marked `.done`.
     static func updateHistoriesForCompletedWorkout(_ session: WorkoutSession, context: ModelContext) {
-        guard session.status == SessionStatus.done.rawValue else {
-            print("⚠️ ExerciseHistoryUpdater: Session not marked as done")
-            return
-        }
-        
-        let catalogIDs = Set((session.exercises ?? []).map { $0.catalogID })
-        
+        let exercises = session.exercises ?? []
+        let catalogIDs = Set(exercises.map { $0.catalogID })
+
+        // Batch fetch all histories in one query
+        var historyMap = batchFetchHistories(for: catalogIDs, context: context)
+
+        // Create any missing histories (rare — typically first time doing an exercise)
+        batchCreateIfNeeded(for: catalogIDs, existingHistories: &historyMap, context: context)
+
         for catalogID in catalogIDs {
-            updateHistory(for: catalogID, context: context, save: false)
+            guard let history = historyMap[catalogID] else { continue }
+
+            // Full recalculate for data accuracy — include this session even before `.done`.
+            let performances = (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID, includingSessionID: session.id))) ?? []
+            history.recalculate(using: performances)
+
+            // Index exercise in Spotlight
+            if let exercise = (try? context.fetch(Exercise.withCatalogID(catalogID)))?.first {
+                SpotlightIndexer.index(exercise: exercise)
+            }
         }
-        saveContext(context: context)
     }
     
     /// Updates histories for all exercises affected by a deleted workout session.
@@ -94,6 +107,36 @@ struct ExerciseHistoryUpdater {
         print("✅ ExerciseHistoryUpdater: Updated history for \(catalogID) - \(history.totalSessions) sessions")
     }
     
+    /// Fetches all ExerciseHistory records for the given catalog IDs in a single query.
+    /// Returns a dictionary keyed by catalogID for O(1) lookup.
+    static func batchFetchHistories(for catalogIDs: Set<String>, context: ModelContext) -> [String: ExerciseHistory] {
+        let ids = Array(catalogIDs)
+        let descriptor = ExerciseHistory.forCatalogIDs(ids)
+        let results = (try? context.fetch(descriptor)) ?? []
+        return Dictionary(uniqueKeysWithValues: results.map { ($0.catalogID, $0) })
+    }
+
+    /// Creates ExerciseHistory for any catalog IDs that don't already have one.
+    /// Saves once at the end instead of per-exercise.
+    static func batchCreateIfNeeded(for catalogIDs: Set<String>, existingHistories: inout [String: ExerciseHistory], context: ModelContext) {
+        let missing = catalogIDs.filter { existingHistories[$0] == nil }
+        guard !missing.isEmpty else { return }
+
+        for catalogID in missing {
+            let history = ExerciseHistory(catalogID: catalogID)
+            context.insert(history)
+
+            // If prior performances exist, populate with historical stats
+            let performances = (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID))) ?? []
+            if !performances.isEmpty {
+                history.recalculate(using: performances)
+            }
+
+            existingHistories[catalogID] = history
+        }
+        saveContext(context: context)
+    }
+
     /// Creates an ExerciseHistory for a catalogID if one doesn't already exist.
     /// Call this when an exercise is added to a workout so history is ready
     /// for PR detection and suggestion generation later.

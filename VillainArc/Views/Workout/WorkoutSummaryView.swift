@@ -24,6 +24,8 @@ struct WorkoutSummaryView: View {
     @State private var showNotesEditorSheet = false
     @State private var prEntries: [PRItem] = []
     @State private var isGeneratingSuggestions = false
+    @State private var isSaving = false
+    @State private var didSaveWorkoutAsPlan = false
     @State private var showPRSection = false
 
     private var totalExercises: Int {
@@ -147,7 +149,7 @@ struct WorkoutSummaryView: View {
                                 ProgressView("Generating suggestions...")
                                     .frame(maxWidth: .infinity, alignment: .center)
                             } else {
-                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in acceptGroup(changes, context: context) }, onRejectGroup: { changes in rejectGroup(changes, context: context) }, onDeferGroup: { changes in deferGroup(changes, context: context) }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "This workout is now saved as a plan. Suggestions will appear here when we have enough evidence to make them."))
+                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in acceptGroup(changes, context: context) }, onRejectGroup: { changes in rejectGroup(changes, context: context) }, onDeferGroup: { changes in deferGroup(changes, context: context) }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: didSaveWorkoutAsPlan ? "This workout is now saved as a plan. Suggestions will appear here when we have enough evidence to make them." : "Suggestions will appear here when we have enough evidence to make them."))
                             }
                         }
                     }
@@ -164,14 +166,14 @@ struct WorkoutSummaryView: View {
                     Button {
                         finishSummary()
                     } label: {
-                        if isGeneratingSuggestions {
+                        if isGeneratingSuggestions || isSaving {
                             ProgressView()
                                 .controlSize(.regular)
                         } else {
                             Label("Done", systemImage: "checkmark")
                         }
                     }
-                    .disabled(isGeneratingSuggestions)
+                    .disabled(isGeneratingSuggestions || isSaving)
                 }
             }
             .task(id: workout.id) {
@@ -239,7 +241,7 @@ struct WorkoutSummaryView: View {
 
     @ViewBuilder
     private var planSaveSection: some View {
-        if let workoutPlan = workout.workoutPlan {
+        if didSaveWorkoutAsPlan, let workoutPlan = workout.workoutPlan {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title2)
@@ -259,7 +261,7 @@ struct WorkoutSummaryView: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
-        } else {
+        } else if workout.workoutPlan == nil {
             Button {
                 saveWorkoutAsPlan()
             } label: {
@@ -270,6 +272,8 @@ struct WorkoutSummaryView: View {
             }
             .buttonStyle(.glassProminent)
             .buttonSizing(.flexible)
+        } else {
+            EmptyView()
         }
     }
 
@@ -349,26 +353,29 @@ struct WorkoutSummaryView: View {
     }
 
     private func loadPRs() {
-        let entries: [PRItem] = workout.sortedExercises.compactMap { exercise in
-            ExerciseHistoryUpdater.createIfNeeded(for: exercise.catalogID, context: context)
-            guard let history = ExerciseHistoryUpdater.fetchHistory(for: exercise.catalogID, context: context) else { return nil }
-            return prEntry(for: exercise, history: history)
+        let exercises = workout.sortedExercises
+        let catalogIDs = Set(exercises.map { $0.catalogID })
+
+        // Single batch fetch instead of per-exercise queries
+        let historyMap = ExerciseHistoryUpdater.batchFetchHistories(for: catalogIDs, context: context)
+
+        prEntries = exercises.compactMap { exercise in
+            prEntry(for: exercise, history: historyMap[exercise.catalogID])
         }
-        prEntries = entries
     }
 
-    private func prEntry(for exercise: ExercisePerformance, history: ExerciseHistory) -> PRItem? {
+    private func prEntry(for exercise: ExercisePerformance, history: ExerciseHistory?) -> PRItem? {
         let (types, values) = prTypesAndValues(for: exercise, history: history)
         guard !types.isEmpty else { return nil }
         return PRItem(exerciseName: exercise.name, types: types.sorted { $0.rawValue < $1.rawValue }, values: values)
     }
 
-    private func prTypesAndValues(for exercise: ExercisePerformance, history: ExerciseHistory) -> (types: [PRType], values: [PRType: Double]) {
+    private func prTypesAndValues(for exercise: ExercisePerformance, history: ExerciseHistory?) -> (types: [PRType], values: [PRType: Double]) {
         var types: [PRType] = []
         var values: [PRType: Double] = [:]
 
         if let current1RM = exercise.bestEstimated1RM {
-            let historical1RM = history.bestEstimated1RM
+            let historical1RM = history?.bestEstimated1RM ?? 0
             if historical1RM == 0 || current1RM > historical1RM {
                 types.append(.estimated1RM)
                 values[.estimated1RM] = current1RM
@@ -376,7 +383,7 @@ struct WorkoutSummaryView: View {
         }
 
         if let currentWeight = exercise.bestWeight {
-            let historicalWeight = history.bestWeight
+            let historicalWeight = history?.bestWeight ?? 0
             if historicalWeight == 0 || currentWeight > historicalWeight {
                 types.append(.maxWeight)
                 values[.maxWeight] = currentWeight
@@ -385,7 +392,7 @@ struct WorkoutSummaryView: View {
 
         let currentVolume = exercise.totalVolume
         if currentVolume > 0 {
-            let historicalVolume = history.bestVolume
+            let historicalVolume = history?.bestVolume ?? 0
             if historicalVolume == 0 || currentVolume > historicalVolume {
                 types.append(.totalVolume)
                 values[.totalVolume] = currentVolume
@@ -413,13 +420,13 @@ struct WorkoutSummaryView: View {
     }
 
     private func finishSummary() {
+        guard !isSaving else { return }
+        isSaving = true
         Haptics.selection()
         deferRemainingSuggestions()
+        ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
-        
-        ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
-        
         dismiss()
     }
 
@@ -429,6 +436,7 @@ struct WorkoutSummaryView: View {
         let plan = WorkoutPlan(from: workout, completed: true)
         context.insert(plan)
         workout.workoutPlan = plan
+        didSaveWorkoutAsPlan = true
         saveContext(context: context)
         SpotlightIndexer.index(workoutPlan: plan)
         Task {
@@ -464,7 +472,6 @@ struct WorkoutSummaryView: View {
         for change in sessionSuggestions where change.decision == .pending {
             change.decision = .deferred
         }
-        saveContext(context: context)
     }
 }
 

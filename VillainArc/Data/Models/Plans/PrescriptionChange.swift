@@ -87,3 +87,60 @@ final class PrescriptionChange {
         self.evaluatedAt = evaluatedAt
     }
 }
+
+// MARK: - Fetch Descriptors
+
+extension PrescriptionChange {
+    /// Pending or deferred suggestions for a plan (for pre-workout review).
+    static func pendingOrDeferred(forPlanID planID: UUID) -> FetchDescriptor<PrescriptionChange> {
+        let pending = Decision.pending
+        let deferred = Decision.deferred
+        let predicate = #Predicate<PrescriptionChange> { change in
+            change.targetPlan?.id == planID && (change.decision == pending || change.decision == deferred)
+        }
+        return FetchDescriptor(predicate: predicate)
+    }
+
+    /// Changes with pending outcome for a plan (for cleanup on plan deletion).
+    static func pendingOutcome(forPlanID planID: UUID) -> FetchDescriptor<PrescriptionChange> {
+        let pending = Outcome.pending
+        let predicate = #Predicate<PrescriptionChange> { change in
+            change.targetPlan?.id == planID && change.outcome == pending
+        }
+        return FetchDescriptor(predicate: predicate)
+    }
+
+    /// Changes with pending outcome targeting a specific exercise.
+    static func pendingOutcome(forPlanID planID: UUID, exerciseID: UUID) -> FetchDescriptor<PrescriptionChange> {
+        let pending = Outcome.pending
+        let predicate = #Predicate<PrescriptionChange> { change in
+            change.targetPlan?.id == planID && change.outcome == pending && change.targetExercisePrescription?.id == exerciseID
+        }
+        return FetchDescriptor(predicate: predicate)
+    }
+
+    /// Changes with pending outcome targeting a specific set.
+    static func pendingOutcome(forPlanID planID: UUID, setID: UUID) -> FetchDescriptor<PrescriptionChange> {
+        let pending = Outcome.pending
+        let predicate = #Predicate<PrescriptionChange> { change in
+            change.targetPlan?.id == planID && change.outcome == pending && change.targetSetPrescription?.id == setID
+        }
+        return FetchDescriptor(predicate: predicate)
+    }
+
+    /// All changes targeting a specific exercise in a plan.
+    static func targeting(planID: UUID, exerciseID: UUID) -> FetchDescriptor<PrescriptionChange> {
+        let predicate = #Predicate<PrescriptionChange> { change in
+            change.targetPlan?.id == planID && change.targetExercisePrescription?.id == exerciseID
+        }
+        return FetchDescriptor(predicate: predicate)
+    }
+
+    /// All changes targeting a specific set in a plan.
+    static func targeting(planID: UUID, setID: UUID) -> FetchDescriptor<PrescriptionChange> {
+        let predicate = #Predicate<PrescriptionChange> { change in
+            change.targetPlan?.id == planID && change.targetSetPrescription?.id == setID
+        }
+        return FetchDescriptor(predicate: predicate)
+    }
+}

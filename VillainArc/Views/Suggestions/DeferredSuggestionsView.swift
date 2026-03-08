@@ -52,7 +52,7 @@ struct DeferredSuggestionsView: View {
             return
         }
         
-        sessionChanges = pendingSuggestions(for: plan)
+        sessionChanges = pendingSuggestions(for: plan, in: context)
         sections = groupSuggestions(sessionChanges)
 
         if sessionChanges.isEmpty {

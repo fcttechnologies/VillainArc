@@ -36,7 +36,7 @@
   - Weekly/rotation scheduling models used by split management and "today's workout" routing
 - `Exercise` + catalog/search metadata + `ExerciseHistory`/`ProgressionPoint`
   - Canonical exercise identity/search + derived longitudinal performance cache
-- `RepRangePolicy` / `RestTimePolicy` / `RestTimeHistory` / `PreWorkoutStatus`
+- `RepRangePolicy` / `RestTimeHistory` / `PreWorkoutStatus`
   - Reusable policy and session-adjacent models shared by workout and plan flows
 - `DataManager` (`saveContext` / `scheduleSave`)
   - Seeds and dedupes exercise catalog data
@@ -518,7 +518,7 @@
 - `PrescriptionChange` links source evidence (`sessionFrom`/`sourceExercisePerformance`/`sourceSetPerformance`) to targets (`targetPlan`/`targetExercisePrescription`/`targetSetPrescription`) and lifecycle state (`decision`, `outcome`).
 - `ExerciseHistory` stores aggregate stats per `catalogID` and owns `ProgressionPoint` rows.
 - `RestTimeHistory` stores reusable recent rest durations.
-- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutStatus`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`.
+- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutStatus`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`.
 
 ### Data Model File Index
 
@@ -536,11 +536,6 @@
 - Does: Reusable rep target/range policy object shared by performance and prescription models.
 - Called by: `ExercisePerformance`, `ExercisePrescription`, `RepRangeEditorView`, suggestion engines.
 - Calls: None (data and display text only).
-
-### `VillainArc/Data/Models/Exercise/RestTimePolicy.swift`
-- Does: Reusable rest policy (`allSame`, `individual`, `byType`) and per-set effective rest resolution.
-- Called by: `ExercisePerformance`, `ExercisePrescription`, `RestTimeEditorView`, suggestion engines.
-- Calls: `seconds(for:)` using `SetPerformance.type`.
 
 ### `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
 - Does: Derived per-exercise analytics cache (PRs, recents, trends, progression points).
@@ -625,7 +620,7 @@
 ### `VillainArc/Data/Models/AIModels/AIOutcomeModels.swift`
 - Does: Foundation Models DTOs/enums for suggestion outcome evaluation prompts/results.
 - Called by: `AIOutcomeInferrer`, `OutcomeResolver`.
-- Calls: Mappers between app enums (`Outcome`, `RestTimeMode`) and AI enums, snapshot builders from prescription/set models.
+- Calls: Mappers between app enums (`Outcome`) and AI enums, snapshot builders from prescription/set models.
 
 ### `VillainArc/Data/SampleData.swift`
 - Does: In-memory preview fixture container for sessions, plans, splits, and suggestion scenarios.
@@ -640,7 +635,6 @@
 - `VillainArc/Data/Models/Enums/Exercise/MuscleGroups.swift`: grouped muscle sets used by split/selection logic.
 - `VillainArc/Data/Models/Enums/Exercise/ProgressionTrend.swift`: history trend states used by `ExerciseHistory`.
 - `VillainArc/Data/Models/Enums/Exercise/RepRangeMode.swift`: rep-range mode enum used by `RepRangePolicy`.
-- `VillainArc/Data/Models/Enums/Exercise/RestTimeMode.swift`: rest-policy mode enum used by `RestTimePolicy`.
 - `VillainArc/Data/Models/Enums/Sessions/MoodLevel.swift`: pre-workout mood enum used by `PreWorkoutStatus`.
 - `VillainArc/Data/Models/Enums/Sessions/SessionOrigin.swift`: session source enum (`plan`/`freeform`) used by `WorkoutSession`.
 - `VillainArc/Data/Models/Enums/Sessions/SessionStatus.swift`: workout lifecycle enum (`pending`/`active`/`summary`/`done`) used by `WorkoutSession` and flow routing.

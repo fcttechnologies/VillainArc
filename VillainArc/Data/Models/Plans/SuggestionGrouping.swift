@@ -83,6 +83,6 @@ private func changeOrder(for changeType: ChangeType) -> Int {
 }
 
 
-func pendingSuggestions(for plan: WorkoutPlan) -> [PrescriptionChange] {
-    (plan.targetedChanges ?? []).filter { $0.decision == .pending || $0.decision == .deferred }
+func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [PrescriptionChange] {
+    (try? context.fetch(PrescriptionChange.pendingOrDeferred(forPlanID: plan.id))) ?? []
 }

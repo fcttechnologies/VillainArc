@@ -118,7 +118,7 @@ final class ExerciseHistory {
         // Store progression data for charting (last 10 sessions)
         storeProgressionData(from: performances)
     }
-    
+
     /// Resets all statistics to default/zero values.
     /// 
     /// **Called When:**
@@ -333,5 +333,12 @@ final class ExerciseHistory {
         var descriptor = FetchDescriptor(predicate: predicate)
         descriptor.fetchLimit = 1
         return descriptor
+    }
+
+    static func forCatalogIDs(_ catalogIDs: [String]) -> FetchDescriptor<ExerciseHistory> {
+        let predicate = #Predicate<ExerciseHistory> { history in
+            catalogIDs.contains(history.catalogID)
+        }
+        return FetchDescriptor(predicate: predicate)
     }
 }

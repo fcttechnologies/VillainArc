@@ -75,7 +75,7 @@ final class AppRouter {
         let workoutSession = WorkoutSession(from: plan)
         
         // Check for pending/deferred suggestions before starting
-        let hasDeferredSuggestions = !pendingSuggestions(for: plan).isEmpty
+        let hasDeferredSuggestions = !pendingSuggestions(for: plan, in: context).isEmpty
         if hasDeferredSuggestions {
             workoutSession.status = SessionStatus.pending.rawValue
         }

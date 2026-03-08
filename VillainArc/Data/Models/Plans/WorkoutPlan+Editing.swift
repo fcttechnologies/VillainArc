@@ -61,47 +61,47 @@ extension WorkoutPlan {
                 continue
             }
 
-            reconcileExercisePendingChanges(original: originalExercise, copy: copyExercise)
+            reconcileExercisePendingChanges(original: originalExercise, copy: copyExercise, context: context)
 
             let copySets = Dictionary(uniqueKeysWithValues: copyExercise.sortedSets.map { ($0.id, $0) })
             for originalSet in originalExercise.sortedSets {
                 guard let copySet = copySets[originalSet.id] else {
                     continue
                 }
-                reconcileSetPendingChanges(original: originalSet, copy: copySet)
+                reconcileSetPendingChanges(original: originalSet, copy: copySet, context: context)
             }
         }
     }
 
-    private func reconcileExercisePendingChanges(original: ExercisePrescription, copy: ExercisePrescription) {
+    private func reconcileExercisePendingChanges(original: ExercisePrescription, copy: ExercisePrescription, context: ModelContext) {
         guard let originalRepRange = original.repRange, let copyRepRange = copy.repRange else { return }
 
         if originalRepRange.activeMode != copyRepRange.activeMode {
-            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.changeRepRangeMode])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.changeRepRangeMode], context: context)
         }
         if originalRepRange.lowerRange != copyRepRange.lowerRange {
-            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeLower, .decreaseRepRangeLower])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeLower, .decreaseRepRangeLower], context: context)
         }
         if originalRepRange.upperRange != copyRepRange.upperRange {
-            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeUpper, .decreaseRepRangeUpper])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeUpper, .decreaseRepRangeUpper], context: context)
         }
         if originalRepRange.targetReps != copyRepRange.targetReps {
-            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget], context: context)
         }
     }
 
-    private func reconcileSetPendingChanges(original: SetPrescription, copy: SetPrescription) {
+    private func reconcileSetPendingChanges(original: SetPrescription, copy: SetPrescription, context: ModelContext) {
         if original.type != copy.type {
-            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.changeSetType])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.changeSetType], context: context)
         }
         if original.targetWeight != copy.targetWeight {
-            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseWeight, .decreaseWeight])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseWeight, .decreaseWeight], context: context)
         }
         if original.targetReps != copy.targetReps {
-            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseReps, .decreaseReps])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseReps, .decreaseReps], context: context)
         }
         if original.targetRest != copy.targetRest {
-            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseRest, .decreaseRest])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseRest, .decreaseRest], context: context)
         }
     }
 
@@ -157,31 +157,36 @@ extension WorkoutPlan {
 
 extension WorkoutPlan {
     func deletePendingOutcomeChanges(context: ModelContext) {
-        for change in targetedChanges ?? [] where change.outcome == .pending {
+        let changes = (try? context.fetch(PrescriptionChange.pendingOutcome(forPlanID: id))) ?? []
+        for change in changes {
             context.delete(change)
         }
     }
 
     func deletePendingOutcomeChanges(forExerciseID exerciseID: UUID, context: ModelContext) {
-        for change in targetedChanges ?? [] where change.outcome == .pending && change.targetExercisePrescription?.id == exerciseID {
+        let changes = (try? context.fetch(PrescriptionChange.pendingOutcome(forPlanID: id, exerciseID: exerciseID))) ?? []
+        for change in changes {
             context.delete(change)
         }
     }
 
     func deletePendingOutcomeChanges(forSetID setID: UUID, context: ModelContext) {
-        for change in targetedChanges ?? [] where change.outcome == .pending && change.targetSetPrescription?.id == setID {
+        let changes = (try? context.fetch(PrescriptionChange.pendingOutcome(forPlanID: id, setID: setID))) ?? []
+        for change in changes {
             context.delete(change)
         }
     }
 
-    func markMatchingPendingChangesAsUserOverride(forExerciseID exerciseID: UUID, changeTypes: [ChangeType]) {
-        for change in targetedChanges ?? [] where change.targetExercisePrescription?.id == exerciseID && changeTypes.contains(change.changeType) {
+    func markMatchingPendingChangesAsUserOverride(forExerciseID exerciseID: UUID, changeTypes: [ChangeType], context: ModelContext) {
+        let changes = (try? context.fetch(PrescriptionChange.targeting(planID: id, exerciseID: exerciseID))) ?? []
+        for change in changes where changeTypes.contains(change.changeType) {
             change.markAsUserOverride()
         }
     }
 
-    func markMatchingPendingChangesAsUserOverride(forSetID setID: UUID, changeTypes: [ChangeType]) {
-        for change in targetedChanges ?? [] where change.targetSetPrescription?.id == setID && changeTypes.contains(change.changeType) {
+    func markMatchingPendingChangesAsUserOverride(forSetID setID: UUID, changeTypes: [ChangeType], context: ModelContext) {
+        let changes = (try? context.fetch(PrescriptionChange.targeting(planID: id, setID: setID))) ?? []
+        for change in changes where changeTypes.contains(change.changeType) {
             change.markAsUserOverride()
         }
     }
