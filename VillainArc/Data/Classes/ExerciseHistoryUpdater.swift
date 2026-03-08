@@ -67,9 +67,10 @@ struct ExerciseHistoryUpdater {
                 if save { saveContext(context: context) }
                 print("🗑️ ExerciseHistoryUpdater: Deleted history for \(catalogID) (no performances)")
             }
+            SpotlightIndexer.deleteExercise(catalogID: catalogID)
             return
         }
-        
+
         // Performances exist - create or update history
         let history: ExerciseHistory
         if let found = existing.first {
@@ -79,11 +80,16 @@ struct ExerciseHistoryUpdater {
             history = ExerciseHistory(catalogID: catalogID)
             context.insert(history)
         }
-        
+
         // Recalculate all statistics from scratch
         history.recalculate(using: performances)
 
         if save { saveContext(context: context) }
+
+        // Index exercise in Spotlight now that it has confirmed history
+        if let exercise = (try? context.fetch(Exercise.withCatalogID(catalogID)))?.first {
+            SpotlightIndexer.index(exercise: exercise)
+        }
 
         print("✅ ExerciseHistoryUpdater: Updated history for \(catalogID) - \(history.totalSessions) sessions")
     }

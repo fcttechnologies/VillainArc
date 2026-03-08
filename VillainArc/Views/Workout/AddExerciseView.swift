@@ -138,13 +138,11 @@ struct AddExerciseView: View {
             for exercise in selectedExercises {
                 workout.addExercise(exercise)
                 exercise.updateLastUsed()
-                SpotlightIndexer.index(exercise: exercise)
             }
         } else if let plan {
             for exercise in selectedExercises {
                 plan.addExercise(exercise)
                 exercise.updateLastUsed()
-                SpotlightIndexer.index(exercise: exercise)
             }
         }
         let donatedExercises = selectedExercises

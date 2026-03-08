@@ -40,6 +40,9 @@ final class WorkoutPlan {
         title = session.title
         notes = session.notes
         self.completed = completed
+        if completed {
+            lastUsed = Date()
+        }
         exercises = session.sortedExercises.map { ExercisePrescription(workoutPlan: self, exercisePerformance: $0) }
     }
     

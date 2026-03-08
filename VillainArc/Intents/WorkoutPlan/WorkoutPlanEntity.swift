@@ -86,14 +86,17 @@ struct WorkoutPlanEntityQuery: EntityQuery, EntityStringQuery {
         let context = SharedModelContainer.container.mainContext
         let ids = identifiers
         let predicate = #Predicate<WorkoutPlan> { ids.contains($0.id) }
-        let descriptor = FetchDescriptor(predicate: predicate)
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         return try context.fetch(descriptor).map(WorkoutPlanEntity.init)
     }
 
     @MainActor
     func suggestedEntities() async throws -> [WorkoutPlanEntity] {
         let context = SharedModelContainer.container.mainContext
-        let templates = (try? context.fetch(WorkoutPlan.all)) ?? []
+        var descriptor = WorkoutPlan.all
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        let templates = (try? context.fetch(descriptor)) ?? []
         return templates.map(WorkoutPlanEntity.init)
     }
 
@@ -103,12 +106,16 @@ struct WorkoutPlanEntityQuery: EntityQuery, EntityStringQuery {
         let context = SharedModelContainer.container.mainContext
         let descriptor: FetchDescriptor<WorkoutPlan>
         if trimmed.isEmpty {
-            descriptor = WorkoutPlan.all
+            var base = WorkoutPlan.all
+            base.relationshipKeyPathsForPrefetching = [\.exercises]
+            descriptor = base
         } else {
             let predicate = #Predicate<WorkoutPlan> {
                 $0.completed && $0.title.localizedStandardContains(trimmed)
             }
-            descriptor = FetchDescriptor(predicate: predicate, sortBy: WorkoutPlan.recentsSort)
+            var base = FetchDescriptor(predicate: predicate, sortBy: WorkoutPlan.recentsSort)
+            base.relationshipKeyPathsForPrefetching = [\.exercises]
+            descriptor = base
         }
         return try context.fetch(descriptor).map(WorkoutPlanEntity.init)
     }

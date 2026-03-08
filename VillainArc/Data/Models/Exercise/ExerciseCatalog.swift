@@ -17,7 +17,7 @@ struct ExerciseCatalogItem {
 }
 
 enum ExerciseCatalog {
-    nonisolated static let catalogVersion = "1.0.7"
+    nonisolated static let catalogVersion = "1.0.8"
     nonisolated static let all: [ExerciseCatalogItem] = [
 
         // BICEPS

@@ -25,10 +25,7 @@ struct ReplaceExerciseIntent: AppIntent {
         }
 
         let exerciseID = newExercise.id
-        let predicate = #Predicate<Exercise> { $0.catalogID == exerciseID }
-        let descriptor = FetchDescriptor(predicate: predicate)
-
-        guard let resolvedExercise = try? context.fetch(descriptor).first else {
+        guard let resolvedExercise = try? context.fetch(Exercise.withCatalogID(exerciseID)).first else {
             return .result(dialog: "Exercise not found.")
         }
 
@@ -53,7 +50,6 @@ struct ReplaceExerciseIntent: AppIntent {
 
         activeExercise.replaceWith(resolvedExercise, keepSets: keepSets)
         resolvedExercise.updateLastUsed()
-        SpotlightIndexer.index(exercise: resolvedExercise)
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
 

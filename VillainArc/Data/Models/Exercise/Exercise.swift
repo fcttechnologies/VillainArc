@@ -99,8 +99,10 @@ extension Exercise {
         FetchDescriptor(sortBy: Exercise.recentsSort)
     }
 
-    static var spotlightEligible: FetchDescriptor<Exercise> {
-        let predicate = #Predicate<Exercise> { $0.lastUsed != nil }
-        return FetchDescriptor(predicate: predicate)
+    static func withCatalogID(_ catalogID: String) -> FetchDescriptor<Exercise> {
+        let predicate = #Predicate<Exercise> { $0.catalogID == catalogID }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return descriptor
     }
 }

@@ -17,18 +17,11 @@ struct ToggleExerciseFavoriteIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
 
         let catalogID = exercise.id
-        let predicate = #Predicate<Exercise> { $0.catalogID == catalogID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-
-        guard let storedExercise = try context.fetch(descriptor).first else {
+        guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else {
             throw ToggleExerciseFavoriteIntentError.exerciseNotFound
         }
 
         storedExercise.toggleFavorite()
-        if storedExercise.favorite {
-            SpotlightIndexer.index(exercise: storedExercise)
-        }
         saveContext(context: context)
 
         if storedExercise.favorite {

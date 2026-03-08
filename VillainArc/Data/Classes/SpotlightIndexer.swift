@@ -25,9 +25,20 @@ enum SpotlightIndexer {
     }
 
     static func reindexAll(context: ModelContext) {
-        let completedWorkouts = (try? context.fetch(WorkoutSession.completedSession)) ?? []
-        let completedPlans = (try? context.fetch(WorkoutPlan.all)) ?? []
-        let exercisesToIndex = (try? context.fetch(Exercise.spotlightEligible)) ?? []
+        var workoutDescriptor = WorkoutSession.completedSession
+        workoutDescriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        let completedWorkouts = (try? context.fetch(workoutDescriptor)) ?? []
+
+        var planDescriptor = WorkoutPlan.all
+        planDescriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        let completedPlans = (try? context.fetch(planDescriptor)) ?? []
+
+        // ExerciseHistory only exists when completed performances exist — it's the
+        // single source of truth for exercise Spotlight eligibility.
+        let histories = (try? context.fetch(FetchDescriptor<ExerciseHistory>())) ?? []
+        let catalogIDs = histories.map(\.catalogID)
+        let exercisesToIndex: [Exercise] = catalogIDs.isEmpty ? [] :
+            (try? context.fetch(FetchDescriptor(predicate: #Predicate<Exercise> { catalogIDs.contains($0.catalogID) }))) ?? []
 
         let allItems = completedWorkouts.map(makeSearchableItem(for:))
             + completedPlans.map(makeSearchableItem(for:))

@@ -100,7 +100,8 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
         let context = SharedModelContainer.container.mainContext
         let ids = identifiers
         let predicate = #Predicate<WorkoutSession> { ids.contains($0.id) }
-        let descriptor = FetchDescriptor(predicate: predicate)
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         let sessions = (try? context.fetch(descriptor)) ?? []
         let byID = Dictionary(sessions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return ids.compactMap { byID[$0] }.map(WorkoutSessionEntity.init)
@@ -111,6 +112,7 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
         let context = SharedModelContainer.container.mainContext
         var descriptor = WorkoutSession.completedSessions(limit: 30)
         descriptor.sortBy = [SortDescriptor(\WorkoutSession.startedAt, order: .reverse)]
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         let sessions = (try? context.fetch(descriptor)) ?? []
         return sessions.map(WorkoutSessionEntity.init)
     }
@@ -123,13 +125,16 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
         if trimmed.isEmpty {
             var base = WorkoutSession.completedSessions(limit: 30)
             base.sortBy = [SortDescriptor(\WorkoutSession.startedAt, order: .reverse)]
+            base.relationshipKeyPathsForPrefetching = [\.exercises]
             descriptor = base
         } else {
             let done = SessionStatus.done.rawValue
             let predicate = #Predicate<WorkoutSession> {
                 $0.status == done && $0.title.localizedStandardContains(trimmed)
             }
-            descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\WorkoutSession.startedAt, order: .reverse), SortDescriptor(\WorkoutSession.title)])
+            var base = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\WorkoutSession.startedAt, order: .reverse), SortDescriptor(\WorkoutSession.title)])
+            base.relationshipKeyPathsForPrefetching = [\.exercises]
+            descriptor = base
         }
         let sessions = (try? context.fetch(descriptor)) ?? []
         return sessions.map(WorkoutSessionEntity.init)

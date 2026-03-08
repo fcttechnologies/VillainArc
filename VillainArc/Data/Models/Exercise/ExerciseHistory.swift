@@ -329,9 +329,9 @@ final class ExerciseHistory {
     // MARK: - Fetch Descriptors
     
     static func forCatalogID(_ catalogID: String) -> FetchDescriptor<ExerciseHistory> {
-        let predicate = #Predicate<ExerciseHistory> { history in
-            history.catalogID == catalogID
-        }
-        return FetchDescriptor(predicate: predicate)
+        let predicate = #Predicate<ExerciseHistory> { $0.catalogID == catalogID }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return descriptor
     }
 }

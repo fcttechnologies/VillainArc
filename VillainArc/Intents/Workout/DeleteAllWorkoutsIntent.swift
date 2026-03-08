@@ -9,7 +9,9 @@ struct DeleteAllWorkoutsIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        let workouts = (try? context.fetch(WorkoutSession.completedSession)) ?? []
+        var descriptor = WorkoutSession.completedSession
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        let workouts = (try? context.fetch(descriptor)) ?? []
 
         guard !workouts.isEmpty else {
             return .result(dialog: "No completed workouts to delete.")
