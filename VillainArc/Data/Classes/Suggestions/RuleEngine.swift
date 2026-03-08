@@ -52,7 +52,6 @@ struct RuleEngine {
         var suggestions: [PrescriptionChange] = []
         suggestions.append(contentsOf: shortRestPerformanceDrop(context))
         suggestions.append(contentsOf: stagnationIncreaseRest(context))
-        suggestions.append(contentsOf: volumeRegression(context))
         return suggestions
     }
 
@@ -581,36 +580,6 @@ struct RuleEngine {
         }
 
         return changes
-    }
-
-    private static func volumeRegression(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
-        // Volume regression: user consistently completes fewer sets than prescribed across 3 sessions -> suggest removing the last set.
-        guard !shouldHoldSteady(context) else { return [] }
-        let prescribedSets = context.prescription.sortedSets
-        let prescribedWorkingSets = prescribedSets.filter { $0.type == .working }
-        guard prescribedWorkingSets.count >= 3 else { return [] } // Need at least 3 prescribed working sets to suggest removing one.
-
-        let recent = recentPerformances(context)
-        guard recent.count >= 3 else { return [] }
-
-        let lastThree = Array(recent.prefix(3))
-        var shortCount = 0
-
-        for performance in lastThree {
-            let completedWorkingSets = performance.sortedSets.filter { $0.type == .working }
-            if completedWorkingSets.count < prescribedWorkingSets.count {
-                shortCount += 1
-            }
-        }
-
-        // Require all 3 recent sessions to show fewer working sets than prescribed.
-        guard shortCount >= 3 else { return [] }
-
-        // The set to remove is the last prescribed working set.
-        let prescribedCount = prescribedWorkingSets.count
-        let reason = "You've completed fewer than the prescribed \(prescribedCount) working sets in your last 3 sessions. Consider removing the last set to match your actual volume."
-
-        return [makeExerciseChange(context: context, changeType: .removeSet, previousValue: Double(prescribedCount), newValue: Double(prescribedCount - 1), reasoning: reason)]
     }
 
     private static func dropSetWithoutBase(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {

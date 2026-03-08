@@ -48,6 +48,7 @@ struct DeferredSuggestionsView: View {
     private func loadPendingSuggestions() {
         guard let plan = workout.workoutPlan else {
             workout.status = SessionStatus.active.rawValue
+            saveContext(context: context)
             return
         }
         
@@ -56,6 +57,7 @@ struct DeferredSuggestionsView: View {
 
         if sessionChanges.isEmpty {
             workout.status = SessionStatus.active.rawValue
+            saveContext(context: context)
         }
     }
     

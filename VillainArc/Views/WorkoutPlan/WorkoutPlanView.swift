@@ -276,7 +276,7 @@ struct WorkoutPlanView: View {
         if plan.completed {
             SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
         }
-        context.delete(plan)
+        plan.deleteWithSuggestionCleanup(context: context)
         try? context.save()
         dismiss()
     }

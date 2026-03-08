@@ -123,197 +123,63 @@ struct SuggestionSystemTests {
         let topSetSuggestions = RuleEngine.evaluate(context: topSetContext)
         let topSetWeightChanges = topSetSuggestions.filter { $0.changeType == .increaseWeight }
 
-        // Both should produce weight increases
+        // Straight sets progresses every working set.
         #expect(straightWeightChanges.count == 3)
-        #expect(topSetWeightChanges.count == 3)
+
+        // Top-set/backoff style should only progress the heavy cluster, not the lighter backoff set.
+        #expect(topSetWeightChanges.count == 2)
 
         let straightValues = straightWeightChanges.compactMap(\.newValue)
         let topSetValues = topSetWeightChanges.compactMap(\.newValue)
         #expect(straightValues.allSatisfy { $0 == 205 })
         #expect(topSetValues.allSatisfy { $0 == 207.5 })
+
+        let topSetIndices = Set(topSetWeightChanges.compactMap { $0.targetSetPrescription?.index })
+        #expect(topSetIndices == Set([0, 1]))
     }
 
-    // MARK: - Volume Regression Rule Tests
-
     @Test @MainActor
-    func volumeRegression_firesWhen3SessionsShort() throws {
+    func generatedSuggestionsAttachTargetPlan() async throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 135, targetReps: 8)
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            workingSets: 3,
+            targetWeight: 200,
+            targetReps: 8,
+            repRangeMode: .target
+        )
+        prescription.repRange?.targetReps = 8
+        prescription.musclesTargeted = [.chest]
+        prescription.equipmentType = .barbell
 
-        // 3 sessions where user only completes 3 of 4 prescribed working sets
-        var history: [ExercisePerformance] = []
-        for daysAgo in [3, 5, 7] {
-            let session = TestDataFactory.makeSession(context: context, daysAgo: daysAgo)
-            let perf = TestDataFactory.makePerformance(context: context, session: session, prescription: prescription, sets: [
-                (weight: 135, reps: 8, rest: 90, type: .working),
-                (weight: 135, reps: 7, rest: 90, type: .working),
-                (weight: 135, reps: 6, rest: 90, type: .working),
-            ])
-            history.append(perf)
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: previousSession, prescription: prescription, sets: [
+            (weight: 200, reps: 10, rest: 90, type: .working),
+            (weight: 200, reps: 10, rest: 90, type: .working),
+            (weight: 200, reps: 10, rest: 90, type: .working),
+        ])
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+        workout.statusValue = .summary
+
+        let currentPerformance = workout.sortedExercises.first
+        #expect(currentPerformance != nil)
+        guard let currentPerformance else { return }
+
+        for set in currentPerformance.sortedSets {
+            set.weight = 200
+            set.reps = 10
+            set.restSeconds = 90
+            set.complete = true
         }
 
-        let currentSession = TestDataFactory.makeSession(context: context)
-        let currentPerf = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 7, rest: 90, type: .working),
-            (weight: 135, reps: 6, rest: 90, type: .working),
-        ])
+        let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
 
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: history, plan: plan, resolvedTrainingStyle: .straightSets)
-
-        let suggestions = RuleEngine.evaluate(context: suggestionContext)
-        let removeSetSuggestions = suggestions.filter { $0.changeType == .removeSet }
-
-        #expect(removeSetSuggestions.count == 1)
-        #expect(removeSetSuggestions.first?.previousValue == 4)
-        #expect(removeSetSuggestions.first?.newValue == 3)
-    }
-
-    @Test @MainActor
-    func volumeRegression_doesNotFireWhenSetsMatch() throws {
-        let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 135, targetReps: 8)
-
-        // 3 sessions where user completes all 3 prescribed working sets
-        var history: [ExercisePerformance] = []
-        for daysAgo in [3, 5, 7] {
-            let session = TestDataFactory.makeSession(context: context, daysAgo: daysAgo)
-            let perf = TestDataFactory.makePerformance(context: context, session: session, prescription: prescription, sets: [
-                (weight: 135, reps: 8, rest: 90, type: .working),
-                (weight: 135, reps: 8, rest: 90, type: .working),
-                (weight: 135, reps: 8, rest: 90, type: .working),
-            ])
-            history.append(perf)
-        }
-
-        let currentSession = TestDataFactory.makeSession(context: context)
-        let currentPerf = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-        ])
-
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: history, plan: plan, resolvedTrainingStyle: .straightSets)
-
-        let suggestions = RuleEngine.evaluate(context: suggestionContext)
-        let removeSetSuggestions = suggestions.filter { $0.changeType == .removeSet }
-
-        #expect(removeSetSuggestions.isEmpty)
-    }
-
-    @Test @MainActor
-    func volumeRegression_doesNotFireWithFewerThan3PrescribedSets() throws {
-        let context = try TestDataFactory.makeContext()
-        // Only 2 working sets prescribed — should not suggest removing
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 135, targetReps: 8)
-
-        var history: [ExercisePerformance] = []
-        for daysAgo in [3, 5, 7] {
-            let session = TestDataFactory.makeSession(context: context, daysAgo: daysAgo)
-            let perf = TestDataFactory.makePerformance(context: context, session: session, prescription: prescription, sets: [
-                (weight: 135, reps: 8, rest: 90, type: .working),
-            ])
-            history.append(perf)
-        }
-
-        let currentSession = TestDataFactory.makeSession(context: context)
-        let currentPerf = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [
-            (weight: 135, reps: 8, rest: 90, type: .working),
-        ])
-
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: history, plan: plan, resolvedTrainingStyle: .straightSets)
-
-        let suggestions = RuleEngine.evaluate(context: suggestionContext)
-        let removeSetSuggestions = suggestions.filter { $0.changeType == .removeSet }
-
-        #expect(removeSetSuggestions.isEmpty)
-    }
-
-    // MARK: - Outcome Rule Engine: removeSet
-
-    @Test @MainActor
-    func outcomeRuleEngine_removeSet_good_whenUserCompletesReducedCount() throws {
-        let context = try TestDataFactory.makeContext()
-        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 135, targetReps: 8)
-
-        let session = TestDataFactory.makeSession(context: context)
-        let perf = TestDataFactory.makePerformance(context: context, session: session, prescription: prescription, sets: [
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-        ])
-
-        let change = PrescriptionChange(catalogID: prescription.catalogID, targetExercisePrescription: prescription, changeType: .removeSet, previousValue: 4, newValue: 3)
-
-        let signal = OutcomeRuleEngine.evaluate(change: change, exercisePerf: perf)
-
-        #expect(signal != nil)
-        #expect(signal?.outcome == .good)
-    }
-
-    @Test @MainActor
-    func outcomeRuleEngine_removeSet_ignored_whenUserCompletesOriginalCount() throws {
-        let context = try TestDataFactory.makeContext()
-        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 135, targetReps: 8)
-
-        let session = TestDataFactory.makeSession(context: context)
-        let perf = TestDataFactory.makePerformance(context: context, session: session, prescription: prescription, sets: [
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-            (weight: 135, reps: 8, rest: 90, type: .working),
-        ])
-
-        let change = PrescriptionChange(catalogID: prescription.catalogID, targetExercisePrescription: prescription, changeType: .removeSet, previousValue: 4, newValue: 3)
-
-        let signal = OutcomeRuleEngine.evaluate(change: change, exercisePerf: perf)
-
-        #expect(signal != nil)
-        #expect(signal?.outcome == .ignored)
-    }
-
-    // MARK: - Deduplicator: removeSet
-
-    @Test @MainActor
-    func deduplicator_removeSet_survivesDedupe() throws {
-        let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context)
-
-        let session = TestDataFactory.makeSession(context: context)
-
-        let change = PrescriptionChange(source: .rules, catalogID: prescription.catalogID, sessionFrom: session, targetExercisePrescription: prescription, targetPlan: plan, changeType: .removeSet, previousValue: 4, newValue: 3)
-        context.insert(change)
-
-        let result = SuggestionDeduplicator.process(suggestions: [change])
-
-        #expect(result.count == 1)
-        #expect(result.first?.changeType == .removeSet)
-    }
-
-    @Test @MainActor
-    func deduplicator_removeSet_notConflictWithWeightChange() throws {
-        let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context)
-        let session = TestDataFactory.makeSession(context: context)
-
-        let removeChange = PrescriptionChange(source: .rules, catalogID: prescription.catalogID, sessionFrom: session, targetExercisePrescription: prescription, targetPlan: plan, changeType: .removeSet, previousValue: 4, newValue: 3)
-        context.insert(removeChange)
-
-        let weightChange = PrescriptionChange(source: .rules, catalogID: prescription.catalogID, sessionFrom: session, targetExercisePrescription: prescription, targetSetPrescription: prescription.sortedSets.first, targetPlan: plan, changeType: .increaseWeight, previousValue: 135, newValue: 140)
-        context.insert(weightChange)
-
-        let result = SuggestionDeduplicator.process(suggestions: [removeChange, weightChange])
-
-        // Both should survive since they target different properties
-        #expect(result.count == 2)
-    }
-
-    // MARK: - ChangeType.policy for removeSet
-
-    @Test
-    func changeType_removeSet_hasStructurePolicy() {
-        #expect(ChangeType.removeSet.policy == .structure)
+        #expect(generated.isEmpty == false)
+        #expect(generated.allSatisfy { $0.targetPlan?.id == plan.id })
+        #expect(generated.allSatisfy { $0.sessionFrom?.id == workout.id })
     }
 
 }
-

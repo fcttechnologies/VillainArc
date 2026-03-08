@@ -17,7 +17,7 @@ class ExercisePrescription {
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
     var sets: [SetPrescription]? = [SetPrescription]()
     
-    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.targetExercisePrescription)
+    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetExercisePrescription)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
     
     var sortedSets: [SetPrescription] {

@@ -170,7 +170,6 @@ Current behavior:
 - rest change -> updates `SetPrescription.targetRest`
 - set type change -> updates `SetPrescription.type`
 - rep-range change -> updates `RepRangePolicy`
-- `removeSet` -> deletes the last working `SetPrescription`
 
 So once a suggestion is accepted, the next workout is performed against the updated prescription.
 
@@ -331,12 +330,6 @@ If estimated 1RM has been flat for about three sessions and the user is struggli
 
 For top-set or descending-heavy styles, the stagnation check uses progression sets rather than the whole exercise.
 
-#### 3. Volume regression
-
-If the user has completed fewer working sets than prescribed across the last three sessions, the engine suggests `removeSet`.
-
-This is only considered when the plan has at least three prescribed working sets.
-
 ### Set-Type Hygiene Rules
 
 These are structural cleanup suggestions.
@@ -421,7 +414,7 @@ Outcome resolution groups changes similarly to the suggestion review UI:
 
 - first by `targetExercisePrescription`
 - then set-level changes by `targetSetPrescription`
-- exercise-level changes by `ChangePolicy`
+- exercise-level changes as a single rep-range group
 
 That grouping is important because AI receives group context, not just isolated changes.
 
@@ -436,7 +429,6 @@ Current outcome logic:
 - weight / reps / rest changes: check whether the athlete followed the suggested direction, then classify by rep performance
 - rep-range changes: evaluate working-set reps against the new range or target
 - set-type changes: binary match or not
-- `removeSet`: compare actual completed working-set count against old and new counts
 
 Outcome rules are directional, not purely exact-match:
 
@@ -479,8 +471,6 @@ That allows the system to learn from rejected suggestions later, not just accept
 ### Prescription Snapshot Reconstruction
 
 For AI evaluation of applied changes, `OutcomeResolver` rebuilds the “before” prescription snapshot by reverting accepted or overridden changes from the current live prescription.
-
-For `removeSet`, it reconstructs missing working sets in the snapshot so AI evaluates against the pre-change structure, not the already-reduced structure.
 
 ### Merge Rules
 

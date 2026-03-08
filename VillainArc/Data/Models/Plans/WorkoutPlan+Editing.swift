@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 extension WorkoutPlan {
     func deleteWithSuggestionCleanup(context: ModelContext) {
+        deletePendingOutcomeChanges(context: context)
         context.delete(self)
     }
 
@@ -16,7 +17,7 @@ extension WorkoutPlan {
     }
 
     func applyEditingCopy(_ copy: WorkoutPlan, context: ModelContext) {
-        markPendingChangesAsUserOverride(comparedTo: copy)
+        reconcilePendingChanges(comparedTo: copy, context: context)
         title = copy.title
         notes = copy.notes
 
@@ -37,6 +38,7 @@ extension WorkoutPlan {
 
         let exercisesToDelete = exercises?.filter { copyExercises[$0.id] == nil } ?? []
         for exercise in exercisesToDelete {
+            deletePendingOutcomeChanges(forExerciseID: exercise.id, context: context)
             exercises?.removeAll { $0.id == exercise.id }
             context.delete(exercise)
         }
@@ -46,7 +48,7 @@ extension WorkoutPlan {
         }
     }
 
-    private func markPendingChangesAsUserOverride(comparedTo copy: WorkoutPlan) {
+    private func reconcilePendingChanges(comparedTo copy: WorkoutPlan, context: ModelContext) {
         let copyExercises = Dictionary(uniqueKeysWithValues: copy.sortedExercises.map { ($0.id, $0) })
 
         for originalExercise in sortedExercises {
@@ -55,57 +57,51 @@ extension WorkoutPlan {
             }
 
             if originalExercise.catalogID != copyExercise.catalogID {
-                originalExercise.markAllPendingChangesAsUserOverride()
+                deletePendingOutcomeChanges(forExerciseID: originalExercise.id, context: context)
                 continue
             }
 
-            markExercisePendingChangesAsUserOverride(original: originalExercise, copy: copyExercise)
+            reconcileExercisePendingChanges(original: originalExercise, copy: copyExercise)
 
             let copySets = Dictionary(uniqueKeysWithValues: copyExercise.sortedSets.map { ($0.id, $0) })
             for originalSet in originalExercise.sortedSets {
                 guard let copySet = copySets[originalSet.id] else {
                     continue
                 }
-                markSetPendingChangesAsUserOverride(original: originalSet, copy: copySet)
+                reconcileSetPendingChanges(original: originalSet, copy: copySet)
             }
         }
     }
 
-    private func markExercisePendingChangesAsUserOverride(original: ExercisePrescription, copy: ExercisePrescription) {
+    private func reconcileExercisePendingChanges(original: ExercisePrescription, copy: ExercisePrescription) {
         guard let originalRepRange = original.repRange, let copyRepRange = copy.repRange else { return }
 
-        let originalWorkingSetCount = original.sortedSets.filter { $0.type == .working }.count
-        let copyWorkingSetCount = copy.sortedSets.filter { $0.type == .working }.count
-        if originalWorkingSetCount != copyWorkingSetCount {
-            original.markMatchingPendingChangesAsUserOverride(for: [.removeSet])
-        }
-
         if originalRepRange.activeMode != copyRepRange.activeMode {
-            original.markMatchingPendingChangesAsUserOverride(for: [.changeRepRangeMode])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.changeRepRangeMode])
         }
         if originalRepRange.lowerRange != copyRepRange.lowerRange {
-            original.markMatchingPendingChangesAsUserOverride(for: [.increaseRepRangeLower, .decreaseRepRangeLower])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeLower, .decreaseRepRangeLower])
         }
         if originalRepRange.upperRange != copyRepRange.upperRange {
-            original.markMatchingPendingChangesAsUserOverride(for: [.increaseRepRangeUpper, .decreaseRepRangeUpper])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeUpper, .decreaseRepRangeUpper])
         }
         if originalRepRange.targetReps != copyRepRange.targetReps {
-            original.markMatchingPendingChangesAsUserOverride(for: [.increaseRepRangeTarget, .decreaseRepRangeTarget])
+            markMatchingPendingChangesAsUserOverride(forExerciseID: original.id, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget])
         }
     }
 
-    private func markSetPendingChangesAsUserOverride(original: SetPrescription, copy: SetPrescription) {
+    private func reconcileSetPendingChanges(original: SetPrescription, copy: SetPrescription) {
         if original.type != copy.type {
-            original.markMatchingPendingChangesAsUserOverride(for: [.changeSetType])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.changeSetType])
         }
         if original.targetWeight != copy.targetWeight {
-            original.markMatchingPendingChangesAsUserOverride(for: [.increaseWeight, .decreaseWeight])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseWeight, .decreaseWeight])
         }
         if original.targetReps != copy.targetReps {
-            original.markMatchingPendingChangesAsUserOverride(for: [.increaseReps, .decreaseReps])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseReps, .decreaseReps])
         }
         if original.targetRest != copy.targetRest {
-            original.markMatchingPendingChangesAsUserOverride(for: [.increaseRest, .decreaseRest])
+            markMatchingPendingChangesAsUserOverride(forSetID: original.id, changeTypes: [.increaseRest, .decreaseRest])
         }
     }
 
@@ -148,6 +144,7 @@ extension WorkoutPlan {
 
         let setsToDelete = originalExercise.sets?.filter { copySets[$0.id] == nil } ?? []
         for set in setsToDelete {
+            deletePendingOutcomeChanges(forSetID: set.id, context: context)
             originalExercise.sets?.removeAll { $0.id == set.id }
             context.delete(set)
         }
@@ -156,34 +153,35 @@ extension WorkoutPlan {
     }
 }
 
-// MARK: - User Override Marking
+// MARK: - Pending Change Reconciliation
 
-extension ExercisePrescription {
-    func markMatchingPendingChangesAsUserOverride(for changeTypes: [ChangeType]) {
-        for change in changes ?? [] where changeTypes.contains(change.changeType) {
+extension WorkoutPlan {
+    func deletePendingOutcomeChanges(context: ModelContext) {
+        for change in targetedChanges ?? [] where change.outcome == .pending {
+            context.delete(change)
+        }
+    }
+
+    func deletePendingOutcomeChanges(forExerciseID exerciseID: UUID, context: ModelContext) {
+        for change in targetedChanges ?? [] where change.outcome == .pending && change.targetExercisePrescription?.id == exerciseID {
+            context.delete(change)
+        }
+    }
+
+    func deletePendingOutcomeChanges(forSetID setID: UUID, context: ModelContext) {
+        for change in targetedChanges ?? [] where change.outcome == .pending && change.targetSetPrescription?.id == setID {
+            context.delete(change)
+        }
+    }
+
+    func markMatchingPendingChangesAsUserOverride(forExerciseID exerciseID: UUID, changeTypes: [ChangeType]) {
+        for change in targetedChanges ?? [] where change.targetExercisePrescription?.id == exerciseID && changeTypes.contains(change.changeType) {
             change.markAsUserOverride()
         }
     }
 
-    func markAllPendingChangesAsUserOverride() {
-        for change in changes ?? [] {
-            change.markAsUserOverride()
-        }
-        for set in sortedSets {
-            set.markAllPendingChangesAsUserOverride()
-        }
-    }
-}
-
-extension SetPrescription {
-    func markMatchingPendingChangesAsUserOverride(for changeTypes: [ChangeType]) {
-        for change in changes ?? [] where changeTypes.contains(change.changeType) {
-            change.markAsUserOverride()
-        }
-    }
-
-    func markAllPendingChangesAsUserOverride() {
-        for change in changes ?? [] {
+    func markMatchingPendingChangesAsUserOverride(forSetID setID: UUID, changeTypes: [ChangeType]) {
+        for change in targetedChanges ?? [] where change.targetSetPrescription?.id == setID && changeTypes.contains(change.changeType) {
             change.markAsUserOverride()
         }
     }

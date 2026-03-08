@@ -5,9 +5,16 @@ import Testing
 
 struct VillainArcTests {
 
+    @MainActor
+    private func finishEditing(_ editCopy: WorkoutPlan, originalPlan: WorkoutPlan, context: ModelContext) {
+        originalPlan.applyEditingCopy(editCopy, context: context)
+        context.delete(editCopy)
+        try? context.save()
+    }
+
     @Test @MainActor
-    // Editing a set creates a user change while only matching rule suggestions are overridden.
-    func userEditsCreatePendingUserChangeAndOverrideRuleSuggestions() throws {
+    // Editing a set updates the plan and only matching rule suggestions are overridden.
+    func userEditsOverrideMatchingRuleSuggestions() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
@@ -22,7 +29,9 @@ struct VillainArcTests {
         guard let copySet1 else { return }
 
         copySet1.targetWeight = 140
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
+
+        #expect(data.benchSet1.targetWeight == 140)
 
         let weightRuleChange = data.changes.first {
             $0.changeType == .increaseWeight &&
@@ -42,20 +51,12 @@ struct VillainArcTests {
 
         let descriptor = FetchDescriptor<PrescriptionChange>()
         let allChanges = (try? context.fetch(descriptor)) ?? []
-        let userChange = allChanges.first {
-            $0.source == .user &&
-            $0.targetSetPrescription?.id == data.benchSet1.id &&
-            ($0.changeType == .increaseWeight || $0.changeType == .decreaseWeight)
-        }
-
-        #expect(userChange != nil)
-        #expect(userChange?.decision == .accepted)
-        #expect(userChange?.outcome == .pending)
+        #expect(allChanges.contains { $0.source == .user } == false)
     }
 
     @Test @MainActor
-    // Deleting a set marks its pending rule suggestions as user overrides.
-    func deletingSetMarksRuleSuggestionsAsUserOverride() throws {
+    // Deleting a set removes unresolved changes tied to that set.
+    func deletingSetDeletesPendingChangesForRemovedSet() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
@@ -70,7 +71,7 @@ struct VillainArcTests {
         guard let copySet2 else { return }
 
         copyBench.deleteSet(copySet2)
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
         #expect((data.bench.sets ?? []).contains { $0.id == data.benchSet2.id } == false)
 
@@ -80,18 +81,60 @@ struct VillainArcTests {
             $0.targetExercisePrescription?.id == data.bench.id
         }
         #expect(ruleChangeForSet2 != nil)
-        #expect(ruleChangeForSet2?.decision == .userOverride)
-        #expect(ruleChangeForSet2?.outcome == .userModified)
+
+        let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        #expect(remainingChanges.contains { $0.id == ruleChangeForSet2?.id } == false)
     }
 
     @Test @MainActor
-    // A deferred weight suggestion is overridden when the user edits the same set weight.
-    func userEditOverridesDeferredWeightSuggestionAndAddsUserChange() throws {
+    // Deleting a set should keep resolved history, but the deleted set link should nullify.
+    func deletingSetPreservesResolvedHistoryForRemovedSet() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
 
-        let deferredDecrease = PrescriptionChange(source: .rules, catalogID: data.bench.catalogID, targetExercisePrescription: data.bench, targetSetPrescription: data.benchSet1, changeType: .decreaseWeight, previousValue: 135, newValue: 125, decision: .deferred)
+        let resolvedChange = PrescriptionChange(
+            source: .rules,
+            catalogID: data.bench.catalogID,
+            targetExercisePrescription: data.bench,
+            targetSetPrescription: data.benchSet2,
+            targetPlan: data.plan,
+            changeType: .increaseWeight,
+            previousValue: 155,
+            newValue: 160,
+            decision: .accepted,
+            outcome: .good,
+            evaluatedAt: Date()
+        )
+        context.insert(resolvedChange)
+
+        let editCopy = data.plan.createEditingCopy(context: context)
+        let copyBench = (editCopy.exercises ?? []).first { $0.id == data.bench.id }
+        #expect(copyBench != nil)
+        guard let copyBench else { return }
+
+        let copySet2 = (copyBench.sets ?? []).first { $0.id == data.benchSet2.id }
+        #expect(copySet2 != nil)
+        guard let copySet2 else { return }
+
+        copyBench.deleteSet(copySet2)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
+
+        let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        let survivingResolvedChange = remainingChanges.first { $0.id == resolvedChange.id }
+        #expect(survivingResolvedChange != nil)
+        #expect(survivingResolvedChange?.targetSetPrescription == nil)
+        #expect(survivingResolvedChange?.targetExercisePrescription?.id == data.bench.id)
+    }
+
+    @Test @MainActor
+    // A deferred weight suggestion is overridden when the user edits the same set weight.
+    func userEditOverridesDeferredWeightSuggestion() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let deferredDecrease = PrescriptionChange(source: .rules, catalogID: data.bench.catalogID, targetExercisePrescription: data.bench, targetSetPrescription: data.benchSet1, targetPlan: data.plan, changeType: .decreaseWeight, previousValue: 135, newValue: 125, decision: .deferred)
         context.insert(deferredDecrease)
 
         let editCopy = data.plan.createEditingCopy(context: context)
@@ -104,22 +147,15 @@ struct VillainArcTests {
         guard let copySet1 else { return }
 
         copySet1.targetWeight = 140
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
+        #expect(data.benchSet1.targetWeight == 140)
         #expect(deferredDecrease.decision == .userOverride)
         #expect(deferredDecrease.outcome == .userModified)
 
         let descriptor = FetchDescriptor<PrescriptionChange>()
         let allChanges = (try? context.fetch(descriptor)) ?? []
-        let userChange = allChanges.first {
-            $0.source == .user &&
-            $0.targetSetPrescription?.id == data.benchSet1.id &&
-            ($0.changeType == .increaseWeight || $0.changeType == .decreaseWeight)
-        }
-
-        #expect(userChange != nil)
-        #expect(userChange?.decision == .accepted)
-        #expect(userChange?.outcome == .pending)
+        #expect(allChanges.contains { $0.source == .user } == false)
     }
 
     @Test @MainActor
@@ -133,7 +169,7 @@ struct VillainArcTests {
         #expect(inclineSet != nil)
         guard let inclineSet else { return }
 
-        let setChange = PrescriptionChange(source: .rules, catalogID: data.incline.catalogID, targetExercisePrescription: data.incline, targetSetPrescription: inclineSet, changeType: .increaseReps, previousValue: Double(inclineSet.targetReps), newValue: Double(inclineSet.targetReps + 2), decision: .accepted)
+        let setChange = PrescriptionChange(source: .rules, catalogID: data.incline.catalogID, targetExercisePrescription: data.incline, targetSetPrescription: inclineSet, targetPlan: data.plan, changeType: .increaseReps, previousValue: Double(inclineSet.targetReps), newValue: Double(inclineSet.targetReps + 2), decision: .accepted)
         context.insert(setChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)
@@ -144,15 +180,63 @@ struct VillainArcTests {
         if let repRange = copyIncline.repRange {
             repRange.targetReps = repRange.targetReps + 2
         }
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
         #expect(setChange.decision == .accepted)
         #expect(setChange.outcome == .pending)
     }
 
     @Test @MainActor
-    // Deleting an exercise overrides pending changes without creating a new user change.
-    func deletingExerciseOverridesPendingChangesWithoutNewUserChange() throws {
+    // Replacing an exercise deletes unresolved old-exercise changes but preserves resolved outcomes for learning.
+    func replacingExerciseDeletesPendingOutcomeChangesForOriginalExercise() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let resolvedChange = PrescriptionChange(
+            source: .rules,
+            catalogID: data.incline.catalogID,
+            targetExercisePrescription: data.incline,
+            targetPlan: data.plan,
+            changeType: .increaseRepRangeTarget,
+            previousValue: 8,
+            newValue: 10,
+            decision: .accepted,
+            outcome: .good,
+            evaluatedAt: Date()
+        )
+        context.insert(resolvedChange)
+
+        let editCopy = data.plan.createEditingCopy(context: context)
+        let copyIncline = (editCopy.exercises ?? []).first { $0.id == data.incline.id }
+        #expect(copyIncline != nil)
+        guard let copyIncline else { return }
+
+        let replacement = Exercise(from: ExerciseCatalog.byID["barbell_shoulder_press"]!)
+        copyIncline.replaceWith(replacement, keepSets: true)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
+
+        #expect(data.incline.catalogID == replacement.catalogID)
+
+        let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        let remainingChangeIDs = Set(allChanges.map(\.id))
+
+        let originalPendingChangeIDs = Set(
+            data.changes
+                .filter { $0.targetExercisePrescription?.id == data.incline.id && $0.outcome == .pending }
+                .map(\.id)
+        )
+
+        for changeID in originalPendingChangeIDs {
+            #expect(remainingChangeIDs.contains(changeID) == false)
+        }
+
+        #expect(remainingChangeIDs.contains(resolvedChange.id))
+    }
+
+    @Test @MainActor
+    // Deleting an exercise removes unresolved changes but preserves resolved history.
+    func deletingExerciseDeletesPendingChangesWithoutNewUserChange() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
@@ -165,8 +249,11 @@ struct VillainArcTests {
         let flysSet = data.flys.sortedSets.first
         #expect(flysSet != nil)
         guard let flysSet else { return }
-        let acceptedChange = PrescriptionChange(source: .rules, catalogID: data.flys.catalogID, targetExercisePrescription: data.flys, targetSetPrescription: flysSet, changeType: .increaseRest, previousValue: Double(flysSet.targetRest), newValue: Double(flysSet.targetRest + 15), decision: .accepted)
-        context.insert(acceptedChange)
+        let pendingAcceptedChange = PrescriptionChange(source: .rules, catalogID: data.flys.catalogID, targetExercisePrescription: data.flys, targetSetPrescription: flysSet, targetPlan: data.plan, changeType: .increaseRest, previousValue: Double(flysSet.targetRest), newValue: Double(flysSet.targetRest + 15), decision: .accepted)
+        context.insert(pendingAcceptedChange)
+
+        let resolvedChange = PrescriptionChange(source: .rules, catalogID: data.flys.catalogID, targetExercisePrescription: data.flys, targetSetPrescription: flysSet, targetPlan: data.plan, changeType: .increaseWeight, previousValue: 40, newValue: 45, decision: .accepted, outcome: .good, evaluatedAt: Date())
+        context.insert(resolvedChange)
 
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyFlys = (editCopy.exercises ?? []).first { $0.id == data.flys.id }
@@ -174,15 +261,13 @@ struct VillainArcTests {
         guard let copyFlys else { return }
 
         editCopy.deleteExercise(copyFlys)
-        editCopy.finishEditing(context: context)
-
-        #expect(flysRuleChange.decision == .userOverride)
-        #expect(flysRuleChange.outcome == .userModified)
-        #expect(acceptedChange.decision == .accepted)
-        #expect(acceptedChange.outcome == .userModified)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
         let descriptor = FetchDescriptor<PrescriptionChange>()
         let allChanges = (try? context.fetch(descriptor)) ?? []
+        #expect(allChanges.contains { $0.id == flysRuleChange.id } == false)
+        #expect(allChanges.contains { $0.id == pendingAcceptedChange.id } == false)
+        #expect(allChanges.contains { $0.id == resolvedChange.id })
         let userChanges = allChanges.filter { $0.source == .user }
         #expect(userChanges.isEmpty)
     }
@@ -199,7 +284,7 @@ struct VillainArcTests {
         let editCopy = data.plan.createEditingCopy(context: context)
         let newExercise = Exercise(from: ExerciseCatalog.byID["barbell_squat"]!)
         editCopy.addExercise(newExercise)
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
         #expect((data.plan.exercises ?? []).contains { $0.catalogID == newExercise.catalogID })
 
@@ -210,13 +295,14 @@ struct VillainArcTests {
     }
 
     @Test @MainActor
-    // Removing an exercise updates the original plan without creating change records.
+    // Removing an exercise updates the original plan and deletes that exercise's unresolved changes.
     func removingExerciseAppliesToOriginalWithoutCreatingChanges() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
 
         let initialChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        let pendingFlysChangeCount = initialChanges.filter { $0.targetExercisePrescription?.id == data.flys.id && $0.outcome == .pending }.count
 
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyFlys = (editCopy.exercises ?? []).first { $0.id == data.flys.id }
@@ -224,12 +310,12 @@ struct VillainArcTests {
         guard let copyFlys else { return }
 
         editCopy.deleteExercise(copyFlys)
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
         #expect((data.plan.exercises ?? []).contains { $0.id == data.flys.id } == false)
 
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
-        #expect(allChanges.count == initialChanges.count)
+        #expect(allChanges.count == initialChanges.count - pendingFlysChangeCount)
         let userChanges = allChanges.filter { $0.source == .user }
         #expect(userChanges.isEmpty)
     }
@@ -251,7 +337,7 @@ struct VillainArcTests {
         editCopy.moveExercise(from: IndexSet(integer: 0), to: count)
         let expectedOrder = editCopy.sortedExercises.map(\.id)
 
-        editCopy.finishEditing(context: context)
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
 
         let newOrder = data.plan.sortedExercises.map(\.id)
         #expect(newOrder == expectedOrder)
@@ -263,25 +349,38 @@ struct VillainArcTests {
     }
 
     @Test @MainActor
-    // Deleting a plan cascade-deletes all linked prescription changes.
-    func deletingPlanDeletesLinkedChanges() throws {
+    // Deleting a plan removes unresolved changes but preserves resolved history.
+    func deletingPlanDeletesOnlyPendingLinkedChanges() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
 
-        let initialChangeCount = data.changes.count
-        #expect(initialChangeCount > 0)
+        let resolvedChange = PrescriptionChange(
+            source: .rules,
+            catalogID: data.bench.catalogID,
+            targetExercisePrescription: data.bench,
+            targetSetPrescription: data.benchSet1,
+            targetPlan: data.plan,
+            changeType: .increaseWeight,
+            previousValue: 135,
+            newValue: 140,
+            decision: .accepted,
+            outcome: .good,
+            evaluatedAt: Date()
+        )
+        context.insert(resolvedChange)
 
         data.plan.deleteWithSuggestionCleanup(context: context)
         try context.save()
 
         let remainingChanges = try context.fetch(FetchDescriptor<PrescriptionChange>())
-        #expect(remainingChanges.isEmpty)
+        #expect(remainingChanges.count == 1)
+        #expect(remainingChanges.first?.id == resolvedChange.id)
     }
 
     @Test @MainActor
-    // Plan-level targeted changes are also cascade-deleted when the plan is deleted.
-    func deletingPlanDeletesTargetPlanOnlyChanges() throws {
+    // Plan-level unresolved changes are deleted while resolved plan-level history remains.
+    func deletingPlanDeletesOnlyPendingTargetPlanChanges() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
@@ -297,11 +396,49 @@ struct VillainArcTests {
         )
         context.insert(planLevelChange)
 
+        let resolvedPlanLevelChange = PrescriptionChange(
+            source: .rules,
+            catalogID: data.bench.catalogID,
+            targetPlan: data.plan,
+            changeType: .increaseRest,
+            previousValue: 90,
+            newValue: 105,
+            decision: .accepted,
+            outcome: .good,
+            evaluatedAt: Date()
+        )
+        context.insert(resolvedPlanLevelChange)
+
         data.plan.deleteWithSuggestionCleanup(context: context)
         try context.save()
 
         let remainingChanges = try context.fetch(FetchDescriptor<PrescriptionChange>())
-        #expect(remainingChanges.isEmpty)
+        #expect(remainingChanges.contains { $0.id == planLevelChange.id } == false)
+        #expect(remainingChanges.contains { $0.id == resolvedPlanLevelChange.id })
+    }
+
+    @Test @MainActor
+    // Pending suggestion lookup depends on targetPlan, not just exercise/set links.
+    func pendingSuggestionsRequireTargetPlanLink() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let unlinkedChange = PrescriptionChange(
+            source: .rules,
+            catalogID: data.bench.catalogID,
+            targetExercisePrescription: data.bench,
+            targetSetPrescription: data.benchSet1,
+            changeType: .increaseWeight,
+            previousValue: 135,
+            newValue: 140,
+            decision: .pending
+        )
+        context.insert(unlinkedChange)
+
+        let suggestions = pendingSuggestions(for: data.plan, in: context)
+        #expect(suggestions.contains { $0.id == unlinkedChange.id } == false)
+        #expect(suggestions.allSatisfy { $0.targetPlan?.id == data.plan.id })
     }
 
     @Test @MainActor

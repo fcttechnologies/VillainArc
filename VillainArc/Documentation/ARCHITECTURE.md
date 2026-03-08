@@ -645,7 +645,7 @@
 - `VillainArc/Data/Models/Enums/Sessions/SessionOrigin.swift`: session source enum (`plan`/`freeform`) used by `WorkoutSession`.
 - `VillainArc/Data/Models/Enums/Sessions/SessionStatus.swift`: workout lifecycle enum (`pending`/`active`/`summary`/`done`) used by `WorkoutSession` and flow routing.
 - `VillainArc/Data/Models/Enums/Sessions/PlanCreator.swift`: creator origin enum (`user`/`ai`) for plan provenance.
-- `VillainArc/Data/Models/Enums/Suggestions/ChangeType.swift` + `ChangePolicy`: suggestion change taxonomy and grouping policy used by rules, review UI, and outcome logic.
+- `VillainArc/Data/Models/Enums/Suggestions/ChangeType.swift`: suggestion change taxonomy used by rules, review UI, and outcome logic.
 - `VillainArc/Data/Models/Enums/Suggestions/Decision.swift`: user decision lifecycle for suggestions.
 - `VillainArc/Data/Models/Enums/Suggestions/Outcome.swift`: post-workout suggestion outcome lifecycle.
 - `VillainArc/Data/Models/Enums/Suggestions/SuggestionSource.swift`: suggestion provenance enum (`rules`/`ai`/`user`).

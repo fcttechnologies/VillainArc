@@ -257,13 +257,13 @@ class PreviewDataContainer {
         let s2 = SetPrescription(exercisePrescription: benchPrescription, setType: .working, targetWeight: 155, targetReps: 8, index: 1)
         benchPrescription.sets?.append(s2)
         
-        let change1 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .increaseWeight, previousValue: 135, newValue: 145, changeReasoning: "Hit all reps last 3 sessions")
+        let change1 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, targetPlan: plan, changeType: .increaseWeight, previousValue: 135, newValue: 145, changeReasoning: "Hit all reps last 3 sessions")
         context.insert(change1)
         
-        let change2 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .decreaseReps, previousValue: 10, newValue: 8)
+        let change2 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s1, targetPlan: plan, changeType: .decreaseReps, previousValue: 10, newValue: 8)
         context.insert(change2)
         
-        let change3 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s2, changeType: .increaseWeight, previousValue: 155, newValue: 160)
+        let change3 = PrescriptionChange(catalogID: bench.catalogID, targetExercisePrescription: benchPrescription, targetSetPrescription: s2, targetPlan: plan, changeType: .increaseWeight, previousValue: 155, newValue: 160)
         context.insert(change3)
         
         // Exercise 2: Incline DB (Group: Rep Range)
@@ -273,13 +273,13 @@ class PreviewDataContainer {
         inclinePrescription.repRange?.targetReps = 8
         plan.exercises?.append(inclinePrescription)
         
-        let change4 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue), changeReasoning: "Switching to range for hypertrophy phase")
+        let change4 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, targetPlan: plan, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue), changeReasoning: "Switching to range for hypertrophy phase")
         context.insert(change4)
         
-        let change5 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
+        let change5 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, targetPlan: plan, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
         context.insert(change5)
         
-        let change6 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
+        let change6 = PrescriptionChange(catalogID: incline.catalogID, targetExercisePrescription: inclinePrescription, targetPlan: plan, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
         context.insert(change6)
         
         // Exercise 3: Flys (Group: Rest Time)
@@ -289,7 +289,7 @@ class PreviewDataContainer {
         flysPrescription.sets?.append(flysSet1)
         plan.exercises?.append(flysPrescription)
         
-        let change7 = PrescriptionChange(catalogID: flys.catalogID, targetExercisePrescription: flysPrescription, targetSetPrescription: flysSet1, changeType: .increaseRest, previousValue: 60, newValue: 90, changeReasoning: "Recovery needs increased")
+        let change7 = PrescriptionChange(catalogID: flys.catalogID, targetExercisePrescription: flysPrescription, targetSetPrescription: flysSet1, targetPlan: plan, changeType: .increaseRest, previousValue: 60, newValue: 90, changeReasoning: "Recovery needs increased")
         context.insert(change7)
     }
 

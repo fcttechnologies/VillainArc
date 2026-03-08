@@ -11,7 +11,7 @@ class SetPrescription {
     var targetRest: Int = 0
     var exercise: ExercisePrescription?
     var performances: [SetPerformance]? = [SetPerformance]()
-    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.targetSetPrescription)
+    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetSetPrescription)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
     
     // Adding set in workout plan creation

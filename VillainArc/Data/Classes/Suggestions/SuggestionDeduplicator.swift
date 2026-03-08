@@ -120,8 +120,6 @@ struct SuggestionDeduplicator {
             return .repRangeTarget
         case .changeRepRangeMode:
             return .repRangeMode
-        case .removeSet:
-            return .structure
         }
     }
 
@@ -140,10 +138,8 @@ struct SuggestionDeduplicator {
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget:
             return 3
-        case .removeSet:
-            return 4
         case .increaseRest, .decreaseRest:
-            return 5
+            return 4
         }
     }
 }
@@ -157,7 +153,6 @@ private enum ChangeProperty: Hashable {
     case repRangeLower
     case repRangeUpper
     case repRangeTarget
-    case structure
 }
 
 private struct ConflictKey: Hashable {

@@ -5,25 +5,20 @@ struct SuggestionGroup: Identifiable {
     let id = UUID()
     let changes: [PrescriptionChange]
     let setPrescription: SetPrescription?
-    let policy: ChangePolicy?
 
     var label: String {
         if let set = setPrescription {
             return "Set \(set.index + 1)"
         }
-        switch policy {
-        case .repRange: return "Rep Range"
-        case .structure: return "Volume"
-        case nil: return "Settings"
-        }
+        return "Rep Range"
     }
 }
 
 struct ExerciseSuggestionSection: Identifiable {
-    let id = UUID()
     let exercisePrescription: ExercisePrescription
     let groups: [SuggestionGroup]
 
+    var id: UUID { exercisePrescription.id }
     var exerciseName: String { exercisePrescription.name }
 }
 
@@ -41,17 +36,16 @@ func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSec
 
         let bySet = Dictionary(grouping: setChanges) { $0.targetSetPrescription!.id }
         for (_, changes) in bySet {
-            groups.append(SuggestionGroup(changes: sortedChanges(changes, policy: nil), setPrescription: changes.first?.targetSetPrescription, policy: nil))
+            groups.append(SuggestionGroup(changes: sortedChanges(changes), setPrescription: changes.first?.targetSetPrescription))
         }
 
-        let byPolicy = Dictionary(grouping: exerciseLevelChanges) { $0.changeType.policy }
-        for (policy, changes) in byPolicy {
-            groups.append(SuggestionGroup(changes: sortedChanges(changes, policy: policy), setPrescription: nil, policy: policy))
+        if !exerciseLevelChanges.isEmpty {
+            groups.append(SuggestionGroup(changes: sortedChanges(exerciseLevelChanges), setPrescription: nil))
         }
 
         groups.sort {
-            let aOrder = $0.setPrescription?.index ?? (1000 + ($0.policy == .repRange ? 0 : 1))
-            let bOrder = $1.setPrescription?.index ?? (1000 + ($1.policy == .repRange ? 0 : 1))
+            let aOrder = $0.setPrescription?.index ?? Int.max
+            let bOrder = $1.setPrescription?.index ?? Int.max
             return aOrder < bOrder
         }
 
@@ -59,10 +53,10 @@ func groupSuggestions(_ changes: [PrescriptionChange]) -> [ExerciseSuggestionSec
     }.sorted { $0.exercisePrescription.index < $1.exercisePrescription.index }
 }
 
-private func sortedChanges(_ changes: [PrescriptionChange], policy: ChangePolicy?) -> [PrescriptionChange] {
+private func sortedChanges(_ changes: [PrescriptionChange]) -> [PrescriptionChange] {
     changes.sorted { lhs, rhs in
-        let lhsOrder = changeOrder(for: lhs.changeType, policy: policy)
-        let rhsOrder = changeOrder(for: rhs.changeType, policy: policy)
+        let lhsOrder = changeOrder(for: lhs.changeType)
+        let rhsOrder = changeOrder(for: rhs.changeType)
         if lhsOrder != rhsOrder {
             return lhsOrder < rhsOrder
         }
@@ -70,22 +64,7 @@ private func sortedChanges(_ changes: [PrescriptionChange], policy: ChangePolicy
     }
 }
 
-private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> Int {
-    if policy == .repRange {
-        switch changeType {
-        case .changeRepRangeMode:
-            return 1
-        case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return 2
-        case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return 3
-        case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            return 4
-        default:
-            return 10
-        }
-    }
-
+private func changeOrder(for changeType: ChangeType) -> Int {
     switch changeType {
     case .increaseWeight, .decreaseWeight:
         return 1
@@ -95,8 +74,6 @@ private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> I
         return 3
     case .changeSetType:
         return 4
-    case .removeSet:
-        return 5
     case .changeRepRangeMode,
          .increaseRepRangeLower, .decreaseRepRangeLower,
          .increaseRepRangeUpper, .decreaseRepRangeUpper,
@@ -113,28 +90,5 @@ func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [Pre
     let descriptor = FetchDescriptor<PrescriptionChange>(predicate: #Predicate<PrescriptionChange> {
         ($0.decision == pending || $0.decision == deferred) && $0.targetPlan?.id == planID
     })
-    if let planChanges = try? context.fetch(descriptor), !planChanges.isEmpty {
-        return planChanges
-    }
-
-    var exerciseIDs: Set<UUID> = []
-    for exercise in plan.exercises ?? [] {
-        exerciseIDs.insert(exercise.id)
-    }
-    var setIDs: Set<UUID> = []
-    for exercise in plan.exercises ?? [] {
-        for set in exercise.sets ?? [] {
-            setIDs.insert(set.id)
-        }
-    }
-
-    let legacyDescriptor = FetchDescriptor<PrescriptionChange>(predicate: #Predicate<PrescriptionChange> {
-        $0.decision == pending || $0.decision == deferred
-    })
-    guard let pendingChanges = try? context.fetch(legacyDescriptor) else { return [] }
-
-    return pendingChanges.filter { change in
-        exerciseIDs.contains(change.targetExercisePrescription?.id ?? UUID()) ||
-        setIDs.contains(change.targetSetPrescription?.id ?? UUID())
-    }
+    return (try? context.fetch(descriptor)) ?? []
 }

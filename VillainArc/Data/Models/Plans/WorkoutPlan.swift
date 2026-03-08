@@ -17,7 +17,7 @@ class WorkoutPlan {
     @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
     var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
     var workoutSessions: [WorkoutSession]? = [WorkoutSession]()
-    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.targetPlan)
+    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetPlan)
     var targetedChanges: [PrescriptionChange]? = [PrescriptionChange]()
 
     var sortedExercises: [ExercisePrescription] {

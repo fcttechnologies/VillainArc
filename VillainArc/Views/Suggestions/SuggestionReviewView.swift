@@ -19,7 +19,7 @@ struct SuggestionReviewView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 16) {
-                ForEach(sections, id: \.exerciseName) { section in
+                ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.exerciseName)
                             .font(.title3)
@@ -269,9 +269,6 @@ struct ChangeDescriptionRow: View {
         case .changeRepRangeMode:
             return repRangeModeDescription(newModeRaw: Int(new))
             
-        // Structure
-        case .removeSet:
-            return "Working sets: \(Int(previous)) → \(Int(new))"
         }
     }
     
@@ -318,13 +315,6 @@ func applyChange(_ change: PrescriptionChange, context: ModelContext) {
         change.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue ?? 0)
     case .changeRepRangeMode:
         change.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue ?? 0)) ?? .notSet
-    case .removeSet:
-        // Remove the last working set from the prescription.
-        if let prescription = change.targetExercisePrescription,
-           let lastWorkingSet = prescription.sortedSets.last(where: { $0.type == .working }) {
-            prescription.deleteSet(lastWorkingSet)
-            context.delete(lastWorkingSet)
-        }
     }
 }
 

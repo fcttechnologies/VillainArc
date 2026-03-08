@@ -11,7 +11,7 @@ import SwiftData
 /// **Lifecycle:**
 /// 1. Created with `decision = .pending`
 /// 2. User reviews: Sets `decision` to `.accepted`, `.rejected`, or `.deferred`
-/// 3. After next workout: `outcome` determined (`.good`, `.tooAggressive`, `.insufficient`)
+/// 3. After next workout: `outcome` determined (`.good`, `.tooAggressive`, `.tooEasy`, `.ignored`, or `.userModified`)
 /// 4. `outcomeReason` explains WHY (for learning)
 ///
 /// **Learning:**

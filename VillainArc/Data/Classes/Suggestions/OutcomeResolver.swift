@@ -16,7 +16,6 @@ private struct OutcomeGroup {
     let exercisePerf: ExercisePerformance
     let prescription: ExercisePrescription
     let setPrescription: SetPrescription?
-    let policy: ChangePolicy?
 }
 
 // MARK: - Resolver
@@ -142,13 +141,11 @@ struct OutcomeResolver {
             // Group set changes by set ID.
             let bySet = Dictionary(grouping: setChanges) { $0.targetSetPrescription!.id }
             for (_, changes) in bySet {
-                groups.append(OutcomeGroup(changes: changes, exercisePerf: exercisePerf, prescription: prescription, setPrescription: changes.first?.targetSetPrescription, policy: nil))
+                groups.append(OutcomeGroup(changes: changes, exercisePerf: exercisePerf, prescription: prescription, setPrescription: changes.first?.targetSetPrescription))
             }
 
-            // Group exercise-level changes by policy.
-            let byPolicy = Dictionary(grouping: exerciseLevelChanges) { $0.changeType.policy }
-            for (policy, changes) in byPolicy {
-                groups.append(OutcomeGroup(changes: changes, exercisePerf: exercisePerf, prescription: prescription, setPrescription: nil, policy: policy))
+            if !exerciseLevelChanges.isEmpty {
+                groups.append(OutcomeGroup(changes: exerciseLevelChanges, exercisePerf: exercisePerf, prescription: prescription, setPrescription: nil))
             }
         }
 
@@ -245,8 +242,7 @@ struct OutcomeResolver {
              .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
-             .increaseRest, .decreaseRest,
-             .removeSet:
+             .increaseRest, .decreaseRest:
             return String(roundedInt)
         case .changeSetType:
             if let type = ExerciseSetType(rawValue: roundedInt) {
@@ -302,8 +298,6 @@ struct OutcomeResolver {
             return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: oldValue.map { Int($0) }, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
             return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: oldValue.map { Int($0) }, sets: snapshot.sets)
-        case .removeSet:
-            return withRestoredWorkingSetCount(snapshot: snapshot, oldCount: oldValue.map { Int($0) })
         }
     }
 
@@ -313,39 +307,6 @@ struct OutcomeResolver {
             set.index == targetIndex ? transform(set) : set
         }
         return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: sets)
-    }
-
-    private static func withRestoredWorkingSetCount(snapshot: AIExercisePrescriptionSnapshot, oldCount: Int?) -> AIExercisePrescriptionSnapshot {
-        guard let oldCount else { return snapshot }
-
-        var sets = snapshot.sets.sorted { $0.index < $1.index }
-        let currentWorkingSets = sets.filter { $0.setType == .working }
-        guard currentWorkingSets.count < oldCount, let lastWorkingSet = currentWorkingSets.last else {
-            return snapshot
-        }
-
-        var nextIndex = (sets.map(\.index).max() ?? -1) + 1
-        while sets.filter({ $0.setType == .working }).count < oldCount {
-            sets.append(
-                AISetPrescriptionSnapshot(
-                    index: nextIndex,
-                    setType: .working,
-                    targetWeight: lastWorkingSet.targetWeight,
-                    targetReps: lastWorkingSet.targetReps,
-                    targetRest: lastWorkingSet.targetRest
-                )
-            )
-            nextIndex += 1
-        }
-
-        return AIExercisePrescriptionSnapshot(
-            exerciseName: snapshot.exerciseName,
-            repRangeMode: snapshot.repRangeMode,
-            repRangeLower: snapshot.repRangeLower,
-            repRangeUpper: snapshot.repRangeUpper,
-            repRangeTarget: snapshot.repRangeTarget,
-            sets: sets.sorted { $0.index < $1.index }
-        )
     }
 
     // MARK: - Merge
