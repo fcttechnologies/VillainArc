@@ -107,23 +107,31 @@ private func changeOrder(for changeType: ChangeType, policy: ChangePolicy?) -> I
 
 
 func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [PrescriptionChange] {
+    let planID = plan.id
+    let pending = Decision.pending
+    let deferred = Decision.deferred
+    let descriptor = FetchDescriptor<PrescriptionChange>(predicate: #Predicate<PrescriptionChange> {
+        ($0.decision == pending || $0.decision == deferred) && $0.targetPlan?.id == planID
+    })
+    if let planChanges = try? context.fetch(descriptor), !planChanges.isEmpty {
+        return planChanges
+    }
+
     var exerciseIDs: Set<UUID> = []
     for exercise in plan.exercises ?? [] {
         exerciseIDs.insert(exercise.id)
     }
     var setIDs: Set<UUID> = []
-    for exercise in plan.exercises ?? []{
+    for exercise in plan.exercises ?? [] {
         for set in exercise.sets ?? [] {
             setIDs.insert(set.id)
         }
     }
 
-    let pending = Decision.pending
-    let deferred = Decision.deferred
-    let descriptor = FetchDescriptor<PrescriptionChange>(predicate: #Predicate<PrescriptionChange> {
+    let legacyDescriptor = FetchDescriptor<PrescriptionChange>(predicate: #Predicate<PrescriptionChange> {
         $0.decision == pending || $0.decision == deferred
     })
-    guard let pendingChanges = try? context.fetch(descriptor) else { return [] }
+    guard let pendingChanges = try? context.fetch(legacyDescriptor) else { return [] }
 
     return pendingChanges.filter { change in
         exerciseIDs.contains(change.targetExercisePrescription?.id ?? UUID()) ||

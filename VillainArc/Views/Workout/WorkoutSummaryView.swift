@@ -24,6 +24,7 @@ struct WorkoutSummaryView: View {
     @State private var showNotesEditorSheet = false
     @State private var prEntries: [PRItem] = []
     @State private var isGeneratingSuggestions = false
+    @State private var showPRSection = false
 
     private var totalExercises: Int {
         workout.exercises?.count ?? 0
@@ -60,6 +61,10 @@ struct WorkoutSummaryView: View {
 
     private var shouldShowSuggestions: Bool {
         workout.workoutPlan != nil
+    }
+
+    private var prCount: Int {
+        prEntries.reduce(0) { $0 + $1.types.count }
     }
 
     private var suggestionSections: [ExerciseSuggestionSection] {
@@ -107,7 +112,7 @@ struct WorkoutSummaryView: View {
                     } else {
                         HStack(spacing: 12) {
                             summaryStat(title: "Total Volume", value: formattedTotalVolume)
-                            summaryStat(title: "New PRs", value: "\(prEntries.reduce(0) { $0 + $1.types.count })")
+                            summaryStat(title: "New PRs", value: "\(prCount)")
                         }
                     }
 
@@ -132,36 +137,23 @@ struct WorkoutSummaryView: View {
 
                     effortSection
 
+                    planSaveSection
+
                     if shouldShowSuggestions {
                         VStack(alignment: .leading, spacing: 12) {
+                            Text("Suggestions")
+                                .font(.headline)
                             if isGeneratingSuggestions {
                                 ProgressView("Generating suggestions...")
                                     .frame(maxWidth: .infinity, alignment: .center)
                             } else {
-                                Text("Suggestions")
-                                    .font(.headline)
-                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in acceptGroup(changes, context: context) }, onRejectGroup: { changes in rejectGroup(changes, context: context) }, onDeferGroup: { changes in deferGroup(changes, context: context) }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "Keep logging workouts so we have enough information to give you detailed suggestions."))
-                            }
-                        }
-                    } else if !prEntries.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(prEntries) { entry in
-                                prRow(entry)
+                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in acceptGroup(changes, context: context) }, onRejectGroup: { changes in rejectGroup(changes, context: context) }, onDeferGroup: { changes in deferGroup(changes, context: context) }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "This workout is now saved as a plan. Suggestions will appear here when we have enough evidence to make them."))
                             }
                         }
                     }
 
-                    if workout.workoutPlan == nil {
-                        Button {
-                            saveWorkoutAsPlan()
-                        } label: {
-                            Label("Save as Workout Plan", systemImage: "list.clipboard")
-                                .padding(.vertical, 5)
-                                .fontWeight(.semibold)
-                                .font(.title3)
-                        }
-                        .buttonStyle(.glassProminent)
-                        .buttonSizing(.flexible)
+                    if !prEntries.isEmpty {
+                        prDisclosureSection
                     }
                 }
                 .fontDesign(.rounded)
@@ -243,6 +235,65 @@ struct WorkoutSummaryView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var planSaveSection: some View {
+        if let workoutPlan = workout.workoutPlan {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.green)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Saved as Workout Plan")
+                        .font(.headline)
+                    Text(workoutPlan.title)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(isGeneratingSuggestions ? "Generating suggestions for this plan now." : "Suggestions for this plan appear below when they are available.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        } else {
+            Button {
+                saveWorkoutAsPlan()
+            } label: {
+                Label("Save as Workout Plan", systemImage: "list.clipboard")
+                    .padding(.vertical, 5)
+                    .fontWeight(.semibold)
+                    .font(.title3)
+            }
+            .buttonStyle(.glassProminent)
+            .buttonSizing(.flexible)
+        }
+    }
+
+    private var prDisclosureSection: some View {
+        DisclosureGroup(isExpanded: $showPRSection) {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(prEntries) { entry in
+                    prRow(entry)
+                }
+            }
+            .padding(.top, 10)
+        } label: {
+            HStack(spacing: 8) {
+                Text("Personal Records")
+                    .font(.headline)
+                Spacer()
+                Text("\(prCount)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func effortCard(for value: Int) -> some View {
@@ -373,13 +424,17 @@ struct WorkoutSummaryView: View {
     }
 
     private func saveWorkoutAsPlan() {
+        guard workout.workoutPlan == nil else { return }
         Haptics.selection()
         let plan = WorkoutPlan(from: workout, completed: true)
         context.insert(plan)
         workout.workoutPlan = plan
         saveContext(context: context)
         SpotlightIndexer.index(workoutPlan: plan)
-        Task { await IntentDonations.donateSaveWorkoutAsPlan(workout: workout) }
+        Task {
+            await generateSuggestionsIfNeeded()
+            await IntentDonations.donateSaveWorkoutAsPlan(workout: workout)
+        }
     }
 
     @MainActor

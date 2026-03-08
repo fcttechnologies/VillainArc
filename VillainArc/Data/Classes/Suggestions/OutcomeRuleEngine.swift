@@ -5,8 +5,8 @@ import Foundation
 struct OutcomeRuleEngine {
 
     /// Routes each change type to the matching rule evaluator.
-    static func evaluate(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        let regularSets = exercisePerf.sortedSets.filter { $0.type == .working }
+    static func evaluate(change: PrescriptionChange, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
+        let regularSets = relevantWorkingSets(in: exercisePerf, trainingStyle: trainingStyle)
 
         switch change.changeType {
         case .increaseWeight, .decreaseWeight:
@@ -25,6 +25,12 @@ struct OutcomeRuleEngine {
         case .removeSet:
             return evaluateRemoveSetChange(change: change, exercisePerf: exercisePerf)
         }
+    }
+
+    private static func relevantWorkingSets(in exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> [SetPerformance] {
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: exercisePerf, overrideStyle: trainingStyle)
+        let workingSets = progressionSets.filter { $0.type == .working }
+        return workingSets.isEmpty ? progressionSets : workingSets
     }
 
     // MARK: - Match Set Performance
@@ -58,8 +64,10 @@ struct OutcomeRuleEngine {
         let weightStep = weightTolerance(for: exercisePerf, baseWeight: baseWeight)
         let actualWeight = setPerf.weight
 
-        // If the athlete never got near the new target, mark as ignored.
-        guard abs(actualWeight - newWeight) <= weightStep else {
+        let followedDirection = followedDirectionalTarget(actual: actualWeight, old: oldWeight, new: newWeight, tolerance: weightStep)
+
+        // If the athlete never got near the new target or moved in the suggested direction, mark as ignored.
+        guard followedDirection else {
             if abs(actualWeight - oldWeight) <= weightStep {
                 return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual weight (\(actualWeight)) stayed near old target (\(oldWeight)), new target (\(newWeight)) not attempted.")
             }
@@ -83,9 +91,9 @@ struct OutcomeRuleEngine {
 
         let actualReps = setPerf.reps
 
-        // Accept either close hit (within 1 rep) or directional progress toward new target.
-        let movedToward = abs(actualReps - newReps) < abs(actualReps - oldReps)
-        guard abs(actualReps - newReps) <= 1 || movedToward else {
+        // Accept either a close hit or clear movement in the suggested direction.
+        let followedDirection = followedDirectionalTarget(actual: Double(actualReps), old: Double(oldReps), new: Double(newReps), tolerance: 1)
+        guard followedDirection else {
             if abs(actualReps - oldReps) <= 1 {
                 return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual reps (\(actualReps)) stayed at old target (\(oldReps)).")
             }
@@ -108,8 +116,10 @@ struct OutcomeRuleEngine {
 
         let actualRest = setPerf.restSeconds
 
-        // Rest adherence window: ±15s counts as following target.
-        guard abs(actualRest - newRest) <= 15 else {
+        let followedDirection = followedDirectionalTarget(actual: Double(actualRest), old: Double(oldRest), new: Double(newRest), tolerance: 15)
+
+        // Rest adherence window: ±15s counts as following target. Overshooting in the suggested direction also counts.
+        guard followedDirection else {
             if abs(actualRest - oldRest) <= 15 {
                 return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual rest (\(actualRest)s) stayed near old target (\(oldRest)s).")
             }
@@ -194,6 +204,24 @@ struct OutcomeRuleEngine {
 
         // In between: partial adherence.
         return OutcomeSignal(outcome: .good, confidence: 0.6, reason: "User completed \(actualCount) working sets, between old (\(oldCount)) and suggested (\(newCount)).")
+    }
+
+    private static func followedDirectionalTarget(actual: Double, old: Double, new: Double, tolerance: Double) -> Bool {
+        guard tolerance >= 0 else { return false }
+        if abs(actual - new) <= tolerance {
+            return true
+        }
+        if abs(actual - new) < abs(actual - old) {
+            return true
+        }
+
+        if new > old {
+            return actual > new
+        }
+        if new < old {
+            return actual < new
+        }
+        return false
     }
 
     // MARK: - Rule Helpers

@@ -80,7 +80,7 @@ struct DeferredSuggestionsView: View {
         Haptics.selection()
         for change in sessionChanges where change.decision == .pending || change.decision == .deferred {
             change.decision = .accepted
-            applyChange(change)
+            applyChange(change, context: context)
         }
         saveContext(context: context)
         proceedToWorkout()

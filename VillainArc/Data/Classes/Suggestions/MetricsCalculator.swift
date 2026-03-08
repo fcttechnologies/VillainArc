@@ -1,67 +1,44 @@
 import Foundation
-import FoundationModels
-
-@Generable
-enum TrainingStyle: String {
-    case straightSets = "Straight Sets"        // all weights within ~10% of average
-    case ascendingPyramid = "Ascending Pyramid" // weight peaks in middle, not first or last
-    case descendingPyramid = "Descending Pyramid" // heaviest first, weight drops each set
-    case ascending = "Ascending"               // weights ramp up monotonically, heaviest is last
-    case topSetBackoffs = "Top Set Then Backoffs" // 1-3 heavy sets at top, remaining are clearly lighter
-    case unknown = "Unknown"
-}
 
 struct MetricsCalculator {
     static func selectProgressionSets(from performance: ExercisePerformance, overrideStyle: TrainingStyle? = nil) -> [SetPerformance] {
-        // Picks the working sets that drive progression rules.
-        let sets = performance.sortedSets
+        let sets = performance.sortedSets.filter(\.complete)
         guard !sets.isEmpty else { return [] }
 
-        let regularSets = sets.filter { $0.type == .working }
-        if !regularSets.isEmpty {
-            // If user labels sets properly, use all regular sets.
-            return regularSets
-        }
-
-        // If set types are unreliable, infer training style by weight pattern.
-        let style = overrideStyle ?? detectTrainingStyle(sets)
-        return setsForStyle(style, from: sets)
+        let workingSets = sets.filter { $0.type == .working }
+        let candidates = workingSets.isEmpty ? sets : workingSets
+        let style = overrideStyle ?? detectTrainingStyle(candidates)
+        return setsForStyle(style, from: candidates)
     }
 
     private static func setsForStyle(_ style: TrainingStyle, from sets: [SetPerformance]) -> [SetPerformance] {
+        let orderedSets = sets.sorted { $0.index < $1.index }
+        let maxWeight = orderedSets.map(\.weight).max() ?? 0
+
         switch style {
         case .straightSets:
-            return sets
+            return orderedSets
         case .ascendingPyramid:
-            let maxWeight = sets.map { $0.weight }.max() ?? 0
-            return sets.filter { $0.weight >= maxWeight * 0.95 }
-                .sorted { $0.index < $1.index }
+            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
         case .descendingPyramid:
-            // Heaviest sets are at the front; include all sets near top weight.
-            let maxWeight = sets.map { $0.weight }.max() ?? 0
-            return sets.filter { $0.weight >= maxWeight * 0.9 }
-                .sorted { $0.index < $1.index }
+            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
         case .ascending:
-            // Heaviest sets are at the end; include all sets near top weight.
-            let maxWeight = sets.map { $0.weight }.max() ?? 0
-            return sets.filter { $0.weight >= maxWeight * 0.9 }
-                .sorted { $0.index < $1.index }
+            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
         case .topSetBackoffs:
-            // Pick the heavy cluster: sets within 10% of max weight.
-            let maxWeight = sets.map { $0.weight }.max() ?? 0
-            guard maxWeight > 0 else { return sets }
-            return sets.filter { $0.weight >= maxWeight * 0.9 }
-                .sorted { $0.weight > $1.weight }
+            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.92)
         case .unknown:
-            return sets.sorted { $0.weight > $1.weight }
+            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
         }
     }
 
     static func detectTrainingStyle(_ sets: [SetPerformance]) -> TrainingStyle {
-        // Infers training style by weight patterns when set types aren't reliable.
-        guard sets.count >= 3 else { return .unknown }
+        let completeSets = sets.filter(\.complete)
+        let workingSets = completeSets.filter { $0.type == .working }
+        let analysisSets = workingSets.isEmpty ? completeSets : workingSets
 
-        let weights = sets.map { $0.weight }
+        guard analysisSets.count >= 3 else { return .unknown }
+
+        let weights = analysisSets.map(\.weight)
         let maxWeight = weights.max() ?? 0
         guard maxWeight > 0 else { return .unknown }
         let avgWeight = weights.reduce(0, +) / Double(weights.count)
@@ -83,13 +60,13 @@ struct MetricsCalculator {
 
         // Ascending: weights monotonically increase (with small tolerance), heaviest is last.
         let ascendingCount = zip(weights, weights.dropFirst()).filter { $0 <= $1 }.count
-        if ascendingCount >= sets.count - 2 && weights.last == maxWeight {
+        if ascendingCount >= analysisSets.count - 2 && weights.last == maxWeight {
             return .ascending
         }
 
         // Descending pyramid: mostly descending, heaviest is first.
         let descendingCount = zip(weights, weights.dropFirst()).filter { $0 > $1 }.count
-        if descendingCount >= sets.count - 2 && weights.first == maxWeight {
+        if descendingCount >= analysisSets.count - 2 && weights.first == maxWeight {
             return .descendingPyramid
         }
 
@@ -100,6 +77,18 @@ struct MetricsCalculator {
         }
 
         return .unknown
+    }
+
+    private static func heavyClusterSets(from sets: [SetPerformance], maxWeight: Double, thresholdRatio: Double) -> [SetPerformance] {
+        guard !sets.isEmpty else { return [] }
+        guard maxWeight > 0 else { return sets }
+
+        let cluster = sets.filter { $0.weight >= maxWeight * thresholdRatio }
+        if !cluster.isEmpty {
+            return cluster.sorted { $0.index < $1.index }
+        }
+
+        return sets.filter { $0.weight == maxWeight }.sorted { $0.index < $1.index }
     }
 
     static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType) -> Double {

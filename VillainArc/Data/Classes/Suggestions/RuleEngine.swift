@@ -11,56 +11,69 @@ struct ExerciseSuggestionContext {
 
 struct RuleEngine {
     static func evaluate(context: ExerciseSuggestionContext) -> [PrescriptionChange] {
-        // Rule order is intentional:
-        // 1) Progression rules (increase weight when performance warrants it).
-        // 2) Safety/cleanup (reduce weight, fix prescriptions to match behavior).
-        // 3) Optimization (rest/stagnation, set type hygiene).
         var suggestions: [PrescriptionChange] = []
 
-        // Progression rules (ordered from strongest evidence to more general).
-        suggestions.append(contentsOf: largeOvershootProgression(context))
-        suggestions.append(contentsOf: doubleProgressionRange(context))
-        suggestions.append(contentsOf: doubleProgressionTarget(context))
-        suggestions.append(contentsOf: steadyRepIncreaseWithinRange(context))
+        let progression = progressionSuggestions(context)
+        suggestions.append(contentsOf: progression)
 
-        // Safety / cleanup rules.
-        suggestions.append(contentsOf: belowRangeWeightDecrease(context))
-        suggestions.append(contentsOf: reducedWeightToHitReps(context))
-        suggestions.append(contentsOf: matchActualWeight(context))
-        suggestions.append(contentsOf: stagnationIncreaseRest(context))
-        suggestions.append(contentsOf: volumeRegression(context))
+        let safetyAndCleanup = safetyAndCleanupSuggestions(context)
+        suggestions.append(contentsOf: safetyAndCleanup)
 
-        // Set type hygiene (ensure labels match behavior).
-        suggestions.append(contentsOf: shortRestPerformanceDrop(context))
-        suggestions.append(contentsOf: dropSetWithoutBase(context))
-        suggestions.append(contentsOf: warmupActingLikeWorkingSet(context))
-        suggestions.append(contentsOf: regularActingLikeWarmup(context))
-        suggestions.append(contentsOf: setTypeMismatch(context))
+        let shouldHold = progression.isEmpty && safetyAndCleanup.isEmpty && shouldHoldSteady(context)
+        if !shouldHold {
+            suggestions.append(contentsOf: plateauSuggestions(context))
+        }
+
+        suggestions.append(contentsOf: setTypeHygieneSuggestions(context))
 
         return suggestions
     }
 
-    private static func doubleProgressionRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
-        // Range mode progression: hit upper bound for 2 sessions -> increase weight, reset to lower bound.
+    private static func progressionSuggestions(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        var suggestions: [PrescriptionChange] = []
+        suggestions.append(contentsOf: largeOvershootProgression(context))
+        suggestions.append(contentsOf: immediateProgressionRange(context))
+        suggestions.append(contentsOf: immediateProgressionTarget(context))
+        suggestions.append(contentsOf: confirmedProgressionRange(context))
+        suggestions.append(contentsOf: confirmedProgressionTarget(context))
+        suggestions.append(contentsOf: steadyRepIncreaseWithinRange(context))
+        return suggestions
+    }
+
+    private static func safetyAndCleanupSuggestions(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        var suggestions: [PrescriptionChange] = []
+        suggestions.append(contentsOf: belowRangeWeightDecrease(context))
+        suggestions.append(contentsOf: reducedWeightToHitReps(context))
+        suggestions.append(contentsOf: matchActualWeight(context))
+        return suggestions
+    }
+
+    private static func plateauSuggestions(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        var suggestions: [PrescriptionChange] = []
+        suggestions.append(contentsOf: shortRestPerformanceDrop(context))
+        suggestions.append(contentsOf: stagnationIncreaseRest(context))
+        suggestions.append(contentsOf: volumeRegression(context))
+        return suggestions
+    }
+
+    private static func setTypeHygieneSuggestions(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        var suggestions: [PrescriptionChange] = []
+        suggestions.append(contentsOf: dropSetWithoutBase(context))
+        suggestions.append(contentsOf: warmupActingLikeWorkingSet(context))
+        suggestions.append(contentsOf: regularActingLikeWarmup(context))
+        suggestions.append(contentsOf: setTypeMismatch(context))
+        return suggestions
+    }
+
+    private static func immediateProgressionRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        // Range mode progression: if primary sets reach the top of the range now, progress immediately.
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let lower = repRange.lowerRange
         let upper = repRange.upperRange
-        let recent = recentPerformances(context)
-        guard recent.count >= 2 else { return [] }
-
-        // Require BOTH of the last two sessions to hit the top of the range.
-        let lastTwo = Array(recent.prefix(2))
-        let hitTopInBoth = lastTwo.allSatisfy { performance in
-            let progressionSets = selectProgressionSets(from: performance, context: context)
-            guard !progressionSets.isEmpty else { return false }
-            return progressionSets.allSatisfy { $0.reps >= upper }
-        }
-
-        guard hitTopInBoth else { return [] }
-
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
+        guard progressionSets.allSatisfy({ $0.reps >= upper }) else { return [] }
 
         var changes: [PrescriptionChange] = []
         let repsReason = "Reset reps to \(lower) to account for the added weight."
@@ -77,8 +90,8 @@ struct RuleEngine {
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
-                ? "You hit the top of your rep range (\(upper)) in your last two sessions. Increase weight to keep progressing."
-                : "You hit the top of your rep range (\(upper)) in your last two sessions. Increase weight and keep reps at \(lower)."
+                ? "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight to keep progressing."
+                : "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight and keep reps at \(lower)."
 
             changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: weightReason))
 
@@ -90,29 +103,100 @@ struct RuleEngine {
         return changes
     }
 
-    private static func doubleProgressionTarget(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
-        // Target mode progression: exceed target by 1+ for 2 sessions -> increase weight.
+    private static func immediateProgressionTarget(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        // Target mode progression: if primary sets exceed the target now, progress immediately.
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
+        guard repRange.activeMode == .target else { return [] }
+        let target = repRange.targetReps
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
+        guard !progressionSets.isEmpty else { return [] }
+        guard progressionSets.allSatisfy({ $0.reps >= target + 1 }) else { return [] }
+
+        var changes: [PrescriptionChange] = []
+        let reason = "You exceeded your rep target (\(target)) on your primary sets this session. Increase weight to keep progressing."
+        let multiplier = styleIncrementMultiplier(context)
+
+        for set in progressionSets {
+            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            let currentWeight = setPrescription.targetWeight
+            guard currentWeight > 0 else { continue }
+
+            let baseIncrement = weightIncrement(for: currentWeight, context: context)
+            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
+
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: reason))
+        }
+
+        return changes
+    }
+
+    private static func confirmedProgressionRange(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
+        guard repRange.activeMode == .range else { return [] }
+        let lower = repRange.lowerRange
+        let upper = repRange.upperRange
+        let recent = recentPerformances(context)
+        guard recent.count >= 2 else { return [] }
+        guard !qualifiesForImmediateLoadProgression(context) else { return [] }
+
+        let lastTwo = Array(recent.prefix(2))
+        let nearTopInBoth = lastTwo.allSatisfy { performance in
+            let progressionSets = primaryProgressionSets(from: performance, context: context)
+            guard !progressionSets.isEmpty else { return false }
+            return progressionSets.allSatisfy { $0.reps >= upper - 1 }
+        }
+        guard nearTopInBoth else { return [] }
+
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
+        guard !progressionSets.isEmpty else { return [] }
+
+        var changes: [PrescriptionChange] = []
+        let repsReason = "Reset reps to \(lower) to account for the added weight."
+        let multiplier = styleIncrementMultiplier(context)
+
+        for set in progressionSets {
+            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            let currentWeight = setPrescription.targetWeight
+            guard currentWeight > 0 else { continue }
+
+            let baseIncrement = weightIncrement(for: currentWeight, context: context)
+            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
+            let shouldResetReps = setPrescription.targetReps != lower
+            let weightReason = shouldResetReps
+                ? "You've been near the top of your rep range (\(upper)) for two sessions on your primary sets. Increase weight to keep progressing."
+                : "You've been near the top of your rep range (\(upper)) for two sessions on your primary sets. Increase weight and keep reps at \(lower)."
+
+            changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight, reasoning: weightReason))
+
+            if shouldResetReps {
+                changes.append(makeSetChange(context: context, set: set, setPrescription: setPrescription, changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower), reasoning: repsReason))
+            }
+        }
+
+        return changes
+    }
+
+    private static func confirmedProgressionTarget(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return [] }
         let target = repRange.targetReps
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
+        guard !qualifiesForImmediateLoadProgression(context) else { return [] }
 
-        // Require BOTH of the last two sessions to exceed target by at least 1.
         let lastTwo = Array(recent.prefix(2))
-        let exceededTargetInBoth = lastTwo.allSatisfy { performance in
-            let progressionSets = selectProgressionSets(from: performance, context: context)
+        let nearTargetInBoth = lastTwo.allSatisfy { performance in
+            let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
-            return progressionSets.allSatisfy { $0.reps >= target + 1 }
+            return progressionSets.allSatisfy { $0.reps >= target }
         }
+        guard nearTargetInBoth else { return [] }
 
-        guard exceededTargetInBoth else { return [] }
-
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
-        let reason = "You exceeded your rep target (\(target)) in your last two sessions. Increase weight to keep progressing."
+        let reason = "You've consistently reached your rep target (\(target)) on your primary sets. Increase weight to keep progressing."
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
@@ -138,7 +222,7 @@ struct RuleEngine {
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         // Skip reps-increase if weight progression already qualifies.
@@ -160,8 +244,7 @@ struct RuleEngine {
             var includesCurrent = false
 
             for performance in evidence {
-                guard let perfSet = performance.sortedSets[safe: setPrescription.index],
-                      perfSet.complete else { continue }
+                guard let perfSet = matchingSetPerformance(in: performance, for: setPrescription) else { continue }
                 guard perfSet.type == .working else { continue }
 
                 if performance.id == context.performance.id {
@@ -191,14 +274,11 @@ struct RuleEngine {
     }
 
     private static func largeOvershootProgression(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
-        // Large overshoot: reps exceed top by 4+ (range) or target by 5+ for 2 sessions -> bigger jump.
-        let recent = recentPerformances(context)
-        guard recent.count >= 2 else { return [] }
-
-        // Check overshoot in BOTH of the last two sessions.
-        let lastTwo = Array(recent.prefix(2))
+        // Large overshoot: one emphatically strong session is enough for a larger jump.
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode != .notSet else { return [] }
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
+        guard !progressionSets.isEmpty else { return [] }
 
         let overshootMet: Bool
         var lower = 0
@@ -208,29 +288,18 @@ struct RuleEngine {
             lower = repRange.lowerRange
             shouldResetReps = true
             let upper = repRange.upperRange
-            overshootMet = lastTwo.allSatisfy { performance in
-                let progressionSets = selectProgressionSets(from: performance, context: context)
-                guard !progressionSets.isEmpty else { return false }
-                return progressionSets.allSatisfy { $0.reps >= upper + 4 }
-            }
+            overshootMet = progressionSets.allSatisfy { $0.reps >= upper + 3 }
         case .target:
             let target = repRange.targetReps
-            overshootMet = lastTwo.allSatisfy { performance in
-                let progressionSets = selectProgressionSets(from: performance, context: context)
-                guard !progressionSets.isEmpty else { return false }
-                return progressionSets.allSatisfy { $0.reps >= target + 5 }
-            }
+            overshootMet = progressionSets.allSatisfy { $0.reps >= target + 4 }
         case .notSet:
             return []
         }
 
         guard overshootMet else { return [] }
 
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
-        guard !progressionSets.isEmpty else { return [] }
-
         var changes: [PrescriptionChange] = []
-        let weightReason = "You exceeded the top of your rep range in two sessions. Increase weight to better match your current strength."
+        let weightReason = "You significantly overshot the target on your primary sets this session. Increase weight to better match your current strength."
         let repsReason = "Reset reps to \(lower) to account for the larger weight jump."
 
         for set in progressionSets {
@@ -266,7 +335,7 @@ struct RuleEngine {
         var belowCount = 0
 
         for performance in lastThree {
-            let progressionSets = selectProgressionSets(from: performance, context: context)
+            let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { continue }
 
             var sessionBelow = true
@@ -291,7 +360,7 @@ struct RuleEngine {
 
         guard belowCount >= 2 else { return [] }
 
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
@@ -331,8 +400,7 @@ struct RuleEngine {
 
             var weights: [Double] = []
             for performance in lastThree {
-                guard let set = performance.sortedSets[safe: setPrescription.index],
-                      set.complete,
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription),
                       set.type == .working else {
                     continue
                 }
@@ -355,7 +423,7 @@ struct RuleEngine {
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
             let reason = "You've used about \(MetricsCalculator.roundToNearestPlate(average)) lbs for three sessions. Update the prescription to match your working weight."
 
-            changes.append(makeSetChange(context: context, set: context.performance.sortedSets[safe: setPrescription.index], setPrescription: setPrescription, changeType: changeType, previousValue: targetWeight, newValue: newWeight, reasoning: reason))
+            changes.append(makeSetChange(context: context, set: matchingSetPerformance(in: context.performance, for: setPrescription, requireComplete: false), setPrescription: setPrescription, changeType: changeType, previousValue: targetWeight, newValue: newWeight, reasoning: reason))
         }
 
         return changes
@@ -376,7 +444,7 @@ struct RuleEngine {
             var hitCount = 0
 
             for performance in lastTwo {
-                guard let set = performance.sortedSets[safe: setPrescription.index], set.complete else { continue }
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription) else { continue }
 
                 let reducedLoad = set.weight < (setPrescription.targetWeight - 2.5)
                 let repsLow = repFloor.map { set.reps <= $0 } ?? false
@@ -395,7 +463,7 @@ struct RuleEngine {
 
             let reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
 
-            changes.append(makeSetChange(context: context, set: context.performance.sortedSets[safe: setPrescription.index], setPrescription: setPrescription, changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight, reasoning: reason))
+            changes.append(makeSetChange(context: context, set: matchingSetPerformance(in: context.performance, for: setPrescription, requireComplete: false), setPrescription: setPrescription, changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight, reasoning: reason))
         }
 
         return changes
@@ -405,6 +473,7 @@ struct RuleEngine {
         // Rest rule: user rests shorter than prescribed and reps drop -> suggest more rest.
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
+        guard !shouldHoldSteady(context) else { return [] }
 
         let lastTwo = Array(recent.prefix(2))
         let repFloor = repFloor(context)
@@ -466,13 +535,14 @@ struct RuleEngine {
     private static func stagnationIncreaseRest(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Optimization: if estimated 1RM hasn't improved over 3 sessions AND user is struggling, increase rest.
         let recent = recentPerformances(context)
+        guard !shouldHoldSteady(context) else { return [] }
 
         // Use style-aware e1RM: for top-set styles, measure stagnation from the progression sets only.
         let e1rms: [Double]
         switch context.resolvedTrainingStyle {
         case .topSetBackoffs, .descendingPyramid:
             e1rms = recent.compactMap { perf in
-                let progressionSets = selectProgressionSets(from: perf, context: context)
+                let progressionSets = primaryProgressionSets(from: perf, context: context)
                 return progressionSets.compactMap(\.estimated1RM).max()
             }
         default:
@@ -496,7 +566,7 @@ struct RuleEngine {
         let increment = 15
         let reason = "Progress has plateaued and you're struggling to hit targets. Adding rest may help recovery and performance."
 
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var changes: [PrescriptionChange] = []
@@ -515,6 +585,7 @@ struct RuleEngine {
 
     private static func volumeRegression(_ context: ExerciseSuggestionContext) -> [PrescriptionChange] {
         // Volume regression: user consistently completes fewer sets than prescribed across 3 sessions -> suggest removing the last set.
+        guard !shouldHoldSteady(context) else { return [] }
         let prescribedSets = context.prescription.sortedSets
         let prescribedWorkingSets = prescribedSets.filter { $0.type == .working }
         guard prescribedWorkingSets.count >= 3 else { return [] } // Need at least 3 prescribed working sets to suggest removing one.
@@ -574,21 +645,21 @@ struct RuleEngine {
         let lastTwo = Array(recent.prefix(2))
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode != .notSet else { return [] }
-        let progressionSets = selectProgressionSets(from: context.performance, context: context)
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         switch repRange.activeMode {
         case .range:
             let upper = repRange.upperRange
             let hitTopInBoth = lastTwo.allSatisfy { performance in
-                let sets = selectProgressionSets(from: performance, context: context)
+                let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= upper }
             }
             let overshootInBoth = lastTwo.allSatisfy { performance in
-                let sets = selectProgressionSets(from: performance, context: context)
+                let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= upper + 4 }
+                return sets.allSatisfy { $0.reps >= upper - 1 }
             }
             guard hitTopInBoth || overshootInBoth else { return [] }
             return Set(progressionSets.map(\.index))
@@ -596,14 +667,14 @@ struct RuleEngine {
         case .target:
             let target = repRange.targetReps
             let exceededInBoth = lastTwo.allSatisfy { performance in
-                let sets = selectProgressionSets(from: performance, context: context)
+                let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= target + 1 }
             }
             let overshootInBoth = lastTwo.allSatisfy { performance in
-                let sets = selectProgressionSets(from: performance, context: context)
+                let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= target + 5 }
+                return sets.allSatisfy { $0.reps >= target }
             }
             guard exceededInBoth || overshootInBoth else { return [] }
             return Set(progressionSets.map(\.index))
@@ -630,7 +701,7 @@ struct RuleEngine {
                 // Compare warmup weight to the max regular set in that session.
                 let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
                 guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0 else { continue }
-                guard let set = performance.sortedSets[safe: setPrescription.index], set.complete else { continue }
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription) else { continue }
 
                 if set.weight >= maxWeight * 0.9 {
                     hitCount += 1
@@ -666,7 +737,7 @@ struct RuleEngine {
                 // Compare this early regular set to the session's max regular set.
                 let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
                 guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0 else { continue }
-                guard let set = performance.sortedSets[safe: setPrescription.index], set.complete else { continue }
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription) else { continue }
 
                 if set.weight < maxWeight * 0.7 {
                     hitCount += 1
@@ -693,7 +764,7 @@ struct RuleEngine {
         var strugglingCount = 0
 
         for performance in lastThree {
-            let progressionSets = selectProgressionSets(from: performance, context: context)
+            let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { continue }
 
             // Check if any progression sets were below floor
@@ -725,7 +796,7 @@ struct RuleEngine {
             var sourceSet: SetPerformance?
 
             for performance in lastTwo {
-                guard let set = performance.sortedSets[safe: setPrescription.index], set.complete else { continue }
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription) else { continue }
                 types.append(set.type)
                 if performance.id == context.performance.id {
                     sourceSet = set
@@ -743,8 +814,45 @@ struct RuleEngine {
         return changes
     }
 
-    private static func selectProgressionSets(from performance: ExercisePerformance, context: ExerciseSuggestionContext) -> [SetPerformance] {
+    private static func primaryProgressionSets(from performance: ExercisePerformance, context: ExerciseSuggestionContext) -> [SetPerformance] {
         MetricsCalculator.selectProgressionSets(from: performance, overrideStyle: context.resolvedTrainingStyle)
+    }
+
+    private static func qualifiesForImmediateLoadProgression(_ context: ExerciseSuggestionContext) -> Bool {
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
+        guard !progressionSets.isEmpty else { return false }
+
+        switch repRange.activeMode {
+        case .range:
+            return progressionSets.allSatisfy { $0.reps >= repRange.upperRange }
+        case .target:
+            return progressionSets.allSatisfy { $0.reps >= repRange.targetReps + 1 }
+        case .notSet:
+            return false
+        }
+    }
+
+    private static func shouldHoldSteady(_ context: ExerciseSuggestionContext) -> Bool {
+        let repRange = context.prescription.repRange ?? RepRangePolicy()
+        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
+        guard !progressionSets.isEmpty else { return false }
+
+        switch repRange.activeMode {
+        case .range:
+            let upper = repRange.upperRange
+            let lower = repRange.lowerRange
+            let allInRange = progressionSets.allSatisfy { $0.reps >= lower && $0.reps <= upper + 1 }
+            let closeToProgression = progressionSets.allSatisfy { $0.reps >= max(lower, upper - 1) }
+            return allInRange && closeToProgression
+        case .target:
+            let target = repRange.targetReps
+            let onTrack = progressionSets.allSatisfy { $0.reps >= target - 1 }
+            let closeToProgression = progressionSets.allSatisfy { $0.reps >= target }
+            return onTrack && closeToProgression
+        case .notSet:
+            return false
+        }
     }
 
     /// Returns a multiplier for weight increments based on training style.
@@ -783,17 +891,36 @@ struct RuleEngine {
         return prescription.sortedSets[safe: set.index]
     }
 
+    private static func matchingSetPerformance(in performance: ExercisePerformance, for setPrescription: SetPrescription, requireComplete: Bool = true) -> SetPerformance? {
+        let candidateSets = requireComplete
+            ? performance.sortedSets.filter(\.complete)
+            : performance.sortedSets
+
+        if let linkedSet = candidateSets.first(where: { $0.prescription?.id == setPrescription.id }) {
+            return linkedSet
+        }
+
+        if let typedMatch = candidateSets.first(where: { $0.index == setPrescription.index && $0.type == setPrescription.type }) {
+            return typedMatch
+        }
+
+        return candidateSets.first(where: { $0.index == setPrescription.index })
+    }
+
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
-        MetricsCalculator.weightIncrement(for: weight, primaryMuscle: context.prescription.musclesTargeted.first!, equipmentType: context.prescription.equipmentType)
+        let primaryMuscle = context.prescription.musclesTargeted.first
+            ?? context.performance.musclesTargeted.first
+            ?? .chest
+        return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType)
     }
 
     private static func makeSetChange(context: ExerciseSuggestionContext, set: SetPerformance?, setPrescription: SetPrescription, changeType: ChangeType, previousValue: Double, newValue: Double, reasoning: String) -> PrescriptionChange {
         // Build a set-scoped suggestion change record.
-        return PrescriptionChange(source: .rules, catalogID: context.prescription.catalogID, sessionFrom: context.session, sourceExercisePerformance: context.performance, sourceSetPerformance: set, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, targetPlan: context.plan, changeType: changeType, previousValue: previousValue, newValue: newValue, changeReasoning: reasoning)
+        return PrescriptionChange(source: .rules, catalogID: context.prescription.catalogID, sessionFrom: context.session, sourceExercisePerformance: context.performance, sourceSetPerformance: set, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, targetPlan: context.plan, changeType: changeType, previousValue: previousValue, newValue: newValue, changeReasoning: reasoning, trainingStyle: context.resolvedTrainingStyle)
     }
 
     private static func makeExerciseChange(context: ExerciseSuggestionContext, changeType: ChangeType, previousValue: Double, newValue: Double, reasoning: String) -> PrescriptionChange {
         // Build an exercise-level suggestion change record.
-        return PrescriptionChange(source: .rules, catalogID: context.prescription.catalogID, sessionFrom: context.session, sourceExercisePerformance: context.performance, targetExercisePrescription: context.prescription, targetPlan: context.plan, changeType: changeType, previousValue: previousValue, newValue: newValue, changeReasoning: reasoning)
+        return PrescriptionChange(source: .rules, catalogID: context.prescription.catalogID, sessionFrom: context.session, sourceExercisePerformance: context.performance, targetExercisePrescription: context.prescription, targetPlan: context.plan, changeType: changeType, previousValue: previousValue, newValue: newValue, changeReasoning: reasoning, trainingStyle: context.resolvedTrainingStyle)
     }
 }

@@ -9,16 +9,21 @@ struct SuggestionGenerator {
         // Step 1: Gather data for AI inference (Main Actor)
         // We do this first to avoid accessing SwiftData objects on background threads.
         var aiRequests: [UUID: AIRequest] = [:]
+        var historyByCatalogID: [String: [ExercisePerformance]] = [:]
         
         for exercisePerf in session.sortedExercises {
             guard let prescription = exercisePerf.prescription else { continue }
             
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
             let resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)
+            historyByCatalogID[exercisePerf.catalogID] = historyByCatalogID[exercisePerf.catalogID] ?? fetchCompletedPerformances(catalogID: exercisePerf.catalogID, context: context)
 
             // Trigger AI if we don't know the training style
             if resolvedTrainingStyle == .unknown {
-                aiRequests[exercisePerf.id] = AIRequest(exerciseName: exercisePerf.name, catalogID: exercisePerf.catalogID, primaryMuscle: prescription.musclesTargeted.first?.rawValue ?? "Unknown", snapshot: AIExercisePerformanceSnapshot(performance: exercisePerf))
+                let primaryMuscle = prescription.musclesTargeted.first?.rawValue
+                    ?? exercisePerf.musclesTargeted.first?.rawValue
+                    ?? "Unknown"
+                aiRequests[exercisePerf.id] = AIRequest(exerciseName: exercisePerf.name, catalogID: exercisePerf.catalogID, primaryMuscle: primaryMuscle, snapshot: AIExercisePerformanceSnapshot(performance: exercisePerf))
             }
         }
         
@@ -51,8 +56,7 @@ struct SuggestionGenerator {
         for exercisePerf in session.sortedExercises {
             guard let prescription = exercisePerf.prescription else { continue }
             
-            // Re-fetch logic (fast, cached by context)
-            let performanceHistory = fetchCompletedPerformances(catalogID: exercisePerf.catalogID, context: context)
+            let performanceHistory = historyByCatalogID[exercisePerf.catalogID] ?? []
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
 
             var resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)

@@ -10,17 +10,27 @@ struct SuggestionDeduplicator {
 
     private static func resolveLogicalConflicts(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
         let grouped = Dictionary(grouping: suggestions) {
-            $0.targetExercisePrescription?.id ?? UUID()
+            logicalConflictKey(for: $0)
         }
 
         var resolved: [PrescriptionChange] = []
 
-        for (_, exerciseSuggestions) in grouped {
-            let filtered = filterConflictingStrategies(exerciseSuggestions)
+        for (_, scopedSuggestions) in grouped {
+            let filtered = filterConflictingStrategies(scopedSuggestions)
             resolved.append(contentsOf: filtered)
         }
 
         return resolved
+    }
+
+    private static func logicalConflictKey(for suggestion: PrescriptionChange) -> LogicalConflictKey {
+        if let setID = suggestion.targetSetPrescription?.id {
+            return LogicalConflictKey(id: setID, isSet: true)
+        }
+        if let exerciseID = suggestion.targetExercisePrescription?.id {
+            return LogicalConflictKey(id: exerciseID, isSet: false)
+        }
+        return LogicalConflictKey(id: suggestion.id, isSet: false)
     }
 
     private static func filterConflictingStrategies(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
@@ -154,4 +164,9 @@ private struct ConflictKey: Hashable {
     let id: UUID
     let isSet: Bool
     let property: ChangeProperty
+}
+
+private struct LogicalConflictKey: Hashable {
+    let id: UUID
+    let isSet: Bool
 }

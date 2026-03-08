@@ -49,6 +49,7 @@ class PrescriptionChange {
     var previousValue: Double?
     var newValue: Double?
     var changeReasoning: String?              // Why suggest this change
+    var trainingStyle: TrainingStyle?
     
     // Decision (user choice)
     var decision: Decision = Decision.pending
@@ -63,7 +64,7 @@ class PrescriptionChange {
     init() {}
 
     // Test/sample initializer to reduce setup boilerplate.
-    convenience init(source: SuggestionSource = .rules, catalogID: String = "", sessionFrom: WorkoutSession? = nil, createdAt: Date = Date(), sourceExercisePerformance: ExercisePerformance? = nil, sourceSetPerformance: SetPerformance? = nil, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, targetPlan: WorkoutPlan? = nil, changeType: ChangeType = .increaseWeight, previousValue: Double? = nil, newValue: Double? = nil, changeReasoning: String? = nil, decision: Decision = .pending, outcome: Outcome = .pending, outcomeReason: String? = nil, evaluatedInSession: WorkoutSession? = nil, evaluatedAt: Date? = nil) {
+    convenience init(source: SuggestionSource = .rules, catalogID: String = "", sessionFrom: WorkoutSession? = nil, createdAt: Date = Date(), sourceExercisePerformance: ExercisePerformance? = nil, sourceSetPerformance: SetPerformance? = nil, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, targetPlan: WorkoutPlan? = nil, changeType: ChangeType = .increaseWeight, previousValue: Double? = nil, newValue: Double? = nil, changeReasoning: String? = nil, trainingStyle: TrainingStyle? = nil, decision: Decision = .pending, outcome: Outcome = .pending, outcomeReason: String? = nil, evaluatedInSession: WorkoutSession? = nil, evaluatedAt: Date? = nil) {
         self.init()
         self.source = source
         self.catalogID = catalogID
@@ -78,6 +79,7 @@ class PrescriptionChange {
         self.previousValue = previousValue
         self.newValue = newValue
         self.changeReasoning = changeReasoning
+        self.trainingStyle = trainingStyle
         self.decision = decision
         self.outcome = outcome
         self.outcomeReason = outcomeReason

@@ -41,8 +41,9 @@ struct OutcomeResolver {
         // Step 3: Rules phase — evaluate each change individually, track results.
         var ruleResults: [UUID: OutcomeSignal?] = [:]
         for group in groups {
+            let groupTrainingStyle = resolvedTrainingStyle(for: group)
             for change in group.changes {
-                ruleResults[change.id] = OutcomeRuleEngine.evaluate(change: change, exercisePerf: group.exercisePerf)
+                ruleResults[change.id] = OutcomeRuleEngine.evaluate(change: change, exercisePerf: group.exercisePerf, trainingStyle: groupTrainingStyle)
             }
         }
 
@@ -177,11 +178,16 @@ struct OutcomeResolver {
         // Aggregate rule outcome for the group — use the most common or most severe.
         let groupRuleSignal = aggregateRuleSignal(changes: group.changes, ruleResults: ruleResults)
 
-        // Detect training style from the current workout's completed sets.
-        let completeSets = group.exercisePerf.sortedSets
-        let style = MetricsCalculator.detectTrainingStyle(completeSets)
+        let style = resolvedTrainingStyle(for: group)
 
         return AIOutcomeGroupInput(changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
+    }
+
+    private static func resolvedTrainingStyle(for group: OutcomeGroup) -> TrainingStyle {
+        if let storedStyle = group.changes.compactMap(\.trainingStyle).first(where: { $0 != .unknown }) {
+            return storedStyle
+        }
+        return MetricsCalculator.detectTrainingStyle(group.exercisePerf.sortedSets)
     }
 
     /// Builds the prescription snapshot representing the state BEFORE changes were applied.
@@ -297,8 +303,7 @@ struct OutcomeResolver {
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
             return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: oldValue.map { Int($0) }, sets: snapshot.sets)
         case .removeSet:
-            // Volume change — snapshot doesn't need structural revert, the set count is captured in previousValue/newValue.
-            return snapshot
+            return withRestoredWorkingSetCount(snapshot: snapshot, oldCount: oldValue.map { Int($0) })
         }
     }
 
@@ -308,6 +313,39 @@ struct OutcomeResolver {
             set.index == targetIndex ? transform(set) : set
         }
         return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: sets)
+    }
+
+    private static func withRestoredWorkingSetCount(snapshot: AIExercisePrescriptionSnapshot, oldCount: Int?) -> AIExercisePrescriptionSnapshot {
+        guard let oldCount else { return snapshot }
+
+        var sets = snapshot.sets.sorted { $0.index < $1.index }
+        let currentWorkingSets = sets.filter { $0.setType == .working }
+        guard currentWorkingSets.count < oldCount, let lastWorkingSet = currentWorkingSets.last else {
+            return snapshot
+        }
+
+        var nextIndex = (sets.map(\.index).max() ?? -1) + 1
+        while sets.filter({ $0.setType == .working }).count < oldCount {
+            sets.append(
+                AISetPrescriptionSnapshot(
+                    index: nextIndex,
+                    setType: .working,
+                    targetWeight: lastWorkingSet.targetWeight,
+                    targetReps: lastWorkingSet.targetReps,
+                    targetRest: lastWorkingSet.targetRest
+                )
+            )
+            nextIndex += 1
+        }
+
+        return AIExercisePrescriptionSnapshot(
+            exerciseName: snapshot.exerciseName,
+            repRangeMode: snapshot.repRangeMode,
+            repRangeLower: snapshot.repRangeLower,
+            repRangeUpper: snapshot.repRangeUpper,
+            repRangeTarget: snapshot.repRangeTarget,
+            sets: sets.sorted { $0.index < $1.index }
+        )
     }
 
     // MARK: - Merge
@@ -329,7 +367,7 @@ struct OutcomeResolver {
             return ResolvedOutcome(outcome: ruleOutcome.outcome, reason: "[Rules] \(ruleOutcome.reason)")
         }
 
-        if ai.outcome.outcome != ruleOutcome.outcome && ai.confidence >= 0.5 {
+        if ai.outcome.outcome != ruleOutcome.outcome && ruleOutcome.confidence < 0.7 && ai.confidence >= 0.75 {
             return ResolvedOutcome(outcome: ai.outcome.outcome, reason: "[AI override] \(ai.reason)")
         }
 

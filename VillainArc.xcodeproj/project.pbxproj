@@ -123,6 +123,7 @@
 				Data/Models/Enums/Suggestions/Decision.swift,
 				Data/Models/Enums/Suggestions/Outcome.swift,
 				Data/Models/Enums/Suggestions/SuggestionSource.swift,
+				Data/Models/Enums/Suggestions/TrainingStyle.swift,
 				Data/Models/Exercise/Exercise.swift,
 				Data/Models/Exercise/ExerciseCatalog.swift,
 				Data/Models/Exercise/ExerciseHistory.swift,

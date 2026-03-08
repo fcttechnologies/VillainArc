@@ -300,7 +300,7 @@ struct ChangeDescriptionRow: View {
 
 
 @MainActor
-func applyChange(_ change: PrescriptionChange) {
+func applyChange(_ change: PrescriptionChange, context: ModelContext) {
     switch change.changeType {
     case .increaseWeight, .decreaseWeight:
         change.targetSetPrescription?.targetWeight = change.newValue ?? 0
@@ -323,6 +323,7 @@ func applyChange(_ change: PrescriptionChange) {
         if let prescription = change.targetExercisePrescription,
            let lastWorkingSet = prescription.sortedSets.last(where: { $0.type == .working }) {
             prescription.deleteSet(lastWorkingSet)
+            context.delete(lastWorkingSet)
         }
     }
 }
@@ -331,7 +332,7 @@ func applyChange(_ change: PrescriptionChange) {
 func acceptGroup(_ changes: [PrescriptionChange], context: ModelContext) {
     for change in changes {
         change.decision = .accepted
-        applyChange(change)
+        applyChange(change, context: context)
     }
     saveContext(context: context)
 }
