@@ -12,8 +12,7 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
 }
 
 @Model
-class UserProfile {
-    var id: UUID = UUID()
+final class UserProfile {
     var name: String = ""
     var birthday: Date?
     var dateJoined: Date = Date()

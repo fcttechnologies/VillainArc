@@ -27,8 +27,9 @@ struct ExerciseHistoryUpdater {
         let catalogIDs = Set((session.exercises ?? []).map { $0.catalogID })
         
         for catalogID in catalogIDs {
-            updateHistory(for: catalogID, context: context)
+            updateHistory(for: catalogID, context: context, save: false)
         }
+        saveContext(context: context)
     }
     
     /// Updates histories for all exercises affected by a deleted workout session.
@@ -39,8 +40,9 @@ struct ExerciseHistoryUpdater {
         // Update must happen after the session is deleted so the fetch
         // won't include the deleted performances.
         for catalogID in catalogIDs {
-            updateHistory(for: catalogID, context: context)
+            updateHistory(for: catalogID, context: context, save: false)
         }
+        saveContext(context: context)
     }
     
     /// Updates or creates ExerciseHistory for a specific exercise.
@@ -50,7 +52,7 @@ struct ExerciseHistoryUpdater {
     /// - If no performances exist: Deletes history (if exists)
     /// - If performances exist but no history: Creates new history
     /// - If both exist: Updates existing history
-    static func updateHistory(for catalogID: String, context: ModelContext) {
+    static func updateHistory(for catalogID: String, context: ModelContext, save: Bool = true) {
         // Fetch all completed performances for this exercise
         let performances = (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID))) ?? []
         
@@ -62,7 +64,7 @@ struct ExerciseHistoryUpdater {
             // No performances left - delete history if it exists
             if let history = existing.first {
                 context.delete(history)
-                saveContext(context: context)
+                if save { saveContext(context: context) }
                 print("🗑️ ExerciseHistoryUpdater: Deleted history for \(catalogID) (no performances)")
             }
             return
@@ -80,10 +82,9 @@ struct ExerciseHistoryUpdater {
         
         // Recalculate all statistics from scratch
         history.recalculate(using: performances)
-        
-        // Save
-        saveContext(context: context)
-        
+
+        if save { saveContext(context: context) }
+
         print("✅ ExerciseHistoryUpdater: Updated history for \(catalogID) - \(history.totalSessions) sessions")
     }
     

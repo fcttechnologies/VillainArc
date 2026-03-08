@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class RestTimeHistory {
+final class RestTimeHistory {
     #Index<RestTimeHistory>([\.seconds], [\.lastUsed])
 
     var seconds: Int = 0

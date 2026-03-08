@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 @Model
-class WorkoutPlan {
-    #Index<WorkoutPlan>([\.id], [\.completed], [\.isEditing], [\.lastUsed])
+final class WorkoutPlan {
+    #Index<WorkoutPlan>([\.completed], [\.isEditing], [\.lastUsed])
 
     var id: UUID = UUID()
     var title: String = "New Workout Plan"

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class ExercisePrescription {
+final class ExercisePrescription {
     var id: UUID = UUID()
     var index: Int = 0
     var catalogID: String = ""

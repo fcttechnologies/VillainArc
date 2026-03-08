@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class SetPerformance {
+final class SetPerformance {
     var id: UUID = UUID()
     var index: Int = 0
     var type: ExerciseSetType = ExerciseSetType.working

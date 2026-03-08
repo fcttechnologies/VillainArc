@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class RepRangePolicy {
+final class RepRangePolicy {
     var activeMode: RepRangeMode = RepRangeMode.notSet
     var lowerRange: Int = 8
     var upperRange: Int = 12

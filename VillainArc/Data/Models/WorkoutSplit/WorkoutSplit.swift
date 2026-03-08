@@ -2,8 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class WorkoutSplit {
-    #Index<WorkoutSplit>([\.isActive])
+final class WorkoutSplit {
 
     var title: String = ""
     var mode: SplitMode = SplitMode.weekly

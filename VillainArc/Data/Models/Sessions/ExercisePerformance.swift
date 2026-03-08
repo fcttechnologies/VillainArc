@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class ExercisePerformance {
+final class ExercisePerformance {
     #Index<ExercisePerformance>([\.catalogID], [\.date])
 
     var id: UUID = UUID()

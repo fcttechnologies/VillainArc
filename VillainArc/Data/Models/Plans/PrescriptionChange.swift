@@ -19,8 +19,8 @@ import SwiftData
 /// - `outcomeReason` provides AI/rule reasoning for future suggestions
 /// - `targetPlan` tracks context (same exercise, different plans may progress differently)
 @Model
-class PrescriptionChange {
-    #Index<PrescriptionChange>([\.catalogID], [\.createdAt])
+final class PrescriptionChange {
+    #Index<PrescriptionChange>([\.catalogID], [\.createdAt], [\.decision])
 
     var id: UUID = UUID()
     var source: SuggestionSource = SuggestionSource.rules

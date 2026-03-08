@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class WorkoutSplitDay {
+final class WorkoutSplitDay {
     var name: String = ""
     var index: Int = 0
     var weekday: Int = 1

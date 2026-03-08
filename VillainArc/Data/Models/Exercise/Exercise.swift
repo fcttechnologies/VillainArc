@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 
 @Model
-class Exercise {
-    #Index<Exercise>([\.catalogID], [\.favorite], [\.lastUsed])
+final class Exercise {
+    #Index<Exercise>([\.catalogID], [\.lastUsed])
 
     var catalogID: String = ""
     var name: String = ""

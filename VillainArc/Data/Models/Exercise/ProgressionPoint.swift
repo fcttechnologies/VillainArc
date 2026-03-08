@@ -21,7 +21,7 @@ import SwiftData
 /// }
 /// ```
 @Model
-class ProgressionPoint {
+final class ProgressionPoint {
     var date: Date = Date()
     var weight: Double = 0  // Top set weight for this session
     var volume: Double = 0  // Total volume (weight × reps) for this session
