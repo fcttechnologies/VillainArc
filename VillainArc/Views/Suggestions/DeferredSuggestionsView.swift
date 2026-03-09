@@ -7,6 +7,7 @@ struct DeferredSuggestionsView: View {
     
     @State private var sections: [ExerciseSuggestionSection] = []
     @State private var sessionChanges: [PrescriptionChange] = []
+    @State private var isTransitioning = false
     
     var body: some View {
         NavigationStack {
@@ -21,7 +22,15 @@ struct DeferredSuggestionsView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    SuggestionReviewView(sections: sections, onAcceptGroup: { changes in acceptGroup(changes, context: context); refreshSections() }, onRejectGroup: { changes in rejectGroup(changes, context: context); refreshSections() }, onDeferGroup: nil, showDecisionState: true)
+                    SuggestionReviewView(sections: sections, onAcceptGroup: { changes in
+                        guard !isTransitioning else { return }
+                        acceptGroup(changes, context: context)
+                        refreshSections()
+                    }, onRejectGroup: { changes in
+                        guard !isTransitioning else { return }
+                        rejectGroup(changes, context: context)
+                        refreshSections()
+                    }, onDeferGroup: nil, showDecisionState: true)
                 }
                 .fontDesign(.rounded)
                 .padding()
@@ -70,6 +79,7 @@ struct DeferredSuggestionsView: View {
     }
     
     private func skipAll() {
+        guard !isTransitioning else { return }
         Haptics.selection()
         for change in sessionChanges where change.decision == .deferred || change.decision == .pending {
             change.decision = .rejected
@@ -79,6 +89,7 @@ struct DeferredSuggestionsView: View {
     }
     
     private func acceptAll() {
+        guard !isTransitioning else { return }
         Haptics.selection()
         for change in sessionChanges where change.decision == .pending || change.decision == .deferred {
             change.decision = .accepted
@@ -89,6 +100,8 @@ struct DeferredSuggestionsView: View {
     }
     
     private func proceedToWorkout() {
+        guard !isTransitioning else { return }
+        isTransitioning = true
         workout.status = SessionStatus.active.rawValue
         saveContext(context: context)
     }

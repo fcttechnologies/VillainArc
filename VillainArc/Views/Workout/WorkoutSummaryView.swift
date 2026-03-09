@@ -104,17 +104,17 @@ struct WorkoutSummaryView: View {
                     }
 
                     HStack(spacing: 12) {
-                        summaryStat(title: "Exercises", value: "\(totalExercises)")
-                        summaryStat(title: "Sets", value: "\(totalSets)")
-                        summaryStat(title: "Duration", value: durationText)
+                        SummaryStatCard(title: "Exercises", value: "\(totalExercises)")
+                        SummaryStatCard(title: "Sets", value: "\(totalSets)")
+                        SummaryStatCard(title: "Duration", value: durationText)
                     }
 
                     if prEntries.isEmpty {
-                        summaryStat(title: "Total Volume", value: formattedTotalVolume)
+                        SummaryStatCard(title: "Total Volume", value: formattedTotalVolume)
                     } else {
                         HStack(spacing: 12) {
-                            summaryStat(title: "Total Volume", value: formattedTotalVolume)
-                            summaryStat(title: "New PRs", value: "\(prCount)")
+                            SummaryStatCard(title: "Total Volume", value: formattedTotalVolume)
+                            SummaryStatCard(title: "New PRs", value: "\(prCount)")
                         }
                     }
 
@@ -149,7 +149,16 @@ struct WorkoutSummaryView: View {
                                 ProgressView("Generating suggestions...")
                                     .frame(maxWidth: .infinity, alignment: .center)
                             } else {
-                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in acceptGroup(changes, context: context) }, onRejectGroup: { changes in rejectGroup(changes, context: context) }, onDeferGroup: { changes in deferGroup(changes, context: context) }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: didSaveWorkoutAsPlan ? "This workout is now saved as a plan. Suggestions will appear here when we have enough evidence to make them." : "Suggestions will appear here when we have enough evidence to make them."))
+                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in
+                                    guard !isSaving else { return }
+                                    acceptGroup(changes, context: context)
+                                }, onRejectGroup: { changes in
+                                    guard !isSaving else { return }
+                                    rejectGroup(changes, context: context)
+                                }, onDeferGroup: { changes in
+                                    guard !isSaving else { return }
+                                    deferGroup(changes, context: context)
+                                }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: didSaveWorkoutAsPlan ? "This workout is now saved as a plan. Suggestions will appear here when we have enough evidence to make them." : "Suggestions will appear here when we have enough evidence to make them."))
                             }
                         }
                     }
@@ -205,22 +214,6 @@ struct WorkoutSummaryView: View {
                     }
             }
         }
-    }
-
-    private func summaryStat(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fontWeight(.semibold)
-            Text(value)
-                .font(.title3)
-                .fontWeight(.semibold)
-        }
-        .fontDesign(.rounded)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var effortSection: some View {

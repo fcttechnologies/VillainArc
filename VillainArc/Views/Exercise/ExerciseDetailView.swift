@@ -3,17 +3,40 @@ import SwiftData
 import Charts
 
 struct ExerciseDetailView: View {
+    private enum ChartMetric: String, CaseIterable, Identifiable {
+        case estimatedOneRepMax = "Estimated 1RM"
+        case topWeight = "Top Weight"
+        case volume = "Volume"
+
+        var id: String { rawValue }
+
+        var tint: Color {
+            switch self {
+            case .estimatedOneRepMax:
+                return .red
+            case .topWeight:
+                return .blue
+            case .volume:
+                return .green
+            }
+        }
+
+        var unit: String { "lbs" }
+    }
+
     let catalogID: String
 
     @Query private var exercises: [Exercise]
     @Query private var histories: [ExerciseHistory]
-    @Query private var performances: [ExercisePerformance]
+
+    private let appRouter = AppRouter.shared
+
+    @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
 
     init(catalogID: String) {
         self.catalogID = catalogID
         _exercises = Query(Exercise.withCatalogID(catalogID))
         _histories = Query(ExerciseHistory.forCatalogID(catalogID))
-        _performances = Query(ExercisePerformance.matching(catalogID: catalogID))
     }
 
     private var exercise: Exercise? {
@@ -25,58 +48,75 @@ struct ExerciseDetailView: View {
     }
 
     private var displayName: String {
-        exercise?.name ?? performances.first?.name ?? "Exercise"
+        exercise?.name ?? "Exercise"
     }
 
     private var subtitle: String {
-        let muscles = majorMusclesText
-        let equipment = exercise?.equipmentType.rawValue ?? performances.first?.equipmentType.rawValue ?? "Unknown Equipment"
-        if muscles.isEmpty {
-            return equipment
-        }
-        return "\(muscles) • \(equipment)"
+        let majorMuscles = ListFormatter.localizedString(byJoining: (exercise?.musclesTargeted ?? []).filter(\.isMajor).map(\.rawValue))
+        let muscles = majorMuscles.isEmpty ? (exercise?.displayMuscle ?? "") : majorMuscles
+        let equipment = exercise?.equipmentType.rawValue ?? "Unknown Equipment"
+        return muscles.isEmpty ? equipment : "\(muscles) • \(equipment)"
     }
 
-    private var majorMusclesText: String {
-        let muscles = (exercise?.musclesTargeted ?? performances.first?.musclesTargeted ?? [])
-            .filter(\.isMajor)
-        return ListFormatter.localizedString(byJoining: muscles.map(\.rawValue))
-    }
-
-    private var recentPerformances: [ExercisePerformance] {
-        Array(performances.prefix(3))
-    }
-
-    private var completedSessionCount: Int {
-        history?.totalSessions ?? performances.count
-    }
-
-    private var last30DaySessionCount: Int {
-        history?.last30DaySessions ?? performances.filter { performance in
-            guard let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) else {
-                return false
-            }
-            return performance.date >= cutoff
-        }.count
-    }
-
-    private var bestEstimatedOneRepMax: Double? {
-        let historyValue = history?.bestEstimated1RM ?? 0
-        return historyValue > 0 ? historyValue : ExercisePerformance.historicalBestEstimated1RM(in: performances)
+    private var latestEstimatedOneRepMax: Double? {
+        guard let history, history.latestEstimated1RM > 0 else { return nil }
+        return history.latestEstimated1RM
     }
 
     private var bestWeight: Double? {
-        let historyValue = history?.bestWeight ?? 0
-        return historyValue > 0 ? historyValue : ExercisePerformance.historicalBestWeight(in: performances)
+        guard let history, history.bestWeight > 0 else { return nil }
+        return history.bestWeight
     }
 
     private var bestVolume: Double? {
-        let historyValue = history?.bestVolume ?? 0
-        return historyValue > 0 ? historyValue : ExercisePerformance.historicalBestVolume(in: performances)
+        guard let history, history.bestVolume > 0 else { return nil }
+        return history.bestVolume
     }
 
-    private var trend: ProgressionTrend {
-        history?.progressionTrend ?? .insufficient
+    private var totalSessions: Int {
+        history?.totalSessions ?? 0
+    }
+
+    private var totalSets: Int {
+        history?.totalCompletedSets ?? 0
+    }
+
+    private var totalVolume: Double {
+        history?.cumulativeVolume ?? 0
+    }
+
+    private var statItems: [ExerciseStatItem] {
+        guard totalSessions > 0 else { return [] }
+
+        var items: [ExerciseStatItem] = [
+            .init(title: "Times Done", value: "\(totalSessions)"),
+            .init(title: "Sets Done", value: "\(totalSets)"),
+            .init(title: "Total Volume", value: "\(totalVolume.formatted(.number.precision(.fractionLength(0)))) lbs")
+        ]
+
+        if let latestEstimatedOneRepMax {
+            items.append(.init(title: "Est. 1RM", value: "\(latestEstimatedOneRepMax.formatted(.number.precision(.fractionLength(0)))) lbs"))
+        }
+
+        if let bestWeight {
+            items.append(.init(title: "Best Weight", value: "\(bestWeight.formatted(.number.precision(.fractionLength(0)))) lbs"))
+        }
+
+        if let bestVolume {
+            items.append(.init(title: "Best Volume", value: "\(bestVolume.formatted(.number.precision(.fractionLength(0)))) lbs"))
+        }
+
+        return items
+    }
+
+    private var estimatedOneRepMaxPoints: [ExerciseMetricPoint] {
+        guard let history else { return [] }
+        return history.sortedProgressionPoints
+            .reversed()
+            .compactMap { point in
+                guard point.estimated1RM > 0 else { return nil }
+                return ExerciseMetricPoint(date: point.date, value: point.estimated1RM)
+            }
     }
 
     private var topWeightPoints: [ExerciseMetricPoint] {
@@ -93,322 +133,186 @@ struct ExerciseDetailView: View {
             .map { ExerciseMetricPoint(date: $0.date, value: $0.volume) }
     }
 
-    private var estimatedOneRepMaxPoints: [ExerciseMetricPoint] {
-        performances
-            .sorted { $0.date < $1.date }
-            .compactMap { performance in
-                guard let value = performance.bestEstimated1RM, value > 0 else { return nil }
-                return ExerciseMetricPoint(date: performance.date, value: value)
-            }
+    private var availableMetrics: [ChartMetric] {
+        ChartMetric.allCases.filter { !points(for: $0).isEmpty }
+    }
+
+    private var activeMetric: ChartMetric? {
+        if availableMetrics.contains(selectedMetric) {
+            return selectedMetric
+        }
+        return availableMetrics.first
+    }
+
+    private var latestMetricValueText: String {
+        guard let activeMetric, let latestValue = points(for: activeMetric).last?.value else { return "" }
+        return "\(latestValue.formatted(.number.precision(.fractionLength(0)))) \(activeMetric.unit)"
     }
 
     var body: some View {
-        List {
-            if completedSessionCount == 0 {
-                ContentUnavailableView(
-                    "No Exercise History",
-                    systemImage: "chart.line.uptrend.xyaxis",
-                    description: Text("Complete this exercise in a workout to see progress, PRs, and recent sessions.")
-                )
-                .listRowBackground(Color.clear)
-                .accessibilityIdentifier("exerciseDetailEmptyState")
-            } else {
-                ExerciseSnapshotSection(
-                    equipment: exercise?.equipmentType.rawValue ?? performances.first?.equipmentType.rawValue ?? "Unknown Equipment",
-                    muscles: majorMusclesText,
-                    trend: trend,
-                    completedSessionCount: completedSessionCount,
-                    last30DaySessionCount: last30DaySessionCount,
-                    lastWorkoutDate: history?.lastWorkoutDate ?? performances.first?.date
-                )
-
-                if bestEstimatedOneRepMax != nil || bestWeight != nil || bestVolume != nil {
-                    Section("Personal Records") {
+        ScrollView {
+            if hasContent {
+                LazyVStack(alignment: .leading, spacing: 44) {
+                    if !statItems.isEmpty {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            if let bestEstimatedOneRepMax {
-                                ExerciseStatCard(
-                                    title: "Best Est. 1RM",
-                                    value: bestEstimatedOneRepMax,
-                                    format: .number.precision(.fractionLength(0)),
-                                    unit: "lbs"
-                                )
-                            }
-
-                            if let bestWeight {
-                                ExerciseStatCard(
-                                    title: "Best Weight",
-                                    value: bestWeight,
-                                    format: .number.precision(.fractionLength(0)),
-                                    unit: "lbs"
-                                )
-                            }
-
-                            if let bestVolume {
-                                ExerciseStatCard(
-                                    title: "Best Volume",
-                                    value: bestVolume,
-                                    format: .number.precision(.fractionLength(0)),
-                                    unit: "lbs"
-                                )
-                            }
-
-                            if let history {
-                                ExerciseTextStatCard(
-                                    title: "Typical Reps",
-                                    value: history.typicalRepRangeLower > 0 && history.typicalRepRangeUpper > 0
-                                        ? "\(history.typicalRepRangeLower)-\(history.typicalRepRangeUpper)"
-                                        : "Not Set",
-                                    subtitle: "Working-set range"
-                                )
+                            ForEach(statItems) { item in
+                                SummaryStatCard(title: item.title, value: item.value)
                             }
                         }
-                        .padding(.vertical, 4)
+                    }
+
+                    if let activeMetric {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                Text(activeMetric.rawValue)
+                                    .font(.headline)
+                                Spacer()
+                                Text("Latest")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(latestMetricValueText)
+                                    .font(.headline)
+                            }
+
+                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint)
+
+                            if availableMetrics.count > 1 {
+                                Picker("Metric", selection: $selectedMetric) {
+                                    ForEach(availableMetrics) { metric in
+                                        Text(metric.rawValue).tag(metric)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                            }
+                        }
                     }
                 }
-
-                Section("Progress") {
-                    if !estimatedOneRepMaxPoints.isEmpty {
-                        ExerciseMetricChartCard(
-                            title: "Estimated 1RM",
-                            points: estimatedOneRepMaxPoints,
-                            tint: .red,
-                            yAxisTitle: "lbs"
-                        )
-                    }
-
-                    if !topWeightPoints.isEmpty {
-                        ExerciseMetricChartCard(
-                            title: "Top Weight",
-                            points: topWeightPoints,
-                            tint: .blue,
-                            yAxisTitle: "lbs"
-                        )
-                    }
-
-                    if !volumePoints.isEmpty {
-                        ExerciseMetricChartCard(
-                            title: "Volume",
-                            points: volumePoints,
-                            tint: .green,
-                            yAxisTitle: "lbs"
-                        )
-                    }
-                }
-
-                Section("Recent Sessions") {
-                    ForEach(recentPerformances) { performance in
-                        RecentExercisePerformanceRow(performance: performance)
-                    }
-                }
+                .padding(.horizontal)
             }
         }
-        .accessibilityIdentifier("exerciseDetailList")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            if !hasContent {
+                ContentUnavailableView("No Exercise History", systemImage: "chart.line.uptrend.xyaxis", description: Text("Complete this exercise in a workout to see progress and personal records."))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("exerciseDetailEmptyState")
+            }
+        }
+        .accessibilityIdentifier("exerciseDetailScrollView")
         .navigationTitle(displayName)
         .navigationSubtitle(Text(subtitle))
         .toolbarTitleDisplayMode(.inline)
-    }
-}
-
-private struct ExerciseSnapshotSection: View {
-    let equipment: String
-    let muscles: String
-    let trend: ProgressionTrend
-    let completedSessionCount: Int
-    let last30DaySessionCount: Int
-    let lastWorkoutDate: Date?
-
-    var body: some View {
-        Section("Overview") {
-            LabeledContent("Equipment", value: equipment)
-
-            if !muscles.isEmpty {
-                LabeledContent("Primary Muscles", value: muscles)
+        .task(id: availableMetrics.map(\.rawValue).joined(separator: ",")) {
+            if let firstMetric = availableMetrics.first, !availableMetrics.contains(selectedMetric) {
+                selectedMetric = firstMetric
             }
-
-            LabeledContent("Trend") {
-                Text(trend.displayName)
-                    .foregroundStyle(trendColor)
-            }
-
-            LabeledContent("Completed Sessions", value: "\(completedSessionCount)")
-            LabeledContent("Last 30 Days", value: "\(last30DaySessionCount)")
-
-            if let lastWorkoutDate {
-                LabeledContent("Last Performed") {
-                    Text(lastWorkoutDate, format: .dateTime.month(.abbreviated).day().year())
+        }
+        .toolbar {
+            ToolbarSpacer(.flexible, placement: .bottomBar)
+            ToolbarItem(placement: .bottomBar) {
+                if totalSessions > 0 {
+                    Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
+                        appRouter.navigate(to: .exerciseHistory(catalogID))
+                    }
+                    .accessibilityIdentifier("exerciseDetailHistoryButton")
                 }
             }
         }
     }
 
-    private var trendColor: Color {
-        switch trend {
-        case .improving:
-            return .green
-        case .stable:
-            return .orange
-        case .declining:
-            return .red
-        case .insufficient:
-            return .secondary
+    private var hasContent: Bool {
+        history != nil && (!statItems.isEmpty || !availableMetrics.isEmpty)
+    }
+
+    private func points(for metric: ChartMetric) -> [ExerciseMetricPoint] {
+        switch metric {
+        case .estimatedOneRepMax:
+            return estimatedOneRepMaxPoints
+        case .topWeight:
+            return topWeightPoints
+        case .volume:
+            return volumePoints
         }
     }
 }
 
-private struct ExerciseStatCard: View {
-    let title: String
-    let value: Double
-    let format: FloatingPointFormatStyle<Double>
-    let unit: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value, format: format)
-                .font(.title3)
-                .bold()
-            Text(unit)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
-    }
-}
-
-private struct ExerciseTextStatCard: View {
+private struct ExerciseStatItem: Identifiable {
+    let id = UUID()
     let title: String
     let value: String
-    let subtitle: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.title3)
-                .bold()
-            Text(subtitle)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
-    }
 }
 
 private struct ExerciseMetricChartCard: View {
-    let title: String
     let points: [ExerciseMetricPoint]
     let tint: Color
-    let yAxisTitle: String
+
+    private var yDomain: ClosedRange<Double> {
+        let values = points.map(\.value)
+        guard let minimum = values.min(), let maximum = values.max() else {
+            return 0...1
+        }
+
+        if minimum == maximum {
+            let padding = max(abs(minimum) * 0.05, 1)
+            return (minimum - padding)...(maximum + padding)
+        }
+
+        let range = maximum - minimum
+        let padding = max(range * 0.15, range < 5 ? 0.5 : 1)
+        return (minimum - padding)...(maximum + padding)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
-
             Chart(points) { point in
                 LineMark(
                     x: .value("Date", point.date),
-                    y: .value(title, point.value)
+                    y: .value("Value", point.value)
                 )
                 .foregroundStyle(tint)
                 .interpolationMethod(.catmullRom)
 
                 PointMark(
                     x: .value("Date", point.date),
-                    y: .value(title, point.value)
+                    y: .value("Value", point.value)
                 )
                 .foregroundStyle(tint)
             }
-            .frame(height: 180)
+            .frame(height: 220)
+            .chartYScale(domain: yDomain)
             .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: min(points.count, 4))) { value in
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                }
-            }
-
-            HStack {
-                Text("Latest")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(points.last?.value ?? 0, format: .number.precision(.fractionLength(0)))
-                    .font(.callout)
-                    .bold()
-                Text(yAxisTitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-private struct RecentExercisePerformanceRow: View {
-    let performance: ExercisePerformance
-
-    private var workingSetCount: Int {
-        performance.sortedSets.filter { $0.type == .working }.count
-    }
-
-    private var topWeight: Double {
-        performance.bestWeight ?? 0
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(performance.workoutSession?.title ?? "Workout")
-                    .font(.headline)
-                Spacer()
-                Text(performance.date, format: .dateTime.month(.abbreviated).day().year())
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Text(sessionSummary)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            ScrollView(.horizontal) {
-                HStack(spacing: 8) {
-                    ForEach(performance.sortedSets) { set in
-                        Text(set.summaryText)
-                            .font(.caption)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                AxisMarks(position: .leading, values: .stride(by: axisStep)) { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let doubleValue = value.as(Double.self) {
+                            Text(doubleValue, format: .number.precision(.fractionLength(0)))
+                        }
                     }
                 }
             }
-            .scrollIndicators(.hidden)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: min(points.count, 4))) { _ in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                }
+            }
         }
-        .padding(.vertical, 4)
+        .padding()
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
     }
 
-    private var sessionSummary: String {
-        var components: [String] = []
-        if workingSetCount > 0 {
-            components.append("\(workingSetCount) working sets")
+    private var axisStep: Double {
+        let range = yDomain.upperBound - yDomain.lowerBound
+        if range <= 5 {
+            return 1
         }
-        if topWeight > 0 {
-            components.append("\(topWeight.formatted(.number.precision(.fractionLength(0)))) lbs top set")
+        if range <= 20 {
+            return 2.5
         }
-        let volume = performance.totalVolume
-        if volume > 0 {
-            components.append("\(volume.formatted(.number.precision(.fractionLength(0)))) lbs volume")
+        if range <= 60 {
+            return 5
         }
-        return ListFormatter.localizedString(byJoining: components)
+        return max((range / 4).rounded(.up), 10)
     }
 }
 
@@ -418,19 +322,16 @@ private struct ExerciseMetricPoint: Identifiable {
     let value: Double
 }
 
-private extension SetPerformance {
-    var summaryText: String {
-        let repsText = "\(reps) reps"
-        if weight > 0 {
-            return "\(type.shortLabel) \(weight.formatted(.number.precision(.fractionLength(0)))) x \(reps)"
-        }
-        return "\(type.shortLabel) \(repsText)"
-    }
-}
-
 #Preview("Exercise Detail") {
     NavigationStack {
         ExerciseDetailView(catalogID: "dumbbell_incline_bench_press")
     }
     .sampleDataContainerSuggestionGeneration()
+}
+
+#Preview("Exercise Detail Empty") {
+    NavigationStack {
+        ExerciseDetailView(catalogID: "barbell_bent_over_row")
+    }
+    .sampleDataContainer()
 }

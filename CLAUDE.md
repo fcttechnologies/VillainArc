@@ -18,3 +18,4 @@ When you make architectural changes — adding files, moving files, changing fol
 - SwiftData direct in views: `@Query` reads, `@Bindable` writes, `saveContext()`/`scheduleSave()` for persistence
 - Plan editing uses the copy-merge pattern — never edit originals directly
 - One active flow at a time enforced by `AppRouter.hasActiveFlow()`
+- Prefer single-line view/function calls when they remain readable; only wrap across multiple lines when the call includes substantial closure content or would become hard to scan

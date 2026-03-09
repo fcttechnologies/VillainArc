@@ -32,6 +32,10 @@ struct ContentView: View {
                     .accessibilityLabel(AccessibilityText.homeRecentWorkoutPlanLabel)
                     .accessibilityHint(AccessibilityText.homeRecentWorkoutPlanHint)
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentWorkoutPlanSection)
+                RecentExercisesSectionView()
+                    .padding()
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("homeRecentExercisesSection")
             }
             .navBar(title: "Home")
             .toolbar {
@@ -88,6 +92,12 @@ struct ContentView: View {
                     WorkoutPlansListView()
                 case .workoutPlanDetail(let plan, let showsUseOnly):
                     WorkoutPlanDetailView(plan: plan, showsUseOnly: showsUseOnly)
+                case .exercisesList:
+                    ExercisesListView()
+                case .exerciseDetail(let catalogID):
+                    ExerciseDetailView(catalogID: catalogID)
+                case .exerciseHistory(let catalogID):
+                    ExerciseHistoryView(catalogID: catalogID)
                 case .splitList(let autoPresentBuilder):
                     WorkoutSplitView(autoPresentBuilder: autoPresentBuilder)
                 case .splitDettail(let split):

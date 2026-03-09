@@ -9,10 +9,11 @@ import SwiftData
 /// - Manual rebuild (migration, data fixes)
 ///
 /// **How It Works:**
-/// - Completion path: Incremental PR updates + limited fetch (last 10) for recent stats
-/// - Deletion path: Full recalculation from scratch (PRs might be lost)
-/// - Creates history if doesn't exist, updates if it does
+/// - Completion path: Full recalculation from scratch, including the just-finished session
+/// - Deletion path: Full recalculation from the remaining completed performances
+/// - Creates history if it doesn't exist, updates it if it does
 /// - Deletes history if no performances remain
+/// - Keeps all cached aggregates in sync, including progression points and cumulative totals
 @MainActor
 struct ExerciseHistoryUpdater {
     
@@ -137,34 +138,4 @@ struct ExerciseHistoryUpdater {
         saveContext(context: context)
     }
 
-    /// Creates an ExerciseHistory for a catalogID if one doesn't already exist.
-    /// Call this when an exercise is added to a workout so history is ready
-    /// for PR detection and suggestion generation later.
-    ///
-    /// If prior performances exist, the history is populated with stats.
-    /// If no performances exist, an empty history is created (all zeros)
-    /// so that any new performance will correctly register as a PR.
-    static func createIfNeeded(for catalogID: String, context: ModelContext) {
-        let descriptor = ExerciseHistory.forCatalogID(catalogID)
-        if (try? context.fetch(descriptor).first) != nil {
-            return
-        }
-        
-        let history = ExerciseHistory(catalogID: catalogID)
-        context.insert(history)
-        
-        let performances = (try? context.fetch(ExercisePerformance.matching(catalogID: catalogID))) ?? []
-        if !performances.isEmpty {
-            history.recalculate(using: performances)
-        }
-        
-        saveContext(context: context)
-    }
-    
-    /// Fetches the ExerciseHistory for a catalogID.
-    /// Returns nil if no history exists.
-    static func fetchHistory(for catalogID: String, context: ModelContext) -> ExerciseHistory? {
-        let descriptor = ExerciseHistory.forCatalogID(catalogID)
-        return try? context.fetch(descriptor).first
-    }
 }

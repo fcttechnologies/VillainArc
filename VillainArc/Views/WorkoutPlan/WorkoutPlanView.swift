@@ -296,6 +296,7 @@ private struct WorkoutPlanExerciseView: View {
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showReplaceExerciseSheet = false
+    @State private var showExerciseHistorySheet = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -366,15 +367,27 @@ private struct WorkoutPlanExerciseView: View {
                     .accessibilityHint("Edits the rep range.")
                 }
                 Spacer()
-                Button("Rest Times", systemImage: "timer") {
-                    Haptics.selection()
-                    showRestTimeEditor = true
+                HStack(spacing: 16) {
+                    Button("History", systemImage: "clock.arrow.circlepath") {
+                        Haptics.selection()
+                        showExerciseHistorySheet = true
+                    }
+                    .accessibilityIdentifier("workoutPlanExerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)")
+                    .accessibilityHint("Shows prior performances for this exercise.")
+                    .labelStyle(.iconOnly)
+                    .font(.title)
+                    .tint(.primary)
+
+                    Button("Rest Times", systemImage: "timer") {
+                        Haptics.selection()
+                        showRestTimeEditor = true
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRestTimesButton(exercise))
+                    .accessibilityHint("Edits rest times.")
+                    .labelStyle(.iconOnly)
+                    .font(.title)
+                    .tint(.primary)
                 }
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRestTimesButton(exercise))
-                .accessibilityHint("Edits rest times.")
-                .labelStyle(.iconOnly)
-                .font(.title)
-                .tint(.primary)
             }
 
             TextField("Notes", text: $exercise.notes)
@@ -422,6 +435,12 @@ private struct WorkoutPlanExerciseView: View {
                 exercise.replaceWith(newExercise, keepSets: keepSets)
                 saveContext(context: context)
             }
+        }
+        .sheet(isPresented: $showExerciseHistorySheet) {
+            NavigationStack {
+                ExerciseHistoryView(exercise: exercise)
+            }
+            .presentationDetents([.medium, .large])
         }
     }
 

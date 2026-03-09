@@ -16,6 +16,8 @@ class PreviewDataContainer {
             ExercisePerformance.self,
             SetPerformance.self,
             Exercise.self,
+            ExerciseHistory.self,
+            ProgressionPoint.self,
             UserProfile.self,
             RepRangePolicy.self,
             RestTimeHistory.self,
@@ -38,6 +40,8 @@ class PreviewDataContainer {
                 loadIncompleteSession()
                 loadIncompletePlan()
             }
+
+            rebuildExerciseHistories()
 
             try context.save()
         } catch {
@@ -83,6 +87,7 @@ class PreviewDataContainer {
         for ex in exercises {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
             let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+            clearSeededSets(from: prescription)
             prescription.notes = ex.notes
 
             if ex.id == "dumbbell_incline_bench_press" {
@@ -141,6 +146,7 @@ class PreviewDataContainer {
         for (i, ex) in exercises.enumerated() {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
             let performance = ExercisePerformance(exercise: exercise, workoutSession: session, notes: ex.notes)
+            clearSeededSets(from: performance)
 
             if ex.id == "dumbbell_incline_bench_press" {
                 performance.repRange?.activeMode = .range
@@ -186,6 +192,7 @@ class PreviewDataContainer {
         for ex in exercises {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
             let performance = ExercisePerformance(exercise: exercise, workoutSession: session, notes: ex.notes)
+            clearSeededSets(from: performance)
 
             let weights = sampleWeights[ex.id] ?? []
             for index in 0..<3 {
@@ -206,6 +213,7 @@ class PreviewDataContainer {
 
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
         let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+        clearSeededSets(from: prescription)
 
         let set1 = SetPrescription(exercisePrescription: prescription, setType: .warmup, targetRest: 60)
         prescription.sets?.append(set1)
@@ -234,6 +242,30 @@ class PreviewDataContainer {
         context.insert(rotationSplit)
     }
 
+    fileprivate func rebuildExerciseHistories() {
+        let performances = (try? context.fetch(ExercisePerformance.completedAll)) ?? []
+        let catalogIDs = Set(performances.map(\.catalogID))
+        let existingHistories = (try? context.fetch(FetchDescriptor<ExerciseHistory>())) ?? []
+        let historyMap = Dictionary(uniqueKeysWithValues: existingHistories.map { ($0.catalogID, $0) })
+
+        for history in existingHistories where !catalogIDs.contains(history.catalogID) {
+            context.delete(history)
+        }
+
+        for catalogID in catalogIDs {
+            let history = historyMap[catalogID] ?? {
+                let history = ExerciseHistory(catalogID: catalogID)
+                context.insert(history)
+                return history
+            }()
+
+            let matchingPerformances = performances
+                .filter { $0.catalogID == catalogID }
+                .sorted { $0.date > $1.date }
+            history.recalculate(using: matchingPerformances)
+        }
+    }
+
     // MARK: - Session with Suggestions
     
     func loadSessionWithSuggestions() {
@@ -247,6 +279,7 @@ class PreviewDataContainer {
         // Exercise 1: Bench Press (Groups: Set 1, Set 2)
         let bench = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
         let benchPrescription = ExercisePrescription(exercise: bench, workoutPlan: plan)
+        clearSeededSets(from: benchPrescription)
         plan.exercises?.append(benchPrescription)
         
         // Set 1 changes
@@ -285,6 +318,7 @@ class PreviewDataContainer {
         // Exercise 3: Flys (Group: Rest Time)
         let flys = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
         let flysPrescription = ExercisePrescription(exercise: flys, workoutPlan: plan)
+        clearSeededSets(from: flysPrescription)
         let flysSet1 = SetPrescription(exercisePrescription: flysPrescription, setType: .working, targetWeight: 30, targetReps: 12, targetRest: 60, index: 0)
         flysPrescription.sets?.append(flysSet1)
         plan.exercises?.append(flysPrescription)
@@ -321,6 +355,7 @@ class PreviewDataContainer {
         for (index, ex) in planExercises.enumerated() {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
             let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+            clearSeededSets(from: prescription)
             prescription.index = index
             prescription.repRange?.activeMode = ex.repRange
             if ex.repRange == .range {
@@ -411,6 +446,7 @@ class PreviewDataContainer {
             for (exerciseIndex, ex) in history.exercises.enumerated() {
                 let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
                 let performance = ExercisePerformance(exercise: exercise, workoutSession: session, index: exerciseIndex, repRangeMode: ex.repRange, lowerRange: ex.lower, upperRange: ex.upper, targetReps: ex.target)
+                clearSeededSets(from: performance)
 
                 for (setIndex, s) in ex.sets.enumerated() {
                     let completedAt = history.date.addingTimeInterval(Double((exerciseIndex * 3 + setIndex + 1) * 120))
@@ -471,6 +507,14 @@ class PreviewDataContainer {
         let components = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
         return Calendar.current.date(from: components) ?? .now
     }
+
+    private func clearSeededSets(from performance: ExercisePerformance) {
+        performance.sets?.removeAll()
+    }
+
+    private func clearSeededSets(from prescription: ExercisePrescription) {
+        prescription.sets?.removeAll()
+    }
 }
 
 // MARK: - Shared Containers
@@ -480,11 +524,13 @@ private let sampleContainerWithIncomplete = PreviewDataContainer(includeIncomple
 private let sampleContainerWithSuggestions: PreviewDataContainer = {
     let container = PreviewDataContainer()
     container.loadSessionWithSuggestions()
+    container.rebuildExerciseHistories()
     return container
 }()
 private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     let container = PreviewDataContainer()
     container.loadSuggestionGenerationScenario()
+    container.rebuildExerciseHistories()
     return container
 }()
 

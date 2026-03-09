@@ -145,19 +145,25 @@ struct FilteredExerciseListView: View {
     @ViewBuilder
     private func exerciseRow(for exercise: Exercise) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(exercise.name)
-                    .font(.headline)
-                Text(exercise.equipmentType.rawValue)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-            }
-            Spacer()
-            if exercise.favorite {
-                Image(systemName: "star.fill")
-                    .foregroundStyle(.yellow)
-                    .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(exercise.name)
+                    Spacer()
+                    if exercise.favorite {
+                        Image(systemName: "star.fill")
+                            .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .font(.headline)
+                HStack {
+                    Text(exercise.equipmentType.rawValue)
+                    Spacer()
+                    Text(exercise.displayMuscle)
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fontWeight(.semibold)
             }
         }
         .accessibilityElement(children: .combine)

@@ -383,7 +383,9 @@ At the summary screen, the user can:
 If they leave the summary with suggestions still `pending`, `finishSummary()` calls `deferRemainingSuggestions()`, which converts those pending suggestions to `deferred`.
 
 That is why plan workouts can surface those same suggestions again next time in `DeferredSuggestionsView`.
-After that, `finishSummary()` marks the workout `done`, saves, updates exercise histories, and dismisses the summary screen.
+After that, `finishSummary()` rebuilds exercise histories while the just-finished workout is still included, then marks the workout `done`, saves, and dismisses the summary screen.
+
+`WorkoutSummaryView` also guards suggestion actions while save is in progress, so accept/reject/defer handlers stop mutating changes once the finish path starts.
 
 ## Outcome Resolution
 
@@ -564,15 +566,26 @@ If the user leaves summary-generated suggestions unresolved, `finishSummary()` c
 
 Those are then shown in `DeferredSuggestionsView` before the next workout from that plan starts.
 
+`DeferredSuggestionsView` also guards its accept/reject-all and transition actions so the session only advances to `.active` once.
+
 ### If an exercise is not performed, its old changes stay pending
 
 Outcome resolution only groups changes when it can match the target prescription to an exercise performance in the current workout.
 
 If the exercise was skipped, there is no evaluation for that change yet.
 
-### Deleting plan/set/exercise objects removes related suggestions by cascade
+### Deleting plan/set/exercise objects removes only pending targeted changes
 
-Relationships are configured so deleting a plan, exercise prescription, or set prescription also deletes linked `PrescriptionChange` rows.
+Deletion and editing cleanup are explicit, not just passive cascade behavior.
+
+`WorkoutPlan+Editing.swift` does this:
+
+- deleting a whole plan removes only `targetedChanges` whose `outcome == .pending`
+- deleting an exercise removes pending changes attached to that exercise plus its sets
+- deleting a set removes pending changes attached to that set
+- editing a value that matches a pending suggestion marks that change `decision = .userOverride` and `outcome = .userModified`
+
+Resolved suggestion history is preserved so later analytics and learning still have that evidence.
 
 That is why structural deletions do not become `userOverride`.
 

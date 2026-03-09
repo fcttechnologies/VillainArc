@@ -15,6 +15,9 @@ final class AppRouter {
         case workoutSessionDetail(WorkoutSession)
         case workoutPlansList
         case workoutPlanDetail(WorkoutPlan, Bool)
+        case exercisesList
+        case exerciseDetail(String)
+        case exerciseHistory(String)
         case splitList(autoPresentBuilder: Bool)
         case splitDettail(WorkoutSplit)
     }
@@ -151,6 +154,14 @@ final class AppRouter {
                 popToRoot()
                 navigate(to: .workoutPlanDetail(workoutPlan, false))
             }
+            return
+        }
+
+        if identifier.hasPrefix(SpotlightIndexer.exerciseIdentifierPrefix) {
+            let catalogID = String(identifier.dropFirst(SpotlightIndexer.exerciseIdentifierPrefix.count))
+            guard (try? context.fetch(Exercise.withCatalogID(catalogID)).first) != nil else { return }
+            popToRoot()
+            navigate(to: .exerciseDetail(catalogID))
         }
     }
 }

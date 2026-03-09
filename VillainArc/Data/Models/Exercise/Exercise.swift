@@ -16,6 +16,10 @@ final class Exercise {
     var searchTokens: [String] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
 
+    var displayMuscle: String {
+        musclesTargeted.first?.rawValue ?? "Unknown Muscle"
+    }
+
     @MainActor
     init(from catalogItem: ExerciseCatalogItem) {
         catalogID = catalogItem.id

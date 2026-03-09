@@ -32,6 +32,10 @@ final class ExerciseHistory {
     // Session counts
     var totalSessions: Int = 0
     var last30DaySessions: Int = 0
+    var totalCompletedSets: Int = 0
+    var cumulativeVolume: Double = 0
+    var latestEstimated1RM: Double = 0
+    var latestEstimated1RMDate: Date?
     
     // Personal Records
     var bestEstimated1RM: Double = 0
@@ -60,7 +64,7 @@ final class ExerciseHistory {
     // Progression trend (SwiftData stores enum directly, String raw value for AI readability)
     var progressionTrend: ProgressionTrend = ProgressionTrend.insufficient
     
-    // Weight progression points (last 10 sessions for charting)
+    // Progression points (last 10 sessions for charting)
     @Relationship(deleteRule: .cascade, inverse: \ProgressionPoint.exerciseHistory)
     var progressionPoints: [ProgressionPoint]? = [ProgressionPoint]()
     
@@ -93,10 +97,14 @@ final class ExerciseHistory {
         
         lastUpdated = Date()
         totalSessions = performances.count
+        totalCompletedSets = performances.reduce(0) { $0 + $1.sortedSets.filter(\.complete).count }
+        cumulativeVolume = performances.reduce(0) { $0 + $1.totalVolume }
         
         // Track most recent workout date
         if let latest = performances.first {
             lastWorkoutDate = latest.date
+            latestEstimated1RM = latest.bestEstimated1RM ?? 0
+            latestEstimated1RMDate = latest.bestEstimated1RM == nil ? nil : latest.date
         }
         
         // Calculate last 30 days
@@ -128,6 +136,10 @@ final class ExerciseHistory {
     private func reset() {
         totalSessions = 0
         last30DaySessions = 0
+        totalCompletedSets = 0
+        cumulativeVolume = 0
+        latestEstimated1RM = 0
+        latestEstimated1RMDate = nil
         lastWorkoutDate = nil
         bestEstimated1RM = 0
         bestEstimated1RMDate = nil
@@ -298,7 +310,7 @@ final class ExerciseHistory {
                 .map { $0.weight }
                 .max() ?? 0
             
-            let point = ProgressionPoint(date: perf.date, weight: topWeight, volume: perf.totalVolume)
+            let point = ProgressionPoint(date: perf.date, weight: topWeight, volume: perf.totalVolume, estimated1RM: perf.bestEstimated1RM ?? 0)
             progressionPoints?.append(point)
         }
     }

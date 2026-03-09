@@ -30,6 +30,7 @@ final class ExercisePerformance {
     // Adding exercise in session
     init(exercise: Exercise, workoutSession: WorkoutSession) {
         index = workoutSession.exercises?.count ?? 0
+        date = workoutSession.startedAt
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
@@ -62,6 +63,7 @@ final class ExercisePerformance {
     // Adding exercise from plan
     init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
         index = exercisePrescription.index
+        date = workoutSession.startedAt
         catalogID = exercisePrescription.catalogID
         name = exercisePrescription.name
         notes = exercisePrescription.notes

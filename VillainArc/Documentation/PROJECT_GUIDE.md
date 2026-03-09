@@ -22,7 +22,7 @@ A gym workout tracking iOS app built with SwiftUI + SwiftData. Users plan workou
 5. Drops user onto home screen
 
 ### Home Screen
-Three sections: **Splits** (today's schedule), **Recent Workout** (last completed), **Recent Plan** (last used plan). Plus a "+" menu to start a workout or create a plan.
+Four sections: **Splits** (today's schedule), **Recent Workout** (last completed), **Recent Plan** (last used plan), and **Exercises** (most recently used exercises). Plus a "+" menu to start a workout or create a plan.
 
 ### Core User Flows
 
@@ -40,6 +40,15 @@ Three sections: **Splits** (today's schedule), **Recent Workout** (last complete
 
 **Suggestion Cycle:** After a plan-based workout, the rule engine + optional AI analyze your performance and suggest changes (increase weight, adjust reps, modify rest times). You review these before your next workout. After that workout, the system evaluates whether the suggestions worked (good/too aggressive/too easy/ignored).
 
+### Flow Invariants
+
+- If an unfinished workout session exists at launch, the app immediately resumes it in the full-screen workout flow. The user cannot start another workout or workout-plan flow until that session is finished or canceled.
+- If no unfinished workout exists but an incomplete non-editing workout plan exists, the app resumes that plan in the full-screen plan editor. The user stays in that flow until the plan is saved/completed or canceled.
+- `AppRouter` enforces a single active flow across the app: at most one workout session or one workout plan can be active at a time, never both.
+- `ExercisePerformance` and `ExercisePrescription` are initialized with at least one set. The editing UI only exposes set deletion when more than one set remains.
+- Finishing a workout resolves incomplete sets before summary: logged unfinished sets can be marked complete, unfinished sets can be deleted, and any exercise left with zero sets is pruned. If every exercise is pruned, the workout itself is deleted instead of reaching summary.
+- `ExerciseHistory` is maintained only for exercises with completed performance history. When the last completed performance is removed, the history record is deleted and the exercise is removed from Spotlight.
+
 ---
 
 ## Architecture Overview
@@ -49,14 +58,16 @@ VillainArcApp (@main)
   └─ ContentView (NavigationStack + home sections)
        ├─ Stack destinations: WorkoutsListView, WorkoutDetailView,
        │   WorkoutPlansListView, WorkoutPlanDetailView,
-       │   WorkoutSplitView, WorkoutSplitCreationView
+       │   ExercisesListView, ExerciseDetailView,
+       │   ExerciseHistoryView, WorkoutSplitView,
+       │   WorkoutSplitCreationView
        ├─ Full-screen cover: WorkoutSessionContainer (active workout)
        │   └─ Routes by status: DeferredSuggestionsView (.pending)
        │       → WorkoutView (.active) → WorkoutSummaryView (.summary/.done)
        └─ Full-screen cover: WorkoutPlanView (plan editing)
 ```
 
-**AppRouter** (singleton, `@Observable`): Owns `NavigationPath`, `activeWorkoutSession`, `activeWorkoutPlan`. Enforces one active flow at a time. Handles Spotlight/Siri routing. Auto-resumes incomplete workouts on launch.
+**AppRouter** (singleton, `@Observable`): Owns `NavigationPath`, `activeWorkoutSession`, `activeWorkoutPlan`. Enforces one active flow at a time, auto-resumes unfinished workout sessions first, then resumable incomplete plans, and blocks Spotlight/Siri/new-flow entry points while a flow is already active.
 
 **SharedModelContainer**: SwiftData container with 16 model types, CloudKit-backed, app-group store.
 
@@ -92,7 +103,7 @@ PrescriptionChange (suggestion)
   └─ outcome: pending/good/tooAggressive/tooEasy/ignored/userModified
 
 ExerciseHistory (analytics cache)
-  └─ owns → ProgressionPoint[] (charting data)
+  └─ owns → ProgressionPoint[] (weight/volume/estimated-1RM charting data)
 ```
 
 ### Session Status Lifecycle
@@ -112,12 +123,13 @@ Use this to find where logic lives for any feature.
 |------|-------|
 | Start empty workout | `Data/Services/AppRouter.swift` → `startWorkoutSession()` |
 | Start from plan | `Data/Services/AppRouter.swift` → `startWorkoutSession(from:)` |
+| Single active flow guard | `Data/Services/AppRouter.swift` → `hasActiveFlow()` |
 | Active workout UI | `Views/Workout/WorkoutView.swift` |
 | Per-exercise logging | `Views/Workout/ExerciseView.swift` |
 | Set row (reps/weight input) | `Views/Components/ExerciseSetRowView.swift` |
-| Finish logic (set cleanup) | `Data/Models/Sessions/WorkoutSession.swift` → `finish()` |
+| Finish logic (incomplete-set resolution + pruning) | `Data/Models/Sessions/WorkoutSession.swift` → `finish()` |
 | Post-workout summary | `Views/Workout/WorkoutSummaryView.swift` |
-| Resume after app kill | `Data/Services/AppRouter.swift` → `checkForUnfinishedData()` |
+| Resume unfinished workout / plan on launch | `Data/Services/AppRouter.swift` → `checkForUnfinishedData()` |
 | Workout status routing | `Views/Workout/WorkoutSessionContainer.swift` |
 
 ### Workout Plans
@@ -128,6 +140,7 @@ Use this to find where logic lives for any feature.
 | Plan list | `Views/WorkoutPlan/WorkoutPlansListView.swift` |
 | Plan picker (for splits) | `Views/WorkoutPlan/WorkoutPlanPickerView.swift` |
 | Editing copy workflow | `Data/Models/Plans/WorkoutPlan+Editing.swift` |
+| Resumable incomplete plan query | `Data/Models/Plans/WorkoutPlan.swift` → `resumableIncomplete` |
 | Plan model | `Data/Models/Plans/WorkoutPlan.swift` |
 | Exercise prescription | `Data/Models/Plans/ExercisePrescription.swift` |
 | Set prescription | `Data/Models/Plans/SetPrescription.swift` |
@@ -172,8 +185,14 @@ Use this to find where logic lives for any feature.
 | Searchable list | `Views/Workout/FilteredExerciseListView.swift` |
 | Replace exercise | `Views/Workout/ReplaceExerciseView.swift` |
 | Muscle filter | `Views/Workout/Editors/MuscleFilterSheetView.swift` |
-| Exercise history stats | `Data/Models/Exercise/ExerciseHistory.swift` |
+| Home exercise section | `Views/HomeSections/RecentExercisesSectionView.swift` |
+| Exercises list | `Views/Exercise/ExercisesListView.swift` |
+| Exercise detail / progress UI | `Views/Exercise/ExerciseDetailView.swift` |
+| Exercise performance history UI | `Views/Exercise/ExerciseHistoryView.swift` |
+| Contextual workout/plan history sheet entry point | `Views/Exercise/ExerciseHistoryView.swift` initializers |
+| Exercise history stats + cached progress metrics | `Data/Models/Exercise/ExerciseHistory.swift` |
 | History rebuild | `Data/Services/ExerciseHistoryUpdater.swift` |
+| Exercise Spotlight eligibility | `Data/Services/ExerciseHistoryUpdater.swift` + `Data/Services/SpotlightIndexer.swift` |
 | Rep range policy | `Data/Models/Exercise/RepRangePolicy.swift` |
 | Rep range editor | `Views/Workout/Editors/RepRangeEditorView.swift` |
 | Rest time editor | `Views/Workout/Editors/RestTimeEditorView.swift` |
@@ -210,7 +229,7 @@ Use this to find where logic lives for any feature.
 | What | Where |
 |------|-------|
 | Index/delete | `Data/Services/SpotlightIndexer.swift` |
-| Spotlight routing | `Data/Services/AppRouter.swift` → `handleSpotlight()` |
+| Spotlight routing (workouts, plans, exercises) | `Data/Services/AppRouter.swift` → `handleSpotlight()` |
 | Entity associations | `Intents/Workout/WorkoutSessionEntity.swift` etc. |
 
 ### Onboarding & Setup
@@ -230,6 +249,8 @@ Use this to find where logic lives for any feature.
 | Text editor sheet | `Views/Components/TextEntryEditorView.swift` |
 | Timer duration picker | `Views/Components/TimerDurationPicker.swift` |
 | RPE picker | `Views/Components/RPEPickerView.swift` |
+| Exercise summary row | `Views/Components/ExerciseSummaryRow.swift` |
+| Summary stat card | `Views/Components/SummaryStatCard.swift` |
 | Section header button | `Views/HomeSections/HomeSectionHeaderButton.swift` |
 | Empty state | `Views/Components/SmallUnavailableView.swift` |
 | Workout card row | `Views/Components/WorkoutRowView.swift` |
@@ -379,14 +400,15 @@ VillainArc/
   Views/
     ContentView.swift            Home screen (NavigationStack root)
     Onboarding/                  First-run onboarding UI
-    HomeSections/                Home screen section views (4 files)
+    HomeSections/                Home screen section views (5 files)
+    Exercise/                    Exercise list, detail, and history surfaces
     Workout/                     Active workout views (11 files)
       Editors/                   Shared editors: RepRange, RestTime, MuscleFilter
     History/                     Workout history list
     WorkoutPlan/                 Plan CRUD views (4 files)
     WorkoutSplit/                Split management views (4 files)
     Suggestions/                 Suggestion review UI (2 files)
-    Components/                  Reusable UI components (9 files)
+    Components/                  Reusable UI components (11 files)
   Data/
     SharedModelContainer.swift   SwiftData schema + container
     SampleData.swift             Preview fixtures
