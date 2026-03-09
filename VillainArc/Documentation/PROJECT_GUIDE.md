@@ -251,15 +251,19 @@ Use this to find where logic lives for any feature.
 
 ## Suggestion Engine Summary
 
+> For the full implementation details, see `Documentation/WORKOUT_PLAN_SUGGESTION_FLOW.md`.
+
 The suggestion system is a closed-loop learning pipeline:
 
-**Generation** (after workout): `SuggestionGenerator` → detects training style (deterministic, with AI fallback for ambiguous cases) → `RuleEngine` evaluates 15 rules (progression, safety, plateau, set-type hygiene) → `SuggestionDeduplicator` resolves conflicts → produces `PrescriptionChange` records.
+**Generation + Outcome Resolution** (during summary screen): When `WorkoutSummaryView` appears, it runs in sequence: (1) `OutcomeResolver` evaluates older suggestions against the just-finished workout, then (2) `SuggestionGenerator` detects training style (deterministic via `MetricsCalculator`, with `AITrainingStyleClassifier` as fallback for `.unknown`) → `RuleEngine` evaluates 15 rules across 4 buckets (progression, safety/cleanup, plateau, set-type hygiene) → `SuggestionDeduplicator` resolves conflicts → produces `PrescriptionChange` records.
 
-**Review** (before next workout): User sees pending suggestions grouped by exercise. Can accept (applies to plan), reject (ignores), or defer (review later).
+**Review — two stages:**
+- *Immediately after workout* (`WorkoutSummaryView`): user can accept, reject, or defer newly generated suggestions. Any still-pending at dismissal are auto-converted to `deferred`.
+- *Before next plan workout* (`DeferredSuggestionsView`): deferred/pending suggestions from prior sessions are reviewed before the workout begins. Accepting mutates the live plan immediately.
 
-**Outcome Evaluation** (after next workout): `OutcomeResolver` checks whether accepted suggestions worked. `OutcomeRuleEngine` scores deterministically. `AIOutcomeInferrer` provides optional AI override (only when AI confidence >= 0.75 AND rule confidence < 0.7).
+**Outcome Evaluation**: `OutcomeRuleEngine` scores deterministically for both accepted *and* rejected suggestions (rejected are evaluated to detect whether the user effectively followed them anyway). `AIOutcomeInferrer` overrides only when rule confidence < 0.7 AND AI confidence >= 0.75.
 
-**Key rules:** Progression (weight/rep increases when targets hit for 2+ sessions), safety (weight decreases when struggling), plateau (rest increases when stagnating), set-type cleanup (misclassified set types).
+**Key rules:** Progression — immediate (1 session: large overshoot, hit top of range/target) or confirmed (2 sessions near top). Safety — weight decreases when struggling or when the user consistently trains lighter. Plateau — rest increases when stagnating or short-rest causes rep drops. Set-type hygiene — fixes misclassified warmup/working/drop sets.
 
 ---
 
