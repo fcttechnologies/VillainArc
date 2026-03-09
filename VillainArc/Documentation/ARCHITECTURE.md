@@ -1,8 +1,9 @@
 # VillainArc Architecture Map
 
-**Status**: Draft  
-**Last updated**: 2026-02-11  
-**Scope**: Root app/navigation + persistence/Spotlight + intent/shortcuts/donations + workout history/detail + workout session/suggestions + suggestion rules/AI pipeline + workout plan list/detail + split planning/editing + exercise selection/editor slice + helper utility slice + data model layer (session/plan/split/history/suggestions).
+**Status**: Current
+**Last updated**: 2026-03-08
+**Scope**: Full codebase — root app/navigation + onboarding + persistence/Spotlight + intent/shortcuts/donations + workout history/detail + workout session/suggestions + suggestion rules/AI pipeline + workout plan list/detail + split planning/editing + exercise selection/editor slice + helper utility slice + data model layer (session/plan/split/history/suggestions).
+**See also**: `PROJECT_GUIDE.md` for conceptual overview and feature→file map. `WORKOUT_PLAN_SUGGESTION_FLOW.md` for suggestion engine deep dive.
 
 ## 1) Architecture Map
 
@@ -36,8 +37,14 @@
   - Weekly/rotation scheduling models used by split management and "today's workout" routing
 - `Exercise` + catalog/search metadata + `ExerciseHistory`/`ProgressionPoint`
   - Canonical exercise identity/search + derived longitudinal performance cache
+- `UserProfile`
+  - User account data (name, birthday, height) collected during onboarding
 - `RepRangePolicy` / `RestTimeHistory` / `PreWorkoutStatus`
   - Reusable policy and session-adjacent models shared by workout and plan flows
+- `OnboardingManager`
+  - First-run state machine (network/iCloud/CloudKit checks → sync → seed → profile collection)
+- `SetupGuard`
+  - Onboarding gate view that blocks app content until setup completes
 - `DataManager` (`saveContext` / `scheduleSave`)
   - Seeds and dedupes exercise catalog data
   - Provides shared save helpers used by router/views/models
@@ -183,7 +190,7 @@
 - Called by: `VillainArcApp`, SwiftUI preview.
 - Calls: `AppRouter.startWorkoutSession`, `AppRouter.createWorkoutPlan`, `AppRouter.checkForUnfinishedData`, `DataManager.seedExercisesIfNeeded`, home sections (`WorkoutSplitSectionView`, `RecentWorkoutSectionView`, `RecentWorkoutPlanSectionView`), destination views (`WorkoutsListView`, `WorkoutDetailView`, `WorkoutPlansListView`, `WorkoutPlanDetailView`, `WorkoutSplitView`, `WorkoutSplitCreationView`), full-screen views (`WorkoutSessionContainer`, `WorkoutPlanView`), `IntentDonations.*`.
 
-### `VillainArc/Data/Classes/AppRouter.swift`
+### `VillainArc/Data/Services/AppRouter.swift`
 - Does: App-wide navigation/workflow coordinator. Owns `path`, `activeWorkoutSession`, `activeWorkoutPlan`, and Spotlight/Siri routing behavior.
 - Called by: `VillainArcApp`, `ContentView`, many feature views under `VillainArc/Views/*`, and app intents under `VillainArc/Intents/*`.
 - Calls: SwiftData context (`insert/fetch/delete` via `SharedModelContainer.container.mainContext`), `saveContext`, `Haptics.selection`, `pendingSuggestions`, `RestTimerState.shared.stop`, `WorkoutActivityManager.end`, `SpotlightIndexer.workoutSessionIdentifierPrefix`, `SpotlightIndexer.workoutPlanIdentifierPrefix`.
@@ -193,62 +200,72 @@
 - Called by: `VillainArcApp` (`.modelContainer`), `AppRouter` (`mainContext`), `WorkoutActivityManager`, and many app intent/entity files.
 - Calls: `Schema(...)` with model types, `FileManager.default.containerURL(...)`, `ModelConfiguration(...)`, `ModelContainer(for:configurations:)`.
 
-### `VillainArc/Data/Classes/DataManager.swift`
+### `VillainArc/Data/Services/DataManager.swift`
 - Does: Catalog bootstrap/dedupe (`DataManager`) plus shared persistence helpers (`saveContext`, `scheduleSave`).
 - Called by: `ContentView` (`seedExercisesIfNeeded`), `AddExerciseView` (`dedupeCatalogExercisesIfNeeded`), exercise intents, and many views/models/router through `saveContext`/`scheduleSave`.
 - Calls: app-group `UserDefaults` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
 
-### `VillainArc/Data/Classes/Suggestions/SuggestionGenerator.swift`
+### `VillainArc/Data/Services/OnboardingManager.swift`
+- Does: First-run state machine orchestrating network/iCloud/CloudKit checks, data sync, exercise catalog seeding, and user profile collection.
+- Called by: `ContentView` (via `onboardingManager.startOnboarding()`).
+- Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `UserProfile` queries, `saveContext`.
+
+### `VillainArc/Data/Services/SetupGuard.swift`
+- Does: View modifier / gate that blocks app content behind onboarding until setup completes.
+- Called by: `ContentView`.
+- Calls: `OnboardingManager.state`, `OnboardingView`.
+
+### `VillainArc/Data/Services/Suggestions/SuggestionGenerator.swift`
 - Does: Generates `PrescriptionChange` suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference.
 - Called by: `WorkoutSummaryView` (`generateSuggestionsIfNeeded`).
 - Calls: `MetricsCalculator.detectTrainingStyle`, `AITrainingStyleClassifier.infer`, `RuleEngine.evaluate`, `SuggestionDeduplicator.process`, `ExercisePerformance.matching(...)`, `ModelContext.fetch`.
 
-### `VillainArc/Data/Classes/Suggestions/RuleEngine.swift`
+### `VillainArc/Data/Services/Suggestions/RuleEngine.swift`
 - Does: Main deterministic suggestion engine (progression/safety/rest/set-type rules) that emits candidate `PrescriptionChange` values.
 - Called by: `SuggestionGenerator`.
 - Calls: `MetricsCalculator.selectProgressionSets`, `MetricsCalculator.weightIncrement`, `MetricsCalculator.roundToNearestPlate`, model helpers (`ExercisePerformance.effectiveRestSeconds`, `repRange`, set/prescription linkage), `PrescriptionChange` initializers.
 
-### `VillainArc/Data/Classes/Suggestions/MetricsCalculator.swift`
+### `VillainArc/Data/Services/Suggestions/MetricsCalculator.swift`
 - Does: Shared training metrics helper for style detection, progression set selection, increment sizing, and plate rounding.
 - Called by: `SuggestionGenerator`, `RuleEngine`, `OutcomeResolver`, `OutcomeRuleEngine`.
 - Calls: Internal heuristics only (`detectTrainingStyle`, `setsForStyle`, `weightIncrement`, `roundToNearestPlate`).
 
-### `VillainArc/Data/Classes/Suggestions/SuggestionDeduplicator.swift`
+### `VillainArc/Data/Services/Suggestions/SuggestionDeduplicator.swift`
 - Does: Conflict resolver for generated suggestions (strategy conflicts, policy conflicts, same-target property collisions).
 - Called by: `SuggestionGenerator`.
 - Calls: Internal grouping/priority helpers (`resolveLogicalConflicts`, `resolveConflicts`).
 
-### `VillainArc/Data/Classes/Suggestions/OutcomeResolver.swift`
+### `VillainArc/Data/Services/Suggestions/OutcomeResolver.swift`
 - Does: Resolves outcomes for prior suggestions in the next workout by combining deterministic rule results with optional AI inference at group level.
 - Called by: `WorkoutSummaryView` (`generateSuggestionsIfNeeded` pre-step).
 - Calls: `OutcomeRuleEngine.evaluate`, `AIOutcomeInferrer.inferApplied`, `AIOutcomeInferrer.inferRejected`, `MetricsCalculator.detectTrainingStyle`, change outcome mutation helpers, `ModelContext.save`.
 
-### `VillainArc/Data/Classes/Suggestions/OutcomeRuleEngine.swift`
+### `VillainArc/Data/Services/Suggestions/OutcomeRuleEngine.swift`
 - Does: Deterministic per-change outcome evaluator (`good` / `tooAggressive` / `tooEasy` / `ignored`) using actual set performance.
 - Called by: `OutcomeResolver`.
 - Calls: `MetricsCalculator.weightIncrement`, change-type-specific evaluation helpers.
 
-### `VillainArc/Data/Classes/Suggestions/AITrainingStyleClassifier.swift`
+### `VillainArc/Data/Services/Suggestions/AITrainingStyleClassifier.swift`
 - Does: On-device Foundation Models classifier for exercise training style when deterministic style detection is inconclusive.
 - Called by: `SuggestionGenerator` (for `.unknown` style cases).
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `RecentExercisePerformancesTool`, `AIInferenceOutput` generation/validation.
 
-### `VillainArc/Data/Classes/Suggestions/AITrainingStyleTools.swift`
+### `VillainArc/Data/Services/Suggestions/AITrainingStyleTools.swift`
 - Does: Defines `RecentExercisePerformancesTool` used by the style classifier to fetch recent exercise history snapshots.
 - Called by: `AITrainingStyleClassifier` (tool-enabled `LanguageModelSession`).
 - Calls: `ModelContext(SharedModelContainer.container)`, `ExercisePerformance.matching(...)`, `ModelContext.fetch`, `AIExercisePerformanceSnapshot`.
 
-### `VillainArc/Data/Classes/Suggestions/AIOutcomeInferrer.swift`
+### `VillainArc/Data/Services/Suggestions/AIOutcomeInferrer.swift`
 - Does: On-device Foundation Models evaluator that infers grouped suggestion outcomes for applied vs rejected paths.
 - Called by: `OutcomeResolver`.
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `AIOutcomeGroupInput` prompts, `AIOutcomeInferenceOutput` validation.
 
-### `VillainArc/Data/Classes/SpotlightIndexer.swift`
+### `VillainArc/Data/Services/SpotlightIndexer.swift`
 - Does: Central Spotlight indexing/deindexing for `WorkoutSession`, `WorkoutPlan`, and `Exercise`; defines reusable identifier prefixes.
 - Called by: workout/plan/exercise views for index/delete actions, `AppRouter` (Spotlight identifier parsing), and related intent/editing flows.
 - Calls: `CSSearchableItemAttributeSet`, `CSSearchableItem`, `CSSearchableIndex.default().indexSearchableItems`, `CSSearchableIndex.default().deleteSearchableItems`, `associateAppEntity(...)` using `WorkoutSessionEntity`, `WorkoutPlanEntity`, `ExerciseEntity`.
 
-### `VillainArc/Views/Components/RecentWorkoutSectionView.swift`
+### `VillainArc/Views/HomeSections/RecentWorkoutSectionView.swift`
 - Does: Home "Workouts" section; shows empty state or latest workout card and provides quick navigation to workout history.
 - Called by: `ContentView`, SwiftUI preview.
 - Calls: `@Query(WorkoutSession.recent)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .workoutSessionsList)`, `WorkoutRowView`, `IntentDonations.donateShowWorkoutHistory`, `IntentDonations.donateViewLastWorkout`.
@@ -268,7 +285,12 @@
 - Called by: `ExerciseSetRowView`, SwiftUI preview.
 - Calls: `Haptics.selection`, `dismiss` environment action.
 
-### `VillainArc/Views/Components/HomeSectionHeaderButton.swift`
+### `VillainArc/Views/Onboarding/OnboardingView.swift`
+- Does: Half-sheet onboarding UI progressing through system checks, data sync, and profile collection (name/birthday/height).
+- Called by: `SetupGuard` (presented as non-dismissible sheet).
+- Calls: `OnboardingManager` state observation, `UserProfile` bindings, `Haptics.selection`.
+
+### `VillainArc/Views/HomeSections/HomeSectionHeaderButton.swift`
 - Does: Reusable home section header button with title + chevron styling and accessibility wiring.
 - Called by: `RecentWorkoutSectionView`, `RecentWorkoutPlanSectionView`, `WorkoutSplitSectionView`.
 - Calls: Provided `action` closure.
@@ -283,7 +305,7 @@
 - Called by: `WorkoutPlanView`, `WorkoutView`, `WorkoutSummaryView`, `WorkoutSplitCreationView`, SwiftUI preview.
 - Calls: `dismissKeyboard`, `.navBar(title:)`, `CloseButton`, bound text mutation (`trimmingCharacters`).
 
-### `VillainArc/Views/WorkoutsListView.swift`
+### `VillainArc/Views/History/WorkoutsListView.swift`
 - Does: List of completed workouts with edit mode, per-item delete, and delete-all workflow.
 - Called by: `ContentView` navigation destination for `.workoutSessionsList`, SwiftUI preview.
 - Calls: `@Query(WorkoutSession.completedSession)`, `WorkoutRowView`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutSessions`, `ModelContext.delete`, `ExerciseHistoryUpdater.updateHistory`, `IntentDonations.donateDeleteWorkout`, `IntentDonations.donateDeleteAllWorkouts`.
@@ -348,22 +370,22 @@
 - Called by: `ExerciseView`, SwiftUI preview.
 - Calls: `FilteredExerciseListView`, `MuscleFilterSheetView`, provided `onReplace` callback, `Haptics.selection`, `dismiss` environment action.
 
-### `VillainArc/Views/Workout/MuscleFilterSheetView.swift`
+### `VillainArc/Views/Workout/Editors/MuscleFilterSheetView.swift`
 - Does: Reusable sheet for selecting major/minor muscle filters and returning the chosen set through `onConfirm`.
 - Called by: `AddExerciseView`, `ReplaceExerciseView`, `WorkoutSplitDayView`, SwiftUI previews.
 - Calls: `Haptics.selection`, `AccessibilityIdentifiers.muscleFilterChip`, provided `onConfirm` callback, `dismiss` environment action.
 
-### `VillainArc/Views/Workout/RepRangeEditorView.swift`
+### `VillainArc/Views/Workout/Editors/RepRangeEditorView.swift`
 - Does: Editor for an exercise's rep-range policy (`notSet` / `target` / `range`) with suggestion from recent history.
 - Called by: `WorkoutPlanView` (`WorkoutPlanExerciseView`), `ExerciseView`, SwiftUI preview.
 - Calls: `RepRangeMode`/`RepRangePolicy` mutations, history fetch via `ExercisePerformance.matching/completedAll`, `Haptics.selection`, `saveContext`, `scheduleSave`, `.navBar(title:)`, `CloseButton`.
 
-### `VillainArc/Views/Workout/RestTimeEditorView.swift`
+### `VillainArc/Views/Workout/Editors/RestTimeEditorView.swift`
 - Does: Generic rest-time editor for exercises with mode-specific rest controls, copy/paste seconds, and per-row picker expansion.
 - Called by: `WorkoutPlanView` (`WorkoutPlanExerciseView`), `ExerciseView`, SwiftUI preview.
 - Calls: `TimerDurationPicker`, `secondsToTime`, `Haptics.selection`, `saveContext`, `scheduleSave`, `.navBar(title:)`, `CloseButton`.
 
-### `VillainArc/Views/Components/RecentWorkoutPlanSectionView.swift`
+### `VillainArc/Views/HomeSections/RecentWorkoutPlanSectionView.swift`
 - Does: Home "Workout Plans" section; shows empty state or latest plan card and provides quick navigation to the full plans list.
 - Called by: `ContentView`, SwiftUI preview.
 - Calls: `@Query(WorkoutPlan.recent)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .workoutPlansList)`, `WorkoutPlanRowView`, `IntentDonations.donateShowWorkoutPlans`.
@@ -403,7 +425,7 @@
 - Called by: `ContentView` navigation destination for `.splitList`, SwiftUI preview.
 - Calls: `@Query` over `WorkoutSplit`, `SplitBuilderView`, `WorkoutPlanPickerView` (`SplitDayPlanPickerSheet`), `WorkoutPlanRowView`, `AppRouter.navigate(to: .splitDettail(...))`, `IntentDonations.donateTrainingSummary`, `Haptics.selection`, `saveContext`, split model operations (`refreshRotationIfNeeded`, `missedDay`, `resetSplit`, `updateCurrentIndex`).
 
-### `VillainArc/Views/Components/WorkoutSplitSectionView.swift`
+### `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`
 - Does: Home split summary section that shows active/today state and routes users into split screens.
 - Called by: `ContentView`, SwiftUI preview.
 - Calls: `@Query` over `WorkoutSplit`, `HomeSectionHeaderButton`, `SmallUnavailableView`, `AppRouter.navigate(to: .splitList/.workoutPlanDetail)`, `IntentDonations.donateStartTodaysWorkout`, `IntentDonations.donateOpenWorkoutPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
@@ -448,7 +470,7 @@
 - Called by: `WorkoutDetailView`, `WorkoutSummaryView`, `RestTimerView`, `WorkoutView`, `ExerciseView`, `RestTimeEditorView`, `TimerDurationPicker`, `ExerciseSetRowView`, rest timer intents/snippet.
 - Calls: `Calendar` and `Date.formatted` utilities for normalized date/time range rendering.
 
-### `VillainArc/Data/Classes/ExerciseHistoryUpdater.swift`
+### `VillainArc/Data/Services/ExerciseHistoryUpdater.swift`
 - Does: Rebuild/create/delete `ExerciseHistory` records from completed exercise performances after workout completion/deletion.
 - Called by: `WorkoutsListView`, `WorkoutDetailView`, `WorkoutSummaryView`.
 - Calls: `ModelContext.fetch/insert/delete`, `ExercisePerformance.matching(...)`, `ExerciseHistory.forCatalogID(...)`, `ExerciseHistory.recalculate(using:)`, `saveContext`.
@@ -470,15 +492,15 @@
 
 ### Donation Map (`IntentDonations`)
 - `StartWorkoutIntent`: donated via `donateStartWorkout`; called from `VillainArc/Views/ContentView.swift`.
-- `StartTodaysWorkoutIntent`: donated via `donateStartTodaysWorkout`; called from `VillainArc/Views/Components/WorkoutSplitSectionView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift` (when starting the active split's current-day plan).
-- `ViewLastWorkoutIntent`: donated via `donateViewLastWorkout`; called from `VillainArc/Views/Components/RecentWorkoutSectionView.swift`.
+- `StartTodaysWorkoutIntent`: donated via `donateStartTodaysWorkout`; called from `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift` (when starting the active split's current-day plan).
+- `ViewLastWorkoutIntent`: donated via `donateViewLastWorkout`; called from `VillainArc/Views/HomeSections/RecentWorkoutSectionView.swift`.
 - `OpenWorkoutIntent`: donated via `donateOpenWorkout`; called from `VillainArc/Views/Components/WorkoutRowView.swift`.
 - `SaveWorkoutAsPlanIntent`: donated via `donateSaveWorkoutAsPlan`; called from `VillainArc/Views/Workout/WorkoutSummaryView.swift`.
-- `DeleteWorkoutIntent`: donated via `donateDeleteWorkout`; called from `VillainArc/Views/Workout/WorkoutDetailView.swift`, `VillainArc/Views/WorkoutsListView.swift` (single-delete path).
-- `DeleteAllWorkoutsIntent`: donated via `donateDeleteAllWorkouts`; called from `VillainArc/Views/WorkoutsListView.swift`.
-- `ShowWorkoutHistoryIntent`: donated via `donateShowWorkoutHistory`; called from `VillainArc/Views/Components/RecentWorkoutSectionView.swift`.
-- `ShowWorkoutPlansIntent`: donated via `donateShowWorkoutPlans`; called from `VillainArc/Views/Components/RecentWorkoutPlanSectionView.swift`.
-- `OpenWorkoutPlanIntent`: donated via `donateOpenWorkoutPlan`; called from `VillainArc/Views/Components/WorkoutPlanRowView.swift`, `VillainArc/Views/Components/WorkoutSplitSectionView.swift`, `VillainArc/Views/Workout/WorkoutDetailView.swift`.
+- `DeleteWorkoutIntent`: donated via `donateDeleteWorkout`; called from `VillainArc/Views/Workout/WorkoutDetailView.swift`, `VillainArc/Views/History/WorkoutsListView.swift` (single-delete path).
+- `DeleteAllWorkoutsIntent`: donated via `donateDeleteAllWorkouts`; called from `VillainArc/Views/History/WorkoutsListView.swift`.
+- `ShowWorkoutHistoryIntent`: donated via `donateShowWorkoutHistory`; called from `VillainArc/Views/HomeSections/RecentWorkoutSectionView.swift`.
+- `ShowWorkoutPlansIntent`: donated via `donateShowWorkoutPlans`; called from `VillainArc/Views/HomeSections/RecentWorkoutPlanSectionView.swift`.
+- `OpenWorkoutPlanIntent`: donated via `donateOpenWorkoutPlan`; called from `VillainArc/Views/Components/WorkoutPlanRowView.swift`, `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`, `VillainArc/Views/Workout/WorkoutDetailView.swift`.
 - `DeleteWorkoutPlanIntent`: donated via `donateDeleteWorkoutPlan`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlansListView.swift` (single-delete path).
 - `DeleteAllWorkoutPlansIntent`: donated via `donateDeleteAllWorkoutPlans`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlansListView.swift`.
 - `ToggleWorkoutPlanFavoriteIntent`: donated via `donateToggleWorkoutPlanFavorite`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlansListView.swift`.
@@ -537,6 +559,11 @@
 - Called by: `ExercisePerformance`, `ExercisePrescription`, `RepRangeEditorView`, suggestion engines.
 - Calls: None (data and display text only).
 
+### `VillainArc/Data/Models/Exercise/RestTimeDefaults.swift`
+- Does: Default rest time constants/helpers for exercise types and equipment.
+- Called by: `ExercisePerformance`, `ExercisePrescription`, rest time editor flows.
+- Calls: None (constants only).
+
 ### `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
 - Does: Derived per-exercise analytics cache (PRs, recents, trends, progression points).
 - Called by: `ExerciseHistoryUpdater`, `WorkoutSummaryView` (history/PR display), schema registration.
@@ -571,6 +598,11 @@
 - Does: Recent rest durations cache for rest-timer quick picks.
 - Called by: `RestTimerView`, `ExerciseSetRowView`, rest timer intents (`StartRestTimerIntent`, `CompleteActiveSetIntent`).
 - Calls: `record(seconds:context:)` with `ModelContext.fetch/insert`.
+
+### `VillainArc/Data/Models/UserProfile.swift`
+- Does: User account data (name, birthday, height) collected during onboarding. Provides `isComplete` and `firstMissingStep` for onboarding flow.
+- Called by: `OnboardingManager`, `OnboardingView`, schema registration.
+- Calls: None (data model only).
 
 ### `VillainArc/Data/Models/Plans/WorkoutPlan.swift`
 - Does: Root workout-plan aggregate (metadata, exercises, split-day links, create-from-session path).
@@ -643,11 +675,12 @@
 - `VillainArc/Data/Models/Enums/Suggestions/Decision.swift`: user decision lifecycle for suggestions.
 - `VillainArc/Data/Models/Enums/Suggestions/Outcome.swift`: post-workout suggestion outcome lifecycle.
 - `VillainArc/Data/Models/Enums/Suggestions/SuggestionSource.swift`: suggestion provenance enum (`rules`/`ai`/`user`).
+- `VillainArc/Data/Models/Enums/Suggestions/TrainingStyle.swift`: detected exercise pattern enum (`straightSets`/`ascending`/`descendingPyramid`/`ascendingPyramid`/`topSetBackoffs`/`unknown`) used by `MetricsCalculator`, `RuleEngine`, and AI classifiers.
 - `VillainArc/Data/Models/Enums/SplitMode.swift`: split schedule mode enum (`weekly`/`rotation`) used by `WorkoutSplit`.
 
 ## 5) Runtime Support Files
 
-### `VillainArc/Data/Classes/RestTimerState.swift`
+### `VillainArc/Data/Services/RestTimerState.swift`
 - Does: App-wide singleton rest timer state machine (run/pause/resume/stop/adjust) with persisted state and optional completion alert.
 - Called by: `RestTimerView`, `ExerciseSetRowView`, `WorkoutView`, `AppRouter`, rest timer intents, live activity intents, and workout completion intents.
 - Calls: `RestTimerNotifications.schedule/cancel`, `WorkoutActivityManager.update`, `UserDefaults` persistence, `AudioServicesPlayAlertSound`.
@@ -682,6 +715,16 @@
 - Called by: `ExerciseSearch` helpers and `ExerciseEntityQuery`.
 - Calls: Internal string-distance/token utilities.
 
+### `VillainArc/Helpers/CloudKitStatusChecker.swift`
+- Does: Checks iCloud sign-in status and CloudKit container availability.
+- Called by: `OnboardingManager`.
+- Calls: `FileManager.default.ubiquityIdentityToken`, `CKContainer.default().accountStatus()`.
+
+### `VillainArc/Helpers/NetworkMonitor.swift`
+- Does: Continuous network connectivity monitoring via NWPathMonitor. Observable singleton exposing `isConnected`.
+- Called by: `OnboardingManager`.
+- Calls: `NWPathMonitor`, `NWPath.status`.
+
 ## 6) Intents File Index (Complete Paths)
 
 ### `VillainArc/Intents/IntentDonations.swift`
@@ -698,6 +741,11 @@
 - Does: Starts empty workout after active-session/active-plan guards.
 - Called by: Siri/Shortcuts (`VillainArcShortcuts`) and donation flow.
 - Calls: `SharedModelContainer` fetch checks, `AppRouter.startWorkoutSession`, `OpenAppIntent`.
+
+### `VillainArc/Intents/Workout/CompleteActiveSetIntent.swift`
+- Does: Background intent that marks the current active set as complete and optionally starts rest timer.
+- Called by: Siri/Shortcuts (`VillainArcShortcuts`), donation flow, Live Activity.
+- Calls: `WorkoutSession.incomplete`, `activeExerciseAndSet`, `RestTimerState.start`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `saveContext`.
 
 ### `VillainArc/Intents/Workout/CancelWorkoutIntent.swift`
 - Does: Cancels/deletes current incomplete workout session.
@@ -922,6 +970,16 @@
 - Does: Rule-engine/training-style/outcome/deduplicator behavior tests.
 - Called by: `VillainArcTests` target test runner.
 - Calls: `TestDataFactory`, `MetricsCalculator`, `RuleEngine`, `OutcomeRuleEngine`, `SuggestionDeduplicator`.
+
+### `VillainArcTests/ExerciseReplacementTests.swift`
+- Does: Exercise swap mechanics tests covering set value copying, prescription clearing, and historical lookup after replacement.
+- Called by: `VillainArcTests` target test runner.
+- Calls: `WorkoutSession(from: plan)`, `ExercisePerformance.replaceWith`, `ExercisePerformance.lastCompleted`.
+
+### `VillainArcTests/SpotlightSummaryTests.swift`
+- Does: Spotlight summary string formatting tests ensuring no "Optional()" leakage and correct set counts.
+- Called by: `VillainArcTests` target test runner.
+- Calls: `WorkoutSession` and `WorkoutPlan` summary properties.
 
 ### `VillainArcTests/TestSupport/TestDataFactory.swift`
 - Does: Shared test-only factory helpers for creating model contexts, plans, sessions, and performances.

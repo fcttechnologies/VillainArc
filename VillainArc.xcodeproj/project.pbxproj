@@ -102,10 +102,6 @@
 		FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Data/Classes/AppRouter.swift,
-				Data/Classes/DataManager.swift,
-				Data/Classes/RestTimerState.swift,
-				Data/Classes/SpotlightIndexer.swift,
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/Enums/Exercise/EquipmentType.swift,
@@ -144,6 +140,10 @@
 				Data/Models/WorkoutSplit/WorkoutSplit.swift,
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
 				Data/Protocols/RestTimeEditable.swift,
+				Data/Services/AppRouter.swift,
+				Data/Services/DataManager.swift,
+				Data/Services/RestTimerState.swift,
+				Data/Services/SpotlightIndexer.swift,
 				Data/SharedModelContainer.swift,
 				Helpers/ExerciseSearch.swift,
 				Helpers/Haptics.swift,
