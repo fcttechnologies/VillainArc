@@ -9,7 +9,7 @@ extension WorkoutPlan {
     }
 
     func createEditingCopy(context: ModelContext) -> WorkoutPlan {
-        let copy = WorkoutPlan(title: title, notes: notes, favorite: favorite, completed: false)
+        let copy = WorkoutPlan(title: title, notes: notes, favorite: favorite, completed: false, origin: origin)
         copy.isEditing = true
         copy.exercises = sortedExercises.map { ExercisePrescription(copying: $0, workoutPlan: copy) }
         context.insert(copy)
@@ -20,6 +20,7 @@ extension WorkoutPlan {
         reconcilePendingChanges(comparedTo: copy, context: context)
         title = copy.title
         notes = copy.notes
+        origin = copy.origin
 
         let copyExercises = Dictionary(uniqueKeysWithValues: copy.sortedExercises.map { ($0.id, $0) })
         let originalExerciseIDs = Set((exercises ?? []).map(\.id))

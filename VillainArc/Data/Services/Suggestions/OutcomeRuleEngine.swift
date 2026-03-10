@@ -36,18 +36,8 @@ struct OutcomeRuleEngine {
     private static func matchSetPerformance(for change: PrescriptionChange, in exercisePerf: ExercisePerformance) -> SetPerformance? {
         let completeSets = exercisePerf.sortedSets.filter { $0.complete }
 
-        // Prefer an explicit prescription link for reliability.
-        if let setPrescriptionID = change.targetSetPrescription?.id {
-            if let match = completeSets.first(where: { $0.prescription?.id == setPrescriptionID }) {
-                return match
-            }
-        }
-
-        // Fallback to set index if we cannot resolve by prescription id.
-        if let setIndex = change.targetSetPrescription?.index {
-            return completeSets.first(where: { $0.index == setIndex })
-        }
-        return nil
+        guard let setPrescriptionID = change.targetSetPrescription?.id else { return nil }
+        return completeSets.first(where: { $0.prescription?.id == setPrescriptionID })
     }
 
     // MARK: - Weight Change

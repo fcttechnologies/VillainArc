@@ -155,8 +155,16 @@ struct OutcomeResolver {
     // MARK: - Build AI Group Input
 
     private static func buildAIGroupInput(group: OutcomeGroup, ruleResults: [UUID: OutcomeSignal?]) -> AIOutcomeGroupInput? {
+        guard canEvaluateWithCurrentPerformance(group: group) else { return nil }
+
         // Convert changes to AI-friendly format.
-        let aiChanges: [AIOutcomeChange] = group.changes.map { change in AIOutcomeChange(changeType: change.changeType, previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType), newValue: formattedChangeValue(change.newValue, changeType: change.changeType), targetSetIndex: change.targetSetPrescription?.index) }
+        let aiChanges: [AIOutcomeChange] = group.changes.map { change in
+            AIOutcomeChange(
+                changeType: change.changeType,
+                previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
+                newValue: formattedChangeValue(change.newValue, changeType: change.changeType)
+            )
+        }
         guard !aiChanges.isEmpty else { return nil }
 
         // Build prescription snapshot (the "before" state).
@@ -178,6 +186,13 @@ struct OutcomeResolver {
         let style = resolvedTrainingStyle(for: group)
 
         return AIOutcomeGroupInput(changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
+    }
+
+    private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
+        guard let setPrescriptionID = group.setPrescription?.id else { return true }
+        return group.exercisePerf.sortedSets.contains { set in
+            set.complete && set.prescription?.id == setPrescriptionID
+        }
     }
 
     private static func resolvedTrainingStyle(for group: OutcomeGroup) -> TrainingStyle {

@@ -17,10 +17,14 @@ struct CompleteActiveSetIntent: AppIntent {
             return .result(dialog: "No incomplete sets found.")
         }
 
+        let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
         set.complete = true
         startRestTimerIfNeeded(for: set, context: context)
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
+        if shouldPrewarmSuggestions {
+            FoundationModelPrewarmer.warmup()
+        }
         let setNumber = set.index + 1
         return .result(dialog: "Completed set \(setNumber) of \(exercise.name).")
     }

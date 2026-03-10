@@ -36,7 +36,7 @@ This pattern exists for three reasons:
 `AppRouter.createWorkoutPlan()`:
 
 1. Guards `hasActiveFlow()`
-2. Creates a new `WorkoutPlan()` with default title, `completed = false`
+2. Creates a new `WorkoutPlan()` with default title, `completed = false`, and `.user` origin
 3. Inserts into context, saves
 4. Sets `activeWorkoutPlan`, triggering `ContentView`'s full-screen cover to show `WorkoutPlanView`
 
@@ -50,7 +50,7 @@ This is a direct edit (no copy needed since there's no original to protect). `Wo
 2. Creates `ExercisePrescription` rows from the workout's `ExercisePerformance` rows
 3. Links each `ExercisePerformance` back to its new `ExercisePrescription`
 4. Links each `SetPerformance` back to its new `SetPrescription`
-5. Sets `completed = true` — this plan is ready to use immediately
+5. Sets `completed = true` and `origin = .session` — this plan is ready to use immediately
 
 Those back-links are critical: they allow the suggestion engine to use the just-finished workout as evidence for generating suggestions against the newly created plan.
 
@@ -65,7 +65,7 @@ Those back-links are critical: they allow the suggestion engine to use the just-
 
 `createEditingCopy(context:)` does:
 
-1. Creates a new `WorkoutPlan` with the same `title`, `notes`, `favorite`, but `completed = false`
+1. Creates a new `WorkoutPlan` with the same `title`, `notes`, `favorite`, and `origin`, but `completed = false`
 2. Sets `isEditing = true` on the copy (marks it as a temporary editing artifact)
 3. Maps all exercises via `ExercisePrescription(copying:workoutPlan:)` — deep copies exercises and their sets, preserving the same `id` values so the apply step can match originals to copies
 4. Inserts the copy into context (it's persisted, not just in memory)

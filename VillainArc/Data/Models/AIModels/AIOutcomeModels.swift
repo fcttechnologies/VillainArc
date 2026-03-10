@@ -36,8 +36,6 @@ struct AIOutcomeChange: Equatable, Sendable {
     let previousValue: String?
     @Guide(description: "New value after the change (e.g., \"140.0\" for weight, \"12\" for reps, \"120\" for rest seconds, \"Regular Set\" for set type, \"Target\" for rep range mode).")
     let newValue: String?
-    @Guide(description: "0-based index of the target set, if this is a set-level change. Nil for exercise-level changes.")
-    let targetSetIndex: Int?
 }
 
 @Generable

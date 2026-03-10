@@ -80,7 +80,7 @@ struct RuleEngine {
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
@@ -116,7 +116,7 @@ struct RuleEngine {
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
@@ -154,7 +154,7 @@ struct RuleEngine {
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
@@ -199,7 +199,7 @@ struct RuleEngine {
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
@@ -234,7 +234,7 @@ struct RuleEngine {
         var changes: [PrescriptionChange] = []
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             guard setPrescription.type == .working else { continue }
             guard !progressionIndices.contains(setPrescription.index) else { continue }
             guard setPrescription.targetReps > 0 else { continue }
@@ -302,7 +302,7 @@ struct RuleEngine {
         let repsReason = "Reset reps to \(lower) to account for the larger weight jump."
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
@@ -339,7 +339,7 @@ struct RuleEngine {
 
             var sessionBelow = true
             for set in progressionSets {
-                guard let setPrescription = targetSet(for: set, prescription: context.prescription) else {
+                guard let setPrescription = targetSet(for: set) else {
                     sessionBelow = false
                     break
                 }
@@ -366,7 +366,7 @@ struct RuleEngine {
         let reason = "You fell below the minimum rep target (\(lower)) in 2 of your last 3 sessions. Reduce weight slightly to stay in range."
 
         for set in progressionSets {
-            guard let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+            guard let setPrescription = targetSet(for: set) else { continue }
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
@@ -491,7 +491,7 @@ struct RuleEngine {
                 let effectiveRest = performance.effectiveRestSeconds(after: prevSet)
                 guard effectiveRest > 0 else { continue }
 
-                guard let setPrescription = targetSet(for: currentSet, prescription: context.prescription) else { continue }
+                guard let setPrescription = targetSet(for: currentSet) else { continue }
                 let targetRest = setPrescription.targetRest
 
                 let actualRest = currentSet.restSeconds
@@ -520,7 +520,7 @@ struct RuleEngine {
         var changes: [PrescriptionChange] = []
         for index in currentTriggered {
             guard let set = context.performance.sortedSets[safe: index],
-                  let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+                  let setPrescription = targetSet(for: set) else { continue }
 
             let current = setPrescription.targetRest
             let newValue = current + restIncrement
@@ -572,7 +572,7 @@ struct RuleEngine {
         for set in progressionSets {
             // Skip drop/superset chains where effective rest is intentionally zero.
             guard set.effectiveRestSeconds > 0,
-                  let setPrescription = targetSet(for: set, prescription: context.prescription) else { continue }
+                  let setPrescription = targetSet(for: set) else { continue }
             let current = setPrescription.targetRest
             let newValue = current + increment
 
@@ -597,7 +597,7 @@ struct RuleEngine {
         }
 
         guard let dropSet = targetDrop,
-              let setPrescription = targetSet(for: dropSet, prescription: context.prescription) else {
+              let setPrescription = targetSet(for: dropSet) else {
             return []
         }
 
@@ -852,12 +852,8 @@ struct RuleEngine {
         [context.performance] + context.history
     }
 
-    private static func targetSet(for set: SetPerformance, prescription: ExercisePrescription) -> SetPrescription? {
-        // Prefer a direct prescription link when available; fallback to index match.
-        if let setPrescription = set.prescription {
-            return setPrescription
-        }
-        return prescription.sortedSets[safe: set.index]
+    private static func targetSet(for set: SetPerformance) -> SetPrescription? {
+        set.prescription
     }
 
     private static func matchingSetPerformance(in performance: ExercisePerformance, for setPrescription: SetPrescription, requireComplete: Bool = true) -> SetPerformance? {
@@ -865,15 +861,7 @@ struct RuleEngine {
             ? performance.sortedSets.filter(\.complete)
             : performance.sortedSets
 
-        if let linkedSet = candidateSets.first(where: { $0.prescription?.id == setPrescription.id }) {
-            return linkedSet
-        }
-
-        if let typedMatch = candidateSets.first(where: { $0.index == setPrescription.index && $0.type == setPrescription.type }) {
-            return typedMatch
-        }
-
-        return candidateSets.first(where: { $0.index == setPrescription.index })
+        return candidateSets.first(where: { $0.prescription?.id == setPrescription.id })
     }
 
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {

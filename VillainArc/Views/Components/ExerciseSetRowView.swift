@@ -157,12 +157,16 @@ struct ExerciseSetRowView: View {
                 .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
             } else {
                 Button {
+                    let shouldPrewarmSuggestions = shouldPrewarmSuggestionModelsOnCompletion
                     Haptics.selection()
                     set.complete = true
                     set.completedAt = Date()
                     handleAutoStartTimer()
                     saveContext(context: context)
                     WorkoutActivityManager.update()
+                    if shouldPrewarmSuggestions {
+                        FoundationModelPrewarmer.warmup()
+                    }
                     Task { await IntentDonations.donateCompleteActiveSet() }
                 } label: {
                     Image(systemName: "checkmark")
@@ -241,6 +245,11 @@ struct ExerciseSetRowView: View {
             return "\(referenceData.displayText), target RPE \(targetRPE)"
         }
         return referenceData.displayText
+    }
+
+    private var shouldPrewarmSuggestionModelsOnCompletion: Bool {
+        guard let workout = exercise.workoutSession, workout.workoutPlan != nil else { return false }
+        return workout.isFinalIncompleteSet(set)
     }
 
     private var setIndicator: some View {

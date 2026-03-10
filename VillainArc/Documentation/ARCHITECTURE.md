@@ -274,6 +274,11 @@
 - Called by: `OutcomeResolver`.
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `AIOutcomeGroupInput` prompts, `AIOutcomeInferenceOutput` validation.
 
+### `VillainArc/Data/Services/Suggestions/FoundationModelPrewarmer.swift`
+- Does: Lightweight Foundation Models warm-up helper that loads a generic `LanguageModelSession` into memory ahead of likely suggestion-summary work.
+- Called by: `WorkoutSummaryView`, `ExerciseSetRowView`, `RestTimerView`, `CompleteActiveSetIntent`, `LiveActivityCompleteSetIntent`, `FinishWorkoutIntent`.
+- Calls: `SystemLanguageModel.default`, `LanguageModelSession.prewarm`.
+
 ### `VillainArc/Data/Services/SpotlightIndexer.swift`
 - Does: Central Spotlight indexing/deindexing for `WorkoutSession`, `WorkoutPlan`, and `Exercise`; defines reusable identifier prefixes. Exercise eligibility is driven by `ExerciseHistory` presence during history updates and full Spotlight rebuilds, and exercise Spotlight metadata uses shared system alternate names plus the exercise subtitle.
 - Called by: workout/plan views for index/delete actions, `ExerciseHistoryUpdater`, `AppRouter` (Spotlight identifier parsing), and related intent/editing flows.
@@ -290,9 +295,9 @@
 - Calls: `AppRouter.navigate(to: .workoutSessionDetail(...))`, `IntentDonations.donateOpenWorkout`, `AccessibilityText.workoutRowLabel/workoutRowValue/workoutRowHint`.
 
 ### `VillainArc/Views/Components/ExerciseSetRowView.swift`
-- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). When a workout comes from a plan, target RPE is shown only in the target/reference column so it stays distinct from logged RPE.
+- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). When a workout comes from a plan, target RPE is shown only in the target/reference column so it stays distinct from logged RPE. Completing the final remaining set in a plan workout also prewarms the suggestion pipeline.
 - Called by: `ExerciseView`, SwiftUI preview via `ExerciseView`.
-- Calls: `RPEBadge`, `RPEValue`, `RestTimerState.shared`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
+- Calls: `RPEBadge`, `RPEValue`, `RestTimerState.shared`, `RestTimeHistory.record`, `FoundationModelPrewarmer`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
 
 ### `VillainArc/Views/Components/RPEBadge.swift`
 - Does: Shared compact RPE badge for actual set RPE and plan target RPE display.
@@ -385,9 +390,9 @@
 - Calls: `TimerDurationPicker`, `RestTimerState.shared` (`start/pause/resume/stop/adjust`), `RestTimeHistory.record`, `WorkoutSession.activeExerciseAndSet`, `WorkoutActivityManager.update`, `IntentDonations` rest-timer actions, `saveContext`, `secondsToTime`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/WorkoutSummaryView.swift`
-- Does: Post-workout summary and finalization screen (stats, weight/volume/rep PR detection, effort rating, notes/title edits, suggestion review, save as plan).
+- Does: Post-workout summary and finalization screen (stats, weight/volume/rep PR detection, effort rating, notes/title edits, suggestion review, save as plan). Freeform summaries also prewarm a generic Foundation Models session in case the workout is saved as a plan.
 - Called by: `WorkoutSessionContainer`, SwiftUI previews.
-- Calls: `formattedDateRange`, `TextEntryEditorView`, `SuggestionReviewView`, `OutcomeResolver.resolveOutcomes`, `SuggestionGenerator.generateSuggestions`, `groupSuggestions`, `acceptGroup/rejectGroup/deferGroup`, `ExerciseHistoryUpdater.batchFetchHistories/updateHistoriesForCompletedWorkout`, `SpotlightIndexer.index(workoutPlan:)`, `IntentDonations.donateSaveWorkoutAsPlan`, `saveContext`, `scheduleSave`, `Haptics.selection`.
+- Calls: `formattedDateRange`, `TextEntryEditorView`, `FoundationModelPrewarmer`, `SuggestionReviewView`, `OutcomeResolver.resolveOutcomes`, `SuggestionGenerator.generateSuggestions`, `groupSuggestions`, `acceptGroup/rejectGroup/deferGroup`, `ExerciseHistoryUpdater.batchFetchHistories/updateHistoriesForCompletedWorkout`, `SpotlightIndexer.index(workoutPlan:)`, `IntentDonations.donateSaveWorkoutAsPlan`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Suggestions/DeferredSuggestionsView.swift`
 - Does: Review step shown before workout logging for pending/deferred plan suggestions, with skip-all/accept-all actions.
@@ -631,12 +636,12 @@
 - Calls: None.
 
 ### `VillainArc/Data/Models/Sessions/WorkoutSession.swift`
-- Does: Root workout runtime/completion aggregate (status, plan origin, exercises, finish workflow helpers). Finish flow resolves incomplete sets before summary and prunes empty exercises or the workout itself when needed.
+- Does: Root workout runtime/completion aggregate (status, provenance origin, plan link, exercises, finish workflow helpers). Finish flow resolves incomplete sets before summary and prunes empty exercises or the workout itself when needed.
 - Called by: `AppRouter`, workout views, workout intents/entities, `SampleData`.
 - Calls: `ExercisePerformance` constructors, session fetch descriptors, finish/prune helpers.
 
 ### `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
-- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
+- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
 - Called by: `WorkoutView`, `ExerciseView`, suggestion engines, history updater, `SampleData`.
 - Calls: `SetPerformance` constructors, rest helper (`effectiveRestSeconds`), descriptors (`lastCompleted`, `matching`, `completedAll`).
 
@@ -656,7 +661,7 @@
 - Calls: None (data model only).
 
 ### `VillainArc/Data/Models/Plans/WorkoutPlan.swift`
-- Does: Root workout-plan aggregate (metadata, exercises, split-day links, create-from-session path).
+- Does: Root workout-plan aggregate (metadata, provenance origin, exercises, split-day links, create-from-session path).
 - Called by: plan views/picker/detail flows, split assignment flows, plan intents, `AppRouter`, `SampleData`.
 - Calls: `ExercisePrescription` constructors, exercise reorder/reindex helpers, fetch descriptors (`all`, `recent`, `incomplete`).
 
@@ -718,9 +723,8 @@
 - `VillainArc/Data/Models/Enums/Exercise/MuscleGroups.swift`: grouped muscle sets used by split/selection logic.
 - `VillainArc/Data/Models/Enums/Exercise/RepRangeMode.swift`: rep-range mode enum used by `RepRangePolicy`.
 - `VillainArc/Data/Models/Enums/Sessions/MoodLevel.swift`: pre-workout mood enum used by `PreWorkoutContext`.
-- `VillainArc/Data/Models/Enums/Sessions/SessionOrigin.swift`: session source enum (`plan`/`freeform`) used by `WorkoutSession`.
+- `VillainArc/Data/Models/Enums/Sessions/Origin.swift`: shared provenance enum (`user`/`plan`/`session`/`ai`) used by `WorkoutSession` and `WorkoutPlan`.
 - `VillainArc/Data/Models/Enums/Sessions/SessionStatus.swift`: workout lifecycle enum (`pending`/`active`/`summary`/`done`) used by `WorkoutSession` and flow routing.
-- `VillainArc/Data/Models/Enums/Sessions/PlanCreator.swift`: creator origin enum (`user`/`ai`) for plan provenance.
 - `VillainArc/Data/Models/Enums/Suggestions/ChangeType.swift`: suggestion change taxonomy used by rules, review UI, and outcome logic.
 - `VillainArc/Data/Models/Enums/Suggestions/Decision.swift`: user decision lifecycle for suggestions.
 - `VillainArc/Data/Models/Enums/Suggestions/Outcome.swift`: post-workout suggestion outcome lifecycle.
@@ -793,9 +797,9 @@
 - Calls: `SharedModelContainer` fetch checks, `AppRouter.startWorkoutSession`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Workout/CompleteActiveSetIntent.swift`
-- Does: Background intent that marks the current active set as complete and optionally starts rest timer.
+- Does: Background intent that marks the current active set as complete, optionally starts rest timer, and prewarms the generic Foundation Models session when that set is the final incomplete set in a plan workout.
 - Called by: Siri/Shortcuts (`VillainArcShortcuts`), donation flow, Live Activity.
-- Calls: `WorkoutSession.incomplete`, `activeExerciseAndSet`, `RestTimerState.start`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `saveContext`.
+- Calls: `WorkoutSession.incomplete`, `activeExerciseAndSet`, `WorkoutSession.isFinalIncompleteSet`, `RestTimerState.start`, `RestTimeHistory.record`, `FoundationModelPrewarmer`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `saveContext`.
 
 ### `VillainArc/Intents/Workout/CancelWorkoutIntent.swift`
 - Does: Cancels/deletes current incomplete workout session.
@@ -803,9 +807,9 @@
 - Calls: `WorkoutSession.incomplete`, `RestTimerState.stop`, `saveContext`, `WorkoutActivityManager.end`, `AppRouter.activeWorkoutSession`.
 
 ### `VillainArc/Intents/Workout/FinishWorkoutIntent.swift`
-- Does: Guided finish workflow for incomplete sets with choice prompts and finish actions.
+- Does: Guided finish workflow for incomplete sets with choice prompts and finish actions. Plan-backed finishes also prewarm the generic Foundation Models session before summary handoff.
 - Called by: Siri/Shortcuts, donation flow.
-- Calls: `WorkoutSession.finish`, `requestChoice`, `RestTimerState.stop`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.end`, `OpenAppIntent`.
+- Calls: `WorkoutSession.finish`, `requestChoice`, `FoundationModelPrewarmer`, `RestTimerState.stop`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.end`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Workout/LastWorkoutSummaryIntent.swift`
 - Does: Background summary dialog for most recent completed workout.
@@ -963,9 +967,9 @@
 - Calls: `AppRouter.showAddExerciseFromLiveActivity`.
 
 ### `VillainArc/Intents/LiveActivity/LiveActivityCompleteSetIntent.swift`
-- Does: Live-activity action to complete current set and optionally start rest timer.
+- Does: Live-activity action to complete current set, optionally start rest timer, and prewarm the generic Foundation Models session when that set is the final incomplete set in a plan workout.
 - Called by: Widget live activity buttons.
-- Calls: `WorkoutSession.incomplete`, set completion mutation, `RestTimerState.start`, `WorkoutActivityManager.update`.
+- Calls: `WorkoutSession.incomplete`, `WorkoutSession.isFinalIncompleteSet`, set completion mutation, `RestTimerState.start`, `FoundationModelPrewarmer`, `WorkoutActivityManager.update`.
 
 ### `VillainArc/Intents/LiveActivity/LiveActivityPauseRestTimerIntent.swift`
 - Does: Live-activity action to pause running rest timer.

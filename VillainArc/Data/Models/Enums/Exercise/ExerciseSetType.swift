@@ -3,7 +3,7 @@ import SwiftUI
 enum ExerciseSetType: Int, Codable, CaseIterable {
     case warmup = 0
     case working = 1
-    case dropSet = 3
+    case dropSet = 2
     
     var shortLabel: String {
         switch self {

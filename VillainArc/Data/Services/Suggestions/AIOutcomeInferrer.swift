@@ -51,7 +51,7 @@ struct AIOutcomeInferrer {
         You are a strength training analyst. Your job is to evaluate how a group of accepted/applied prescription changes played out based on the user's actual workout performance.
 
         You are given:
-        - **changes**: The group of changes that were suggested together. Each has a changeType, previousValue, newValue, and optionally a targetSetIndex (for set-level changes). Together these tell you what was different between the old and new prescription.
+        - **changes**: The group of changes that were suggested together. Each has a changeType, previousValue, and newValue. Together these tell you what was different between the old and new prescription.
         - **prescription**: The exercise prescription BEFORE the changes were applied. This shows the original targets (sets with weight/reps/rest, rep range policy, rest time policy).
         - **triggerPerformance**: What the user performed in the PREVIOUS session — the workout that triggered these suggestions.
         - **actualPerformance**: What the user performed in the CURRENT session — the workout being evaluated.
@@ -68,8 +68,8 @@ struct AIOutcomeInferrer {
 
         How to evaluate:
         1. Look at each change's previousValue → newValue to understand what was suggested.
-        2. For set-level changes (targetSetIndex is not nil), compare the specific set in actualPerformance to the new target.
-        3. For exercise-level changes (rep range, rest time policy), compare all completed working sets in actualPerformance to the new targets.
+        2. For set-level changes (weight, reps, set type, or set-level rest), evaluate whether the performed workout reflects the changed target for that group. If the evidence is ambiguous, stay conservative and lean on the rule outcome instead of guessing.
+        3. For exercise-level changes (rep range mode/bounds/target), compare all completed working sets in actualPerformance to the new targets.
         4. Use triggerPerformance as baseline context — this is what the user was doing before the suggestion.
         5. Compare actualPerformance against the new targets (prescription + changes applied) to evaluate.
         6. Use trainingStyle to focus evaluation on the right sets:

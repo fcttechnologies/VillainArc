@@ -85,6 +85,12 @@ final class ExercisePerformance {
     }
 
     func addSet() {
+        if let restoredPrescription = nextRestorableTailPrescription() {
+            sets?.append(SetPerformance(exercise: self, setPrescription: restoredPrescription))
+            reindexSetsByCurrentOrder()
+            return
+        }
+
         if let previous = sortedSets.last {
             sets?.append(SetPerformance(exercise: self, weight: previous.weight, reps: previous.reps, restSeconds: previous.restSeconds))
         } else {
@@ -120,8 +126,20 @@ final class ExercisePerformance {
     }
 
     func reindexSets() {
-        let sortSets = sortedSets
-        for (index, set) in sortSets.enumerated() {
+        reindexSetsByCurrentOrder()
+    }
+
+    private func nextRestorableTailPrescription() -> SetPrescription? {
+        guard let prescription else { return nil }
+
+        let usedPrescriptionIDs = Set(sortedSets.compactMap { $0.prescription?.id })
+        let maxLinkedIndex = sortedSets.compactMap { $0.prescription?.index }.max() ?? -1
+
+        return prescription.sortedSets.first { !usedPrescriptionIDs.contains($0.id) && $0.index > maxLinkedIndex }
+    }
+
+    private func reindexSetsByCurrentOrder() {
+        for (index, set) in sortedSets.enumerated() {
             set.index = index
         }
     }

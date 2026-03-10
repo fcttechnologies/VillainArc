@@ -11,7 +11,7 @@ final class WorkoutSession {
     var status: String = SessionStatus.active.rawValue
     var startedAt: Date = Date()
     var endedAt: Date?
-    var origin: SessionOrigin = SessionOrigin.freeform
+    var origin: Origin = Origin.user
     
     var statusValue: SessionStatus {
         get { SessionStatus(rawValue: status) ?? .active }
@@ -39,7 +39,7 @@ final class WorkoutSession {
     }
 
     // Test/sample initializer to reduce setup boilerplate.
-    convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil, origin: SessionOrigin = .freeform) {
+    convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil, origin: Origin = .user) {
         self.init()
         self.title = title
         self.notes = notes
@@ -191,6 +191,16 @@ extension WorkoutSession {
             }
         }
         return nil
+    }
+
+    func isFinalIncompleteSet(_ candidate: SetPerformance) -> Bool {
+        var incompleteSets: [SetPerformance] = []
+
+        for exercise in sortedExercises {
+            incompleteSets.append(contentsOf: exercise.sortedSets.filter { !$0.complete })
+        }
+
+        return incompleteSets.count == 1 && incompleteSets[0] == candidate
     }
     
     @MainActor

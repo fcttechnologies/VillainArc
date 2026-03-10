@@ -78,6 +78,8 @@ When `WorkoutSummaryView` appears, it does two important things in `.task(id: wo
 1. `loadPRs()`
 2. `generateSuggestionsIfNeeded()`
 
+If the workout is still freeform (`workout.workoutPlan == nil`), the summary also prewarms a generic Foundation Models `LanguageModelSession` in the background. This makes the later "Save as Workout Plan" suggestion pass more responsive if the user chooses to create a plan from the finished workout.
+
 `generateSuggestionsIfNeeded()` only runs when `workout.workoutPlan != nil`.
 It also exits early if `sessionSuggestions` for that summary already exist, which prevents duplicate suggestion creation for the same session.
 
@@ -91,10 +93,11 @@ That button does this:
 
 1. Creates `WorkoutPlan(from: workout, completed: true)`.
 2. Inserts the plan.
-3. Assigns `workout.workoutPlan = plan`.
-4. Saves context.
-5. Indexes the plan for Spotlight.
-6. Immediately runs `generateSuggestionsIfNeeded()`.
+3. The new plan stores `origin = .session`.
+4. Assigns `workout.workoutPlan = plan`.
+5. Saves context.
+6. Indexes the plan for Spotlight.
+7. Immediately runs `generateSuggestionsIfNeeded()`.
 
 `WorkoutPlan(from: workout, completed: true)` is important:
 
@@ -129,6 +132,10 @@ Before presenting the workout, it checks `pendingSuggestions(for: plan, in: cont
 
 - if there are pending or deferred suggestions, session status becomes `.pending`
 - if there are none, the session stays `.active`
+
+During a plan-backed workout, when the user completes the final remaining incomplete set, the app prewarms a generic Foundation Models `LanguageModelSession` in the background. This happens from the set-row completion path, the rest-timer "Complete set" shortcut, and the workout/live-activity completion intents, since the next likely transition is the summary screen where outcome resolution and suggestion generation may run.
+
+If the workout is finished through `FinishWorkoutIntent`, the app also prewarms before handing off to the summary screen for any plan-backed workout, because that path can skip the normal final-set completion trigger entirely.
 
 `WorkoutSessionContainer` uses `statusValue` to choose the UI:
 
@@ -425,6 +432,7 @@ Outcome resolution groups changes similarly to the suggestion review UI:
 - exercise-level changes as a single rep-range group
 
 That grouping is important because AI receives group context, not just isolated changes.
+For set-level evaluation, matching uses the workout set's attached `SetPrescription`, not the current session set index.
 
 ### Deterministic Outcome Rules
 
@@ -579,6 +587,16 @@ Those are then shown in `DeferredSuggestionsView` before the next workout from t
 Outcome resolution only groups changes when it can match the target prescription to an exercise performance in the current workout.
 
 If the exercise was skipped, there is no evaluation for that change yet.
+
+### If a performed exercise deletes a planned set, that set's old changes stay pending
+
+Set-level outcome evaluation only runs when the current workout still contains a completed `SetPerformance` linked to the targeted `SetPrescription`.
+
+If the user deletes that set from the session, the resolver does not fall back to shifted session indices. The targeted change is left `pending` until a later workout still contains and performs that prescription-linked set.
+
+Suggestion generation follows the same rule. Set-level rules only use session sets that still carry their `SetPrescription` link, and historical matching also uses that prescription link only. So a deleted session set does not create a fresh set-level suggestion for that same prescription slot from that workout.
+
+If the user re-adds a set, the app only restores a prescription link when the deleted prescription was a **tail** slot (no remaining set links to a higher-index prescription). This covers the "delete last set, change mind, add it back" case. If the gap is in the middle (e.g., set 1 deleted while sets 2–3 still have their links), adding a set creates a new unlinked set at the end — it does not restore the middle prescription. That restored tail set can again participate in set-level outcome resolution and future suggestion generation.
 
 ### Deleting plan/set/exercise objects removes only pending targeted changes
 

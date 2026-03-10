@@ -190,6 +190,9 @@ struct WorkoutSummaryView: View {
             }
             .task(id: workout.id) {
                 loadPRs()
+                if workout.workoutPlan == nil {
+                    FoundationModelPrewarmer.warmup()
+                }
                 await generateSuggestionsIfNeeded()
             }
             .sheet(isPresented: $showNotesEditorSheet) {

@@ -11,6 +11,7 @@ final class WorkoutPlan {
     var favorite: Bool = false
     var completed: Bool = false
     var isEditing: Bool = false
+    var origin: Origin = Origin.user
     var lastUsed: Date?
     @Relationship(deleteRule: .cascade, inverse: \ExercisePrescription.workoutPlan)
     var exercises: [ExercisePrescription]? = [ExercisePrescription]()
@@ -27,12 +28,13 @@ final class WorkoutPlan {
     init() {}
 
     // Test/sample initializer to reduce setup boilerplate.
-    convenience init(title: String = "New Workout Plan", notes: String = "", favorite: Bool = false, completed: Bool = false, lastUsed: Date? = nil) {
+    convenience init(title: String = "New Workout Plan", notes: String = "", favorite: Bool = false, completed: Bool = false, origin: Origin = .user, lastUsed: Date? = nil) {
         self.init()
         self.title = title
         self.notes = notes
         self.favorite = favorite
         self.completed = completed
+        self.origin = origin
         self.lastUsed = lastUsed
     }
     
@@ -40,6 +42,7 @@ final class WorkoutPlan {
         title = session.title
         notes = session.notes
         self.completed = completed
+        origin = .session
         if completed {
             lastUsed = Date()
         }

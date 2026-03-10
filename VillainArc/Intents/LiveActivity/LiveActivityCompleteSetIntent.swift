@@ -14,6 +14,7 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
             return .result()
         }
 
+        let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
         set.complete = true
         set.completedAt = Date()
 
@@ -26,6 +27,9 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
 
         try? context.save()
         WorkoutActivityManager.update(for: workout)
+        if shouldPrewarmSuggestions {
+            FoundationModelPrewarmer.warmup()
+        }
 
         return .result()
     }

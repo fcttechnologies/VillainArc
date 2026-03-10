@@ -70,6 +70,7 @@ struct FinishWorkoutIntent: AppIntent {
             }
         }
 
+        let shouldPrewarmSuggestions = workoutSession.workoutPlan != nil
         let result = workoutSession.finish(action: finishAction, context: context)
         
         switch result {
@@ -77,8 +78,10 @@ struct FinishWorkoutIntent: AppIntent {
             RestTimerState.shared.stop()
             saveContext(context: context)
             SpotlightIndexer.index(workoutSession: workoutSession)
-            AppRouter.shared.activeWorkoutSession = nil
             WorkoutActivityManager.end()
+            if shouldPrewarmSuggestions {
+                FoundationModelPrewarmer.warmup()
+            }
         case .workoutDeleted:
             RestTimerState.shared.stop()
             saveContext(context: context)

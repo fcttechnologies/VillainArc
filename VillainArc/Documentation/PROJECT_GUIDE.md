@@ -174,6 +174,7 @@ Use this to find where logic lives for any feature.
 | Outcome scoring | `Data/Services/Suggestions/OutcomeRuleEngine.swift` |
 | AI style classifier | `Data/Services/Suggestions/AITrainingStyleClassifier.swift` |
 | AI outcome evaluator | `Data/Services/Suggestions/AIOutcomeInferrer.swift` |
+| Foundation model prewarm | `Data/Services/Suggestions/FoundationModelPrewarmer.swift` |
 | AI tool (history access) | `Data/Services/Suggestions/AITrainingStyleTools.swift` |
 | Suggestion model | `Data/Models/Plans/PrescriptionChange.swift` |
 | Grouping/query helpers | `Data/Models/Plans/SuggestionGrouping.swift` |
@@ -368,7 +369,7 @@ Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift`
 | Enum | Cases | Used For |
 |------|-------|----------|
 | `SessionStatus` | pending, active, summary, done | Workout lifecycle |
-| `SessionOrigin` | plan, freeform | How workout started |
+| `Origin` | user, plan, session, ai | Provenance for plans and sessions |
 | `ExerciseSetType` | warmup, working, dropSet | Set classification |
 | `RepRangeMode` | notSet, target, range | Rep goal strategy |
 | `MoodLevel` | notSet, sick, tired, okay, good, great | Pre-workout feeling |
@@ -380,7 +381,6 @@ Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift`
 | `SuggestionSource` | rules, ai, user | Where suggestion came from |
 | `Muscle` | 36 variants (10 major, 26 minor) | Muscle targeting |
 | `EquipmentType` | 18 variants | Equipment classification |
-| `PlanCreator` | user, ai | Plan origin |
 
 ---
 
@@ -428,21 +428,21 @@ VillainArc/
       RestTimerState.swift       Global rest timer (singleton)
       SpotlightIndexer.swift     CoreSpotlight integration
       ExerciseHistoryUpdater.swift  Analytics rebuild
-      Suggestions/               Suggestion engine (9 files)
+      Suggestions/               Suggestion engine (10 files)
     Models/
       Sessions/                  WorkoutSession, ExercisePerformance, SetPerformance, PreWorkoutContext
       Plans/                     WorkoutPlan, ExercisePrescription, SetPrescription, PrescriptionChange, SuggestionGrouping, WorkoutPlan+Editing
       Exercise/                  Exercise, ExerciseCatalog, ExerciseHistory, ProgressionPoint, RepRangePolicy, RestTimeDefaults
       WorkoutSplit/              WorkoutSplit, WorkoutSplitDay
       AIModels/                  AI DTOs for suggestion/outcome inference
-      Enums/                     All domain enums (15 files)
+      Enums/                     All domain enums (14 files)
       UserProfile.swift
       RestTimeHistory.swift
     LiveActivity/                ActivityKit attributes + manager
     Protocols/                   RestTimeEditable protocol
   Intents/                       App Intents for Siri/Shortcuts (42 files)
   Helpers/                       Utility functions (10 files)
-  Documentation/                 This file + ARCHITECTURE.md + flow docs (5 files)
+  Documentation/                 This file + ARCHITECTURE.md + flow docs (7 files)
 
 VillainArcWidgetExtension/       Live Activity widget UI
 VillainArcIntentsExtension/      Legacy SiriKit handlers

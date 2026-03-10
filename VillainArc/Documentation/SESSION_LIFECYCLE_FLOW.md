@@ -13,7 +13,7 @@ It is based on the current code in:
 - `Views/Workout/WorkoutView.swift`
 - `Views/Workout/WorkoutSummaryView.swift`
 - `Data/Models/Enums/Sessions/SessionStatus.swift`
-- `Data/Models/Enums/Sessions/SessionOrigin.swift`
+- `Data/Models/Enums/Sessions/Origin.swift`
 - `Data/LiveActivity/WorkoutActivityManager.swift`
 
 ## Core Model
@@ -23,7 +23,7 @@ It is based on the current code in:
 - `id`, `title`, `notes` — user-facing metadata
 - `status` — raw string backing `SessionStatus` (pending/active/summary/done)
 - `startedAt`, `endedAt` — timestamps
-- `origin` — `.freeform` or `.plan`
+- `origin` — provenance for the session (`.user`, `.plan`, `.session`, or `.ai`; current workout creation paths use `.user` and `.plan`)
 - `preWorkoutContext` — optional mood/notes captured before the workout (cascade delete)
 - `workoutPlan` — optional link to the source plan (nullify on plan delete)
 - `exercises` — array of `ExercisePerformance` (cascade delete)
@@ -62,7 +62,7 @@ There are two paths.
 `AppRouter.startWorkoutSession()`:
 
 1. Guards `hasActiveFlow()` — returns immediately if any workout or plan editing is active
-2. Creates a new `WorkoutSession()` with default title "New Workout", `.active` status, `.freeform` origin
+2. Creates a new `WorkoutSession()` with default title "New Workout", `.active` status, and `.user` origin
 3. A `PreWorkoutContext` is auto-created in the initializer
 4. Inserts into SwiftData context and saves
 5. Sets `activeWorkoutSession`, which triggers `ContentView`'s full-screen cover
@@ -82,6 +82,8 @@ There are two paths.
 4. Inserts, saves, and presents
 
 When performance rows are created from prescriptions, each `ExercisePerformance` gets its sets pre-populated from the plan's `SetPrescription` rows. The prescription back-references are maintained so the suggestion system can later link source evidence to targets.
+
+During a plan-based workout, if the user deletes a prescribed session set and later adds a set back, `ExercisePerformance.addSet()` only restores a prescription link when the deleted prescription was a **tail** slot — i.e., no remaining set is linked to a prescription with a higher index. This handles the common "delete last set, change my mind, add it back" case. If the deleted prescription would create a hole in the middle (e.g., deleting set 1 of 3 while sets 2 and 3 still carry their links), adding a set creates a new unlinked set at the end instead, since the user likely wants an extra set rather than the one they removed.
 
 ## Resuming Unfinished Work
 
@@ -114,6 +116,12 @@ This guard is checked before starting a new workout, creating a new plan, handli
 - **Set logging**: Each set row (`ExerciseSetRowView`) handles weight/reps input, completion toggling, set type changes, and RPE recording
 - **Rest timer**: Auto-starts on set completion via `RestTimerState.shared.start()`, shown in `RestTimerView` sheet
 - **Live Activity**: Started with `WorkoutActivityManager.start()` when the workout begins, updated on set completion and exercise changes, ended on finish/cancel
+
+If the workout is linked to a plan, completing the final remaining incomplete set also prewarms a generic Foundation Models `LanguageModelSession` in the background. That warm-up happens from:
+- `ExerciseSetRowView`
+- `RestTimerView`'s "Complete set" action
+- `CompleteActiveSetIntent`
+- `LiveActivityCompleteSetIntent`
 
 The workout auto-tracks `activeExercise` for the live activity and intent system to know which exercise and set are currently in focus.
 
@@ -152,6 +160,8 @@ After the action, it:
 2. Sets `endedAt` to now
 3. Clears `activeExercise`
 
+If the workout is plan-backed and is finished through `FinishWorkoutIntent`, the app also prewarms a generic Foundation Models `LanguageModelSession` before handing off to the summary screen. That intent path can bypass the normal "final remaining set completed" trigger.
+
 ### Pruning
 
 `pruneEmptyExercises(context:)` runs after set deletion. It removes any `ExercisePerformance` that has zero sets remaining. If ALL exercises are pruned (the entire workout becomes empty), the workout itself is deleted from context and the method returns `.workoutDeleted`.
@@ -167,6 +177,8 @@ This is a critical edge case: if the user started a workout, added exercises, ne
 A `.task(id: workout.id)` runs:
 1. `loadPRs()` — batch-fetches `ExerciseHistory` for all exercises in the workout, compares current performance against cached PRs
 2. `generateSuggestionsIfNeeded()` — only for plan-based workouts, see WORKOUT_PLAN_SUGGESTION_FLOW.md
+
+If the workout is still freeform (`workout.workoutPlan == nil`), the summary also prewarms a generic Foundation Models `LanguageModelSession` in the background. This makes the later "Save as Workout Plan" path more responsive if the user chooses to create a plan from the finished workout.
 
 ### PR Detection
 

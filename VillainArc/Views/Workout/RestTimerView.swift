@@ -296,6 +296,7 @@ struct RestTimerView: View {
 
     private func completeNextSet() {
         guard let (_, nextSet) = workout.activeExerciseAndSet() else { return }
+        let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(nextSet)
         Haptics.selection()
         nextSet.complete = true
         nextSet.completedAt = Date()
@@ -308,6 +309,9 @@ struct RestTimerView: View {
         }
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
+        if shouldPrewarmSuggestions {
+            FoundationModelPrewarmer.warmup()
+        }
         Task { await IntentDonations.donateCompleteActiveSet() }
     }
 }
