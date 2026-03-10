@@ -114,6 +114,7 @@ This guard is checked before starting a new workout, creating a new plan, handli
 - **Exercise pager**: TabView showing one exercise at a time, with swipe navigation
 - **Add exercise**: Opens `AddExerciseView` modal to select from the catalog
 - **Set logging**: Each set row (`ExerciseSetRowView`) handles weight/reps input, completion toggling, set type changes, and RPE recording
+- **Reference column**: Exercises linked to a plan prescription show a Target column sourced only from each set's linked `SetPrescription`; unlinked rows show `-` instead of falling back to previous-by-index. Exercises without a linked prescription use previous-performance references.
 - **Rest timer**: Auto-starts on set completion via `RestTimerState.shared.start()`, shown in `RestTimerView` sheet
 - **Live Activity**: Started with `WorkoutActivityManager.start()` when the workout begins, updated on set completion and exercise changes, ended on finish/cancel
 

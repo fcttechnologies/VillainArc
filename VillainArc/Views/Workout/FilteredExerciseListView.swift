@@ -13,8 +13,9 @@ struct FilteredExerciseListView: View {
     let selectedOnly: Bool
     let sortOption: ExerciseSortOption
     let singleSelection: Bool
+    let excludedCatalogIDs: Set<String>
 
-    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false) {
+    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = []) {
         _selectedExercises = selectedExercises
         _selectedExerciseIDs = selectedExerciseIDs
         self.searchText = searchText
@@ -23,6 +24,7 @@ struct FilteredExerciseListView: View {
         self.selectedOnly = selectedOnly
         self.sortOption = sortOption
         self.singleSelection = singleSelection
+        self.excludedCatalogIDs = excludedCatalogIDs
         
         let predicate: Predicate<Exercise>?
         if selectedOnly {
@@ -46,7 +48,7 @@ struct FilteredExerciseListView: View {
     private var filteredExercises: [Exercise] {
         let cleanText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let queryTokens = normalizedTokens(for: cleanText)
-        let sourceExercises = selectedOnly ? selectedExercises : allExercises
+        let sourceExercises = (selectedOnly ? selectedExercises : allExercises).filter { !excludedCatalogIDs.contains($0.catalogID) }
         let needsFavoriteFilter = favoritesOnly && selectedOnly
         let needsMuscleFilter = !muscleFilters.isEmpty
         let needsFilters = needsFavoriteFilter || needsMuscleFilter

@@ -4,6 +4,7 @@ import SwiftData
 struct ReplaceExerciseView: View {
     @Environment(\.dismiss) private var dismiss
 
+    let currentCatalogID: String
     let onReplace: (Exercise, Bool) -> Void
 
     @State private var searchText = ""
@@ -21,7 +22,7 @@ struct ReplaceExerciseView: View {
 
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: false, sortOption: exerciseSort, singleSelection: true)
+            FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: false, sortOption: exerciseSort, singleSelection: true, excludedCatalogIDs: [currentCatalogID])
             .navigationTitle("Replace Exercise")
             .navigationSubtitle(Text(selectedExercise?.name ?? "Select an exercise"))
             .navigationBarTitleDisplayMode(.inline)
@@ -103,6 +104,6 @@ struct ReplaceExerciseView: View {
 }
 
 #Preview {
-    ReplaceExerciseView { _, _ in }
+    ReplaceExerciseView(currentCatalogID: "barbell_bench_press") { _, _ in }
         .sampleDataContainerIncomplete()
 }

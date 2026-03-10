@@ -99,6 +99,7 @@ final class ExercisePerformance {
     }
 
     func replaceWith(_ exercise: Exercise, keepSets: Bool) {
+        guard catalogID != exercise.catalogID else { return }
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted

@@ -427,7 +427,7 @@ private struct WorkoutPlanExerciseView: View {
             RestTimeEditorView(exercise: exercise)
         }
         .sheet(isPresented: $showReplaceExerciseSheet) {
-            ReplaceExerciseView { newExercise, keepSets in
+            ReplaceExerciseView(currentCatalogID: exercise.catalogID) { newExercise, keepSets in
                 exercise.replaceWith(newExercise, keepSets: keepSets)
                 saveContext(context: context)
             }

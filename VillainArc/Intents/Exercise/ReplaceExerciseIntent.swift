@@ -28,6 +28,9 @@ struct ReplaceExerciseIntent: AppIntent {
         guard let resolvedExercise = try? context.fetch(Exercise.withCatalogID(exerciseID)).first else {
             return .result(dialog: "Exercise not found.")
         }
+        guard activeExercise.catalogID != resolvedExercise.catalogID else {
+            return .result(dialog: "\(resolvedExercise.name) is already the active exercise.")
+        }
 
         let oldName = activeExercise.name
         let hasSets = !activeExercise.sets!.isEmpty

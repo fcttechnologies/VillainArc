@@ -375,7 +375,7 @@
 - Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/ExerciseView.swift`
-- Does: Per-exercise workout page with set logging grid, notes, rep/rest editors, replace action, and set reference handling. Plan-based sessions prefer target references, including target RPE badges when present.
+- Does: Per-exercise workout page with set logging grid, notes, rep/rest editors, replace action, and set reference handling. Exercises still linked to a plan prescription show target references, including target RPE badges when present; exercises without a linked prescription use previous-performance references instead.
 - Called by: `WorkoutView`, SwiftUI preview.
 - Calls: `ExerciseSetRowView`, `RepRangeEditorView`, `RestTimeEditorView`, `ReplaceExerciseView`, `ExerciseHistoryView` (sheet), `WorkoutActivityManager.update`, `IntentDonations.donateReplaceExercise`, `saveContext`, `scheduleSave`, `Haptics.selection`, `secondsToTime`.
 

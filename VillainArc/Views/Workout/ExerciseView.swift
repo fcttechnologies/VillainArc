@@ -21,20 +21,12 @@ struct ExerciseView: View {
         self.onDeleteExercise = onDeleteExercise
     }
 
-    private var isPlanSession: Bool {
-        exercise.workoutSession?.origin == .plan
-    }
-
     private var previousSets: [SetPerformance] {
         (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
     }
 
     private var shouldUseTargetReference: Bool {
-        guard isPlanSession else { return false }
-        return exercise.sortedSets.contains { set in
-            guard let prescription = set.prescription else { return false }
-            return prescription.targetReps > 0 || prescription.targetWeight > 0 || prescription.visibleTargetRPE != nil
-        }
+        exercise.prescription != nil
     }
 
     private func targetReferenceData(for set: SetPerformance) -> SetReferenceData? {
@@ -54,7 +46,7 @@ struct ExerciseView: View {
 
     private func referenceData(for set: SetPerformance) -> SetReferenceData? {
         if shouldUseTargetReference {
-            return targetReferenceData(for: set) ?? previousReferenceData(for: set)
+            return targetReferenceData(for: set)
         }
         return previousReferenceData(for: set)
     }
@@ -211,7 +203,7 @@ struct ExerciseView: View {
                     }
             }
             .sheet(isPresented: $showReplaceExerciseSheet) {
-                ReplaceExerciseView { newExercise, keepSets in
+                ReplaceExerciseView(currentCatalogID: exercise.catalogID) { newExercise, keepSets in
                     exercise.replaceWith(newExercise, keepSets: keepSets)
                     saveContext(context: context)
                     WorkoutActivityManager.update()
