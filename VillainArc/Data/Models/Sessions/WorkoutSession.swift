@@ -34,7 +34,9 @@ final class WorkoutSession {
     }
     
     // New session
-    init() {}
+    init() {
+        preWorkoutContext = PreWorkoutContext()
+    }
 
     // Test/sample initializer to reduce setup boilerplate.
     convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil, origin: SessionOrigin = .freeform) {
@@ -45,10 +47,12 @@ final class WorkoutSession {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.origin = origin
+        self.preWorkoutContext = PreWorkoutContext()
     }
 
     // From workout plan
     init(from plan: WorkoutPlan) {
+        preWorkoutContext = PreWorkoutContext()
         title = plan.title
         notes = plan.notes
         origin = .plan

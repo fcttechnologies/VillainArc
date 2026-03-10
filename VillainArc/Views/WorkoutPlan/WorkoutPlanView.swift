@@ -419,15 +419,11 @@ private struct WorkoutPlanExerciseView: View {
                 .accessibilityHint("Deletes this exercise.")
             }
         }
-        .sheet(isPresented: $showRepRangeEditor, onDismiss: {
-            saveContext(context: context)
-        }) {
+        .sheet(isPresented: $showRepRangeEditor) {
             RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: $showRestTimeEditor, onDismiss: {
-            saveContext(context: context)
-        }) {
+        .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
         }
         .sheet(isPresented: $showReplaceExerciseSheet) {

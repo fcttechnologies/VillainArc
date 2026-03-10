@@ -31,6 +31,7 @@ final class ExercisePrescription {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        repRange = RepRangePolicy()
         self.workoutPlan = workoutPlan
         addSet()
     }

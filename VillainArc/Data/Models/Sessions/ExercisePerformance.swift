@@ -35,6 +35,7 @@ final class ExercisePerformance {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        repRange = RepRangePolicy()
         self.workoutSession = workoutSession
         addSet()
     }

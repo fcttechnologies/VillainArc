@@ -7,10 +7,6 @@ struct RepRangeEditorView: View {
     let catalogID: String
     @State private var suggestion: RepRangeSuggestion?
     
-    private var mode: RepRangeMode {
-        repRange.activeMode
-    }
-    
     var body: some View {
         Form {
             Section {
@@ -26,22 +22,23 @@ struct RepRangeEditorView: View {
             }
 
             Section {
-                if mode == .target {
+                if repRange.activeMode == .target {
                     Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
                         .accessibilityIdentifier("repRangeTargetStepper")
-                } else if mode == .range {
+                } else if repRange.activeMode == .range {
                     Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
                         .accessibilityIdentifier("repRangeLowerStepper")
                     Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: (repRange.lowerRange + 1)...200)
                         .accessibilityIdentifier("repRangeUpperStepper")
                 }
             } footer: {
-                if mode == .target || mode == .range {
+                if repRange.activeMode == .target || repRange.activeMode == .range {
                     Text(repGuidanceFooterText)
                 }
             }
+            .id(repRange.activeMode)
             
-            if mode == .notSet, let suggestion {
+            if repRange.activeMode == .notSet, let suggestion {
                 Section {
                     Button {
                         applySuggestion(suggestion)
@@ -76,7 +73,7 @@ struct RepRangeEditorView: View {
             CloseButton()
         }
         .accessibilityIdentifier("repRangeForm")
-        .onChange(of: mode) {
+        .onChange(of: repRange.activeMode) {
             Haptics.selection()
             saveContext(context: context)
         }
@@ -104,7 +101,7 @@ struct RepRangeEditorView: View {
     }
     
     private var modeFooterText: String {
-        switch mode {
+        switch repRange.activeMode {
         case .notSet:
             return "No rep goal is stored for this exercise."
         case .target:
@@ -115,7 +112,7 @@ struct RepRangeEditorView: View {
     }
     
     private var repGuidanceFooterText: String {
-        switch mode {
+        switch repRange.activeMode {
         case .target:
             return "Pick one rep target that matches your goal: strength often uses a low target like 3 reps, hypertrophy is often around 10 reps, endurance is usually 15+ reps."
         case .range:
