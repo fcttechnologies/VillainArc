@@ -1,7 +1,7 @@
 # VillainArc Architecture Map
 
 **Status**: Current
-**Last updated**: 2026-03-09
+**Last updated**: 2026-03-10
 **Scope**: Full codebase — root app/navigation + onboarding + persistence/Spotlight + intent/shortcuts/donations + workout history/detail + workout session/suggestions + suggestion rules/AI pipeline + workout plan list/detail + split planning/editing + exercise selection/editor slice + helper utility slice + data model layer (session/plan/split/history/suggestions).
 **See also**: `PROJECT_GUIDE.md` for conceptual overview and feature→file map. `WORKOUT_PLAN_SUGGESTION_FLOW.md` for suggestion engine deep dive.
 
@@ -44,7 +44,7 @@
 - `OnboardingManager`
   - First-run state machine (network/iCloud/CloudKit checks → sync → seed → Spotlight rebuild → profile collection)
 - `SetupGuard`
-  - Onboarding gate view that blocks app content until setup completes
+  - Intent pre-condition guard that verifies initial bootstrap and user profile setup are complete before allowing intent execution
 - `DataManager` (`saveContext` / `scheduleSave`)
   - Seeds and dedupes exercise catalog data
   - Provides shared save helpers used by router/views/models
@@ -204,7 +204,7 @@
 ### `VillainArc/Views/ContentView.swift`
 - Does: Root/home UI shell. Hosts `NavigationStack`, menu actions, startup seed/resume task, and workout/plan presentations.
 - Called by: `VillainArcApp`, SwiftUI preview.
-- Calls: `AppRouter.startWorkoutSession`, `AppRouter.createWorkoutPlan`, `AppRouter.checkForUnfinishedData`, `DataManager.seedExercisesIfNeeded`, home sections (`WorkoutSplitSectionView`, `RecentWorkoutSectionView`, `RecentWorkoutPlanSectionView`, `RecentExercisesSectionView`), destination views (`WorkoutsListView`, `WorkoutDetailView`, `WorkoutPlansListView`, `WorkoutPlanDetailView`, `ExercisesListView`, `ExerciseDetailView`, `ExerciseHistoryView`, `WorkoutSplitView`, `WorkoutSplitCreationView`), full-screen views (`WorkoutSessionContainer`, `WorkoutPlanView`), `IntentDonations.*`.
+- Calls: `AppRouter.startWorkoutSession`, `AppRouter.createWorkoutPlan`, `AppRouter.checkForUnfinishedData`, `OnboardingManager.startOnboarding`, home sections (`WorkoutSplitSectionView`, `RecentWorkoutSectionView`, `RecentWorkoutPlanSectionView`, `RecentExercisesSectionView`), destination views (`WorkoutsListView`, `WorkoutDetailView`, `WorkoutPlansListView`, `WorkoutPlanDetailView`, `ExercisesListView`, `ExerciseDetailView`, `ExerciseHistoryView`, `WorkoutSplitView`, `WorkoutSplitCreationView`), full-screen views (`WorkoutSessionContainer`, `WorkoutPlanView`), `IntentDonations.*`.
 
 ### `VillainArc/Data/Services/AppRouter.swift`
 - Does: App-wide navigation/workflow coordinator. Owns `path`, `activeWorkoutSession`, `activeWorkoutPlan`, auto-resumes unfinished workout/plan work on launch, blocks parallel flows while one is active, and routes Spotlight results for workouts, plans, and exercises.
@@ -227,9 +227,9 @@
 - Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `SpotlightIndexer.reindexAll`, `UserProfile` queries, `saveContext`.
 
 ### `VillainArc/Data/Services/SetupGuard.swift`
-- Does: View modifier / gate that blocks app content behind onboarding until setup completes.
-- Called by: `ContentView`.
-- Calls: `OnboardingManager.state`, `OnboardingView`.
+- Does: Intent pre-condition guard that verifies initial bootstrap and user profile setup are complete before allowing intent execution.
+- Called by: `StartWorkoutIntent`, `CreateWorkoutPlanIntent`, `StartTodaysWorkoutIntent`.
+- Calls: `DataManager.hasCompletedInitialBootstrap`, `UserProfile.single` fetch, `SetupGuardError`.
 
 ### `VillainArc/Data/Services/Suggestions/SuggestionGenerator.swift`
 - Does: Generates `PrescriptionChange` suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference.
@@ -323,7 +323,7 @@
 
 ### `VillainArc/Views/Components/SmallUnavailableView.swift`
 - Does: Compact unavailable/empty-state presentational component.
-- Called by: `WorkoutSplitSectionView`, SwiftUI preview.
+- Called by: `WorkoutSplitSectionView`, `RecentExercisesSectionView`, SwiftUI preview.
 - Calls: None (display-only component).
 
 ### `VillainArc/Views/Components/TextEntryEditorView.swift`
@@ -357,9 +357,9 @@
 - Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `SummaryStatCard`, `Charts` line/point marks, chart scaling helpers, `AppRouter.navigate(to: .exerciseHistory(...))`, cached history metrics.
 
 ### `VillainArc/Views/Exercise/ExerciseHistoryView.swift`
-- Does: List of all completed performances for one exercise, with one section per performance and a set grid showing set label/type, weight, reps, rest, rep range, and notes. Supports both browse navigation (`catalogID`) and future contextual sheet presentation from workout/plan exercise headers.
+- Does: List of all completed performances for one exercise, with one section per performance and a set grid showing set label/type, weight, reps, rest, rep range, per-set RPE badges, and notes. Supports both browse navigation (`catalogID`) and future contextual sheet presentation from workout/plan exercise headers.
 - Called by: `ContentView` navigation destination for `.exerciseHistory`, future workout/plan sheets, SwiftUI previews.
-- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExercisePerformance.matching(...))`, `formattedDateRange`, `secondsToTime`.
+- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExercisePerformance.matching(...))`, `RPEBadge`, `formattedDateRange`, `secondsToTime`.
 
 ### `VillainArc/Views/Workout/WorkoutDetailView.swift`
 - Does: Detailed readout for one completed workout (notes, exercises, sets, rest, actual RPE badges, pre-workout context toolbar status, post-workout effort ring) with actions to delete the workout, save as plan when no linked plan exists, and open linked plan when present.
@@ -521,6 +521,11 @@
 - Called by: `WorkoutDetailView`, `WorkoutSummaryView`, `RestTimerView`, `WorkoutView`, `ExerciseView`, `RestTimeEditorView`, `TimerDurationPicker`, `ExerciseSetRowView`, rest timer intents/snippet.
 - Calls: `Calendar` and `Date.formatted` utilities for normalized date/time range rendering.
 
+### `VillainArc/Helpers/WorkoutEffortFormatting.swift`
+- Does: Shared effort-level description helper that maps numeric workout effort ratings (1-10) to localized display strings.
+- Called by: `WorkoutSummaryView`, `WorkoutDetailView`.
+- Calls: None (formatting helper only).
+
 ### `VillainArc/Data/Services/ExerciseHistoryUpdater.swift`
 - Does: Rebuild/create/delete `ExerciseHistory` records from completed exercise performances after workout completion/deletion, including cached totals and progression-chart data.
 - Called by: `WorkoutsListView`, `WorkoutDetailView`, `WorkoutSummaryView`.
@@ -593,7 +598,7 @@
 - `PrescriptionChange` links source evidence (`sessionFrom`/`sourceExercisePerformance`/`sourceSetPerformance`) to targets (`targetPlan`/`targetExercisePrescription`/`targetSetPrescription`) and lifecycle state (`decision`, `outcome`).
 - `ExerciseHistory` stores aggregate stats per `catalogID` and owns `ProgressionPoint` rows.
 - `RestTimeHistory` stores reusable recent rest durations.
-- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`.
+- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`, `UserProfile`.
 
 ### Data Model File Index
 
@@ -624,8 +629,6 @@
 
 ### `VillainArc/Data/Models/Exercise/ProgressionPoint.swift`
 - Does: One timeseries point (date/weight/total reps/volume/estimated 1RM) for `ExerciseHistory` charts.
-- Called by: `ExerciseHistory.recalculate`, schema registration.
-- Calls: None.
 - Called by: `ExerciseHistory.recalculate`, schema registration.
 - Calls: None.
 

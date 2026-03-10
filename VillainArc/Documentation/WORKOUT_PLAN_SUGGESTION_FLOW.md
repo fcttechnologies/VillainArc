@@ -15,6 +15,7 @@ It is based on the current code in:
 - `Data/Services/Suggestions/OutcomeResolver.swift`
 - `Data/Services/Suggestions/OutcomeRuleEngine.swift`
 - `Data/Services/Suggestions/AITrainingStyleClassifier.swift`
+- `Data/Services/Suggestions/AITrainingStyleTools.swift`
 - `Data/Services/Suggestions/AIOutcomeInferrer.swift`
 - `Data/Models/Plans/WorkoutPlan.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
@@ -157,6 +158,11 @@ Rejecting does not mutate the plan. It only sets `decision = .rejected`.
 
 Skipping all marks every remaining `pending` or `deferred` change as `rejected`.
 
+The view also has two automatic behaviors:
+
+- if no pending or deferred suggestions remain on load (e.g. they were resolved between session creation and view appearance), the view immediately transitions to `.active` without showing the review screen
+- after each individual accept or reject action, the view checks if any undecided changes remain and automatically proceeds to the workout if none are left
+
 Once everything is decided, the screen moves the session to `.active` and the workout begins.
 
 ## What “Accept” Actually Changes
@@ -231,7 +237,7 @@ The rule engine does not just look at every set equally.
 - `straightSets`: all ordered working candidates
 - `topSetBackoffs`: the heavy cluster near the top weight
 - `ascending` / pyramid styles: the heavy cluster around peak weight
-- `unknown`: a stricter heavy-cluster fallback
+- `unknown`: the same heavy-cluster approach (0.95 threshold) as pyramid/ascending styles
 
 This matters because progression rules are evaluated on those primary sets, not automatically on every set in the exercise.
 
@@ -583,7 +589,7 @@ Deletion and editing cleanup are explicit, not just passive cascade behavior.
 - deleting a whole plan removes only `targetedChanges` whose `outcome == .pending`
 - deleting an exercise removes pending changes attached to that exercise plus its sets
 - deleting a set removes pending changes attached to that set
-- editing a value that matches a pending suggestion marks that change `decision = .userOverride` and `outcome = .userModified`
+- editing a value that matches a pending or deferred suggestion marks that change `decision = .userOverride` and `outcome = .userModified` (skips changes whose `source == .user`, and only applies when the current decision is `pending` or `deferred`, not if already accepted or rejected)
 
 Resolved suggestion history is preserved so later analytics and learning still have that evidence.
 

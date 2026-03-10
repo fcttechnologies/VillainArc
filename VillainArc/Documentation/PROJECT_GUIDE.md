@@ -3,6 +3,9 @@
 > Give this file to any AI agent to understand the entire project.
 > For the full file-by-file index, see ARCHITECTURE.md.
 > For the suggestion engine deep dive, see WORKOUT_PLAN_SUGGESTION_FLOW.md.
+> For session lifecycle details, see SESSION_LIFECYCLE_FLOW.md.
+> For plan editing mechanics, see PLAN_EDITING_FLOW.md.
+> For exercise history system, see EXERCISE_HISTORY_FLOW.md.
 
 ## What Is VillainArc?
 
@@ -91,7 +94,9 @@ WorkoutPlan (blueprint)
 WorkoutSession (actual workout)
   ├─ owns → ExercisePerformance[] → SetPerformance[]
   ├─ has one → PreWorkoutContext
-  └─ links back to → WorkoutPlan (if plan-based)
+  ├─ links back to → WorkoutPlan (if plan-based)
+  ├─ generates → PrescriptionChange[] (via createdPrescriptionChanges)
+  └─ evaluates → PrescriptionChange[] (via evaluatedPrescriptionChanges)
 
 WorkoutSplit (schedule)
   └─ owns → WorkoutSplitDay[] → each references one WorkoutPlan
@@ -131,6 +136,7 @@ Use this to find where logic lives for any feature.
 | Post-workout summary | `Views/Workout/WorkoutSummaryView.swift` |
 | Resume unfinished workout / plan on launch | `Data/Services/AppRouter.swift` → `checkForUnfinishedData()` |
 | Workout status routing | `Views/Workout/WorkoutSessionContainer.swift` |
+| Pre-workout context (mood/notes) | `Views/Workout/PreWorkoutContextView.swift` |
 
 ### Workout Plans
 | What | Where |
@@ -211,7 +217,7 @@ Use this to find where logic lives for any feature.
 |------|-------|
 | Shortcut registration | `Intents/VillainArcShortcuts.swift` |
 | Donation hub | `Intents/IntentDonations.swift` |
-| Workout intents | `Intents/Workout/*.swift` (13 files) |
+| Workout intents | `Intents/Workout/*.swift` (14 files) |
 | Plan intents | `Intents/WorkoutPlan/*.swift` (8 files) |
 | Exercise intents | `Intents/Exercise/*.swift` (6 files) |
 | Rest timer intents | `Intents/RestTimer/*.swift` (7 files) |
@@ -256,6 +262,7 @@ Use this to find where logic lives for any feature.
 | Workout card row | `Views/Components/WorkoutRowView.swift` |
 | Plan card (display) | `Views/Components/WorkoutPlanCardView.swift` |
 | Plan row (navigable) | `Views/Components/WorkoutPlanRowView.swift` |
+| RPE badge (compact) | `Views/Components/RPEBadge.swift` |
 
 ### Utilities
 | What | Where |
@@ -267,6 +274,7 @@ Use this to find where logic lives for any feature.
 | Keyboard dismiss | `Helpers/KeyboardDismiss.swift` |
 | Accessibility IDs | `Helpers/Accessibility.swift` |
 | Sample/preview data | `Data/SampleData.swift` |
+| Workout effort formatting | `Helpers/WorkoutEffortFormatting.swift` |
 
 ---
 
@@ -362,16 +370,16 @@ Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift`
 |------|-------|----------|
 | `SessionStatus` | pending, active, summary, done | Workout lifecycle |
 | `SessionOrigin` | plan, freeform | How workout started |
-| `ExerciseSetType` | working, warmup, dropSet | Set classification |
+| `ExerciseSetType` | warmup, working, dropSet | Set classification |
 | `RepRangeMode` | notSet, target, range | Rep goal strategy |
 | `MoodLevel` | notSet, sick, tired, okay, good, great | Pre-workout feeling |
 | `SplitMode` | weekly, rotation | Schedule type |
-| `ChangeType` | 16 variants (weight/reps/rest/repRange changes) | What a suggestion modifies |
+| `ChangeType` | 14 variants (weight/reps/rest/setType/repRange changes) | What a suggestion modifies |
 | `Decision` | pending, accepted, rejected, deferred, userOverride | User's choice on suggestion |
 | `Outcome` | pending, good, tooAggressive, tooEasy, ignored, userModified | How suggestion played out |
 | `TrainingStyle` | straightSets, ascending, descendingPyramid, ascendingPyramid, topSetBackoffs, unknown | Detected exercise pattern |
 | `SuggestionSource` | rules, ai, user | Where suggestion came from |
-| `Muscle` | 43 variants (10 major, 33 minor) | Muscle targeting |
+| `Muscle` | 36 variants (10 major, 26 minor) | Muscle targeting |
 | `EquipmentType` | 18 variants | Equipment classification |
 | `PlanCreator` | user, ai | Plan origin |
 
@@ -379,10 +387,10 @@ Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift`
 
 ## Test Coverage
 
-**45 tests across 7 files:**
-- Plan editing & suggestion lifecycle (18 tests)
+**43 tests across 7 files:**
+- Plan editing & suggestion lifecycle (14 tests)
 - Workout finish logic (11 tests)
-- Suggestion system / training style (8 tests)
+- Suggestion system / training style (10 tests)
 - Exercise replacement (3 tests)
 - Spotlight summaries (2 tests)
 - Exercise entity search / alternate names (2 tests)
@@ -403,13 +411,13 @@ VillainArc/
     Onboarding/                  First-run onboarding UI
     HomeSections/                Home screen section views (5 files)
     Exercise/                    Exercise list, detail, and history surfaces
-    Workout/                     Active workout views (11 files)
+    Workout/                     Active workout views (10 files)
       Editors/                   Shared editors: RepRange, RestTime, MuscleFilter
     History/                     Workout history list
     WorkoutPlan/                 Plan CRUD views (4 files)
     WorkoutSplit/                Split management views (4 files)
     Suggestions/                 Suggestion review UI (2 files)
-    Components/                  Reusable UI components (11 files)
+    Components/                  Reusable UI components (12 files)
   Data/
     SharedModelContainer.swift   SwiftData schema + container
     SampleData.swift             Preview fixtures
@@ -417,27 +425,27 @@ VillainArc/
       AppRouter.swift            Navigation coordinator (singleton)
       DataManager.swift          Catalog seeding + save helpers
       OnboardingManager.swift    First-run state machine
-      SetupGuard.swift           Onboarding gate
+      SetupGuard.swift           Intent pre-condition guard
       RestTimerState.swift       Global rest timer (singleton)
       SpotlightIndexer.swift     CoreSpotlight integration
       ExerciseHistoryUpdater.swift  Analytics rebuild
-      Suggestions/               Suggestion engine (8 files)
+      Suggestions/               Suggestion engine (9 files)
     Models/
       Sessions/                  WorkoutSession, ExercisePerformance, SetPerformance, PreWorkoutContext
       Plans/                     WorkoutPlan, ExercisePrescription, SetPrescription, PrescriptionChange, SuggestionGrouping, WorkoutPlan+Editing
       Exercise/                  Exercise, ExerciseCatalog, ExerciseHistory, ProgressionPoint, RepRangePolicy, RestTimeDefaults
       WorkoutSplit/              WorkoutSplit, WorkoutSplitDay
       AIModels/                  AI DTOs for suggestion/outcome inference
-      Enums/                     All domain enums (14 files)
+      Enums/                     All domain enums (15 files)
       UserProfile.swift
       RestTimeHistory.swift
     LiveActivity/                ActivityKit attributes + manager
     Protocols/                   RestTimeEditable protocol
-  Intents/                       App Intents for Siri/Shortcuts (24 files)
-  Helpers/                       Utility functions (8 files)
-  Documentation/                 This file + ARCHITECTURE.md + suggestion flow doc
+  Intents/                       App Intents for Siri/Shortcuts (42 files)
+  Helpers/                       Utility functions (10 files)
+  Documentation/                 This file + ARCHITECTURE.md + flow docs (5 files)
 
 VillainArcWidgetExtension/       Live Activity widget UI
 VillainArcIntentsExtension/      Legacy SiriKit handlers
-VillainArcTests/                 Test suite (5 test files + 3 support files)
+VillainArcTests/                 Test suite (7 test files + 3 support files)
 ```
