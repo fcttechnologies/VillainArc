@@ -27,8 +27,8 @@ struct RPEBadge: View {
         Text(value, format: .number)
             .font(.caption)
             .fontWeight(.semibold)
+            .minimumScaleFactor(0.7)
             .lineLimit(1)
-            .minimumScaleFactor(0.8)
             .foregroundStyle(style.tint(for: value))
             .accessibilityHidden(true)
     }

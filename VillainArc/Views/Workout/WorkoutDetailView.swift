@@ -45,7 +45,7 @@ struct WorkoutDetailView: View {
             }
             ForEach(workout.sortedExercises) { exercise in
                 Section {
-                    Grid(verticalSpacing: 8) {
+                    Grid(verticalSpacing: 10) {
                         GridRow {
                             Text("Set")
                             Spacer()
@@ -300,13 +300,14 @@ struct WorkoutDetailView: View {
         return "\(feeling). \(tookPreWorkout)."
     }
 
+    @ViewBuilder
     private func setIndicator(for set: SetPerformance) -> some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .overlay(alignment: .bottomTrailing) {
                 if let visibleRPE = set.visibleRPE {
                     RPEBadge(value: visibleRPE)
-                        .offset(x: 8, y: 5)
+                        .offset(x: visibleRPE == 10 ? 12 : 9, y: 5)
                 }
             }
     }

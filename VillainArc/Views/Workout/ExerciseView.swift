@@ -63,8 +63,83 @@ struct ExerciseView: View {
         GeometryReader { geometry in
             let fieldWidth = geometry.size.width / 5
             ScrollView {
-                headerView
-                    .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(exercise.name)
+                        .font(.title3)
+                        .bold()
+                        .lineLimit(1)
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(exercise.equipmentType.rawValue)
+                                .foregroundStyle(.secondary)
+                                .fontWeight(.semibold)
+                            Button {
+                                Haptics.selection()
+                                showRepRangeEditor = true
+                            } label: {
+                                Text(exercise.repRange?.displayText ?? "")
+                                    .fontWeight(.semibold)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Rep range")
+                            .accessibilityValue(exercise.repRange?.displayText ?? "")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRepRangeButton(exercise))
+                            .accessibilityHint("Edits the rep range.")
+                        }
+                        Spacer()
+                        HStack(spacing: 16) {
+                            Button("History", systemImage: "clock.arrow.circlepath") {
+                                Haptics.selection()
+                                showExerciseHistorySheet = true
+                            }
+                            .accessibilityIdentifier("exerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityHint("Shows prior performances for this exercise.")
+                            .labelStyle(.iconOnly)
+                            .font(.title)
+                            .tint(.primary)
+
+                            Button("Rest Times", systemImage: "timer") {
+                                Haptics.selection()
+                                showRestTimeEditor = true
+                            }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
+                            .accessibilityHint("Edits rest times.")
+                            .labelStyle(.iconOnly)
+                            .font(.title)
+                            .tint(.primary)
+                        }
+                    }
+
+                    TextField("Notes", text: $exercise.notes)
+                        .padding(.top, 8)
+                        .onChange(of: exercise.notes) {
+                            scheduleSave(context: context)
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
+                }
+                .padding()
+                .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                .contextMenu {
+                    Button {
+                        Haptics.selection()
+                        showReplaceExerciseSheet = true
+                    } label: {
+                        Label("Replace Exercise", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseReplaceButton(exercise))
+                    .accessibilityHint("Replaces this exercise with another.")
+                    if let onDeleteExercise {
+                        Button(role: .destructive) {
+                            Haptics.selection()
+                            onDeleteExercise()
+                        } label: {
+                            Label("Delete Exercise", systemImage: "trash")
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDeleteButton(exercise))
+                        .accessibilityHint("Deletes this exercise.")
+                    }
+                }
+                .padding(.horizontal)
 
                 Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                     GridRow {
@@ -125,109 +200,30 @@ struct ExerciseView: View {
             } message: {
                 Text("Want to update rest timer to reflect the new set rest time?")
             }
-        }
-    }
-
-    var headerView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(exercise.name)
-                .font(.title3)
-                .bold()
-                .lineLimit(1)
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(exercise.equipmentType.rawValue)
-                        .foregroundStyle(.secondary)
-                        .fontWeight(.semibold)
-                    Button {
-                        Haptics.selection()
-                        showRepRangeEditor = true
-                    } label: {
-                        Text(exercise.repRange?.displayText ?? "")
-                            .fontWeight(.semibold)
+            .sheet(isPresented: $showRepRangeEditor) {
+                RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
+                    .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showRestTimeEditor) {
+                RestTimeEditorView(exercise: exercise)
+                    .onDisappear {
+                        checkForRestTimeUpdate()
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Rep range")
-                    .accessibilityValue(exercise.repRange?.displayText ?? "")
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRepRangeButton(exercise))
-                    .accessibilityHint("Edits the rep range.")
-                }
-                Spacer()
-                HStack(spacing: 16) {
-                    Button("History", systemImage: "clock.arrow.circlepath") {
-                        Haptics.selection()
-                        showExerciseHistorySheet = true
-                    }
-                    .accessibilityIdentifier("exerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)")
-                    .accessibilityHint("Shows prior performances for this exercise.")
-                    .labelStyle(.iconOnly)
-                    .font(.title)
-                    .tint(.primary)
-
-                    Button("Rest Times", systemImage: "timer") {
-                        Haptics.selection()
-                        showRestTimeEditor = true
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
-                    .accessibilityHint("Edits rest times.")
-                    .labelStyle(.iconOnly)
-                    .font(.title)
-                    .tint(.primary)
+            }
+            .sheet(isPresented: $showReplaceExerciseSheet) {
+                ReplaceExerciseView { newExercise, keepSets in
+                    exercise.replaceWith(newExercise, keepSets: keepSets)
+                    saveContext(context: context)
+                    WorkoutActivityManager.update()
+                    Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
                 }
             }
-
-            TextField("Notes", text: $exercise.notes)
-                .padding(.top, 8)
-                .onChange(of: exercise.notes) {
-                    scheduleSave(context: context)
+            .sheet(isPresented: $showExerciseHistorySheet) {
+                NavigationStack {
+                    ExerciseHistoryView(exercise: exercise)
                 }
-                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
-        }
-        .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-        .contextMenu {
-            Button {
-                Haptics.selection()
-                showReplaceExerciseSheet = true
-            } label: {
-                Label("Replace Exercise", systemImage: "arrow.triangle.2.circlepath")
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseReplaceButton(exercise))
-            .accessibilityHint("Replaces this exercise with another.")
-            if let onDeleteExercise {
-                Button(role: .destructive) {
-                    Haptics.selection()
-                    onDeleteExercise()
-                } label: {
-                    Label("Delete Exercise", systemImage: "trash")
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDeleteButton(exercise))
-                .accessibilityHint("Deletes this exercise.")
-            }
-        }
-        .sheet(isPresented: $showRepRangeEditor) {
-            RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                 .presentationDetents([.medium, .large])
-        }
-        .sheet(isPresented: $showRestTimeEditor) {
-            RestTimeEditorView(exercise: exercise)
-                .onDisappear {
-                    checkForRestTimeUpdate()
-                }
-        }
-        .sheet(isPresented: $showReplaceExerciseSheet) {
-            ReplaceExerciseView { newExercise, keepSets in
-                exercise.replaceWith(newExercise, keepSets: keepSets)
-                saveContext(context: context)
-                WorkoutActivityManager.update()
-                Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
             }
-        }
-        .sheet(isPresented: $showExerciseHistorySheet) {
-            NavigationStack {
-                ExerciseHistoryView(exercise: exercise)
-            }
-            .presentationDetents([.medium, .large])
         }
     }
 

@@ -42,7 +42,7 @@ struct ExerciseHistoryView: View {
         List {
             ForEach(performances) { performance in
                 Section {
-                    Grid(verticalSpacing: 6) {
+                    Grid(verticalSpacing: 10) {
                         GridRow {
                             Text("Set")
                             Spacer()
@@ -106,13 +106,14 @@ struct ExerciseHistoryView: View {
         .toolbarTitleDisplayMode(.inline)
     }
 
+    @ViewBuilder
     private func setIndicator(for set: SetPerformance) -> some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .overlay(alignment: .bottomTrailing) {
                 if let visibleRPE = set.visibleRPE {
                     RPEBadge(value: visibleRPE)
-                        .offset(x: 8, y: 5)
+                        .offset(x: visibleRPE == 10 ? 12 : 9, y: 5)
                 }
             }
     }

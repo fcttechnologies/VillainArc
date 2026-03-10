@@ -187,13 +187,14 @@ struct WorkoutPlanDetailView: View {
         dismiss()
     }
 
+    @ViewBuilder
     private func setIndicator(for set: SetPrescription) -> some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .overlay(alignment: .bottomTrailing) {
                 if let visibleTargetRPE = set.visibleTargetRPE {
                     RPEBadge(value: visibleTargetRPE, style: .target)
-                        .offset(x: 8, y: 5)
+                        .offset(x: visibleTargetRPE == 10 ? 12 : 9, y: 5)
                 }
             }
     }
