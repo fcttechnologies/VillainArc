@@ -45,7 +45,7 @@ struct WorkoutDetailView: View {
             }
             ForEach(workout.sortedExercises) { exercise in
                 Section {
-                    Grid(verticalSpacing: 6) {
+                    Grid(verticalSpacing: 8) {
                         GridRow {
                             Text("Set")
                             Spacer()

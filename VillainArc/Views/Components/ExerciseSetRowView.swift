@@ -36,7 +36,6 @@ struct ExerciseSetRowView: View {
     private let restTimer = RestTimerState.shared
     @AppStorage("autoStartRestTimer", store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @State private var showOverrideTimerAlert = false
-    @State private var showRPEPicker = false
     @FocusState private var focusedField: Field?
 
     let referenceData: SetReferenceData?
@@ -64,8 +63,21 @@ struct ExerciseSetRowView: View {
                 }
                 Divider()
                 if set.type != .warmup {
-                    Button("RPE\(set.rpe > 0 ? " (\(set.rpe))" : "")", systemImage: "flame.fill") {
-                        showRPEPicker = true
+                    Menu {
+                        Picker("RPE", selection: Binding(
+                            get: { set.rpe },
+                            set: { newValue in
+                                updateRPE(to: set.rpe == newValue ? 0 : newValue)
+                            }
+                        )) {
+                            ForEach(RPEValue.selectableValues, id: \.self) { value in
+                                Label(RPEValue.pickerDescription(for: value, style: .actual), systemImage: "\(value).circle")
+                                    .tag(value)
+                            }
+                        }
+                    } label: {
+                        Label("RPE\(set.rpe == 0 ? "" : ": \(set.rpe)")", systemImage: "flame.fill")
+                        Text(RPEValue.menuSubtitle(for: set.visibleRPE, style: .actual))
                     }
                 }
                 if (exercise.sets?.count ?? 0) > 1 {
@@ -175,13 +187,6 @@ struct ExerciseSetRowView: View {
             scheduleSave(context: context)
             WorkoutActivityManager.update()
         }
-        .sheet(isPresented: $showRPEPicker) {
-            RPEPickerView(rpe: $set.rpe)
-                .presentationDetents([.fraction(0.25)])
-                .onChange(of: set.rpe) {
-                    saveContext(context: context)
-                }
-        }
         .alert("Replace Rest Timer?", isPresented: $showOverrideTimerAlert) {
             Button("Replace", role: .destructive) {
                 let restSeconds = set.effectiveRestSeconds
@@ -203,6 +208,14 @@ struct ExerciseSetRowView: View {
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)
+        saveContext(context: context)
+        WorkoutActivityManager.update()
+    }
+
+    private func updateRPE(to value: Int) {
+        guard set.rpe != value else { return }
+        Haptics.selection()
+        set.rpe = value
         saveContext(context: context)
         WorkoutActivityManager.update()
     }

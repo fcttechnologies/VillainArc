@@ -254,7 +254,6 @@ Use this to find where logic lives for any feature.
 | Navigation bar helpers | `Views/Components/Navbar.swift` |
 | Text editor sheet | `Views/Components/TextEntryEditorView.swift` |
 | Timer duration picker | `Views/Components/TimerDurationPicker.swift` |
-| RPE picker | `Views/Components/RPEPickerView.swift` |
 | Exercise summary row | `Views/Components/ExerciseSummaryRow.swift` |
 | Summary stat card | `Views/Components/SummaryStatCard.swift` |
 | Section header button | `Views/HomeSections/HomeSectionHeaderButton.swift` |
@@ -417,7 +416,7 @@ VillainArc/
     WorkoutPlan/                 Plan CRUD views (4 files)
     WorkoutSplit/                Split management views (4 files)
     Suggestions/                 Suggestion review UI (2 files)
-    Components/                  Reusable UI components (12 files)
+    Components/                  Reusable UI components (11 files)
   Data/
     SharedModelContainer.swift   SwiftData schema + container
     SampleData.swift             Preview fixtures

@@ -456,7 +456,6 @@ private struct WorkoutPlanSetRowView: View {
     @Environment(\.modelContext) private var context
     @Bindable var set: SetPrescription
     @Bindable var exercise: ExercisePrescription
-    @State private var showTargetRPEPicker = false
     @FocusState private var focusedField: Field?
 
     var body: some View {
@@ -480,8 +479,21 @@ private struct WorkoutPlanSetRowView: View {
                 }
                 Divider()
                 if set.type != .warmup {
-                    Button("Target RPE\(set.targetRPE > 0 ? " (\(set.targetRPE))" : "")", systemImage: "flag.fill") {
-                        showTargetRPEPicker = true
+                    Menu {
+                        Picker("Target RPE", selection: Binding(
+                            get: { set.targetRPE },
+                            set: { newValue in
+                                updateTargetRPE(to: set.targetRPE == newValue ? 0 : newValue)
+                            }
+                        )) {
+                            ForEach(RPEValue.selectableValues, id: \.self) { value in
+                                Label(RPEValue.pickerDescription(for: value, style: .target), systemImage: "\(value).circle")
+                                    .tag(value)
+                            }
+                        }
+                    } label: {
+                        Label("Target RPE\(set.targetRPE == 0 ? "" : ": \(set.targetRPE)")", systemImage: "flag.fill")
+                        Text(RPEValue.menuSubtitle(for: set.visibleTargetRPE, style: .target))
                     }
                 }
                 if (exercise.sets?.count ?? 0) > 1 {
@@ -520,19 +532,19 @@ private struct WorkoutPlanSetRowView: View {
         .onChange(of: set.targetWeight) {
             scheduleSave(context: context)
         }
-        .sheet(isPresented: $showTargetRPEPicker) {
-            RPEPickerView(rpe: $set.targetRPE)
-                .presentationDetents([.fraction(0.25)])
-                .onChange(of: set.targetRPE) {
-                    saveContext(context: context)
-                }
-        }
     }
 
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)
         context.delete(set)
+        saveContext(context: context)
+    }
+
+    private func updateTargetRPE(to value: Int) {
+        guard set.targetRPE != value else { return }
+        Haptics.selection()
+        set.targetRPE = value
         saveContext(context: context)
     }
 

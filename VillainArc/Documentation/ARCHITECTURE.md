@@ -74,8 +74,6 @@
 - `ExerciseSetRowView`
   - Editable set row used in active workout exercises
   - Handles set type, reps/weight logging, completion, timer start, and per-set quick actions
-- `RPEPickerView`
-  - Quick sheet picker for set RPE values
 - `WorkoutsListView`
   - Shows completed workouts list
   - Handles bulk/single delete with Spotlight cleanup + exercise history recompute
@@ -292,14 +290,9 @@
 - Calls: `AppRouter.navigate(to: .workoutSessionDetail(...))`, `IntentDonations.donateOpenWorkout`, `AccessibilityText.workoutRowLabel/workoutRowValue/workoutRowHint`.
 
 ### `VillainArc/Views/Components/ExerciseSetRowView.swift`
-- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge/picker). When a workout comes from a plan, target RPE is shown only in the target/reference column so it stays distinct from logged RPE.
+- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). When a workout comes from a plan, target RPE is shown only in the target/reference column so it stays distinct from logged RPE.
 - Called by: `ExerciseView`, SwiftUI preview via `ExerciseView`.
-- Calls: `RPEPickerView`, `RPEBadge`, `RestTimerState.shared`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
-
-### `VillainArc/Views/Components/RPEPickerView.swift`
-- Does: Compact sheet picker for selecting/clearing RPE values and showing effort descriptions.
-- Called by: `ExerciseSetRowView`, SwiftUI preview.
-- Calls: `Haptics.selection`, `dismiss` environment action.
+- Calls: `RPEBadge`, `RPEValue`, `RestTimerState.shared`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
 
 ### `VillainArc/Views/Components/RPEBadge.swift`
 - Does: Shared compact RPE badge for actual set RPE and plan target RPE display.
@@ -464,7 +457,7 @@
 ### `VillainArc/Views/WorkoutPlan/WorkoutPlanView.swift`
 - Does: Full-screen editor for creating or editing a workout plan, including exercise list editing, set editing, optional target RPE per non-warmup set, notes/title editing, and save/cancel logic.
 - Called by: `ContentView` (`activeWorkoutPlan` fullScreenCover), `WorkoutPlanDetailView` (editing copy flow), `WorkoutPlanPickerView` (new plan flow), `WorkoutDetailView` (save workout as plan), SwiftUI preview.
-- Calls: `AddExerciseView`, `TextEntryEditorView`, `WorkoutPlan.finishEditing`, `WorkoutPlan.cancelEditing`, `WorkoutPlan.deletePlanEntirely`, `WorkoutPlan.deleteExercise`, `WorkoutPlan.moveExercise`, `ExerciseHistoryView` (via `WorkoutPlanExerciseView` sheet), `RPEPickerView`, `RPEBadge`, `SpotlightIndexer.index(workoutPlan:)`, `saveContext`, `scheduleSave`, `dismissKeyboard`, nested editors (`RepRangeEditorView`, `RestTimeEditorView`), `WorkoutPlanEntity` via `userActivity`.
+- Calls: `AddExerciseView`, `TextEntryEditorView`, `WorkoutPlan.finishEditing`, `WorkoutPlan.cancelEditing`, `WorkoutPlan.deletePlanEntirely`, `WorkoutPlan.deleteExercise`, `WorkoutPlan.moveExercise`, `ExerciseHistoryView` (via `WorkoutPlanExerciseView` sheet), `RPEBadge`, `RPEValue`, `SpotlightIndexer.index(workoutPlan:)`, `saveContext`, `scheduleSave`, `dismissKeyboard`, nested editors (`RepRangeEditorView`, `RestTimeEditorView`), `WorkoutPlanEntity` via `userActivity`.
 
 ### `VillainArc/Views/WorkoutPlan/WorkoutPlanPickerView.swift`
 - Does: Plan selection screen for assigning/clearing a selected plan, with ability to create a new plan inline.
