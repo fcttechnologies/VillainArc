@@ -9,10 +9,10 @@ struct ExerciseEntity: AppEntity, IndexedEntity, Identifiable {
     let id: String
     let name: String
     let equipment: String
-    let aliases: [String]
+    let alternateNames: [String]
 
     var displayRepresentation: DisplayRepresentation {
-        let synonyms = aliases.map { LocalizedStringResource(stringLiteral: $0) }
+        let synonyms = alternateNames.map { LocalizedStringResource(stringLiteral: $0) }
         return DisplayRepresentation(title: "\(name)", subtitle: "\(equipment)", synonyms: synonyms)
     }
 
@@ -23,7 +23,7 @@ extension ExerciseEntity {
         id = exercise.catalogID
         name = exercise.name
         equipment = exercise.equipmentType.rawValue
-        aliases = exercise.aliases
+        alternateNames = exercise.systemAlternateNames
     }
 }
 
@@ -68,7 +68,10 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
             return exercises.map(ExerciseEntity.init)
         }
 
-        let scored = exerciseSearchMatches(in: exercises, queryTokens: queryTokens)
+        let scored = exercises.compactMap { exercise in
+            let score = exerciseEntitySearchScore(for: exercise, query: trimmed, queryTokens: queryTokens)
+            return score > 0 ? ExerciseSearchMatch(exercise: exercise, score: score) : nil
+        }
         if !scored.isEmpty {
             let sorted = scored.sorted { left, right in
                 if left.score != right.score {
@@ -92,7 +95,7 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
     @MainActor
     private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
         guard !queryTokens.isEmpty else { return true }
-        let haystackTokens = cachedExerciseSearchTokens(for: exercise)
+        let haystackTokens = cachedExerciseSearchTokens(for: exercise) + exerciseEntitySearchTokens(for: exercise)
 
         return queryTokens.allSatisfy { queryToken in
             let maxDistance = maximumFuzzyDistance(for: queryToken)
@@ -119,4 +122,47 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         }
         return left.name.localizedStandardCompare(right.name) == .orderedAscending
     }
+}
+
+@MainActor
+func exerciseEntitySearchScore(for exercise: Exercise, query: String, queryTokens: [String]? = nil) -> Int {
+    let resolvedQueryTokens = queryTokens ?? normalizedTokens(for: query)
+    guard !resolvedQueryTokens.isEmpty else { return 0 }
+
+    var score = exerciseSearchScore(for: exercise, queryTokens: resolvedQueryTokens)
+    let normalizedQuery = normalizedSearchPhrase(query)
+    if normalizedQuery.isEmpty {
+        return score
+    }
+
+    let exactCandidates = [exercise.name] + exercise.systemAlternateNames
+    for candidate in exactCandidates {
+        let normalizedCandidate = normalizedSearchPhrase(candidate)
+        guard !normalizedCandidate.isEmpty else { continue }
+
+        if normalizedCandidate == normalizedQuery {
+            score += 10_000
+            continue
+        }
+
+        if normalizedCandidate.hasPrefix(normalizedQuery + " ") {
+            score += 500
+        }
+    }
+
+    return score
+}
+
+private func exerciseEntitySearchTokens(for exercise: Exercise) -> [String] {
+    var tokens: [String] = []
+    var seen = Set<String>()
+
+    for value in exercise.systemAlternateNames {
+        for token in normalizedTokens(for: value) {
+            guard seen.insert(token).inserted else { continue }
+            tokens.append(token)
+        }
+    }
+
+    return tokens
 }

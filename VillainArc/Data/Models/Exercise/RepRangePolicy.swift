@@ -17,7 +17,7 @@ final class RepRangePolicy {
         case .range:
             return "Rep Range: \(lowerRange)-\(upperRange)"
         case .target:
-            return "Rep Target: \(targetReps)"
+            return "Target: \(targetReps) reps"
         }
     }
     

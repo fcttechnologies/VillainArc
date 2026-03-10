@@ -1,10 +1,10 @@
 import SwiftUI
 import SwiftData
 
-struct PreWorkoutStatusView: View {
+struct PreWorkoutContextView: View {
     @Environment(\.dismiss) private var dismiss
-    @Bindable var status: PreWorkoutStatus
-    @Environment(\.modelContext) private var context
+    @Bindable var preWorkoutContext: PreWorkoutContext
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         NavigationStack {
@@ -17,10 +17,10 @@ struct PreWorkoutStatusView: View {
                         }
                     }
                     
-                    TextField("Notes (optional)", text: $status.notes)
+                    TextField("Notes (optional)", text: $preWorkoutContext.notes)
                         .fontWeight(.semibold)
-                        .onChange(of: status.notes) {
-                            scheduleSave(context: context)
+                        .onChange(of: preWorkoutContext.notes) {
+                            scheduleSave(context: modelContext)
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodNotesField)
                 }
@@ -33,18 +33,18 @@ struct PreWorkoutStatusView: View {
                 }
             )
             .onDisappear {
-                saveContext(context: context)
-                status.notes = status.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                saveContext(context: modelContext)
+                preWorkoutContext.notes = preWorkoutContext.notes.trimmingCharacters(in: .whitespacesAndNewlines)
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodSheet)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    let isSelected = status.tookPreWorkout
+                    let isSelected = preWorkoutContext.tookPreWorkout
 
                     return Button {
                         Haptics.selection()
-                        status.tookPreWorkout.toggle()
-                        saveContext(context: context)
+                        preWorkoutContext.tookPreWorkout.toggle()
+                        saveContext(context: modelContext)
                     } label: {
                         Image(systemName: isSelected ? "bolt.fill" : "bolt.slash")
                             .foregroundStyle(isSelected ? .yellow : .primary)
@@ -67,12 +67,12 @@ struct PreWorkoutStatusView: View {
     }
 
     private func moodCard(for level: MoodLevel) -> some View {
-        let isSelected = status.feeling == level
+        let isSelected = preWorkoutContext.feeling == level
 
         return Button {
             Haptics.selection()
-            status.feeling = level
-            saveContext(context: context)
+            preWorkoutContext.feeling = level
+            saveContext(context: modelContext)
         } label: {
             VStack(spacing: 6) {
                 Text(level.emoji)
@@ -89,7 +89,7 @@ struct PreWorkoutStatusView: View {
             .scaleEffect(isSelected ? 1.2 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(.bouncy, value: status.feeling)
+        .animation(.bouncy, value: preWorkoutContext.feeling)
         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodOption(level))
         .accessibilityLabel(level.displayName)
         .accessibilityHint("Sets your pre-workout mood.")
@@ -97,6 +97,6 @@ struct PreWorkoutStatusView: View {
 }
 
 #Preview {
-    PreWorkoutStatusView(status: sampleIncompleteSession().preStatus ?? PreWorkoutStatus())
+    PreWorkoutContextView(preWorkoutContext: sampleIncompleteSession().preWorkoutContext ?? PreWorkoutContext())
         .sampleDataContainerIncomplete()
 }

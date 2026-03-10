@@ -12,7 +12,7 @@ class PreviewDataContainer {
     init(includeIncompleteData: Bool = false) {
         let schema = Schema([
             WorkoutSession.self,
-            PreWorkoutStatus.self,
+            PreWorkoutContext.self,
             ExercisePerformance.self,
             SetPerformance.self,
             Exercise.self,
@@ -61,26 +61,26 @@ class PreviewDataContainer {
         let plan = WorkoutPlan(title: "Push Day", notes: "Chest and triceps focus", favorite: true, completed: true, lastUsed: date(2026, 1, 5, 8, 15))
         context.insert(plan)
 
-        let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
+        let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int, targetRPE: Int)])] = [
             ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
-                (.warmup, 45, 12, 60),
-                (.working, 135, 10, 90),
-                (.working, 155, 8, 90)
+                (.warmup, 45, 12, 60, 0),
+                (.working, 135, 10, 90, 7),
+                (.working, 155, 8, 90, 8)
             ]),
             ("dumbbell_incline_bench_press", "", [
-                (.warmup, 25, 12, 60),
-                (.working, 55, 10, 90),
-                (.working, 60, 8, 90)
+                (.warmup, 25, 12, 60, 0),
+                (.working, 55, 10, 90, 8),
+                (.working, 60, 8, 90, 10)
             ]),
             ("cable_bench_chest_fly", "slow eccentric", [
-                (.working, 30, 12, 90),
-                (.working, 35, 10, 90),
-                (.working, 35, 10, 90)
+                (.working, 30, 12, 90, 8),
+                (.working, 35, 10, 90, 8),
+                (.working, 35, 10, 90, 9)
             ]),
             ("cable_bar_pushdown", "triceps finisher", [
-                (.working, 50, 12, 60),
-                (.working, 55, 10, 60),
-                (.working, 60, 8, 60)
+                (.working, 50, 12, 60, 8),
+                (.working, 55, 10, 60, 9),
+                (.working, 60, 8, 60, 9)
             ])
         ]
 
@@ -105,7 +105,7 @@ class PreviewDataContainer {
             }
 
             for s in ex.sets {
-                let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest)
+                let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest, targetRPE: s.targetRPE)
                 prescription.sets?.append(setPrescription)
             }
 
@@ -119,6 +119,9 @@ class PreviewDataContainer {
         let session = WorkoutSession(title: "Chest Day", notes: "Testing sample", status: .done, startedAt: date(2026, 1, 5, 8, 15), endedAt: date(2026, 1, 5, 9, 5))
         context.insert(session)
 
+        session.preWorkoutContext?.feeling = .okay
+        session.preWorkoutContext?.tookPreWorkout = true
+        session.preWorkoutContext?.notes = "Slept fine, but appetite was low before training."
         session.postEffort = 7
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])] = [
@@ -171,38 +174,49 @@ class PreviewDataContainer {
     // MARK: - Incomplete Session
 
     private func loadIncompleteSession() {
-        let session = WorkoutSession(title: "Sample Workout")
-        context.insert(session)
+        let plan = WorkoutPlan(title: "Sample Workout Template")
+        context.insert(plan)
 
-        let exercises: [(id: String, notes: String)] = [
-            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8"),
-            ("dumbbell_incline_bench_press", ""),
-            ("cable_bench_chest_fly", "slow eccentric"),
-            ("barbell_bent_over_row", "Back focus")
-        ]
-
-        let sampleReps = [12, 10, 8]
-        let sampleWeights: [String: [Double]] = [
-            "barbell_bench_press": [45, 135, 165],
-            "dumbbell_incline_bench_press": [25, 60, 65],
-            "cable_bench_chest_fly": [20, 35, 40],
-            "barbell_bent_over_row": [45, 95, 115]
+        let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int, targetRPE: Int)])] = [
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
+                (.warmup, 45, 12, 60, 0),
+                (.working, 0, 10, 90, 7),
+                (.working, 165, 8, 90, 10)
+            ]),
+            ("dumbbell_incline_bench_press", "", [
+                (.warmup, 25, 12, 60, 0),
+                (.working, 60, 10, 90, 8),
+                (.working, 65, 8, 90, 9)
+            ]),
+            ("cable_bench_chest_fly", "slow eccentric", [
+                (.warmup, 20, 12, 60, 0),
+                (.working, 35, 10, 90, 8),
+                (.working, 40, 8, 90, 9)
+            ]),
+            ("barbell_bent_over_row", "Back focus", [
+                (.warmup, 45, 12, 60, 0),
+                (.working, 95, 10, 90, 8),
+                (.working, 115, 8, 90, 9)
+            ])
         ]
 
         for ex in exercises {
             let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
-            let performance = ExercisePerformance(exercise: exercise, workoutSession: session, notes: ex.notes)
-            clearSeededSets(from: performance)
+            let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+            clearSeededSets(from: prescription)
+            prescription.notes = ex.notes
 
-            let weights = sampleWeights[ex.id] ?? []
-            for index in 0..<3 {
-                let weight = index < weights.count ? weights[index] : 0
-                let setPerf = SetPerformance(exercise: performance, setType: index == 0 ? .warmup : .working, weight: weight, reps: sampleReps[index], restSeconds: index == 0 ? 60 : 90, index: index)
-                performance.sets?.append(setPerf)
+            for s in ex.sets {
+                let setPrescription = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest, targetRPE: s.targetRPE)
+                prescription.sets?.append(setPrescription)
             }
 
-            session.exercises?.append(performance)
+            plan.exercises?.append(prescription)
         }
+
+        let session = WorkoutSession(from: plan)
+        session.title = "Sample Workout"
+        context.insert(session)
     }
 
     // MARK: - Incomplete Plan
@@ -544,6 +558,9 @@ func sampleCompletedSession() -> WorkoutSession {
     }
 
     let fallback = WorkoutSession(title: "Chest Day", status: .done, endedAt: .now)
+    fallback.preWorkoutContext?.feeling = .okay
+    fallback.preWorkoutContext?.tookPreWorkout = true
+    fallback.preWorkoutContext?.notes = "Slept fine, but appetite was low before training."
     sampleContainer.context.insert(fallback)
     return fallback
 }
@@ -564,7 +581,7 @@ func sampleIncompleteSession() -> WorkoutSession {
 func sampleCompletedPlan() -> WorkoutPlan {
     let descriptor = FetchDescriptor(predicate: WorkoutPlan.completedPredicate)
     let plans = (try? sampleContainer.context.fetch(descriptor)) ?? []
-    if let plan = plans.first {
+    if let plan = plans.first(where: { $0.title == "Push Day" }) ?? plans.first {
         return plan
     }
 

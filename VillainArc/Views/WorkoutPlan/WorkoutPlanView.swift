@@ -460,6 +460,7 @@ private struct WorkoutPlanSetRowView: View {
     @Environment(\.modelContext) private var context
     @Bindable var set: SetPrescription
     @Bindable var exercise: ExercisePrescription
+    @State private var showTargetRPEPicker = false
     @FocusState private var focusedField: Field?
 
     var body: some View {
@@ -470,6 +471,9 @@ private struct WorkoutPlanSetRowView: View {
                     set.type = newValue
                     if newValue != oldValue {
                         Haptics.selection()
+                        if newValue == .warmup {
+                            set.targetRPE = 0
+                        }
                         saveContext(context: context)
                     }
                 })) {
@@ -479,6 +483,11 @@ private struct WorkoutPlanSetRowView: View {
                     }
                 }
                 Divider()
+                if set.type != .warmup {
+                    Button("Target RPE\(set.targetRPE > 0 ? " (\(set.targetRPE))" : "")", systemImage: "flag.fill") {
+                        showTargetRPEPicker = true
+                    }
+                }
                 if (exercise.sets?.count ?? 0) > 1 {
                     Button("Delete Set", systemImage: "trash", role: .destructive) {
                         deleteSet()
@@ -486,10 +495,7 @@ private struct WorkoutPlanSetRowView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetDeleteButton(exercise, set: set))
                 }
             } label: {
-                Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
-                    .foregroundStyle(set.type.tintColor)
-                    .frame(width: 40, height: 40)
-                    .glassEffect(.regular, in: .circle)
+                setIndicator
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetMenu(exercise, set: set))
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
@@ -518,6 +524,13 @@ private struct WorkoutPlanSetRowView: View {
         .onChange(of: set.targetWeight) {
             scheduleSave(context: context)
         }
+        .sheet(isPresented: $showTargetRPEPicker) {
+            RPEPickerView(rpe: $set.targetRPE)
+                .presentationDetents([.fraction(0.25)])
+                .onChange(of: set.targetRPE) {
+                    saveContext(context: context)
+                }
+        }
     }
 
     private func deleteSet() {
@@ -525,6 +538,19 @@ private struct WorkoutPlanSetRowView: View {
         exercise.deleteSet(set)
         context.delete(set)
         saveContext(context: context)
+    }
+
+    private var setIndicator: some View {
+        Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
+            .foregroundStyle(set.type.tintColor)
+            .frame(width: 40, height: 40)
+            .glassEffect(.regular, in: .circle)
+            .overlay(alignment: .bottomTrailing) {
+                if let visibleTargetRPE = set.visibleTargetRPE {
+                    RPEBadge(value: visibleTargetRPE, style: .target)
+                        .offset(x: visibleTargetRPE == 10 ? 1 : -2, y: -2)
+                }
+            }
     }
 }
 

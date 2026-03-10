@@ -4,6 +4,9 @@ func secondsToTime(_ seconds: Int) -> String {
     let clampedSeconds = max(0, seconds)
     let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
+    if minutes < 10 {
+        return String(format: "%d:%02d", minutes, remainingSeconds)
+    }
     return String(format: "%02d:%02d", minutes, remainingSeconds)
 }
 

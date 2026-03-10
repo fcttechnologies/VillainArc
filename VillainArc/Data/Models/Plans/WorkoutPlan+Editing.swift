@@ -140,6 +140,7 @@ extension WorkoutPlan {
             originalSet.targetWeight = copySet.targetWeight
             originalSet.targetReps = copySet.targetReps
             originalSet.targetRest = copySet.targetRest
+            originalSet.targetRPE = copySet.targetRPE
         }
 
         let setsToDelete = originalExercise.sets?.filter { copySets[$0.id] == nil } ?? []

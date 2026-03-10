@@ -92,6 +92,12 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
+    static func donateOpenExercise(exercise: Exercise) async {
+        let intent = OpenExerciseIntent()
+        intent.exercise = ExerciseEntity(exercise: exercise)
+        _ = try? await intent.donate()
+    }
+
     static func donateStartRestTimer(seconds: Int) async {
         guard seconds > 0 else { return }
         let intent = StartRestTimerIntent()

@@ -480,16 +480,23 @@ enum AccessibilityText {
     static func exerciseSetValue(for set: SetPerformance) -> String {
         let repsText = set.reps == 1 ? "1 rep" : "\(set.reps) reps"
         let weightText = set.weight.formatted(.number)
+        if let visibleRPE = set.visibleRPE {
+            return "\(repsText), \(weightText) pounds, RPE \(visibleRPE)"
+        }
         return "\(repsText), \(weightText) pounds"
     }
 
     static func exerciseSetValue(for set: SetPrescription) -> String {
         let hasReps = set.targetReps > 0
         let hasWeight = set.targetWeight > 0
-        guard hasReps || hasWeight else { return "No target set" }
+        let hasTargetRPE = set.visibleTargetRPE != nil
+        guard hasReps || hasWeight || hasTargetRPE else { return "No target set" }
 
         let repsText = hasReps ? (set.targetReps == 1 ? "1 rep" : "\(set.targetReps) reps") : "No reps target"
         let weightText = hasWeight ? "\(set.targetWeight.formatted(.number)) pounds" : "No weight target"
+        if let visibleTargetRPE = set.visibleTargetRPE {
+            return "\(repsText), \(weightText), target RPE \(visibleTargetRPE)"
+        }
         return "\(repsText), \(weightText)"
     }
 
@@ -498,7 +505,10 @@ enum AccessibilityText {
     }
 
     static func exerciseSetMenuValue(for set: SetPerformance) -> String {
-        set.type.displayName
+        if let visibleRPE = set.visibleRPE {
+            return "\(set.type.displayName), RPE \(visibleRPE)"
+        }
+        return set.type.displayName
     }
 
     static func exerciseSetMenuLabel(for set: SetPrescription) -> String {
@@ -506,7 +516,10 @@ enum AccessibilityText {
     }
 
     static func exerciseSetMenuValue(for set: SetPrescription) -> String {
-        set.type.displayName
+        if let visibleTargetRPE = set.visibleTargetRPE {
+            return "\(set.type.displayName), target RPE \(visibleTargetRPE)"
+        }
+        return set.type.displayName
     }
 
     static func exerciseSetCompletionLabel(isComplete: Bool) -> String {

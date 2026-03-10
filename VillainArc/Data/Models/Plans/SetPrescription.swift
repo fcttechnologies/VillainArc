@@ -9,23 +9,30 @@ final class SetPrescription {
     var targetWeight: Double = 0
     var targetReps: Int = 0
     var targetRest: Int = 0
+    var targetRPE: Int = 0
     var exercise: ExercisePrescription?
     var performances: [SetPerformance]? = [SetPerformance]()
     @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetSetPrescription)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
+
+    var visibleTargetRPE: Int? {
+        guard type != .warmup, targetRPE > 0 else { return nil }
+        return targetRPE
+    }
     
     // Adding set in workout plan creation
-    init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0) {
+    init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0) {
         index = exercisePrescription.sets?.count ?? 0
         exercise = exercisePrescription
         self.targetWeight = targetWeight
         self.targetReps = targetReps
         self.targetRest = targetRest
+        self.targetRPE = targetRPE
     }
 
     // Test/sample initializer to reduce setup boilerplate.
-    convenience init(exercisePrescription: ExercisePrescription, setType: ExerciseSetType, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, index: Int? = nil) {
-        self.init(exercisePrescription: exercisePrescription, targetWeight: targetWeight, targetReps: targetReps, targetRest: targetRest)
+    convenience init(exercisePrescription: ExercisePrescription, setType: ExerciseSetType, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0, index: Int? = nil) {
+        self.init(exercisePrescription: exercisePrescription, targetWeight: targetWeight, targetReps: targetReps, targetRest: targetRest, targetRPE: targetRPE)
         self.type = setType
         if let index {
             self.index = index
@@ -39,6 +46,7 @@ final class SetPrescription {
         targetWeight = setPerformance.weight
         targetReps = setPerformance.reps
         targetRest = setPerformance.restSeconds
+        targetRPE = setPerformance.type == .warmup ? 0 : setPerformance.rpe
         exercise = exercisePrescription
         setPerformance.prescription = self
     }
@@ -51,6 +59,7 @@ final class SetPrescription {
         targetWeight = original.targetWeight
         targetReps = original.targetReps
         targetRest = original.targetRest
+        targetRPE = original.targetRPE
         self.exercise = exercise
         // DO NOT copy changes - they remain on the original prescription
     }

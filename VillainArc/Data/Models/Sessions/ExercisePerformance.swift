@@ -138,6 +138,15 @@ extension ExercisePerformance {
         return maxWeight > 0 ? maxWeight : nil
     }
 
+    var bestReps: Int? {
+        let maxReps = sets?.map(\.reps).max() ?? 0
+        return maxReps > 0 ? maxReps : nil
+    }
+
+    var totalCompletedReps: Int {
+        sets?.reduce(0) { $0 + $1.reps } ?? 0
+    }
+
     var totalVolume: Double {
         sets?.reduce(0) { $0 + $1.volume } ?? 0
     }
@@ -148,6 +157,10 @@ extension ExercisePerformance {
 
     static func historicalBestWeight(in performances: [ExercisePerformance]) -> Double? {
         performances.compactMap(\.bestWeight).max()
+    }
+
+    static func historicalBestReps(in performances: [ExercisePerformance]) -> Int? {
+        performances.compactMap(\.bestReps).max()
     }
 
     static func historicalBestVolume(in performances: [ExercisePerformance]) -> Double? {

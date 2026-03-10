@@ -66,7 +66,7 @@ final class ExercisePrescription {
 
     func addSet() {
         if let previous = sortedSets.last {
-            sets?.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest))
+            sets?.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest, targetRPE: previous.targetRPE))
         } else {
             sets?.append(SetPrescription(exercisePrescription: self, targetRest: RestTimeDefaults.restSeconds))
         }

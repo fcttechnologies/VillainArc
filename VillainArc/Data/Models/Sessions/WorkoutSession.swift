@@ -17,8 +17,8 @@ final class WorkoutSession {
         get { SessionStatus(rawValue: status) ?? .active }
         set { status = newValue.rawValue }
     }
-    @Relationship(deleteRule: .cascade, inverse: \PreWorkoutStatus.workoutSession)
-    var preStatus: PreWorkoutStatus? = PreWorkoutStatus()
+    @Relationship(deleteRule: .cascade, inverse: \PreWorkoutContext.workoutSession)
+    var preWorkoutContext: PreWorkoutContext? = PreWorkoutContext()
     var postEffort: Int = 0
     @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.workoutSessions)
     var workoutPlan: WorkoutPlan?

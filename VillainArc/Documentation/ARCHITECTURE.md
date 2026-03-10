@@ -39,10 +39,10 @@
   - Canonical exercise identity/search + derived longitudinal performance cache
 - `UserProfile`
   - User account data (name, birthday, height) collected during onboarding
-- `RepRangePolicy` / `RestTimeHistory` / `PreWorkoutStatus`
+- `RepRangePolicy` / `RestTimeHistory` / `PreWorkoutContext`
   - Reusable policy and session-adjacent models shared by workout and plan flows
 - `OnboardingManager`
-  - First-run state machine (network/iCloud/CloudKit checks → sync → seed → profile collection)
+  - First-run state machine (network/iCloud/CloudKit checks → sync → seed → Spotlight rebuild → profile collection)
 - `SetupGuard`
   - Onboarding gate view that blocks app content until setup completes
 - `DataManager` (`saveContext` / `scheduleSave`)
@@ -50,6 +50,7 @@
   - Provides shared save helpers used by router/views/models
 - `SpotlightIndexer`
   - Indexes/deletes workout sessions, workout plans, and exercises in Spotlight
+  - Exercise items use shared system alternate names plus the exercise subtitle for richer Spotlight matches
   - Prefix constants are consumed by `AppRouter.handleSpotlight`
 - `IntentDonations`
   - Central donation adapter from UI/workflow events to App Intents
@@ -98,7 +99,7 @@
   - Active workout logging screen with exercise pager/list, add exercise, rest timer, and finish/cancel flows
 - `ExerciseView`
   - Per-exercise logging page with set grid, rep/rest editors, replace flow, and notes
-- `PreWorkoutStatusView`
+- `PreWorkoutContextView`
   - Pre-workout check-in sheet for energy/mood/notes
 - `RestTimerView`
   - Rest-timer sheet with countdown controls, recents, and next-set quick complete action
@@ -221,9 +222,9 @@
 - Calls: app-group `UserDefaults` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
 
 ### `VillainArc/Data/Services/OnboardingManager.swift`
-- Does: First-run state machine orchestrating network/iCloud/CloudKit checks, data sync, exercise catalog seeding, and user profile collection.
+- Does: First-run state machine orchestrating network/iCloud/CloudKit checks, data sync, exercise catalog seeding, fresh-install Spotlight rebuild, and user profile collection.
 - Called by: `ContentView` (via `onboardingManager.startOnboarding()`).
-- Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `UserProfile` queries, `saveContext`.
+- Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `SpotlightIndexer.reindexAll`, `UserProfile` queries, `saveContext`.
 
 ### `VillainArc/Data/Services/SetupGuard.swift`
 - Does: View modifier / gate that blocks app content behind onboarding until setup completes.
@@ -276,7 +277,7 @@
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `AIOutcomeGroupInput` prompts, `AIOutcomeInferenceOutput` validation.
 
 ### `VillainArc/Data/Services/SpotlightIndexer.swift`
-- Does: Central Spotlight indexing/deindexing for `WorkoutSession`, `WorkoutPlan`, and `Exercise`; defines reusable identifier prefixes. Exercise eligibility is driven by `ExerciseHistory` presence during history updates and full Spotlight rebuilds.
+- Does: Central Spotlight indexing/deindexing for `WorkoutSession`, `WorkoutPlan`, and `Exercise`; defines reusable identifier prefixes. Exercise eligibility is driven by `ExerciseHistory` presence during history updates and full Spotlight rebuilds, and exercise Spotlight metadata uses shared system alternate names plus the exercise subtitle.
 - Called by: workout/plan views for index/delete actions, `ExerciseHistoryUpdater`, `AppRouter` (Spotlight identifier parsing), and related intent/editing flows.
 - Calls: `CSSearchableItemAttributeSet`, `CSSearchableItem`, `CSSearchableIndex.default().indexSearchableItems`, `CSSearchableIndex.default().deleteSearchableItems`, `associateAppEntity(...)` using `WorkoutSessionEntity`, `WorkoutPlanEntity`, `ExerciseEntity`.
 
@@ -291,14 +292,19 @@
 - Calls: `AppRouter.navigate(to: .workoutSessionDetail(...))`, `IntentDonations.donateOpenWorkout`, `AccessibilityText.workoutRowLabel/workoutRowValue/workoutRowHint`.
 
 ### `VillainArc/Views/Components/ExerciseSetRowView.swift`
-- Does: Editable set row used during active workout logging (set type, reps/weight fields, reference apply, complete/uncomplete, optional RPE).
+- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge/picker). When a workout comes from a plan, target RPE is shown only in the target/reference column so it stays distinct from logged RPE.
 - Called by: `ExerciseView`, SwiftUI preview via `ExerciseView`.
-- Calls: `RPEPickerView`, `RestTimerState.shared`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
+- Calls: `RPEPickerView`, `RPEBadge`, `RestTimerState.shared`, `RestTimeHistory.record`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
 
 ### `VillainArc/Views/Components/RPEPickerView.swift`
 - Does: Compact sheet picker for selecting/clearing RPE values and showing effort descriptions.
 - Called by: `ExerciseSetRowView`, SwiftUI preview.
 - Calls: `Haptics.selection`, `dismiss` environment action.
+
+### `VillainArc/Views/Components/RPEBadge.swift`
+- Does: Shared compact RPE badge for actual set RPE and plan target RPE display.
+- Called by: `ExerciseSetRowView`, `WorkoutDetailView`, `WorkoutPlanDetailView`, `WorkoutPlanView`.
+- Calls: None (display helper only).
 
 ### `VillainArc/Views/Onboarding/OnboardingView.swift`
 - Does: Half-sheet onboarding UI progressing through system checks, data sync, and profile collection (name/birthday/height).
@@ -333,7 +339,7 @@
 ### `VillainArc/Views/Components/ExerciseSummaryRow.swift`
 - Does: Shared exercise summary card row showing name, equipment, and display muscle for navigation surfaces.
 - Called by: `RecentExercisesSectionView`, `ExercisesListView`.
-- Calls: `AppRouter.navigate(to: .exerciseDetail(...))`.
+- Calls: `AppRouter.navigate(to: .exerciseDetail(...))`, `IntentDonations.donateOpenExercise`.
 
 ### `VillainArc/Views/History/WorkoutsListView.swift`
 - Does: List of completed workouts with edit mode, per-item delete, and delete-all workflow.
@@ -346,7 +352,7 @@
 - Calls: `@Query(Exercise.all)`, `ExerciseSummaryRow`.
 
 ### `VillainArc/Views/Exercise/ExerciseDetailView.swift`
-- Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with shared summary stat tiles plus a picker-driven progression chart and a footer button to open full history.
+- Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, rep-aware progression charts, and a footer button to open full history.
 - Called by: `ContentView` navigation destination for `.exerciseDetail`, SwiftUI previews; intended for reuse from workout, plan, and active-session exercise surfaces.
 - Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `SummaryStatCard`, `Charts` line/point marks, chart scaling helpers, `AppRouter.navigate(to: .exerciseHistory(...))`, cached history metrics.
 
@@ -356,9 +362,9 @@
 - Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExercisePerformance.matching(...))`, `formattedDateRange`, `secondsToTime`.
 
 ### `VillainArc/Views/Workout/WorkoutDetailView.swift`
-- Does: Detailed readout for one completed workout (notes, exercises, sets) with actions to delete the workout, save as plan when no linked plan exists, and open linked plan when present.
+- Does: Detailed readout for one completed workout (notes, exercises, sets, rest, actual RPE badges, pre-workout context toolbar status, post-workout effort ring) with actions to delete the workout, save as plan when no linked plan exists, and open linked plan when present.
 - Called by: `ContentView` navigation destination for `.workoutSessionDetail`, SwiftUI preview.
-- Calls: `formattedDateRange`, `WorkoutPlanView` (fullScreenCover), `AppRouter.popToRoot`, `AppRouter.navigate(to: .workoutPlanDetail(...))`, `IntentDonations.donateOpenWorkoutPlan`, `IntentDonations.donateDeleteWorkout`, `userActivity` with `WorkoutSessionEntity`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutSession`, `ModelContext.delete/insert`, `ExerciseHistoryUpdater.updateHistory`, `saveContext`.
+- Calls: `formattedDateRange`, `WorkoutPlanView` (fullScreenCover), `RPEBadge`, `workoutEffortDescription`, `AppRouter.popToRoot`, `AppRouter.navigate(to: .workoutPlanDetail(...))`, `IntentDonations.donateOpenWorkoutPlan`, `IntentDonations.donateDeleteWorkout`, `userActivity` with `WorkoutSessionEntity`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutSession`, `ModelContext.delete/insert`, `ExerciseHistoryUpdater.updateHistory`, `saveContext`.
 
 ### `VillainArc/Views/Workout/WorkoutSessionContainer.swift`
 - Does: Status-driven workout flow container that switches between suggestion review, active logging, and summary stages.
@@ -368,14 +374,14 @@
 ### `VillainArc/Views/Workout/WorkoutView.swift`
 - Does: Primary active-workout screen (exercise pager/list, add exercise, timer access, title/notes/pre-checkin sheets, finish/cancel actions).
 - Called by: `WorkoutSessionContainer`, SwiftUI previews.
-- Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutStatusView`, `TextEntryEditorView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
+- Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/ExerciseView.swift`
-- Does: Per-exercise workout page with set logging grid, notes, rep/rest editors, replace action, and set reference handling.
+- Does: Per-exercise workout page with set logging grid, notes, rep/rest editors, replace action, and set reference handling. Plan-based sessions prefer target references, including target RPE badges when present.
 - Called by: `WorkoutView`, SwiftUI preview.
 - Calls: `ExerciseSetRowView`, `RepRangeEditorView`, `RestTimeEditorView`, `ReplaceExerciseView`, `ExerciseHistoryView` (sheet), `WorkoutActivityManager.update`, `IntentDonations.donateReplaceExercise`, `saveContext`, `scheduleSave`, `Haptics.selection`, `secondsToTime`.
 
-### `VillainArc/Views/Workout/PreWorkoutStatusView.swift`
+### `VillainArc/Views/Workout/PreWorkoutContextView.swift`
 - Does: Sheet for recording pre-workout status (mood, pre-workout drink toggle, optional notes).
 - Called by: `WorkoutView`, SwiftUI preview.
 - Calls: `Haptics.selection`, `dismissKeyboard`, `saveContext`, `scheduleSave`, `dismiss` environment action.
@@ -386,7 +392,7 @@
 - Calls: `TimerDurationPicker`, `RestTimerState.shared` (`start/pause/resume/stop/adjust`), `RestTimeHistory.record`, `WorkoutSession.activeExerciseAndSet`, `WorkoutActivityManager.update`, `IntentDonations` rest-timer actions, `saveContext`, `secondsToTime`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/WorkoutSummaryView.swift`
-- Does: Post-workout summary and finalization screen (stats, PR detection, effort rating, notes/title edits, suggestion review, save as plan).
+- Does: Post-workout summary and finalization screen (stats, weight/volume/rep PR detection, effort rating, notes/title edits, suggestion review, save as plan).
 - Called by: `WorkoutSessionContainer`, SwiftUI previews.
 - Calls: `formattedDateRange`, `TextEntryEditorView`, `SuggestionReviewView`, `OutcomeResolver.resolveOutcomes`, `SuggestionGenerator.generateSuggestions`, `groupSuggestions`, `acceptGroup/rejectGroup/deferGroup`, `ExerciseHistoryUpdater.batchFetchHistories/updateHistoriesForCompletedWorkout`, `SpotlightIndexer.index(workoutPlan:)`, `IntentDonations.donateSaveWorkoutAsPlan`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
@@ -451,14 +457,14 @@
 - Calls: `@Query(WorkoutPlan.all)`, `WorkoutPlanRowView`, `Haptics.selection`, `saveContext`, `SpotlightIndexer.deleteWorkoutPlans`, `ModelContext.delete`, `IntentDonations.donateToggleWorkoutPlanFavorite`, `IntentDonations.donateDeleteWorkoutPlan`, `IntentDonations.donateDeleteAllWorkoutPlans`.
 
 ### `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-- Does: Detailed view for a single workout plan with actions to select/start/edit/delete and favorite the plan.
+- Does: Detailed view for a single workout plan with actions to select/start/edit/delete and favorite the plan. Set rows show target reps/weight/rest plus optional target RPE badges.
 - Called by: `ContentView` navigation destination for `.workoutPlanDetail`, `WorkoutPlanPickerView`, SwiftUI preview.
 - Calls: `WorkoutPlan.musclesTargeted()`, `plan.createEditingCopy(context:)`, `WorkoutPlanView` (fullScreenCover), `@Query` over `WorkoutSplit`, `AppRouter.startWorkoutSession(from:)`, `IntentDonations.donateStartWorkoutWithPlan`, `IntentDonations.donateStartTodaysWorkout` (when the started plan matches active split's current day), `IntentDonations.donateToggleWorkoutPlanFavorite`, `IntentDonations.donateDeleteWorkoutPlan`, `userActivity` with `WorkoutPlanEntity`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutPlan`, `ModelContext.delete`, `saveContext`.
 
 ### `VillainArc/Views/WorkoutPlan/WorkoutPlanView.swift`
-- Does: Full-screen editor for creating or editing a workout plan, including exercise list editing, set editing, notes/title editing, and save/cancel logic.
+- Does: Full-screen editor for creating or editing a workout plan, including exercise list editing, set editing, optional target RPE per non-warmup set, notes/title editing, and save/cancel logic.
 - Called by: `ContentView` (`activeWorkoutPlan` fullScreenCover), `WorkoutPlanDetailView` (editing copy flow), `WorkoutPlanPickerView` (new plan flow), `WorkoutDetailView` (save workout as plan), SwiftUI preview.
-- Calls: `AddExerciseView`, `TextEntryEditorView`, `WorkoutPlan.finishEditing`, `WorkoutPlan.cancelEditing`, `WorkoutPlan.deletePlanEntirely`, `WorkoutPlan.deleteExercise`, `WorkoutPlan.moveExercise`, `ExerciseHistoryView` (via `WorkoutPlanExerciseView` sheet), `SpotlightIndexer.index(workoutPlan:)`, `saveContext`, `scheduleSave`, `dismissKeyboard`, nested editors (`RepRangeEditorView`, `RestTimeEditorView`), `WorkoutPlanEntity` via `userActivity`.
+- Calls: `AddExerciseView`, `TextEntryEditorView`, `WorkoutPlan.finishEditing`, `WorkoutPlan.cancelEditing`, `WorkoutPlan.deletePlanEntirely`, `WorkoutPlan.deleteExercise`, `WorkoutPlan.moveExercise`, `ExerciseHistoryView` (via `WorkoutPlanExerciseView` sheet), `RPEPickerView`, `RPEBadge`, `SpotlightIndexer.index(workoutPlan:)`, `saveContext`, `scheduleSave`, `dismissKeyboard`, nested editors (`RepRangeEditorView`, `RestTimeEditorView`), `WorkoutPlanEntity` via `userActivity`.
 
 ### `VillainArc/Views/WorkoutPlan/WorkoutPlanPickerView.swift`
 - Does: Plan selection screen for assigning/clearing a selected plan, with ability to create a new plan inline.
@@ -525,7 +531,7 @@
 ### Intent Inventory
 - App Intents (Workout): `StartWorkoutIntent`, `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `LastWorkoutSummaryIntent`, `FinishWorkoutIntent`, `CompleteActiveSetIntent`, `CancelWorkoutIntent`, `ViewLastWorkoutIntent`, `ShowWorkoutHistoryIntent`, `OpenWorkoutIntent`, `SaveWorkoutAsPlanIntent`, `DeleteWorkoutIntent`, `DeleteAllWorkoutsIntent`.
 - App Intents (Workout Plan): `CreateWorkoutPlanIntent`, `StartWorkoutWithPlanIntent`, `OpenWorkoutPlanIntent`, `ShowWorkoutPlansIntent`, `DeleteWorkoutPlanIntent`, `DeleteAllWorkoutPlansIntent`, `ToggleWorkoutPlanFavoriteIntent`.
-- App Intents (Exercise): `AddExerciseIntent`, `AddExercisesIntent`, `ReplaceExerciseIntent`, `ToggleExerciseFavoriteIntent`.
+- App Intents (Exercise): `AddExerciseIntent`, `AddExercisesIntent`, `OpenExerciseIntent`, `ReplaceExerciseIntent`, `ToggleExerciseFavoriteIntent`.
 - App Intents (Rest Timer): `StartRestTimerIntent`, `PauseRestTimerIntent`, `ResumeRestTimerIntent`, `StopRestTimerIntent`, `RestTimerControlIntent`.
 - App Intent (App shell): `OpenAppIntent`.
 - Live Activity Intents: `LiveActivityAddExerciseIntent`, `LiveActivityCompleteSetIntent`, `LiveActivityPauseRestTimerIntent`, `LiveActivityResumeRestTimerIntent`.
@@ -534,6 +540,7 @@
 
 ### Shortcut Registration
 - `VillainArc/Intents/VillainArcShortcuts.swift` currently registers: `StartWorkoutIntent`, `StartWorkoutWithPlanIntent`, `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `LastWorkoutSummaryIntent`, `FinishWorkoutIntent`, `CompleteActiveSetIntent`, `AddExerciseIntent`, `StartRestTimerIntent`, `StopRestTimerIntent`.
+- `OpenExerciseIntent` exists and is donated, but its explicit `AppShortcut` block is currently commented out to stay within the 10-shortcut cap.
 
 ### Donation Map (`IntentDonations`)
 - `StartWorkoutIntent`: donated via `donateStartWorkout`; called from `VillainArc/Views/ContentView.swift`.
@@ -555,6 +562,7 @@
 - `StartWorkoutWithPlanIntent`: donated via `donateStartWorkoutWithPlan`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Intents/Workout/StartTodaysWorkoutIntent.swift`.
 - `AddExerciseIntent`: donated via `donateAddExercise`; called from `VillainArc/Views/Workout/AddExerciseView.swift`.
 - `AddExercisesIntent`: donated via `donateAddExercises`; called from `VillainArc/Views/Workout/AddExerciseView.swift`.
+- `OpenExerciseIntent`: donated via `donateOpenExercise`; called from `VillainArc/Views/Components/ExerciseSummaryRow.swift`.
 - `ReplaceExerciseIntent`: donated via `donateReplaceExercise`; called from `VillainArc/Views/Workout/ExerciseView.swift`.
 - `ToggleExerciseFavoriteIntent`: donated via `donateToggleExerciseFavorite`; called from `VillainArc/Views/Workout/FilteredExerciseListView.swift`.
 - `StartRestTimerIntent`: donated via `donateStartRestTimer`; called from `VillainArc/Views/Workout/RestTimerView.swift`, `VillainArc/Views/Components/ExerciseSetRowView.swift`, `VillainArc/Intents/Workout/CompleteActiveSetIntent.swift`.
@@ -575,7 +583,7 @@
 
 ### Model Relationship Map
 - `Exercise` is the canonical exercise catalog record used to create `ExercisePerformance` and `ExercisePrescription` rows.
-- `WorkoutSession` owns one `PreWorkoutStatus` and many `ExercisePerformance` rows.
+- `WorkoutSession` owns one `PreWorkoutContext` and many `ExercisePerformance` rows.
 - `ExercisePerformance` owns many `SetPerformance` rows, and can point back to its originating `ExercisePrescription`.
 - `SetPerformance` can point back to its originating `SetPrescription`.
 - `WorkoutPlan` owns many `ExercisePrescription` rows.
@@ -585,14 +593,14 @@
 - `PrescriptionChange` links source evidence (`sessionFrom`/`sourceExercisePerformance`/`sourceSetPerformance`) to targets (`targetPlan`/`targetExercisePrescription`/`targetSetPrescription`) and lifecycle state (`decision`, `outcome`).
 - `ExerciseHistory` stores aggregate stats per `catalogID` and owns `ProgressionPoint` rows.
 - `RestTimeHistory` stores reusable recent rest durations.
-- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutStatus`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`.
+- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`.
 
 ### Data Model File Index
 
 ### `VillainArc/Data/Models/Exercise/Exercise.swift`
-- Does: Persisted exercise catalog row (name/muscles/equipment/favorite/last-used) plus normalized search metadata.
+- Does: Persisted exercise catalog row (name/muscles/equipment/favorite/last-used) plus normalized search metadata, shared exercise subtitle formatting, and system alternate names for Spotlight/App Intents.
 - Called by: `DataManager` seeding/dedupe, exercise picker/add/replace flows, session/plan model constructors.
-- Calls: Search-token helpers (`exerciseSearchTokens`), fetch descriptors (`all`, `catalogExercises`).
+- Calls: Search-token helpers (`exerciseSearchTokens`, `normalizedTokens`), fetch descriptors (`all`, `catalogExercises`).
 
 ### `VillainArc/Data/Models/Exercise/ExerciseCatalog.swift`
 - Does: Static built-in exercise dataset (`all`) + lookup map (`byID`) + seed version (`catalogVersion`).
@@ -610,18 +618,20 @@
 - Calls: None (constants only).
 
 ### `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
-- Does: Derived per-exercise analytics cache (PRs, latest estimated 1RM, cumulative totals, completed-set counts, recents, trends, progression points).
+- Does: Derived per-exercise analytics cache (PRs, latest estimated 1RM, total sets/reps, cumulative volume, and progression points with reps).
 - Called by: `ExerciseHistoryUpdater`, `WorkoutSummaryView` (history/PR display), schema registration.
 - Calls: `ExercisePerformance` metric helpers, internal recalculation helpers, `forCatalogID` descriptor.
 
 ### `VillainArc/Data/Models/Exercise/ProgressionPoint.swift`
-- Does: One timeseries point (date/weight/volume/estimated 1RM) for `ExerciseHistory` charts.
+- Does: One timeseries point (date/weight/total reps/volume/estimated 1RM) for `ExerciseHistory` charts.
+- Called by: `ExerciseHistory.recalculate`, schema registration.
+- Calls: None.
 - Called by: `ExerciseHistory.recalculate`, schema registration.
 - Calls: None.
 
-### `VillainArc/Data/Models/Sessions/PreWorkoutStatus.swift`
+### `VillainArc/Data/Models/Sessions/PreWorkoutContext.swift`
 - Does: Session pre-checkin state (mood, pre-workout toggle, notes).
-- Called by: `WorkoutSession.preStatus`, `PreWorkoutStatusView`, schema registration.
+- Called by: `WorkoutSession.preWorkoutContext`, `PreWorkoutContextView`, schema registration.
 - Calls: None.
 
 ### `VillainArc/Data/Models/Sessions/WorkoutSession.swift`
@@ -630,12 +640,12 @@
 - Calls: `ExercisePerformance` constructors, session fetch descriptors, finish/prune helpers.
 
 ### `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
-- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set and stamps new performances with the parent workout's `startedAt`.
+- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
 - Called by: `WorkoutView`, `ExerciseView`, suggestion engines, history updater, `SampleData`.
 - Calls: `SetPerformance` constructors, rest helper (`effectiveRestSeconds`), descriptors (`lastCompleted`, `matching`, `completedAll`).
 
 ### `VillainArc/Data/Models/Sessions/SetPerformance.swift`
-- Does: Per-set logged data (type, weight, reps, rest, completion metadata).
+- Does: Per-set logged data (type, weight, reps, rest, actual RPE, completion metadata). Does not inherit target RPE from plan prescriptions when plan-based workouts start.
 - Called by: `ExerciseSetRowView`, `ExerciseView`, suggestion engines/outcome rules, `SampleData`.
 - Calls: Computed helpers (`effectiveRestSeconds`, `estimated1RM`, `volume`).
 
@@ -665,7 +675,7 @@
 - Calls: `SetPrescription` constructors/copy helpers, policy copy constructors.
 
 ### `VillainArc/Data/Models/Plans/SetPrescription.swift`
-- Does: Per-set target prescription (type/target weight/reps/rest) with change links.
+- Does: Per-set target prescription (type/target weight/reps/rest/target RPE) with change links. Target RPE is hidden for warmup sets and is copied from logged RPE when creating a plan from a finished workout.
 - Called by: `ExercisePrescription`, plan editors, suggestion engines, performance conversion.
 - Calls: Constructors from `SetPerformance`, copy helpers, `RestTimeEditableSet` adapter.
 
@@ -710,9 +720,8 @@
 - `VillainArc/Data/Models/Enums/Exercise/ExerciseSetType.swift`: set taxonomy + display metadata used by set models, editors, and rule engines.
 - `VillainArc/Data/Models/Enums/Exercise/Muscle.swift`: normalized muscle taxonomy with major/minor semantics used across exercise, plan, and split models.
 - `VillainArc/Data/Models/Enums/Exercise/MuscleGroups.swift`: grouped muscle sets used by split/selection logic.
-- `VillainArc/Data/Models/Enums/Exercise/ProgressionTrend.swift`: history trend states used by `ExerciseHistory`.
 - `VillainArc/Data/Models/Enums/Exercise/RepRangeMode.swift`: rep-range mode enum used by `RepRangePolicy`.
-- `VillainArc/Data/Models/Enums/Sessions/MoodLevel.swift`: pre-workout mood enum used by `PreWorkoutStatus`.
+- `VillainArc/Data/Models/Enums/Sessions/MoodLevel.swift`: pre-workout mood enum used by `PreWorkoutContext`.
 - `VillainArc/Data/Models/Enums/Sessions/SessionOrigin.swift`: session source enum (`plan`/`freeform`) used by `WorkoutSession`.
 - `VillainArc/Data/Models/Enums/Sessions/SessionStatus.swift`: workout lifecycle enum (`pending`/`active`/`summary`/`done`) used by `WorkoutSession` and flow routing.
 - `VillainArc/Data/Models/Enums/Sessions/PlanCreator.swift`: creator origin enum (`user`/`ai`) for plan provenance.
@@ -747,7 +756,7 @@
 
 ### `VillainArc/Helpers/KeyboardDismiss.swift`
 - Does: UIKit bridge helper to dismiss current keyboard focus from SwiftUI flows.
-- Called by: `TextEntryEditorView`, `PreWorkoutStatusView`, `WorkoutPlanView`, and other text-entry screens.
+- Called by: `TextEntryEditorView`, `PreWorkoutContextView`, `WorkoutPlanView`, and other text-entry screens.
 - Calls: `UIApplication.shared.sendAction(...resignFirstResponder...)`.
 
 ### `VillainArc/Helpers/RestTimerNotifications.swift`
@@ -897,8 +906,13 @@
 - Called by: Siri/Shortcuts, donations (`donateAddExercises`).
 - Calls: Exercise resolution fetch, add/update/save helpers.
 
+### `VillainArc/Intents/Exercise/OpenExerciseIntent.swift`
+- Does: Opens the exercise detail/progress screen for a selected exercise after active-flow guards pass.
+- Called by: Siri/Shortcuts, donations (`donateOpenExercise`).
+- Calls: `Exercise` resolution fetch, `AppRouter.popToRoot`, `AppRouter.navigate(.exerciseDetail)`, `OpenAppIntent`.
+
 ### `VillainArc/Intents/Exercise/ExerciseEntity.swift`
-- Does: AppEntity + queries + fuzzy search support for exercise selection in intents.
+- Does: AppEntity + queries + fuzzy search support for exercise selection in intents, with shared system alternate names and boosted exact phrase scoring for disambiguation.
 - Called by: Exercise intents, `SpotlightIndexer.associateAppEntity`, donations.
 - Calls: `ExerciseSearch` + `TextNormalization` helpers, `SharedModelContainer` queries.
 
@@ -1025,6 +1039,16 @@
 - Does: Spotlight summary string formatting tests ensuring no "Optional()" leakage and correct set counts.
 - Called by: `VillainArcTests` target test runner.
 - Calls: `WorkoutSession` and `WorkoutPlan` summary properties.
+
+### `VillainArcTests/ExerciseEntitySearchTests.swift`
+- Does: Verifies system alternate-name generation for exercises and exact phrase preference in exercise entity search scoring.
+- Called by: `VillainArcTests` target test runner.
+- Calls: `Exercise.systemAlternateNames`, `exerciseEntitySearchScore`.
+
+### `VillainArcTests/ExerciseHistoryMetricsTests.swift`
+- Does: Verifies rep-based exercise history aggregates and progression points for bodyweight/no-load exercises.
+- Called by: `VillainArcTests` target test runner.
+- Calls: `ExerciseHistory.recalculate`, `ExercisePerformance.totalCompletedReps`, `ProgressionPoint.totalReps`.
 
 ### `VillainArcTests/TestSupport/TestDataFactory.swift`
 - Does: Shared test-only factory helpers for creating model contexts, plans, sessions, and performances.

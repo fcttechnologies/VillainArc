@@ -136,6 +136,19 @@ struct VillainArcShortcuts: AppShortcutsProvider {
 
     }
 }
+
+//AppShortcut(intent: OpenExerciseIntent(), phrases: [
+//        "Open \(\.$exercise) in \(.applicationName)",
+//        "Show \(\.$exercise) in \(.applicationName)",
+//        "View \(\.$exercise) in \(.applicationName)",
+//        "Show history for \(\.$exercise) in \(.applicationName)",
+//        "Open history for \(\.$exercise) in \(.applicationName)",
+//        "Show progress for \(\.$exercise) in \(.applicationName)",
+//        "Open progress for \(\.$exercise) in \(.applicationName)",
+//        "Show exercise details for \(\.$exercise) in \(.applicationName)",
+//        "View exercise history in \(.applicationName)",
+//        "Open an exercise in \(.applicationName)"
+//    ], shortTitle: "Open Exercise", systemImageName: "chart.line.uptrend.xyaxis")
 //        AppShortcut(
 //            intent: CreateWorkoutPlanIntent(),
 //            phrases: [

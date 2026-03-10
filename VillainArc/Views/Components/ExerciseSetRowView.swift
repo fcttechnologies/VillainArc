@@ -4,7 +4,12 @@ import SwiftData
 struct SetReferenceData {
     let reps: Int?
     let weight: Double?
+    let targetRPE: Int?
     let actionLabel: String
+
+    var hasActionableValues: Bool {
+        reps != nil || weight != nil
+    }
 
     var displayText: String {
         if let reps, reps > 0, (weight ?? 0) == 0 {
@@ -70,11 +75,7 @@ struct ExerciseSetRowView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetDeleteButton(exercise, set: set))
                 }
             } label: {
-                Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
-                    .foregroundStyle(set.type.tintColor)
-                    .frame(width: 40, height: 40)
-                    .glassEffect(.regular, in: .circle)
-                    .opacity(set.complete ? 0.4 : 1)
+                setIndicator
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetMenu(exercise, set: set))
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
@@ -98,27 +99,33 @@ struct ExerciseSetRowView: View {
 
             Text(referenceData?.displayText ?? "-")
                 .lineLimit(1)
-                .frame(maxWidth: fieldWidth)
-                .opacity(set.complete ? 0.4 : 1)
-                .contextMenu {
-                    if let referenceData {
-                        Button(referenceData.actionLabel) {
-                            Haptics.selection()
-                            if let reps = referenceData.reps {
-                                set.reps = reps
-                            }
-                            if let weight = referenceData.weight {
-                                set.weight = weight
-                            }
-                            saveContext(context: context)
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
+                .overlay(alignment: .bottomTrailing) {
+                    if let targetRPE = referenceData?.targetRPE {
+                        RPEBadge(value: targetRPE, style: .target)
+                            .offset(x: targetRPE == 10 ? 14 : 9, y: 4)
                     }
                 }
-                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
-                .accessibilityLabel(referenceData?.actionLabel ?? "Reference")
-                .accessibilityValue(referenceData?.displayText ?? "None")
-                .accessibilityHint(referenceData == nil ? "No reference data." : "Long-press for options.")
+            .frame(maxWidth: fieldWidth)
+            .opacity(set.complete ? 0.4 : 1)
+            .contextMenu {
+                if let referenceData, referenceData.hasActionableValues {
+                    Button(referenceData.actionLabel) {
+                        Haptics.selection()
+                        if let reps = referenceData.reps {
+                            set.reps = reps
+                        }
+                        if let weight = referenceData.weight {
+                            set.weight = weight
+                        }
+                        saveContext(context: context)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
+                }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
+            .accessibilityLabel(referenceData?.hasActionableValues == true ? (referenceData?.actionLabel ?? "Reference") : "Target")
+            .accessibilityValue(referenceValueText)
+            .accessibilityHint(referenceData?.hasActionableValues == true ? "Long-press for options." : "No quick-fill options.")
 
             if set.complete {
                 Button {
@@ -213,6 +220,28 @@ struct ExerciseSetRowView: View {
             saveContext(context: context)
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
         }
+    }
+
+    private var referenceValueText: String {
+        guard let referenceData else { return "None" }
+        if let targetRPE = referenceData.targetRPE {
+            return "\(referenceData.displayText), target RPE \(targetRPE)"
+        }
+        return referenceData.displayText
+    }
+
+    private var setIndicator: some View {
+        Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
+            .foregroundStyle(set.type.tintColor)
+            .frame(width: 40, height: 40)
+            .glassEffect(.regular, in: .circle)
+            .opacity(set.complete ? 0.4 : 1)
+            .overlay(alignment: .bottomTrailing) {
+                if let visibleRPE = set.visibleRPE {
+                    RPEBadge(value: visibleRPE)
+                        .offset(x: visibleRPE == 10 ? 1 : -2, y: -2)
+                }
+            }
     }
 
 }

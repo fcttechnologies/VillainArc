@@ -90,7 +90,7 @@ WorkoutPlan (blueprint)
 
 WorkoutSession (actual workout)
   ├─ owns → ExercisePerformance[] → SetPerformance[]
-  ├─ has one → PreWorkoutStatus
+  ├─ has one → PreWorkoutContext
   └─ links back to → WorkoutPlan (if plan-based)
 
 WorkoutSplit (schedule)
@@ -143,7 +143,7 @@ Use this to find where logic lives for any feature.
 | Resumable incomplete plan query | `Data/Models/Plans/WorkoutPlan.swift` → `resumableIncomplete` |
 | Plan model | `Data/Models/Plans/WorkoutPlan.swift` |
 | Exercise prescription | `Data/Models/Plans/ExercisePrescription.swift` |
-| Set prescription | `Data/Models/Plans/SetPrescription.swift` |
+| Set prescription (weight/reps/rest/target RPE) | `Data/Models/Plans/SetPrescription.swift` |
 
 ### Training Splits
 | What | Where |
@@ -213,7 +213,7 @@ Use this to find where logic lives for any feature.
 | Donation hub | `Intents/IntentDonations.swift` |
 | Workout intents | `Intents/Workout/*.swift` (13 files) |
 | Plan intents | `Intents/WorkoutPlan/*.swift` (8 files) |
-| Exercise intents | `Intents/Exercise/*.swift` (5 files) |
+| Exercise intents | `Intents/Exercise/*.swift` (6 files) |
 | Rest timer intents | `Intents/RestTimer/*.swift` (7 files) |
 | Legacy SiriKit | `VillainArcIntentsExtension/*.swift` |
 
@@ -373,19 +373,20 @@ Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift`
 | `SuggestionSource` | rules, ai, user | Where suggestion came from |
 | `Muscle` | 43 variants (10 major, 33 minor) | Muscle targeting |
 | `EquipmentType` | 18 variants | Equipment classification |
-| `ProgressionTrend` | improving, stable, declining, insufficient | Performance trajectory |
 | `PlanCreator` | user, ai | Plan origin |
 
 ---
 
 ## Test Coverage
 
-**42 tests across 5 files:**
+**45 tests across 7 files:**
 - Plan editing & suggestion lifecycle (18 tests)
 - Workout finish logic (11 tests)
 - Suggestion system / training style (8 tests)
 - Exercise replacement (3 tests)
 - Spotlight summaries (2 tests)
+- Exercise entity search / alternate names (2 tests)
+- Exercise history rep metrics (1 test)
 
 **Notable gaps:** No tests for RuleEngine individual rules, OutcomeRuleEngine evaluation, WorkoutSplit logic, RestTimerState, UI views, or onboarding flow.
 
@@ -422,7 +423,7 @@ VillainArc/
       ExerciseHistoryUpdater.swift  Analytics rebuild
       Suggestions/               Suggestion engine (8 files)
     Models/
-      Sessions/                  WorkoutSession, ExercisePerformance, SetPerformance, PreWorkoutStatus
+      Sessions/                  WorkoutSession, ExercisePerformance, SetPerformance, PreWorkoutContext
       Plans/                     WorkoutPlan, ExercisePrescription, SetPrescription, PrescriptionChange, SuggestionGrouping, WorkoutPlan+Editing
       Exercise/                  Exercise, ExerciseCatalog, ExerciseHistory, ProgressionPoint, RepRangePolicy, RestTimeDefaults
       WorkoutSplit/              WorkoutSplit, WorkoutSplitDay

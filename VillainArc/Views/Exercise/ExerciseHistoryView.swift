@@ -38,13 +38,6 @@ struct ExerciseHistoryView: View {
         exercises.first
     }
 
-    private var subtitle: String {
-        let majorMuscles = ListFormatter.localizedString(byJoining: (exercise?.musclesTargeted ?? []).filter(\.isMajor).map(\.rawValue))
-        let muscles = majorMuscles.isEmpty ? (exercise?.displayMuscle ?? "") : majorMuscles
-        let equipment = exercise?.equipmentType.rawValue ?? "Unknown Equipment"
-        return muscles.isEmpty ? equipment : "\(muscles) • \(equipment)"
-    }
-
     var body: some View {
         List {
             ForEach(performances) { performance in
@@ -65,17 +58,16 @@ struct ExerciseHistoryView: View {
 
                         ForEach(performance.sortedSets) { set in
                             GridRow {
-                                Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
-                                    .foregroundStyle(set.type.tintColor)
+                                setIndicator(for: set)
                                     .gridColumnAlignment(.leading)
                                 Spacer()
-                                Text(set.reps, format: .number)
+                                Text(set.reps > 0 ? "\(set.reps)" : "-")
                                     .gridColumnAlignment(.leading)
                                 Spacer()
-                                Text("\(set.weight, format: .number) lbs")
+                                Text(set.weight > 0 ? "\(set.weight, format: .number) lbs" : "-")
                                     .gridColumnAlignment(.leading)
                                 Spacer()
-                                Text(secondsToTime(set.effectiveRestSeconds))
+                                Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
                                     .gridColumnAlignment(.leading)
                             }
                             .font(.title3)
@@ -86,9 +78,11 @@ struct ExerciseHistoryView: View {
                     HStack(alignment: .bottom) {
                         Text(formattedDateRange(start: performance.date))
                         Spacer()
-                        Text(performance.repRange?.displayText ?? "Rep Range: Not Set")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                        if let repRange = performance.repRange, repRange.activeMode != .notSet {
+                            Text(repRange.displayText)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
                     }
                 } footer: {
                     if !performance.notes.isEmpty {
@@ -108,8 +102,19 @@ struct ExerciseHistoryView: View {
         }
         .accessibilityIdentifier("exerciseHistoryList")
         .navigationTitle(exercise?.name ?? "Exercise History")
-        .navigationSubtitle(Text(subtitle))
+        .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
+    }
+
+    private func setIndicator(for set: SetPerformance) -> some View {
+        Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
+            .foregroundStyle(set.type.tintColor)
+            .overlay(alignment: .bottomTrailing) {
+                if let visibleRPE = set.visibleRPE {
+                    RPEBadge(value: visibleRPE)
+                        .offset(x: 8, y: 5)
+                }
+            }
     }
 }
 

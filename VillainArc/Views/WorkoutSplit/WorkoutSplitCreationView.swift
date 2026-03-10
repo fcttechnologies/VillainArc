@@ -451,7 +451,7 @@ struct WorkoutSplitCreationView: View {
     }
 
     private var canSwapRotationDays: Bool {
-        (split.days?.count ?? 0) > 2
+        (split.days?.count ?? 0) > 1
     }
 
     private func startSwapMode() {

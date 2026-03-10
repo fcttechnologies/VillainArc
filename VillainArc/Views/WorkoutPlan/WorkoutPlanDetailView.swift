@@ -46,6 +46,8 @@ struct WorkoutPlanDetailView: View {
                             Text("Reps")
                             Spacer()
                             Text("Weight")
+                            Spacer()
+                            Text("Rest")
                         }
                         .font(.title3)
                         .bold()
@@ -53,14 +55,16 @@ struct WorkoutPlanDetailView: View {
 
                         ForEach(exercise.sortedSets) { set in
                             GridRow {
-                                Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
-                                    .foregroundStyle(set.type.tintColor)
+                                setIndicator(for: set)
                                     .gridColumnAlignment(.leading)
                                 Spacer()
                                 Text(set.targetReps > 0 ? "\(set.targetReps)" : "-")
                                     .gridColumnAlignment(.leading)
                                 Spacer()
                                 Text(set.targetWeight > 0 ? "\(set.targetWeight, format: .number) lbs" : "-")
+                                    .gridColumnAlignment(.leading)
+                                Spacer()
+                                Text(set.targetRest > 0 ? secondsToTime(set.targetRest) : "-")
                                     .gridColumnAlignment(.leading)
                             }
                             .font(.title3)
@@ -71,9 +75,15 @@ struct WorkoutPlanDetailView: View {
                         }
                     }
                 } header: {
-                    Text(exercise.name)
-                        .lineLimit(1)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(exercise.name)
+                            .lineLimit(1)
+                        if let repRange = exercise.repRange, repRange.activeMode != .notSet {
+                            Text(repRange.displayText)
+                                .font(.subheadline)
+                        }
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
                 } footer: {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
@@ -175,6 +185,17 @@ struct WorkoutPlanDetailView: View {
         saveContext(context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()
+    }
+
+    private func setIndicator(for set: SetPrescription) -> some View {
+        Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
+            .foregroundStyle(set.type.tintColor)
+            .overlay(alignment: .bottomTrailing) {
+                if let visibleTargetRPE = set.visibleTargetRPE {
+                    RPEBadge(value: visibleTargetRPE, style: .target)
+                        .offset(x: 8, y: 5)
+                }
+            }
     }
 }
 

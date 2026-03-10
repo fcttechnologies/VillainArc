@@ -38,7 +38,7 @@ struct WorkoutView: View {
                 Button("Workout Notes", systemImage: "note.text") {
                     showNotesEditorSheet = true
                 }
-                Button("Pre Workout Energy", systemImage: "bolt.fill") {
+                Button("Pre Workout Context", systemImage: "bolt.fill") {
                     showPreWorkoutSheet = true
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
@@ -104,11 +104,11 @@ struct WorkoutView: View {
                     }
             }
             .sheet(isPresented: $showPreWorkoutSheet) {
-                PreWorkoutStatusView(status: workout.preStatus ?? PreWorkoutStatus())
+                PreWorkoutContextView(preWorkoutContext: workout.preWorkoutContext ?? PreWorkoutContext())
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
-                        if workout.preStatus?.feeling == .notSet {
-                            workout.preStatus?.feeling = .okay
+                        if workout.preWorkoutContext?.feeling == .notSet {
+                            workout.preWorkoutContext?.feeling = .okay
                             saveContext(context: context)
                         }
                     }
@@ -145,7 +145,7 @@ struct WorkoutView: View {
                 activity.appEntityIdentifier = .init(for: entity)
             }
             .task {
-                if workout.preStatus?.feeling == .notSet {
+                if workout.preWorkoutContext?.feeling == .notSet {
                     showPreWorkoutSheet = true
                 }
             }

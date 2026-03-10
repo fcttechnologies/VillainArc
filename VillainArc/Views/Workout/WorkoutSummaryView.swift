@@ -5,6 +5,7 @@ struct WorkoutSummaryView: View {
     private enum PRType: String, CaseIterable {
         case estimated1RM = "1RM"
         case maxWeight = "Max Weight"
+        case maxReps = "Max Reps"
         case totalVolume = "Total Volume"
     }
 
@@ -91,10 +92,12 @@ struct WorkoutSummaryView: View {
                                 Text(workout.title)
                                     .font(.title)
                                     .bold()
+                                    .lineLimit(1)
                                 Image(systemName: "pencil")
                                     .font(.title2)
                                     .foregroundStyle(.secondary)
                             }
+                            .lineLimit(1)
                         }
                         .buttonStyle(.plain)
 
@@ -158,7 +161,7 @@ struct WorkoutSummaryView: View {
                                 }, onDeferGroup: { changes in
                                     guard !isSaving else { return }
                                     deferGroup(changes, context: context)
-                                }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: didSaveWorkoutAsPlan ? "This workout is now saved as a plan. Suggestions will appear here when we have enough evidence to make them." : "Suggestions will appear here when we have enough evidence to make them."))
+                                }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "Not enough data to create suggestions yet. Keep using this plan and we'll suggest changes once we have enough workout data."))
                             }
                         }
                     }
@@ -168,7 +171,7 @@ struct WorkoutSummaryView: View {
                     }
                 }
                 .fontDesign(.rounded)
-                .padding()
+                .padding(.horizontal)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -220,7 +223,7 @@ struct WorkoutSummaryView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Effort")
                 .font(.headline)
-            Text(effortDescription(workout.postEffort))
+            Text(workoutEffortDescription(workout.postEffort))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fontWeight(.semibold)
@@ -234,22 +237,14 @@ struct WorkoutSummaryView: View {
 
     @ViewBuilder
     private var planSaveSection: some View {
-        if didSaveWorkoutAsPlan, let workoutPlan = workout.workoutPlan {
+        if didSaveWorkoutAsPlan, workout.workoutPlan != nil {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title2)
                     .foregroundStyle(.green)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Saved as Workout Plan")
-                        .font(.headline)
-                    Text(workoutPlan.title)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(isGeneratingSuggestions ? "Generating suggestions for this plan now." : "Suggestions for this plan appear below when they are available.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("Saved as Workout Plan")
+                    .font(.headline)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -313,18 +308,6 @@ struct WorkoutSummaryView: View {
         .animation(.bouncy, value: isSelected)
     }
 
-    private func effortDescription(_ value: Int) -> String {
-        switch value {
-        case 1...2: "Very easy, minimal exertion."
-        case 3...4: "Light effort, could do much more."
-        case 5...6: "Moderate effort, comfortable pace."
-        case 7...8: "Hard effort, pushing your limits."
-        case 9: "Near maximal, barely completed."
-        case 10: "Absolute maximum effort."
-        default: "How hard was this workout?"
-        }
-    }
-
     private func prRow(_ entry: PRItem) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(entry.exerciseName)
@@ -383,6 +366,14 @@ struct WorkoutSummaryView: View {
             }
         }
 
+        if let currentReps = exercise.bestReps {
+            let historicalReps = history?.bestReps ?? 0
+            if historicalReps == 0 || currentReps > historicalReps {
+                types.append(.maxReps)
+                values[.maxReps] = Double(currentReps)
+            }
+        }
+
         let currentVolume = exercise.totalVolume
         if currentVolume > 0 {
             let historicalVolume = history?.bestVolume ?? 0
@@ -401,6 +392,8 @@ struct WorkoutSummaryView: View {
             return "New Estimated 1RM: \(formatWeight(value))"
         case .maxWeight:
             return "Max Weight: \(formatWeight(value))"
+        case .maxReps:
+            return "Max Reps: \(Int(value))"
         case .totalVolume:
             return "Total Volume: \(formatWeight(value, allowFraction: false))"
         }

@@ -33,7 +33,7 @@ struct ExerciseView: View {
         guard isPlanSession else { return false }
         return exercise.sortedSets.contains { set in
             guard let prescription = set.prescription else { return false }
-            return prescription.targetReps > 0 || prescription.targetWeight > 0
+            return prescription.targetReps > 0 || prescription.targetWeight > 0 || prescription.visibleTargetRPE != nil
         }
     }
 
@@ -41,14 +41,15 @@ struct ExerciseView: View {
         guard let prescription = set.prescription else { return nil }
         let reps = prescription.targetReps > 0 ? prescription.targetReps : nil
         let weight = prescription.targetWeight > 0 ? prescription.targetWeight : nil
-        guard reps != nil || weight != nil else { return nil }
-        return SetReferenceData(reps: reps, weight: weight, actionLabel: "Use Target")
+        let targetRPE = prescription.visibleTargetRPE
+        guard reps != nil || weight != nil || targetRPE != nil else { return nil }
+        return SetReferenceData(reps: reps, weight: weight, targetRPE: targetRPE, actionLabel: "Use Target")
     }
 
     private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
         guard set.index < previousSets.count else { return nil }
         let prevSet = previousSets[set.index]
-        return SetReferenceData(reps: prevSet.reps, weight: prevSet.weight, actionLabel: "Use Previous")
+        return SetReferenceData(reps: prevSet.reps, weight: prevSet.weight, targetRPE: nil, actionLabel: "Use Previous")
     }
 
     private func referenceData(for set: SetPerformance) -> SetReferenceData? {

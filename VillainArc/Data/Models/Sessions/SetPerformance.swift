@@ -17,6 +17,11 @@ final class SetPerformance {
     var prescription: SetPrescription?
     var sourceChanges: [PrescriptionChange]? = [PrescriptionChange]()
 
+    var visibleRPE: Int? {
+        guard type != .warmup, rpe > 0 else { return nil }
+        return rpe
+    }
+
     var effectiveRestSeconds: Int {
         exercise?.effectiveRestSeconds(after: self) ?? restSeconds
     }

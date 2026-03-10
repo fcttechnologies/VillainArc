@@ -13,7 +13,7 @@ enum SharedModelContainer {
 
     static let schema = Schema([
         WorkoutSession.self,
-        PreWorkoutStatus.self,
+        PreWorkoutContext.self,
         ExercisePerformance.self,
         SetPerformance.self,
         Exercise.self,

@@ -12,12 +12,45 @@ final class Exercise {
     var lastUsed: Date? = nil
     var favorite: Bool = false
     var isCustom: Bool = false
-    var searchIndex: String = ""
     var searchTokens: [String] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
 
     var displayMuscle: String {
         musclesTargeted.first?.rawValue ?? "Unknown Muscle"
+    }
+
+    var detailSubtitle: String {
+        let majorMuscles = ListFormatter.localizedString(byJoining: musclesTargeted.filter(\.isMajor).map(\.rawValue))
+        let muscles = majorMuscles.isEmpty ? displayMuscle : majorMuscles
+        let equipment = equipmentType.rawValue
+        return muscles.isEmpty ? equipment : "\(muscles) • \(equipment)"
+    }
+
+    var systemAlternateNames: [String] {
+        var alternateNames: [String] = []
+        var seen = Set<String>()
+        let normalizedName = normalizedSearchPhrase(name)
+
+        func add(_ candidate: String) {
+            let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalized = normalizedSearchPhrase(trimmed)
+            guard !trimmed.isEmpty, !normalized.isEmpty, normalized != normalizedName else { return }
+            guard seen.insert(normalized).inserted else { return }
+            alternateNames.append(trimmed)
+        }
+
+        for alias in aliases {
+            add(alias)
+        }
+
+        for prefix in equipmentType.systemAlternateNamePrefixes {
+            add("\(prefix) \(name)")
+            for alias in aliases {
+                add("\(prefix) \(alias)")
+            }
+        }
+
+        return alternateNames
     }
 
     @MainActor
@@ -42,12 +75,9 @@ final class Exercise {
     @discardableResult
     func rebuildSearchData() -> Bool {
         let tokens = exerciseSearchTokens(for: self)
-        let updatedIndex = tokens.joined(separator: " ")
-        if updatedIndex == searchIndex && tokens == searchTokens {
+        if tokens == searchTokens {
             return false
         }
-        
-        searchIndex = updatedIndex
         searchTokens = tokens
         return true
     }
@@ -84,6 +114,10 @@ final class Exercise {
         return didChange
     }
 
+}
+
+nonisolated func normalizedSearchPhrase(_ value: String) -> String {
+    normalizedTokens(for: value).joined(separator: " ")
 }
 
 extension Exercise {

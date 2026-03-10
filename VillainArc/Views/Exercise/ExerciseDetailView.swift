@@ -7,6 +7,7 @@ struct ExerciseDetailView: View {
         case estimatedOneRepMax = "Estimated 1RM"
         case topWeight = "Top Weight"
         case volume = "Volume"
+        case reps = "Reps"
 
         var id: String { rawValue }
 
@@ -18,10 +19,19 @@ struct ExerciseDetailView: View {
                 return .blue
             case .volume:
                 return .green
+            case .reps:
+                return .orange
             }
         }
 
-        var unit: String { "lbs" }
+        var unit: String {
+            switch self {
+            case .reps:
+                return "reps"
+            default:
+                return "lbs"
+            }
+        }
     }
 
     let catalogID: String
@@ -51,13 +61,6 @@ struct ExerciseDetailView: View {
         exercise?.name ?? "Exercise"
     }
 
-    private var subtitle: String {
-        let majorMuscles = ListFormatter.localizedString(byJoining: (exercise?.musclesTargeted ?? []).filter(\.isMajor).map(\.rawValue))
-        let muscles = majorMuscles.isEmpty ? (exercise?.displayMuscle ?? "") : majorMuscles
-        let equipment = exercise?.equipmentType.rawValue ?? "Unknown Equipment"
-        return muscles.isEmpty ? equipment : "\(muscles) • \(equipment)"
-    }
-
     private var latestEstimatedOneRepMax: Double? {
         guard let history, history.latestEstimated1RM > 0 else { return nil }
         return history.latestEstimated1RM
@@ -81,8 +84,17 @@ struct ExerciseDetailView: View {
         history?.totalCompletedSets ?? 0
     }
 
+    private var totalReps: Int {
+        history?.totalCompletedReps ?? 0
+    }
+
     private var totalVolume: Double {
         history?.cumulativeVolume ?? 0
+    }
+
+    private var bestReps: Int? {
+        guard let history, history.bestReps > 0 else { return nil }
+        return history.bestReps
     }
 
     private var statItems: [ExerciseStatItem] {
@@ -90,9 +102,20 @@ struct ExerciseDetailView: View {
 
         var items: [ExerciseStatItem] = [
             .init(title: "Times Done", value: "\(totalSessions)"),
-            .init(title: "Sets Done", value: "\(totalSets)"),
-            .init(title: "Total Volume", value: "\(totalVolume.formatted(.number.precision(.fractionLength(0)))) lbs")
+            .init(title: "Sets Done", value: "\(totalSets)")
         ]
+
+        if totalReps > 0 {
+            items.append(.init(title: "Total Reps", value: "\(totalReps)"))
+        }
+
+        if totalVolume > 0 {
+            items.append(.init(title: "Total Volume", value: "\(totalVolume.formatted(.number.precision(.fractionLength(0)))) lbs"))
+        }
+
+        if let bestReps {
+            items.append(.init(title: "Best Reps", value: "\(bestReps)"))
+        }
 
         if let latestEstimatedOneRepMax {
             items.append(.init(title: "Est. 1RM", value: "\(latestEstimatedOneRepMax.formatted(.number.precision(.fractionLength(0)))) lbs"))
@@ -123,14 +146,30 @@ struct ExerciseDetailView: View {
         guard let history else { return [] }
         return history.sortedProgressionPoints
             .reversed()
-            .map { ExerciseMetricPoint(date: $0.date, value: $0.weight) }
+            .compactMap { point in
+                guard point.weight > 0 else { return nil }
+                return ExerciseMetricPoint(date: point.date, value: point.weight)
+            }
     }
 
     private var volumePoints: [ExerciseMetricPoint] {
         guard let history else { return [] }
         return history.sortedProgressionPoints
             .reversed()
-            .map { ExerciseMetricPoint(date: $0.date, value: $0.volume) }
+            .compactMap { point in
+                guard point.volume > 0 else { return nil }
+                return ExerciseMetricPoint(date: point.date, value: point.volume)
+            }
+    }
+
+    private var repsPoints: [ExerciseMetricPoint] {
+        guard let history else { return [] }
+        return history.sortedProgressionPoints
+            .reversed()
+            .compactMap { point in
+                guard point.totalReps > 0 else { return nil }
+                return ExerciseMetricPoint(date: point.date, value: Double(point.totalReps))
+            }
     }
 
     private var availableMetrics: [ChartMetric] {
@@ -200,7 +239,7 @@ struct ExerciseDetailView: View {
         }
         .accessibilityIdentifier("exerciseDetailScrollView")
         .navigationTitle(displayName)
-        .navigationSubtitle(Text(subtitle))
+        .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
         .task(id: availableMetrics.map(\.rawValue).joined(separator: ",")) {
             if let firstMetric = availableMetrics.first, !availableMetrics.contains(selectedMetric) {
@@ -232,6 +271,8 @@ struct ExerciseDetailView: View {
             return topWeightPoints
         case .volume:
             return volumePoints
+        case .reps:
+            return repsPoints
         }
     }
 }

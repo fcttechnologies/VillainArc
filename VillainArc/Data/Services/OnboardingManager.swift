@@ -89,10 +89,8 @@ class OnboardingManager {
         // Step 5: Seed exercises
         state = .seeding
         do {
-            let didChange = try await DataManager.seedExercisesForOnboarding()
-            if didChange {
-                SpotlightIndexer.reindexAll(context: context)
-            }
+            _ = try await DataManager.seedExercisesForOnboarding()
+            SpotlightIndexer.reindexAll(context: context)
         } catch {
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
             return
@@ -118,10 +116,8 @@ class OnboardingManager {
 
         do {
             // Seed exercises locally only
-            let didChange = try await DataManager.seedExercisesForOnboarding()
-            if didChange {
-                SpotlightIndexer.reindexAll(context: context)
-            }
+            _ = try await DataManager.seedExercisesForOnboarding()
+            SpotlightIndexer.reindexAll(context: context)
             let profile = try ensureProfile()
             routeFromProfile(profile)
         } catch {
