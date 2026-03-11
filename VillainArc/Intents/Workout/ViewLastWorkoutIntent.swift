@@ -9,6 +9,7 @@ struct ViewLastWorkoutIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
+        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
         
         guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else {
             throw ViewLastWorkoutError.noWorkoutsFound

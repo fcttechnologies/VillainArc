@@ -1,0 +1,220 @@
+import AppIntents
+import CoreTransferable
+import Foundation
+import SwiftData
+import UniformTypeIdentifiers
+
+struct WorkoutSplitFullContent: Codable {
+    struct PlanReference: Codable, Hashable {
+        let id: UUID
+        let title: String
+        let summary: String
+    }
+
+    struct Day: Codable, Hashable {
+        let index: Int
+        let weekday: Int
+        let name: String?
+        let isRestDay: Bool
+        let targetMuscles: [String]
+        let workoutPlan: PlanReference?
+    }
+
+    let id: String
+    let title: String
+    let summary: String
+    let mode: String
+    let isActive: Bool
+    let weeklySplitOffset: Int
+    let rotationCurrentIndex: Int
+    let rotationLastUpdatedDate: Date?
+    let days: [Day]
+}
+
+struct WorkoutSplitEntity: AppEntity, IndexedEntity, Identifiable {
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Workout Split")
+    static let defaultQuery = WorkoutSplitEntityQuery()
+
+    let id: String
+    let title: String
+    let summary: String
+    let mode: String
+    let isActive: Bool
+    let dayNames: [String]
+    let fullContent: WorkoutSplitFullContent
+
+    var displayRepresentation: DisplayRepresentation {
+        if summary.isEmpty {
+            return DisplayRepresentation(title: "\(title)")
+        }
+        return DisplayRepresentation(title: "\(title)", subtitle: "\(summary)")
+    }
+}
+
+@MainActor
+extension WorkoutSplitEntity {
+    init(workoutSplit: WorkoutSplit) {
+        let splitID = workoutSplitEntityID(for: workoutSplit)
+        let displayTitle = workoutSplitDisplayTitle(for: workoutSplit)
+        let days = workoutSplit.sortedDays.map(makeDayContent)
+        let summary = workoutSplitSummary(for: workoutSplit, days: days)
+
+        id = splitID
+        title = displayTitle
+        self.summary = summary
+        mode = workoutSplit.mode.rawValue
+        isActive = workoutSplit.isActive
+        dayNames = days.map { splitDayDisplayName(for: $0, mode: workoutSplit.mode) }
+        fullContent = WorkoutSplitFullContent(
+            id: splitID,
+            title: displayTitle,
+            summary: summary,
+            mode: workoutSplit.mode.rawValue,
+            isActive: workoutSplit.isActive,
+            weeklySplitOffset: workoutSplit.weeklySplitOffset,
+            rotationCurrentIndex: workoutSplit.rotationCurrentIndex,
+            rotationLastUpdatedDate: workoutSplit.rotationLastUpdatedDate,
+            days: days
+        )
+    }
+}
+
+extension WorkoutSplitEntity: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { entity in
+            try await MainActor.run {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                encoder.dateEncodingStrategy = .iso8601
+                return try encoder.encode(entity.fullContent)
+            }
+        }
+
+        ProxyRepresentation { entity in
+            "\(entity.title)\n\(entity.summary)"
+        }
+    }
+}
+
+struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
+    @MainActor
+    func entities(for identifiers: [WorkoutSplitEntity.ID]) async throws -> [WorkoutSplitEntity] {
+        guard !identifiers.isEmpty else { return [] }
+        let context = SharedModelContainer.container.mainContext
+        let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+        let entities = splits.map(WorkoutSplitEntity.init)
+        let byID = Dictionary(entities.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return identifiers.compactMap { byID[$0] }
+    }
+
+    @MainActor
+    func suggestedEntities() async throws -> [WorkoutSplitEntity] {
+        let context = SharedModelContainer.container.mainContext
+        let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+        return sortedWorkoutSplits(splits).map(WorkoutSplitEntity.init)
+    }
+
+    @MainActor
+    func entities(matching string: String) async throws -> [WorkoutSplitEntity] {
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        let context = SharedModelContainer.container.mainContext
+        let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+        let orderedSplits = sortedWorkoutSplits(splits)
+        guard !trimmed.isEmpty else {
+            return orderedSplits.map(WorkoutSplitEntity.init)
+        }
+
+        return orderedSplits
+            .map(WorkoutSplitEntity.init)
+            .filter { entity in
+                entity.title.localizedStandardContains(trimmed)
+                    || entity.summary.localizedStandardContains(trimmed)
+                    || entity.dayNames.contains(where: { $0.localizedStandardContains(trimmed) })
+            }
+    }
+}
+
+@MainActor
+private func workoutSplitEntityID(for split: WorkoutSplit) -> String {
+    String(describing: split.persistentModelID)
+}
+
+private func makeDayContent(for day: WorkoutSplitDay) -> WorkoutSplitFullContent.Day {
+    WorkoutSplitFullContent.Day(
+        index: day.index,
+        weekday: day.weekday,
+        name: normalizedSplitDayName(day.name),
+        isRestDay: day.isRestDay,
+        targetMuscles: day.resolvedMuscles.map(\.rawValue),
+        workoutPlan: workoutPlanReferenceContent(for: day.workoutPlan)
+    )
+}
+
+private func workoutPlanReferenceContent(for workoutPlan: WorkoutPlan?) -> WorkoutSplitFullContent.PlanReference? {
+    guard let workoutPlan else { return nil }
+    return WorkoutSplitFullContent.PlanReference(id: workoutPlan.id, title: workoutPlan.title, summary: workoutPlan.spotlightSummary)
+}
+
+private func normalizedSplitDayName(_ name: String) -> String? {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? nil : trimmed
+}
+
+private func splitDayDisplayName(for day: WorkoutSplitFullContent.Day, mode: SplitMode) -> String {
+    if let name = day.name {
+        return name
+    }
+    if let planTitle = day.workoutPlan?.title, !planTitle.isEmpty {
+        return planTitle
+    }
+    if day.isRestDay {
+        return "Rest Day"
+    }
+    switch mode {
+    case .weekly:
+        return weekdayName(for: day.weekday)
+    case .rotation:
+        return "Day \(day.index + 1)"
+    }
+}
+
+private func weekdayName(for weekday: Int) -> String {
+    let symbols = Calendar.current.weekdaySymbols
+    guard weekday >= 1 && weekday <= symbols.count else { return "Day \(weekday)" }
+    return symbols[weekday - 1]
+}
+
+@MainActor
+private func workoutSplitDisplayTitle(for split: WorkoutSplit) -> String {
+    let trimmed = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else {
+        return split.mode == .weekly ? "Weekly Split" : "Rotation Split"
+    }
+    return trimmed
+}
+
+@MainActor
+private func workoutSplitSummary(for split: WorkoutSplit, days: [WorkoutSplitFullContent.Day]) -> String {
+    let dayCount = days.count
+    let base = split.mode == .weekly ? "Weekly split" : "Rotation split"
+    let dayText = "\(dayCount) \(dayCount == 1 ? "day" : "days")"
+    guard let currentDay = split.todaysSplitDay else {
+        return "\(base) • \(dayText)"
+    }
+
+    let currentDayContent = makeDayContent(for: currentDay)
+    let currentLabel = splitDayDisplayName(for: currentDayContent, mode: split.mode)
+
+    let labelPrefix = split.mode == .weekly ? "Today" : "Current"
+    return "\(base) • \(dayText) • \(labelPrefix): \(currentLabel)"
+}
+
+@MainActor
+private func sortedWorkoutSplits(_ splits: [WorkoutSplit]) -> [WorkoutSplit] {
+    splits.sorted { lhs, rhs in
+        if lhs.isActive != rhs.isActive {
+            return lhs.isActive && !rhs.isActive
+        }
+        return workoutSplitDisplayTitle(for: lhs).localizedStandardCompare(workoutSplitDisplayTitle(for: rhs)) == .orderedAscending
+    }
+}

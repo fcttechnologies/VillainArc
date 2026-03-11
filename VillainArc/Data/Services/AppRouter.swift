@@ -9,6 +9,10 @@ final class AppRouter {
     var activeWorkoutSession: WorkoutSession?
     var activeWorkoutPlan: WorkoutPlan?
     var showAddExerciseFromLiveActivity = false
+    var showWorkoutSplitListFromIntent = false
+    var showWorkoutSettingsFromIntent = false
+    var showRestTimerFromIntent = false
+    var showPreWorkoutContextFromIntent = false
     
     enum Destination: Hashable {
         case workoutSessionsList

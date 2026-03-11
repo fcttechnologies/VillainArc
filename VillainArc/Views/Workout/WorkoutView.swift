@@ -5,6 +5,7 @@ import AppIntents
 struct WorkoutView: View {
     @Bindable var workout: WorkoutSession
     private let restTimer = RestTimerState.shared
+    @State private var router = AppRouter.shared
     
     @State private var showExerciseEditSheet = false
     @State private var showAddExerciseSheet = false
@@ -17,8 +18,6 @@ struct WorkoutView: View {
     @State private var showSaveConfirmation = false
     @State private var autoAdvanceTargetIndex: Int?
     
-    private let router = AppRouter.shared
-
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
@@ -40,6 +39,7 @@ struct WorkoutView: View {
                 }
                 Button("Pre Workout Context", systemImage: "bolt.fill") {
                     showPreWorkoutSheet = true
+                    Task { await IntentDonations.donateOpenPreWorkoutContext() }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
                 .accessibilityHint("Updates your pre-workout energy.")
@@ -50,6 +50,7 @@ struct WorkoutView: View {
                     Button {
                         showRestTimerSheet = true
                         Haptics.selection()
+                        Task { await IntentDonations.donateOpenRestTimer() }
                     } label: {
                         timerToolbarLabel
                     }
@@ -107,10 +108,8 @@ struct WorkoutView: View {
                 PreWorkoutContextView(preWorkoutContext: workout.preWorkoutContext ?? PreWorkoutContext())
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
-                        if workout.preWorkoutContext?.feeling == .notSet {
-                            workout.preWorkoutContext?.feeling = .okay
-                            saveContext(context: context)
-                        }
+                        workout.ensurePreWorkoutFeelingDefault()
+                        saveContext(context: context)
                     }
             }
             .sheet(isPresented: $showTitleEditorSheet) {
@@ -140,6 +139,15 @@ struct WorkoutView: View {
                     showAddExerciseSheet = true
                 }
             }
+            .onChange(of: router.showRestTimerFromIntent) { _, _ in
+                presentIntentDrivenSheetsIfNeeded()
+            }
+            .onChange(of: router.showPreWorkoutContextFromIntent) { _, _ in
+                presentIntentDrivenSheetsIfNeeded()
+            }
+            .onChange(of: router.showWorkoutSettingsFromIntent) { _, _ in
+                presentIntentDrivenSheetsIfNeeded()
+            }
             .userActivity("com.villainarc.workoutSession.active", element: workout) { session, activity in
                 activity.title = session.title
                 activity.isEligibleForSearch = false
@@ -154,6 +162,7 @@ struct WorkoutView: View {
             }
             .onAppear {
                 WorkoutActivityManager.start(workout: workout)
+                presentIntentDrivenSheetsIfNeeded()
             }
         }
     }
@@ -277,6 +286,7 @@ struct WorkoutView: View {
                     Button("Workout Settings", systemImage: "gear") {
                         Haptics.selection()
                         showWorkoutSettingsSheet = true
+                        Task { await IntentDonations.donateOpenWorkoutSettings() }
                     }
                     .accessibilityIdentifier("workoutSettingsButton")
                     .accessibilityHint("Shows workout settings.")
@@ -472,6 +482,21 @@ struct WorkoutView: View {
         let sets = activeExercise.sortedSets
         guard !sets.isEmpty else { return false }
         return sets.allSatisfy { $0.complete }
+    }
+
+    private func presentIntentDrivenSheetsIfNeeded() {
+        if router.showWorkoutSettingsFromIntent {
+            router.showWorkoutSettingsFromIntent = false
+            showWorkoutSettingsSheet = true
+        }
+        if router.showRestTimerFromIntent {
+            router.showRestTimerFromIntent = false
+            showRestTimerSheet = true
+        }
+        if router.showPreWorkoutContextFromIntent {
+            router.showPreWorkoutContextFromIntent = false
+            showPreWorkoutSheet = true
+        }
     }
 }
 

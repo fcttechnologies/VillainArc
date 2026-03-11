@@ -45,6 +45,7 @@ struct AddExercisesIntent: AppIntent {
             exercise.updateLastUsed()
         }
         saveContext(context: context)
+        WorkoutActivityManager.update(for: workout)
         let count = resolvedExercises.count
         if count == 1 {
             return "Added exercise to your workout."

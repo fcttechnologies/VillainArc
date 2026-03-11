@@ -87,6 +87,22 @@ struct WorkoutFinishTests {
         #expect(session.activeExercise == nil)
     }
 
+    @Test @MainActor
+    func finish_defaultsPreWorkoutFeelingToOkayWhenNotSet() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+
+        let session = makeSession(context: context, exerciseConfigs: [
+            (weight: 135, reps: 10, complete: true),
+        ])
+        session.preWorkoutContext?.feeling = .notSet
+
+        let result = session.finish(action: .finish, context: context)
+
+        #expect(result == .finished)
+        #expect(session.preWorkoutContext?.feeling == .okay)
+    }
+
     // MARK: - .markLoggedComplete action
 
     @Test @MainActor

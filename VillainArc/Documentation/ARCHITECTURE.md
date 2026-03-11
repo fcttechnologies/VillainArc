@@ -17,7 +17,7 @@
   - Hosts home sections including `RecentWorkoutSectionView` and `RecentExercisesSectionView`
   - Uses shared UI helpers (`navBar`, accessibility labels/ids)
 - `AppRouter.shared`
-  - Owns app navigation/workflow state (`path`, active workout/plan)
+  - Owns app navigation/workflow state (`path`, active workout/plan, transient intent-driven sheet flags)
   - Reads/writes SwiftData through `SharedModelContainer.container.mainContext`
   - Persists via `saveContext`
   - Uses `SpotlightIndexer` prefixes when resolving Spotlight identifiers
@@ -35,6 +35,8 @@
   - Link source evidence to target plan/set modifications
 - `WorkoutSplit` / `WorkoutSplitDay`
   - Weekly/rotation scheduling models used by split management and "today's workout" routing
+- `WorkoutSplitEntity` + nested transfer payloads
+  - Split export/share representation with ordered day snapshots and lightweight workout-plan references
 - `Exercise` + catalog/search metadata + `ExerciseHistory`/`ProgressionPoint`
   - Canonical exercise identity/search + derived longitudinal performance cache
 - `AppSettings`
@@ -46,7 +48,7 @@
 - `OnboardingManager`
   - First-run state machine (network/iCloud/CloudKit checks → sync → seed → Spotlight rebuild → profile collection)
 - `SetupGuard`
-  - Intent pre-condition guard that verifies initial bootstrap and user profile setup are complete before allowing intent execution
+  - Intent pre-condition guard that validates initial bootstrap/user profile setup and, for navigation intents, preserves the single-active-flow invariant without creating missing singleton records
 - `SystemState`
   - Shared singleton bootstrap helper that ensures `UserProfile` and `AppSettings` exist before feature code reads them
 - `DataManager` (`saveContext` / `scheduleSave`)
@@ -60,7 +62,7 @@
   - Central donation adapter from UI/workflow events to App Intents
 - `VillainArcShortcuts`
   - Declares the discoverable App Shortcuts surface
-- `App Intents` (`Workout*`, `WorkoutPlan*`, `Exercise*`, `RestTimer*`, `OpenAppIntent`)
+- `App Intents` (`Workout*`, `WorkoutSplit*`, `WorkoutPlan*`, `Exercise*`, `RestTimer*`, `OpenAppIntent`)
   - Handle Siri/Shortcuts actions and foreground/background routing
 - `LiveActivity Intents` + `RestTimerSnippetIntent`
   - Support lock-screen/live activity controls and snippet interactions
@@ -172,7 +174,7 @@
   - Used by split-day assignment flows
 - `WorkoutSplitView`
   - Split overview screen (active + inactive splits)
-  - Handles split actions (rotation/offset), split activation, and per-day plan selection
+  - Handles split actions (rotation/offset), split activation, per-day plan selection, and publishes the current split as a searchable/predictable user activity
 - `WorkoutSplitSectionView`
   - Home-level split summary card with quick routes to split settings/today plan
   - Uses `SmallUnavailableView` and section header button patterns
@@ -209,7 +211,7 @@
 - Calls: `AppRouter.startWorkoutSession`, `AppRouter.createWorkoutPlan`, `AppRouter.checkForUnfinishedData`, `OnboardingManager.startOnboarding`, home sections (`WorkoutSplitSectionView`, `RecentWorkoutSectionView`, `RecentWorkoutPlanSectionView`, `RecentExercisesSectionView`), destination views (`WorkoutsListView`, `WorkoutDetailView`, `WorkoutPlansListView`, `WorkoutPlanDetailView`, `ExercisesListView`, `ExerciseDetailView`, `ExerciseHistoryView`, `WorkoutSplitView`, `WorkoutSplitCreationView`), full-screen views (`WorkoutSessionContainer`, `WorkoutPlanView`), `IntentDonations.*`.
 
 ### `VillainArc/Data/Services/AppRouter.swift`
-- Does: App-wide navigation/workflow coordinator. Owns `path`, `activeWorkoutSession`, `activeWorkoutPlan`, auto-resumes unfinished workout/plan work on launch, blocks parallel flows while one is active, and routes Spotlight results for workouts, plans, and exercises.
+- Does: App-wide navigation/workflow coordinator. Owns `path`, `activeWorkoutSession`, `activeWorkoutPlan`, transient intent-driven sheet flags, auto-resumes unfinished workout/plan work on launch, blocks parallel flows while one is active, and routes Spotlight results for workouts, plans, and exercises.
 - Called by: `VillainArcApp`, `ContentView`, many feature views under `VillainArc/Views/*`, and app intents under `VillainArc/Intents/*`.
 - Calls: SwiftData context (`insert/fetch/delete` via `SharedModelContainer.container.mainContext`), `saveContext`, `Haptics.selection`, `pendingSuggestions`, `RestTimerState.shared.stop`, `WorkoutActivityManager.end`, `SpotlightIndexer.workoutSessionIdentifierPrefix`, `SpotlightIndexer.workoutPlanIdentifierPrefix`, `SpotlightIndexer.exerciseIdentifierPrefix`.
 
@@ -229,13 +231,13 @@
 - Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `SpotlightIndexer.reindexAll`, `SystemState.ensureUserProfile`, `SystemState.ensureAppSettings`, `saveContext`.
 
 ### `VillainArc/Data/Services/SetupGuard.swift`
-- Does: Intent pre-condition guard that verifies initial bootstrap, singleton bootstrap, and user profile setup are complete before allowing intent execution.
-- Called by: `StartWorkoutIntent`, `CreateWorkoutPlanIntent`, `StartTodaysWorkoutIntent`.
-- Calls: `DataManager.hasCompletedInitialBootstrap`, `SystemState.ensureAppSettings`, `SystemState.ensureUserProfile`, `SetupGuardError`.
+- Does: Intent pre-condition guard that validates initial bootstrap, required singleton presence, and user profile setup before allowing intent execution, with a shared helper for blocking navigation while a workout or plan flow is already active.
+- Called by: flow-entry and navigation intents including `StartWorkoutIntent`, `CreateWorkoutPlanIntent`, `StartTodaysWorkoutIntent`, `OpenWorkoutIntent`, `OpenWorkoutPlanIntent`, `OpenExerciseIntent`, `OpenExercisesIntent`, `OpenWorkoutSplitIntent`, `CreateWorkoutSplitIntent`, `ManageWorkoutSplitsIntent`, `OpenTodaysPlanIntent`, `ShowWorkoutHistoryIntent`, `ShowWorkoutPlansIntent`, and `ViewLastWorkoutIntent`.
+- Calls: `DataManager.hasCompletedInitialBootstrap`, `AppSettings.single`, `UserProfile.single`, `WorkoutPlan.incomplete`, `WorkoutSession.incomplete`, `SetupGuardError`, `StartWorkoutError`.
 
 ### `VillainArc/Data/Services/SystemState.swift`
 - Does: Shared singleton bootstrap service that lazily ensures `UserProfile` and `AppSettings` exist.
-- Called by: `OnboardingManager`, `SetupGuard`, `WorkoutSettingsView`.
+- Called by: `OnboardingManager`, `WorkoutSettingsView`.
 - Calls: `UserProfile.single`, `AppSettings.single`, `ModelContext.fetch/insert/save`.
 
 ### `VillainArc/Data/Services/Suggestions/SuggestionGenerator.swift`
@@ -331,7 +333,7 @@
 ### `VillainArc/Views/HomeSections/RecentExercisesSectionView.swift`
 - Does: Home "Exercises" section; shows the most recently used exercises using the shared summary cards enriched with cached history chips, and links to the full exercises list.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query(Exercise.all)`, `@Query(ExerciseHistory)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .exercisesList)`, `ExerciseSummaryRow`, `SmallUnavailableView`.
+- Calls: `@Query(Exercise.all)`, `@Query(ExerciseHistory)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .exercisesList)`, `IntentDonations.donateOpenExercises`, `ExerciseSummaryRow`, `SmallUnavailableView`.
 
 ### `VillainArc/Views/Components/SmallUnavailableView.swift`
 - Does: Compact unavailable/empty-state presentational component.
@@ -384,9 +386,9 @@
 - Calls: `DeferredSuggestionsView`, `WorkoutView`, `WorkoutSummaryView`.
 
 ### `VillainArc/Views/Workout/WorkoutView.swift`
-- Does: Primary active-workout screen (exercise pager/list, add exercise, timer access, title/notes/pre-checkin sheets, finish/cancel actions). Keeps the original direct cancel button when the workout is empty and otherwise exposes the ellipsis menu.
+- Does: Primary active-workout screen (exercise pager/list, add exercise, timer access, title/notes/pre-checkin sheets, finish/cancel actions). Keeps the original direct cancel button when the workout is empty and otherwise exposes the ellipsis menu, while also reacting to intent-driven router flags to open workout settings, rest timer, or pre-workout context.
 - Called by: `WorkoutSessionContainer`, SwiftUI previews.
-- Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSettingsView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
+- Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSettingsView`, `WorkoutSession.finish`, `WorkoutSession.ensurePreWorkoutFeelingDefault`, `AppRouter.shared` intent flags, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/WorkoutSettingsView.swift`
 - Does: Workout-scoped settings sheet for timer auto-start, auto-complete-after-RPE, rest timer notifications, live activity visibility, and manual live activity restart, backed by the singleton `AppSettings` model.
@@ -489,9 +491,9 @@
 - Calls: `@Query(WorkoutPlan.all)`, `WorkoutPlanDetailView` (with select callback), `WorkoutPlanCardView`, `WorkoutPlanView` (new plan fullScreenCover), `ModelContext.insert/fetch`, `saveContext`, `IntentDonations.donateCreateWorkoutPlan`, `Haptics.selection`.
 
 ### `VillainArc/Views/WorkoutSplit/WorkoutSplitView.swift`
-- Does: Main split editor screen for the active split (or an override split). Shows day-paging TabView with capsule headers, options menu (rename, schedule adjustments, swap/rotate days, delete), and "Create New Split" bottom bar. Also shows empty-state views when no splits or no active split exist.
+- Does: Main split editor screen for the active split (or an override split). Shows day-paging TabView with capsule headers, options menu (rename, schedule adjustments, swap/rotate days, delete), and "Create New Split" bottom bar. When routed with `autoPresentBuilder`, it presents the split builder on first appearance. Also shows empty-state views when no splits or no active split exist, and publishes the current split as `com.villainarc.workoutSplit.view`.
 - Called by: `ContentView` navigation destination for `.workoutSplit`, `WorkoutSplitListView` (navigation destination for inactive split tap), SwiftUI preview.
-- Calls: `@Query` over `WorkoutSplit`, `WorkoutSplitDayView`, `WorkoutSplitListView` (sheet), `SplitBuilderView` (sheet), `TextEntryEditorView`, `IntentDonations.donateTrainingSummary`, `Haptics.selection`, `saveContext`, `scheduleSave`, split model operations (`refreshRotationIfNeeded`, `missedDay`, `resetSplit`, `updateCurrentIndex`, `deleteDay`), internal swap/rotation helpers.
+- Calls: `@Query` over `WorkoutSplit`, `WorkoutSplitDayView`, `WorkoutSplitListView` (sheet), `SplitBuilderView` (sheet), `TextEntryEditorView`, `WorkoutSplitEntity`, `IntentDonations.donateTrainingSummary`, `IntentDonations.donateCreateWorkoutSplit`, `Haptics.selection`, `saveContext`, `scheduleSave`, split model operations (`refreshRotationIfNeeded`, `missedDay`, `resetSplit`, `updateCurrentIndex`, `deleteDay`), internal swap/rotation helpers.
 
 ### `VillainArc/Views/WorkoutSplit/WorkoutSplitListView.swift`
 - Does: Sheet presenting all splits (active + inactive sections). Active split tap dismisses the sheet; inactive split tap navigates into `WorkoutSplitView` within the sheet's own `NavigationStack`. Hosts "Create New Split" bottom bar via `SplitBuilderView`.
@@ -501,7 +503,7 @@
 ### `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`
 - Does: Home split summary section that shows active/today state and routes users into split screens.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query` over `WorkoutSplit`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateStartTodaysWorkout`, `IntentDonations.donateOpenWorkoutPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
+- Calls: `@Query` over `WorkoutSplit`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateOpenWorkoutSplit`, `IntentDonations.donateCreateWorkoutSplit`, `IntentDonations.donateManageWorkoutSplits`, `IntentDonations.donateOpenTodaysPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
 
 ### `VillainArc/Views/WorkoutSplit/SplitBuilderView.swift`
 - Does: Multi-step split builder for preset-based or scratch split creation (type, schedule mode, training days, rest style).
@@ -551,14 +553,15 @@
 ## 3) Intents
 
 ### Intent Inventory
-- App Intents (Workout): `StartWorkoutIntent`, `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `LastWorkoutSummaryIntent`, `FinishWorkoutIntent`, `CompleteActiveSetIntent`, `CancelWorkoutIntent`, `ViewLastWorkoutIntent`, `ShowWorkoutHistoryIntent`, `OpenWorkoutIntent`, `SaveWorkoutAsPlanIntent`, `DeleteWorkoutIntent`, `DeleteAllWorkoutsIntent`.
+- App Intents (Workout): `StartWorkoutIntent`, `OpenActiveWorkoutIntent`, `OpenPreWorkoutContextIntent`, `OpenRestTimerIntent`, `OpenWorkoutSettingsIntent`, `LastWorkoutSummaryIntent`, `FinishWorkoutIntent`, `CompleteActiveSetIntent`, `CancelWorkoutIntent`, `ViewLastWorkoutIntent`, `ShowWorkoutHistoryIntent`, `OpenWorkoutIntent`, `SaveWorkoutAsPlanIntent`, `DeleteWorkoutIntent`, `DeleteAllWorkoutsIntent`.
+- App Intents (Workout Split): `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `OpenWorkoutSplitIntent`, `CreateWorkoutSplitIntent`, `ManageWorkoutSplitsIntent`, `OpenTodaysPlanIntent`.
 - App Intents (Workout Plan): `CreateWorkoutPlanIntent`, `StartWorkoutWithPlanIntent`, `OpenWorkoutPlanIntent`, `ShowWorkoutPlansIntent`, `DeleteWorkoutPlanIntent`, `DeleteAllWorkoutPlansIntent`, `ToggleWorkoutPlanFavoriteIntent`.
-- App Intents (Exercise): `AddExerciseIntent`, `AddExercisesIntent`, `OpenExerciseIntent`, `ReplaceExerciseIntent`, `ToggleExerciseFavoriteIntent`.
+- App Intents (Exercise): `AddExerciseIntent`, `AddExercisesIntent`, `OpenExerciseIntent`, `OpenExercisesIntent`, `ReplaceExerciseIntent`, `ToggleExerciseFavoriteIntent`.
 - App Intents (Rest Timer): `StartRestTimerIntent`, `PauseRestTimerIntent`, `ResumeRestTimerIntent`, `StopRestTimerIntent`, `RestTimerControlIntent`.
 - App Intent (App shell): `OpenAppIntent`.
 - Live Activity Intents: `LiveActivityAddExerciseIntent`, `LiveActivityCompleteSetIntent`, `LiveActivityPauseRestTimerIntent`, `LiveActivityResumeRestTimerIntent`.
 - Snippet Intent: `RestTimerSnippetIntent`.
-- Intent entities/queries: `WorkoutSessionEntity` + `WorkoutSessionEntityQuery`, `WorkoutPlanEntity` + `WorkoutPlanEntityQuery`, `ExerciseEntity` + `ExerciseEntityQuery`.
+- Intent entities/queries: `WorkoutSessionEntity` + `WorkoutSessionEntityQuery`, `WorkoutPlanEntity` + `WorkoutPlanEntityQuery`, `ExerciseEntity` + `ExerciseEntityQuery`, `WorkoutSplitEntity` + `WorkoutSplitEntityQuery`.
 
 ### Shortcut Registration
 - `VillainArc/Intents/VillainArcShortcuts.swift` currently registers: `StartWorkoutIntent`, `StartWorkoutWithPlanIntent`, `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `LastWorkoutSummaryIntent`, `FinishWorkoutIntent`, `CompleteActiveSetIntent`, `AddExerciseIntent`, `StartRestTimerIntent`, `StopRestTimerIntent`.
@@ -566,7 +569,11 @@
 
 ### Donation Map (`IntentDonations`)
 - `StartWorkoutIntent`: donated via `donateStartWorkout`; called from `VillainArc/Views/ContentView.swift`.
-- `StartTodaysWorkoutIntent`: donated via `donateStartTodaysWorkout`; called from `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift` (when starting the active split's current-day plan).
+- `OpenWorkoutSplitIntent`: donated via `donateOpenWorkoutSplit`; called from `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`.
+- `CreateWorkoutSplitIntent`: donated via `donateCreateWorkoutSplit`; called from `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`, `VillainArc/Views/WorkoutSplit/WorkoutSplitView.swift`.
+- `ManageWorkoutSplitsIntent`: donated via `donateManageWorkoutSplits`; called from `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`.
+- `OpenTodaysPlanIntent`: donated via `donateOpenTodaysPlan`; called from `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`.
+- `StartTodaysWorkoutIntent`: donated via `donateStartTodaysWorkout`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift` (when starting the active split's current-day plan).
 - `ViewLastWorkoutIntent`: donated via `donateViewLastWorkout`; called from `VillainArc/Views/HomeSections/RecentWorkoutSectionView.swift`.
 - `OpenWorkoutIntent`: donated via `donateOpenWorkout`; called from `VillainArc/Views/Components/WorkoutRowView.swift`.
 - `SaveWorkoutAsPlanIntent`: donated via `donateSaveWorkoutAsPlan`; called from `VillainArc/Views/Workout/WorkoutSummaryView.swift`.
@@ -574,19 +581,23 @@
 - `DeleteAllWorkoutsIntent`: donated via `donateDeleteAllWorkouts`; called from `VillainArc/Views/History/WorkoutsListView.swift`.
 - `ShowWorkoutHistoryIntent`: donated via `donateShowWorkoutHistory`; called from `VillainArc/Views/HomeSections/RecentWorkoutSectionView.swift`.
 - `ShowWorkoutPlansIntent`: donated via `donateShowWorkoutPlans`; called from `VillainArc/Views/HomeSections/RecentWorkoutPlanSectionView.swift`.
-- `OpenWorkoutPlanIntent`: donated via `donateOpenWorkoutPlan`; called from `VillainArc/Views/Components/WorkoutPlanRowView.swift`, `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`, `VillainArc/Views/Workout/WorkoutDetailView.swift`.
+- `OpenWorkoutPlanIntent`: donated via `donateOpenWorkoutPlan`; called from `VillainArc/Views/Components/WorkoutPlanRowView.swift`, `VillainArc/Views/Workout/WorkoutDetailView.swift`.
 - `DeleteWorkoutPlanIntent`: donated via `donateDeleteWorkoutPlan`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlansListView.swift` (single-delete path).
 - `DeleteAllWorkoutPlansIntent`: donated via `donateDeleteAllWorkoutPlans`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlansListView.swift`.
 - `ToggleWorkoutPlanFavoriteIntent`: donated via `donateToggleWorkoutPlanFavorite`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlansListView.swift`.
 - `LastWorkoutSummaryIntent`: donated via `donateLastWorkoutSummary`; called from `VillainArc/Views/Workout/WorkoutView.swift`.
 - `TrainingSummaryIntent`: donated via `donateTrainingSummary`; called from `VillainArc/Views/WorkoutSplit/WorkoutSplitView.swift`.
 - `CreateWorkoutPlanIntent`: donated via `donateCreateWorkoutPlan`; called from `VillainArc/Views/ContentView.swift`, `VillainArc/Views/WorkoutPlan/WorkoutPlanPickerView.swift`.
-- `StartWorkoutWithPlanIntent`: donated via `donateStartWorkoutWithPlan`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Intents/Workout/StartTodaysWorkoutIntent.swift`.
+- `StartWorkoutWithPlanIntent`: donated via `donateStartWorkoutWithPlan`; called from `VillainArc/Views/WorkoutPlan/WorkoutPlanDetailView.swift`, `VillainArc/Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift`.
 - `AddExerciseIntent`: donated via `donateAddExercise`; called from `VillainArc/Views/Workout/AddExerciseView.swift`.
 - `AddExercisesIntent`: donated via `donateAddExercises`; called from `VillainArc/Views/Workout/AddExerciseView.swift`.
 - `OpenExerciseIntent`: donated via `donateOpenExercise`; called from `VillainArc/Views/Components/ExerciseSummaryRow.swift`.
+- `OpenExercisesIntent`: donated via `donateOpenExercises`; called from `VillainArc/Views/HomeSections/RecentExercisesSectionView.swift`.
 - `ReplaceExerciseIntent`: donated via `donateReplaceExercise`; called from `VillainArc/Views/Workout/ExerciseView.swift`.
 - `ToggleExerciseFavoriteIntent`: donated via `donateToggleExerciseFavorite`; called from `VillainArc/Views/Workout/FilteredExerciseListView.swift`.
+- `OpenWorkoutSettingsIntent`: donated via `donateOpenWorkoutSettings`; called from `VillainArc/Views/Workout/WorkoutView.swift`.
+- `OpenRestTimerIntent`: donated via `donateOpenRestTimer`; called from `VillainArc/Views/Workout/WorkoutView.swift`.
+- `OpenPreWorkoutContextIntent`: donated via `donateOpenPreWorkoutContext`; called from `VillainArc/Views/Workout/WorkoutView.swift`.
 - `StartRestTimerIntent`: donated via `donateStartRestTimer`; called from `VillainArc/Views/Workout/RestTimerView.swift`, `VillainArc/Views/Components/ExerciseSetRowView.swift`, `VillainArc/Intents/Workout/CompleteActiveSetIntent.swift`.
 - `PauseRestTimerIntent`: donated via `donatePauseRestTimer`; called from `VillainArc/Views/Workout/RestTimerView.swift`.
 - `ResumeRestTimerIntent`: donated via `donateResumeRestTimer`; called from `VillainArc/Views/Workout/RestTimerView.swift`.
@@ -597,6 +608,7 @@
 
 ### Non-Donation Intent Paths
 - `OpenAppIntent`: used as `opensIntent` return target from multiple foreground intents; not donated.
+- `OpenActiveWorkoutIntent`: foreground deep link into the current active workout; currently not donated through `IntentDonations`.
 - `RestTimerControlIntent`: invoked from `RestTimerSnippetView` button intents; not donated.
 - `RestTimerSnippetIntent`: returned by rest timer intents and reloaded by `RestTimerControlIntent`; not donated.
 - Live activity intents (`LiveActivity*`): invoked by live activity controls; not donated through `IntentDonations`.
@@ -716,7 +728,7 @@
 
 ### `VillainArc/Data/Models/WorkoutSplit/WorkoutSplit.swift`
 - Does: Split schedule aggregate (weekly/rotation state, day resolution, current-day advancement logic).
-- Called by: split views, `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `AppRouter` split routes, `SampleData`.
+- Called by: split views, `StartTodaysWorkoutIntent`, `TrainingSummaryIntent`, `OpenWorkoutSplitIntent`, `ManageWorkoutSplitsIntent`, `OpenTodaysPlanIntent`, `AppRouter` split routes, `SampleData`.
 - Calls: day-resolution helpers (`dayIndex`, `splitDay`, `workoutPlan`), `saveContext` in rotation refresh.
 
 ### `VillainArc/Data/Models/WorkoutSplit/WorkoutSplitDay.swift`
@@ -841,9 +853,29 @@
 - Calls: `WorkoutSession.recent` fetch + `exerciseSummary`.
 
 ### `VillainArc/Intents/Workout/OpenWorkoutIntent.swift`
-- Does: Opens selected completed workout detail route.
+- Does: Opens selected completed workout detail route after setup/bootstrap and no-active-flow checks.
 - Called by: Siri/Shortcuts, donations (`donateOpenWorkout`).
-- Calls: `WorkoutSessionEntity` resolution fetch, `AppRouter.navigate(.workoutSessionDetail)`, `OpenAppIntent`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutSessionEntity` resolution fetch, `AppRouter.navigate(.workoutSessionDetail)`, `OpenAppIntent`.
+
+### `VillainArc/Intents/Workout/OpenActiveWorkoutIntent.swift`
+- Does: Foregrounds the app when an active workout exists so the normal resume flow can present it.
+- Called by: direct App Intent execution.
+- Calls: `WorkoutSession.incomplete`, `OpenAppIntent`.
+
+### `VillainArc/Intents/Workout/OpenPreWorkoutContextIntent.swift`
+- Does: Foregrounds the current active workout and flips the router flag that opens the pre-workout context sheet.
+- Called by: Siri/Shortcuts/App Intent execution, donations (`donateOpenPreWorkoutContext`).
+- Calls: `WorkoutSession.incomplete`, `AppRouter.shared.showPreWorkoutContextFromIntent`, `OpenAppIntent`.
+
+### `VillainArc/Intents/Workout/OpenRestTimerIntent.swift`
+- Does: Foregrounds the current active workout and flips the router flag that opens the rest timer sheet.
+- Called by: Siri/Shortcuts/App Intent execution, donations (`donateOpenRestTimer`).
+- Calls: `WorkoutSession.incomplete`, `AppRouter.shared.showRestTimerFromIntent`, `OpenAppIntent`.
+
+### `VillainArc/Intents/Workout/OpenWorkoutSettingsIntent.swift`
+- Does: Foregrounds the current active workout and flips the router flag that opens the workout settings sheet.
+- Called by: Siri/Shortcuts/App Intent execution, donations (`donateOpenWorkoutSettings`).
+- Calls: `WorkoutSession.incomplete`, `AppRouter.shared.showWorkoutSettingsFromIntent`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Workout/SaveWorkoutAsPlanIntent.swift`
 - Does: Creates a completed workout plan from a completed workout, links it back to that workout, and opens the created plan.
@@ -861,24 +893,54 @@
 - Calls: `WorkoutSession.completedSession` fetch, `requestChoice` confirmation, `SpotlightIndexer.deleteWorkoutSessions`, `ExerciseHistoryUpdater.updateHistory`, `ModelContext.delete`, `saveContext`.
 
 ### `VillainArc/Intents/Workout/ShowWorkoutHistoryIntent.swift`
-- Does: Navigates app to workout history list.
+- Does: Opens workout history after setup/bootstrap, no-active-flow, and data-availability validation.
 - Called by: Siri/Shortcuts, donations (`donateShowWorkoutHistory`).
-- Calls: `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSessionsList)`.
-
-### `VillainArc/Intents/Workout/TrainingSummaryIntent.swift`
-- Does: Returns split-day training summary for requested day enum.
-- Called by: Siri/Shortcuts, donations (`donateTrainingSummary`).
-- Calls: `WorkoutSplit.active`, `splitDay(for:)`, plan/rest-day summary formatting.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutSession.recent`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSessionsList)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Workout/ViewLastWorkoutIntent.swift`
-- Does: Opens most recent completed workout detail screen.
+- Does: Opens the most recent completed workout detail screen after setup/bootstrap and no-active-flow checks.
 - Called by: Siri/Shortcuts, donations (`donateViewLastWorkout`).
-- Calls: `WorkoutSession.recent`, `AppRouter.navigate(.workoutSessionDetail)`, `OpenAppIntent`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutSession.recent`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSessionDetail)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Workout/WorkoutSessionEntity.swift`
 - Does: AppEntity + queries + transfer payload for workout sessions (used by Siri/Shortcuts/Spotlight).
 - Called by: `OpenWorkoutIntent`, `SpotlightIndexer.associateAppEntity`, donation mapping, `userActivity` integration.
 - Calls: `SharedModelContainer` queries, `WorkoutSession` mapping, JSON transfer encoding.
+
+### `VillainArc/Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift`
+- Does: Starts today's workout from the active split after setup/bootstrap and active-flow guards.
+- Called by: Siri/Shortcuts (`VillainArcShortcuts`) and donation flow.
+- Calls: `SetupGuard.requireReady`, `WorkoutSplit.active`, `WorkoutSplit.refreshRotationIfNeeded`, `IntentDonations.donateStartWorkoutWithPlan`, `AppRouter.startWorkoutSession(from:)`, `OpenAppIntent`.
+
+### `VillainArc/Intents/WorkoutSplit/TrainingSummaryIntent.swift`
+- Does: Returns split-day training summary for requested day enum.
+- Called by: Siri/Shortcuts, donations (`donateTrainingSummary`).
+- Calls: `WorkoutSplit.active`, `WorkoutSplit.refreshRotationIfNeeded`, `splitDay(for:)`, plan/rest-day summary formatting.
+
+### `VillainArc/Intents/WorkoutSplit/OpenWorkoutSplitIntent.swift`
+- Does: Opens the active workout split after setup/bootstrap, no-active-flow, and active-split validation.
+- Called by: Siri/Shortcuts, donations (`donateOpenWorkoutSplit`).
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutSplit.active`, `WorkoutSplit.refreshRotationIfNeeded`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSplit)`, `OpenAppIntent`.
+
+### `VillainArc/Intents/WorkoutSplit/CreateWorkoutSplitIntent.swift`
+- Does: Opens the workout split screen and auto-presents the builder immediately after setup/bootstrap and no-active-flow checks.
+- Called by: Siri/Shortcuts, donations (`donateCreateWorkoutSplit`).
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSplit(autoPresentBuilder: true))`, `OpenAppIntent`.
+
+### `VillainArc/Intents/WorkoutSplit/ManageWorkoutSplitsIntent.swift`
+- Does: Opens workout split management after setup/bootstrap, no-active-flow, and split-availability validation.
+- Called by: Siri/Shortcuts, donations (`donateManageWorkoutSplits`).
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `FetchDescriptor<WorkoutSplit>`, `WorkoutSplit.active`, `WorkoutSplit.refreshRotationIfNeeded`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSplit)`, `OpenAppIntent`.
+
+### `VillainArc/Intents/WorkoutSplit/OpenTodaysPlanIntent.swift`
+- Does: Opens today's assigned split plan after setup/bootstrap, no-active-flow, rotation refresh, and plan-availability validation.
+- Called by: Siri/Shortcuts, donations (`donateOpenTodaysPlan`).
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutSplit.active`, `WorkoutSplit.refreshRotationIfNeeded`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutPlanDetail)`, `OpenAppIntent`.
+
+### `VillainArc/Intents/WorkoutSplit/WorkoutSplitEntity.swift`
+- Does: Split AppEntity/IndexedEntity definition with JSON transfer support and nested day/plan reference payloads for user activity and future export/share flows.
+- Called by: `WorkoutSplitView` and any future split-specific App Intents or transfer surfaces.
+- Calls: `SharedModelContainer.container.mainContext`, `FetchDescriptor<WorkoutSplit>`, split/day/plan mapping helpers.
 
 ### `VillainArc/Intents/WorkoutPlan/CreateWorkoutPlanIntent.swift`
 - Does: Opens create-plan flow with active-workout/plan guard checks.
@@ -886,9 +948,9 @@
 - Calls: `WorkoutSession.incomplete`, `WorkoutPlan.incomplete`, `AppRouter.createWorkoutPlan`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/WorkoutPlan/OpenWorkoutPlanIntent.swift`
-- Does: Opens selected completed workout plan detail route.
+- Does: Opens selected completed workout plan detail route after setup/bootstrap and no-active-flow checks.
 - Called by: Siri/Shortcuts, donations (`donateOpenWorkoutPlan`).
-- Calls: `WorkoutPlanEntity` resolution fetch, `AppRouter.navigate(.workoutPlanDetail)`, `OpenAppIntent`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutPlanEntity` resolution fetch, `AppRouter.navigate(.workoutPlanDetail)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/WorkoutPlan/DeleteWorkoutPlanIntent.swift`
 - Does: Deletes one selected completed workout plan after explicit destructive confirmation.
@@ -906,9 +968,9 @@
 - Calls: `WorkoutPlanEntity` resolution fetch, `ModelContext` mutation, `saveContext`.
 
 ### `VillainArc/Intents/WorkoutPlan/ShowWorkoutPlansIntent.swift`
-- Does: Navigates app to workout plans list.
+- Does: Opens workout plans after setup/bootstrap, no-active-flow, and data-availability validation.
 - Called by: Siri/Shortcuts, donations (`donateShowWorkoutPlans`).
-- Calls: `AppRouter.popToRoot`, `AppRouter.navigate(.workoutPlansList)`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutPlan.recent`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutPlansList)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/WorkoutPlan/StartWorkoutWithPlanIntent.swift`
 - Does: Starts workout from selected completed plan.
@@ -926,14 +988,19 @@
 - Calls: `DataManager.dedupeCatalogExercisesIfNeeded`, `WorkoutSession.addExercise`/`WorkoutPlan.addExercise`, `WorkoutActivityManager.update`.
 
 ### `VillainArc/Intents/Exercise/AddExercisesIntent.swift`
-- Does: Adds multiple selected exercises to active workout or active editing plan.
+- Does: Adds multiple selected exercises to active workout or active editing plan, updating the workout live activity when applicable.
 - Called by: Siri/Shortcuts, donations (`donateAddExercises`).
 - Calls: Exercise resolution fetch, add/update/save helpers.
 
+### `VillainArc/Intents/Exercise/OpenExercisesIntent.swift`
+- Does: Opens the full exercises list after setup/bootstrap, no-active-flow, and exercise-catalog availability validation.
+- Called by: Siri/Shortcuts, donations (`donateOpenExercises`).
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `Exercise.all`, `AppRouter.popToRoot`, `AppRouter.navigate(.exercisesList)`, `OpenAppIntent`.
+
 ### `VillainArc/Intents/Exercise/OpenExerciseIntent.swift`
-- Does: Opens the exercise detail/progress screen for a selected exercise after active-flow guards pass.
+- Does: Opens the exercise detail/progress screen for a selected exercise after setup/bootstrap and no-active-flow checks.
 - Called by: Siri/Shortcuts, donations (`donateOpenExercise`).
-- Calls: `Exercise` resolution fetch, `AppRouter.popToRoot`, `AppRouter.navigate(.exerciseDetail)`, `OpenAppIntent`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `Exercise` resolution fetch, `AppRouter.popToRoot`, `AppRouter.navigate(.exerciseDetail)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Exercise/ExerciseEntity.swift`
 - Does: AppEntity + queries + fuzzy search support for exercise selection in intents, with shared system alternate names and boosted exact phrase scoring for disambiguation.

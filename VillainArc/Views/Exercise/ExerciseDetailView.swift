@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Charts
+import AppIntents
 
 struct ExerciseDetailView: View {
     private enum ChartMetric: String, CaseIterable, Identifiable {
@@ -247,6 +248,14 @@ struct ExerciseDetailView: View {
             if let firstMetric = availableMetrics.first, !availableMetrics.contains(selectedMetric) {
                 selectedMetric = firstMetric
             }
+        }
+        .userActivity("com.villainarc.exercise.view", isActive: exercise != nil) { activity in
+            guard let exercise else { return }
+            activity.title = exercise.name
+            activity.isEligibleForSearch = true
+            activity.isEligibleForPrediction = true
+            let entity = ExerciseEntity(exercise: exercise)
+            activity.appEntityIdentifier = .init(for: entity)
         }
         .toolbar {
             ToolbarSpacer(.flexible, placement: .bottomBar)

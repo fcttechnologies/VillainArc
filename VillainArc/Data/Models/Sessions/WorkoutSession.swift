@@ -124,6 +124,12 @@ struct UnfinishedSetSummary {
 }
 
 extension WorkoutSession {
+    func ensurePreWorkoutFeelingDefault() {
+        if preWorkoutContext?.feeling == .notSet {
+            preWorkoutContext?.feeling = .okay
+        }
+    }
+
     @MainActor var unfinishedSetSummary: UnfinishedSetSummary {
         var emptySets: [SetPerformance] = []
         var loggedSets: [SetPerformance] = []
@@ -243,6 +249,7 @@ extension WorkoutSession {
             break
         }
         
+        ensurePreWorkoutFeelingDefault()
         status = SessionStatus.summary.rawValue
         endedAt = Date()
         activeExercise = nil

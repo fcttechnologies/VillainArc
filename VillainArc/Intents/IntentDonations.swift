@@ -6,6 +6,22 @@ enum IntentDonations {
         _ = try? await StartWorkoutIntent().donate()
     }
 
+    static func donateOpenWorkoutSplit() async {
+        _ = try? await OpenWorkoutSplitIntent().donate()
+    }
+
+    static func donateCreateWorkoutSplit() async {
+        _ = try? await CreateWorkoutSplitIntent().donate()
+    }
+
+    static func donateManageWorkoutSplits() async {
+        _ = try? await ManageWorkoutSplitsIntent().donate()
+    }
+
+    static func donateOpenTodaysPlan() async {
+        _ = try? await OpenTodaysPlanIntent().donate()
+    }
+
     static func donateStartTodaysWorkout() async {
         _ = try? await StartTodaysWorkoutIntent().donate()
     }
@@ -96,6 +112,22 @@ enum IntentDonations {
         let intent = OpenExerciseIntent()
         intent.exercise = ExerciseEntity(exercise: exercise)
         _ = try? await intent.donate()
+    }
+
+    static func donateOpenExercises() async {
+        _ = try? await OpenExercisesIntent().donate()
+    }
+
+    static func donateOpenWorkoutSettings() async {
+        _ = try? await OpenWorkoutSettingsIntent().donate()
+    }
+
+    static func donateOpenRestTimer() async {
+        _ = try? await OpenRestTimerIntent().donate()
+    }
+
+    static func donateOpenPreWorkoutContext() async {
+        _ = try? await OpenPreWorkoutContextIntent().donate()
     }
 
     static func donateStartRestTimer(seconds: Int) async {

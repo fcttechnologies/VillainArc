@@ -141,6 +141,7 @@ Use this to find where logic lives for any feature.
 | Workout status routing | `Views/Workout/WorkoutSessionContainer.swift` |
 | Pre-workout context (mood/notes) | `Views/Workout/PreWorkoutContextView.swift` |
 | Workout settings | `Views/Workout/WorkoutSettingsView.swift` |
+| Intent-driven workout sheet routing | `Data/Services/AppRouter.swift` + `Views/Workout/WorkoutView.swift` + `Intents/Workout/OpenActiveWorkoutIntent.swift` / `OpenPreWorkoutContextIntent.swift` / `OpenRestTimerIntent.swift` / `OpenWorkoutSettingsIntent.swift` |
 
 ### Workout Plans
 | What | Where |
@@ -164,6 +165,7 @@ Use this to find where logic lives for any feature.
 | Per-day editor | `Views/WorkoutSplit/WorkoutSplitDayView.swift` |
 | Split model | `Data/Models/WorkoutSplit/WorkoutSplit.swift` |
 | Split day model | `Data/Models/WorkoutSplit/WorkoutSplitDay.swift` |
+| Split entity + transfer payload | `Intents/WorkoutSplit/WorkoutSplitEntity.swift` |
 | Today's workout logic | `WorkoutSplit.todaysSplitDay` / `todaysWorkoutPlan` |
 | Rotation advancement | `WorkoutSplit.refreshRotationIfNeeded()` |
 
@@ -225,9 +227,10 @@ Use this to find where logic lives for any feature.
 |------|-------|
 | Shortcut registration | `Intents/VillainArcShortcuts.swift` |
 | Donation hub | `Intents/IntentDonations.swift` |
-| Workout intents | `Intents/Workout/*.swift` (14 files) |
+| Workout intents | `Intents/Workout/*.swift` (16 files) |
+| Workout split intents + entity | `Intents/WorkoutSplit/*.swift` (7 files) |
 | Plan intents | `Intents/WorkoutPlan/*.swift` (8 files) |
-| Exercise intents | `Intents/Exercise/*.swift` (6 files) |
+| Exercise intents | `Intents/Exercise/*.swift` (7 files) |
 | Rest timer intents | `Intents/RestTimer/*.swift` (7 files) |
 | Legacy SiriKit | `VillainArcIntentsExtension/*.swift` |
 
@@ -244,7 +247,7 @@ Use this to find where logic lives for any feature.
 |------|-------|
 | Index/delete | `Data/Services/SpotlightIndexer.swift` |
 | Spotlight routing (workouts, plans, exercises) | `Data/Services/AppRouter.swift` → `handleSpotlight()` |
-| Entity associations | `Intents/Workout/WorkoutSessionEntity.swift` etc. |
+| Entity associations | `Intents/Workout/WorkoutSessionEntity.swift`, `Intents/WorkoutPlan/WorkoutPlanEntity.swift`, `Intents/Exercise/ExerciseEntity.swift`, `Intents/WorkoutSplit/WorkoutSplitEntity.swift` |
 
 ### Onboarding & Setup
 | What | Where |
@@ -452,7 +455,13 @@ VillainArc/
       RestTimeHistory.swift
     LiveActivity/                ActivityKit attributes + manager
     Protocols/                   RestTimeEditable protocol
-  Intents/                       App Intents for Siri/Shortcuts (42 files)
+  Intents/                       App Intents for Siri/Shortcuts (52 files)
+    Workout/                     Workout session/history intents + entity
+    WorkoutSplit/                Split navigation/start/summary intents + entity
+    WorkoutPlan/                 Workout plan intents + entity
+    Exercise/                    Exercise intents + entity
+    RestTimer/                   Rest timer intents + snippet UI
+    LiveActivity/                Live Activity control intents
   Helpers/                       Utility functions (10 files)
   Documentation/                 This file + ARCHITECTURE.md + flow docs (7 files)
 

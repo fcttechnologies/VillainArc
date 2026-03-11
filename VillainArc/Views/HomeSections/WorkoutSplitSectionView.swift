@@ -25,25 +25,32 @@ struct WorkoutSplitSectionView: View {
     @ViewBuilder
     private var content: some View {
         if splits.isEmpty {
-            splitUnavailableView(title: "No Workout Split", description: "Create a split to plan your training days.", autoOpenBuilder: true)
+            splitUnavailableView(title: "No Workout Split", description: "Create a split to plan your training days.", autoOpenBuilder: true) {
+                await IntentDonations.donateCreateWorkoutSplit()
+            }
                 .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitEmptyState)
         } else if let activeSplit {
             if let day = activeSplit.todaysSplitDay {
                 activeSplitCard(split: activeSplit, day: day)
                     .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitActiveRow)
             } else {
-                splitUnavailableView(title: "No Split Day Configured", description: "Add days to your split to get started.")
+                splitUnavailableView(title: "No Split Day Configured", description: "Add days to your split to get started.") {
+                    await IntentDonations.donateOpenWorkoutSplit()
+                }
                     .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoDayState)
             }
         } else {
-            splitUnavailableView(title: "No Active Split", description: "Set one of your splits as active.")
+            splitUnavailableView(title: "No Active Split", description: "Set one of your splits as active.") {
+                await IntentDonations.donateManageWorkoutSplits()
+            }
                 .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoActiveState)
         }
     }
 
-    private func splitUnavailableView(title: String, description: String, autoOpenBuilder: Bool = false) -> some View {
+    private func splitUnavailableView(title: String, description: String, autoOpenBuilder: Bool = false, onNavigate: @escaping () async -> Void = {}) -> some View {
         Button {
             appRouter.navigate(to: .workoutSplit(autoPresentBuilder: autoOpenBuilder))
+            Task { await onNavigate() }
         } label: {
             SmallUnavailableView(sfIconName: "calendar.badge.exclamationmark", title: title, subtitle: description)
                 .padding()
@@ -74,10 +81,7 @@ struct WorkoutSplitSectionView: View {
             if !isRestDay, let plan = day.workoutPlan {
                 Button {
                     appRouter.navigate(to: .workoutPlanDetail(plan, true))
-                    Task {
-                        await IntentDonations.donateStartTodaysWorkout()
-                        await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan)
-                    }
+                    Task { await IntentDonations.donateOpenTodaysPlan() }
                 } label: {
                     Image(systemName: "list.clipboard")
                         .font(.title3)
@@ -93,6 +97,7 @@ struct WorkoutSplitSectionView: View {
         .contentShape(.rect)
         .onTapGesture {
             appRouter.navigate(to: .workoutSplit(autoPresentBuilder: false))
+            Task { await IntentDonations.donateOpenWorkoutSplit() }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(titleText)

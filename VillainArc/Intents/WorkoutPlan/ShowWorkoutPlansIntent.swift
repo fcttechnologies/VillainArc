@@ -1,4 +1,5 @@
 import AppIntents
+import SwiftData
 
 struct ShowWorkoutPlansIntent: AppIntent {
     static let title: LocalizedStringResource = "Show Workout Plans"
@@ -6,9 +7,27 @@ struct ShowWorkoutPlansIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & OpensIntent {
+        let context = SharedModelContainer.container.mainContext
+        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+
+        guard (try? context.fetch(WorkoutPlan.recent).first) != nil else {
+            throw ShowWorkoutPlansError.noWorkoutPlansFound
+        }
+
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlansList)
-        return .result()
+        return .result(opensIntent: OpenAppIntent())
+    }
+}
+
+enum ShowWorkoutPlansError: Error, CustomLocalizedStringResourceConvertible {
+    case noWorkoutPlansFound
+
+    var localizedStringResource: LocalizedStringResource {
+        switch self {
+        case .noWorkoutPlansFound:
+            return "You don't have any workout plans yet."
+        }
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import AppIntents
 
 struct WorkoutSplitView: View {
     @Environment(\.modelContext) private var context
@@ -8,6 +9,7 @@ struct WorkoutSplitView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Query private var allSplits: [WorkoutSplit]
+    @State private var router = AppRouter.shared
 
     @State private var overrideSplit: WorkoutSplit?
     @State private var selectedSplitDay: WorkoutSplitDay?
@@ -101,7 +103,11 @@ struct WorkoutSplitView: View {
                 showSplitBuilder = true
             }
             refreshRotationIfNeeded()
+            presentSplitListIfNeeded()
             Task { await IntentDonations.donateTrainingSummary() }
+        }
+        .onChange(of: router.showWorkoutSplitListFromIntent) { _, _ in
+            presentSplitListIfNeeded()
         }
         .onChange(of: currentSplit?.persistentModelID) { _, _ in
             selectedSplitDay = currentSplit?.todaysSplitDay
@@ -113,6 +119,21 @@ struct WorkoutSplitView: View {
             guard newPhase == .active else { return }
             refreshRotationIfNeeded()
         }
+        .userActivity("com.villainarc.workoutSplit.view", isActive: currentSplit != nil) { activity in
+            guard let split = currentSplit else { return }
+            let entity = WorkoutSplitEntity(workoutSplit: split)
+            activity.title = entity.title
+            activity.isEligibleForSearch = true
+            activity.isEligibleForPrediction = true
+            activity.appEntityIdentifier = .init(for: entity)
+        }
+    }
+
+    private func presentSplitListIfNeeded() {
+        guard router.showWorkoutSplitListFromIntent else { return }
+        router.showWorkoutSplitListFromIntent = false
+        splitListInitialPath = []
+        showSplitList = true
     }
 
     // MARK: - Content
@@ -192,6 +213,7 @@ struct WorkoutSplitView: View {
                     Button("Create New Split", systemImage: "plus") {
                         Haptics.selection()
                         showSplitBuilder = true
+                        Task { await IntentDonations.donateCreateWorkoutSplit() }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
                     .accessibilityHint(AccessibilityText.workoutSplitCreateHint)

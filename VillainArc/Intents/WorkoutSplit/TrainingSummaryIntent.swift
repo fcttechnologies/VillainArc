@@ -93,6 +93,8 @@ struct TrainingSummaryIntent: AppIntent {
             return .result(dialog: "Your split doesn't have any days set up yet.")
         }
 
+        split.refreshRotationIfNeeded(context: context)
+
         let targetDate = day.date
         guard let splitDay = split.splitDay(for: targetDate) else {
             return .result(dialog: "Couldn't determine your training day.")

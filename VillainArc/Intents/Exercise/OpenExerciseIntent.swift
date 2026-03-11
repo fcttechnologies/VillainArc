@@ -15,12 +15,7 @@ struct OpenExerciseIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        if let _ = try? context.fetch(WorkoutPlan.incomplete).first {
-            throw StartWorkoutError.workoutPlanIsActive
-        }
-        if let _ = try? context.fetch(WorkoutSession.incomplete).first {
-            throw StartWorkoutError.workoutIsActive
-        }
+        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
         let catalogID = exercise.id
         guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else {

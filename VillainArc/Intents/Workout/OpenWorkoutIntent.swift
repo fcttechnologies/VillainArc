@@ -15,12 +15,7 @@ struct OpenWorkoutIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        if let _ = try? context.fetch(WorkoutPlan.incomplete).first {
-            throw StartWorkoutError.workoutPlanIsActive
-        }
-        if let _ = try? context.fetch(WorkoutSession.incomplete).first {
-            throw StartWorkoutError.workoutIsActive
-        }
+        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
         let workoutID = workout.id
         let predicate = #Predicate<WorkoutSession> { $0.id == workoutID }
