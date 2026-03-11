@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct ExerciseView: View {
-    @AppStorage(WorkoutPreferences.autoStartRestTimerKey, store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var exercise: ExercisePerformance
     let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
@@ -15,6 +15,10 @@ struct ExerciseView: View {
     @State private var showExerciseHistorySheet = false
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
+
+    private var autoStartRestTimerEnabled: Bool {
+        appSettings.first?.autoStartRestTimer ?? true
+    }
 
     init(exercise: ExercisePerformance, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
@@ -219,7 +223,7 @@ struct ExerciseView: View {
     }
 
     private func checkForRestTimeUpdate() {
-        guard autoStartRestTimer else { return }
+        guard autoStartRestTimerEnabled else { return }
         guard let startedFromSetID = restTimer.startedFromSetID else { return }
         guard let matchingSet = exercise.sortedSets.first(where: { $0.id == startedFromSetID }) else { return }
 

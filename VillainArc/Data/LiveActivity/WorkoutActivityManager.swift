@@ -4,9 +4,13 @@ import SwiftData
 
 @MainActor
 enum WorkoutActivityManager {
+    private static var liveActivitiesEnabled: Bool {
+        let context = SharedModelContainer.container.mainContext
+        return (try? context.fetch(AppSettings.single).first)?.liveActivitiesEnabled ?? true
+    }
 
     static func start(workout: WorkoutSession) {
-        guard WorkoutPreferences.liveActivitiesEnabled else {
+        guard liveActivitiesEnabled else {
             endAllActivities()
             return
         }
@@ -16,7 +20,7 @@ enum WorkoutActivityManager {
     }
 
     static func update(for workout: WorkoutSession? = nil) {
-        guard WorkoutPreferences.liveActivitiesEnabled else {
+        guard liveActivitiesEnabled else {
             endAllActivities()
             return
         }
@@ -46,7 +50,7 @@ enum WorkoutActivityManager {
     }
 
     static func restoreIfNeeded(workout: WorkoutSession) {
-        guard WorkoutPreferences.liveActivitiesEnabled else {
+        guard liveActivitiesEnabled else {
             endAllActivities()
             return
         }
@@ -58,7 +62,7 @@ enum WorkoutActivityManager {
     }
 
     static func restart(workout: WorkoutSession) {
-        guard WorkoutPreferences.liveActivitiesEnabled else {
+        guard liveActivitiesEnabled else {
             endAllActivities()
             return
         }

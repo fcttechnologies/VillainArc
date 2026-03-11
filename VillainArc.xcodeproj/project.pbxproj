@@ -108,6 +108,7 @@
 			membershipExceptions = (
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
+				Data/Models/AppSettings.swift,
 				Data/Models/Enums/Exercise/EquipmentType.swift,
 				Data/Models/Enums/Exercise/ExerciseSetType.swift,
 				Data/Models/Enums/Exercise/Muscle.swift,

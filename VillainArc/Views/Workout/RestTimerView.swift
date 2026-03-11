@@ -5,10 +5,14 @@ struct RestTimerView: View {
     @Environment(\.dismiss) private var dismiss
     private let restTimer = RestTimerState.shared
     @Environment(\.modelContext) private var context
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
-    @AppStorage(WorkoutPreferences.autoStartRestTimerKey, store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @State private var selectedSeconds = RestTimeDefaults.restSeconds
     @Bindable var workout: WorkoutSession
+
+    private var autoStartRestTimerEnabled: Bool {
+        appSettings.first?.autoStartRestTimer ?? true
+    }
     
     var body: some View {
         NavigationStack {
@@ -302,7 +306,7 @@ struct RestTimerView: View {
         nextSet.completedAt = Date()
 
         let restSeconds = nextSet.effectiveRestSeconds
-        if autoStartRestTimer, restSeconds > 0 {
+        if autoStartRestTimerEnabled, restSeconds > 0 {
             restTimer.start(seconds: restSeconds, startedFromSetID: nextSet.id)
             RestTimeHistory.record(seconds: restSeconds, context: context)
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }

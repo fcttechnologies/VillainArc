@@ -33,14 +33,21 @@ struct ExerciseSetRowView: View {
     @Bindable var set: SetPerformance
     @Bindable var exercise: ExercisePerformance
     @Environment(\.modelContext) private var context
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     private let restTimer = RestTimerState.shared
-    @AppStorage(WorkoutPreferences.autoStartRestTimerKey, store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
-    @AppStorage(WorkoutPreferences.autoCompleteSetAfterRPEKey, store: SharedModelContainer.sharedDefaults) private var autoCompleteSetAfterRPE = false
     @State private var showOverrideTimerAlert = false
     @FocusState private var focusedField: Field?
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
+
+    private var autoStartRestTimerEnabled: Bool {
+        appSettings.first?.autoStartRestTimer ?? true
+    }
+
+    private var autoCompleteSetAfterRPEEnabled: Bool {
+        appSettings.first?.autoCompleteSetAfterRPE ?? false
+    }
 
     var body: some View {
         Group {
@@ -212,7 +219,7 @@ struct ExerciseSetRowView: View {
         guard set.rpe != value else { return }
         Haptics.selection()
         set.rpe = value
-        if autoCompleteSetAfterRPE, !set.complete, value > 0 {
+        if autoCompleteSetAfterRPEEnabled, !set.complete, value > 0 {
             completeSet(playHaptics: false)
             return
         }
@@ -237,7 +244,7 @@ struct ExerciseSetRowView: View {
     }
 
     private func handleAutoStartTimer() {
-        guard autoStartRestTimer else { return }
+        guard autoStartRestTimerEnabled else { return }
         let restSeconds = set.effectiveRestSeconds
         guard restSeconds > 0 else { return }
 

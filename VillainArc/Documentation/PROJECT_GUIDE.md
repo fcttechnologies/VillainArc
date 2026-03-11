@@ -72,7 +72,7 @@ VillainArcApp (@main)
 
 **AppRouter** (singleton, `@Observable`): Owns `NavigationPath`, `activeWorkoutSession`, `activeWorkoutPlan`. Enforces one active flow at a time, auto-resumes unfinished workout sessions first, then resumable incomplete plans, and blocks Spotlight/Siri/new-flow entry points while a flow is already active.
 
-**SharedModelContainer**: SwiftData container with 16 model types, CloudKit-backed, app-group store.
+**SharedModelContainer**: SwiftData container with 17 model types, CloudKit-backed, app-group store.
 
 **Data flow:** Views use `@Query` for reads, `@Bindable` for mutations, `saveContext()`/`scheduleSave()` for persistence. No separate view model layer.
 
@@ -85,6 +85,9 @@ VillainArcApp (@main)
 Exercise (catalog)
   ├─ used to create → ExercisePerformance (in session)
   └─ used to create → ExercisePrescription (in plan)
+
+AppSettings (singleton)
+  └─ stores → app-wide workout/timer/live-activity preferences
 
 WorkoutPlan (blueprint)
   ├─ owns → ExercisePrescription[] → SetPrescription[]
@@ -213,7 +216,8 @@ Use this to find where logic lives for any feature.
 | Notifications | `Helpers/RestTimerNotifications.swift` |
 | Recent durations | `Data/Models/RestTimeHistory.swift` |
 | Auto-start on set complete | `Views/Components/ExerciseSetRowView.swift` |
-| Workout timer/live-activity preferences | `Views/Workout/WorkoutSettingsView.swift` |
+| Workout timer/live-activity preferences UI | `Views/Workout/WorkoutSettingsView.swift` |
+| Workout timer/live-activity preferences data | `Data/Models/AppSettings.swift` + `Data/Services/SystemState.swift` |
 
 ### Siri / Shortcuts / Intents
 | What | Where |
@@ -246,8 +250,10 @@ Use this to find where logic lives for any feature.
 |------|-------|
 | Onboarding state machine | `Data/Services/OnboardingManager.swift` |
 | Setup guard (gate) | `Data/Services/SetupGuard.swift` |
+| System singleton bootstrap | `Data/Services/SystemState.swift` |
 | Onboarding UI | `Views/Onboarding/OnboardingView.swift` |
 | User profile model | `Data/Models/UserProfile.swift` |
+| App settings model | `Data/Models/AppSettings.swift` |
 | iCloud check | `Helpers/CloudKitStatusChecker.swift` |
 | Network check | `Helpers/NetworkMonitor.swift` |
 
@@ -427,6 +433,7 @@ VillainArc/
       DataManager.swift          Catalog seeding + save helpers
       OnboardingManager.swift    First-run state machine
       SetupGuard.swift           Intent pre-condition guard
+      SystemState.swift          Singleton bootstrap + settings migration helper
       RestTimerState.swift       Global rest timer (singleton)
       SpotlightIndexer.swift     CoreSpotlight integration
       ExerciseHistoryUpdater.swift  Analytics rebuild
@@ -438,6 +445,7 @@ VillainArc/
       WorkoutSplit/              WorkoutSplit, WorkoutSplitDay
       AIModels/                  AI DTOs for suggestion/outcome inference
       Enums/                     All domain enums (14 files)
+      AppSettings.swift
       UserProfile.swift
       RestTimeHistory.swift
     LiveActivity/                ActivityKit attributes + manager

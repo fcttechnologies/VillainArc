@@ -1,11 +1,14 @@
 import Foundation
+import SwiftData
 import UserNotifications
 
 enum RestTimerNotifications {
     private static let notificationID = "restTimerComplete"
 
     static func schedule(endDate: Date, durationSeconds: Int) async {
-        guard WorkoutPreferences.restTimerNotificationsEnabled else {
+        let context = ModelContext(SharedModelContainer.container)
+        let notificationsEnabled = (try? context.fetch(AppSettings.single).first)?.restTimerNotificationsEnabled ?? true
+        guard notificationsEnabled else {
             await cancel()
             return
         }

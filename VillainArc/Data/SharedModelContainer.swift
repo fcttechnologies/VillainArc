@@ -17,6 +17,7 @@ enum SharedModelContainer {
         ExercisePerformance.self,
         SetPerformance.self,
         Exercise.self,
+        AppSettings.self,
         UserProfile.self,
         ExerciseHistory.self,
         ProgressionPoint.self,
@@ -52,35 +53,4 @@ enum SharedModelContainer {
             fatalError("Failed to create shared ModelContainer: \(error)")
         }
     }()
-}
-
-enum WorkoutPreferences {
-    static let autoStartRestTimerKey = "autoStartRestTimer"
-    static let autoCompleteSetAfterRPEKey = "autoCompleteSetAfterRPE"
-    static let liveActivitiesEnabledKey = "workoutLiveActivitiesEnabled"
-    static let restTimerNotificationsEnabledKey = "restTimerNotificationsEnabled"
-
-    static func bool(forKey key: String, default defaultValue: Bool) -> Bool {
-        let defaults = SharedModelContainer.sharedDefaults
-        if defaults.object(forKey: key) == nil {
-            return defaultValue
-        }
-        return defaults.bool(forKey: key)
-    }
-
-    static var autoStartRestTimerEnabled: Bool {
-        bool(forKey: autoStartRestTimerKey, default: true)
-    }
-
-    static var autoCompleteSetAfterRPEEnabled: Bool {
-        bool(forKey: autoCompleteSetAfterRPEKey, default: false)
-    }
-
-    static var liveActivitiesEnabled: Bool {
-        bool(forKey: liveActivitiesEnabledKey, default: true)
-    }
-
-    static var restTimerNotificationsEnabled: Bool {
-        bool(forKey: restTimerNotificationsEnabledKey, default: true)
-    }
 }

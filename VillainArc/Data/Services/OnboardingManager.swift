@@ -9,7 +9,7 @@ enum OnboardingState: Equatable {
     case noiCloud
     case cloudKitUnavailable
     case syncing
-    case syncingSlowNetwork  // Taking longer than expected
+    case syncingSlowNetwork
     case seeding
     case profile(UserProfileOnboardingStep)
     case finishing
@@ -97,7 +97,8 @@ class OnboardingManager {
         }
 
         do {
-            let profile = try ensureProfile()
+            _ = try SystemState.ensureAppSettings(context: context)
+            let profile = try SystemState.ensureUserProfile(context: context)
             routeFromProfile(profile)
         } catch {
             state = .error("Failed to set up your profile: \(error.localizedDescription)")
@@ -118,7 +119,8 @@ class OnboardingManager {
             // Seed exercises locally only
             _ = try await DataManager.seedExercisesForOnboarding()
             SpotlightIndexer.reindexAll(context: context)
-            let profile = try ensureProfile()
+            _ = try SystemState.ensureAppSettings(context: context)
+            let profile = try SystemState.ensureUserProfile(context: context)
             routeFromProfile(profile)
         } catch {
             state = .error("Failed to finish setup: \(error.localizedDescription)")
@@ -185,29 +187,12 @@ class OnboardingManager {
         }
 
         do {
-            let profile = try ensureProfile()
+            _ = try SystemState.ensureAppSettings(context: context)
+            let profile = try SystemState.ensureUserProfile(context: context)
             routeFromProfile(profile)
         } catch {
             state = .error("Failed to load your profile: \(error.localizedDescription)")
         }
-    }
-
-    private func ensureProfile() throws -> UserProfile {
-        if let existing = try fetchProfiles().first {
-            profile = existing
-            return existing
-        }
-
-        let newProfile = UserProfile()
-        context.insert(newProfile)
-        print("New profile created")
-        try context.save()
-        profile = newProfile
-        return newProfile
-    }
-
-    private func fetchProfiles() throws -> [UserProfile] {
-        return try context.fetch(UserProfile.single)
     }
 
     private func transitionToReady() {

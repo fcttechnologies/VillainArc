@@ -8,7 +8,9 @@ enum SetupGuard {
             throw SetupGuardError.onboardingNotComplete
         }
 
-        guard let profile = try context.fetch(UserProfile.single).first, profile.firstMissingStep == nil else {
+        _ = try SystemState.ensureAppSettings(context: context)
+        let profile = try SystemState.ensureUserProfile(context: context)
+        guard profile.firstMissingStep == nil else {
             throw SetupGuardError.onboardingNotComplete
         }
     }

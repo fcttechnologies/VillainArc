@@ -16,6 +16,7 @@ class PreviewDataContainer {
             ExercisePerformance.self,
             SetPerformance.self,
             Exercise.self,
+            AppSettings.self,
             ExerciseHistory.self,
             ProgressionPoint.self,
             UserProfile.self,
@@ -32,6 +33,7 @@ class PreviewDataContainer {
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])
 
+            context.insert(AppSettings())
             syncExercises()
             loadCompletedPlan()
             loadCompletedSession()

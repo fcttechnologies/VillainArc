@@ -37,6 +37,8 @@
   - Weekly/rotation scheduling models used by split management and "today's workout" routing
 - `Exercise` + catalog/search metadata + `ExerciseHistory`/`ProgressionPoint`
   - Canonical exercise identity/search + derived longitudinal performance cache
+- `AppSettings`
+  - Singleton app-preference model for workout logging, rest timer, notifications, and live-activity behavior
 - `UserProfile`
   - User account data (name, birthday, height) collected during onboarding
 - `RepRangePolicy` / `RestTimeHistory` / `PreWorkoutContext`
@@ -45,6 +47,8 @@
   - First-run state machine (network/iCloud/CloudKit checks → sync → seed → Spotlight rebuild → profile collection)
 - `SetupGuard`
   - Intent pre-condition guard that verifies initial bootstrap and user profile setup are complete before allowing intent execution
+- `SystemState`
+  - Shared singleton bootstrap helper that ensures `UserProfile` and `AppSettings` exist before feature code reads them
 - `DataManager` (`saveContext` / `scheduleSave`)
   - Seeds and dedupes exercise catalog data
   - Provides shared save helpers used by router/views/models
@@ -210,7 +214,7 @@
 - Calls: SwiftData context (`insert/fetch/delete` via `SharedModelContainer.container.mainContext`), `saveContext`, `Haptics.selection`, `pendingSuggestions`, `RestTimerState.shared.stop`, `WorkoutActivityManager.end`, `SpotlightIndexer.workoutSessionIdentifierPrefix`, `SpotlightIndexer.workoutPlanIdentifierPrefix`, `SpotlightIndexer.exerciseIdentifierPrefix`.
 
 ### `VillainArc/Data/SharedModelContainer.swift`
-- Does: Defines app-wide SwiftData schema, creates the shared `ModelContainer`, and exposes app-group `UserDefaults` plus shared workout preference keys/default readers.
+- Does: Defines app-wide SwiftData schema, creates the shared `ModelContainer`, and exposes app-group `UserDefaults` for non-model shared state like catalog versioning and rest-timer restoration.
 - Called by: `VillainArcApp` (`.modelContainer`), `AppRouter` (`mainContext`), `WorkoutActivityManager`, and many app intent/entity files.
 - Calls: `Schema(...)` with model types, `FileManager.default.containerURL(...)`, `ModelConfiguration(...)`, `ModelContainer(for:configurations:)`.
 
@@ -220,14 +224,19 @@
 - Calls: app-group `UserDefaults` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
 
 ### `VillainArc/Data/Services/OnboardingManager.swift`
-- Does: First-run state machine orchestrating network/iCloud/CloudKit checks, data sync, exercise catalog seeding, fresh-install Spotlight rebuild, and user profile collection.
+- Does: First-run state machine orchestrating network/iCloud/CloudKit checks, data sync, exercise catalog seeding, fresh-install Spotlight rebuild, and singleton bootstrap for `UserProfile` plus `AppSettings`.
 - Called by: `ContentView` (via `onboardingManager.startOnboarding()`).
-- Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `SpotlightIndexer.reindexAll`, `UserProfile` queries, `saveContext`.
+- Calls: `NetworkMonitor.checkConnectivity`, `CloudKitStatusChecker.checkiCloudStatus/checkCloudKitAvailability`, `DataManager.seedExercisesForOnboarding`, `SpotlightIndexer.reindexAll`, `SystemState.ensureUserProfile`, `SystemState.ensureAppSettings`, `saveContext`.
 
 ### `VillainArc/Data/Services/SetupGuard.swift`
-- Does: Intent pre-condition guard that verifies initial bootstrap and user profile setup are complete before allowing intent execution.
+- Does: Intent pre-condition guard that verifies initial bootstrap, singleton bootstrap, and user profile setup are complete before allowing intent execution.
 - Called by: `StartWorkoutIntent`, `CreateWorkoutPlanIntent`, `StartTodaysWorkoutIntent`.
-- Calls: `DataManager.hasCompletedInitialBootstrap`, `UserProfile.single` fetch, `SetupGuardError`.
+- Calls: `DataManager.hasCompletedInitialBootstrap`, `SystemState.ensureAppSettings`, `SystemState.ensureUserProfile`, `SetupGuardError`.
+
+### `VillainArc/Data/Services/SystemState.swift`
+- Does: Shared singleton bootstrap service that lazily ensures `UserProfile` and `AppSettings` exist.
+- Called by: `OnboardingManager`, `SetupGuard`, `WorkoutSettingsView`.
+- Calls: `UserProfile.single`, `AppSettings.single`, `ModelContext.fetch/insert/save`.
 
 ### `VillainArc/Data/Services/Suggestions/SuggestionGenerator.swift`
 - Does: Generates `PrescriptionChange` suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference.
@@ -295,9 +304,9 @@
 - Calls: `AppRouter.navigate(to: .workoutSessionDetail(...))`, `IntentDonations.donateOpenWorkout`, `AccessibilityText.workoutRowLabel/workoutRowValue/workoutRowHint`.
 
 ### `VillainArc/Views/Components/ExerciseSetRowView.swift`
-- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). Linked plan targets stay in the target/reference column, and an optional workout setting can auto-complete the set immediately after the user picks an RPE. Completing the final remaining set in a plan workout also prewarms the suggestion pipeline.
+- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). Linked plan targets stay in the target/reference column, and `AppSettings` can auto-complete the set immediately after the user picks an RPE. Completing the final remaining set in a plan workout also prewarms the suggestion pipeline.
 - Called by: `ExerciseView`, SwiftUI preview via `ExerciseView`.
-- Calls: `RPEBadge`, `RPEValue`, `RestTimerState.shared`, `RestTimeHistory.record`, `FoundationModelPrewarmer`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
+- Calls: `RPEBadge`, `RPEValue`, `AppSettings.single` query, `RestTimerState.shared`, `RestTimeHistory.record`, `FoundationModelPrewarmer`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
 
 ### `VillainArc/Views/Components/RPEBadge.swift`
 - Does: Shared compact RPE badge for actual set RPE and plan target RPE display.
@@ -380,9 +389,9 @@
 - Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSettingsView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/WorkoutSettingsView.swift`
-- Does: Workout-scoped settings sheet for timer auto-start, auto-complete-after-RPE, rest timer notifications, live activity visibility, and manual live activity restart.
+- Does: Workout-scoped settings sheet for timer auto-start, auto-complete-after-RPE, rest timer notifications, live activity visibility, and manual live activity restart, backed by the singleton `AppSettings` model.
 - Called by: `WorkoutView`, SwiftUI preview.
-- Calls: `WorkoutActivityManager.restart/end`, `RestTimerNotifications.schedule/cancel`, `.navBar(title:)`, `CloseButton`, app-group `@AppStorage` via `SharedModelContainer.sharedDefaults`.
+- Calls: `AppSettings.single` query, `SystemState.ensureAppSettings`, `WorkoutActivityManager.restart/end`, `RestTimerNotifications.schedule/cancel`, `saveContext`, `.navBar(title:)`, `CloseButton`.
 
 ### `VillainArc/Views/Workout/ExerciseView.swift`
 - Does: Per-exercise workout page with set logging grid, notes, rep/rest editors, replace action, and set reference handling. Exercises still linked to a plan prescription show target references, including target RPE badges when present; exercises without a linked prescription use previous-performance references instead.
@@ -395,9 +404,9 @@
 - Calls: `Haptics.selection`, `dismissKeyboard`, `saveContext`, `scheduleSave`, `dismiss` environment action.
 
 ### `VillainArc/Views/Workout/RestTimerView.swift`
-- Does: Rest timer control screen with picker/start-pause-resume-stop, recent durations, and next-set completion shortcut. The timer auto-start preference now lives in workout settings rather than this sheet.
+- Does: Rest timer control screen with picker/start-pause-resume-stop, recent durations, and next-set completion shortcut. The timer auto-start preference is read from singleton `AppSettings`.
 - Called by: `WorkoutView`, SwiftUI preview.
-- Calls: `TimerDurationPicker`, `RestTimerState.shared` (`start/pause/resume/stop/adjust`), `RestTimeHistory.record`, `WorkoutSession.activeExerciseAndSet`, `WorkoutActivityManager.update`, `IntentDonations` rest-timer actions, `saveContext`, `secondsToTime`, `Haptics.selection`.
+- Calls: `TimerDurationPicker`, `AppSettings.single` query, `RestTimerState.shared` (`start/pause/resume/stop/adjust`), `RestTimeHistory.record`, `WorkoutSession.activeExerciseAndSet`, `WorkoutActivityManager.update`, `IntentDonations` rest-timer actions, `saveContext`, `secondsToTime`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/WorkoutSummaryView.swift`
 - Does: Post-workout summary and finalization screen (stats, weight/volume/rep PR detection, effort rating, notes/title edits, suggestion review, save as plan). Freeform summaries also prewarm a generic Foundation Models session in case the workout is saved as a plan.
@@ -606,7 +615,7 @@
 - `PrescriptionChange` links source evidence (`sessionFrom`/`sourceExercisePerformance`/`sourceSetPerformance`) to targets (`targetPlan`/`targetExercisePrescription`/`targetSetPrescription`) and lifecycle state (`decision`, `outcome`).
 - `ExerciseHistory` stores aggregate stats per `catalogID` and owns `ProgressionPoint` rows.
 - `RestTimeHistory` stores reusable recent rest durations.
-- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`, `UserProfile`.
+- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `AppSettings`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`, `UserProfile`.
 
 ### Data Model File Index
 
@@ -664,6 +673,11 @@
 - Does: Recent rest durations cache for rest-timer quick picks.
 - Called by: `RestTimerView`, `ExerciseSetRowView`, rest timer intents (`StartRestTimerIntent`, `CompleteActiveSetIntent`).
 - Calls: `record(seconds:context:)` with `ModelContext.fetch/insert`.
+
+### `VillainArc/Data/Models/AppSettings.swift`
+- Does: Singleton app-settings model storing workout logging, rest timer, notification, and live-activity preferences with default values.
+- Called by: `SystemState`, `WorkoutSettingsView`, workout/live-activity helpers and intents via fetches.
+- Calls: `AppSettings.single` fetch descriptor helper.
 
 ### `VillainArc/Data/Models/UserProfile.swift`
 - Does: User account data (name, birthday, height) collected during onboarding. Provides `isComplete` and `firstMissingStep` for onboarding flow.
@@ -755,9 +769,9 @@
 - Calls: Internal state helpers (`isTimerRunning`, `isTimerPaused`, `hasActiveSet`).
 
 ### `VillainArc/Data/LiveActivity/WorkoutActivityManager.swift`
-- Does: Live activity lifecycle manager (start/update/end/restore/restart) for active workouts, gated by the shared workout live-activity preference.
+- Does: Live activity lifecycle manager (start/update/end/restore/restart) for active workouts, gated by singleton `AppSettings`.
 - Called by: `WorkoutView`, `ExerciseSetRowView`, `RestTimerView`, `RestTimerState`, workout/live-activity intents, `AppRouter`.
-- Calls: `Activity.request/update/end`, `WorkoutActivityAttributes.ContentState` builder, `SharedModelContainer.container.mainContext`, `WorkoutSession.incomplete`.
+- Calls: `Activity.request/update/end`, `AppSettings.single` fetch, `WorkoutActivityAttributes.ContentState` builder, `SharedModelContainer.container.mainContext`, `WorkoutSession.incomplete`.
 
 ### `VillainArc/Helpers/ExerciseSearch.swift`
 - Does: Search scoring and tokenization helpers for exercise lookup (exact/prefix/phrase weighting).
@@ -770,9 +784,9 @@
 - Calls: `UIApplication.shared.sendAction(...resignFirstResponder...)`.
 
 ### `VillainArc/Helpers/RestTimerNotifications.swift`
-- Does: Local notification scheduler/canceler for rest timer completion reminders, gated by the shared workout notification preference.
+- Does: Local notification scheduler/canceler for rest timer completion reminders, gated by singleton `AppSettings`.
 - Called by: `RestTimerState`.
-- Calls: `UNUserNotificationCenter` auth/settings APIs, notification request creation.
+- Calls: `ModelContext(SharedModelContainer.container)`, `AppSettings.single` fetch, `UNUserNotificationCenter` auth/settings APIs, notification request creation.
 
 ### `VillainArc/Helpers/TextNormalization.swift`
 - Does: Text normalization + fuzzy-match helpers (tokenization, max distance, Levenshtein distance).

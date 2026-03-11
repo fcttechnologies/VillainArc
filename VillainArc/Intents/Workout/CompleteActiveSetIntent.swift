@@ -20,8 +20,9 @@ struct CompleteActiveSetIntent: AppIntent {
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
         set.complete = true
         set.completedAt = Date()
-        
-        if WorkoutPreferences.autoStartRestTimerEnabled {
+
+        let autoStartRestTimerEnabled = (try? context.fetch(AppSettings.single).first)?.autoStartRestTimer ?? true
+        if autoStartRestTimerEnabled {
             let restSeconds = set.effectiveRestSeconds
             if restSeconds > 0 {
                 RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.id)
