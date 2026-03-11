@@ -18,8 +18,7 @@ final class AppRouter {
         case exercisesList
         case exerciseDetail(String)
         case exerciseHistory(String)
-        case splitList(autoPresentBuilder: Bool)
-        case splitDettail(WorkoutSplit)
+        case workoutSplit(autoPresentBuilder: Bool)
     }
     
     var path = NavigationPath()

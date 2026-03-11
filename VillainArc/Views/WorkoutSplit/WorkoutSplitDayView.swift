@@ -110,14 +110,14 @@ struct WorkoutSplitDayView: View {
 
 #Preview("Weekly Split") {
     NavigationStack {
-        WorkoutSplitCreationView(split: sampleWeeklySplit())
+        WorkoutSplitView(split: sampleWeeklySplit())
     }
     .sampleDataContainer()
 }
 
 #Preview("Rotation Split") {
     NavigationStack {
-        WorkoutSplitCreationView(split: sampleRotationSplit())
+        WorkoutSplitView(split: sampleRotationSplit())
     }
     .sampleDataContainer()
 }

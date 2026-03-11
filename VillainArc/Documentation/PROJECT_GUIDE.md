@@ -62,8 +62,7 @@ VillainArcApp (@main)
        ├─ Stack destinations: WorkoutsListView, WorkoutDetailView,
        │   WorkoutPlansListView, WorkoutPlanDetailView,
        │   ExercisesListView, ExerciseDetailView,
-       │   ExerciseHistoryView, WorkoutSplitView,
-       │   WorkoutSplitCreationView
+       │   ExerciseHistoryView, WorkoutSplitView
        ├─ Full-screen cover: WorkoutSessionContainer (active workout)
        │   └─ Routes by status: DeferredSuggestionsView (.pending)
        │       → WorkoutView (.active) → WorkoutSummaryView (.summary/.done)
@@ -158,9 +157,9 @@ Use this to find where logic lives for any feature.
 ### Training Splits
 | What | Where |
 |------|-------|
-| Split management | `Views/WorkoutSplit/WorkoutSplitView.swift` |
+| Split editor (main screen, active split) | `Views/WorkoutSplit/WorkoutSplitView.swift` |
+| Split list sheet (all splits management) | `Views/WorkoutSplit/WorkoutSplitListView.swift` |
 | Split builder (presets) | `Views/WorkoutSplit/SplitBuilderView.swift` |
-| Split detail editor | `Views/WorkoutSplit/WorkoutSplitCreationView.swift` |
 | Per-day editor | `Views/WorkoutSplit/WorkoutSplitDayView.swift` |
 | Split model | `Data/Models/WorkoutSplit/WorkoutSplit.swift` |
 | Split day model | `Data/Models/WorkoutSplit/WorkoutSplitDay.swift` |
@@ -197,7 +196,7 @@ Use this to find where logic lives for any feature.
 | Replace exercise | `Views/Workout/ReplaceExerciseView.swift` |
 | Muscle filter | `Views/Workout/Editors/MuscleFilterSheetView.swift` |
 | Home exercise section | `Views/HomeSections/RecentExercisesSectionView.swift` |
-| Exercises list | `Views/Exercise/ExercisesListView.swift` |
+| Exercises list (search + favorites filter/toggle) | `Views/Exercise/ExercisesListView.swift` |
 | Exercise detail / progress UI | `Views/Exercise/ExerciseDetailView.swift` |
 | Exercise performance history UI | `Views/Exercise/ExerciseHistoryView.swift` |
 | Contextual workout/plan history sheet entry point | `Views/Exercise/ExerciseHistoryView.swift` initializers |
@@ -368,7 +367,7 @@ Look at: `SuggestionGenerator.swift` (generation), `RuleEngine.swift` (rules), `
 Look at: `RestTimerState.swift` (state machine), `RestTimerView.swift` (UI), `RestTimerNotifications.swift` (notifications), `ExerciseSetRowView.swift` (auto-start trigger).
 
 ### "Something is broken with splits"
-Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift` (management UI), `WorkoutSplitCreationView.swift` (editor).
+Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift` (main editor, active split), `WorkoutSplitListView.swift` (all-splits sheet).
 
 ---
 

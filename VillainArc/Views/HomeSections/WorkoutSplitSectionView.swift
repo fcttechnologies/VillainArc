@@ -14,7 +14,7 @@ struct WorkoutSplitSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HomeSectionHeaderButton(title: "Workout Split", accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitLink, accessibilityHint: AccessibilityText.workoutSplitHeaderHint) {
-                appRouter.navigate(to: .splitList(autoPresentBuilder: false))
+                appRouter.navigate(to: .workoutSplit(autoPresentBuilder: false))
             }
 
             content
@@ -49,7 +49,7 @@ struct WorkoutSplitSectionView: View {
 
     private func splitUnavailableView(title: String, description: String, autoOpenBuilder: Bool = false) -> some View {
         Button {
-            appRouter.navigate(to: .splitList(autoPresentBuilder: autoOpenBuilder))
+            appRouter.navigate(to: .workoutSplit(autoPresentBuilder: autoOpenBuilder))
         } label: {
             SmallUnavailableView(sfIconName: "calendar.badge.exclamationmark", title: title, subtitle: description)
                 .padding()
@@ -98,7 +98,7 @@ struct WorkoutSplitSectionView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 12))
         .contentShape(.rect)
         .onTapGesture {
-            appRouter.navigate(to: .splitList(autoPresentBuilder: false))
+            appRouter.navigate(to: .workoutSplit(autoPresentBuilder: false))
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(titleText)

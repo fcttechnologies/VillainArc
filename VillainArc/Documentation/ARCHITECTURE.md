@@ -359,9 +359,9 @@
 - Calls: `@Query(WorkoutSession.completedSession)`, `WorkoutRowView`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutSessions`, `ModelContext.delete`, `ExerciseHistoryUpdater.updateHistory`, `IntentDonations.donateDeleteWorkout`, `IntentDonations.donateDeleteAllWorkouts`.
 
 ### `VillainArc/Views/Exercise/ExercisesListView.swift`
-- Does: Scrollable list of all exercises sorted by `lastUsed`.
+- Does: Searchable list of all exercises sorted by `lastUsed`, with favorites-only filtering, visible favorite badges, and swipe actions to toggle favorites before navigating to exercise detail.
 - Called by: `ContentView` navigation destination for `.exercisesList`, SwiftUI previews.
-- Calls: `@Query(Exercise.all)`, `ExerciseSummaryRow`.
+- Calls: `@Query(Exercise.all)`, exercise search helpers (`normalizedTokens`, `exerciseSearchMatches`, fuzzy matching), `AppRouter.navigate(to: .exerciseDetail(...))`, `IntentDonations.donateOpenExercise`, `IntentDonations.donateToggleExerciseFavorite`, `Haptics.selection`, `saveContext`.
 
 ### `VillainArc/Views/Exercise/ExerciseDetailView.swift`
 - Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, rep-aware progression charts, and a footer button to open full history.
@@ -489,28 +489,28 @@
 - Calls: `@Query(WorkoutPlan.all)`, `WorkoutPlanDetailView` (with select callback), `WorkoutPlanCardView`, `WorkoutPlanView` (new plan fullScreenCover), `ModelContext.insert/fetch`, `saveContext`, `IntentDonations.donateCreateWorkoutPlan`, `Haptics.selection`.
 
 ### `VillainArc/Views/WorkoutSplit/WorkoutSplitView.swift`
-- Does: Main split management screen showing active/inactive splits, split actions, and today's plan assignment summary.
-- Called by: `ContentView` navigation destination for `.splitList`, SwiftUI preview.
-- Calls: `@Query` over `WorkoutSplit`, `SplitBuilderView`, `WorkoutPlanPickerView` (`SplitDayPlanPickerSheet`), `WorkoutPlanRowView`, `AppRouter.navigate(to: .splitDettail(...))`, `IntentDonations.donateTrainingSummary`, `Haptics.selection`, `saveContext`, split model operations (`refreshRotationIfNeeded`, `missedDay`, `resetSplit`, `updateCurrentIndex`).
+- Does: Main split editor screen for the active split (or an override split). Shows day-paging TabView with capsule headers, options menu (rename, schedule adjustments, swap/rotate days, delete), and "Create New Split" bottom bar. Also shows empty-state views when no splits or no active split exist.
+- Called by: `ContentView` navigation destination for `.workoutSplit`, `WorkoutSplitListView` (navigation destination for inactive split tap), SwiftUI preview.
+- Calls: `@Query` over `WorkoutSplit`, `WorkoutSplitDayView`, `WorkoutSplitListView` (sheet), `SplitBuilderView` (sheet), `TextEntryEditorView`, `IntentDonations.donateTrainingSummary`, `Haptics.selection`, `saveContext`, `scheduleSave`, split model operations (`refreshRotationIfNeeded`, `missedDay`, `resetSplit`, `updateCurrentIndex`, `deleteDay`), internal swap/rotation helpers.
+
+### `VillainArc/Views/WorkoutSplit/WorkoutSplitListView.swift`
+- Does: Sheet presenting all splits (active + inactive sections). Active split tap dismisses the sheet; inactive split tap navigates into `WorkoutSplitView` within the sheet's own `NavigationStack`. Hosts "Create New Split" bottom bar via `SplitBuilderView`.
+- Called by: `WorkoutSplitView` (sheet), SwiftUI preview.
+- Calls: `@Query` over `WorkoutSplit`, `WorkoutSplitView` (navigation destination), `SplitBuilderView` (sheet), `Haptics.selection`, `saveContext`, split model operations (`isActive`, `rotationCurrentIndex`, `rotationLastUpdatedDate`).
 
 ### `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`
 - Does: Home split summary section that shows active/today state and routes users into split screens.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query` over `WorkoutSplit`, `HomeSectionHeaderButton`, `SmallUnavailableView`, `AppRouter.navigate(to: .splitList/.workoutPlanDetail)`, `IntentDonations.donateStartTodaysWorkout`, `IntentDonations.donateOpenWorkoutPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
+- Calls: `@Query` over `WorkoutSplit`, `HomeSectionHeaderButton`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateStartTodaysWorkout`, `IntentDonations.donateOpenWorkoutPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
 
 ### `VillainArc/Views/WorkoutSplit/SplitBuilderView.swift`
 - Does: Multi-step split builder for preset-based or scratch split creation (type, schedule mode, training days, rest style).
-- Called by: `WorkoutSplitView` (create split sheet), SwiftUI preview.
-- Calls: `AppRouter.navigate(to: .splitDettail(...))`, `ModelContext.fetch/insert`, `saveContext`, `Haptics.selection`, split/day model creation (`WorkoutSplit`, `WorkoutSplitDay`), internal generator/config types (`SplitBuilderConfig`, `SplitGenerator`).
-
-### `VillainArc/Views/WorkoutSplit/WorkoutSplitCreationView.swift`
-- Does: Split detail editing screen for an existing split, including day paging, rename, swap mode, day rotation/reorder, and delete actions.
-- Called by: `ContentView` navigation destination for `.splitDettail`, SwiftUI preview.
-- Calls: `WorkoutSplitDayView`, `TextEntryEditorView`, `WorkoutSplit.deleteDay`, `ModelContext.delete`, `saveContext`, `scheduleSave`, `Haptics.selection`, internal helpers for swap/rotation (`swapDays`, `rotateSplit`, `setCurrentRotationDay`).
+- Called by: `WorkoutSplitView` (create split sheet), `WorkoutSplitListView` (create split sheet), SwiftUI preview.
+- Calls: `onSplitCreated: (WorkoutSplit) -> Void` callback on completion, `ModelContext.fetch/insert`, `saveContext`, `Haptics.selection`, split/day model creation (`WorkoutSplit`, `WorkoutSplitDay`), internal generator/config types (`SplitBuilderConfig`, `SplitGenerator`).
 
 ### `VillainArc/Views/WorkoutSplit/WorkoutSplitDayView.swift`
-- Does: Per-day editor used inside split creation/detail flow; controls rest-day state, day name, assigned plan, and target muscles.
-- Called by: `WorkoutSplitCreationView` (tab pages), SwiftUI preview via `WorkoutSplitCreationView`.
+- Does: Per-day editor used inside split editing flow; controls rest-day state, day name, assigned plan, and target muscles.
+- Called by: `WorkoutSplitView` (tab pages), SwiftUI preview.
 - Calls: `WorkoutPlanCardView`, `WorkoutPlanPickerView`, `MuscleFilterSheetView`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Components/Navbar.swift`

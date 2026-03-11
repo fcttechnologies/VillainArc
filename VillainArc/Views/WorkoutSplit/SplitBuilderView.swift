@@ -134,8 +134,8 @@ struct SplitBuilderView: View {
     @State private var config = SplitBuilderConfig()
     @State private var path: [BuilderNavStep] = []
     @State private var showScratchPicker = false
-    private let appRouter = AppRouter.shared
-    
+    let onSplitCreated: (WorkoutSplit) -> Void
+
     var body: some View {
         NavigationStack(path: $path) {
             SelectTypeView(config: config, path: $path, showScratchPicker: $showScratchPicker) {
@@ -187,11 +187,11 @@ struct SplitBuilderView: View {
         
         context.insert(split)
         saveContext(context: context)
-        
+
+        onSplitCreated(split)
         dismiss()
-        appRouter.navigate(to: .splitDettail(split))
     }
-    
+
     private func createSplit(days: [DayTemplate]) {
         Haptics.selection()
 
@@ -215,9 +215,9 @@ struct SplitBuilderView: View {
         }
         context.insert(split)
         saveContext(context: context)
-        
+
+        onSplitCreated(split)
         dismiss()
-        appRouter.navigate(to: .splitDettail(split))
     }
     
     private func createSplitFromConfig() {
@@ -893,6 +893,6 @@ private enum SplitGenerator {
 }
 
 #Preview {
-    SplitBuilderView()
+    SplitBuilderView { _ in }
         .sampleDataContainer()
 }
