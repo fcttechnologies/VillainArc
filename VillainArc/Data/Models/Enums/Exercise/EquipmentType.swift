@@ -1,5 +1,7 @@
 import Foundation
+import FoundationModels
 
+@Generable
 enum EquipmentType: String, Codable, CaseIterable {
     case barbell = "Barbell"
     case bodyweight = "Bodyweight"

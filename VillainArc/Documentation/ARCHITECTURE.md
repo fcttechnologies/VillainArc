@@ -737,15 +737,40 @@
 - Called by: split creation/detail/day views, split builder, plan picker assignment flows, `SampleData`.
 - Calls: `resolvedMuscles` via `workoutPlan?.musclesArray`.
 
-### `VillainArc/Data/Models/AIModels/AISuggestionModels.swift`
-- Does: Foundation Models DTOs/enums for training-style classification prompts/results.
-- Called by: `AITrainingStyleClassifier`, `RecentExercisePerformancesTool`.
-- Calls: Mappers from `ExercisePerformance`/`SetPerformance`/`RepRangeMode`/`ExerciseSetType`.
+### `VillainArc/Data/Models/AIModels/AIInferenceModels.swift`
+- Does: Feature-level Foundation Models input/output DTOs for training-style classification.
+- Called by: `AITrainingStyleClassifier`.
+- Calls: Shared AI snapshots and `TrainingStyle`.
 
 ### `VillainArc/Data/Models/AIModels/AIOutcomeModels.swift`
 - Does: Foundation Models DTOs/enums for suggestion outcome evaluation prompts/results.
 - Called by: `AIOutcomeInferrer`, `OutcomeResolver`.
-- Calls: Mappers between app enums (`Outcome`) and AI enums, snapshot builders from prescription/set models.
+- Calls: Mappers between app enums (`Outcome`) and AI enums plus shared exercise/performance/prescription snapshots.
+
+### `VillainArc/Data/Models/AIModels/Shared/AIEnumWrappers.swift`
+- Does: AI-readable wrappers for app enums that need display-safe labels instead of persisted raw values (`AIRepRangeMode`, `AIExerciseSetType`).
+- Called by: shared AI snapshots and `OutcomeResolver`.
+- Calls: Mappers from `RepRangeMode` and `ExerciseSetType`.
+
+### `VillainArc/Data/Models/AIModels/Shared/AIRepRangeSnapshot.swift`
+- Does: Shared AI snapshot for rep-range configuration using a non-optional mode inside the snapshot.
+- Called by: shared exercise performance/prescription snapshots and any future AI feature that needs rep-range context.
+- Calls: `RepRangePolicy` mapping helpers.
+
+### `VillainArc/Data/Models/AIModels/Shared/AIExerciseIdentitySnapshot.swift`
+- Does: Shared AI snapshot for canonical exercise identity (`catalogID`, name, muscles, equipment).
+- Called by: shared exercise performance/prescription snapshots and future plan/session/split AI features.
+- Calls: Mappers from `Exercise`, `ExercisePerformance`, and `ExercisePrescription`.
+
+### `VillainArc/Data/Models/AIModels/Shared/AIExercisePerformanceSnapshot.swift`
+- Does: Shared AI snapshot for performed exercise data plus set-level actual results.
+- Called by: `AITrainingStyleClassifier`, `RecentExercisePerformancesTool`, and `OutcomeResolver`.
+- Calls: `AIExerciseIdentitySnapshot`, `AIRepRangeSnapshot`, and set-performance mapping helpers.
+
+### `VillainArc/Data/Models/AIModels/Shared/AIExercisePrescriptionSnapshot.swift`
+- Does: Shared AI snapshot for prescribed exercise targets plus set-level prescription data.
+- Called by: `OutcomeResolver` and future plan-review/generation features.
+- Calls: `AIExerciseIdentitySnapshot`, `AIRepRangeSnapshot`, and set-prescription mapping helpers.
 
 ### `VillainArc/Data/SampleData.swift`
 - Does: In-memory preview fixture container for sessions, plans, splits, and suggestion scenarios.
@@ -754,9 +779,9 @@
 
 ### Enums + Protocols (Model-Adjacent)
 - `VillainArc/Data/Protocols/RestTimeEditable.swift`: protocol contracts for generic rest editor flows; conformed to by `ExercisePerformance`, `ExercisePrescription`, `SetPerformance`, `SetPrescription`.
-- `VillainArc/Data/Models/Enums/Exercise/EquipmentType.swift`: equipment taxonomy used by `Exercise`, `ExercisePerformance`, `ExercisePrescription`, and catalog/search/filtering.
+- `VillainArc/Data/Models/Enums/Exercise/EquipmentType.swift`: equipment taxonomy used by `Exercise`, `ExercisePerformance`, `ExercisePrescription`, catalog/search/filtering, and shared AI snapshots.
 - `VillainArc/Data/Models/Enums/Exercise/ExerciseSetType.swift`: set taxonomy + display metadata used by set models, editors, and rule engines.
-- `VillainArc/Data/Models/Enums/Exercise/Muscle.swift`: normalized muscle taxonomy with major/minor semantics used across exercise, plan, and split models.
+- `VillainArc/Data/Models/Enums/Exercise/Muscle.swift`: normalized muscle taxonomy with major/minor semantics used across exercise, plan, split, and AI snapshot models.
 - `VillainArc/Data/Models/Enums/Exercise/MuscleGroups.swift`: grouped muscle sets used by split/selection logic.
 - `VillainArc/Data/Models/Enums/Exercise/RepRangeMode.swift`: rep-range mode enum used by `RepRangePolicy`.
 - `VillainArc/Data/Models/Enums/Sessions/MoodLevel.swift`: pre-workout mood enum used by `PreWorkoutContext`.
@@ -767,7 +792,7 @@
 - `VillainArc/Data/Models/Enums/Suggestions/Outcome.swift`: post-workout suggestion outcome lifecycle.
 - `VillainArc/Data/Models/Enums/Suggestions/SuggestionSource.swift`: suggestion provenance enum (`rules`/`ai`/`user`).
 - `VillainArc/Data/Models/Enums/Suggestions/TrainingStyle.swift`: detected exercise pattern enum (`straightSets`/`ascending`/`descendingPyramid`/`ascendingPyramid`/`topSetBackoffs`/`unknown`) used by `MetricsCalculator`, `RuleEngine`, and AI classifiers.
-- `VillainArc/Data/Models/Enums/SplitMode.swift`: split schedule mode enum (`weekly`/`rotation`) used by `WorkoutSplit`.
+- `VillainArc/Data/Models/Enums/SplitMode.swift`: split schedule mode enum (`weekly`/`rotation`) used by `WorkoutSplit` and future AI split-generation inputs.
 
 ## 5) Runtime Support Files
 

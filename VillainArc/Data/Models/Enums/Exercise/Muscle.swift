@@ -1,5 +1,7 @@
 import Foundation
+import FoundationModels
 
+@Generable
 enum Muscle: String, Codable, CaseIterable {
     // Major Muscle
     case chest = "Chest"

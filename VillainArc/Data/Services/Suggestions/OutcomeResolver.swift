@@ -302,17 +302,23 @@ struct OutcomeResolver {
         case .changeRepRangeMode:
             let oldMode: AIRepRangeMode?
             if let raw = oldValue.map({ Int($0) }), let mode = RepRangeMode(rawValue: raw) {
-                oldMode = (mode == .range) ? .range : (mode == .target) ? .target : nil
+                oldMode = AIRepRangeMode(from: mode)
             } else {
-                oldMode = snapshot.repRangeMode
+                oldMode = snapshot.repRange?.mode
             }
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: oldMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
+            let revertedRepRange = oldMode.map {
+                AIRepRangeSnapshot(mode: $0, lower: snapshot.repRange?.lower, upper: snapshot.repRange?.upper, target: snapshot.repRange?.target)
+            }
+            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: revertedRepRange, sets: snapshot.sets)
         case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: oldValue.map { Int($0) }, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
+            guard let repRange = snapshot.repRange else { return snapshot }
+            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: AIRepRangeSnapshot(mode: repRange.mode, lower: oldValue.map { Int($0) }, upper: repRange.upper, target: repRange.target), sets: snapshot.sets)
         case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: oldValue.map { Int($0) }, repRangeTarget: snapshot.repRangeTarget, sets: snapshot.sets)
+            guard let repRange = snapshot.repRange else { return snapshot }
+            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: AIRepRangeSnapshot(mode: repRange.mode, lower: repRange.lower, upper: oldValue.map { Int($0) }, target: repRange.target), sets: snapshot.sets)
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: oldValue.map { Int($0) }, sets: snapshot.sets)
+            guard let repRange = snapshot.repRange else { return snapshot }
+            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: AIRepRangeSnapshot(mode: repRange.mode, lower: repRange.lower, upper: repRange.upper, target: oldValue.map { Int($0) }), sets: snapshot.sets)
         }
     }
 
@@ -321,7 +327,7 @@ struct OutcomeResolver {
         let sets = snapshot.sets.map { set in
             set.index == targetIndex ? transform(set) : set
         }
-        return AIExercisePrescriptionSnapshot(exerciseName: snapshot.exerciseName, repRangeMode: snapshot.repRangeMode, repRangeLower: snapshot.repRangeLower, repRangeUpper: snapshot.repRangeUpper, repRangeTarget: snapshot.repRangeTarget, sets: sets)
+        return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: snapshot.repRange, sets: sets)
     }
 
     // MARK: - Merge

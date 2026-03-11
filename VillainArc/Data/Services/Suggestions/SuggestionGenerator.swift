@@ -12,7 +12,7 @@ struct SuggestionGenerator {
         var historyByCatalogID: [String: [ExercisePerformance]] = [:]
         
         for exercisePerf in session.sortedExercises {
-            guard let prescription = exercisePerf.prescription else { continue }
+            guard let _ = exercisePerf.prescription else { continue }
             
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
             let resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)
@@ -20,10 +20,7 @@ struct SuggestionGenerator {
 
             // Trigger AI if we don't know the training style
             if resolvedTrainingStyle == .unknown {
-                let primaryMuscle = prescription.musclesTargeted.first?.rawValue
-                    ?? exercisePerf.musclesTargeted.first?.rawValue
-                    ?? "Unknown"
-                aiRequests[exercisePerf.id] = AIRequest(exerciseName: exercisePerf.name, catalogID: exercisePerf.catalogID, primaryMuscle: primaryMuscle, snapshot: AIExercisePerformanceSnapshot(performance: exercisePerf))
+                aiRequests[exercisePerf.id] = AIRequest(snapshot: AIExercisePerformanceSnapshot(performance: exercisePerf))
             }
         }
         
@@ -31,12 +28,7 @@ struct SuggestionGenerator {
         let aiResults = await withTaskGroup(of: (UUID, AIInferenceOutput?).self) { group in
             for (id, request) in aiRequests {
                 group.addTask {
-                    let result = await AITrainingStyleClassifier.infer(
-                        exerciseName: request.exerciseName,
-                        catalogID: request.catalogID,
-                        primaryMuscle: request.primaryMuscle,
-                        performance: request.snapshot
-                    )
+                    let result = await AITrainingStyleClassifier.infer(performance: request.snapshot)
                     return (id, result)
                 }
             }
@@ -77,9 +69,6 @@ struct SuggestionGenerator {
     }
     
     private struct AIRequest: Sendable {
-        let exerciseName: String
-        let catalogID: String
-        let primaryMuscle: String
         let snapshot: AIExercisePerformanceSnapshot
     }
 

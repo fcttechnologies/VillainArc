@@ -22,7 +22,7 @@ struct RecentExercisePerformancesTool: Tool, Sendable {
         """
 
     @Generable
-    struct Arguments: Equatable, Sendable {
+    struct Arguments {
         let catalogID: String
         let limit: Int
     }

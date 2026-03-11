@@ -4,7 +4,7 @@ import FoundationModels
 struct AITrainingStyleClassifier {
     /// Asks the on-device model to classify training style for an exercise.
     /// Returns nil if the model is unavailable or inference fails.
-    static func infer(exerciseName: String, catalogID: String, primaryMuscle: String, performance: AIExercisePerformanceSnapshot) async -> AIInferenceOutput? {
+    static func infer(performance: AIExercisePerformanceSnapshot) async -> AIInferenceOutput? {
         let model = SystemLanguageModel.default
         guard case .available = model.availability else { return nil }
 
@@ -12,7 +12,7 @@ struct AITrainingStyleClassifier {
             RecentExercisePerformancesTool()
         ]
 
-        let input = AIInferenceInput(catalogID: catalogID, exerciseName: exerciseName, primaryMuscle: primaryMuscle, performance: performance)
+        let input = AIInferenceInput(performance: performance)
 
         do {
             let session = LanguageModelSession(tools: tools, instructions: instructions)

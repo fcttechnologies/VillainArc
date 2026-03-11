@@ -450,7 +450,7 @@ VillainArc/
       Plans/                     WorkoutPlan, ExercisePrescription, SetPrescription, PrescriptionChange, SuggestionGrouping, WorkoutPlan+Editing
       Exercise/                  Exercise, ExerciseCatalog, ExerciseHistory, ProgressionPoint, RepRangePolicy, RestTimeDefaults
       WorkoutSplit/              WorkoutSplit, WorkoutSplitDay
-      AIModels/                  AI DTOs for suggestion/outcome inference
+      AIModels/                  Shared AI snapshots + feature-specific inference/outcome DTOs
       Enums/                     All domain enums (14 files)
       AppSettings.swift
       UserProfile.swift
