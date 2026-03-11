@@ -39,7 +39,7 @@ struct WorkoutPlanDetailView: View {
 
             ForEach(plan.sortedExercises) { exercise in
                 Section {
-                    Grid(verticalSpacing: 10) {
+                    Grid(verticalSpacing: 8) {
                         GridRow {
                             Text("Set")
                             Spacer()
@@ -59,13 +59,13 @@ struct WorkoutPlanDetailView: View {
                                     .gridColumnAlignment(.leading)
                                 Spacer()
                                 Text(set.targetReps > 0 ? "\(set.targetReps)" : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.targetReps > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.targetWeight > 0 ? "\(set.targetWeight, format: .number) lbs" : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.targetWeight > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.targetRest > 0 ? secondsToTime(set.targetRest) : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.targetRest > 0 ? .leading : .center)
                             }
                             .font(.title3)
                             .accessibilityElement(children: .ignore)
@@ -191,10 +191,10 @@ struct WorkoutPlanDetailView: View {
     private func setIndicator(for set: SetPrescription) -> some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .topTrailing) {
                 if let visibleTargetRPE = set.visibleTargetRPE {
                     RPEBadge(value: visibleTargetRPE, style: .target)
-                        .offset(x: visibleTargetRPE == 10 ? 12 : 9, y: 5)
+                        .offset(x: 7, y: -7)
                 }
             }
     }

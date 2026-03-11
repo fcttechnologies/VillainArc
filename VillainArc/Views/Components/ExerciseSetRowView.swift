@@ -34,7 +34,8 @@ struct ExerciseSetRowView: View {
     @Bindable var exercise: ExercisePerformance
     @Environment(\.modelContext) private var context
     private let restTimer = RestTimerState.shared
-    @AppStorage("autoStartRestTimer", store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
+    @AppStorage(WorkoutPreferences.autoStartRestTimerKey, store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
+    @AppStorage(WorkoutPreferences.autoCompleteSetAfterRPEKey, store: SharedModelContainer.sharedDefaults) private var autoCompleteSetAfterRPE = false
     @State private var showOverrideTimerAlert = false
     @FocusState private var focusedField: Field?
 
@@ -111,10 +112,11 @@ struct ExerciseSetRowView: View {
 
             Text(referenceData?.displayText ?? "-")
                 .lineLimit(1)
-                .overlay(alignment: .bottomTrailing) {
+                .minimumScaleFactor(0.8)
+                .overlay(alignment: .topTrailing) {
                     if let targetRPE = referenceData?.targetRPE {
                         RPEBadge(value: targetRPE, style: .target)
-                            .offset(x: targetRPE == 10 ? 14 : 9, y: 4)
+                            .offset(x: targetRPE == 10 ? 14 : 7, y: -4)
                     }
                 }
             .frame(maxWidth: fieldWidth)
@@ -157,17 +159,7 @@ struct ExerciseSetRowView: View {
                 .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
             } else {
                 Button {
-                    let shouldPrewarmSuggestions = shouldPrewarmSuggestionModelsOnCompletion
-                    Haptics.selection()
-                    set.complete = true
-                    set.completedAt = Date()
-                    handleAutoStartTimer()
-                    saveContext(context: context)
-                    WorkoutActivityManager.update()
-                    if shouldPrewarmSuggestions {
-                        FoundationModelPrewarmer.warmup()
-                    }
-                    Task { await IntentDonations.donateCompleteActiveSet() }
+                    completeSet()
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -195,7 +187,7 @@ struct ExerciseSetRowView: View {
             Button("Replace", role: .destructive) {
                 let restSeconds = set.effectiveRestSeconds
                 if restSeconds > 0 {
-                    restTimer.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
+                    restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
                     RestTimeHistory.record(seconds: restSeconds, context: context)
                     saveContext(context: context)
                     Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
@@ -220,8 +212,28 @@ struct ExerciseSetRowView: View {
         guard set.rpe != value else { return }
         Haptics.selection()
         set.rpe = value
+        if autoCompleteSetAfterRPE, !set.complete, value > 0 {
+            completeSet(playHaptics: false)
+            return
+        }
         saveContext(context: context)
         WorkoutActivityManager.update()
+    }
+
+    private func completeSet(playHaptics: Bool = true) {
+        let shouldPrewarmSuggestions = shouldPrewarmSuggestionModelsOnCompletion
+        if playHaptics {
+            Haptics.selection()
+        }
+        set.complete = true
+        set.completedAt = Date()
+        handleAutoStartTimer()
+        saveContext(context: context)
+        WorkoutActivityManager.update()
+        if shouldPrewarmSuggestions {
+            FoundationModelPrewarmer.warmup()
+        }
+        Task { await IntentDonations.donateCompleteActiveSet() }
     }
 
     private func handleAutoStartTimer() {
@@ -232,7 +244,7 @@ struct ExerciseSetRowView: View {
         if restTimer.isActive {
             showOverrideTimerAlert = true
         } else {
-            restTimer.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
+            restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
             RestTimeHistory.record(seconds: restSeconds, context: context)
             saveContext(context: context)
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
@@ -258,10 +270,10 @@ struct ExerciseSetRowView: View {
             .frame(width: 40, height: 40)
             .glassEffect(.regular, in: .circle)
             .opacity(set.complete ? 0.4 : 1)
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .topTrailing) {
                 if let visibleRPE = set.visibleRPE {
                     RPEBadge(value: visibleRPE)
-                        .offset(x: visibleRPE == 10 ? 1 : -2, y: -2)
+                        .offset(x: visibleRPE == 10 ? -2 : -8)
                 }
             }
     }

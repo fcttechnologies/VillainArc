@@ -353,18 +353,9 @@ private struct WorkoutPlanExerciseView: View {
                     Text(exercise.equipmentType.rawValue)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
-                    Button {
-                        Haptics.selection()
-                        showRepRangeEditor = true
-                    } label: {
-                        Text(exercise.repRange?.displayText ?? "")
-                            .fontWeight(.semibold)
+                    if let repRange = exercise.repRange {
+                        RepRangeButton(repRange: repRange, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanExerciseRepRangeButton(exercise)) { showRepRangeEditor = true }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Rep range")
-                    .accessibilityValue(exercise.repRange?.displayText ?? "")
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRepRangeButton(exercise))
-                    .accessibilityHint("Edits the rep range.")
                 }
                 Spacer()
                 HStack(spacing: 16) {
@@ -425,6 +416,7 @@ private struct WorkoutPlanExerciseView: View {
         }
         .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showReplaceExerciseSheet) {
             ReplaceExerciseView(currentCatalogID: exercise.catalogID) { newExercise, keepSets in
@@ -553,10 +545,10 @@ private struct WorkoutPlanSetRowView: View {
             .foregroundStyle(set.type.tintColor)
             .frame(width: 40, height: 40)
             .glassEffect(.regular, in: .circle)
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .topTrailing) {
                 if let visibleTargetRPE = set.visibleTargetRPE {
                     RPEBadge(value: visibleTargetRPE, style: .target)
-                        .offset(x: visibleTargetRPE == 10 ? 1 : -2, y: -2)
+                        .offset(x: visibleTargetRPE == 10 ? -2 : -8)
                 }
             }
     }

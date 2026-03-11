@@ -6,23 +6,20 @@ import SwiftData
 enum WorkoutActivityManager {
 
     static func start(workout: WorkoutSession) {
+        guard WorkoutPreferences.liveActivitiesEnabled else {
+            endAllActivities()
+            return
+        }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         endAllActivities()
-
-        let attributes = WorkoutActivityAttributes(startDate: workout.startedAt)
-        let state = contentState(for: workout)
-        do {
-            _ = try Activity.request(
-                attributes: attributes,
-                content: .init(state: state, staleDate: nil),
-                pushType: nil
-            )
-        } catch {
-            print("Failed to start Live Activity: \(error)")
-        }
+        requestActivity(for: workout)
     }
 
     static func update(for workout: WorkoutSession? = nil) {
+        guard WorkoutPreferences.liveActivitiesEnabled else {
+            endAllActivities()
+            return
+        }
         guard let activity = currentActivity else { return }
 
         let resolvedWorkout: WorkoutSession?
@@ -49,10 +46,28 @@ enum WorkoutActivityManager {
     }
 
     static func restoreIfNeeded(workout: WorkoutSession) {
+        guard WorkoutPreferences.liveActivitiesEnabled else {
+            endAllActivities()
+            return
+        }
         if currentActivity != nil {
             update(for: workout)
         } else {
             start(workout: workout)
+        }
+    }
+
+    static func restart(workout: WorkoutSession) {
+        guard WorkoutPreferences.liveActivitiesEnabled else {
+            endAllActivities()
+            return
+        }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        Task { @MainActor in
+            for activity in Activity<WorkoutActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+            requestActivity(for: workout)
         }
     }
 
@@ -65,6 +80,20 @@ enum WorkoutActivityManager {
             Task {
                 await activity.end(nil, dismissalPolicy: .immediate)
             }
+        }
+    }
+
+    private static func requestActivity(for workout: WorkoutSession) {
+        let attributes = WorkoutActivityAttributes(startDate: workout.startedAt)
+        let state = contentState(for: workout)
+        do {
+            _ = try Activity.request(
+                attributes: attributes,
+                content: .init(state: state, staleDate: nil),
+                pushType: nil
+            )
+        } catch {
+            print("Failed to start Live Activity: \(error)")
         }
     }
 

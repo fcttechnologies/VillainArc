@@ -42,7 +42,7 @@ struct ExerciseHistoryView: View {
         List {
             ForEach(performances) { performance in
                 Section {
-                    Grid(verticalSpacing: 10) {
+                    Grid(verticalSpacing: 8) {
                         GridRow {
                             Text("Set")
                             Spacer()
@@ -62,13 +62,13 @@ struct ExerciseHistoryView: View {
                                     .gridColumnAlignment(.leading)
                                 Spacer()
                                 Text(set.reps > 0 ? "\(set.reps)" : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.reps > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.weight > 0 ? "\(set.weight, format: .number) lbs" : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.weight > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
                             }
                             .font(.title3)
                         }
@@ -110,10 +110,10 @@ struct ExerciseHistoryView: View {
     private func setIndicator(for set: SetPerformance) -> some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .topTrailing) {
                 if let visibleRPE = set.visibleRPE {
                     RPEBadge(value: visibleRPE)
-                        .offset(x: visibleRPE == 10 ? 12 : 9, y: 5)
+                        .offset(x: 7, y: -7)
                 }
             }
     }

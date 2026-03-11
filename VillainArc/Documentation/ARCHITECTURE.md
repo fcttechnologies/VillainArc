@@ -210,7 +210,7 @@
 - Calls: SwiftData context (`insert/fetch/delete` via `SharedModelContainer.container.mainContext`), `saveContext`, `Haptics.selection`, `pendingSuggestions`, `RestTimerState.shared.stop`, `WorkoutActivityManager.end`, `SpotlightIndexer.workoutSessionIdentifierPrefix`, `SpotlightIndexer.workoutPlanIdentifierPrefix`, `SpotlightIndexer.exerciseIdentifierPrefix`.
 
 ### `VillainArc/Data/SharedModelContainer.swift`
-- Does: Defines app-wide SwiftData schema and creates the shared `ModelContainer`.
+- Does: Defines app-wide SwiftData schema, creates the shared `ModelContainer`, and exposes app-group `UserDefaults` plus shared workout preference keys/default readers.
 - Called by: `VillainArcApp` (`.modelContainer`), `AppRouter` (`mainContext`), `WorkoutActivityManager`, and many app intent/entity files.
 - Calls: `Schema(...)` with model types, `FileManager.default.containerURL(...)`, `ModelConfiguration(...)`, `ModelContainer(for:configurations:)`.
 
@@ -295,7 +295,7 @@
 - Calls: `AppRouter.navigate(to: .workoutSessionDetail(...))`, `IntentDonations.donateOpenWorkout`, `AccessibilityText.workoutRowLabel/workoutRowValue/workoutRowHint`.
 
 ### `VillainArc/Views/Components/ExerciseSetRowView.swift`
-- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). When a workout comes from a plan, target RPE is shown only in the target/reference column so it stays distinct from logged RPE. Completing the final remaining set in a plan workout also prewarms the suggestion pipeline.
+- Does: Editable set row used during active workout logging (set type, reps/weight fields, target/previous reference apply, complete/uncomplete, optional actual RPE badge, and inline RPE submenu picker). Linked plan targets stay in the target/reference column, and an optional workout setting can auto-complete the set immediately after the user picks an RPE. Completing the final remaining set in a plan workout also prewarms the suggestion pipeline.
 - Called by: `ExerciseView`, SwiftUI preview via `ExerciseView`.
 - Calls: `RPEBadge`, `RPEValue`, `RestTimerState.shared`, `RestTimeHistory.record`, `FoundationModelPrewarmer`, `WorkoutActivityManager.update`, `IntentDonations.donateStartRestTimer`, `IntentDonations.donateCompleteActiveSet`, `Haptics.selection`, `saveContext`, `scheduleSave`, `secondsToTime`.
 
@@ -303,6 +303,11 @@
 - Does: Shared compact RPE badge for actual set RPE and plan target RPE display.
 - Called by: `ExerciseSetRowView`, `WorkoutDetailView`, `WorkoutPlanDetailView`, `WorkoutPlanView`.
 - Calls: None (display helper only).
+
+### `VillainArc/Views/Components/RepRangeButton.swift`
+- Does: Shared rep-range trigger button that observes `RepRangePolicy` directly so rep-range display text updates immediately in workout and plan headers.
+- Called by: `ExerciseView`, `WorkoutPlanView` (`WorkoutPlanExerciseView`).
+- Calls: `Haptics.selection`.
 
 ### `VillainArc/Views/Onboarding/OnboardingView.swift`
 - Does: Half-sheet onboarding UI progressing through system checks, data sync, and profile collection (name/birthday/height).
@@ -370,14 +375,19 @@
 - Calls: `DeferredSuggestionsView`, `WorkoutView`, `WorkoutSummaryView`.
 
 ### `VillainArc/Views/Workout/WorkoutView.swift`
-- Does: Primary active-workout screen (exercise pager/list, add exercise, timer access, title/notes/pre-checkin sheets, finish/cancel actions).
+- Does: Primary active-workout screen (exercise pager/list, add exercise, timer access, title/notes/pre-checkin sheets, finish/cancel actions). Keeps the original direct cancel button when the workout is empty and otherwise exposes the ellipsis menu.
 - Called by: `WorkoutSessionContainer`, SwiftUI previews.
-- Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
+- Calls: `ExerciseView`, `AddExerciseView`, `RestTimerView`, `PreWorkoutContextView`, `TextEntryEditorView`, `WorkoutSettingsView`, `WorkoutSession.finish`, `SpotlightIndexer.index(workoutSession:)`, `WorkoutActivityManager.start/update/end`, `IntentDonations` workout actions, `RestTimerState.shared.stop`, `saveContext`, `scheduleSave`, `Haptics.selection`.
+
+### `VillainArc/Views/Workout/WorkoutSettingsView.swift`
+- Does: Workout-scoped settings sheet for timer auto-start, auto-complete-after-RPE, rest timer notifications, live activity visibility, and manual live activity restart.
+- Called by: `WorkoutView`, SwiftUI preview.
+- Calls: `WorkoutActivityManager.restart/end`, `RestTimerNotifications.schedule/cancel`, `.navBar(title:)`, `CloseButton`, app-group `@AppStorage` via `SharedModelContainer.sharedDefaults`.
 
 ### `VillainArc/Views/Workout/ExerciseView.swift`
 - Does: Per-exercise workout page with set logging grid, notes, rep/rest editors, replace action, and set reference handling. Exercises still linked to a plan prescription show target references, including target RPE badges when present; exercises without a linked prescription use previous-performance references instead.
 - Called by: `WorkoutView`, SwiftUI preview.
-- Calls: `ExerciseSetRowView`, `RepRangeEditorView`, `RestTimeEditorView`, `ReplaceExerciseView`, `ExerciseHistoryView` (sheet), `WorkoutActivityManager.update`, `IntentDonations.donateReplaceExercise`, `saveContext`, `scheduleSave`, `Haptics.selection`, `secondsToTime`.
+- Calls: `ExerciseSetRowView`, `RepRangeButton`, `RepRangeEditorView`, `RestTimeEditorView`, `ReplaceExerciseView`, `ExerciseHistoryView` (sheet), `WorkoutActivityManager.update`, `IntentDonations.donateReplaceExercise`, `saveContext`, `scheduleSave`, `Haptics.selection`, `secondsToTime`.
 
 ### `VillainArc/Views/Workout/PreWorkoutContextView.swift`
 - Does: Sheet for recording pre-workout status (mood, pre-workout drink toggle, optional notes).
@@ -385,7 +395,7 @@
 - Calls: `Haptics.selection`, `dismissKeyboard`, `saveContext`, `scheduleSave`, `dismiss` environment action.
 
 ### `VillainArc/Views/Workout/RestTimerView.swift`
-- Does: Rest timer control screen with picker/start-pause-resume-stop, recent durations, and next-set completion shortcut.
+- Does: Rest timer control screen with picker/start-pause-resume-stop, recent durations, and next-set completion shortcut. The timer auto-start preference now lives in workout settings rather than this sheet.
 - Called by: `WorkoutView`, SwiftUI preview.
 - Calls: `TimerDurationPicker`, `RestTimerState.shared` (`start/pause/resume/stop/adjust`), `RestTimeHistory.record`, `WorkoutSession.activeExerciseAndSet`, `WorkoutActivityManager.update`, `IntentDonations` rest-timer actions, `saveContext`, `secondsToTime`, `Haptics.selection`.
 
@@ -745,7 +755,7 @@
 - Calls: Internal state helpers (`isTimerRunning`, `isTimerPaused`, `hasActiveSet`).
 
 ### `VillainArc/Data/LiveActivity/WorkoutActivityManager.swift`
-- Does: Live activity lifecycle manager (start/update/end/restore) for active workouts.
+- Does: Live activity lifecycle manager (start/update/end/restore/restart) for active workouts, gated by the shared workout live-activity preference.
 - Called by: `WorkoutView`, `ExerciseSetRowView`, `RestTimerView`, `RestTimerState`, workout/live-activity intents, `AppRouter`.
 - Calls: `Activity.request/update/end`, `WorkoutActivityAttributes.ContentState` builder, `SharedModelContainer.container.mainContext`, `WorkoutSession.incomplete`.
 
@@ -760,7 +770,7 @@
 - Calls: `UIApplication.shared.sendAction(...resignFirstResponder...)`.
 
 ### `VillainArc/Helpers/RestTimerNotifications.swift`
-- Does: Local notification scheduler/canceler for rest timer completion reminders.
+- Does: Local notification scheduler/canceler for rest timer completion reminders, gated by the shared workout notification preference.
 - Called by: `RestTimerState`.
 - Calls: `UNUserNotificationCenter` auth/settings APIs, notification request creation.
 

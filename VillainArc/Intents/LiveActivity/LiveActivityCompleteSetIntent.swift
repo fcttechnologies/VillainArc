@@ -18,28 +18,20 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
         set.complete = true
         set.completedAt = Date()
 
-        if autoStartRestTimerEnabled {
+        if WorkoutPreferences.autoStartRestTimerEnabled {
             let restSeconds = set.effectiveRestSeconds
             if restSeconds > 0 {
-                RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
+                RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.id)
+                RestTimeHistory.record(seconds: restSeconds, context: context)
             }
         }
 
-        try? context.save()
+        saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
         if shouldPrewarmSuggestions {
             FoundationModelPrewarmer.warmup()
         }
 
         return .result()
-    }
-
-    @MainActor
-    private var autoStartRestTimerEnabled: Bool {
-        let defaults = SharedModelContainer.sharedDefaults
-        if defaults.object(forKey: "autoStartRestTimer") == nil {
-            return true
-        }
-        return defaults.bool(forKey: "autoStartRestTimer")
     }
 }

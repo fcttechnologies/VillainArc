@@ -7,6 +7,7 @@ struct SuggestionReviewView: View {
     let onRejectGroup: ([PrescriptionChange]) -> Void
     let onDeferGroup: (([PrescriptionChange]) -> Void)?
     var showDecisionState: Bool = false
+    var actionableDecisions: Set<Decision> = [.pending]
     var emptyState: SuggestionEmptyState?
     
     var body: some View {
@@ -28,7 +29,7 @@ struct SuggestionReviewView: View {
                             .fontDesign(.rounded)
                         
                         ForEach(section.groups, id: \.id) { group in
-                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group.changes) }, onReject: { onRejectGroup(group.changes) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group.changes) } : nil, showDecisionState: showDecisionState)
+                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group.changes) }, onReject: { onRejectGroup(group.changes) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group.changes) } : nil, showDecisionState: showDecisionState, actionableDecisions: actionableDecisions)
                         }
                     }
                 }
@@ -43,6 +44,7 @@ struct SuggestionGroupRow: View {
     let onReject: () -> Void
     let onDefer: (() -> Void)?
     var showDecisionState: Bool = false
+    let actionableDecisions: Set<Decision>
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -55,11 +57,11 @@ struct SuggestionGroupRow: View {
                 Spacer()
 
                 // Show decision status inline with the group label.
-                if showDecisionState, let decisionState {
-                    Text(decisionState.label)
+                if showDecisionState, let visibleDecisionState {
+                    Text(visibleDecisionState.label)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(decisionState.tint)
+                        .foregroundStyle(visibleDecisionState.tint)
                 }
             }
 
@@ -76,7 +78,7 @@ struct SuggestionGroupRow: View {
                 }
             }
             
-            if decisionState == nil {
+            if visibleDecisionState == nil {
                 HStack(spacing: 8) {
                     
                     Button {
@@ -119,9 +121,11 @@ struct SuggestionGroupRow: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private var decisionState: DecisionState? {
-        // If all changes share one decision, show it; otherwise show mixed or pending.
+    private var visibleDecisionState: DecisionState? {
         let decisions = Set(group.changes.map { $0.decision })
+        if decisions.isSubset(of: actionableDecisions) {
+            return nil
+        }
         if decisions.count == 1, let only = decisions.first {
             switch only {
             case .pending:

@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 
 struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
-    @AppStorage("autoStartRestTimer", store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExerciseType
 
@@ -11,13 +10,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
 
     var body: some View {
         Form {
-            Section {
-                Toggle("Auto-Start Timer", isOn: $autoStartRestTimer)
-                    .accessibilityIdentifier("restTimeAutoStartToggle")
-            } footer: {
-                Text("Starts a rest timer after completing a set.")
-            }
-
             Section {
                 if exercise.sortedSets.isEmpty {
                     Text("Add sets first to change their rest times.")

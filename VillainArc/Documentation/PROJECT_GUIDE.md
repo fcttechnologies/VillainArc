@@ -137,6 +137,7 @@ Use this to find where logic lives for any feature.
 | Resume unfinished workout / plan on launch | `Data/Services/AppRouter.swift` → `checkForUnfinishedData()` |
 | Workout status routing | `Views/Workout/WorkoutSessionContainer.swift` |
 | Pre-workout context (mood/notes) | `Views/Workout/PreWorkoutContextView.swift` |
+| Workout settings | `Views/Workout/WorkoutSettingsView.swift` |
 
 ### Workout Plans
 | What | Where |
@@ -212,6 +213,7 @@ Use this to find where logic lives for any feature.
 | Notifications | `Helpers/RestTimerNotifications.swift` |
 | Recent durations | `Data/Models/RestTimeHistory.swift` |
 | Auto-start on set complete | `Views/Components/ExerciseSetRowView.swift` |
+| Workout timer/live-activity preferences | `Views/Workout/WorkoutSettingsView.swift` |
 
 ### Siri / Shortcuts / Intents
 | What | Where |
@@ -410,13 +412,13 @@ VillainArc/
     Onboarding/                  First-run onboarding UI
     HomeSections/                Home screen section views (5 files)
     Exercise/                    Exercise list, detail, and history surfaces
-    Workout/                     Active workout views (10 files)
+    Workout/                     Active workout views (11 files)
       Editors/                   Shared editors: RepRange, RestTime, MuscleFilter
     History/                     Workout history list
     WorkoutPlan/                 Plan CRUD views (4 files)
     WorkoutSplit/                Split management views (4 files)
     Suggestions/                 Suggestion review UI (2 files)
-    Components/                  Reusable UI components (11 files)
+    Components/                  Reusable UI components (12 files)
   Data/
     SharedModelContainer.swift   SwiftData schema + container
     SampleData.swift             Preview fixtures

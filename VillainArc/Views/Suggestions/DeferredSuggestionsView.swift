@@ -30,7 +30,7 @@ struct DeferredSuggestionsView: View {
                         guard !isTransitioning else { return }
                         rejectGroup(changes, context: context)
                         refreshSections()
-                    }, onDeferGroup: nil, showDecisionState: true)
+                    }, onDeferGroup: nil, showDecisionState: false, actionableDecisions: [.pending, .deferred])
                 }
                 .fontDesign(.rounded)
                 .padding()
@@ -71,8 +71,14 @@ struct DeferredSuggestionsView: View {
     }
     
     private func refreshSections() {
+        guard let plan = workout.workoutPlan else {
+            proceedToWorkout()
+            return
+        }
+
+        sessionChanges = pendingSuggestions(for: plan, in: context)
         sections = groupSuggestions(sessionChanges)
-        let hasUndecided = sessionChanges.contains { $0.decision == .pending || $0.decision == .deferred }
+        let hasUndecided = !sessionChanges.isEmpty
         if !hasUndecided {
             proceedToWorkout()
         }

@@ -25,9 +25,8 @@ struct RPEBadge: View {
 
     var body: some View {
         Text(value, format: .number)
-            .font(.caption)
-            .fontWeight(.semibold)
-            .minimumScaleFactor(0.7)
+            .font(value == 10 ? .caption2 : .caption)
+            .minimumScaleFactor(value == 10 ? 0.5 : 1)
             .lineLimit(1)
             .foregroundStyle(style.tint(for: value))
             .accessibilityHidden(true)
@@ -93,7 +92,7 @@ enum RPEValue {
 
 #Preview {
     VStack(spacing: 12) {
-        RPEBadge(value: 8)
+        RPEBadge(value: 10)
         RPEBadge(value: 8, style: .target)
     }
     .padding()

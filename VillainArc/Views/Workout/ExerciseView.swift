@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ExerciseView: View {
-    @AppStorage("autoStartRestTimer", store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
+    @AppStorage(WorkoutPreferences.autoStartRestTimerKey, store: SharedModelContainer.sharedDefaults) private var autoStartRestTimer = true
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
     let onDeleteExercise: (() -> Void)?
@@ -65,18 +65,9 @@ struct ExerciseView: View {
                             Text(exercise.equipmentType.rawValue)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
-                            Button {
-                                Haptics.selection()
-                                showRepRangeEditor = true
-                            } label: {
-                                Text(exercise.repRange?.displayText ?? "")
-                                    .fontWeight(.semibold)
+                            if let repRange = exercise.repRange {
+                                RepRangeButton(repRange: repRange, accessibilityIdentifier: AccessibilityIdentifiers.exerciseRepRangeButton(exercise)) { showRepRangeEditor = true }
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Rep range")
-                            .accessibilityValue(exercise.repRange?.displayText ?? "")
-                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRepRangeButton(exercise))
-                            .accessibilityHint("Edits the rep range.")
                         }
                         Spacer()
                         HStack(spacing: 16) {
@@ -198,6 +189,7 @@ struct ExerciseView: View {
             }
             .sheet(isPresented: $showRestTimeEditor) {
                 RestTimeEditorView(exercise: exercise)
+                    .presentationDetents([.medium, .large])
                     .onDisappear {
                         checkForRestTimeUpdate()
                     }
@@ -229,7 +221,7 @@ struct ExerciseView: View {
     private func checkForRestTimeUpdate() {
         guard autoStartRestTimer else { return }
         guard let startedFromSetID = restTimer.startedFromSetID else { return }
-        guard let matchingSet = exercise.sortedSets.first(where: { $0.persistentModelID == startedFromSetID }) else { return }
+        guard let matchingSet = exercise.sortedSets.first(where: { $0.id == startedFromSetID }) else { return }
 
         let newRestSeconds = matchingSet.effectiveRestSeconds
         let originalSeconds = restTimer.startedSeconds

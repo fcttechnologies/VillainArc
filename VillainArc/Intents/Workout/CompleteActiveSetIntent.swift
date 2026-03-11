@@ -19,7 +19,17 @@ struct CompleteActiveSetIntent: AppIntent {
 
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
         set.complete = true
-        startRestTimerIfNeeded(for: set, context: context)
+        set.completedAt = Date()
+        
+        if WorkoutPreferences.autoStartRestTimerEnabled {
+            let restSeconds = set.effectiveRestSeconds
+            if restSeconds > 0 {
+                RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.id)
+                RestTimeHistory.record(seconds: restSeconds, context: context)
+                Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
+            }
+        }
+        
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
         if shouldPrewarmSuggestions {
@@ -27,25 +37,5 @@ struct CompleteActiveSetIntent: AppIntent {
         }
         let setNumber = set.index + 1
         return .result(dialog: "Completed set \(setNumber) of \(exercise.name).")
-    }
-    
-    @MainActor
-    private func startRestTimerIfNeeded(for set: SetPerformance, context: ModelContext) {
-        guard autoStartRestTimerEnabled else { return }
-        let restSeconds = set.effectiveRestSeconds
-        guard restSeconds > 0 else { return }
-
-        RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.persistentModelID)
-        RestTimeHistory.record(seconds: restSeconds, context: context)
-        Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
-    }
-
-    @MainActor
-    private var autoStartRestTimerEnabled: Bool {
-        let defaults = SharedModelContainer.sharedDefaults
-        if defaults.object(forKey: "autoStartRestTimer") == nil {
-            return true
-        }
-        return defaults.bool(forKey: "autoStartRestTimer")
     }
 }

@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import SwiftData
 import AudioToolbox
 import UIKit
 
@@ -23,7 +22,7 @@ final class RestTimerState {
     var endDate: Date?
     var pausedRemainingSeconds: Int
     var isPaused: Bool
-    var startedFromSetID: PersistentIdentifier?
+    var startedFromSetID: UUID?
     var startedSeconds: Int
     
     init() {
@@ -38,7 +37,7 @@ final class RestTimerState {
         isPaused = storedPaused
         startedSeconds = max(0, storedStartedSeconds)
         if let storedStartedSetID,
-           let decodedID = try? JSONDecoder().decode(PersistentIdentifier.self, from: storedStartedSetID) {
+           let decodedID = try? JSONDecoder().decode(UUID.self, from: storedStartedSetID) {
             startedFromSetID = decodedID
         } else {
             startedFromSetID = nil
@@ -75,7 +74,7 @@ final class RestTimerState {
         isRunning || (isPaused && pausedRemainingSeconds > 0)
     }
     
-    func start(seconds: Int, startedFromSetID: PersistentIdentifier? = nil) {
+    func start(seconds: Int, startedFromSetID: UUID? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
             stopInternal(playAlert: false)

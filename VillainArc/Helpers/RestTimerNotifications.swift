@@ -5,6 +5,10 @@ enum RestTimerNotifications {
     private static let notificationID = "restTimerComplete"
 
     static func schedule(endDate: Date, durationSeconds: Int) async {
+        guard WorkoutPreferences.restTimerNotificationsEnabled else {
+            await cancel()
+            return
+        }
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         let isAuthorized = await requestAuthorizationIfNeeded(center: center, settings: settings)

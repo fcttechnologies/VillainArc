@@ -12,22 +12,11 @@ struct WorkoutDetailView: View {
     @State private var newWorkoutPlan: WorkoutPlan?
     @State private var showPreWorkoutContextSheet = false
 
-    private var preWorkoutFeelingText: String? {
-        guard let preWorkoutContext = workout.preWorkoutContext, preWorkoutContext.feeling != .notSet else { return nil }
-        return preWorkoutContext.feeling.displayName
-    }
-
-    private var hasPreWorkoutNotes: Bool {
-        !(workout.preWorkoutContext?.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
-    }
+    private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
 
     private var preWorkoutNotesText: String? {
-        let trimmed = workout.preWorkoutContext?.notes.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let trimmed = preWorkoutContext?.notes.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private var showsFeelingStatus: Bool {
-        preWorkoutFeelingText != nil
     }
 
     private var postWorkoutEffortText: String? {
@@ -45,7 +34,7 @@ struct WorkoutDetailView: View {
             }
             ForEach(workout.sortedExercises) { exercise in
                 Section {
-                    Grid(verticalSpacing: 10) {
+                    Grid(verticalSpacing: 8) {
                         GridRow {
                             Text("Set")
                             Spacer()
@@ -64,14 +53,14 @@ struct WorkoutDetailView: View {
                                 setIndicator(for: set)
                                     .gridColumnAlignment(.leading)
                                 Spacer()
-                                Text(set.reps, format: .number)
-                                    .gridColumnAlignment(.leading)
+                                Text(set.reps > 0 ? "\(set.reps)" : "-")
+                                    .gridColumnAlignment(set.reps > 0 ? .leading : .center)
                                 Spacer()
-                                Text("\(set.weight, format: .number) lbs")
-                                    .gridColumnAlignment(.leading)
+                                Text(set.weight > 0 ? "\(set.weight, format: .number) lbs" : "-")
+                                    .gridColumnAlignment(set.weight > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
-                                    .gridColumnAlignment(.leading)
+                                    .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
                             }
                             .font(.title3)
                             .accessibilityElement(children: .ignore)
@@ -138,13 +127,30 @@ struct WorkoutDetailView: View {
                 }
             }
             ToolbarItemGroup(placement: .bottomBar) {
-                if showsFeelingStatus {
-                    preWorkoutStatusToolbarItem
+                if let preWorkoutContext {
+                    Button {
+                        showPreWorkoutContextSheet = true
+                    } label: {
+                        Text(preWorkoutContext.feeling.emoji)
+                            .font(.title)
+                            .frame(width: 28, height: 28)
+                    }
+                    .accessibilityIdentifier("workoutDetailPreWorkoutContextButton")
+                    .accessibilityLabel("Pre workout context")
+                    .accessibilityValue(preWorkoutAccessibilityValue)
+                    .accessibilityHint("Shows pre workout details.")
                 }
-                if workout.preWorkoutContext?.tookPreWorkout == true {
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(.yellow)
-                        .accessibilityLabel("Pre-workout drink taken")
+                if preWorkoutContext?.tookPreWorkout == true {
+                    Button {
+                        showPreWorkoutContextSheet = true
+                    } label: {
+                        Image(systemName: "bolt.fill")
+                            .foregroundStyle(.yellow)
+                    }
+                    .accessibilityIdentifier("workoutDetailPreWorkoutDrinkButton")
+                    .accessibilityLabel("Pre workout context")
+                    .accessibilityValue(preWorkoutAccessibilityValue)
+                    .accessibilityHint("Shows pre workout details.")
                 }
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -164,12 +170,10 @@ struct WorkoutDetailView: View {
         .sheet(isPresented: $showPreWorkoutContextSheet) {
             NavigationStack {
                 List {
-                    if let preWorkoutFeelingText {
-                        LabeledContent("Pre Workout Feeling", value: preWorkoutFeelingText)
+                    if let preWorkoutContext {
+                        LabeledContent("Felt", value: preWorkoutContext.feeling.displayName)
                     }
-                    if workout.preWorkoutContext?.tookPreWorkout == true {
-                        LabeledContent("Pre Workout", value: "Yes")
-                    }
+                    LabeledContent("Took pre workout", value: preWorkoutContext?.tookPreWorkout == true ? "Yes" : "No")
                     if let preWorkoutNotesText {
                         Section("Notes") {
                             Text(preWorkoutNotesText)
@@ -177,6 +181,8 @@ struct WorkoutDetailView: View {
                         }
                     }
                 }
+                .fontWeight(.semibold)
+                .fontDesign(.rounded)
                 .navigationTitle("Pre Workout Context")
                 .toolbarTitleDisplayMode(.inline)
                 .toolbar {
@@ -235,37 +241,6 @@ struct WorkoutDetailView: View {
         Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
     }
 
-    @ViewBuilder
-    private var preWorkoutStatusToolbarItem: some View {
-        if hasPreWorkoutNotes {
-            Button {
-                showPreWorkoutContextSheet = true
-            } label: {
-                preWorkoutStatusLabel
-            }
-            .accessibilityIdentifier("workoutDetailPreWorkoutContextButton")
-            .accessibilityLabel("Pre workout context")
-            .accessibilityValue(preWorkoutAccessibilityValue)
-            .accessibilityHint("Shows pre workout details.")
-        } else {
-            preWorkoutStatusLabel
-                .accessibilityElement(children: .ignore)
-                .accessibilityIdentifier("workoutDetailPreWorkoutContextDisplay")
-                .accessibilityLabel("Pre workout context")
-                .accessibilityValue(preWorkoutAccessibilityValue)
-        }
-    }
-
-    private var preWorkoutStatusLabel: some View {
-        Group {
-            if let feeling = workout.preWorkoutContext?.feeling, feeling != .notSet {
-                Text(feeling.emoji)
-                    .font(.title)
-                    .frame(width: 28, height: 28)
-            }
-        }
-    }
-
     private var effortRingLabel: some View {
         let effortColor = effortRingColor
 
@@ -295,8 +270,8 @@ struct WorkoutDetailView: View {
     }
 
     private var preWorkoutAccessibilityValue: String {
-        let feeling = preWorkoutFeelingText ?? "Not set"
-        let tookPreWorkout = workout.preWorkoutContext?.tookPreWorkout == true ? "Pre workout taken" : "No pre workout"
+        let feeling = preWorkoutContext?.feeling.displayName ?? "Not set"
+        let tookPreWorkout = preWorkoutContext?.tookPreWorkout == true ? "Pre workout taken" : "No pre workout"
         return "\(feeling). \(tookPreWorkout)."
     }
 
@@ -304,10 +279,10 @@ struct WorkoutDetailView: View {
     private func setIndicator(for set: SetPerformance) -> some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .topTrailing) {
                 if let visibleRPE = set.visibleRPE {
                     RPEBadge(value: visibleRPE)
-                        .offset(x: visibleRPE == 10 ? 12 : 9, y: 5)
+                        .offset(x: 7, y: -7)
                 }
             }
     }

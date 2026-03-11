@@ -9,10 +9,10 @@ struct WorkoutView: View {
     @State private var showExerciseEditSheet = false
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
-    @State private var showDeleteWorkoutAlert = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var showPreWorkoutSheet = false
+    @State private var showWorkoutSettingsSheet = false
     @State private var showDeleteConfirmation = false
     @State private var showSaveConfirmation = false
     @State private var autoAdvanceTargetIndex: Int?
@@ -126,6 +126,9 @@ struct WorkoutView: View {
                         saveContext(context: context)
                         WorkoutActivityManager.update(for: workout)
                     }
+            }
+            .sheet(isPresented: $showWorkoutSettingsSheet) {
+                WorkoutSettingsView(workout: workout)
             }
             .onChange(of: workout.activeExercise?.id) {
                 scheduleSave(context: context)
@@ -271,6 +274,12 @@ struct WorkoutView: View {
                 .accessibilityHint("Deletes this workout.")
             } else {
                 Menu("Workout Options", systemImage: "ellipsis") {
+                    Button("Workout Settings", systemImage: "gear") {
+                        Haptics.selection()
+                        showWorkoutSettingsSheet = true
+                    }
+                    .accessibilityIdentifier("workoutSettingsButton")
+                    .accessibilityHint("Shows workout settings.")
                     Button("Edit Exercises", systemImage: "pencil") {
                         Haptics.selection()
                         showExerciseEditSheet = true

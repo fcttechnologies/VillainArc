@@ -83,6 +83,14 @@ private func changeOrder(for changeType: ChangeType) -> Int {
 }
 
 
-func pendingSuggestions(for plan: WorkoutPlan, in context: ModelContext) -> [PrescriptionChange] {
-    (try? context.fetch(PrescriptionChange.pendingOrDeferred(forPlanID: plan.id))) ?? []
+func pendingSuggestions(for plan: WorkoutPlan, in _: ModelContext) -> [PrescriptionChange] {
+    var seenChangeIDs = Set<UUID>()
+    let allChanges = Array(plan.targetedChanges ?? [])
+        + plan.sortedExercises.flatMap { Array($0.changes ?? []) }
+        + plan.sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.changes ?? []) } }
+
+    return allChanges.filter { change in
+        guard seenChangeIDs.insert(change.id).inserted else { return false }
+        return change.decision == .pending || change.decision == .deferred
+    }
 }
