@@ -329,9 +329,9 @@
 - Calls: Provided `action` closure.
 
 ### `VillainArc/Views/HomeSections/RecentExercisesSectionView.swift`
-- Does: Home "Exercises" section; shows the most recently used exercises and links to the full exercises list.
+- Does: Home "Exercises" section; shows the most recently used exercises using the shared summary cards enriched with cached history chips, and links to the full exercises list.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query(Exercise.all)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .exercisesList)`, `ExerciseSummaryRow`, `SmallUnavailableView`.
+- Calls: `@Query(Exercise.all)`, `@Query(ExerciseHistory)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .exercisesList)`, `ExerciseSummaryRow`, `SmallUnavailableView`.
 
 ### `VillainArc/Views/Components/SmallUnavailableView.swift`
 - Does: Compact unavailable/empty-state presentational component.
@@ -349,7 +349,7 @@
 - Calls: None (presentational component).
 
 ### `VillainArc/Views/Components/ExerciseSummaryRow.swift`
-- Does: Shared exercise summary card row showing name, equipment, and display muscle for navigation surfaces.
+- Does: Shared exercise summary card row for navigation surfaces, showing exercise identity plus cached context like subtitle, favorite badge, last-used state, session count, and best-set chips when history is available.
 - Called by: `RecentExercisesSectionView`, `ExercisesListView`.
 - Calls: `AppRouter.navigate(to: .exerciseDetail(...))`, `IntentDonations.donateOpenExercise`.
 
@@ -359,14 +359,14 @@
 - Calls: `@Query(WorkoutSession.completedSession)`, `WorkoutRowView`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutSessions`, `ModelContext.delete`, `ExerciseHistoryUpdater.updateHistory`, `IntentDonations.donateDeleteWorkout`, `IntentDonations.donateDeleteAllWorkouts`.
 
 ### `VillainArc/Views/Exercise/ExercisesListView.swift`
-- Does: Searchable list of all exercises sorted by `lastUsed`, with favorites-only filtering, visible favorite badges, and swipe actions to toggle favorites before navigating to exercise detail.
+- Does: Searchable list of all exercises sorted by `lastUsed`, with favorites-only filtering, swipe actions to toggle favorites, and shared summary cards populated with cached exercise-history chips before navigating to exercise detail.
 - Called by: `ContentView` navigation destination for `.exercisesList`, SwiftUI previews.
-- Calls: `@Query(Exercise.all)`, exercise search helpers (`normalizedTokens`, `exerciseSearchMatches`, fuzzy matching), `AppRouter.navigate(to: .exerciseDetail(...))`, `IntentDonations.donateOpenExercise`, `IntentDonations.donateToggleExerciseFavorite`, `Haptics.selection`, `saveContext`.
+- Calls: `@Query(Exercise.all)`, `@Query(ExerciseHistory)`, exercise search helpers (`normalizedTokens`, `exerciseSearchMatches`, fuzzy matching), `ExerciseSummaryRow`, `IntentDonations.donateToggleExerciseFavorite`, `Haptics.selection`, `saveContext`.
 
 ### `VillainArc/Views/Exercise/ExerciseDetailView.swift`
-- Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, rep-aware progression charts, and a footer button to open full history.
+- Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, segmented progression metrics, charts gated until at least two points exist, and interactive chart selection that reveals a rule-mark callout for the chosen session.
 - Called by: `ContentView` navigation destination for `.exerciseDetail`, SwiftUI previews; intended for reuse from workout, plan, and active-session exercise surfaces.
-- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `SummaryStatCard`, `Charts` line/point marks, chart scaling helpers, `AppRouter.navigate(to: .exerciseHistory(...))`, cached history metrics.
+- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `SummaryStatCard`, `Charts` line/point/rule marks, chart selection modifiers, chart scaling helpers, `AppRouter.navigate(to: .exerciseHistory(...))`, cached history metrics.
 
 ### `VillainArc/Views/Exercise/ExerciseHistoryView.swift`
 - Does: List of all completed performances for one exercise, with one section per performance and a set grid showing set label/type, weight, reps, rest, rep range, per-set RPE badges, and notes. Supports both browse navigation (`catalogID`) and future contextual sheet presentation from workout/plan exercise headers.
@@ -501,7 +501,7 @@
 ### `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`
 - Does: Home split summary section that shows active/today state and routes users into split screens.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query` over `WorkoutSplit`, `HomeSectionHeaderButton`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateStartTodaysWorkout`, `IntentDonations.donateOpenWorkoutPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
+- Calls: `@Query` over `WorkoutSplit`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateStartTodaysWorkout`, `IntentDonations.donateOpenWorkoutPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
 
 ### `VillainArc/Views/WorkoutSplit/SplitBuilderView.swift`
 - Does: Multi-step split builder for preset-based or scratch split creation (type, schedule mode, training days, rest style).

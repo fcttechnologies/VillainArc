@@ -4,7 +4,7 @@ import Charts
 
 struct ExerciseDetailView: View {
     private enum ChartMetric: String, CaseIterable, Identifiable {
-        case estimatedOneRepMax = "Estimated 1RM"
+        case estimatedOneRepMax = "Est. 1RM"
         case topWeight = "Top Weight"
         case volume = "Volume"
         case reps = "Reps"
@@ -173,7 +173,7 @@ struct ExerciseDetailView: View {
     }
 
     private var availableMetrics: [ChartMetric] {
-        ChartMetric.allCases.filter { !points(for: $0).isEmpty }
+        ChartMetric.allCases.filter { points(for: $0).count >= 2 }
     }
 
     private var activeMetric: ChartMetric? {
@@ -213,7 +213,7 @@ struct ExerciseDetailView: View {
                                     .font(.headline)
                             }
 
-                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint)
+                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint, unit: activeMetric.unit)
 
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {
@@ -224,6 +224,8 @@ struct ExerciseDetailView: View {
                                 .pickerStyle(.segmented)
                             }
                         }
+                    } else if totalSessions > 0 {
+                        chartUnavailableCard
                     }
                 }
                 .padding(.horizontal)
@@ -263,6 +265,13 @@ struct ExerciseDetailView: View {
         history != nil && (!statItems.isEmpty || !availableMetrics.isEmpty)
     }
 
+    private var chartUnavailableCard: some View {
+        ContentUnavailableView("Progress Charts", systemImage: "chart.line.uptrend.xyaxis", description: Text("Charts appear after at least 2 logged sessions for this exercise."))
+        .padding()
+        .frame(maxWidth: .infinity)
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+    }
+
     private func points(for metric: ChartMetric) -> [ExerciseMetricPoint] {
         switch metric {
         case .estimatedOneRepMax:
@@ -286,6 +295,9 @@ private struct ExerciseStatItem: Identifiable {
 private struct ExerciseMetricChartCard: View {
     let points: [ExerciseMetricPoint]
     let tint: Color
+    let unit: String
+
+    @State private var selectedDate: Date?
 
     private var yDomain: ClosedRange<Double> {
         let values = points.map(\.value)
@@ -303,6 +315,11 @@ private struct ExerciseMetricChartCard: View {
         return (minimum - padding)...(maximum + padding)
     }
 
+    private var displayedPoint: ExerciseMetricPoint? {
+        guard let selectedDate else { return nil }
+        return nearestPoint(to: selectedDate)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Chart(points) { point in
@@ -318,9 +335,30 @@ private struct ExerciseMetricChartCard: View {
                     y: .value("Value", point.value)
                 )
                 .foregroundStyle(tint)
+
+                if point.id == displayedPoint?.id {
+                    RuleMark(x: .value("Selected Date", point.date))
+                        .foregroundStyle(tint)
+                        .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                        .annotation(position: .top, spacing: 8, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(point.date, style: .date)
+                                    .foregroundStyle(.white.opacity(0.9))
+                                Text("\(point.value, format: .number) \(unit)")
+                                    .font(.title2)
+                                    .foregroundStyle(.white)
+                            }
+                            .bold()
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(tint.gradient, in: .rect(cornerRadius: 12))
+                        }
+                }
             }
             .frame(height: 220)
             .chartYScale(domain: yDomain)
+            .chartXSelection(value: $selectedDate)
+            
             .chartYAxis {
                 AxisMarks(position: .leading, values: .stride(by: axisStep)) { value in
                     AxisGridLine()
@@ -340,6 +378,11 @@ private struct ExerciseMetricChartCard: View {
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+        .onChange(of: points) { _, newPoints in
+            if let selectedDate {
+                self.selectedDate = nearestPoint(in: newPoints, to: selectedDate)?.date
+            }
+        }
     }
 
     private var axisStep: Double {
@@ -355,12 +398,28 @@ private struct ExerciseMetricChartCard: View {
         }
         return max((range / 4).rounded(.up), 10)
     }
+
+    private func nearestPoint(to date: Date) -> ExerciseMetricPoint? {
+        nearestPoint(in: points, to: date)
+    }
+
+    private func nearestPoint(in points: [ExerciseMetricPoint], to date: Date) -> ExerciseMetricPoint? {
+        points.min { left, right in
+            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
+        }
+    }
 }
 
-private struct ExerciseMetricPoint: Identifiable {
-    let id = UUID()
+private struct ExerciseMetricPoint: Identifiable, Equatable {
+    let id: Date
     let date: Date
     let value: Double
+
+    init(date: Date, value: Double) {
+        self.id = date
+        self.date = date
+        self.value = value
+    }
 }
 
 #Preview("Exercise Detail") {

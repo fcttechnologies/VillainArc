@@ -181,8 +181,10 @@ struct WorkoutSplitView: View {
                     .accessibilityHint(AccessibilityText.workoutSplitSwapConfirmHint)
             }
         } else {
-            ToolbarItem(placement: .topBarTrailing) {
-                splitOptionsMenu
+            if currentSplit != nil || (!isOverride && !allSplits.isEmpty) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    splitOptionsMenu
+                }
             }
             if !isOverride {
                 ToolbarSpacer(.flexible, placement: .bottomBar)

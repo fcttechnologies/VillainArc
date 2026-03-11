@@ -12,20 +12,14 @@ struct WorkoutSplitSectionView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HomeSectionHeaderButton(title: "Workout Split", accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitLink, accessibilityHint: AccessibilityText.workoutSplitHeaderHint) {
-                appRouter.navigate(to: .workoutSplit(autoPresentBuilder: false))
+        content
+            .onAppear {
+                refreshRotationIfNeeded()
             }
-
-            content
-        }
-        .onAppear {
-            refreshRotationIfNeeded()
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active else { return }
-            refreshRotationIfNeeded()
-        }
+            .onChange(of: scenePhase) { _, newPhase in
+                guard newPhase == .active else { return }
+                refreshRotationIfNeeded()
+            }
     }
 
     @ViewBuilder

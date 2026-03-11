@@ -4,12 +4,20 @@ import SwiftData
 struct ExercisesListView: View {
     @Environment(\.modelContext) private var context
     @Query(Exercise.all) private var exercises: [Exercise]
+    @Query private var histories: [ExerciseHistory]
     @State private var searchText = ""
     @State private var favoritesOnly = false
-    private let appRouter = AppRouter.shared
+
+    init() {
+        _histories = Query()
+    }
 
     private var hasFavorites: Bool {
         exercises.contains(where: \.favorite)
+    }
+
+    private var historyByCatalogID: [String: ExerciseHistory] {
+        Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
     }
 
     private var filteredExercises: [Exercise] {
@@ -43,17 +51,11 @@ struct ExercisesListView: View {
     var body: some View {
         List {
             ForEach(filteredExercises) { exercise in
-                Button {
-                    appRouter.navigate(to: .exerciseDetail(exercise.catalogID))
-                    Task { await IntentDonations.donateOpenExercise(exercise: exercise) }
-                } label: {
-                    exerciseRow(for: exercise)
-                }
-                .buttonStyle(.borderless)
+                ExerciseSummaryRow(exercise: exercise, history: historyByCatalogID[exercise.catalogID])
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     favoriteAction(for: exercise)
                 }
-                    .accessibilityIdentifier("exerciseListRow-\(exercise.catalogID)")
+                .accessibilityIdentifier("exerciseListRow-\(exercise.catalogID)")
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -94,37 +96,6 @@ struct ExercisesListView: View {
         .onChange(of: favoritesOnly) {
             Haptics.selection()
         }
-    }
-
-    @ViewBuilder
-    private func exerciseRow(for exercise: Exercise) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(exercise.name)
-                    .lineLimit(1)
-                Spacer()
-                if exercise.favorite {
-                    Image(systemName: "star.fill")
-                        .foregroundStyle(.yellow)
-                        .accessibilityHidden(true)
-                }
-            }
-            .font(.title3)
-
-            HStack {
-                Text(exercise.equipmentType.rawValue)
-                Spacer()
-                Text(exercise.displayMuscle)
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
-        .fontWeight(.semibold)
-        .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-        .fontDesign(.rounded)
-        .tint(.primary)
-        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
