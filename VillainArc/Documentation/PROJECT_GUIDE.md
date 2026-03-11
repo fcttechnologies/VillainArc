@@ -49,6 +49,7 @@ Four sections: **Splits** (today's schedule), **Recent Workout** (last completed
 - If no unfinished workout exists but an incomplete non-editing workout plan exists, the app resumes that plan in the full-screen plan editor. The user stays in that flow until the plan is saved/completed or canceled.
 - `AppRouter` enforces a single active flow across the app: at most one workout session or one workout plan can be active at a time, never both.
 - `ExercisePerformance` and `ExercisePrescription` are initialized with at least one set. The editing UI only exposes set deletion when more than one set remains.
+- Built-in exercise catalog metadata is canonical for `name`, `musclesTargeted`, and `equipmentType`. When catalog seeding updates those fields, matching `ExercisePrescription` and `ExercisePerformance` snapshots are refreshed by `catalogID`.
 - Finishing a workout resolves incomplete sets before summary: logged unfinished sets can be marked complete, unfinished sets can be deleted, and any exercise left with zero sets is pruned. If every exercise is pruned, the workout itself is deleted instead of reaching summary.
 - `ExerciseHistory` is maintained only for exercises with completed performance history. When the last completed performance is removed, the history record is deleted and the exercise is removed from Spotlight.
 
@@ -203,6 +204,7 @@ Use this to find where logic lives for any feature.
 | Exercise history stats + cached progress metrics | `Data/Models/Exercise/ExerciseHistory.swift` |
 | History rebuild | `Data/Services/ExerciseHistoryUpdater.swift` |
 | Exercise Spotlight eligibility | `Data/Services/ExerciseHistoryUpdater.swift` + `Data/Services/SpotlightIndexer.swift` |
+| Catalog metadata propagation into plan/workout snapshots | `Data/Services/DataManager.swift` → `syncExerciseSnapshots()` |
 | Rep range policy | `Data/Models/Exercise/RepRangePolicy.swift` |
 | Rep range editor | `Views/Workout/Editors/RepRangeEditorView.swift` |
 | Rest time editor | `Views/Workout/Editors/RestTimeEditorView.swift` |
@@ -276,6 +278,7 @@ Use this to find where logic lives for any feature.
 |------|-------|
 | Persistence helpers | `Data/Services/DataManager.swift` → `saveContext()`, `scheduleSave()` |
 | Exercise catalog seeding | `Data/Services/DataManager.swift` → `seedExercisesIfNeeded()` |
+| Exercise snapshot metadata sync | `Data/Services/DataManager.swift` → `syncExerciseSnapshots()` |
 | Haptic feedback | `Helpers/Haptics.swift` |
 | Time formatting | `Helpers/TimeFormatting.swift` |
 | Keyboard dismiss | `Helpers/KeyboardDismiss.swift` |
@@ -429,7 +432,7 @@ VillainArc/
     SampleData.swift             Preview fixtures
     Services/                    Service/coordinator classes
       AppRouter.swift            Navigation coordinator (singleton)
-      DataManager.swift          Catalog seeding + save helpers
+      DataManager.swift          Catalog seeding + snapshot sync + save helpers
       OnboardingManager.swift    First-run state machine
       SetupGuard.swift           Intent pre-condition guard
       SystemState.swift          Singleton bootstrap + settings migration helper
@@ -455,5 +458,5 @@ VillainArc/
 
 VillainArcWidgetExtension/       Live Activity widget UI
 VillainArcIntentsExtension/      Legacy SiriKit handlers
-VillainArcTests/                 Test suite (7 test files + 3 support files)
+VillainArcTests/                 Test suite (8 test files + 3 support files)
 ```

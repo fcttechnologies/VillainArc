@@ -99,6 +99,33 @@ final class ExercisePrescription {
             set.index = index
         }
     }
+
+    @discardableResult
+    func applyCatalogMetadata(name: String, musclesTargeted: [Muscle], equipmentType: EquipmentType) -> Bool {
+        var didChange = false
+
+        if self.name != name {
+            self.name = name
+            didChange = true
+        }
+        if self.musclesTargeted != musclesTargeted {
+            self.musclesTargeted = musclesTargeted
+            didChange = true
+        }
+        if self.equipmentType != equipmentType {
+            self.equipmentType = equipmentType
+            didChange = true
+        }
+
+        return didChange
+    }
 }
 
 extension ExercisePrescription: RestTimeEditable {}
+
+extension ExercisePrescription {
+    static func matching(catalogID: String) -> FetchDescriptor<ExercisePrescription> {
+        let predicate = #Predicate<ExercisePrescription> { $0.catalogID == catalogID }
+        return FetchDescriptor(predicate: predicate)
+    }
+}

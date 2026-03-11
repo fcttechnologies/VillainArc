@@ -53,7 +53,20 @@ enum TestDataFactory {
         perf.sets?.removeAll()
 
         for (index, config) in sets.enumerated() {
-            let setPerf = SetPerformance(exercise: perf, setType: config.type, weight: config.weight, reps: config.reps, restSeconds: config.rest, index: index, complete: true)
+            let setPerf: SetPerformance
+            if index < prescription.sortedSets.count {
+                let setPrescription = prescription.sortedSets[index]
+                setPerf = SetPerformance(exercise: perf, setPrescription: setPrescription)
+                setPerf.type = config.type
+                setPerf.weight = config.weight
+                setPerf.reps = config.reps
+                setPerf.restSeconds = config.rest
+                setPerf.index = index
+                setPerf.complete = true
+                setPerf.completedAt = Date()
+            } else {
+                setPerf = SetPerformance(exercise: perf, setType: config.type, weight: config.weight, reps: config.reps, restSeconds: config.rest, index: index, complete: true)
+            }
             context.insert(setPerf)
             perf.sets?.append(setPerf)
         }

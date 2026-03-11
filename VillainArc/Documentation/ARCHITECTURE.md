@@ -1,7 +1,7 @@
 # VillainArc Architecture Map
 
 **Status**: Current
-**Last updated**: 2026-03-10
+**Last updated**: 2026-03-11
 **Scope**: Full codebase — root app/navigation + onboarding + persistence/Spotlight + intent/shortcuts/donations + workout history/detail + workout session/suggestions + suggestion rules/AI pipeline + workout plan list/detail + split planning/editing + exercise selection/editor slice + helper utility slice + data model layer (session/plan/split/history/suggestions).
 **See also**: `PROJECT_GUIDE.md` for conceptual overview and feature→file map. `WORKOUT_PLAN_SUGGESTION_FLOW.md` for suggestion engine deep dive.
 
@@ -219,7 +219,7 @@
 - Calls: `Schema(...)` with model types, `FileManager.default.containerURL(...)`, `ModelConfiguration(...)`, `ModelContainer(for:configurations:)`.
 
 ### `VillainArc/Data/Services/DataManager.swift`
-- Does: Catalog bootstrap/dedupe (`DataManager`) plus shared persistence helpers (`saveContext`, `scheduleSave`).
+- Does: Catalog bootstrap/dedupe (`DataManager`) plus shared persistence helpers (`saveContext`, `scheduleSave`); catalog metadata sync also propagates canonical exercise name/muscles/equipment updates into matching plan/session exercise snapshots.
 - Called by: `ContentView` (`seedExercisesIfNeeded`), `AddExerciseView` (`dedupeCatalogExercisesIfNeeded`), exercise intents, and many views/models/router through `saveContext`/`scheduleSave`.
 - Calls: app-group `UserDefaults` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
 
@@ -660,9 +660,9 @@
 - Calls: `ExercisePerformance` constructors, session fetch descriptors, finish/prune helpers.
 
 ### `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
-- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
+- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
 - Called by: `WorkoutView`, `ExerciseView`, suggestion engines, history updater, `SampleData`.
-- Calls: `SetPerformance` constructors, rest helper (`effectiveRestSeconds`), descriptors (`lastCompleted`, `matching`, `completedAll`).
+- Calls: `SetPerformance` constructors, rest helper (`effectiveRestSeconds`), descriptors (`lastCompleted`, `matching`, `withCatalogID`, `completedAll`).
 
 ### `VillainArc/Data/Models/Sessions/SetPerformance.swift`
 - Does: Per-set logged data (type, weight, reps, rest, actual RPE, completion metadata). Does not inherit target RPE from plan prescriptions when plan-based workouts start.
@@ -695,9 +695,9 @@
 - Calls: `PrescriptionChange` creation, pending-change override marking, set/exercise sync helpers, `SpotlightIndexer.deleteWorkoutPlan` (delete-entirely path).
 
 ### `VillainArc/Data/Models/Plans/ExercisePrescription.swift`
-- Does: Per-exercise plan prescription (rep/rest policy, notes, set targets, pending changes). Initializes with at least one set for new plan exercises.
+- Does: Per-exercise plan prescription (rep/rest policy, notes, set targets, pending changes). Initializes with at least one set for new plan exercises and can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync.
 - Called by: `WorkoutPlan`, `WorkoutSession` plan-start path, plan editors, suggestion engines.
-- Calls: `SetPrescription` constructors/copy helpers, policy copy constructors.
+- Calls: `SetPrescription` constructors/copy helpers, policy copy constructors, `matching(catalogID:)`.
 
 ### `VillainArc/Data/Models/Plans/SetPrescription.swift`
 - Does: Per-set target prescription (type/target weight/reps/rest/target RPE) with change links. Target RPE is hidden for warmup sets and is copied from logged RPE when creating a plan from a finished workout.
@@ -710,9 +710,9 @@
 - Calls: None (data model only).
 
 ### `VillainArc/Data/Models/Plans/SuggestionGrouping.swift`
-- Does: Grouping/query helpers for rendering and resolving plan suggestions (`groupSuggestions`, `pendingSuggestions`).
+- Does: Grouping/query helpers for rendering and resolving plan suggestions (`groupSuggestions`, `pendingSuggestions`). `pendingSuggestions` walks the plan's direct change relationships (`targetedChanges`, exercise changes, set changes) instead of issuing a separate SwiftData fetch.
 - Called by: `DeferredSuggestionsView`, `WorkoutSummaryView`.
-- Calls: `ModelContext.fetch` for pending suggestion scans.
+- Calls: In-memory grouping/sorting helpers plus plan relationship traversal.
 
 ### `VillainArc/Data/Models/WorkoutSplit/WorkoutSplit.swift`
 - Does: Split schedule aggregate (weekly/rotation state, day resolution, current-day advancement logic).
@@ -1074,9 +1074,14 @@
 - Called by: `VillainArcTests` target test runner.
 - Calls: `ExerciseHistory.recalculate`, `ExercisePerformance.totalCompletedReps`, `ProgressionPoint.totalReps`.
 
+### `VillainArcTests/DataManagerCatalogSyncTests.swift`
+- Does: Verifies catalog metadata sync updates matching plan/session exercise snapshots without mutating unrelated exercises.
+- Called by: `VillainArcTests` target test runner.
+- Calls: `DataManager.syncExerciseSnapshots`, `WorkoutSession(from: plan)`, core exercise/plan/session model constructors.
+
 ### `VillainArcTests/TestSupport/TestDataFactory.swift`
 - Does: Shared test-only factory helpers for creating model contexts, plans, sessions, and performances.
-- Called by: `SuggestionSystemTests`.
+- Called by: `SuggestionSystemTests`, `DataManagerCatalogSyncTests`.
 - Calls: `TestModelContainer.make`, core model constructors.
 
 ### `VillainArcTests/TestSupport/PlanEditingTestData.swift`

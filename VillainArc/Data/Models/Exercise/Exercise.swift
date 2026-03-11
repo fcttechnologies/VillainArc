@@ -20,7 +20,7 @@ final class Exercise {
     }
 
     var detailSubtitle: String {
-        let majorMuscles = ListFormatter.localizedString(byJoining: musclesTargeted.filter(\.isMajor).map(\.rawValue))
+        let majorMuscles = ListFormatter.localizedString(byJoining: Array(musclesTargeted.filter(\.isMajor).prefix(3).map(\.rawValue)))
         let muscles = majorMuscles.isEmpty ? displayMuscle : majorMuscles
         let equipment = equipmentType.rawValue
         return muscles.isEmpty ? equipment : "\(muscles) • \(equipment)"

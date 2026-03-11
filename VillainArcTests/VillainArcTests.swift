@@ -418,30 +418,6 @@ struct VillainArcTests {
     }
 
     @Test @MainActor
-    // Pending suggestion lookup depends on targetPlan, not just exercise/set links.
-    func pendingSuggestionsRequireTargetPlanLink() throws {
-        let container = try TestModelContainer.make()
-        let context = ModelContext(container)
-        let data = makePlanWithRuleSuggestions(in: context)
-
-        let unlinkedChange = PrescriptionChange(
-            source: .rules,
-            catalogID: data.bench.catalogID,
-            targetExercisePrescription: data.bench,
-            targetSetPrescription: data.benchSet1,
-            changeType: .increaseWeight,
-            previousValue: 135,
-            newValue: 140,
-            decision: .pending
-        )
-        context.insert(unlinkedChange)
-
-        let suggestions = pendingSuggestions(for: data.plan, in: context)
-        #expect(suggestions.contains { $0.id == unlinkedChange.id } == false)
-        #expect(suggestions.allSatisfy { $0.targetPlan?.id == data.plan.id })
-    }
-
-    @Test @MainActor
     // Deleting a source performance preserves prescription changes and nullifies the source link.
     func deletingExercisePerformancePreservesSourceChanges() throws {
         let context = try TestDataFactory.makeContext()

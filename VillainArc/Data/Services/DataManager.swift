@@ -53,13 +53,47 @@ import SwiftData
 
         for catalogItem in ExerciseCatalog.all {
             if let existing = exercisesByCatalogID[catalogItem.id] {
+                let metadataChanged =
+                    existing.name != catalogItem.name ||
+                    existing.musclesTargeted != catalogItem.musclesTargeted ||
+                    existing.equipmentType != catalogItem.equipmentType
+
                 didChange = existing.applyCatalogItem(catalogItem) || didChange
+
+                if metadataChanged {
+                    didChange = try syncExerciseSnapshots(for: catalogItem, context: context) || didChange
+                }
             } else {
                 let newExercise = Exercise(from: catalogItem)
                 context.insert(newExercise)
                 didChange = true
             }
         }
+        return didChange
+    }
+
+    @discardableResult
+    static func syncExerciseSnapshots(for catalogItem: ExerciseCatalogItem, context: ModelContext) throws -> Bool {
+        var didChange = false
+
+        let prescriptions = try context.fetch(ExercisePrescription.matching(catalogID: catalogItem.id))
+        for prescription in prescriptions {
+            didChange = prescription.applyCatalogMetadata(
+                name: catalogItem.name,
+                musclesTargeted: catalogItem.musclesTargeted,
+                equipmentType: catalogItem.equipmentType
+            ) || didChange
+        }
+
+        let performances = try context.fetch(ExercisePerformance.withCatalogID(catalogItem.id))
+        for performance in performances {
+            didChange = performance.applyCatalogMetadata(
+                name: catalogItem.name,
+                musclesTargeted: catalogItem.musclesTargeted,
+                equipmentType: catalogItem.equipmentType
+            ) || didChange
+        }
+
         return didChange
     }
 

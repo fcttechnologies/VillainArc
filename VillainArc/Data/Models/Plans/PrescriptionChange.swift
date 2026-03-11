@@ -87,18 +87,3 @@ final class PrescriptionChange {
         self.evaluatedAt = evaluatedAt
     }
 }
-
-// MARK: - Fetch Descriptors
-
-extension PrescriptionChange {
-    /// Pending or deferred suggestions for a plan (for pre-workout review).
-    static func pendingOrDeferred(forPlanID planID: UUID) -> FetchDescriptor<PrescriptionChange> {
-        let pending = Decision.pending
-        let deferred = Decision.deferred
-        let predicate = #Predicate<PrescriptionChange> { change in
-            change.targetPlan?.id == planID && (change.decision == pending || change.decision == deferred)
-        }
-        return FetchDescriptor(predicate: predicate)
-    }
-
-}

@@ -25,7 +25,9 @@ struct ExerciseSummaryRow: View {
                         Text(exercise.detailSubtitle)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .allowsTightening(true)
                     }
                     Spacer()
                     if exercise.favorite {

@@ -130,6 +130,26 @@ final class ExercisePerformance {
         reindexSetsByCurrentOrder()
     }
 
+    @discardableResult
+    func applyCatalogMetadata(name: String, musclesTargeted: [Muscle], equipmentType: EquipmentType) -> Bool {
+        var didChange = false
+
+        if self.name != name {
+            self.name = name
+            didChange = true
+        }
+        if self.musclesTargeted != musclesTargeted {
+            self.musclesTargeted = musclesTargeted
+            didChange = true
+        }
+        if self.equipmentType != equipmentType {
+            self.equipmentType = equipmentType
+            didChange = true
+        }
+
+        return didChange
+    }
+
     private func nextRestorableTailPrescription() -> SetPrescription? {
         guard let prescription else { return nil }
 
@@ -213,6 +233,11 @@ extension ExercisePerformance {
             item.catalogID == catalogID && (item.workoutSession?.status == done || item.workoutSession?.id == sessionID)
         }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+    }
+
+    static func withCatalogID(_ catalogID: String) -> FetchDescriptor<ExercisePerformance> {
+        let predicate = #Predicate<ExercisePerformance> { $0.catalogID == catalogID }
+        return FetchDescriptor(predicate: predicate)
     }
 
     static var completedAll: FetchDescriptor<ExercisePerformance> {
