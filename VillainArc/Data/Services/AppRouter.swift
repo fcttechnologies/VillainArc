@@ -7,7 +7,14 @@ import SwiftData
 final class AppRouter {
     static let shared = AppRouter()
     var activeWorkoutSession: WorkoutSession?
-    var activeWorkoutPlan: WorkoutPlan?
+    var activeWorkoutPlan: WorkoutPlan? {
+        didSet {
+            if activeWorkoutPlan == nil {
+                activeWorkoutPlanOriginal = nil
+            }
+        }
+    }
+    var activeWorkoutPlanOriginal: WorkoutPlan?
     var showAddExerciseFromLiveActivity = false
     var showWorkoutSplitListFromIntent = false
     var showWorkoutSettingsFromIntent = false
@@ -72,7 +79,17 @@ final class AppRouter {
         let newWorkoutPlan = WorkoutPlan()
         context.insert(newWorkoutPlan)
         saveContext(context: context)
+        activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
+    }
+
+    func editWorkoutPlan(_ plan: WorkoutPlan) {
+        guard !hasActiveFlow(), plan.completed, !plan.isEditing else { return }
+        Haptics.selection()
+        let editingCopy = plan.createEditingCopy(context: context)
+        saveContext(context: context)
+        activeWorkoutPlanOriginal = plan
+        activeWorkoutPlan = editingCopy
     }
     
     func startWorkoutSession(from plan: WorkoutPlan) {
@@ -98,6 +115,7 @@ final class AppRouter {
     
     func resumeWorkoutPlanCreation(_ workoutPlan: WorkoutPlan) {
         Haptics.selection()
+        activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = workoutPlan
     }
     

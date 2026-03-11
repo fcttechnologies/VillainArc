@@ -151,6 +151,7 @@ Use this to find where logic lives for any feature.
 | Plan list | `Views/WorkoutPlan/WorkoutPlansListView.swift` |
 | Plan picker (for splits) | `Views/WorkoutPlan/WorkoutPlanPickerView.swift` |
 | Editing copy workflow | `Data/Models/Plans/WorkoutPlan+Editing.swift` |
+| Intent-driven plan edit flow | `Data/Services/AppRouter.swift` + `Views/ContentView.swift` + `Intents/WorkoutPlan/EditWorkoutPlanIntent.swift` |
 | Resumable incomplete plan query | `Data/Models/Plans/WorkoutPlan.swift` → `resumableIncomplete` |
 | Plan model | `Data/Models/Plans/WorkoutPlan.swift` |
 | Exercise prescription | `Data/Models/Plans/ExercisePrescription.swift` |
@@ -204,6 +205,7 @@ Use this to find where logic lives for any feature.
 | Exercise performance history UI | `Views/Exercise/ExerciseHistoryView.swift` |
 | Contextual workout/plan history sheet entry point | `Views/Exercise/ExerciseHistoryView.swift` initializers |
 | Exercise history stats + cached progress metrics | `Data/Models/Exercise/ExerciseHistory.swift` |
+| Exercise navigation/history intents | `Intents/Exercise/ViewLastUsedExerciseIntent.swift` + `Intents/Exercise/ShowExerciseHistoryIntent.swift` + `Intents/Exercise/OpenExerciseIntent.swift` |
 | History rebuild | `Data/Services/ExerciseHistoryUpdater.swift` |
 | Exercise Spotlight eligibility | `Data/Services/ExerciseHistoryUpdater.swift` + `Data/Services/SpotlightIndexer.swift` |
 | Catalog metadata propagation into plan/workout snapshots | `Data/Services/DataManager.swift` → `syncExerciseSnapshots()` |
@@ -229,8 +231,8 @@ Use this to find where logic lives for any feature.
 | Donation hub | `Intents/IntentDonations.swift` |
 | Workout intents | `Intents/Workout/*.swift` (16 files) |
 | Workout split intents + entity | `Intents/WorkoutSplit/*.swift` (7 files) |
-| Plan intents | `Intents/WorkoutPlan/*.swift` (8 files) |
-| Exercise intents | `Intents/Exercise/*.swift` (7 files) |
+| Plan intents | `Intents/WorkoutPlan/*.swift` (10 files) |
+| Exercise intents | `Intents/Exercise/*.swift` (9 files) |
 | Rest timer intents | `Intents/RestTimer/*.swift` (7 files) |
 | Legacy SiriKit | `VillainArcIntentsExtension/*.swift` |
 
@@ -455,7 +457,7 @@ VillainArc/
       RestTimeHistory.swift
     LiveActivity/                ActivityKit attributes + manager
     Protocols/                   RestTimeEditable protocol
-  Intents/                       App Intents for Siri/Shortcuts (52 files)
+  Intents/                       App Intents for Siri/Shortcuts (56 files)
     Workout/                     Workout session/history intents + entity
     WorkoutSplit/                Split navigation/start/summary intents + entity
     WorkoutPlan/                 Workout plan intents + entity

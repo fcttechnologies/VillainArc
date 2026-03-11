@@ -79,8 +79,10 @@ struct ContentView: View {
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutSessionContainer(workout: $0)
             }
-            .fullScreenCover(item: $router.activeWorkoutPlan) {
-                WorkoutPlanView(plan: $0)
+            .fullScreenCover(item: $router.activeWorkoutPlan, onDismiss: {
+                router.activeWorkoutPlanOriginal = nil
+            }) {
+                WorkoutPlanView(plan: $0, originalPlan: router.activeWorkoutPlanOriginal)
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {

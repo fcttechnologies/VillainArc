@@ -134,6 +134,7 @@
 				Data/Models/Plans/SetPrescription.swift,
 				Data/Models/Plans/SuggestionGrouping.swift,
 				Data/Models/Plans/WorkoutPlan.swift,
+				"Data/Models/Plans/WorkoutPlan+Editing.swift",
 				Data/Models/RestTimeHistory.swift,
 				Data/Models/Sessions/ExercisePerformance.swift,
 				Data/Models/Sessions/PreWorkoutContext.swift,
