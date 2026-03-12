@@ -237,6 +237,11 @@ enum AccessibilityIdentifiers {
     static let workoutSplitActiveActionsButton = "workoutSplitActiveActionsButton"
     static let workoutSplitTitleEditorField = "workoutSplitTitleEditorField"
 
+    // MARK: - Exercise Feedback
+    static let exerciseDetailProgressionFeedbackButton = "exerciseDetailProgressionFeedbackButton"
+    static let exerciseProgressionFeedbackSheet = "exerciseProgressionFeedbackSheet"
+    static let exerciseProgressionFeedbackSendButton = "exerciseProgressionFeedbackSendButton"
+
     static let workoutSplitAddRotationDayCapsule = "addRotationDayCapsule"
 
     static func workoutSplitWeekdayCapsule(_ day: WorkoutSplitDay) -> String {

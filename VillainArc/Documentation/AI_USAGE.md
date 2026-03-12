@@ -61,6 +61,10 @@ The test I apply: if I couldn't explain a piece of code in a code review or debu
 - **What AI did**: Generated `PROJECT_GUIDE.md`, `ARCHITECTURE.md`, and `WORKOUT_PLAN_SUGGESTION_FLOW.md` by reading the full codebase and synthesizing it. Also caught discrepancies between docs and actual code behavior.
 - **What I decided**: The documentation structure, what an AI agent needs to be useful on this codebase, and which discrepancies to fix. I reviewed every section for accuracy.
 
+### Exercise Progression Feedback
+- **What AI did**: Helped research Apple’s Foundation Models session/guided-generation/streaming APIs and prototype the bounded DTO shape for exercise progression feedback.
+- **What I decided**: Keep this surface read-only for v1, seed a compact exercise-history context once, generate a structured initial insight, then reuse the same session for follow-up chat. The context trimming rules, UI gating, and separation from the suggestion engine are my design decisions.
+
 ---
 
 ## What AI Doesn't Do Here

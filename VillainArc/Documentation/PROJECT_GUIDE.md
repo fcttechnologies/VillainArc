@@ -181,16 +181,16 @@ Use this to find where logic lives for any feature.
 ### Suggestion Engine
 | What | Where |
 |------|-------|
-| Entry point | `Data/Services/Suggestions/SuggestionGenerator.swift` |
-| Deterministic rules (set-level rules + exercise-level rep-range rules) | `Data/Services/Suggestions/RuleEngine.swift` |
-| Training style detection | `Data/Services/Suggestions/MetricsCalculator.swift` |
-| Conflict resolution | `Data/Services/Suggestions/SuggestionDeduplicator.swift` |
-| Post-workout outcome eval | `Data/Services/Suggestions/OutcomeResolver.swift` |
-| Outcome scoring | `Data/Services/Suggestions/OutcomeRuleEngine.swift` |
-| AI style classifier | `Data/Services/Suggestions/AITrainingStyleClassifier.swift` |
-| AI outcome evaluator | `Data/Services/Suggestions/AIOutcomeInferrer.swift` |
-| Foundation model prewarm | `Data/Services/Suggestions/FoundationModelPrewarmer.swift` |
-| AI tool (history access) | `Data/Services/Suggestions/AITrainingStyleTools.swift` |
+| Entry point | `Data/Services/Suggestions/Generation/SuggestionGenerator.swift` |
+| Deterministic rules (set-level rules + exercise-level rep-range rules) | `Data/Services/Suggestions/Generation/RuleEngine.swift` |
+| Shared suggestion metrics | `Data/Services/Suggestions/Shared/MetricsCalculator.swift` |
+| Conflict resolution | `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift` |
+| Post-workout outcome eval | `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift` |
+| Outcome scoring | `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift` |
+| AI style classifier | `Data/Services/AI/Suggestions/AITrainingStyleClassifier.swift` |
+| AI outcome evaluator | `Data/Services/AI/Outcomes/AIOutcomeInferrer.swift` |
+| Foundation model prewarm | `Data/Services/AI/Shared/FoundationModelPrewarmer.swift` |
+| AI tool (history access) | `Data/Services/AI/Suggestions/AITrainingStyleTools.swift` |
 | Suggestion models | `Data/Models/Suggestions/SuggestionEvent.swift` + `Data/Models/Suggestions/SuggestionEventDraft.swift` + `Data/Models/Plans/PrescriptionChange.swift` |
 | Suggestion snapshot types | `Data/Models/Suggestions/SuggestionSnapshots.swift` |
 | Grouping/query helpers | `Data/Models/Plans/SuggestionGrouping.swift` |
@@ -212,12 +212,25 @@ Use this to find where logic lives for any feature.
 | Exercises list (search + favorites filter/toggle) | `Views/Exercise/ExercisesListView.swift` |
 | Exercise detail / progress UI | `Views/Exercise/ExerciseDetailView.swift` |
 | Exercise performance history UI | `Views/Exercise/ExerciseHistoryView.swift` |
+| AI progression feedback sheet | `Views/Exercise/ExerciseProgressionFeedbackSheet.swift` |
 | Contextual workout/plan history sheet entry point | `Views/Exercise/ExerciseHistoryView.swift` initializers |
 | Exercise history stats + cached progress metrics | `Data/Models/Exercise/ExerciseHistory.swift` |
+| Exercise progression AI context builder | `Data/Services/AI/ExerciseProgression/ExerciseProgressionContextBuilder.swift` |
+| Exercise progression AI assistant | `Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift` |
 | Exercise navigation/history intents | `Intents/Exercise/ViewLastUsedExerciseIntent.swift` + `Intents/Exercise/ShowExerciseHistoryIntent.swift` + `Intents/Exercise/OpenExerciseIntent.swift` |
 | History rebuild | `Data/Services/ExerciseHistoryUpdater.swift` |
 | Exercise Spotlight eligibility | `Data/Services/ExerciseHistoryUpdater.swift` + `Data/Services/SpotlightIndexer.swift` |
 | Catalog metadata propagation into plan/workout snapshots | `Data/Services/DataManager.swift` → `syncExerciseSnapshots()` |
+
+### Foundation Models Feedback
+| What | Where |
+|------|-------|
+| Shared performance/prescription AI snapshots | `Data/Models/AIModels/Shared/*` |
+| Suggestion AI DTOs | `Data/Models/AIModels/Suggestions/*` |
+| Outcome AI DTOs | `Data/Models/AIModels/Outcomes/*` |
+| Exercise progression AI DTOs | `Data/Models/AIModels/ExerciseProgression/*` |
+| Exercise progression guided-generation + chat session | `Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift` |
+| Exercise progression screen entry point | `Views/Exercise/ExerciseDetailView.swift` |
 | Rep range policy | `Data/Models/Exercise/RepRangePolicy.swift` |
 | Rep range editor | `Views/Workout/Editors/RepRangeEditorView.swift` |
 | Rest time editor | `Views/Workout/Editors/RestTimeEditorView.swift` |
@@ -365,7 +378,7 @@ Suggestion generation is safer now, but not fully structure-aware yet. Current-s
 3. Update `DataManager.seedExercisesIfNeeded()` if it needs seeding
 
 ### "I want to add a new suggestion rule"
-1. Add rule method to `Data/Services/Suggestions/RuleEngine.swift`
+1. Add rule method to `Data/Services/Suggestions/Generation/RuleEngine.swift`
 2. Call it from `evaluate()` in the appropriate priority section
 3. Add test in `VillainArcTests/SuggestionSystemTests.swift`
 4. Update `WORKOUT_PLAN_SUGGESTION_FLOW.md`
@@ -381,6 +394,7 @@ Look at: `WorkoutView.swift` (overall), `ExerciseView.swift` (per-exercise), `Ex
 
 ### "Something is broken with suggestions"
 Look at: `SuggestionGenerator.swift` (generation), `RuleEngine.swift` (rules), `PrescriptionChange.swift` (model), `SuggestionReviewView.swift` (UI), `OutcomeResolver.swift` (evaluation).
+Current paths: `Data/Services/Suggestions/Generation/`, `Data/Services/Suggestions/Outcomes/`, and `Data/Services/AI/`.
 
 ### "Something is broken with the rest timer"
 Look at: `RestTimerState.swift` (state machine), `RestTimerView.swift` (UI), `RestTimerNotifications.swift` (notifications), `ExerciseSetRowView.swift` (auto-start trigger).

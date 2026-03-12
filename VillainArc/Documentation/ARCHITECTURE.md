@@ -90,10 +90,18 @@
 - `ExerciseDetailView`
   - Read-only exercise analytics screen keyed by `catalogID`
   - Reads `Exercise` + cached `ExerciseHistory` metrics instead of scanning performances directly
-  - Combines summary stat tiles with a picker-driven progress chart surface and links to full performance history
+  - Combines summary stat tiles with a picker-driven progress chart surface, links to full performance history, and exposes AI progression feedback once enough sessions exist
 - `ExerciseHistoryView`
   - Shows every completed `ExercisePerformance` for one `catalogID`
   - Uses sectioned set grids to display performed sets, rest, rep range, and notes
+- `ExerciseProgressionFeedbackSheet`
+  - Read-only Foundation Models surface for one exercise
+  - Generates a structured progression insight from compact history context, then keeps a multi-turn session alive for follow-up questions
+- `ExerciseProgressionContextBuilder`
+  - Trims exercise-history context to a bounded summary plus a small recent-performance window before AI generation
+- `ExerciseProgressionAssistant`
+  - `@Observable` UI-facing service that owns a single `LanguageModelSession` per sheet presentation
+  - Generates the initial structured progression insight, then streams follow-up text replies in the same session
 - `WorkoutDetailView`
   - Shows one workout's exercises/sets and notes
   - Handles delete + "save as plan" actions
@@ -131,6 +139,8 @@
   - On-device model classification used when set-style inference is ambiguous
 - `AIOutcomeInferrer`
   - On-device model evaluator for group-level suggestion outcomes during resolution
+- `AIExerciseProgressionContext` + `AIExerciseHistorySummarySnapshot` + `AIExerciseProgressionInsight`
+  - Feature-specific AI DTOs for the exercise progression feedback flow
 - `ExerciseHistoryUpdater`
   - Rebuilds exercise history stats from completed performances
   - Used after workout completion/deletion flows
@@ -241,55 +251,65 @@
 - Called by: `OnboardingManager`, `WorkoutSettingsView`.
 - Calls: `UserProfile.single`, `AppSettings.single`, `ModelContext.fetch/insert/save`.
 
-### `VillainArc/Data/Services/Suggestions/SuggestionGenerator.swift`
+### `VillainArc/Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
 - Does: Generates grouped plan suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference. Builds `SuggestionEventDraft`s, deduplicates them by event scope, then persists `SuggestionEvent`s with child `PrescriptionChange` deltas.
 - Called by: `WorkoutSummaryView` (`generateSuggestionsIfNeeded`).
 - Calls: `MetricsCalculator.detectTrainingStyle`, `AITrainingStyleClassifier.infer`, `RuleEngine.evaluate`, `SuggestionDeduplicator.process`, `ExercisePerformance.matching(...)`, `ModelContext.fetch`.
 
-### `VillainArc/Data/Services/Suggestions/RuleEngine.swift`
+### `VillainArc/Data/Services/Suggestions/Generation/RuleEngine.swift`
 - Does: Main deterministic suggestion engine. Emits grouped `SuggestionEventDraft` candidates instead of flat child changes, using set-level progression/safety/rest/set-type rules first and conservative exercise-level rep-range rules only when no set-level suggestion survives for that exercise. Historical set-aware rules read prior target context from `ExercisePerformance.originalTargetSnapshot` and match completed sets back to target slots through frozen `SetPerformance.linkedTargetSetIndex` instead of relying on historical `SetPrescription` links.
 - Called by: `SuggestionGenerator`.
 - Calls: `MetricsCalculator.selectProgressionSets`, `MetricsCalculator.weightIncrement`, `MetricsCalculator.roundToNearestPlate`, model helpers (`ExercisePerformance.effectiveRestSeconds`, `repRange`, set/prescription linkage), draft builders for grouped event output.
 
-### `VillainArc/Data/Services/Suggestions/MetricsCalculator.swift`
+### `VillainArc/Data/Services/Suggestions/Shared/MetricsCalculator.swift`
 - Does: Shared training metrics helper for style detection, progression set selection, increment sizing, and plate rounding.
 - Called by: `SuggestionGenerator`, `RuleEngine`, `OutcomeResolver`, `OutcomeRuleEngine`.
 - Calls: Internal heuristics only (`detectTrainingStyle`, `setsForStyle`, `weightIncrement`, `roundToNearestPlate`).
 
-### `VillainArc/Data/Services/Suggestions/SuggestionDeduplicator.swift`
+### `VillainArc/Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
 - Does: Conflict resolver for generated `SuggestionEventDraft`s. Keeps at most one event draft per exercise/set scope using change priority, grouped size, magnitude, and tie-breakers.
 - Called by: `SuggestionGenerator`.
 - Calls: Internal scope-grouping and priority helpers.
 
-### `VillainArc/Data/Services/Suggestions/OutcomeResolver.swift`
+### `VillainArc/Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - Does: Resolves outcomes for prior suggestions in the next workout by combining deterministic rule results with optional AI inference at group level.
 - Called by: `WorkoutSummaryView` (`generateSuggestionsIfNeeded` pre-step).
 - Calls: `OutcomeRuleEngine.evaluate`, `AIOutcomeInferrer.inferApplied`, `AIOutcomeInferrer.inferRejected`, `MetricsCalculator.detectTrainingStyle`, change outcome mutation helpers, `ModelContext.save`.
 
-### `VillainArc/Data/Services/Suggestions/OutcomeRuleEngine.swift`
+### `VillainArc/Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - Does: Deterministic per-change outcome evaluator (`good` / `tooAggressive` / `tooEasy` / `ignored`) using actual set performance. Set-scoped outcome matching now requires a live `SetPrescription` link in the current workout rather than falling back to current-session set index.
 - Called by: `OutcomeResolver`.
 - Calls: `MetricsCalculator.weightIncrement`, change-type-specific evaluation helpers.
 
-### `VillainArc/Data/Services/Suggestions/AITrainingStyleClassifier.swift`
+### `VillainArc/Data/Services/AI/Suggestions/AITrainingStyleClassifier.swift`
 - Does: On-device Foundation Models classifier for exercise training style when deterministic style detection is inconclusive.
 - Called by: `SuggestionGenerator` (for `.unknown` style cases).
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `RecentExercisePerformancesTool`, `AIInferenceOutput` generation/validation.
 
-### `VillainArc/Data/Services/Suggestions/AITrainingStyleTools.swift`
+### `VillainArc/Data/Services/AI/Suggestions/AITrainingStyleTools.swift`
 - Does: Defines `RecentExercisePerformancesTool` used by the style classifier to fetch recent exercise history snapshots.
 - Called by: `AITrainingStyleClassifier` (tool-enabled `LanguageModelSession`).
 - Calls: `ModelContext(SharedModelContainer.container)`, `ExercisePerformance.matching(...)`, `ModelContext.fetch`, `AIExercisePerformanceSnapshot`.
 
-### `VillainArc/Data/Services/Suggestions/AIOutcomeInferrer.swift`
+### `VillainArc/Data/Services/AI/Outcomes/AIOutcomeInferrer.swift`
 - Does: On-device Foundation Models evaluator that infers grouped suggestion outcomes for applied vs rejected paths.
 - Called by: `OutcomeResolver`.
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `AIOutcomeGroupInput` prompts, `AIOutcomeInferenceOutput` validation.
 
-### `VillainArc/Data/Services/Suggestions/FoundationModelPrewarmer.swift`
+### `VillainArc/Data/Services/AI/Shared/FoundationModelPrewarmer.swift`
 - Does: Lightweight Foundation Models warm-up helper that loads a generic `LanguageModelSession` into memory ahead of likely suggestion-summary work.
 - Called by: `WorkoutSummaryView`, `ExerciseSetRowView`, `RestTimerView`, `CompleteActiveSetIntent`, `LiveActivityCompleteSetIntent`, `FinishWorkoutIntent`.
 - Calls: `SystemLanguageModel.default`, `LanguageModelSession.prewarm`.
+
+### `VillainArc/Data/Services/AI/ExerciseProgression/ExerciseProgressionContextBuilder.swift`
+- Does: Builds a compact exercise-progression AI input by enforcing the minimum-history threshold, trimming history to a small recent-performance window, and converting live models into bounded AI snapshots.
+- Called by: `ExerciseDetailView` (button gating), `ExerciseProgressionFeedbackSheet`.
+- Calls: `AIExerciseIdentitySnapshot`, `AIExerciseHistorySummarySnapshot`, `AIExercisePerformanceSnapshot`.
+
+### `VillainArc/Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift`
+- Does: UI-facing `@Observable` Foundation Models service for exercise progression feedback. Reuses one `LanguageModelSession` per sheet presentation, generates the initial structured insight, then streams follow-up answers in the same session.
+- Called by: `ExerciseProgressionFeedbackSheet`.
+- Calls: `SystemLanguageModel.default`, `LanguageModelSession`, `LanguageModelSession.respond`, `LanguageModelSession.streamResponse`, `AIExerciseProgressionContext`, `AIExerciseProgressionInsight`.
 
 ### `VillainArc/Data/Services/SpotlightIndexer.swift`
 - Does: Central Spotlight indexing/deindexing for `WorkoutSession`, `WorkoutPlan`, and `Exercise`; defines reusable identifier prefixes. Exercise eligibility is driven by `ExerciseHistory` presence during history updates and full Spotlight rebuilds, and exercise Spotlight metadata uses shared system alternate names plus the exercise subtitle.
@@ -367,9 +387,14 @@
 - Calls: `@Query(Exercise)`, `@Query(ExerciseHistory.recentCompleted)`, exercise search helpers (`normalizedTokens`, `exerciseSearchMatches`, fuzzy matching), `ExerciseSummaryRow`, `IntentDonations.donateToggleExerciseFavorite`, `Haptics.selection`, `saveContext`.
 
 ### `VillainArc/Views/Exercise/ExerciseDetailView.swift`
-- Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, segmented progression metrics, charts gated until at least two points exist, and interactive chart selection that reveals a rule-mark callout for the chosen session.
+- Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, segmented progression metrics, charts gated until at least two points exist, interactive chart selection that reveals a rule-mark callout for the chosen session, and a progression-feedback sheet trigger once the exercise has enough completed sessions.
 - Called by: `ContentView` navigation destination for `.exerciseDetail`, SwiftUI previews; intended for reuse from workout, plan, and active-session exercise surfaces.
-- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `SummaryStatCard`, `Charts` line/point/rule marks, chart selection modifiers, chart scaling helpers, `AppRouter.navigate(to: .exerciseHistory(...))`, cached history metrics.
+- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `SummaryStatCard`, `Charts` line/point/rule marks, chart selection modifiers, chart scaling helpers, `ExerciseProgressionContextBuilder.minimumSessionCount`, `ExerciseProgressionFeedbackSheet`, `AppRouter.navigate(to: .exerciseHistory(...))`, cached history metrics.
+
+### `VillainArc/Views/Exercise/ExerciseProgressionFeedbackSheet.swift`
+- Does: Exercise-scoped AI feedback sheet that loads compact history context, renders a structured progression insight, exposes suggested follow-up prompts, and supports streamed freeform Q&A about the same lift.
+- Called by: `ExerciseDetailView`.
+- Calls: `@Query(Exercise.withCatalogID)`, `@Query(ExerciseHistory.forCatalogID)`, `@Query(ExercisePerformance.matching(...))`, `ExerciseProgressionContextBuilder`, `ExerciseProgressionAssistant`, `FoundationModelPrewarmer`, `ContentUnavailableView`.
 
 ### `VillainArc/Views/Exercise/ExerciseHistoryView.swift`
 - Does: List of all completed performances for one exercise, with one section per performance and a set grid showing set label/type, weight, reps, rest, rep range, per-set RPE badges, and notes. Supports both browse navigation (`catalogID`) and future contextual sheet presentation from workout/plan exercise headers.
@@ -754,15 +779,30 @@
 - Called by: split creation/detail/day views, split builder, plan picker assignment flows, `SampleData`.
 - Calls: `resolvedMuscles` via `workoutPlan?.musclesArray`.
 
-### `VillainArc/Data/Models/AIModels/AIInferenceModels.swift`
+### `VillainArc/Data/Models/AIModels/Suggestions/AIInferenceModels.swift`
 - Does: Feature-level Foundation Models input/output DTOs for training-style classification.
 - Called by: `AITrainingStyleClassifier`.
 - Calls: Shared AI snapshots and `TrainingStyle`.
 
-### `VillainArc/Data/Models/AIModels/AIOutcomeModels.swift`
+### `VillainArc/Data/Models/AIModels/Outcomes/AIOutcomeModels.swift`
 - Does: Foundation Models DTOs/enums for suggestion outcome evaluation prompts/results. Set-scoped AI outcome changes also carry explicit scope and `targetSetIndex` so the model knows which target slot a grouped change refers to.
 - Called by: `AIOutcomeInferrer`, `OutcomeResolver`.
 - Calls: Mappers between app enums (`Outcome`) and AI enums plus shared exercise/performance/prescription snapshots.
+
+### `VillainArc/Data/Models/AIModels/ExerciseProgression/AIExerciseProgressionContext.swift`
+- Does: Feature-specific Foundation Models input DTO for exercise progression feedback. Packages compact exercise identity, a bounded history summary, a small recent-performance window, and an optional starter question.
+- Called by: `ExerciseProgressionContextBuilder`, `ExerciseProgressionAssistant`.
+- Calls: `AIExerciseIdentitySnapshot`, `AIExerciseHistorySummarySnapshot`, `AIExercisePerformanceSnapshot`.
+
+### `VillainArc/Data/Models/AIModels/ExerciseProgression/AIExerciseProgressionInsight.swift`
+- Does: Structured Foundation Models output for the initial exercise progression analysis, including trend label, positives, concerns, next step, confidence, and suggested follow-up prompts.
+- Called by: `ExerciseProgressionAssistant`, `ExerciseProgressionFeedbackSheet`.
+- Calls: `AIProgressionTrend`.
+
+### `VillainArc/Data/Models/AIModels/ExerciseProgression/ExerciseProgressionMessage.swift`
+- Does: Lightweight UI-only conversation message model for exercise progression follow-up chat.
+- Called by: `ExerciseProgressionAssistant`, `ExerciseProgressionFeedbackSheet`.
+- Calls: None (value-type UI state only).
 
 ### `VillainArc/Data/Models/AIModels/Shared/AIEnumWrappers.swift`
 - Does: AI-readable wrappers for app enums that need display-safe labels instead of persisted raw values (`AIRepRangeMode`, `AIExerciseSetType`).

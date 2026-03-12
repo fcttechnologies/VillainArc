@@ -43,6 +43,7 @@ struct ExerciseDetailView: View {
     private let appRouter = AppRouter.shared
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
+    @State private var showProgressionFeedbackSheet = false
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -79,6 +80,10 @@ struct ExerciseDetailView: View {
 
     private var totalSessions: Int {
         history?.totalSessions ?? 0
+    }
+
+    private var canShowProgressionFeedback: Bool {
+        totalSessions >= ExerciseProgressionContextBuilder.minimumSessionCount
     }
 
     private var totalSets: Int {
@@ -244,6 +249,9 @@ struct ExerciseDetailView: View {
         .navigationTitle(displayName)
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showProgressionFeedbackSheet) {
+            ExerciseProgressionFeedbackSheet(catalogID: catalogID)
+        }
         .task(id: availableMetrics.map(\.rawValue).joined(separator: ",")) {
             if let firstMetric = availableMetrics.first, !availableMetrics.contains(selectedMetric) {
                 selectedMetric = firstMetric
@@ -258,6 +266,14 @@ struct ExerciseDetailView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
         .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                if canShowProgressionFeedback {
+                    Button("Progress Feedback", systemImage: "sparkles") {
+                        showProgressionFeedbackSheet = true
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailProgressionFeedbackButton)
+                }
+            }
             ToolbarSpacer(.flexible, placement: .bottomBar)
             ToolbarItem(placement: .bottomBar) {
                 if totalSessions > 0 {
