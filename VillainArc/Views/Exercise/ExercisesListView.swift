@@ -17,8 +17,8 @@ struct ExercisesListView: View {
         exercises.contains(where: \.favorite)
     }
 
-    private var historyByCatalogID: [String: ExerciseHistory] {
-        Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
+    private var historyOrdering: ExerciseHistoryOrdering {
+        ExerciseHistoryOrdering(histories: histories)
     }
 
     private var filteredExercises: [Exercise] {
@@ -27,7 +27,7 @@ struct ExercisesListView: View {
         let queryTokens = normalizedTokens(for: cleanText)
 
         if queryTokens.isEmpty {
-            return sourceExercises.sorted(by: isOrderedBefore)
+            return historyOrdering.ordered(sourceExercises)
         }
 
         let scored = exerciseSearchMatches(in: sourceExercises, queryTokens: queryTokens)
@@ -37,7 +37,7 @@ struct ExercisesListView: View {
                     if left.score != right.score {
                         return left.score > right.score
                     }
-                    return isOrderedBefore(left.exercise, right.exercise)
+                    return historyOrdering.isOrderedBefore(left.exercise, right.exercise)
                 }
                 .map(\.exercise)
         }
@@ -46,13 +46,13 @@ struct ExercisesListView: View {
 
         return sourceExercises
             .filter { matchesSearchFuzzy($0, queryTokens: queryTokens) }
-            .sorted(by: isOrderedBefore)
+            .sorted(by: historyOrdering.isOrderedBefore)
     }
 
     var body: some View {
         List {
             ForEach(filteredExercises) { exercise in
-                ExerciseSummaryRow(exercise: exercise, history: historyByCatalogID[exercise.catalogID])
+                ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise))
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     favoriteAction(for: exercise)
                 }
@@ -135,16 +135,6 @@ struct ExercisesListView: View {
         }
     }
 
-    private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
-        let leftDate = historyByCatalogID[left.catalogID]?.lastCompletedAt ?? .distantPast
-        let rightDate = historyByCatalogID[right.catalogID]?.lastCompletedAt ?? .distantPast
-
-        if leftDate != rightDate {
-            return leftDate > rightDate
-        }
-
-        return left.name.localizedStandardCompare(right.name) == .orderedAscending
-    }
 }
 
 #Preview {

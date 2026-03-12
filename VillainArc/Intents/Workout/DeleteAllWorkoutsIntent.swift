@@ -38,9 +38,7 @@ struct DeleteAllWorkoutsIntent: AppIntent {
             context.delete(workout)
         }
 
-        for catalogID in affectedCatalogIDs {
-            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
-        }
+        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context, save: false)
 
         saveContext(context: context)
         return .result(dialog: "Deleted \(label).")

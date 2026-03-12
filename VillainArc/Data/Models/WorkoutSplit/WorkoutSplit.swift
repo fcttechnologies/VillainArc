@@ -164,4 +164,10 @@ extension WorkoutSplit {
         descriptor.fetchLimit = 1
         return descriptor
     }
+
+    static var any: FetchDescriptor<WorkoutSplit> {
+        var descriptor = FetchDescriptor<WorkoutSplit>()
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
 }

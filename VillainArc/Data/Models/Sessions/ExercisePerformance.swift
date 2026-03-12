@@ -250,6 +250,22 @@ extension ExercisePerformance {
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
     }
 
+    static func matching(catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
+        let done = SessionStatus.done.rawValue
+        let predicate = #Predicate<ExercisePerformance> { item in
+            catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done
+        }
+        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+    }
+
+    static func matching(catalogIDs: [String], includingSessionID sessionID: UUID) -> FetchDescriptor<ExercisePerformance> {
+        let done = SessionStatus.done.rawValue
+        let predicate = #Predicate<ExercisePerformance> { item in
+            catalogIDs.contains(item.catalogID) && (item.workoutSession?.status == done || item.workoutSession?.id == sessionID)
+        }
+        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+    }
+
     static func withCatalogID(_ catalogID: String) -> FetchDescriptor<ExercisePerformance> {
         let predicate = #Predicate<ExercisePerformance> { $0.catalogID == catalogID }
         return FetchDescriptor(predicate: predicate)

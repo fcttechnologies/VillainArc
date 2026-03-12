@@ -70,20 +70,20 @@ final class ExerciseHistory {
             return
         }
 
-        let sortedPerformances = performances.sorted { $0.date > $1.date }
+        let sessionSummaries = summarizedSessions(from: performances)
 
-        lastCompletedAt = sortedPerformances.first?.date
-        totalSessions = sortedPerformances.count
-        totalCompletedSets = sortedPerformances.reduce(0) { $0 + $1.sortedSets.count }
-        totalCompletedReps = sortedPerformances.reduce(0) { $0 + $1.totalCompletedReps }
-        cumulativeVolume = sortedPerformances.reduce(0) { $0 + $1.totalVolume }
-        latestEstimated1RM = sortedPerformances.first?.bestEstimated1RM ?? 0
+        lastCompletedAt = sessionSummaries.first?.date
+        totalSessions = sessionSummaries.count
+        totalCompletedSets = sessionSummaries.reduce(0) { $0 + $1.totalCompletedSets }
+        totalCompletedReps = sessionSummaries.reduce(0) { $0 + $1.totalCompletedReps }
+        cumulativeVolume = sessionSummaries.reduce(0) { $0 + $1.totalVolume }
+        latestEstimated1RM = sessionSummaries.first?.bestEstimated1RM ?? 0
         
         // Calculate PRs
-        calculatePRs(from: sortedPerformances)
+        calculatePRs(from: sessionSummaries)
 
         // Store progression data for charting (last 10 sessions)
-        storeProgressionData(from: sortedPerformances)
+        storeProgressionData(from: sessionSummaries)
     }
 
     /// Resets all statistics to default/zero values.
@@ -106,47 +106,69 @@ final class ExerciseHistory {
         progressionPoints?.removeAll()
     }
     
-    private func calculatePRs(from performances: [ExercisePerformance]) {
+    private func calculatePRs(from sessions: [ExerciseHistorySessionSummary]) {
         // Best estimated 1RM
         var best1RM: Double = 0
-        for perf in performances {
-            if let perf1RM = perf.bestEstimated1RM, perf1RM > best1RM {
-                best1RM = perf1RM
+        for session in sessions {
+            if let session1RM = session.bestEstimated1RM, session1RM > best1RM {
+                best1RM = session1RM
             }
         }
         bestEstimated1RM = best1RM
         
         // Best weight
         var maxWeight: Double = 0
-        for perf in performances {
-            if let perfWeight = perf.bestWeight, perfWeight > maxWeight {
-                maxWeight = perfWeight
+        for session in sessions {
+            if let sessionWeight = session.bestWeight, sessionWeight > maxWeight {
+                maxWeight = sessionWeight
             }
         }
         bestWeight = maxWeight
         
         // Best volume
         var maxVolume: Double = 0
-        for perf in performances {
-            let vol = perf.totalVolume
+        for session in sessions {
+            let vol = session.totalVolume
             if vol > maxVolume {
                 maxVolume = vol
             }
         }
         bestVolume = maxVolume
-        bestReps = performances.compactMap(\.bestReps).max() ?? 0
+        bestReps = sessions.compactMap(\.bestReps).max() ?? 0
     }
     
-    private func storeProgressionData(from performances: [ExercisePerformance]) {
+    private func storeProgressionData(from sessions: [ExerciseHistorySessionSummary]) {
         // Clear existing progression points
         progressionPoints?.removeAll()
         
-        let last10 = Array(performances.prefix(10))
+        let last10 = Array(sessions.prefix(10))
         
-        for perf in last10 {
-            let topWeight = perf.sortedSets.map(\.weight).max() ?? 0
-            let point = ProgressionPoint(date: perf.date, weight: topWeight, totalReps: perf.totalCompletedReps, volume: perf.totalVolume, estimated1RM: perf.bestEstimated1RM ?? 0)
+        for session in last10 {
+            let point = ProgressionPoint(date: session.date, weight: session.bestWeight ?? 0, totalReps: session.totalCompletedReps, volume: session.totalVolume, estimated1RM: session.bestEstimated1RM ?? 0)
             progressionPoints?.append(point)
+        }
+    }
+
+    @MainActor
+    private func summarizedSessions(from performances: [ExercisePerformance]) -> [ExerciseHistorySessionSummary] {
+        let groupedBySession = Dictionary(grouping: performances) { performance in
+            performance.workoutSession?.id ?? performance.id
+        }
+
+        var summaries: [ExerciseHistorySessionSummary] = []
+        summaries.reserveCapacity(groupedBySession.count)
+
+        for performances in groupedBySession.values {
+            if let summary = ExerciseHistorySessionSummary(performances: performances) {
+                summaries.append(summary)
+            }
+        }
+
+        return summaries.sorted { left, right in
+            if left.date != right.date {
+                return left.date > right.date
+            }
+            return left.id.uuidString < right.id.uuidString
         }
     }
     
@@ -180,5 +202,62 @@ final class ExerciseHistory {
             descriptor.fetchLimit = limit
         }
         return descriptor
+    }
+}
+
+private struct ExerciseHistorySessionSummary {
+    let id: UUID
+    let date: Date
+    let totalCompletedSets: Int
+    let totalCompletedReps: Int
+    let totalVolume: Double
+    let bestEstimated1RM: Double?
+    let bestWeight: Double?
+    let bestReps: Int?
+
+    @MainActor
+    init?(performances: [ExercisePerformance]) {
+        guard let first = performances.first else { return nil }
+
+        id = first.workoutSession?.id ?? first.id
+        date = performances.map(\.date).max() ?? first.date
+        totalCompletedSets = performances.reduce(0) { $0 + $1.sortedSets.count }
+        totalCompletedReps = performances.reduce(0) { $0 + $1.totalCompletedReps }
+        totalVolume = performances.reduce(0) { $0 + $1.totalVolume }
+        bestEstimated1RM = performances.compactMap(\.bestEstimated1RM).max()
+        bestWeight = performances.compactMap(\.bestWeight).max()
+        bestReps = performances.compactMap(\.bestReps).max()
+    }
+}
+
+struct ExerciseHistoryOrdering {
+    let historyByCatalogID: [String: ExerciseHistory]
+
+    init(histories: [ExerciseHistory]) {
+        historyByCatalogID = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
+    }
+
+    func history(for exercise: Exercise) -> ExerciseHistory? {
+        historyByCatalogID[exercise.catalogID]
+    }
+
+    func ordered(_ exercises: [Exercise]) -> [Exercise] {
+        exercises.sorted(by: isOrderedBefore)
+    }
+
+    func recentExercises(from exercises: [Exercise], orderedBy histories: [ExerciseHistory]) -> [Exercise] {
+        let exerciseByCatalogID = Dictionary(uniqueKeysWithValues: exercises.map { ($0.catalogID, $0) })
+        return histories.compactMap { exerciseByCatalogID[$0.catalogID] }
+    }
+
+    func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
+        let leftDate = historyByCatalogID[left.catalogID]?.lastCompletedAt ?? .distantPast
+        let rightDate = historyByCatalogID[right.catalogID]?.lastCompletedAt ?? .distantPast
+
+        if leftDate != rightDate {
+            return leftDate > rightDate
+        }
+
+        return left.name.localizedStandardCompare(right.name) == .orderedAscending
     }
 }

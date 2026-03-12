@@ -504,7 +504,7 @@
 ### `VillainArc/Views/HomeSections/WorkoutSplitSectionView.swift`
 - Does: Home split summary section that shows active/today state and routes users into split screens.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query` over `WorkoutSplit`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateOpenWorkoutSplit`, `IntentDonations.donateCreateWorkoutSplit`, `IntentDonations.donateManageWorkoutSplits`, `IntentDonations.donateOpenTodaysPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
+- Calls: `@Query(WorkoutSplit.active)`, `@Query(WorkoutSplit.any)`, `SmallUnavailableView`, `AppRouter.navigate(to: .workoutSplit/.workoutPlanDetail)`, `IntentDonations.donateOpenWorkoutSplit`, `IntentDonations.donateCreateWorkoutSplit`, `IntentDonations.donateManageWorkoutSplits`, `IntentDonations.donateOpenTodaysPlan`, `WorkoutSplit.refreshRotationIfNeeded`.
 
 ### `VillainArc/Views/WorkoutSplit/SplitBuilderView.swift`
 - Does: Multi-step split builder for preset-based or scratch split creation (type, schedule mode, training days, rest style).
@@ -547,9 +547,9 @@
 - Calls: None (formatting helper only).
 
 ### `VillainArc/Data/Services/ExerciseHistoryUpdater.swift`
-- Does: Rebuild/create/delete `ExerciseHistory` records from completed exercise performances after workout completion/deletion, including cached totals and progression-chart data.
+- Does: Rebuild/create/delete `ExerciseHistory` records from completed exercise performances after workout completion/deletion, including cached totals and progression-chart data, using batched history/performance/exercise fetches for completion and delete flows.
 - Called by: `WorkoutsListView`, `WorkoutDetailView`, `WorkoutSummaryView`.
-- Calls: `ModelContext.fetch/insert/delete`, `ExercisePerformance.matching(...)`, `ExerciseHistory.forCatalogID(...)`, `ExerciseHistory.recalculate(using:)`, `saveContext`.
+- Calls: `ModelContext.fetch/insert/delete`, `ExercisePerformance.matching(...)`, `ExerciseHistory.forCatalogIDs(...)`, `Exercise.withCatalogIDs(...)`, `ExerciseHistory.recalculate(using:)`, `SpotlightIndexer.index/deleteExercise`, `saveContext`.
 
 ## 3) Intents
 
@@ -655,8 +655,8 @@
 - Calls: None (constants only).
 
 ### `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
-- Does: Derived per-exercise analytics cache (last completed timestamp, PRs, latest estimated 1RM, total sets/reps, cumulative volume, and progression points with reps).
-- Called by: `ExerciseHistoryUpdater`, `WorkoutSummaryView` (history/PR display), schema registration.
+- Does: Derived per-exercise analytics cache (last completed timestamp, PRs, latest estimated 1RM, total sets/reps, cumulative volume, and progression points with reps), plus shared `ExerciseHistoryOrdering` helpers for mapping and sorting catalog exercises by cached recency.
+- Called by: `ExerciseHistoryUpdater`, `WorkoutSummaryView` (history/PR display), `ExercisesListView`, `RecentExercisesSectionView`, `ExerciseEntityQuery`, schema registration.
 - Calls: `ExercisePerformance` metric helpers, internal recalculation helpers, `forCatalogID` descriptor.
 
 ### `VillainArc/Data/Models/Exercise/ProgressionPoint.swift`
@@ -1066,9 +1066,9 @@
 - Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `Exercise` resolution fetch, `ExerciseHistory.forCatalogID`, `ExercisePerformance.matching(...)`, `AppRouter.popToRoot`, `AppRouter.navigate(.exerciseHistory)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Exercise/ExerciseEntity.swift`
-- Does: AppEntity + queries + fuzzy search support for exercise selection in intents, with shared system alternate names and boosted exact phrase scoring for disambiguation.
+- Does: AppEntity + queries + fuzzy search support for exercise selection in intents, with shared system alternate names, boosted exact phrase scoring for disambiguation, and recency ordering driven by cached `ExerciseHistory`.
 - Called by: Exercise intents, `SpotlightIndexer.associateAppEntity`, donations.
-- Calls: `ExerciseSearch` + `TextNormalization` helpers, `SharedModelContainer` queries.
+- Calls: `ExerciseSearch` + `TextNormalization` helpers, `SharedModelContainer` queries, `ExerciseHistoryOrdering`.
 
 ### `VillainArc/Intents/Exercise/ReplaceExerciseIntent.swift`
 - Does: Replaces active workout exercise, optionally preserving sets.

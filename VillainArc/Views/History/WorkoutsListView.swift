@@ -93,10 +93,7 @@ struct WorkoutsListView: View {
             context.delete(workout)
         }
         
-        // Update exercise histories for affected exercises
-        for catalogID in affectedCatalogIDs {
-            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
-        }
+        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context)
 
         if workoutsToDelete.count == 1, let workout = workoutsToDelete.first {
             Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
@@ -121,11 +118,7 @@ struct WorkoutsListView: View {
             context.delete(workout)
         }
         
-        // Update exercise histories for affected exercises
-        // This will delete histories where no performances remain
-        for catalogID in affectedCatalogIDs {
-            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
-        }
+        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context)
 
         Task { await IntentDonations.donateDeleteAllWorkouts() }
         

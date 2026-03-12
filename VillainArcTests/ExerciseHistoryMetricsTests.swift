@@ -55,4 +55,51 @@ struct ExerciseHistoryMetricsTests {
         
         #expect(history.lastCompletedAt == nil)
     }
+
+    @Test @MainActor
+    func recalculateCollapsesDuplicateExerciseRowsFromSameWorkoutIntoOneSession() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+
+        let session = WorkoutSession(status: .done)
+        context.insert(session)
+
+        let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
+        let firstPerformance = ExercisePerformance(exercise: exercise, workoutSession: session)
+        let secondPerformance = ExercisePerformance(exercise: exercise, workoutSession: session)
+        context.insert(firstPerformance)
+        context.insert(secondPerformance)
+        session.exercises?.append(firstPerformance)
+        session.exercises?.append(secondPerformance)
+
+        for performance in [firstPerformance, secondPerformance] {
+            for set in performance.sets ?? [] {
+                context.delete(set)
+            }
+            performance.sets?.removeAll()
+        }
+
+        let firstSet = SetPerformance(exercise: firstPerformance, setType: .working, weight: 185, reps: 5, restSeconds: 120, index: 0, complete: true)
+        let secondSet = SetPerformance(exercise: secondPerformance, setType: .working, weight: 165, reps: 8, restSeconds: 120, index: 0, complete: true)
+        context.insert(firstSet)
+        context.insert(secondSet)
+        firstPerformance.sets?.append(firstSet)
+        secondPerformance.sets?.append(secondSet)
+
+        let history = ExerciseHistory(catalogID: firstPerformance.catalogID)
+        let expectedVolume = (185.0 * 5.0) + (165.0 * 8.0)
+        history.recalculate(using: [firstPerformance, secondPerformance])
+
+        #expect(history.totalSessions == 1)
+        #expect(history.totalCompletedSets == 2)
+        #expect(history.totalCompletedReps == 13)
+        #expect(history.cumulativeVolume == expectedVolume)
+        #expect(history.bestWeight == 185)
+        #expect(history.bestVolume == expectedVolume)
+        #expect(history.bestReps == 8)
+        #expect(history.sortedProgressionPoints.count == 1)
+        #expect(history.sortedProgressionPoints.first?.totalReps == 13)
+        #expect(history.sortedProgressionPoints.first?.weight == 185)
+        #expect(history.sortedProgressionPoints.first?.volume == expectedVolume)
+    }
 }

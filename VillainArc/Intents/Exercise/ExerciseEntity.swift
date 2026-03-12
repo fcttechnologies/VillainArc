@@ -53,7 +53,8 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         let context = SharedModelContainer.container.mainContext
         let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
         let histories = (try? context.fetch(ExerciseHistory.recentCompleted())) ?? []
-        let sorted = sortExercisesByRecentCompletion(exercises, histories: histories)
+        let ordering = ExerciseHistoryOrdering(histories: histories)
+        let sorted = ordering.ordered(exercises)
         return Array(sorted.prefix(30)).map(ExerciseEntity.init)
     }
 
@@ -64,8 +65,8 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         let context = SharedModelContainer.container.mainContext
         let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
         let histories = (try? context.fetch(ExerciseHistory.recentCompleted())) ?? []
-        let historyByCatalogID = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
-        let sortedExercises = sortExercisesByRecentCompletion(exercises, histories: histories)
+        let ordering = ExerciseHistoryOrdering(histories: histories)
+        let sortedExercises = ordering.ordered(exercises)
 
         if queryTokens.isEmpty {
             return sortedExercises.map(ExerciseEntity.init)
@@ -80,7 +81,7 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
                 if left.score != right.score {
                     return left.score > right.score
                 }
-                return isOrderedBefore(left.exercise, right.exercise, historyByCatalogID: historyByCatalogID)
+                return ordering.isOrderedBefore(left.exercise, right.exercise)
             }
             return sorted.map { ExerciseEntity(exercise: $0.exercise) }
         }
@@ -93,7 +94,7 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
             matchesSearchFuzzy(exercise, queryTokens: queryTokens)
         }
         return fuzzyFiltered
-            .sorted { isOrderedBefore($0, $1, historyByCatalogID: historyByCatalogID) }
+            .sorted(by: ordering.isOrderedBefore)
             .map(ExerciseEntity.init)
     }
     
@@ -119,19 +120,6 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         }
     }
 
-    private func isOrderedBefore(_ left: Exercise, _ right: Exercise, historyByCatalogID: [String: ExerciseHistory]) -> Bool {
-        let leftDate = historyByCatalogID[left.catalogID]?.lastCompletedAt ?? .distantPast
-        let rightDate = historyByCatalogID[right.catalogID]?.lastCompletedAt ?? .distantPast
-        if leftDate != rightDate {
-            return leftDate > rightDate
-        }
-        return left.name.localizedStandardCompare(right.name) == .orderedAscending
-    }
-
-    private func sortExercisesByRecentCompletion(_ exercises: [Exercise], histories: [ExerciseHistory]) -> [Exercise] {
-        let historyByCatalogID = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
-        return exercises.sorted { isOrderedBefore($0, $1, historyByCatalogID: historyByCatalogID) }
-    }
 }
 
 @MainActor

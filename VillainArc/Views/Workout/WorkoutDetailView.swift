@@ -213,11 +213,7 @@ struct WorkoutDetailView: View {
         affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
         context.delete(workout)
         
-        // Update exercise histories for affected exercises
-        // This will delete histories where no performances remain
-        for catalogID in affectedCatalogIDs {
-            ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
-        }
+        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context)
 
         Task { await IntentDonations.donateDeleteWorkout(workout: deletedWorkout) }
         

@@ -16,6 +16,15 @@ struct WorkoutSummaryView: View {
         let values: [PRType: Double]
     }
 
+    private struct WorkoutExercisePRSummary {
+        let catalogID: String
+        let exerciseName: String
+        let bestEstimated1RM: Double?
+        let bestWeight: Double?
+        let bestReps: Int?
+        let totalVolume: Double
+    }
+
     @Bindable var workout: WorkoutSession
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -337,23 +346,49 @@ struct WorkoutSummaryView: View {
 
         // Single batch fetch instead of per-exercise queries
         let historyMap = ExerciseHistoryUpdater.batchFetchHistories(for: catalogIDs, context: context)
+        let prSummaries = combinedPRSummaries(from: exercises)
 
-        prEntries = exercises.compactMap { exercise in
-            prEntry(for: exercise, history: historyMap[exercise.catalogID])
+        prEntries = prSummaries.compactMap { summary in
+            prEntry(for: summary, history: historyMap[summary.catalogID])
         }
     }
 
-    private func prEntry(for exercise: ExercisePerformance, history: ExerciseHistory?) -> PRItem? {
-        let (types, values) = prTypesAndValues(for: exercise, history: history)
-        guard !types.isEmpty else { return nil }
-        return PRItem(exerciseName: exercise.name, types: types.sorted { $0.rawValue < $1.rawValue }, values: values)
+    private func combinedPRSummaries(from exercises: [ExercisePerformance]) -> [WorkoutExercisePRSummary] {
+        var orderedCatalogIDs: [String] = []
+        var groupedExercises: [String: [ExercisePerformance]] = [:]
+
+        for exercise in exercises {
+            if groupedExercises[exercise.catalogID] == nil {
+                orderedCatalogIDs.append(exercise.catalogID)
+            }
+            groupedExercises[exercise.catalogID, default: []].append(exercise)
+        }
+
+        return orderedCatalogIDs.compactMap { catalogID in
+            guard let grouped = groupedExercises[catalogID], let first = grouped.first else { return nil }
+
+            return WorkoutExercisePRSummary(
+                catalogID: catalogID,
+                exerciseName: first.name,
+                bestEstimated1RM: grouped.compactMap(\.bestEstimated1RM).max(),
+                bestWeight: grouped.compactMap(\.bestWeight).max(),
+                bestReps: grouped.compactMap(\.bestReps).max(),
+                totalVolume: grouped.reduce(0) { $0 + $1.totalVolume }
+            )
+        }
     }
 
-    private func prTypesAndValues(for exercise: ExercisePerformance, history: ExerciseHistory?) -> (types: [PRType], values: [PRType: Double]) {
+    private func prEntry(for summary: WorkoutExercisePRSummary, history: ExerciseHistory?) -> PRItem? {
+        let (types, values) = prTypesAndValues(for: summary, history: history)
+        guard !types.isEmpty else { return nil }
+        return PRItem(exerciseName: summary.exerciseName, types: types.sorted { $0.rawValue < $1.rawValue }, values: values)
+    }
+
+    private func prTypesAndValues(for summary: WorkoutExercisePRSummary, history: ExerciseHistory?) -> (types: [PRType], values: [PRType: Double]) {
         var types: [PRType] = []
         var values: [PRType: Double] = [:]
 
-        if let current1RM = exercise.bestEstimated1RM {
+        if let current1RM = summary.bestEstimated1RM {
             let historical1RM = history?.bestEstimated1RM ?? 0
             if historical1RM == 0 || current1RM > historical1RM {
                 types.append(.estimated1RM)
@@ -361,7 +396,7 @@ struct WorkoutSummaryView: View {
             }
         }
 
-        if let currentWeight = exercise.bestWeight {
+        if let currentWeight = summary.bestWeight {
             let historicalWeight = history?.bestWeight ?? 0
             if historicalWeight == 0 || currentWeight > historicalWeight {
                 types.append(.maxWeight)
@@ -369,7 +404,7 @@ struct WorkoutSummaryView: View {
             }
         }
 
-        if let currentReps = exercise.bestReps {
+        if let currentReps = summary.bestReps {
             let historicalReps = history?.bestReps ?? 0
             if historicalReps == 0 || currentReps > historicalReps {
                 types.append(.maxReps)
@@ -377,7 +412,7 @@ struct WorkoutSummaryView: View {
             }
         }
 
-        let currentVolume = exercise.totalVolume
+        let currentVolume = summary.totalVolume
         if currentVolume > 0 {
             let historicalVolume = history?.bestVolume ?? 0
             if historicalVolume == 0 || currentVolume > historicalVolume {

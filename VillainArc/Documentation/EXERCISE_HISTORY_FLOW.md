@@ -34,7 +34,7 @@ One record per `catalogID`. Stores:
 
 **Session counts:**
 - `lastCompletedAt` — timestamp of the most recent completed performance for this exercise
-- `totalSessions` — number of completed workout performances for this exercise
+- `totalSessions` — number of unique completed workout sessions for this exercise
 - `totalCompletedSets` — total sets across all sessions
 - `totalCompletedReps` — total reps across all sessions
 - `cumulativeVolume` — total weight × reps across all sessions
@@ -54,11 +54,12 @@ One record per `catalogID`. Stores:
 This is the core method. Given an array of `ExercisePerformance`:
 
 1. If the array is empty, calls `reset()` which nils `lastCompletedAt`, zeros everything else, and clears progression points
-2. Sorts performances by date descending so recency fields are deterministic
-3. Sets `lastCompletedAt` and `latestEstimated1RM` from the first (most recent) performance
-4. Counts sessions, sets, reps, cumulative volume
-5. Calculates PRs: scans all performances for max estimated 1RM, max weight, max volume, max reps
-6. Stores progression data: takes the last 10 performances and creates `ProgressionPoint` rows
+2. Collapses duplicate `ExercisePerformance` rows from the same `WorkoutSession` into one session summary
+3. Sorts those session summaries by date descending so recency fields are deterministic
+4. Sets `lastCompletedAt` and `latestEstimated1RM` from the most recent session summary
+5. Counts sessions by unique workout session, while still summing all sets, reps, and volume performed across duplicate blocks in that workout
+6. Calculates PRs from the session summaries: max estimated 1RM, max weight, max volume, max reps
+7. Stores progression data: takes the last 10 session summaries and creates one `ProgressionPoint` row per workout session
 
 ## ProgressionPoint
 
@@ -81,16 +82,30 @@ The rebuild pipeline. All methods are `@MainActor` and `static`.
 Called from `WorkoutSummaryView.finishSummary()`. This is the primary update path.
 
 1. Collects all `catalogID`s from the workout's exercises
-2. Batch-fetches existing `ExerciseHistory` records in one query (`batchFetchHistories`)
-3. Creates any missing histories (`batchCreateIfNeeded`) — happens for exercises done for the first time
-4. For each exercise: fetches ALL completed performances (using `ExercisePerformance.matching(catalogID:includingSessionID:)` to include the current session even though it hasn't been marked `.done` yet), runs `history.recalculate(using:)`
-5. Indexes each exercise in Spotlight
+2. Batch-fetches all matching `ExercisePerformance` rows in one query using `ExercisePerformance.matching(catalogIDs:includingSessionID:)`, with `sets` prefetched so recalc does not trigger per-performance faults
+3. Batch-fetches existing `ExerciseHistory` rows in one query, with progression points prefetched internally during rebuild so chart-point resets do not fault one history at a time
+4. Batch-fetches matching `Exercise` rows in one query for Spotlight reindexing
+5. Rebuilds each affected history from the grouped performance map, creating `ExerciseHistory` on demand when the exercise is being completed for the first time
+6. Reindexes each affected exercise in Spotlight
 
 The `includingSessionID` parameter is important. At the time this runs, the workout is still in `.summary` status, not `.done`. The fetch descriptor normally only returns `.done` sessions. The `includingSessionID` override ensures the current session's data is included in the rebuild.
 
 ### updateHistoriesForDeletedWorkout
 
-Called after a workout session is deleted. Takes the deleted session's exercise list and updates each affected exercise's history. Must be called AFTER the session is deleted from context, so the fetch won't include the deleted performances.
+Called after a workout session is deleted. It delegates to `updateHistoriesForDeletedCatalogIDs`, which batch-fetches all remaining completed performances for the affected exercises, batch-fetches matching histories and exercises, then either recalculates or deletes each history depending on whether any completed performances remain. It must be called AFTER the session is deleted from context, so the fetch won't include the deleted performances.
+
+### updateHistoriesForDeletedCatalogIDs
+
+This is the shared deletion path used by workout list/detail delete actions and workout delete intents:
+
+1. Collect the affected `catalogID`s before deleting the workout(s)
+2. Delete the workout session rows from context and remove their workout Spotlight entries
+3. Batch-fetch all remaining completed performances for those `catalogID`s
+4. Batch-fetch existing histories plus matching `Exercise` rows for exercise Spotlight maintenance
+5. For each affected `catalogID`:
+   - If performances remain: recalculate history and reindex the exercise
+   - If no performances remain: delete history and remove the exercise from Spotlight
+6. Save once at the end (or let the caller own the final save in intent flows)
 
 ### updateHistory (single exercise)
 
@@ -109,9 +124,9 @@ Fetches all `ExerciseHistory` records for a set of `catalogID`s in a single quer
 | Trigger | Method Called | Context |
 |---------|-------------|---------|
 | Workout completed (summary dismissed) | `updateHistoriesForCompletedWorkout` | Includes current session |
-| Single workout deleted | `updateHistory` per exercise | After session deleted from context |
-| All workouts deleted | `updateHistory` per exercise | After bulk deletion |
-| Workout deleted from detail view | `updateHistory` per exercise | After session deleted |
+| Single workout deleted | `updateHistoriesForDeletedCatalogIDs` | After session deleted from context |
+| All workouts deleted | `updateHistoriesForDeletedCatalogIDs` | After bulk deletion |
+| Workout deleted from detail view | `updateHistoriesForDeletedCatalogIDs` | After session deleted |
 
 History is never updated during active workout logging. It only runs at transition boundaries.
 
@@ -123,7 +138,7 @@ History is never updated during active workout logging. It only runs at transiti
 2. For each exercise, calls `prTypesAndValues(for:history:)`:
    - **Estimated 1RM PR**: `exercise.bestEstimated1RM > history.bestEstimated1RM` (or history is zero/missing)
    - **Weight PR**: `exercise.bestWeight > history.bestWeight` (or history is zero/missing)
-   - **Volume PR**: `exercise.totalVolume > history.bestVolume` (or history is zero/missing)
+   - **Volume PR**: combined workout volume for that `catalogID` is `> history.bestVolume` (or history is zero/missing)
 3. First-time exercises (no history yet) get PRs for any non-zero metrics
 
 PR detection runs before exercise history is rebuilt. This is by design — comparing against the pre-updated cache is what makes the comparison meaningful. If history were rebuilt first, every session would match its own records.
@@ -166,7 +181,7 @@ This means only exercises that have been used at least once appear in Spotlight 
 
 ## History Lifecycle
 
-**Creation**: An `ExerciseHistory` record is created the first time a workout is completed that includes that exercise. `batchCreateIfNeeded` handles this during `updateHistoriesForCompletedWorkout`.
+**Creation**: An `ExerciseHistory` record is created the first time a workout is completed that includes that exercise. The rebuild pipeline creates it on demand when performances exist but no cached history row does.
 
 **Updates**: Every subsequent workout completion triggers a full recalculate for each exercise in that workout.
 
@@ -188,7 +203,13 @@ The exercise catalog entry (`Exercise`) is never deleted — it remains in the c
 
 ### Multiple exercises with same catalogID in one workout
 
-Each exercise in a workout has its own `ExercisePerformance`. The fetch `ExercisePerformance.matching(catalogID:)` returns all of them. The history recalculation treats each as a separate session entry. This could lead to double-counting `totalSessions` for that workout. In practice, duplicates within a single workout are uncommon.
+Each exercise in a workout still has its own `ExercisePerformance`, and the rebuild fetch returns all of them. But `ExerciseHistory.recalculate(using:)` now collapses rows with the same `catalogID` and `workoutSession.id` into one session summary before computing totals, PRs, and progression points.
+
+That means:
+- `totalSessions` counts the workout once
+- `bestVolume` uses the combined volume for that exercise across the whole workout
+- progression charts show one point for that workout
+- `totalCompletedSets`, `totalCompletedReps`, and `cumulativeVolume` still include all work performed across duplicate exercise blocks
 
 ### History rebuild during summary
 

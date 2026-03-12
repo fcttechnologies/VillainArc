@@ -150,4 +150,9 @@ extension Exercise {
         descriptor.fetchLimit = 1
         return descriptor
     }
+
+    static func withCatalogIDs(_ catalogIDs: [String]) -> FetchDescriptor<Exercise> {
+        let predicate = #Predicate<Exercise> { catalogIDs.contains($0.catalogID) }
+        return FetchDescriptor(predicate: predicate)
+    }
 }

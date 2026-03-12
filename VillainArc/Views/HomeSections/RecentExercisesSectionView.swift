@@ -12,13 +12,12 @@ struct RecentExercisesSectionView: View {
         _histories = Query(ExerciseHistory.recentCompleted(limit: 3))
     }
 
-    private var recentExercises: [Exercise] {
-        let exerciseByCatalogID = Dictionary(uniqueKeysWithValues: exercises.map { ($0.catalogID, $0) })
-        return histories.compactMap { exerciseByCatalogID[$0.catalogID] }
+    private var historyOrdering: ExerciseHistoryOrdering {
+        ExerciseHistoryOrdering(histories: histories)
     }
 
-    private var historyByCatalogID: [String: ExerciseHistory] {
-        Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
+    private var recentExercises: [Exercise] {
+        historyOrdering.recentExercises(from: exercises, orderedBy: histories)
     }
 
     var body: some View {
@@ -34,7 +33,7 @@ struct RecentExercisesSectionView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(recentExercises) { exercise in
-                        ExerciseSummaryRow(exercise: exercise, history: historyByCatalogID[exercise.catalogID])
+                        ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise))
                             .accessibilityIdentifier("recentExerciseRow-\(exercise.catalogID)")
                     }
                 }

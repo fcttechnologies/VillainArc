@@ -4,11 +4,16 @@ import SwiftData
 struct WorkoutSplitSectionView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
-    @Query private var splits: [WorkoutSplit]
+    @Query(WorkoutSplit.active) private var activeSplits: [WorkoutSplit]
+    @Query(WorkoutSplit.any) private var storedSplits: [WorkoutSplit]
     private let appRouter = AppRouter.shared
 
     private var activeSplit: WorkoutSplit? {
-        splits.first { $0.isActive }
+        activeSplits.first
+    }
+
+    private var hasAnySplit: Bool {
+        !storedSplits.isEmpty
     }
 
     var body: some View {
@@ -24,7 +29,7 @@ struct WorkoutSplitSectionView: View {
 
     @ViewBuilder
     private var content: some View {
-        if splits.isEmpty {
+        if !hasAnySplit {
             splitUnavailableView(title: "No Workout Split", description: "Create a split to plan your training days.", autoOpenBuilder: true) {
                 await IntentDonations.donateCreateWorkoutSplit()
             }
@@ -129,7 +134,7 @@ struct WorkoutSplitSectionView: View {
     }
 
     private func refreshRotationIfNeeded() {
-        guard let split = splits.first(where: { $0.isActive }), split.mode == .rotation else { return }
+        guard let split = activeSplit, split.mode == .rotation else { return }
         split.refreshRotationIfNeeded(context: context)
     }
 }
