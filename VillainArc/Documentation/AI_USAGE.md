@@ -30,8 +30,8 @@ The test I apply: if I couldn't explain a piece of code in a code review or debu
 - **What I decided**: Chose the embedded policy approach (`RepRangePolicy`) that fits SwiftData's relationship model without unnecessary object overhead.
 
 ### Suggestion Engine Design
-- **What AI did**: Helped document the rule structure and walked through edge cases in outcome evaluation (rejected-but-followed suggestions, same-session evaluation guard, prescription snapshot reconstruction).
-- **What I decided**: The closed-loop architecture (generation → review → outcome → learning signal), the 15 rules across 4 buckets, and the AI/deterministic merge strategy are product decisions I designed. AI helped formalize the documentation once the design was stable.
+- **What AI did**: Helped document the rule structure and walked through edge cases in outcome evaluation (rejected-but-followed suggestions, same-session evaluation guard, snapshot-based prescription reconstruction).
+- **What I decided**: The closed-loop architecture (generation → review → outcome → learning signal), the event-first grouped suggestion model, the set-level plus exercise-level rule split, and the AI/deterministic merge strategy are product decisions I designed. AI helped formalize the documentation once the design was stable.
 
 ### App Intents + Siri Integration
 - **What AI did**: API reference for App Intents lifecycle, `@AppShortcutsProvider`, entity resolution, and Live Activity intent patterns — areas where the Apple docs are sparse.

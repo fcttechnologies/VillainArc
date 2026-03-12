@@ -9,9 +9,7 @@ struct DeleteAllWorkoutPlansIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        var planDescriptor = WorkoutPlan.all
-        planDescriptor.relationshipKeyPathsForPrefetching = [\.targetedChanges]
-        let workoutPlans = (try? context.fetch(planDescriptor)) ?? []
+        let workoutPlans = (try? context.fetch(WorkoutPlan.all)) ?? []
 
         guard !workoutPlans.isEmpty else {
             return .result(dialog: "No workout plans to delete.")

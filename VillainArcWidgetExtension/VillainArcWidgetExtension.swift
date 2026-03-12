@@ -120,7 +120,7 @@ struct WorkoutLiveActivity: Widget {
 struct WorkoutLiveActivityExpandedView: View {
     let attributes: WorkoutActivityAttributes
     let state: WorkoutActivityAttributes.ContentState
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
@@ -158,9 +158,9 @@ struct WorkoutLiveActivityExpandedView: View {
                     .buttonStyle(.plain)
                 }
             }
-
+            
             Divider()
-
+            
             if let exerciseName = state.exerciseName {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -213,21 +213,21 @@ private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> 
           let totalSets = state.totalSets else {
         return ""
     }
-
+    
     var parts: [String] = ["Set \(setNumber)/\(totalSets)"]
-
+    
     if let weight = state.weight, weight > 0 {
         let formatted = weight.formatted(.number.precision(.fractionLength(0...1)))
         parts.append("\(formatted) lbs")
     }
-
+    
     if let reps = state.reps, reps > 0 {
         parts.append("\(reps) reps")
     }
-
+    
     if let targetRPE = state.targetRPE {
         parts.append("RPE \(targetRPE)")
     }
-
+    
     return parts.joined(separator: " · ")
 }

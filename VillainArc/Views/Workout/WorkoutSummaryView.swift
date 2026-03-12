@@ -19,7 +19,7 @@ struct WorkoutSummaryView: View {
     @Bindable var workout: WorkoutSession
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @Query private var sessionSuggestions: [PrescriptionChange]
+    @Query private var sessionSuggestionEvents: [SuggestionEvent]
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
@@ -71,13 +71,13 @@ struct WorkoutSummaryView: View {
     }
 
     private var suggestionSections: [ExerciseSuggestionSection] {
-        groupSuggestions(sessionSuggestions)
+        groupSuggestions(sessionSuggestionEvents)
     }
 
     init(workout: WorkoutSession) {
         _workout = Bindable(wrappedValue: workout)
         let sessionID = workout.id
-        _sessionSuggestions = Query(filter: #Predicate<PrescriptionChange> { $0.sessionFrom?.id == sessionID }, sort: [SortDescriptor(\.createdAt, order: .reverse)])
+        _sessionSuggestionEvents = Query(filter: #Predicate<SuggestionEvent> { $0.sessionFrom?.id == sessionID }, sort: [SortDescriptor(\.createdAt, order: .reverse)])
     }
 
     var body: some View {
@@ -413,6 +413,7 @@ struct WorkoutSummaryView: View {
         isSaving = true
         Haptics.selection()
         deferRemainingSuggestions()
+        cleanupHistoricalPrescriptionLinksIfNeeded()
         ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
@@ -439,28 +440,37 @@ struct WorkoutSummaryView: View {
         guard shouldShowSuggestions else { return }
         guard !isGeneratingSuggestions else { return }
 
-        guard sessionSuggestions.isEmpty else { return }
-
         isGeneratingSuggestions = true
-        defer { isGeneratingSuggestions = false }
+        defer {
+            cleanupHistoricalPrescriptionLinksIfNeeded()
+            isGeneratingSuggestions = false
+        }
 
-        await OutcomeResolver.resolveOutcomes(for: workout, context: context)
+        if sessionSuggestionEvents.isEmpty {
+            await OutcomeResolver.resolveOutcomes(for: workout, context: context)
 
-        let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
-        if !generated.isEmpty {
-            for change in generated {
-                context.insert(change)
+            let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
+            if !generated.isEmpty {
+                for event in generated {
+                    context.insert(event)
+                }
+                saveContext(context: context)
             }
-            saveContext(context: context)
         }
     }
 
     @MainActor
     private func deferRemainingSuggestions() {
-        guard !sessionSuggestions.isEmpty else { return }
-        for change in sessionSuggestions where change.decision == .pending {
-            change.decision = .deferred
+        guard !sessionSuggestionEvents.isEmpty else { return }
+        for event in sessionSuggestionEvents where event.decision == .pending {
+            event.decision = .deferred
         }
+    }
+
+    private func cleanupHistoricalPrescriptionLinksIfNeeded() {
+        guard workout.workoutPlan != nil else { return }
+        workout.clearPrescriptionLinksForHistoricalUse()
+        saveContext(context: context)
     }
 }
 

@@ -21,6 +21,12 @@ struct AIExercisePrescriptionSnapshot {
         repRange = AIRepRangeSnapshot(policy: prescription.repRange)
         sets = prescription.sortedSets.map { AISetPrescriptionSnapshot(from: $0) }
     }
+
+    init(exercise: AIExerciseIdentitySnapshot, targetSnapshot: ExerciseTargetSnapshot) {
+        self.exercise = exercise
+        repRange = AIRepRangeSnapshot(snapshot: targetSnapshot.repRange)
+        sets = targetSnapshot.sets.map { AISetPrescriptionSnapshot(snapshot: $0) }
+    }
 }
 
 @Generable
@@ -50,5 +56,13 @@ struct AISetPrescriptionSnapshot {
         targetWeight = set.targetWeight
         targetReps = set.targetReps
         targetRest = set.targetRest
+    }
+
+    init(snapshot: SetTargetSnapshot) {
+        index = snapshot.index
+        setType = AIExerciseSetType(from: snapshot.type)
+        targetWeight = snapshot.targetWeight
+        targetReps = snapshot.targetReps
+        targetRest = snapshot.targetRest
     }
 }

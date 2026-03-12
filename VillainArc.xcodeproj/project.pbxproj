@@ -140,6 +140,8 @@
 				Data/Models/Sessions/PreWorkoutContext.swift,
 				Data/Models/Sessions/SetPerformance.swift,
 				Data/Models/Sessions/WorkoutSession.swift,
+				Data/Models/Suggestions/SuggestionEvent.swift,
+				Data/Models/Suggestions/SuggestionSnapshots.swift,
 				Data/Models/UserProfile.swift,
 				Data/Models/WorkoutSplit/WorkoutSplit.swift,
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,

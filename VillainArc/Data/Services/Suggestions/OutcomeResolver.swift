@@ -12,10 +12,12 @@ struct OutcomeSignal {
 // MARK: - Internal Grouping
 
 private struct OutcomeGroup {
-    let changes: [PrescriptionChange]
+    let event: SuggestionEvent
     let exercisePerf: ExercisePerformance
     let prescription: ExercisePrescription
     let setPrescription: SetPrescription?
+
+    var changes: [PrescriptionChange] { event.sortedChanges }
 }
 
 // MARK: - Resolver
@@ -28,8 +30,8 @@ struct OutcomeResolver {
     static func resolveOutcomes(for workout: WorkoutSession, context: ModelContext) async {
         guard workout.workoutPlan != nil else { return }
 
-        // Step 1: Gather eligible changes
-        let eligible = gatherEligibleChanges(for: workout)
+        // Step 1: Gather eligible events
+        let eligible = gatherEligibleEvents(for: workout)
         guard !eligible.isEmpty else { return }
 
         // Build performance lookups for this workout.
@@ -75,45 +77,48 @@ struct OutcomeResolver {
             return results
         }
 
-        // Step 5: Merge phase — apply outcomes to each change.
+        // Step 5: Merge phase — apply outcomes to each event.
         for (index, pair) in aiGroupInputs.enumerated() {
             let aiOutput = aiResults[index]
-            for change in pair.group.changes {
-                applyOutcomeIfPossible(change: change, ruleResults: ruleResults, aiOutput: aiOutput, workout: workout)
-            }
+            applyOutcomeIfPossible(event: pair.group.event, changes: pair.group.changes, exercisePerf: pair.group.exercisePerf, ruleResults: ruleResults, aiOutput: aiOutput)
         }
 
-        // Apply rule-only results for any remaining pending changes.
+        // Apply rule-only results for any remaining pending events.
         for group in groups {
-            for change in group.changes {
-                applyOutcomeIfPossible(change: change, ruleResults: ruleResults, aiOutput: nil, workout: workout)
-            }
+            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: nil)
         }
 
         // Step 6: Persist
         try? context.save()
     }
 
-    // MARK: - Gather Eligible Changes
+    // MARK: - Gather Eligible Events
 
-    private static func gatherEligibleChanges(for workout: WorkoutSession) -> [PrescriptionChange] {
+    private static func gatherEligibleEvents(for workout: WorkoutSession) -> [SuggestionEvent] {
         let prescriptions = workout.sortedExercises.compactMap { $0.prescription }
         guard !prescriptions.isEmpty else { return [] }
 
         var seen = Set<UUID>()
-        var eligible: [PrescriptionChange] = []
+        var eligible: [SuggestionEvent] = []
 
-        func appendIfEligible(_ change: PrescriptionChange) {
-            guard change.outcome == .pending, change.createdAt < workout.startedAt else { return }
-
-            if seen.insert(change.id).inserted {
-                eligible.append(change)
+        func appendIfEligible(_ event: SuggestionEvent?) {
+            guard let event,
+                  event.outcome == .pending,
+                  event.createdAt < workout.startedAt,
+                  event.decision == .accepted || event.decision == .rejected else { return }
+            if seen.insert(event.id).inserted {
+                eligible.append(event)
             }
         }
 
         for prescription in prescriptions {
             for change in prescription.changes ?? [] {
-                appendIfEligible(change)
+                appendIfEligible(change.event)
+            }
+            for set in prescription.sortedSets {
+                for change in set.changes ?? [] {
+                    appendIfEligible(change.event)
+                }
             }
         }
 
@@ -122,34 +127,13 @@ struct OutcomeResolver {
 
     // MARK: - Build Groups
 
-    private static func buildGroups(eligible: [PrescriptionChange], perfByPrescriptionID: [UUID: ExercisePerformance]) -> [OutcomeGroup] {
-        // Group by exercise prescription, then by set or policy (mirrors SuggestionGrouping).
-        let byExercise = Dictionary(grouping: eligible) { $0.targetExercisePrescription?.id }
-
-        var groups: [OutcomeGroup] = []
-
-        for (_, exerciseChanges) in byExercise {
-            guard let prescription = exerciseChanges.first?.targetExercisePrescription else { continue }
-
-            // Find the matching performance in the current workout.
-            guard let exercisePerf = perfByPrescriptionID[prescription.id] else { continue } // Exercise not performed — leave pending.
-
-            // Split into set-level vs exercise-level.
-            let setChanges = exerciseChanges.filter { $0.targetSetPrescription != nil }
-            let exerciseLevelChanges = exerciseChanges.filter { $0.targetSetPrescription == nil }
-
-            // Group set changes by set ID.
-            let bySet = Dictionary(grouping: setChanges) { $0.targetSetPrescription!.id }
-            for (_, changes) in bySet {
-                groups.append(OutcomeGroup(changes: changes, exercisePerf: exercisePerf, prescription: prescription, setPrescription: changes.first?.targetSetPrescription))
-            }
-
-            if !exerciseLevelChanges.isEmpty {
-                groups.append(OutcomeGroup(changes: exerciseLevelChanges, exercisePerf: exercisePerf, prescription: prescription, setPrescription: nil))
-            }
+    private static func buildGroups(eligible: [SuggestionEvent], perfByPrescriptionID: [UUID: ExercisePerformance]) -> [OutcomeGroup] {
+        eligible.compactMap { event in
+            guard let prescription = event.changes?.compactMap(\.targetExercisePrescription).first else { return nil }
+            guard let exercisePerf = perfByPrescriptionID[prescription.id] else { return nil }
+            let setPrescription = event.changes?.compactMap(\.targetSetPrescription).first
+            return OutcomeGroup(event: event, exercisePerf: exercisePerf, prescription: prescription, setPrescription: setPrescription)
         }
-
-        return groups
     }
 
     // MARK: - Build AI Group Input
@@ -167,15 +151,10 @@ struct OutcomeResolver {
         }
         guard !aiChanges.isEmpty else { return nil }
 
-        // Build prescription snapshot (the "before" state).
+        // Build prescription snapshot (the "before" state) from the frozen trigger target snapshot.
         let prescriptionSnapshot = buildPrescriptionSnapshot(group: group)
 
-        // Trigger performance: what the user did last time (from the session that created these changes).
-        // All changes in a group come from the same exercise, so use the first available.
-        guard let triggerExercisePerf = group.changes.compactMap({ $0.sourceExercisePerformance }).first else {
-            return nil
-        }
-        let triggerSnapshot = AIExercisePerformanceSnapshot(performance: triggerExercisePerf)
+        let triggerSnapshot = buildAIPerformanceSnapshot(from: group.event.triggerPerformanceSnapshot, prescription: group.prescription, date: group.event.createdAt)
 
         // Actual performance: what the user did this time.
         let actualSnapshot = AIExercisePerformanceSnapshot(performance: group.exercisePerf)
@@ -189,35 +168,26 @@ struct OutcomeResolver {
     }
 
     private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
-        guard let setPrescriptionID = group.setPrescription?.id else { return true }
+        guard let targetSetIndex = group.changes.compactMap(\.targetSetIndex).first else { return true }
         return group.exercisePerf.sortedSets.contains { set in
-            set.complete && set.prescription?.id == setPrescriptionID
+            guard set.complete else { return false }
+            if let setPrescriptionID = group.setPrescription?.id {
+                return set.prescription?.id == setPrescriptionID
+            }
+            return set.index == targetSetIndex
         }
     }
 
     private static func resolvedTrainingStyle(for group: OutcomeGroup) -> TrainingStyle {
-        if let storedStyle = group.changes.compactMap(\.trainingStyle).first(where: { $0 != .unknown }) {
-            return storedStyle
-        }
-        return MetricsCalculator.detectTrainingStyle(group.exercisePerf.sortedSets)
+        let storedStyle = group.event.trainingStyle
+        return storedStyle != .unknown ? storedStyle : MetricsCalculator.detectTrainingStyle(group.exercisePerf.sortedSets)
     }
 
-    /// Builds the prescription snapshot representing the state BEFORE changes were applied.
-    /// For accepted changes, we revert newValue → previousValue on the live prescription.
-    /// For rejected/deferred, the live prescription already IS the old state.
     private static func buildPrescriptionSnapshot(group: OutcomeGroup) -> AIExercisePrescriptionSnapshot {
-        let base = AIExercisePrescriptionSnapshot(from: group.prescription)
-
-        // If any change was accepted, the live prescription has the new values baked in.
-        // We need to revert those accepted changes to get the "before" state.
-        let acceptedChanges = group.changes.filter { $0.decision == .accepted || $0.decision == .userOverride }
-        guard !acceptedChanges.isEmpty else { return base }
-
-        var snapshot = base
-        for change in acceptedChanges {
-            snapshot = revertChange(snapshot: snapshot, change: change)
-        }
-        return snapshot
+        AIExercisePrescriptionSnapshot(
+            exercise: AIExerciseIdentitySnapshot(prescription: group.prescription),
+            targetSnapshot: group.event.triggerTargetSnapshot
+        )
     }
 
     /// Picks the most representative rule signal for a group.
@@ -235,19 +205,13 @@ struct OutcomeResolver {
         return signals.first
     }
 
-    /// A group is "rejected mode" for AI if none of its changes were applied.
-    /// We treat `accepted` and `userOverride` as applied; everything else as not applied.
     private static func isRejectedGroup(_ group: OutcomeGroup) -> Bool {
-        !group.changes.contains { change in
-            change.decision == .accepted || change.decision == .userOverride
-        }
+        group.event.decision != .accepted
     }
 
     // MARK: - Helpers
 
-    private static func formattedChangeValue(_ value: Double?, changeType: ChangeType) -> String? {
-        guard let value else { return nil }
-
+    private static func formattedChangeValue(_ value: Double, changeType: ChangeType) -> String {
         let roundedInt = Int(value.rounded())
 
         switch changeType {
@@ -276,60 +240,6 @@ struct OutcomeResolver {
         value.formatted(.number.precision(.fractionLength(0...2)))
     }
 
-    // MARK: - Revert Accepted Changes
-
-    private static func revertChange(snapshot: AIExercisePrescriptionSnapshot, change: PrescriptionChange) -> AIExercisePrescriptionSnapshot {
-        let oldValue = change.previousValue
-
-        switch change.changeType {
-        case .increaseWeight, .decreaseWeight:
-            return withRevertedSet(snapshot: snapshot, change: change) { set in
-                AISetPrescriptionSnapshot(index: set.index, setType: set.setType, targetWeight: oldValue ?? set.targetWeight, targetReps: set.targetReps, targetRest: set.targetRest)
-            }
-        case .increaseReps, .decreaseReps:
-            return withRevertedSet(snapshot: snapshot, change: change) { set in
-                AISetPrescriptionSnapshot(index: set.index, setType: set.setType, targetWeight: set.targetWeight, targetReps: oldValue.map { Int($0) } ?? set.targetReps, targetRest: set.targetRest)
-            }
-        case .increaseRest, .decreaseRest:
-            return withRevertedSet(snapshot: snapshot, change: change) { set in
-                AISetPrescriptionSnapshot(index: set.index, setType: set.setType, targetWeight: set.targetWeight, targetReps: set.targetReps, targetRest: oldValue.map { Int($0) } ?? set.targetRest)
-            }
-        case .changeSetType:
-            return withRevertedSet(snapshot: snapshot, change: change) { set in
-                let oldType = oldValue.flatMap { ExerciseSetType(rawValue: Int($0)) }.map { AIExerciseSetType(from: $0) } ?? set.setType
-                return AISetPrescriptionSnapshot(index: set.index, setType: oldType, targetWeight: set.targetWeight, targetReps: set.targetReps, targetRest: set.targetRest)
-            }
-        case .changeRepRangeMode:
-            let oldMode: AIRepRangeMode?
-            if let raw = oldValue.map({ Int($0) }), let mode = RepRangeMode(rawValue: raw) {
-                oldMode = AIRepRangeMode(from: mode)
-            } else {
-                oldMode = snapshot.repRange?.mode
-            }
-            let revertedRepRange = oldMode.map {
-                AIRepRangeSnapshot(mode: $0, lower: snapshot.repRange?.lower, upper: snapshot.repRange?.upper, target: snapshot.repRange?.target)
-            }
-            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: revertedRepRange, sets: snapshot.sets)
-        case .increaseRepRangeLower, .decreaseRepRangeLower:
-            guard let repRange = snapshot.repRange else { return snapshot }
-            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: AIRepRangeSnapshot(mode: repRange.mode, lower: oldValue.map { Int($0) }, upper: repRange.upper, target: repRange.target), sets: snapshot.sets)
-        case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            guard let repRange = snapshot.repRange else { return snapshot }
-            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: AIRepRangeSnapshot(mode: repRange.mode, lower: repRange.lower, upper: oldValue.map { Int($0) }, target: repRange.target), sets: snapshot.sets)
-        case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            guard let repRange = snapshot.repRange else { return snapshot }
-            return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: AIRepRangeSnapshot(mode: repRange.mode, lower: repRange.lower, upper: repRange.upper, target: oldValue.map { Int($0) }), sets: snapshot.sets)
-        }
-    }
-
-    private static func withRevertedSet(snapshot: AIExercisePrescriptionSnapshot, change: PrescriptionChange, transform: (AISetPrescriptionSnapshot) -> AISetPrescriptionSnapshot) -> AIExercisePrescriptionSnapshot {
-        guard let targetIndex = change.targetSetPrescription?.index else { return snapshot }
-        let sets = snapshot.sets.map { set in
-            set.index == targetIndex ? transform(set) : set
-        }
-        return AIExercisePrescriptionSnapshot(exercise: snapshot.exercise, repRange: snapshot.repRange, sets: sets)
-    }
-
     // MARK: - Merge
 
     private struct ResolvedOutcome {
@@ -356,17 +266,25 @@ struct OutcomeResolver {
         return ResolvedOutcome(outcome: ruleOutcome.outcome, reason: "[Rules] \(ruleOutcome.reason)")
     }
 
-    private static func applyOutcomeIfPossible(change: PrescriptionChange, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, workout: WorkoutSession) {
-        guard change.outcome == .pending, change.evaluatedAt == nil else { return }
-        let ruleSignal = ruleResults[change.id] ?? nil
-        guard let resolved = mergeOutcome(rule: ruleSignal, ai: aiOutput) else { return }
-        applyResolvedOutcome(resolved, to: change, workout: workout)
+    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?) {
+        guard event.outcome == .pending, event.evaluatedAt == nil else { return }
+        let groupRuleSignal = aggregateRuleSignal(changes: changes, ruleResults: ruleResults)
+        guard let resolved = mergeOutcome(rule: groupRuleSignal, ai: aiOutput) else { return }
+        applyResolvedOutcome(resolved, to: event, exercisePerf: exercisePerf)
     }
 
-    private static func applyResolvedOutcome(_ resolved: ResolvedOutcome, to change: PrescriptionChange, workout: WorkoutSession) {
-        change.outcome = resolved.outcome
-        change.outcomeReason = resolved.reason
-        change.evaluatedAt = Date()
-        change.evaluatedInSession = workout
+    private static func applyResolvedOutcome(_ resolved: ResolvedOutcome, to event: SuggestionEvent, exercisePerf: ExercisePerformance) {
+        event.outcome = resolved.outcome
+        event.outcomeReason = resolved.reason
+        event.evaluatedAt = Date()
+        event.evaluatedPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerf)
+    }
+
+    private static func buildAIPerformanceSnapshot(from snapshot: ExercisePerformanceSnapshot, prescription: ExercisePrescription, date: Date) -> AIExercisePerformanceSnapshot {
+        AIExercisePerformanceSnapshot(
+            exercise: AIExerciseIdentitySnapshot(prescription: prescription),
+            date: date,
+            snapshot: snapshot
+        )
     }
 }

@@ -31,4 +31,15 @@ struct AIRepRangeSnapshot {
             return nil
         }
     }
+
+    init?(snapshot: RepRangeSnapshot) {
+        switch snapshot.mode {
+        case .range:
+            self.init(mode: .range, lower: snapshot.lower, upper: snapshot.upper)
+        case .target:
+            self.init(mode: .target, target: snapshot.target)
+        case .notSet:
+            return nil
+        }
+    }
 }

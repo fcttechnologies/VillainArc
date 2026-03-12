@@ -6,7 +6,7 @@ struct DeferredSuggestionsView: View {
     @Environment(\.modelContext) private var context
     
     @State private var sections: [ExerciseSuggestionSection] = []
-    @State private var sessionChanges: [PrescriptionChange] = []
+    @State private var sessionEvents: [SuggestionEvent] = []
     @State private var isTransitioning = false
     
     var body: some View {
@@ -61,10 +61,10 @@ struct DeferredSuggestionsView: View {
             return
         }
         
-        sessionChanges = pendingSuggestions(for: plan, in: context)
-        sections = groupSuggestions(sessionChanges)
+        sessionEvents = pendingSuggestionEvents(for: plan, in: context)
+        sections = groupSuggestions(sessionEvents)
 
-        if sessionChanges.isEmpty {
+        if sessionEvents.isEmpty {
             workout.status = SessionStatus.active.rawValue
             saveContext(context: context)
         }
@@ -76,9 +76,9 @@ struct DeferredSuggestionsView: View {
             return
         }
 
-        sessionChanges = pendingSuggestions(for: plan, in: context)
-        sections = groupSuggestions(sessionChanges)
-        let hasUndecided = !sessionChanges.isEmpty
+        sessionEvents = pendingSuggestionEvents(for: plan, in: context)
+        sections = groupSuggestions(sessionEvents)
+        let hasUndecided = !sessionEvents.isEmpty
         if !hasUndecided {
             proceedToWorkout()
         }
@@ -87,8 +87,8 @@ struct DeferredSuggestionsView: View {
     private func skipAll() {
         guard !isTransitioning else { return }
         Haptics.selection()
-        for change in sessionChanges where change.decision == .deferred || change.decision == .pending {
-            change.decision = .rejected
+        for event in sessionEvents where event.decision == .deferred || event.decision == .pending {
+            event.decision = .rejected
         }
         saveContext(context: context)
         proceedToWorkout()
@@ -97,11 +97,9 @@ struct DeferredSuggestionsView: View {
     private func acceptAll() {
         guard !isTransitioning else { return }
         Haptics.selection()
-        for change in sessionChanges where change.decision == .pending || change.decision == .deferred {
-            change.decision = .accepted
-            applyChange(change, context: context)
+        for event in sessionEvents where event.decision == .pending || event.decision == .deferred {
+            acceptGroup(SuggestionGroup(event: event), context: context)
         }
-        saveContext(context: context)
         proceedToWorkout()
     }
     

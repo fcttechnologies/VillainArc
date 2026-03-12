@@ -5,6 +5,5 @@ enum Outcome: String, Codable {
     case good
     case tooAggressive
     case tooEasy
-    case ignored        // User didn't follow during workout
-    case userModified   // User changed the prescription
+    case ignored
 }

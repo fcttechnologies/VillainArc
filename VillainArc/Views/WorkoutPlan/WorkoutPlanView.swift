@@ -77,7 +77,8 @@ struct WorkoutPlanView: View {
                         if !plan.completed {
                             plan.completed = true
                         }
-                        try? context.save()
+                        plan.clearCompletedSessionPerformanceReferences()
+                        saveContext(context: context)
                         SpotlightIndexer.index(workoutPlan: plan)
                         dismiss()
                     }

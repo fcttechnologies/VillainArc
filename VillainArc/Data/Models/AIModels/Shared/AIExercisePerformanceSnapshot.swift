@@ -19,6 +19,13 @@ struct AIExercisePerformanceSnapshot {
         sets = performance.sortedSets.map { AISetPerformanceSnapshot(set: $0) }
     }
 
+    init(exercise: AIExerciseIdentitySnapshot, date: Date, snapshot: ExercisePerformanceSnapshot) {
+        self.exercise = exercise
+        self.date = Self.iso8601String(from: date)
+        repRange = AIRepRangeSnapshot(snapshot: snapshot.repRange)
+        sets = snapshot.sets.map { AISetPerformanceSnapshot(snapshot: $0) }
+    }
+
     private static func iso8601String(from date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
@@ -45,5 +52,13 @@ struct AISetPerformanceSnapshot {
         weight = set.weight
         reps = set.reps
         restSeconds = set.restSeconds
+    }
+
+    init(snapshot: SetPerformanceSnapshot) {
+        index = snapshot.index
+        setType = AIExerciseSetType(from: snapshot.type)
+        weight = snapshot.weight
+        reps = snapshot.reps
+        restSeconds = snapshot.restSeconds
     }
 }

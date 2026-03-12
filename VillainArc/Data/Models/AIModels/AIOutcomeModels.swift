@@ -23,7 +23,7 @@ enum AIOutcome: String {
         case .tooAggressive: self = .tooAggressive
         case .tooEasy: self = .tooEasy
         case .ignored: self = .ignored
-        case .pending, .userModified: return nil
+        case .pending: return nil
         }
     }
 }

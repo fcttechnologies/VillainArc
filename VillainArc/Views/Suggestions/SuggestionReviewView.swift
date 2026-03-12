@@ -3,9 +3,9 @@ import SwiftData
 
 struct SuggestionReviewView: View {
     let sections: [ExerciseSuggestionSection]
-    let onAcceptGroup: ([PrescriptionChange]) -> Void
-    let onRejectGroup: ([PrescriptionChange]) -> Void
-    let onDeferGroup: (([PrescriptionChange]) -> Void)?
+    let onAcceptGroup: (SuggestionGroup) -> Void
+    let onRejectGroup: (SuggestionGroup) -> Void
+    let onDeferGroup: ((SuggestionGroup) -> Void)?
     var showDecisionState: Bool = false
     var actionableDecisions: Set<Decision> = [.pending]
     var emptyState: SuggestionEmptyState?
@@ -29,7 +29,7 @@ struct SuggestionReviewView: View {
                             .fontDesign(.rounded)
                         
                         ForEach(section.groups, id: \.id) { group in
-                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group.changes) }, onReject: { onRejectGroup(group.changes) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group.changes) } : nil, showDecisionState: showDecisionState, actionableDecisions: actionableDecisions)
+                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group) }, onReject: { onRejectGroup(group) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group) } : nil, showDecisionState: showDecisionState, actionableDecisions: actionableDecisions)
                         }
                     }
                 }
@@ -74,7 +74,7 @@ struct SuggestionGroupRow: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(group.changes, id: \.id) { change in
-                    ChangeDescriptionRow(change: change, showReasoning: shouldShowChangeReasoning(for: change))
+                    ChangeDescriptionRow(change: change)
                 }
             }
             
@@ -122,77 +122,25 @@ struct SuggestionGroupRow: View {
     }
 
     private var visibleDecisionState: DecisionState? {
-        let decisions = Set(group.changes.map { $0.decision })
-        if decisions.isSubset(of: actionableDecisions) {
+        let decision = group.event.decision
+        if actionableDecisions.contains(decision) {
             return nil
         }
-        if decisions.count == 1, let only = decisions.first {
-            switch only {
-            case .pending:
-                return nil
-            case .accepted:
-                return .accepted
-            case .rejected:
-                return .rejected
-            case .deferred:
-                return .deferred
-            case .userOverride:
-                return .overridden
-            }
-        }
-        if decisions.contains(.pending) {
+        switch decision {
+        case .pending:
             return nil
+        case .accepted:
+            return .accepted
+        case .rejected:
+            return .rejected
+        case .deferred:
+            return .deferred
         }
-        return .mixed
     }
 
     private var groupReasoning: String? {
-        // Only show a single reason at group level when all reasons match.
-        uniqueReasonings.count == 1 ? uniqueReasonings.first : nil
-    }
-
-    private func shouldShowChangeReasoning(for change: PrescriptionChange) -> Bool {
-        // If multiple unique reasons exist, show them once per unique reason.
-        guard uniqueReasonings.count > 1 else { return false }
-        let reasoningMap = reasoningVisibilityMap
-        return reasoningMap[change.id] ?? false
-    }
-
-    private var uniqueReasonings: [String] {
-        var seen: Set<String> = []
-        var result: [String] = []
-
-        for change in group.changes {
-            let trimmed = change.changeReasoning?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !trimmed.isEmpty else { continue }
-            if seen.insert(trimmed).inserted {
-                result.append(trimmed)
-            }
-        }
-
-        return result
-    }
-
-    private var reasoningVisibilityMap: [UUID: Bool] {
-        // First occurrence of each unique reason shows; duplicates are hidden.
-        var seen: Set<String> = []
-        var map: [UUID: Bool] = [:]
-
-        for change in group.changes {
-            let trimmed = change.changeReasoning?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !trimmed.isEmpty else {
-                map[change.id] = false
-                continue
-            }
-            if seen.contains(trimmed) {
-                map[change.id] = false
-            } else {
-                seen.insert(trimmed)
-                map[change.id] = true
-            }
-        }
-
-        return map
+        let trimmed = group.event.changeReasoning?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 
@@ -203,8 +151,6 @@ private struct DecisionState {
     static let accepted = DecisionState(label: "Accepted", tint: .green)
     static let rejected = DecisionState(label: "Rejected", tint: .red)
     static let deferred = DecisionState(label: "Deferred", tint: .orange)
-    static let overridden = DecisionState(label: "Overridden", tint: .secondary)
-    static let mixed = DecisionState(label: "Mixed", tint: .secondary)
 }
 
 struct SuggestionEmptyState {
@@ -230,25 +176,16 @@ struct SuggestionEmptyState {
 
 struct ChangeDescriptionRow: View {
     let change: PrescriptionChange
-    let showReasoning: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(changeDescription)
-                .font(.subheadline)
-            
-            if showReasoning, let reasoning = change.changeReasoning, !reasoning.isEmpty {
-                Text(reasoning)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
+        Text(changeDescription)
+            .font(.subheadline)
         .fontWeight(.semibold)
     }
     
     private var changeDescription: String {
-        let previous = change.previousValue ?? 0
-        let new = change.newValue ?? 0
+        let previous = change.previousValue
+        let new = change.newValue
         
         switch change.changeType {
         // Set-level
@@ -304,45 +241,41 @@ struct ChangeDescriptionRow: View {
 func applyChange(_ change: PrescriptionChange, context: ModelContext) {
     switch change.changeType {
     case .increaseWeight, .decreaseWeight:
-        change.targetSetPrescription?.targetWeight = change.newValue ?? 0
+        change.targetSetPrescription?.targetWeight = change.newValue
     case .increaseReps, .decreaseReps:
-        change.targetSetPrescription?.targetReps = Int(change.newValue ?? 0)
+        change.targetSetPrescription?.targetReps = Int(change.newValue)
     case .increaseRest, .decreaseRest:
-        change.targetSetPrescription?.targetRest = Int(change.newValue ?? 0)
+        change.targetSetPrescription?.targetRest = Int(change.newValue)
     case .changeSetType:
-        change.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue ?? 0)) ?? .working
+        change.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue)) ?? .working
     case .increaseRepRangeLower, .decreaseRepRangeLower:
-        change.targetExercisePrescription?.repRange?.lowerRange = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.repRange?.lowerRange = Int(change.newValue)
     case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-        change.targetExercisePrescription?.repRange?.upperRange = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.repRange?.upperRange = Int(change.newValue)
     case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-        change.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue ?? 0)
+        change.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue)
     case .changeRepRangeMode:
-        change.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue ?? 0)) ?? .notSet
+        change.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue)) ?? .notSet
     }
 }
 
 @MainActor
-func acceptGroup(_ changes: [PrescriptionChange], context: ModelContext) {
-    for change in changes {
-        change.decision = .accepted
+func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
+    group.event.decision = .accepted
+    for change in group.changes {
         applyChange(change, context: context)
     }
     saveContext(context: context)
 }
 
 @MainActor
-func rejectGroup(_ changes: [PrescriptionChange], context: ModelContext) {
-    for change in changes {
-        change.decision = .rejected
-    }
+func rejectGroup(_ group: SuggestionGroup, context: ModelContext) {
+    group.event.decision = .rejected
     saveContext(context: context)
 }
 
 @MainActor
-func deferGroup(_ changes: [PrescriptionChange], context: ModelContext) {
-    for change in changes {
-        change.decision = .deferred
-    }
+func deferGroup(_ group: SuggestionGroup, context: ModelContext) {
+    group.event.decision = .deferred
     saveContext(context: context)
 }

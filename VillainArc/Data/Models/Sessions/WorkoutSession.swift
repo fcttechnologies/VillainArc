@@ -26,8 +26,8 @@ final class WorkoutSession {
     var exercises: [ExercisePerformance]? = [ExercisePerformance]()
     @Relationship(deleteRule: .nullify, inverse: \ExercisePerformance.activeInSession)
     var activeExercise: ExercisePerformance?
-    var createdPrescriptionChanges: [PrescriptionChange]? = [PrescriptionChange]()
-    var evaluatedPrescriptionChanges: [PrescriptionChange]? = [PrescriptionChange]()
+    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.sessionFrom)
+    var createdSuggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
     
     var sortedExercises: [ExercisePerformance] {
         (exercises ?? []).sorted { $0.index < $1.index }
@@ -51,6 +51,7 @@ final class WorkoutSession {
     }
 
     // From workout plan
+    @MainActor
     init(from plan: WorkoutPlan) {
         preWorkoutContext = PreWorkoutContext()
         title = plan.title
@@ -207,6 +208,12 @@ extension WorkoutSession {
         }
 
         return incompleteSets.count == 1 && incompleteSets[0] == candidate
+    }
+
+    func clearPrescriptionLinksForHistoricalUse() {
+        for exercise in sortedExercises {
+            exercise.clearPrescriptionLinksForHistoricalUse()
+        }
     }
     
     @MainActor

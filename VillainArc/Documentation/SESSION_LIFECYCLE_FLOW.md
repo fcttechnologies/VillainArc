@@ -29,8 +29,7 @@ It is based on the current code in:
 - `exercises` — array of `ExercisePerformance` (cascade delete)
 - `activeExercise` — the currently focused exercise (nullify)
 - `postEffort` — 1-10 effort rating set during summary
-- `createdPrescriptionChanges` — suggestions generated from this session
-- `evaluatedPrescriptionChanges` — suggestions evaluated against this session
+- `createdSuggestionEvents` — grouped suggestions generated from this session
 
 Each `ExercisePerformance` owns an array of `SetPerformance` rows. Sets track weight, reps, set type, completion state, actual RPE, rest time, and optional back-references to their originating prescription/set prescription.
 
@@ -78,10 +77,10 @@ There are two paths.
    - Links `workoutPlan = plan`
    - Maps `plan.sortedExercises` into `ExercisePerformance` rows (each linked back to its `ExercisePrescription`)
    - Updates `plan.lastUsed`
-3. Checks `pendingSuggestions(for: plan, in: context)` — if any pending/deferred suggestions exist, sets status to `.pending` instead of `.active`
+3. Checks `pendingSuggestionEvents(for: plan, in: context)` — if any pending/deferred grouped suggestions exist, sets status to `.pending` instead of `.active`
 4. Inserts, saves, and presents
 
-When performance rows are created from prescriptions, each `ExercisePerformance` gets its sets pre-populated from the plan's `SetPrescription` rows. The prescription back-references are maintained so the suggestion system can later link source evidence to targets.
+When performance rows are created from prescriptions, each `ExercisePerformance` gets its sets pre-populated from the plan's `SetPrescription` rows. Those live prescription back-references are still used during the active workout, and plan-started exercises also store immutable `originalTargetSnapshot` values so later historical suggestion logic does not depend on those links remaining forever.
 
 During a plan-based workout, if the user deletes a prescribed session set and later adds a set back, `ExercisePerformance.addSet()` only restores a prescription link when the deleted prescription was a **tail** slot — i.e., no remaining set is linked to a prescription with a higher index. This handles the common "delete last set, change my mind, add it back" case. If the deleted prescription would create a hole in the middle (e.g., deleting set 1 of 3 while sets 2 and 3 still carry their links), adding a set creates a new unlinked set at the end instead, since the user likely wants an extra set rather than the one they removed.
 

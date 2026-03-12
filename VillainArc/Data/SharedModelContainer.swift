@@ -28,6 +28,7 @@ enum SharedModelContainer {
         SetPrescription.self,
         WorkoutSplit.self,
         WorkoutSplitDay.self,
+        SuggestionEvent.self,
         PrescriptionChange.self
     ])
 

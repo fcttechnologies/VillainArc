@@ -13,7 +13,8 @@ final class ExercisePrescription {
     @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePrescription)
     var repRange: RepRangePolicy? = RepRangePolicy()
     var workoutPlan: WorkoutPlan?
-    var performances: [ExercisePerformance]? = [ExercisePerformance]()
+    @Relationship(deleteRule: .nullify)
+    var activePerformance: ExercisePerformance?
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
     var sets: [SetPrescription]? = [SetPrescription]()
     
@@ -72,9 +73,15 @@ final class ExercisePrescription {
             sets?.append(SetPrescription(exercisePrescription: self, targetRest: RestTimeDefaults.restSeconds))
         }
     }
+
+    func clearLinkedPerformanceReferences() {
+        guard let performance = activePerformance else { return }
+        performance.clearPrescriptionLinksForHistoricalUse()
+    }
     
     func replaceWith(_ exercise: Exercise, keepSets: Bool) {
         guard catalogID != exercise.catalogID else { return }
+        clearLinkedPerformanceReferences()
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted

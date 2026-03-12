@@ -105,7 +105,7 @@ Before applying any changes, the method compares the copy to the original to fin
   - Exercise-level: rep range mode, lower/upper bounds, target reps
   - Set-level: set type, target weight, target reps, target rest
 
-When a manual change matches a pending/deferred suggestion's domain (e.g., user changed target weight, and there was a pending `increaseWeight` suggestion), that suggestion is marked via `markAsUserOverride()`.
+When a manual change matches an unresolved suggestion's domain (e.g., user changed target weight, and there was a pending `increaseWeight` suggestion), that unresolved suggestion record is deleted. If the change belongs to a grouped `SuggestionEvent`, the whole unresolved event is deleted so the stale intervention does not remain partially alive.
 
 **Step 2: Apply values**
 
@@ -136,39 +136,31 @@ All exercises are reindexed to maintain correct ordering.
 
 `deleteWithSuggestionCleanup(context:)`:
 
-1. Calls `deletePendingOutcomeChanges(context:)` — deletes all `PrescriptionChange` records targeting this plan where `outcome == .pending`
+1. Calls `deletePendingOutcomeChanges(context:)` — deletes all unresolved suggestion records reachable from the plan's exercise/set change relationships (and any legacy plan-level changes)
 2. Deletes the plan itself from context
 
 Only pending-outcome suggestions are removed. Resolved suggestions (with outcomes like `.good`, `.tooAggressive`, etc.) are preserved for analytics history even after the plan is gone.
 
 ## Interaction with Suggestions
 
-### markAsUserOverride
+### Manual Edit Invalidation
 
-`PrescriptionChange.markAsUserOverride()` is the bridge between manual edits and the suggestion system:
+Manual edits no longer create override/modified terminal states for unresolved suggestions.
 
-```
-guard source != .user else { return }       // skip user-sourced changes
-if decision == .deferred || decision == .pending {
-    decision = .userOverride
-}
-if outcome == .pending {
-    outcome = .userModified
-}
-```
+Instead, the copy-merge reconciliation step treats a conflicting manual edit as invalidation:
 
-Guards:
-- Skips changes whose `source == .user` (user-created suggestions don't need override tracking)
-- Only marks `decision = .userOverride` if the current decision is `pending` or `deferred` (already accepted/rejected suggestions are left alone)
-- Only marks `outcome = .userModified` if the outcome is still `pending`
+- if the unresolved record is a standalone `PrescriptionChange`, it is deleted
+- if the unresolved record belongs to a grouped `SuggestionEvent`, the whole event is deleted
+
+This keeps the historical suggestion list honest. The old intervention is no longer something the app should try to evaluate or learn from.
 
 ### Deletion Cleanup
 
 Three levels of cleanup, all scoped to `outcome == .pending`:
 
-1. **Plan deletion**: Removes all pending-outcome changes targeting this plan
-2. **Exercise deletion**: Removes pending-outcome changes targeting the exercise and all its sets (deduplicated)
-3. **Set deletion**: Removes pending-outcome changes targeting just that set
+1. **Plan deletion**: Removes all unresolved suggestion records reachable from the plan
+2. **Exercise deletion**: Removes unresolved suggestion records targeting the exercise and all its sets (deduplicated, event-aware)
+3. **Set deletion**: Removes unresolved suggestion records targeting just that set
 
 Resolved suggestions are always preserved.
 
@@ -176,23 +168,25 @@ Resolved suggestions are always preserved.
 
 Accepting a suggestion (`applyChange` in `SuggestionReviewView.swift`) directly mutates the live plan and sets `decision = .accepted`. This happens outside the editing copy flow — it modifies the original plan immediately.
 
-Manual editing through the copy flow does not directly set `decision` on suggestions. Instead, it uses the reconciliation step to detect overlapping changes and mark them as `userOverride`.
+Manual editing through the copy flow does not directly set `decision` on suggestions. Instead, it uses the reconciliation step to detect overlapping changes and delete unresolved suggestion records that are no longer relevant.
 
 ## Startup Cleanup
 
 `WorkoutPlan.resumableIncomplete` fetches plans where `!completed && !isEditing`. This means editing copies (which have `isEditing = true`) are excluded from the resume flow.
 
-If the user force-quits during plan editing, the editing copy persists in the database but is not resumed on next launch. The original plan is untouched. The orphaned copy is cleaned up by `WorkoutPlan.incomplete` queries used in `hasActiveFlow()` checks, which include editing copies — this prevents starting new flows until the copy is dealt with. In practice, the editing copy is cleaned up when the user next opens the plan detail and starts a new edit (the old copy is replaced).
+If the user force-quits during plan editing, the editing copy persists until the next app launch. `VillainArcApp.cleanupEditingWorkoutPlanCopies()` deletes all `isEditing` plans during startup before normal routing resumes. The original plan is untouched.
 
 ## Edge Cases
 
 ### Editing a plan with pending suggestions
 
-The reconciliation step runs before any values are applied. This means if the user edits a set's weight and there was a pending `increaseWeight` suggestion for that same set, the suggestion is marked as `userOverride` before the new weight is written. The suggestion system treats this as "the user took matters into their own hands."
+The reconciliation step runs before any values are applied. This means if the user edits a set's weight and there was an unresolved `increaseWeight` suggestion for that same set, that unresolved suggestion record is deleted before the new weight is written. If the weight change lived inside a grouped `SuggestionEvent`, the whole event is deleted.
 
 ### Replacing an exercise during editing
 
-If the user replaces an exercise (changes the `catalogID`), all pending suggestions for the old exercise are deleted rather than marked as overrides. This is correct because the suggestions targeted a different exercise entirely.
+If the user replaces an exercise (changes the `catalogID`), all unresolved suggestions for the old exercise are deleted rather than partially preserved. This is correct because the suggestions targeted a different exercise entirely.
+
+When the edited copy is later applied back onto the original plan, any historical `ExercisePerformance` / `SetPerformance` links still attached to the original prescription are cleared before that prescription is repurposed to the new exercise. Completed performances remain valid historical facts, but they no longer point at a prescription whose identity has changed underneath them.
 
 ### Deleting the only set in an exercise
 

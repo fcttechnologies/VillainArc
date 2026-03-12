@@ -36,16 +36,23 @@ struct OutcomeRuleEngine {
     private static func matchSetPerformance(for change: PrescriptionChange, in exercisePerf: ExercisePerformance) -> SetPerformance? {
         let completeSets = exercisePerf.sortedSets.filter { $0.complete }
 
-        guard let setPrescriptionID = change.targetSetPrescription?.id else { return nil }
-        return completeSets.first(where: { $0.prescription?.id == setPrescriptionID })
+        if let setPrescriptionID = change.targetSetPrescription?.id,
+           let matched = completeSets.first(where: { $0.prescription?.id == setPrescriptionID }) {
+            return matched
+        }
+
+        guard let targetSetIndex = change.targetSetIndex else { return nil }
+        return completeSets.first(where: { $0.index == targetSetIndex })
     }
 
     // MARK: - Weight Change
 
     private static func evaluateWeightChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
         guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              let newWeight = change.newValue,
-              let oldWeight = change.previousValue else { return nil }
+              change.targetSetIndex != nil || change.targetSetPrescription != nil else { return nil }
+
+        let newWeight = change.newValue
+        let oldWeight = change.previousValue
 
         // Tolerance comes from equipment/muscle-aware increment sizing.
         let baseWeight = newWeight > 0 ? newWeight : oldWeight
@@ -74,8 +81,10 @@ struct OutcomeRuleEngine {
 
     private static func evaluateRepsChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
         guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              let newReps = change.newValue.map({ Int($0) }),
-              let oldReps = change.previousValue.map({ Int($0) }) else { return nil }
+              change.targetSetIndex != nil || change.targetSetPrescription != nil else { return nil }
+
+        let newReps = Int(change.newValue)
+        let oldReps = Int(change.previousValue)
 
         let actualReps = setPerf.reps
 
@@ -99,8 +108,10 @@ struct OutcomeRuleEngine {
 
     private static func evaluateSetRestChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
         guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              let newRest = change.newValue.map({ Int($0) }),
-              let oldRest = change.previousValue.map({ Int($0) }) else { return nil }
+              change.targetSetIndex != nil || change.targetSetPrescription != nil else { return nil }
+
+        let newRest = Int(change.newValue)
+        let oldRest = Int(change.previousValue)
 
         let actualRest = setPerf.restSeconds
 
@@ -161,8 +172,7 @@ struct OutcomeRuleEngine {
 
     private static func evaluateSetTypeChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
         guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              let newTypeRaw = change.newValue.map({ Int($0) }),
-              let newType = ExerciseSetType(rawValue: newTypeRaw) else { return nil }
+              let newType = ExerciseSetType(rawValue: Int(change.newValue)) else { return nil }
 
         // Type changes are binary: exact type match means success, otherwise ignored.
         if setPerf.type == newType {
@@ -247,8 +257,7 @@ struct OutcomeRuleEngine {
 
         switch change.changeType {
         case .changeRepRangeMode:
-            if let rawMode = change.newValue.map({ Int($0) }),
-               let mode = RepRangeMode(rawValue: rawMode) {
+            if let mode = RepRangeMode(rawValue: Int(change.newValue)) {
                 switch mode {
                 case .range: return (policy.lowerRange, policy.upperRange)
                 case .target: return (policy.targetReps, policy.targetReps)
@@ -257,11 +266,11 @@ struct OutcomeRuleEngine {
             }
             return (nil, nil)
         case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return (change.newValue.map { Int($0) } ?? policy.lowerRange, policy.upperRange)
+            return (Int(change.newValue), policy.upperRange)
         case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return (policy.lowerRange, change.newValue.map { Int($0) } ?? policy.upperRange)
+            return (policy.lowerRange, Int(change.newValue))
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            let newTarget = change.newValue.map { Int($0) } ?? policy.targetReps
+            let newTarget = Int(change.newValue)
             return (newTarget, newTarget)
         default:
             switch policy.activeMode {

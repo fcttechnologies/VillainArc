@@ -11,7 +11,8 @@ final class SetPrescription {
     var targetRest: Int = 0
     var targetRPE: Int = 0
     var exercise: ExercisePrescription?
-    var performances: [SetPerformance]? = [SetPerformance]()
+    @Relationship(deleteRule: .nullify)
+    var activePerformance: SetPerformance?
     @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetSetPrescription)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
 

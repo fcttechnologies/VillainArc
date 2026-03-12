@@ -1,125 +1,49 @@
 import Foundation
 
 struct SuggestionDeduplicator {
-    static func process(suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
+    static func process(suggestions: [SuggestionEventDraft]) -> [SuggestionEventDraft] {
         guard !suggestions.isEmpty else { return [] }
 
-        let filtered = resolveLogicalConflicts(suggestions)
-        return resolveConflicts(filtered)
+        let grouped = Dictionary(grouping: suggestions, by: \.idScope)
+
+        return grouped.values.compactMap { scopedSuggestions in
+            scopedSuggestions.sorted(by: isPreferred(_:over:)).first
+        }
     }
 
-    private static func resolveLogicalConflicts(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        let grouped = Dictionary(grouping: suggestions) {
-            logicalConflictKey(for: $0)
+    private static func isPreferred(_ lhs: SuggestionEventDraft, over rhs: SuggestionEventDraft) -> Bool {
+        let lhsPriority = priority(for: lhs)
+        let rhsPriority = priority(for: rhs)
+        if lhsPriority != rhsPriority {
+            return lhsPriority < rhsPriority
         }
 
-        var resolved: [PrescriptionChange] = []
-
-        for (_, scopedSuggestions) in grouped {
-            let filtered = filterConflictingStrategies(scopedSuggestions)
-            resolved.append(contentsOf: filtered)
+        if lhs.changes.count != rhs.changes.count {
+            return lhs.changes.count > rhs.changes.count
         }
 
-        return resolved
+        let lhsMagnitude = totalMagnitude(for: lhs)
+        let rhsMagnitude = totalMagnitude(for: rhs)
+        if lhsMagnitude != rhsMagnitude {
+            return lhsMagnitude > rhsMagnitude
+        }
+
+        let lhsReasoning = lhs.changeReasoning ?? ""
+        let rhsReasoning = rhs.changeReasoning ?? ""
+        if lhsReasoning != rhsReasoning {
+            return lhsReasoning < rhsReasoning
+        }
+
+        return lhs.catalogID < rhs.catalogID
     }
 
-    private static func logicalConflictKey(for suggestion: PrescriptionChange) -> LogicalConflictKey {
-        if let setID = suggestion.targetSetPrescription?.id {
-            return LogicalConflictKey(id: setID, isSet: true)
-        }
-        if let exerciseID = suggestion.targetExercisePrescription?.id {
-            return LogicalConflictKey(id: exerciseID, isSet: false)
-        }
-        return LogicalConflictKey(id: suggestion.id, isSet: false)
+    private static func priority(for draft: SuggestionEventDraft) -> Int {
+        draft.changes.map { priority(for: $0.changeType) }.min() ?? Int.max
     }
 
-    private static func filterConflictingStrategies(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        let hasWeightIncrease = suggestions.contains { $0.changeType == .increaseWeight }
-        let hasRestIncrease = suggestions.contains { $0.changeType == .increaseRest }
-
-        if hasWeightIncrease && hasRestIncrease {
-            return suggestions.filter { $0.changeType != .increaseRest }
-        }
-
-        let hasWeightDecrease = suggestions.contains { $0.changeType == .decreaseWeight }
-
-        if hasWeightIncrease && hasWeightDecrease {
-            return suggestions.filter { $0.changeType != .increaseWeight }
-        }
-
-        return suggestions
-    }
-
-    private static func resolveConflicts(_ suggestions: [PrescriptionChange]) -> [PrescriptionChange] {
-        guard suggestions.count > 1 else { return suggestions }
-
-        var grouped: [ConflictKey: [PrescriptionChange]] = [:]
-        for suggestion in suggestions {
-            guard let key = conflictKey(for: suggestion) else { continue }
-            grouped[key, default: []].append(suggestion)
-        }
-
-        var resolved: [PrescriptionChange] = []
-
-        for group in grouped.values {
-            if group.count == 1 {
-                resolved.append(group[0])
-                continue
-            }
-
-            let sorted = group.sorted { lhs, rhs in
-                let lhsPriority = priority(for: lhs.changeType)
-                let rhsPriority = priority(for: rhs.changeType)
-                if lhsPriority != rhsPriority {
-                    return lhsPriority < rhsPriority
-                }
-                if lhs.source != rhs.source {
-                    return lhs.source == .rules
-                }
-                let lhsMagnitude = abs((lhs.newValue ?? 0) - (lhs.previousValue ?? 0))
-                let rhsMagnitude = abs((rhs.newValue ?? 0) - (rhs.previousValue ?? 0))
-                if lhsMagnitude != rhsMagnitude {
-                    return lhsMagnitude > rhsMagnitude
-                }
-                return lhs.createdAt < rhs.createdAt
-            }
-
-            if let best = sorted.first {
-                resolved.append(best)
-            }
-        }
-
-        return resolved
-    }
-
-    private static func conflictKey(for suggestion: PrescriptionChange) -> ConflictKey? {
-        if let setID = suggestion.targetSetPrescription?.id {
-            return ConflictKey(id: setID, isSet: true, property: property(for: suggestion.changeType))
-        }
-        if let exerciseID = suggestion.targetExercisePrescription?.id {
-            return ConflictKey(id: exerciseID, isSet: false, property: property(for: suggestion.changeType))
-        }
-        return nil
-    }
-
-    private static func property(for changeType: ChangeType) -> ChangeProperty {
-        switch changeType {
-        case .increaseWeight, .decreaseWeight:
-            return .weight
-        case .increaseReps, .decreaseReps:
-            return .reps
-        case .increaseRest, .decreaseRest:
-            return .rest
-        case .changeSetType:
-            return .setType
-        case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return .repRangeLower
-        case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return .repRangeUpper
-        case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-            return .repRangeTarget
-        case .changeRepRangeMode:
-            return .repRangeMode
+    private static func totalMagnitude(for draft: SuggestionEventDraft) -> Double {
+        draft.changes.reduce(0) { partialResult, change in
+            partialResult + abs(change.newValue - change.previousValue)
         }
     }
 
@@ -142,26 +66,4 @@ struct SuggestionDeduplicator {
             return 4
         }
     }
-}
-
-private enum ChangeProperty: Hashable {
-    case weight
-    case reps
-    case rest
-    case setType
-    case repRangeMode
-    case repRangeLower
-    case repRangeUpper
-    case repRangeTarget
-}
-
-private struct ConflictKey: Hashable {
-    let id: UUID
-    let isSet: Bool
-    let property: ChangeProperty
-}
-
-private struct LogicalConflictKey: Hashable {
-    let id: UUID
-    let isSet: Bool
 }

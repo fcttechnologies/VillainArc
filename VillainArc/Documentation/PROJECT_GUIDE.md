@@ -49,9 +49,10 @@ Four sections: **Splits** (today's schedule), **Recent Workout** (last completed
 - If no unfinished workout exists but an incomplete non-editing workout plan exists, the app resumes that plan in the full-screen plan editor. The user stays in that flow until the plan is saved/completed or canceled.
 - `AppRouter` enforces a single active flow across the app: at most one workout session or one workout plan can be active at a time, never both.
 - `ExercisePerformance` and `ExercisePrescription` are initialized with at least one set. The editing UI only exposes set deletion when more than one set remains.
-- Built-in exercise catalog metadata is canonical for `name`, `musclesTargeted`, and `equipmentType`. When catalog seeding updates those fields, matching `ExercisePrescription` and `ExercisePerformance` snapshots are refreshed by `catalogID`.
+- Built-in exercise catalog metadata is canonical for `name`, `musclesTargeted`, and `equipmentType`. When catalog seeding updates those fields, matching `ExercisePrescription` and `ExercisePerformance` copies are refreshed by `catalogID`.
 - Finishing a workout resolves incomplete sets before summary: logged unfinished sets can be marked complete, unfinished sets can be deleted, and any exercise left with zero sets is pruned. If every exercise is pruned, the workout itself is deleted instead of reaching summary.
 - `Exercise.lastAddedAt` tracks catalog-selection recency for add/replace flows. `ExerciseHistory.lastCompletedAt` tracks actual completed-workout recency for user-facing "used" ordering. When the last completed performance is removed, the history record is deleted and the exercise is removed from Spotlight.
+- Plan-started `ExercisePerformance` rows store an immutable `originalTargetSnapshot` describing the exercise-level rep range and target sets they began with. Freeform exercises and detached replacements keep this snapshot `nil`.
 
 ---
 
@@ -72,7 +73,7 @@ VillainArcApp (@main)
 
 **AppRouter** (singleton, `@Observable`): Owns `NavigationPath`, `activeWorkoutSession`, `activeWorkoutPlan`. Enforces one active flow at a time, auto-resumes unfinished workout sessions first, then resumable incomplete plans, and blocks Spotlight/Siri/new-flow entry points while a flow is already active.
 
-**SharedModelContainer**: SwiftData container with 17 model types, CloudKit-backed, app-group store.
+**SharedModelContainer**: SwiftData container with 18 model types, CloudKit-backed, app-group store.
 
 **Data flow:** Views use `@Query` for reads, `@Bindable` for mutations, `saveContext()`/`scheduleSave()` for persistence. No separate view model layer.
 
@@ -98,17 +99,23 @@ WorkoutSession (actual workout)
   ├─ owns → ExercisePerformance[] → SetPerformance[]
   ├─ has one → PreWorkoutContext
   ├─ links back to → WorkoutPlan (if plan-based)
-  ├─ generates → PrescriptionChange[] (via createdPrescriptionChanges)
-  └─ evaluates → PrescriptionChange[] (via evaluatedPrescriptionChanges)
+  ├─ stores on plan-started exercises → original target snapshots
+  └─ can be linked from → SuggestionEvent (as the trigger session)
 
 WorkoutSplit (schedule)
   └─ owns → WorkoutSplitDay[] → each references one WorkoutPlan
 
+SuggestionEvent (grouped suggestion)
+  ├─ owns → PrescriptionChange[] child deltas
+  ├─ stores → trigger/evaluation snapshots
+  ├─ decision: pending/accepted/rejected/deferred
+  └─ outcome: pending/good/tooAggressive/tooEasy/ignored
+
 PrescriptionChange (suggestion)
-  ├─ source: which performance triggered it
+  ├─ belongs to → SuggestionEvent
   ├─ target: which prescription to change
-  ├─ decision: pending/accepted/rejected/deferred/userOverride
-  └─ outcome: pending/good/tooAggressive/tooEasy/ignored/userModified
+  ├─ stores → previous/new value
+  └─ optionally identifies → target set index
 
 ExerciseHistory (analytics cache)
   └─ owns → ProgressionPoint[] (weight/volume/estimated-1RM charting data)
@@ -118,7 +125,7 @@ ExerciseHistory (analytics cache)
 `pending` (has deferred suggestions to review) → `active` (logging workout) → `summary` (reviewing stats/suggestions) → `done` (locked).
 
 ### Plan Editing Pattern
-Never edit the original directly. `createEditingCopy()` makes a temporary clone. User edits the clone. `applyEditingCopy()` merges changes back, marking conflicting suggestions as `userOverride`.
+Never edit the original directly. `createEditingCopy()` makes a temporary clone. User edits the clone. `applyEditingCopy()` merges changes back and deletes any still-unresolved suggestion events that the manual edit makes stale.
 
 ---
 
@@ -174,7 +181,7 @@ Use this to find where logic lives for any feature.
 | What | Where |
 |------|-------|
 | Entry point | `Data/Services/Suggestions/SuggestionGenerator.swift` |
-| Deterministic rules (15 rules) | `Data/Services/Suggestions/RuleEngine.swift` |
+| Deterministic rules (set-level rules + exercise-level rep-range rules) | `Data/Services/Suggestions/RuleEngine.swift` |
 | Training style detection | `Data/Services/Suggestions/MetricsCalculator.swift` |
 | Conflict resolution | `Data/Services/Suggestions/SuggestionDeduplicator.swift` |
 | Post-workout outcome eval | `Data/Services/Suggestions/OutcomeResolver.swift` |
@@ -183,7 +190,8 @@ Use this to find where logic lives for any feature.
 | AI outcome evaluator | `Data/Services/Suggestions/AIOutcomeInferrer.swift` |
 | Foundation model prewarm | `Data/Services/Suggestions/FoundationModelPrewarmer.swift` |
 | AI tool (history access) | `Data/Services/Suggestions/AITrainingStyleTools.swift` |
-| Suggestion model | `Data/Models/Plans/PrescriptionChange.swift` |
+| Suggestion models | `Data/Models/Suggestions/SuggestionEvent.swift` + `Data/Models/Suggestions/SuggestionEventDraft.swift` + `Data/Models/Plans/PrescriptionChange.swift` |
+| Suggestion snapshot types | `Data/Models/Suggestions/SuggestionSnapshots.swift` |
 | Grouping/query helpers | `Data/Models/Plans/SuggestionGrouping.swift` |
 | Pre-workout review UI | `Views/Suggestions/DeferredSuggestionsView.swift` |
 | Shared review component | `Views/Suggestions/SuggestionReviewView.swift` |
@@ -299,7 +307,7 @@ Use this to find where logic lives for any feature.
 
 The suggestion system is a closed-loop learning pipeline:
 
-**Generation + Outcome Resolution** (during summary screen): When `WorkoutSummaryView` appears, it runs in sequence: (1) `OutcomeResolver` evaluates older suggestions against the just-finished workout, then (2) `SuggestionGenerator` detects training style (deterministic via `MetricsCalculator`, with `AITrainingStyleClassifier` as fallback for `.unknown`) → `RuleEngine` evaluates 15 rules across 4 buckets (progression, safety/cleanup, plateau, set-type hygiene) → `SuggestionDeduplicator` resolves conflicts → produces `PrescriptionChange` records.
+**Generation + Outcome Resolution** (during summary screen): When `WorkoutSummaryView` appears, it runs in sequence: (1) `OutcomeResolver` evaluates older suggestions against the just-finished workout, then (2) `SuggestionGenerator` detects training style (deterministic via `MetricsCalculator`, with `AITrainingStyleClassifier` as fallback for `.unknown`) → `RuleEngine` evaluates its set-level rule buckets (progression, safety/cleanup, plateau, set-type hygiene), then only if no set-level suggestion survives for that exercise evaluates conservative exercise-level rep-range rules, using `ExercisePerformance.originalTargetSnapshot` for historical target-aware comparisons and emitting grouped `SuggestionEventDraft`s → `SuggestionDeduplicator` resolves conflicts at the event scope → `SuggestionGenerator` persists final `SuggestionEvent`s with child `PrescriptionChange` deltas.
 
 **Review — two stages:**
 - *Immediately after workout* (`WorkoutSummaryView`): user can accept, reject, or defer newly generated suggestions. Any still-pending at dismissal are auto-converted to `deferred`.
@@ -325,7 +333,9 @@ The suggestion system is a closed-loop learning pipeline:
 
 6. **Exercise history is rebuilt from scratch** after each workout. `ExerciseHistory.recalculate()` recomputes all stats from all performances. Safe but not incremental.
 
-7. **Suggestions link source evidence to targets.** Each `PrescriptionChange` has both `sourceExercisePerformance` (what triggered it) and `targetSetPrescription` (what to change).
+7. **Suggestions now separate history from live plan links.** Plan-started workouts preserve `ExercisePerformance.originalTargetSnapshot`, while live `prescription` links are treated as active-workout-only helpers and cleared once completed-session suggestion work is done.
+
+Suggestion generation is safer now, but not fully structure-aware yet. Some set-level historical comparisons still align old target context by snapshot set index. This handles different set counts safely by skipping unmatched historical slots, but the longer-term goal is to compare actual value deltas and overall exercise structure more directly rather than relying mainly on indexed set-to-set alignment.
 
 8. **Intent donations** happen at contextually relevant moments (e.g., donate "Start Rest Timer" when a set is completed).
 
@@ -390,8 +400,8 @@ Look at: `WorkoutSplit.swift` (model + day resolution), `WorkoutSplitView.swift`
 | `MoodLevel` | notSet, sick, tired, okay, good, great | Pre-workout feeling |
 | `SplitMode` | weekly, rotation | Schedule type |
 | `ChangeType` | 14 variants (weight/reps/rest/setType/repRange changes) | What a suggestion modifies |
-| `Decision` | pending, accepted, rejected, deferred, userOverride | User's choice on suggestion |
-| `Outcome` | pending, good, tooAggressive, tooEasy, ignored, userModified | How suggestion played out |
+| `Decision` | pending, accepted, rejected, deferred | User's choice on suggestion |
+| `Outcome` | pending, good, tooAggressive, tooEasy, ignored | How suggestion played out |
 | `TrainingStyle` | straightSets, ascending, descendingPyramid, ascendingPyramid, topSetBackoffs, unknown | Detected exercise pattern |
 | `SuggestionSource` | rules, ai, user | Where suggestion came from |
 | `Muscle` | 36 variants (10 major, 26 minor) | Muscle targeting |

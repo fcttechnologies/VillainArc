@@ -18,8 +18,6 @@ final class WorkoutPlan {
     @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
     var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
     var workoutSessions: [WorkoutSession]? = [WorkoutSession]()
-    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetPlan)
-    var targetedChanges: [PrescriptionChange]? = [PrescriptionChange]()
 
     var sortedExercises: [ExercisePrescription] {
         (exercises ?? []).sorted { $0.index < $1.index }
@@ -47,6 +45,12 @@ final class WorkoutPlan {
             lastUsed = Date()
         }
         exercises = session.sortedExercises.map { ExercisePrescription(workoutPlan: self, exercisePerformance: $0) }
+    }
+
+    func clearCompletedSessionPerformanceReferences() {
+        for session in workoutSessions ?? [] where session.statusValue == .done {
+            session.clearPrescriptionLinksForHistoricalUse()
+        }
     }
     
     func musclesTargeted() -> String {

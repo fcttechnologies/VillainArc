@@ -13,9 +13,8 @@ final class SetPerformance {
     var complete: Bool = false
     var completedAt: Date?
     var exercise: ExercisePerformance?
-    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.performances)
+    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.activePerformance)
     var prescription: SetPrescription?
-    var sourceChanges: [PrescriptionChange]? = [PrescriptionChange]()
 
     var visibleRPE: Int? {
         guard type != .warmup, rpe > 0 else { return nil }

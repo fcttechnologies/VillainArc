@@ -26,13 +26,14 @@
   - Builds the shared `ModelContainer` (app-group store when available)
 - `WorkoutSession` / `ExercisePerformance` / `SetPerformance`
   - Runtime logging models for active/completed workouts
+  - Plan-started `ExercisePerformance` rows also preserve immutable original target snapshots for future suggestion history
   - Tie UI logging flows to suggestion generation/outcome evaluation inputs
 - `WorkoutPlan` / `ExercisePrescription` / `SetPrescription`
   - Persistent training prescription models used by plan editing and plan-based session starts
   - Target surface for suggestion application and user edit overrides
-- `PrescriptionChange` + suggestion grouping helpers
+- `PrescriptionChange` + suggestion grouping helpers + suggestion snapshot structs
   - Persist suggestion lifecycle (`pending/accepted/rejected/deferred` + outcome)
-  - Link source evidence to target plan/set modifications
+  - Snapshot immutable target/performance context separately from live plan/set relationships
 - `WorkoutSplit` / `WorkoutSplitDay`
   - Weekly/rotation scheduling models used by split management and "today's workout" routing
 - `WorkoutSplitEntity` + nested transfer payloads
@@ -213,7 +214,7 @@
 ### `VillainArc/Data/Services/AppRouter.swift`
 - Does: App-wide navigation/workflow coordinator. Owns `path`, `activeWorkoutSession`, `activeWorkoutPlan`, the original plan backing an edit-copy flow, transient intent-driven sheet flags, auto-resumes unfinished workout/plan work on launch, blocks parallel flows while one is active, and routes Spotlight results for workouts, plans, and exercises.
 - Called by: `VillainArcApp`, `ContentView`, many feature views under `VillainArc/Views/*`, and app intents under `VillainArc/Intents/*`.
-- Calls: SwiftData context (`insert/fetch/delete` via `SharedModelContainer.container.mainContext`), `saveContext`, `Haptics.selection`, `pendingSuggestions`, `RestTimerState.shared.stop`, `WorkoutActivityManager.end`, `SpotlightIndexer.workoutSessionIdentifierPrefix`, `SpotlightIndexer.workoutPlanIdentifierPrefix`, `SpotlightIndexer.exerciseIdentifierPrefix`.
+- Calls: SwiftData context (`insert/fetch/delete` via `SharedModelContainer.container.mainContext`), `saveContext`, `Haptics.selection`, `pendingSuggestionEvents`, `RestTimerState.shared.stop`, `WorkoutActivityManager.end`, `SpotlightIndexer.workoutSessionIdentifierPrefix`, `SpotlightIndexer.workoutPlanIdentifierPrefix`, `SpotlightIndexer.exerciseIdentifierPrefix`.
 
 ### `VillainArc/Data/SharedModelContainer.swift`
 - Does: Defines app-wide SwiftData schema, creates the shared `ModelContainer`, and exposes app-group `UserDefaults` for non-model shared state like catalog versioning and rest-timer restoration.
@@ -221,7 +222,7 @@
 - Calls: `Schema(...)` with model types, `FileManager.default.containerURL(...)`, `ModelConfiguration(...)`, `ModelContainer(for:configurations:)`.
 
 ### `VillainArc/Data/Services/DataManager.swift`
-- Does: Catalog bootstrap/dedupe (`DataManager`) plus shared persistence helpers (`saveContext`, `scheduleSave`); catalog metadata sync also propagates canonical exercise name/muscles/equipment updates into matching plan/session exercise snapshots.
+- Does: Catalog bootstrap/dedupe (`DataManager`) plus shared persistence helpers (`saveContext`, `scheduleSave`); catalog metadata sync also propagates canonical exercise name/muscles/equipment updates into matching plan/session exercise copies.
 - Called by: `ContentView` (`seedExercisesIfNeeded`), `AddExerciseView` (`dedupeCatalogExercisesIfNeeded`), exercise intents, and many views/models/router through `saveContext`/`scheduleSave`.
 - Calls: app-group `UserDefaults` (`exerciseCatalogVersion`), `ExerciseCatalog` (`catalogVersion`, `all`, `byID`), `ModelContext.fetch/insert/delete/save`.
 
@@ -241,14 +242,14 @@
 - Calls: `UserProfile.single`, `AppSettings.single`, `ModelContext.fetch/insert/save`.
 
 ### `VillainArc/Data/Services/Suggestions/SuggestionGenerator.swift`
-- Does: Generates `PrescriptionChange` suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference.
+- Does: Generates grouped plan suggestions for completed plan-based sessions by combining deterministic rules with optional AI style inference. Builds `SuggestionEventDraft`s, deduplicates them by event scope, then persists `SuggestionEvent`s with child `PrescriptionChange` deltas.
 - Called by: `WorkoutSummaryView` (`generateSuggestionsIfNeeded`).
 - Calls: `MetricsCalculator.detectTrainingStyle`, `AITrainingStyleClassifier.infer`, `RuleEngine.evaluate`, `SuggestionDeduplicator.process`, `ExercisePerformance.matching(...)`, `ModelContext.fetch`.
 
 ### `VillainArc/Data/Services/Suggestions/RuleEngine.swift`
-- Does: Main deterministic suggestion engine (progression/safety/rest/set-type rules) that emits candidate `PrescriptionChange` values.
+- Does: Main deterministic suggestion engine. Emits grouped `SuggestionEventDraft` candidates instead of flat child changes, using set-level progression/safety/rest/set-type rules first and conservative exercise-level rep-range rules only when no set-level suggestion survives for that exercise. Historical set-aware rules now read prior target context from `ExercisePerformance.originalTargetSnapshot` instead of relying on historical `SetPrescription` links.
 - Called by: `SuggestionGenerator`.
-- Calls: `MetricsCalculator.selectProgressionSets`, `MetricsCalculator.weightIncrement`, `MetricsCalculator.roundToNearestPlate`, model helpers (`ExercisePerformance.effectiveRestSeconds`, `repRange`, set/prescription linkage), `PrescriptionChange` initializers.
+- Calls: `MetricsCalculator.selectProgressionSets`, `MetricsCalculator.weightIncrement`, `MetricsCalculator.roundToNearestPlate`, model helpers (`ExercisePerformance.effectiveRestSeconds`, `repRange`, set/prescription linkage), draft builders for grouped event output.
 
 ### `VillainArc/Data/Services/Suggestions/MetricsCalculator.swift`
 - Does: Shared training metrics helper for style detection, progression set selection, increment sizing, and plate rounding.
@@ -256,9 +257,9 @@
 - Calls: Internal heuristics only (`detectTrainingStyle`, `setsForStyle`, `weightIncrement`, `roundToNearestPlate`).
 
 ### `VillainArc/Data/Services/Suggestions/SuggestionDeduplicator.swift`
-- Does: Conflict resolver for generated suggestions (strategy conflicts, policy conflicts, same-target property collisions).
+- Does: Conflict resolver for generated `SuggestionEventDraft`s. Keeps at most one event draft per exercise/set scope using change priority, grouped size, magnitude, and tie-breakers.
 - Called by: `SuggestionGenerator`.
-- Calls: Internal grouping/priority helpers (`resolveLogicalConflicts`, `resolveConflicts`).
+- Calls: Internal scope-grouping and priority helpers.
 
 ### `VillainArc/Data/Services/Suggestions/OutcomeResolver.swift`
 - Does: Resolves outcomes for prior suggestions in the next workout by combining deterministic rule results with optional AI inference at group level.
@@ -411,14 +412,14 @@
 - Calls: `TimerDurationPicker`, `AppSettings.single` query, `RestTimerState.shared` (`start/pause/resume/stop/adjust`), `RestTimeHistory.record`, `WorkoutSession.activeExerciseAndSet`, `WorkoutActivityManager.update`, `IntentDonations` rest-timer actions, `saveContext`, `secondsToTime`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/WorkoutSummaryView.swift`
-- Does: Post-workout summary and finalization screen (stats, weight/volume/rep PR detection, effort rating, notes/title edits, suggestion review, save as plan). Freeform summaries also prewarm a generic Foundation Models session in case the workout is saved as a plan.
+- Does: Post-workout summary and finalization screen (stats, weight/volume/rep PR detection, effort rating, notes/title edits, suggestion review, save as plan). Freeform summaries also prewarm a generic Foundation Models session in case the workout is saved as a plan, and completed sessions clear their live prescription links here once summary-side outcome/suggestion work is finished.
 - Called by: `WorkoutSessionContainer`, SwiftUI previews.
 - Calls: `formattedDateRange`, `TextEntryEditorView`, `FoundationModelPrewarmer`, `SuggestionReviewView`, `OutcomeResolver.resolveOutcomes`, `SuggestionGenerator.generateSuggestions`, `groupSuggestions`, `acceptGroup/rejectGroup/deferGroup`, `ExerciseHistoryUpdater.batchFetchHistories/updateHistoriesForCompletedWorkout`, `SpotlightIndexer.index(workoutPlan:)`, `IntentDonations.donateSaveWorkoutAsPlan`, `saveContext`, `scheduleSave`, `Haptics.selection`.
 
 ### `VillainArc/Views/Suggestions/DeferredSuggestionsView.swift`
 - Does: Review step shown before workout logging for pending/deferred plan suggestions, with skip-all/accept-all actions.
 - Called by: `WorkoutSessionContainer` (when session status is `.pending`), SwiftUI preview.
-- Calls: `pendingSuggestions`, `groupSuggestions`, `SuggestionReviewView`, `acceptGroup`, `rejectGroup`, `applyChange`, `saveContext`, `Haptics.selection`.
+- Calls: `pendingSuggestionEvents`, `groupSuggestions`, `SuggestionReviewView`, `acceptGroup`, `rejectGroup`, `applyChange`, `saveContext`, `Haptics.selection`.
 
 ### `VillainArc/Views/Suggestions/SuggestionReviewView.swift`
 - Does: Shared grouped suggestion UI used in both deferred and summary review flows, including action rows and decision-state rendering.
@@ -481,7 +482,7 @@
 - Calls: `WorkoutPlan.musclesTargeted()`, `@Query` over `WorkoutSplit`, `AppRouter.editWorkoutPlan`, `AppRouter.startWorkoutSession(from:)`, `IntentDonations.donateStartWorkoutWithPlan`, `IntentDonations.donateStartTodaysWorkout` (when the started plan matches active split's current day), `IntentDonations.donateToggleWorkoutPlanFavorite`, `IntentDonations.donateDeleteWorkoutPlan`, `userActivity` with `WorkoutPlanEntity`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutPlan`, `ModelContext.delete`, `saveContext`.
 
 ### `VillainArc/Views/WorkoutPlan/WorkoutPlanView.swift`
-- Does: Full-screen editor for creating or editing a workout plan, including exercise list editing, set editing, optional target RPE per non-warmup set, notes/title editing, and save/cancel logic.
+- Does: Full-screen editor for creating or editing a workout plan, including exercise list editing, set editing, optional target RPE per non-warmup set, notes/title editing, and save/cancel logic. Finalizing a session-derived plan also clears live prescription links from its completed source workout so those links remain active-only.
 - Called by: `ContentView` (`activeWorkoutPlan` fullScreenCover), `WorkoutPlanDetailView` (editing copy flow), `WorkoutPlanPickerView` (new plan flow), `WorkoutDetailView` (save workout as plan), SwiftUI preview.
 - Calls: `AddExerciseView`, `TextEntryEditorView`, `WorkoutPlan.finishEditing`, `WorkoutPlan.cancelEditing`, `WorkoutPlan.deletePlanEntirely`, `WorkoutPlan.deleteExercise`, `WorkoutPlan.moveExercise`, `ExerciseHistoryView` (via `WorkoutPlanExerciseView` sheet), `RPEBadge`, `RPEValue`, `SpotlightIndexer.index(workoutPlan:)`, `saveContext`, `scheduleSave`, `dismissKeyboard`, nested editors (`RepRangeEditorView`, `RestTimeEditorView`), `WorkoutPlanEntity` via `userActivity`.
 
@@ -625,10 +626,11 @@
 - `ExercisePrescription` owns many `SetPrescription` rows.
 - `WorkoutSplit` owns many `WorkoutSplitDay` rows.
 - `WorkoutSplitDay` may reference one assigned `WorkoutPlan` (or be a rest day).
-- `PrescriptionChange` links source evidence (`sessionFrom`/`sourceExercisePerformance`/`sourceSetPerformance`) to targets (`targetPlan`/`targetExercisePrescription`/`targetSetPrescription`) and lifecycle state (`decision`, `outcome`).
+- `SuggestionEvent` owns grouped suggestion context (trigger/evaluation snapshots, group decision/outcome) and many `PrescriptionChange` child deltas.
+- `PrescriptionChange` stores the scalar delta and optional live target references (`targetExercisePrescription` / `targetSetPrescription`) under a parent `SuggestionEvent`.
 - `ExerciseHistory` stores aggregate stats plus completed-workout recency per `catalogID` and owns `ProgressionPoint` rows.
 - `RestTimeHistory` stores reusable recent rest durations.
-- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `AppSettings`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`, `UserProfile`.
+- `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `AppSettings`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `SuggestionEvent`, `PrescriptionChange`, `UserProfile`.
 
 ### Data Model File Index
 
@@ -673,7 +675,7 @@
 - Calls: `ExercisePerformance` constructors, session fetch descriptors, finish/prune helpers.
 
 ### `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
-- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
+- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Plan-started exercises also store an immutable `originalTargetSnapshot` capturing the rep range and target sets they began with. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
 - Called by: `WorkoutView`, `ExerciseView`, suggestion engines, history updater, `SampleData`.
 - Calls: `SetPerformance` constructors, rest helper (`effectiveRestSeconds`), descriptors (`lastCompleted`, `matching`, `withCatalogID`, `completedAll`).
 
@@ -703,27 +705,42 @@
 - Calls: `ExercisePrescription` constructors, exercise reorder/reindex helpers, fetch descriptors (`all`, `recent`, `incomplete`).
 
 ### `VillainArc/Data/Models/Plans/WorkoutPlan+Editing.swift`
-- Does: Editing-copy workflow (`createEditingCopy`, `finishEditing`, `cancelEditing`) + change detection/synchronization to original plan.
+- Does: Editing-copy workflow (`createEditingCopy`, `finishEditing`, `cancelEditing`) + change detection/synchronization to original plan, including clearing historical performance links before an original prescription is repurposed to a different exercise and deleting unresolved suggestion events/changes when manual edits make them stale.
 - Called by: `WorkoutPlanDetailView` (editing copy setup), `WorkoutPlanView` (save/cancel/delete flows).
-- Calls: `PrescriptionChange` creation, pending-change override marking, set/exercise sync helpers, `SpotlightIndexer.deleteWorkoutPlan` (delete-entirely path).
+- Calls: unresolved change/event cleanup helpers, set/exercise sync helpers, `SpotlightIndexer.deleteWorkoutPlan` (delete-entirely path).
 
 ### `VillainArc/Data/Models/Plans/ExercisePrescription.swift`
-- Does: Per-exercise plan prescription (rep/rest policy, notes, set targets, pending changes). Initializes with at least one set for new plan exercises and can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync.
+- Does: Per-exercise plan prescription (rep/rest policy, notes, set targets, pending changes). Holds only the currently active workout performance through `activePerformance`, initializes with at least one set for new plan exercises, can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync, and clears linked active performance references when a prescription is repurposed to a different exercise.
 - Called by: `WorkoutPlan`, `WorkoutSession` plan-start path, plan editors, suggestion engines.
 - Calls: `SetPrescription` constructors/copy helpers, policy copy constructors, `matching(catalogID:)`.
 
 ### `VillainArc/Data/Models/Plans/SetPrescription.swift`
-- Does: Per-set target prescription (type/target weight/reps/rest/target RPE) with change links. Target RPE is hidden for warmup sets and is copied from logged RPE when creating a plan from a finished workout.
+- Does: Per-set target prescription (type/target weight/reps/rest/target RPE) with change links. Holds only the currently active set performance through `activePerformance`, hides target RPE for warmup sets, and is copied from logged RPE when creating a plan from a finished workout.
 - Called by: `ExercisePrescription`, plan editors, suggestion engines, performance conversion.
 - Calls: Constructors from `SetPerformance`, copy helpers, `RestTimeEditableSet` adapter.
 
 ### `VillainArc/Data/Models/Plans/PrescriptionChange.swift`
-- Does: Persisted suggestion/change lifecycle record from generation through decision and post-workout outcome.
-- Called by: `RuleEngine`, `WorkoutPlan+Editing`, `SuggestionReviewView`, `DeferredSuggestionsView`, `WorkoutSummaryView`, `OutcomeResolver`.
+- Does: Persisted scalar suggestion delta record. Each change stores one proposed mutation, optional live target references, durable `targetSetIndex` for set-scoped grouping, and an optional parent `SuggestionEvent`.
+- Called by: `SuggestionGenerator`, `WorkoutPlan+Editing`, `SuggestionReviewView`, `DeferredSuggestionsView`, `WorkoutSummaryView`, `OutcomeResolver`.
 - Calls: None (data model only).
 
+### `VillainArc/Data/Models/Suggestions/SuggestionEvent.swift`
+- Does: Persisted grouped suggestion/intervention record. Owns grouped trigger/evaluation snapshots, group decision/outcome state, and cascades to child `PrescriptionChange` rows.
+- Called by: `SuggestionGenerator`, `WorkoutSummaryView`, `DeferredSuggestionsView`, `SuggestionGrouping`, schema registration, preview/sample suggestion data.
+- Calls: Child-change sorting helper used for group display ordering.
+
+### `VillainArc/Data/Models/Suggestions/SuggestionEventDraft.swift`
+- Does: Internal event-first generation draft types. Defines `SuggestionEventDraft`, `PrescriptionChangeDraft`, and the draft deduplication scope key used before persisted `SuggestionEvent` creation.
+- Called by: `RuleEngine`, `SuggestionDeduplicator`, `SuggestionGenerator`, `SuggestionSystemTests`.
+- Calls: None (value-type draft model only).
+
+### `VillainArc/Data/Models/Suggestions/SuggestionSnapshots.swift`
+- Does: Immutable Codable snapshot structs shared by the Suggestion System V2 direction. Defines exercise-level rep range snapshots, set target snapshots, set performance snapshots, grouped target snapshots, and grouped exercise performance snapshots.
+- Called by: `ExercisePerformance` (stored `originalTargetSnapshot`), `SuggestionEvent`, `SuggestionGenerator`, `OutcomeResolver`, and AI snapshot adapters.
+- Calls: Lightweight initializers from `RepRangePolicy`, `ExercisePrescription`, `SetPrescription`, `ExercisePerformance`, and `SetPerformance`.
+
 ### `VillainArc/Data/Models/Plans/SuggestionGrouping.swift`
-- Does: Grouping/query helpers for rendering and resolving plan suggestions (`groupSuggestions`, `pendingSuggestions`). `pendingSuggestions` walks the plan's direct change relationships (`targetedChanges`, exercise changes, set changes) instead of issuing a separate SwiftData fetch.
+- Does: Grouping/query helpers for rendering grouped plan suggestions. `pendingSuggestionEvents` walks exercise/set change relationships, lifts them to their parent `SuggestionEvent`, deduplicates them, and `groupSuggestions` sections those events by exercise for UI display.
 - Called by: `DeferredSuggestionsView`, `WorkoutSummaryView`.
 - Calls: In-memory grouping/sorting helpers plus plan relationship traversal.
 
@@ -1168,7 +1185,7 @@
 - Calls: `TestDataFactory`, `MetricsCalculator`, `RuleEngine`, `OutcomeRuleEngine`, `SuggestionDeduplicator`.
 
 ### `VillainArcTests/ExerciseReplacementTests.swift`
-- Does: Exercise swap mechanics tests covering set value copying, prescription clearing, and historical lookup after replacement.
+- Does: Exercise swap mechanics tests covering set value copying, prescription clearing, historical lookup after replacement, and unlinking historical performance references when plan prescriptions are replaced.
 - Called by: `VillainArcTests` target test runner.
 - Calls: `WorkoutSession(from: plan)`, `ExercisePerformance.replaceWith`, `ExercisePerformance.lastCompleted`.
 

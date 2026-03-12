@@ -14,30 +14,42 @@ struct PlanEditingTestData {
 
 @MainActor
 func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestData {
+    func makeEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], setIndex: Int? = nil, reasoning: String? = nil) -> SuggestionEvent {
+        let event = SuggestionEvent(catalogID: exercise.catalogID, sessionFrom: nil, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
+        context.insert(event)
+        for change in changes {
+            change.event = event
+            change.targetSetIndex = setIndex
+        }
+        return event
+    }
+    
     let plan = WorkoutPlan(title: "Chest Growth")
     context.insert(plan)
-
+    
     // Exercise 1: Bench Press with two sets and set-level suggestions.
     let benchExercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
     let bench = ExercisePrescription(exercise: benchExercise, workoutPlan: plan)
     bench.sets = []
-
+    
     let benchSet1 = SetPrescription(exercisePrescription: bench, setType: .warmup, targetWeight: 135, targetReps: 10, targetRest: 60)
     let benchSet2 = SetPrescription(exercisePrescription: bench, setType: .working, targetWeight: 155, targetReps: 8, targetRest: 90)
-
+    
     bench.sets = [benchSet1, benchSet2]
     bench.reindexSets()
     plan.exercises?.append(bench)
-
-    let change1 = PrescriptionChange(source: .rules, catalogID: bench.catalogID, targetExercisePrescription: bench, targetSetPrescription: benchSet1, targetPlan: plan, changeType: .increaseWeight, previousValue: 135, newValue: 145)
+    
+    let change1 = PrescriptionChange(targetExercisePrescription: bench, targetSetPrescription: benchSet1, changeType: .increaseWeight, previousValue: 135, newValue: 145)
     context.insert(change1)
-
-    let change2 = PrescriptionChange(source: .rules, catalogID: bench.catalogID, targetExercisePrescription: bench, targetSetPrescription: benchSet1, targetPlan: plan, changeType: .decreaseReps, previousValue: 10, newValue: 8)
+    
+    let change2 = PrescriptionChange(targetExercisePrescription: bench, targetSetPrescription: benchSet1, changeType: .decreaseReps, previousValue: 10, newValue: 8)
     context.insert(change2)
-
-    let change3 = PrescriptionChange(source: .rules, catalogID: bench.catalogID, targetExercisePrescription: bench, targetSetPrescription: benchSet2, targetPlan: plan, changeType: .increaseWeight, previousValue: 155, newValue: 160)
+    
+    let change3 = PrescriptionChange(targetExercisePrescription: bench, targetSetPrescription: benchSet2, changeType: .increaseWeight, previousValue: 155, newValue: 160)
     context.insert(change3)
-
+    _ = makeEvent(for: bench, changes: [change1, change2], setIndex: benchSet1.index)
+    _ = makeEvent(for: bench, changes: [change3], setIndex: benchSet2.index)
+    
     // Exercise 2: Incline DB with rep range suggestions.
     let inclineExercise = Exercise(from: ExerciseCatalog.byID["dumbbell_incline_bench_press"]!)
     let incline = ExercisePrescription(exercise: inclineExercise, workoutPlan: plan)
@@ -46,16 +58,17 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
         repRange.targetReps = 8
     }
     plan.exercises?.append(incline)
-
-    let change4 = PrescriptionChange(source: .rules, catalogID: incline.catalogID, targetExercisePrescription: incline, targetPlan: plan, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
+    
+    let change4 = PrescriptionChange(targetExercisePrescription: incline, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
     context.insert(change4)
-
-    let change5 = PrescriptionChange(source: .rules, catalogID: incline.catalogID, targetExercisePrescription: incline, targetPlan: plan, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
+    
+    let change5 = PrescriptionChange(targetExercisePrescription: incline, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
     context.insert(change5)
-
-    let change6 = PrescriptionChange(source: .rules, catalogID: incline.catalogID, targetExercisePrescription: incline, targetPlan: plan, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
+    
+    let change6 = PrescriptionChange(targetExercisePrescription: incline, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
     context.insert(change6)
-
+    _ = makeEvent(for: incline, changes: [change4, change5, change6])
+    
     // Exercise 3: Flys with rest time suggestion.
     let flysExercise = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
     let flys = ExercisePrescription(exercise: flysExercise, workoutPlan: plan)
@@ -63,14 +76,15 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
         firstSet.targetRest = 60
     }
     plan.exercises?.append(flys)
-
+    
     let flysSet = flys.sortedSets.first!
-    let change7 = PrescriptionChange(source: .rules, catalogID: flys.catalogID, targetExercisePrescription: flys, targetSetPrescription: flysSet, targetPlan: plan, changeType: .increaseRest, previousValue: 60, newValue: 90)
+    let change7 = PrescriptionChange(targetExercisePrescription: flys, targetSetPrescription: flysSet, changeType: .increaseRest, previousValue: 60, newValue: 90)
     context.insert(change7)
-
+    _ = makeEvent(for: flys, changes: [change7], setIndex: flysSet.index, reasoning: "Recovery needs increased")
+    
     for (index, exercise) in (plan.exercises ?? []).enumerated() {
         exercise.index = index
     }
-
+    
     return PlanEditingTestData(plan: plan, bench: bench, benchSet1: benchSet1, benchSet2: benchSet2, incline: incline, flys: flys, changes: [change1, change2, change3, change4, change5, change6, change7])
 }

@@ -3,7 +3,7 @@ import SwiftData
 
 @MainActor
 struct SuggestionGenerator {
-    static func generateSuggestions(for session: WorkoutSession, context: ModelContext) async -> [PrescriptionChange] {
+    static func generateSuggestions(for session: WorkoutSession, context: ModelContext) async -> [SuggestionEvent] {
         guard let plan = session.workoutPlan else { return [] }
 
         // Step 1: Gather data for AI inference (Main Actor)
@@ -43,7 +43,8 @@ struct SuggestionGenerator {
         }
 
         // Step 3: Evaluate Rules (Main Actor)
-        var allSuggestions: [PrescriptionChange] = []
+        var allSuggestions: [SuggestionEventDraft] = []
+        var resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle] = [:]
 
         for exercisePerf in session.sortedExercises {
             guard let prescription = exercisePerf.prescription else { continue }
@@ -59,13 +60,16 @@ struct SuggestionGenerator {
                 resolvedTrainingStyle = aiStyle
             }
 
+            resolvedTrainingStyleByPrescriptionID[prescription.id] = resolvedTrainingStyle
+
             let suggestionContext = ExerciseSuggestionContext(session: session, performance: exercisePerf, prescription: prescription, history: performanceHistory, plan: plan, resolvedTrainingStyle: resolvedTrainingStyle)
 
             let candidateSuggestions = RuleEngine.evaluate(context: suggestionContext)
             allSuggestions.append(contentsOf: candidateSuggestions)
         }
 
-        return SuggestionDeduplicator.process(suggestions: allSuggestions)
+        let deduplicated = SuggestionDeduplicator.process(suggestions: allSuggestions)
+        return buildSuggestionEvents(from: deduplicated, session: session, resolvedTrainingStyleByPrescriptionID: resolvedTrainingStyleByPrescriptionID)
     }
     
     private struct AIRequest: Sendable {
@@ -79,5 +83,38 @@ struct SuggestionGenerator {
             descriptor.fetchLimit = limit
         }
         return (try? context.fetch(descriptor)) ?? []
+    }
+
+    private static func buildSuggestionEvents(from drafts: [SuggestionEventDraft], session: WorkoutSession, resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle]) -> [SuggestionEvent] {
+        let performanceByPrescriptionID = Dictionary(uniqueKeysWithValues: session.sortedExercises.compactMap { performance in
+            performance.prescription.map { ($0.id, performance) }
+        })
+
+        return drafts.compactMap { draft in
+            let exercisePrescription = draft.targetExercisePrescription
+            guard let exercisePerformance = performanceByPrescriptionID[exercisePrescription.id] else { return nil }
+
+            let triggerTargetSnapshot = exercisePerformance.originalTargetSnapshot ?? ExerciseTargetSnapshot(prescription: exercisePrescription)
+            let triggerPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerformance)
+            let changes = draft.changes.map { change in
+                PrescriptionChange(
+                    targetExercisePrescription: draft.targetExercisePrescription,
+                    targetSetPrescription: draft.targetSetPrescription,
+                    targetSetIndex: draft.targetSetIndex,
+                    changeType: change.changeType,
+                    previousValue: change.previousValue,
+                    newValue: change.newValue
+                )
+            }
+
+            let event = SuggestionEvent(source: draft.source, catalogID: exercisePrescription.catalogID, sessionFrom: session, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, changeReasoning: draft.changeReasoning, changes: changes)
+            return event
+        }
+        .sorted { lhs, rhs in
+            if lhs.createdAt != rhs.createdAt {
+                return lhs.createdAt > rhs.createdAt
+            }
+            return lhs.catalogID < rhs.catalogID
+        }
     }
 }

@@ -15,11 +15,11 @@ final class ExercisePerformance {
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePerformance)
     var repRange: RepRangePolicy? = RepRangePolicy()
+    var originalTargetSnapshot: ExerciseTargetSnapshot?
     var workoutSession: WorkoutSession?
     var activeInSession: WorkoutSession?
-    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.performances)
+    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.activePerformance)
     var prescription: ExercisePrescription?
-    var sourceChanges: [PrescriptionChange]? = [PrescriptionChange]()
     @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise)
     var sets: [SetPerformance]? = [SetPerformance]()
     
@@ -62,6 +62,7 @@ final class ExercisePerformance {
     }
     
     // Adding exercise from plan
+    @MainActor
     init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
         index = exercisePrescription.index
         date = workoutSession.startedAt
@@ -71,6 +72,7 @@ final class ExercisePerformance {
         musclesTargeted = exercisePrescription.musclesTargeted
         equipmentType = exercisePrescription.equipmentType
         repRange = RepRangePolicy(copying: exercisePrescription.repRange)
+        originalTargetSnapshot = ExerciseTargetSnapshot(prescription: exercisePrescription)
         self.workoutSession = workoutSession
         prescription = exercisePrescription
         sets = exercisePrescription.sortedSets.map { SetPerformance(exercise: self, setPrescription: $0) }
@@ -100,16 +102,19 @@ final class ExercisePerformance {
 
     func replaceWith(_ exercise: Exercise, keepSets: Bool) {
         guard catalogID != exercise.catalogID else { return }
+        prescription?.activePerformance = nil
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
         exercise.updateLastAddedAt()
         prescription = nil
+        originalTargetSnapshot = nil
 
         // This exercise is no longer tied to the original plan prescription.
         // Clear any per-set prescription links so stale targets don't show.
         for set in sets ?? [] {
+            set.prescription?.activePerformance = nil
             set.prescription = nil
         }
 
@@ -163,6 +168,15 @@ final class ExercisePerformance {
     private func reindexSetsByCurrentOrder() {
         for (index, set) in sortedSets.enumerated() {
             set.index = index
+        }
+    }
+
+    func clearPrescriptionLinksForHistoricalUse() {
+        prescription?.activePerformance = nil
+        prescription = nil
+        for set in sortedSets {
+            set.prescription?.activePerformance = nil
+            set.prescription = nil
         }
     }
 }
