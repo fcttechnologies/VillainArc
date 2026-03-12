@@ -37,6 +37,8 @@ struct AIExercisePerformanceSnapshot {
 struct AISetPerformanceSnapshot {
     @Guide(description: "0-based set index.")
     let index: Int
+    @Guide(description: "Original target-slot index this performed set was linked to when the snapshot was captured, if any.")
+    let linkedTargetSetIndex: Int?
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
     @Guide(description: "Weight used.")
@@ -48,6 +50,7 @@ struct AISetPerformanceSnapshot {
 
     init(set: SetPerformance) {
         index = set.index
+        linkedTargetSetIndex = set.linkedTargetSetIndex ?? set.prescription?.index
         setType = AIExerciseSetType(from: set.type)
         weight = set.weight
         reps = set.reps
@@ -56,6 +59,7 @@ struct AISetPerformanceSnapshot {
 
     init(snapshot: SetPerformanceSnapshot) {
         index = snapshot.index
+        linkedTargetSetIndex = snapshot.linkedTargetSetIndex
         setType = AIExerciseSetType(from: snapshot.type)
         weight = snapshot.weight
         reps = snapshot.reps

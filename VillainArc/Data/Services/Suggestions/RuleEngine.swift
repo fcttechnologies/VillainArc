@@ -1028,7 +1028,10 @@ struct RuleEngine {
             return TargetSetContext(snapshot: SetTargetSnapshot(prescription: prescription))
         }
 
-        guard let snapshot = performance.originalTargetSnapshot?.sets.first(where: { $0.index == set.index }) else {
+        guard let targetIndex = set.linkedTargetSetIndex else {
+            return nil
+        }
+        guard let snapshot = performance.originalTargetSnapshot?.sets.first(where: { $0.index == targetIndex }) else {
             return nil
         }
 
@@ -1046,14 +1049,9 @@ struct RuleEngine {
 
         if performance.id == context.performance.id {
             return candidateSets.first(where: { $0.prescription?.id == setPrescription.id })
-                ?? candidateSets.first(where: { $0.index == setPrescription.index })
         }
 
-        guard let snapshot = performance.originalTargetSnapshot?.sets.first(where: { $0.index == setPrescription.index }) else {
-            return nil
-        }
-
-        return candidateSets.first(where: { $0.index == snapshot.index })
+        return candidateSets.first(where: { $0.linkedTargetSetIndex == setPrescription.index })
     }
 
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {

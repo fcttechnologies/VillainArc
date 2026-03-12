@@ -80,7 +80,7 @@ There are two paths.
 3. Checks `pendingSuggestionEvents(for: plan, in: context)` — if any pending/deferred grouped suggestions exist, sets status to `.pending` instead of `.active`
 4. Inserts, saves, and presents
 
-When performance rows are created from prescriptions, each `ExercisePerformance` gets its sets pre-populated from the plan's `SetPrescription` rows. Those live prescription back-references are still used during the active workout, and plan-started exercises also store immutable `originalTargetSnapshot` values so later historical suggestion logic does not depend on those links remaining forever.
+When performance rows are created from prescriptions, each `ExercisePerformance` gets its sets pre-populated from the plan's `SetPrescription` rows. Those live prescription back-references are still used during the active workout, and plan-started exercises also store immutable `originalTargetSnapshot` values while each linked `SetPerformance` freezes its `linkedTargetSetIndex`, so later historical suggestion logic does not depend on those links remaining forever.
 
 During a plan-based workout, if the user deletes a prescribed session set and later adds a set back, `ExercisePerformance.addSet()` only restores a prescription link when the deleted prescription was a **tail** slot — i.e., no remaining set is linked to a prescription with a higher index. This handles the common "delete last set, change my mind, add it back" case. If the deleted prescription would create a hole in the middle (e.g., deleting set 1 of 3 while sets 2 and 3 still carry their links), adding a set creates a new unlinked set at the end instead, since the user likely wants an extra set rather than the one they removed.
 

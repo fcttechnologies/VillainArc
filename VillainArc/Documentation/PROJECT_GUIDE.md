@@ -31,7 +31,7 @@ Four sections: **Splits** (today's schedule), **Recent Workout** (last completed
 
 **Freeform Workout:** Start empty workout > add exercises > log sets (reps/weight) > mark sets complete > finish > review summary > done.
 
-**Plan-Based Workout:** Open plan > "Start Workout" > review pending suggestions (accept/reject/defer) > log sets with target references > finish > system generates new suggestions > review > done.
+**Plan-Based Workout:** Open plan > "Start Workout" > review pending/deferred suggestions (accept/reject, or skip/accept all) > log sets with target references > finish > system generates new suggestions > review > done.
 
 **Creating a Plan:** "Create Plan" > add exercises from catalog > set rep ranges, rest times, target weight/reps per set > save. Plans can also be created from completed workouts ("Save as Plan").
 
@@ -52,7 +52,7 @@ Four sections: **Splits** (today's schedule), **Recent Workout** (last completed
 - Built-in exercise catalog metadata is canonical for `name`, `musclesTargeted`, and `equipmentType`. When catalog seeding updates those fields, matching `ExercisePrescription` and `ExercisePerformance` copies are refreshed by `catalogID`.
 - Finishing a workout resolves incomplete sets before summary: logged unfinished sets can be marked complete, unfinished sets can be deleted, and any exercise left with zero sets is pruned. If every exercise is pruned, the workout itself is deleted instead of reaching summary.
 - `Exercise.lastAddedAt` tracks catalog-selection recency for add/replace flows. `ExerciseHistory.lastCompletedAt` tracks actual completed-workout recency for user-facing "used" ordering. When the last completed performance is removed, the history record is deleted and the exercise is removed from Spotlight.
-- Plan-started `ExercisePerformance` rows store an immutable `originalTargetSnapshot` describing the exercise-level rep range and target sets they began with. Freeform exercises and detached replacements keep this snapshot `nil`.
+- Plan-started `ExercisePerformance` rows store an immutable `originalTargetSnapshot` describing the exercise-level rep range and target sets they began with. Freeform exercises keep this snapshot `nil` unless the finished session is converted into a plan from `WorkoutSummaryView`, where the app freezes the performed values as the initial target baseline for later suggestion history. Detached replacements keep this snapshot `nil`.
 
 ---
 
@@ -100,6 +100,7 @@ WorkoutSession (actual workout)
   ├─ has one → PreWorkoutContext
   ├─ links back to → WorkoutPlan (if plan-based)
   ├─ stores on plan-started exercises → original target snapshots
+  ├─ stores on plan-linked sets → frozen linked target-set indices for later history matching
   └─ can be linked from → SuggestionEvent (as the trigger session)
 
 WorkoutSplit (schedule)
@@ -307,13 +308,13 @@ Use this to find where logic lives for any feature.
 
 The suggestion system is a closed-loop learning pipeline:
 
-**Generation + Outcome Resolution** (during summary screen): When `WorkoutSummaryView` appears, it runs in sequence: (1) `OutcomeResolver` evaluates older suggestions against the just-finished workout, then (2) `SuggestionGenerator` detects training style (deterministic via `MetricsCalculator`, with `AITrainingStyleClassifier` as fallback for `.unknown`) → `RuleEngine` evaluates its set-level rule buckets (progression, safety/cleanup, plateau, set-type hygiene), then only if no set-level suggestion survives for that exercise evaluates conservative exercise-level rep-range rules, using `ExercisePerformance.originalTargetSnapshot` for historical target-aware comparisons and emitting grouped `SuggestionEventDraft`s → `SuggestionDeduplicator` resolves conflicts at the event scope → `SuggestionGenerator` persists final `SuggestionEvent`s with child `PrescriptionChange` deltas.
+**Generation + Outcome Resolution** (during summary screen): When `WorkoutSummaryView` appears, it runs in sequence: (1) `OutcomeResolver` evaluates older suggestions against the just-finished workout, then (2) `SuggestionGenerator` detects training style (deterministic via `MetricsCalculator`, with `AITrainingStyleClassifier` as fallback for `.unknown`) → `RuleEngine` evaluates its set-level rule buckets (progression, safety/cleanup, plateau, set-type hygiene), using `ExercisePerformance.originalTargetSnapshot` plus each historical `SetPerformance.linkedTargetSetIndex` for set-aware history matching, then only if no set-level suggestion survives for that exercise evaluates conservative exercise-level rep-range rules and emits grouped `SuggestionEventDraft`s → `SuggestionDeduplicator` resolves conflicts at the event scope → `SuggestionGenerator` persists final `SuggestionEvent`s with child `PrescriptionChange` deltas.
 
 **Review — two stages:**
 - *Immediately after workout* (`WorkoutSummaryView`): user can accept, reject, or defer newly generated suggestions. Any still-pending at dismissal are auto-converted to `deferred`.
 - *Before next plan workout* (`DeferredSuggestionsView`): deferred/pending suggestions from prior sessions are reviewed before the workout begins. Accepting mutates the live plan immediately.
 
-**Outcome Evaluation**: `OutcomeRuleEngine` scores deterministically for both accepted *and* rejected suggestions (rejected are evaluated to detect whether the user effectively followed them anyway). `AIOutcomeInferrer` overrides only when rule confidence < 0.7 AND AI confidence >= 0.75.
+**Outcome Evaluation**: `OutcomeRuleEngine` scores deterministically for both accepted *and* rejected suggestions (rejected are evaluated to detect whether the user effectively followed them anyway). `AIOutcomeInferrer` sees grouped change scope plus `targetSetIndex` for set-level events and overrides only when rule confidence < 0.7 AND AI confidence >= 0.75.
 
 **Key rules:** Progression — immediate (1 session: large overshoot, hit top of range/target) or confirmed (2 sessions near top). Safety — weight decreases when struggling or when the user consistently trains lighter. Plateau — rest increases when stagnating or short-rest causes rep drops. Set-type hygiene — fixes misclassified warmup/working/drop sets.
 
@@ -333,9 +334,9 @@ The suggestion system is a closed-loop learning pipeline:
 
 6. **Exercise history is rebuilt from scratch** after each workout. `ExerciseHistory.recalculate()` recomputes all stats from all performances. Safe but not incremental.
 
-7. **Suggestions now separate history from live plan links.** Plan-started workouts preserve `ExercisePerformance.originalTargetSnapshot`, while live `prescription` links are treated as active-workout-only helpers and cleared once completed-session suggestion work is done.
+7. **Suggestions now separate history from live plan links.** Plan-started workouts, plus freeform workouts converted into plans from `WorkoutSummaryView`, preserve `ExercisePerformance.originalTargetSnapshot`, and each plan-linked `SetPerformance` freezes its own `linkedTargetSetIndex` before historical links are cleared. Frozen performance snapshots also carry that same optional index for durable stored-event and AI context. Live `prescription` links are treated as active-workout-only helpers and cleared once completed-session suggestion work is done.
 
-Suggestion generation is safer now, but not fully structure-aware yet. Some set-level historical comparisons still align old target context by snapshot set index. This handles different set counts safely by skipping unmatched historical slots, but the longer-term goal is to compare actual value deltas and overall exercise structure more directly rather than relying mainly on indexed set-to-set alignment.
+Suggestion generation is safer now, but not fully structure-aware yet. Current-session set targeting still requires live prescription links, while historical set-level comparisons now match performed sets back to their frozen target slots through `linkedTargetSetIndex` plus `originalTargetSnapshot`. That closes the most brittle reindexing gap after deleted/moved historical sets, though the longer-term goal is still to compare actual value deltas and overall exercise structure more directly rather than relying mainly on target-slot alignment.
 
 8. **Intent donations** happen at contextually relevant moments (e.g., donate "Start Rest Timer" when a set is completed).
 

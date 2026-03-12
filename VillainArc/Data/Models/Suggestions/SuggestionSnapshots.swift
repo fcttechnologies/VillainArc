@@ -102,10 +102,20 @@ struct SetTargetSnapshot: Codable, Sendable {
         targetRest = prescription.targetRest
         targetRPE = prescription.targetRPE
     }
+
+    init(performance: SetPerformance) {
+        index = performance.index
+        type = performance.type
+        targetWeight = performance.weight
+        targetReps = performance.reps
+        targetRest = performance.restSeconds
+        targetRPE = performance.type == .warmup ? 0 : performance.rpe
+    }
 }
 
 struct SetPerformanceSnapshot: Codable, Sendable {
     var index: Int
+    var linkedTargetSetIndex: Int?
     var type: ExerciseSetType
     var weight: Double
     var reps: Int
@@ -114,6 +124,7 @@ struct SetPerformanceSnapshot: Codable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case index
+        case linkedTargetSetIndex
         case type
         case weight
         case reps
@@ -121,8 +132,9 @@ struct SetPerformanceSnapshot: Codable, Sendable {
         case rpe
     }
 
-    nonisolated init(index: Int, type: ExerciseSetType, weight: Double, reps: Int, restSeconds: Int, rpe: Int) {
+    nonisolated init(index: Int, linkedTargetSetIndex: Int? = nil, type: ExerciseSetType, weight: Double, reps: Int, restSeconds: Int, rpe: Int) {
         self.index = index
+        self.linkedTargetSetIndex = linkedTargetSetIndex
         self.type = type
         self.weight = weight
         self.reps = reps
@@ -133,6 +145,7 @@ struct SetPerformanceSnapshot: Codable, Sendable {
     nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         index = try container.decode(Int.self, forKey: .index)
+        linkedTargetSetIndex = try container.decodeIfPresent(Int.self, forKey: .linkedTargetSetIndex)
         type = try container.decode(ExerciseSetType.self, forKey: .type)
         weight = try container.decode(Double.self, forKey: .weight)
         reps = try container.decode(Int.self, forKey: .reps)
@@ -143,6 +156,7 @@ struct SetPerformanceSnapshot: Codable, Sendable {
     nonisolated func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(index, forKey: .index)
+        try container.encodeIfPresent(linkedTargetSetIndex, forKey: .linkedTargetSetIndex)
         try container.encode(type, forKey: .type)
         try container.encode(weight, forKey: .weight)
         try container.encode(reps, forKey: .reps)
@@ -152,6 +166,7 @@ struct SetPerformanceSnapshot: Codable, Sendable {
 
     init(set: SetPerformance) {
         index = set.index
+        linkedTargetSetIndex = set.linkedTargetSetIndex ?? set.prescription?.index
         type = set.type
         weight = set.weight
         reps = set.reps
@@ -193,6 +208,11 @@ struct ExerciseTargetSnapshot: Codable, Sendable {
     init(prescription: ExercisePrescription) {
         repRange = RepRangeSnapshot(policy: prescription.repRange)
         sets = prescription.sortedSets.map { SetTargetSnapshot(prescription: $0) }
+    }
+
+    init(performance: ExercisePerformance) {
+        repRange = RepRangeSnapshot(policy: performance.repRange)
+        sets = performance.sortedSets.map { SetTargetSnapshot(performance: $0) }
     }
 }
 

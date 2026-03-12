@@ -50,6 +50,7 @@ final class SetPrescription {
         targetRPE = setPerformance.type == .warmup ? 0 : setPerformance.rpe
         exercise = exercisePrescription
         setPerformance.prescription = self
+        setPerformance.linkedTargetSetIndex = index
     }
     
     // Creates a copy with the same ID for edit tracking

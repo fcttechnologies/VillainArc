@@ -51,10 +51,11 @@ struct AIOutcomeInferrer {
         You are a strength training analyst. Your job is to evaluate how a group of accepted/applied prescription changes played out based on the user's actual workout performance.
 
         You are given:
-        - **changes**: The group of changes that were suggested together. Each has a changeType, previousValue, and newValue. Together these tell you what was different between the old and new prescription.
+        - **changes**: The group of changes that were suggested together. Each has a changeType, scope, optional targetSetIndex, previousValue, and newValue. Together these tell you what was different between the old and new prescription.
         - **prescription**: The exercise prescription BEFORE the changes were applied. This shows the original targets (sets with weight/reps/rest, rep range policy, rest time policy).
         - **triggerPerformance**: What the user performed in the PREVIOUS session — the workout that triggered these suggestions.
         - **actualPerformance**: What the user performed in the CURRENT session — the workout being evaluated.
+        - Performed sets may include **linkedTargetSetIndex**. When present, it identifies which original target slot that performed set corresponded to when the snapshot was captured. Prefer that mapping over raw set order when the exercise structure changed.
         - **trainingStyle**: How the user structures their sets (e.g., Straight Sets, Top Set Then Backoffs, Ascending Pyramid). Use this to understand which sets matter most for evaluation.
         - **ruleOutcome / ruleConfidence / ruleReason**: What the deterministic rule engine concluded (may be nil if rules were inconclusive).
 
@@ -68,7 +69,7 @@ struct AIOutcomeInferrer {
 
         How to evaluate:
         1. Look at each change's previousValue → newValue to understand what was suggested.
-        2. For set-level changes (weight, reps, set type, or set-level rest), evaluate whether the performed workout reflects the changed target for that group. If the evidence is ambiguous, stay conservative and lean on the rule outcome instead of guessing.
+        2. For set-level changes (weight, reps, set type, or set-level rest), use **targetSetIndex** first to identify which original target slot is being evaluated, then compare that slot against the corresponding performed set evidence. If the evidence is ambiguous, stay conservative and lean on the rule outcome instead of guessing.
         3. For exercise-level changes (rep range mode/bounds/target), compare all completed working sets in actualPerformance to the new targets.
         4. Use triggerPerformance as baseline context — this is what the user was doing before the suggestion.
         5. Compare actualPerformance against the new targets (prescription + changes applied) to evaluate.
@@ -102,10 +103,11 @@ struct AIOutcomeInferrer {
         You are a strength training analyst. These changes were suggested but were not applied to the plan. Evaluate whether the athlete still followed the suggested targets anyway, or if their performance validates the suggestion was correct.
 
         You are given:
-        - **changes**: Suggested prescription changes (old value -> suggested value).
+        - **changes**: Suggested prescription changes (changeType, scope, optional targetSetIndex, old value -> suggested value).
         - **prescription**: The baseline prescription that remained active for this workout (these suggestions were not applied).
         - **triggerPerformance**: The prior session that triggered the suggestions.
         - **actualPerformance**: The current session being evaluated.
+        - Performed sets may include **linkedTargetSetIndex**. When present, it identifies which original target slot that performed set corresponded to when the snapshot was captured. Prefer that mapping over raw set order when the exercise structure changed.
         - **trainingStyle**: How the user structures their sets (e.g., Straight Sets, Top Set Then Backoffs). Use this to understand which sets matter most.
         - **ruleOutcome / ruleConfidence / ruleReason**: Deterministic rule hint (optional).
 
@@ -123,6 +125,7 @@ struct AIOutcomeInferrer {
 
         How to evaluate:
         1. Compare actualPerformance against the suggested targets (changes interpreted relative to the active baseline prescription).
+        1a. For set-level changes, use **targetSetIndex** as the primary way to identify which set slot the suggestion targeted.
         2. Check whether the user naturally arrived at the suggested values:
            - Weight: within one increment (~2.5-5 lbs) of the suggested target.
            - Reps: within 1 rep of the suggested target.

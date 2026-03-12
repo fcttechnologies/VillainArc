@@ -460,6 +460,9 @@ struct WorkoutSummaryView: View {
         Haptics.selection()
         let plan = WorkoutPlan(from: workout, completed: true)
         context.insert(plan)
+        for exercise in workout.sortedExercises {
+            exercise.originalTargetSnapshot = ExerciseTargetSnapshot(performance: exercise)
+        }
         workout.workoutPlan = plan
         didSaveWorkoutAsPlan = true
         saveContext(context: context)

@@ -218,6 +218,41 @@ struct SuggestionSystemTests {
         #expect(event.sortedChanges.allSatisfy { $0.targetSetIndex == 0 })
         #expect(event.changeReasoning?.contains("significantly overshot the target") == true)
     }
+
+    @Test @MainActor
+    func generateSuggestions_triggerSnapshotPreservesLinkedTargetSetIndices() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+        workout.statusValue = .summary
+
+        guard let performance = workout.sortedExercises.first else {
+            Issue.record("Expected current plan-backed performance.")
+            return
+        }
+
+        for set in performance.sortedSets {
+            set.weight = 100
+            set.reps = 10
+            set.restSeconds = 90
+            set.complete = true
+        }
+
+        let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
+
+        guard let event = generated.first else {
+            Issue.record("Expected generated suggestion event.")
+            return
+        }
+
+        let snapshotSets = event.triggerPerformanceSnapshot.sets.sorted { $0.index < $1.index }
+        #expect(snapshotSets.count == 2)
+        #expect(snapshotSets[0].linkedTargetSetIndex == 0)
+        #expect(snapshotSets[1].linkedTargetSetIndex == 1)
+    }
     
     @Test @MainActor
     func generateSuggestions_ignoresIncompleteHistoryForConfirmedProgression() async throws {
@@ -271,9 +306,8 @@ struct SuggestionSystemTests {
         previousSet.complete = true
         
         #expect(previousPerformance.originalTargetSnapshot != nil)
-        
-        previousPerformance.prescription = nil
-        previousSet.prescription = nil
+        previousSession.clearPrescriptionLinksForHistoricalUse()
+        #expect(previousSet.linkedTargetSetIndex == 0)
         
         let currentSession = WorkoutSession(from: plan)
         context.insert(currentSession)
@@ -300,6 +334,64 @@ struct SuggestionSystemTests {
             #expect(repChange.change.newValue == 9)
             #expect(repChange.draft.targetSetIndex == 0)
         }
+    }
+
+    @Test @MainActor
+    func historicalLinkedTargetSetIndexMatchesReindexedHistoricalSetToOriginalTargetSlot() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
+
+        let previousSession = WorkoutSession(from: plan)
+        context.insert(previousSession)
+        previousSession.statusValue = .done
+
+        guard let previousPerformance = previousSession.sortedExercises.first,
+              previousPerformance.sortedSets.count == 2 else {
+            Issue.record("Expected prior plan-based performance with two sets.")
+            return
+        }
+
+        let previousFirstSet = previousPerformance.sortedSets[0]
+        let previousSecondSet = previousPerformance.sortedSets[1]
+        previousFirstSet.weight = 100
+        previousFirstSet.reps = 6
+        previousFirstSet.restSeconds = 90
+        previousFirstSet.complete = true
+        previousSecondSet.weight = 100
+        previousSecondSet.reps = 8
+        previousSecondSet.restSeconds = 90
+        previousSecondSet.complete = true
+
+        previousPerformance.deleteSet(previousFirstSet)
+        #expect(previousPerformance.sortedSets.count == 1)
+        #expect(previousPerformance.sortedSets[0].index == 0)
+        #expect(previousPerformance.sortedSets[0].prescription?.index == 1)
+
+        previousSession.clearPrescriptionLinksForHistoricalUse()
+        #expect(previousPerformance.sortedSets[0].linkedTargetSetIndex == 1)
+
+        let currentSession = WorkoutSession(from: plan)
+        context.insert(currentSession)
+
+        guard let currentPerformance = currentSession.sortedExercises.first else {
+            Issue.record("Expected current plan-based performance.")
+            return
+        }
+
+        for set in currentPerformance.sortedSets {
+            set.weight = 100
+            set.reps = 8
+            set.restSeconds = 90
+            set.complete = true
+        }
+
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let repChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseReps }
+
+        #expect(repChanges.contains { $0.draft.targetSetIndex == 1 })
+        #expect(repChanges.contains { $0.draft.targetSetIndex == 0 } == false)
     }
     
     @Test @MainActor
@@ -534,5 +626,44 @@ struct SuggestionSystemTests {
         #expect(sections.count == 1)
         #expect(sections.first?.groups.count == 1)
         #expect(sections.first?.groups.first?.changes.count == 2)
+    }
+
+    @Test @MainActor
+    func outcomeRuleEngine_requiresLiveSetPrescriptionLinkForSetLevelChanges() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 95, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+
+        guard let performance = workout.sortedExercises.first,
+              let set = performance.sortedSets.first,
+              let setPrescription = prescription.sortedSets.first else {
+            Issue.record("Expected plan-backed performance with one linked set.")
+            return
+        }
+
+        set.weight = 100
+        set.reps = 8
+        set.restSeconds = 90
+        set.complete = true
+
+        let change = PrescriptionChange(
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            targetSetIndex: setPrescription.index,
+            changeType: .increaseWeight,
+            previousValue: 95,
+            newValue: 100
+        )
+
+        let matched = OutcomeRuleEngine.evaluate(change: change, exercisePerf: performance, trainingStyle: .straightSets)
+        #expect(matched?.outcome == .good)
+
+        set.prescription = nil
+
+        let withoutLiveLink = OutcomeRuleEngine.evaluate(change: change, exercisePerf: performance, trainingStyle: .straightSets)
+        #expect(withoutLiveLink == nil)
     }
 }

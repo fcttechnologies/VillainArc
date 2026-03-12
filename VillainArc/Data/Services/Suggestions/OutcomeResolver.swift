@@ -145,6 +145,8 @@ struct OutcomeResolver {
         let aiChanges: [AIOutcomeChange] = group.changes.map { change in
             AIOutcomeChange(
                 changeType: change.changeType,
+                scope: (change.targetSetIndex != nil || change.targetSetPrescription != nil) ? .set : .exercise,
+                targetSetIndex: change.targetSetIndex ?? change.targetSetPrescription?.index,
                 previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
                 newValue: formattedChangeValue(change.newValue, changeType: change.changeType)
             )
@@ -168,13 +170,10 @@ struct OutcomeResolver {
     }
 
     private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
-        guard let targetSetIndex = group.changes.compactMap(\.targetSetIndex).first else { return true }
+        guard group.changes.contains(where: { $0.targetSetIndex != nil || $0.targetSetPrescription != nil }) else { return true }
+        guard let setPrescriptionID = group.setPrescription?.id else { return false }
         return group.exercisePerf.sortedSets.contains { set in
-            guard set.complete else { return false }
-            if let setPrescriptionID = group.setPrescription?.id {
-                return set.prescription?.id == setPrescriptionID
-            }
-            return set.index == targetSetIndex
+            set.complete && set.prescription?.id == setPrescriptionID
         }
     }
 

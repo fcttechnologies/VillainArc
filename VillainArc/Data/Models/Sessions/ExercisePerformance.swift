@@ -116,6 +116,7 @@ final class ExercisePerformance {
         for set in sets ?? [] {
             set.prescription?.activePerformance = nil
             set.prescription = nil
+            set.linkedTargetSetIndex = nil
         }
 
         if !keepSets {
@@ -175,6 +176,7 @@ final class ExercisePerformance {
         prescription?.activePerformance = nil
         prescription = nil
         for set in sortedSets {
+            set.linkedTargetSetIndex = set.linkedTargetSetIndex ?? set.prescription?.index
             set.prescription?.activePerformance = nil
             set.prescription = nil
         }

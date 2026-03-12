@@ -46,6 +46,8 @@ The system currently has five main layers:
 - the grouped `outcome`
 - child `PrescriptionChange` rows
 
+Within those frozen performance snapshots, each performed set can also store an optional `linkedTargetSetIndex` describing which original target slot it was still attached to when the snapshot was captured. That preserves set-to-target mapping inside stored suggestion evidence even if the workout's visible set order later changes.
+
 Each `PrescriptionChange` stores:
 
 - which live prescription it targets (`targetExercisePrescription`, `targetSetPrescription`)
@@ -115,6 +117,8 @@ That button does this:
 - each `SetPerformance` is linked to its new `SetPrescription`
 
 Because of that link-up, the just-finished workout can immediately be used as the trigger session for suggestion generation, even though it started freeform.
+
+During this summary-only conversion path, each finished `ExercisePerformance` also gets an `originalTargetSnapshot` built directly from its own rep range and performed sets. That makes the new plan's first completed session behave like other target-aware history later on, without changing the separate `WorkoutDetailView` "save as plan" flow where the user may still want to edit prescriptions manually before treating them as the frozen baseline.
 
 In practice:
 
@@ -233,6 +237,8 @@ That means rules always evaluate the current workout plus prior completed workou
 For historical target context, the rule engine now prefers `ExercisePerformance.originalTargetSnapshot` instead of historical `SetPrescription` links.
 
 That means prior completed workouts can still contribute valid target-aware history even after their live prescription links have been cleared.
+
+For set-level historical rules, the matching key is now each completed `SetPerformance`'s frozen `linkedTargetSetIndex`. The rule engine uses that to map a performed set back onto the correct entry inside the parent `ExercisePerformance.originalTargetSnapshot`, so deleted/reindexed historical sets can still contribute evidence for the right prescription slot after live links are gone.
 
 ## Training Style Resolution
 
@@ -467,7 +473,7 @@ Outcome resolution is already event-grouped.
 `OutcomeResolver.buildGroups(...)` takes each eligible `SuggestionEvent`, matches it to the current workout’s `ExercisePerformance` by live prescription identity, and then derives set scope from the event’s child `PrescriptionChange`s.
 
 That grouping is important because AI receives event context, not just isolated scalar changes.
-For set-level evaluation, matching first tries the workout set's attached `SetPrescription` and then falls back to the stored `targetSetIndex` when needed.
+For set-level evaluation in the current workout, matching now requires the workout set's live `SetPrescription` link. The stored `targetSetIndex` is still kept as frozen context, but it is no longer used to guess a current-session match after the set structure changes.
 
 ### Deterministic Outcome Rules
 
@@ -500,6 +506,7 @@ Used when a group contains accepted changes.
 The AI sees:
 
 - the change group
+- each change's scope plus `targetSetIndex` when the suggestion is set-scoped
 - the prescription snapshot from before the applied change
 - the trigger workout that caused the suggestion
 - the current workout being evaluated
@@ -631,9 +638,9 @@ If the exercise was skipped, there is no evaluation for that change yet.
 
 Set-level outcome evaluation only runs when the current workout still contains a completed `SetPerformance` linked to the targeted `SetPrescription`.
 
-If the user deletes that set from the session, the resolver does not fall back to shifted session indices. The targeted change is left `pending` until a later workout still contains and performs that prescription-linked set.
+If the user deletes that set from the session, the resolver does not fall back to shifted session indices or other index-based guesses. The targeted change is left `pending` until a later workout still contains and performs that prescription-linked set.
 
-Suggestion generation is slightly different. The current workout still uses live `SetPrescription` links, but historical matching now relies on each completed performance's immutable `originalTargetSnapshot` rather than historical prescription links. So a deleted current-session set still does not create a fresh set-level suggestion for that same prescription slot from that workout, while older completed sessions can continue to inform suggestion generation even after their live links are gone.
+Suggestion generation is slightly different. The current workout uses live `SetPrescription` links only, while historical matching relies on each completed performance's immutable `originalTargetSnapshot` plus the frozen `linkedTargetSetIndex` stored on each completed `SetPerformance`. So a deleted current-session set still does not create a fresh set-level suggestion for that same prescription slot from that workout, while older completed sessions can continue to inform suggestion generation even after their live links are gone.
 
 If the user re-adds a set, the app only restores a prescription link when the deleted prescription was a **tail** slot (no remaining set links to a higher-index prescription). This covers the "delete last set, change mind, add it back" case. If the gap is in the middle (e.g., set 1 deleted while sets 2–3 still have their links), adding a set creates a new unlinked set at the end — it does not restore the middle prescription. That restored tail set can again participate in set-level outcome resolution and future suggestion generation.
 

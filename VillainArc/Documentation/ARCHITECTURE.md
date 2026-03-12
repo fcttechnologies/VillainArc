@@ -247,7 +247,7 @@
 - Calls: `MetricsCalculator.detectTrainingStyle`, `AITrainingStyleClassifier.infer`, `RuleEngine.evaluate`, `SuggestionDeduplicator.process`, `ExercisePerformance.matching(...)`, `ModelContext.fetch`.
 
 ### `VillainArc/Data/Services/Suggestions/RuleEngine.swift`
-- Does: Main deterministic suggestion engine. Emits grouped `SuggestionEventDraft` candidates instead of flat child changes, using set-level progression/safety/rest/set-type rules first and conservative exercise-level rep-range rules only when no set-level suggestion survives for that exercise. Historical set-aware rules now read prior target context from `ExercisePerformance.originalTargetSnapshot` instead of relying on historical `SetPrescription` links.
+- Does: Main deterministic suggestion engine. Emits grouped `SuggestionEventDraft` candidates instead of flat child changes, using set-level progression/safety/rest/set-type rules first and conservative exercise-level rep-range rules only when no set-level suggestion survives for that exercise. Historical set-aware rules read prior target context from `ExercisePerformance.originalTargetSnapshot` and match completed sets back to target slots through frozen `SetPerformance.linkedTargetSetIndex` instead of relying on historical `SetPrescription` links.
 - Called by: `SuggestionGenerator`.
 - Calls: `MetricsCalculator.selectProgressionSets`, `MetricsCalculator.weightIncrement`, `MetricsCalculator.roundToNearestPlate`, model helpers (`ExercisePerformance.effectiveRestSeconds`, `repRange`, set/prescription linkage), draft builders for grouped event output.
 
@@ -267,7 +267,7 @@
 - Calls: `OutcomeRuleEngine.evaluate`, `AIOutcomeInferrer.inferApplied`, `AIOutcomeInferrer.inferRejected`, `MetricsCalculator.detectTrainingStyle`, change outcome mutation helpers, `ModelContext.save`.
 
 ### `VillainArc/Data/Services/Suggestions/OutcomeRuleEngine.swift`
-- Does: Deterministic per-change outcome evaluator (`good` / `tooAggressive` / `tooEasy` / `ignored`) using actual set performance.
+- Does: Deterministic per-change outcome evaluator (`good` / `tooAggressive` / `tooEasy` / `ignored`) using actual set performance. Set-scoped outcome matching now requires a live `SetPrescription` link in the current workout rather than falling back to current-session set index.
 - Called by: `OutcomeResolver`.
 - Calls: `MetricsCalculator.weightIncrement`, change-type-specific evaluation helpers.
 
@@ -675,12 +675,12 @@
 - Calls: `ExercisePerformance` constructors, session fetch descriptors, finish/prune helpers.
 
 ### `VillainArc/Data/Models/Sessions/ExercisePerformance.swift`
-- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Plan-started exercises also store an immutable `originalTargetSnapshot` capturing the rep range and target sets they began with. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
+- Does: Per-exercise workout log entry with set rows and optional back-reference to originating plan prescription. Plan-started exercises also store an immutable `originalTargetSnapshot` capturing the rep range and target sets they began with, and `WorkoutSummaryView` now backfills that snapshot for freeform sessions only when they are converted into plans from the summary flow. Initializes with at least one set, stamps new performances with the parent workout's `startedAt`, restores a tail `SetPrescription` link when re-adding a deleted set in a plan session (only when no remaining set links to a higher-index prescription), preserves each historical set's frozen `linkedTargetSetIndex` before live links are cleared, can refresh copied catalog metadata (`name`/`musclesTargeted`/`equipmentType`) during catalog sync, and exposes best-weight/best-rep/volume helpers used by history and PR surfaces.
 - Called by: `WorkoutView`, `ExerciseView`, suggestion engines, history updater, `SampleData`.
 - Calls: `SetPerformance` constructors, rest helper (`effectiveRestSeconds`), descriptors (`lastCompleted`, `matching`, `withCatalogID`, `completedAll`).
 
 ### `VillainArc/Data/Models/Sessions/SetPerformance.swift`
-- Does: Per-set logged data (type, weight, reps, rest, actual RPE, completion metadata). Does not inherit target RPE from plan prescriptions when plan-based workouts start.
+- Does: Per-set logged data (type, weight, reps, rest, actual RPE, completion metadata). Plan-linked sets also freeze an optional `linkedTargetSetIndex` so completed-session suggestion history can still map the performed set back to its original prescription slot after live links are removed. Does not inherit target RPE from plan prescriptions when plan-based workouts start.
 - Called by: `ExerciseSetRowView`, `ExerciseView`, suggestion engines/outcome rules, `SampleData`.
 - Calls: Computed helpers (`effectiveRestSeconds`, `estimated1RM`, `volume`).
 
@@ -735,7 +735,7 @@
 - Calls: None (value-type draft model only).
 
 ### `VillainArc/Data/Models/Suggestions/SuggestionSnapshots.swift`
-- Does: Immutable Codable snapshot structs shared by the Suggestion System V2 direction. Defines exercise-level rep range snapshots, set target snapshots, set performance snapshots, grouped target snapshots, and grouped exercise performance snapshots.
+- Does: Immutable Codable snapshot structs shared by the Suggestion System V2 direction. Defines exercise-level rep range snapshots, set target snapshots, set performance snapshots, grouped target snapshots, and grouped exercise performance snapshots. Performed-set snapshots also preserve an optional `linkedTargetSetIndex` so stored suggestion events and AI evaluation inputs retain captured set-to-target mapping even after workout structure changes.
 - Called by: `ExercisePerformance` (stored `originalTargetSnapshot`), `SuggestionEvent`, `SuggestionGenerator`, `OutcomeResolver`, and AI snapshot adapters.
 - Calls: Lightweight initializers from `RepRangePolicy`, `ExercisePrescription`, `SetPrescription`, `ExercisePerformance`, and `SetPerformance`.
 
@@ -760,7 +760,7 @@
 - Calls: Shared AI snapshots and `TrainingStyle`.
 
 ### `VillainArc/Data/Models/AIModels/AIOutcomeModels.swift`
-- Does: Foundation Models DTOs/enums for suggestion outcome evaluation prompts/results.
+- Does: Foundation Models DTOs/enums for suggestion outcome evaluation prompts/results. Set-scoped AI outcome changes also carry explicit scope and `targetSetIndex` so the model knows which target slot a grouped change refers to.
 - Called by: `AIOutcomeInferrer`, `OutcomeResolver`.
 - Calls: Mappers between app enums (`Outcome`) and AI enums plus shared exercise/performance/prescription snapshots.
 

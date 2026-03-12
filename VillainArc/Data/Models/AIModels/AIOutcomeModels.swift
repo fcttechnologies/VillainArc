@@ -2,6 +2,12 @@ import Foundation
 import FoundationModels
 
 @Generable
+enum AIChangeScope: String {
+    case exercise = "Exercise"
+    case set = "Set"
+}
+
+@Generable
 enum AIOutcome: String {
     case good = "Good"
     case tooAggressive = "Too Aggressive"
@@ -32,6 +38,10 @@ enum AIOutcome: String {
 struct AIOutcomeChange {
     @Guide(description: "Type of change that was suggested.")
     let changeType: ChangeType
+    @Guide(description: "Whether this change applies to the whole exercise prescription or one specific target set.")
+    let scope: AIChangeScope
+    @Guide(description: "0-based target set slot for set-level changes. Nil for exercise-level changes.")
+    let targetSetIndex: Int?
     @Guide(description: "Previous value before the change (e.g., \"135.0\" for weight, \"10\" for reps, \"90\" for rest seconds, \"Warm Up Set\" for set type, \"Range\" for rep range mode).")
     let previousValue: String?
     @Guide(description: "New value after the change (e.g., \"140.0\" for weight, \"12\" for reps, \"120\" for rest seconds, \"Regular Set\" for set type, \"Target\" for rep range mode).")

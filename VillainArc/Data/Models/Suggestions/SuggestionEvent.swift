@@ -43,22 +43,7 @@ final class SuggestionEvent {
 
     init() {}
 
-    convenience init(
-        source: SuggestionSource = .rules,
-        catalogID: String,
-        sessionFrom: WorkoutSession?,
-        decision: Decision = .pending,
-        outcome: Outcome = .pending,
-        triggerPerformanceSnapshot: ExercisePerformanceSnapshot,
-        triggerTargetSnapshot: ExerciseTargetSnapshot,
-        evaluatedPerformanceSnapshot: ExercisePerformanceSnapshot? = nil,
-        trainingStyle: TrainingStyle,
-        createdAt: Date = .now,
-        evaluatedAt: Date? = nil,
-        changeReasoning: String? = nil,
-        outcomeReason: String? = nil,
-        changes: [PrescriptionChange] = []
-    ) {
+    convenience init(source: SuggestionSource = .rules, catalogID: String, sessionFrom: WorkoutSession?, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, evaluatedPerformanceSnapshot: ExercisePerformanceSnapshot? = nil, trainingStyle: TrainingStyle, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = []) {
         self.init()
         self.source = source
         self.catalogID = catalogID

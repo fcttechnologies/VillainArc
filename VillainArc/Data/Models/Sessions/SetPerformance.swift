@@ -5,6 +5,7 @@ import SwiftData
 final class SetPerformance {
     var id: UUID = UUID()
     var index: Int = 0
+    var linkedTargetSetIndex: Int?
     var type: ExerciseSetType = ExerciseSetType.working
     var weight: Double = 0
     var reps: Int = 0
@@ -61,6 +62,7 @@ final class SetPerformance {
     // Adding set from plan
     init(exercise: ExercisePerformance, setPrescription: SetPrescription) {
         index = setPrescription.index
+        linkedTargetSetIndex = setPrescription.index
         type = setPrescription.type
         weight = setPrescription.targetWeight
         reps = setPrescription.targetReps

@@ -41,8 +41,7 @@ struct OutcomeRuleEngine {
             return matched
         }
 
-        guard let targetSetIndex = change.targetSetIndex else { return nil }
-        return completeSets.first(where: { $0.index == targetSetIndex })
+        return nil
     }
 
     // MARK: - Weight Change
