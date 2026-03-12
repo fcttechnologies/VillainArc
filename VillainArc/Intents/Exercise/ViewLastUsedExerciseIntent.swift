@@ -11,14 +11,11 @@ struct ViewLastUsedExerciseIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
-        let histories = (try? context.fetch(FetchDescriptor<ExerciseHistory>())) ?? []
-        let historyCatalogIDs = Set(histories.map(\.catalogID))
-        guard !historyCatalogIDs.isEmpty else {
+        guard let history = try context.fetch(ExerciseHistory.recentCompleted(limit: 1)).first else {
             throw ViewLastUsedExerciseError.noExerciseHistoryFound
         }
 
-        let exercises = try context.fetch(Exercise.all)
-        let storedExercise = exercises.first(where: { historyCatalogIDs.contains($0.catalogID) })
+        let storedExercise = try context.fetch(Exercise.withCatalogID(history.catalogID)).first
         guard let storedExercise else {
             throw ViewLastUsedExerciseError.noExerciseHistoryFound
         }

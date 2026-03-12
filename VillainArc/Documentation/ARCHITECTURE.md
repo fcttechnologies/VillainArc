@@ -84,7 +84,7 @@
   - Shows completed workouts list
   - Handles bulk/single delete with Spotlight cleanup + exercise history recompute
 - `ExercisesListView`
-  - Shows all exercises sorted by `lastUsed`
+  - Shows all exercises sorted by `ExerciseHistory.lastCompletedAt`
   - Navigates to `ExerciseDetailView` for the selected exercise
 - `ExerciseDetailView`
   - Read-only exercise analytics screen keyed by `catalogID`
@@ -331,9 +331,9 @@
 - Calls: Provided `action` closure.
 
 ### `VillainArc/Views/HomeSections/RecentExercisesSectionView.swift`
-- Does: Home "Exercises" section; shows the most recently used exercises using the shared summary cards enriched with cached history chips, and links to the full exercises list.
+- Does: Home "Exercises" section; shows the most recently completed exercises using the shared summary cards enriched with cached history chips, and links to the full exercises list.
 - Called by: `ContentView`, SwiftUI preview.
-- Calls: `@Query(Exercise.all)`, `@Query(ExerciseHistory)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .exercisesList)`, `IntentDonations.donateOpenExercises`, `ExerciseSummaryRow`, `SmallUnavailableView`.
+- Calls: `@Query(Exercise)`, `@Query(ExerciseHistory.recentCompleted)`, `HomeSectionHeaderButton`, `AppRouter.navigate(to: .exercisesList)`, `IntentDonations.donateOpenExercises`, `ExerciseSummaryRow`, `SmallUnavailableView`.
 
 ### `VillainArc/Views/Components/SmallUnavailableView.swift`
 - Does: Compact unavailable/empty-state presentational component.
@@ -361,9 +361,9 @@
 - Calls: `@Query(WorkoutSession.completedSession)`, `WorkoutRowView`, `Haptics.selection`, `SpotlightIndexer.deleteWorkoutSessions`, `ModelContext.delete`, `ExerciseHistoryUpdater.updateHistory`, `IntentDonations.donateDeleteWorkout`, `IntentDonations.donateDeleteAllWorkouts`.
 
 ### `VillainArc/Views/Exercise/ExercisesListView.swift`
-- Does: Searchable list of all exercises sorted by `lastUsed`, with favorites-only filtering, swipe actions to toggle favorites, and shared summary cards populated with cached exercise-history chips before navigating to exercise detail.
+- Does: Searchable list of all exercises sorted by completed-workout recency from `ExerciseHistory.lastCompletedAt`, with favorites-only filtering, swipe actions to toggle favorites, and shared summary cards populated with cached exercise-history chips before navigating to exercise detail.
 - Called by: `ContentView` navigation destination for `.exercisesList`, SwiftUI previews.
-- Calls: `@Query(Exercise.all)`, `@Query(ExerciseHistory)`, exercise search helpers (`normalizedTokens`, `exerciseSearchMatches`, fuzzy matching), `ExerciseSummaryRow`, `IntentDonations.donateToggleExerciseFavorite`, `Haptics.selection`, `saveContext`.
+- Calls: `@Query(Exercise)`, `@Query(ExerciseHistory.recentCompleted)`, exercise search helpers (`normalizedTokens`, `exerciseSearchMatches`, fuzzy matching), `ExerciseSummaryRow`, `IntentDonations.donateToggleExerciseFavorite`, `Haptics.selection`, `saveContext`.
 
 ### `VillainArc/Views/Exercise/ExerciseDetailView.swift`
 - Does: Read-only exercise detail/progress screen keyed by `catalogID` backed by `Exercise` + `ExerciseHistory`, with smart non-zero stat tiles, segmented progression metrics, charts gated until at least two points exist, and interactive chart selection that reveals a rule-mark callout for the chosen session.
@@ -426,9 +426,9 @@
 - Calls: action closures (`onAcceptGroup`, `onRejectGroup`, `onDeferGroup`), `Haptics.selection`; helper functions in file call `applyChange`, `saveContext`.
 
 ### `VillainArc/Views/Workout/AddExerciseView.swift`
-- Does: Shared add-exercise modal that selects exercises and appends them to a `WorkoutSession` or `WorkoutPlan`.
+- Does: Shared add-exercise modal that selects exercises and appends them to a `WorkoutSession` or `WorkoutPlan`, updating `Exercise.lastAddedAt` so future add/replace flows can surface recent picks.
 - Called by: `WorkoutView`, `WorkoutPlanView`, SwiftUI preview.
-- Calls: `FilteredExerciseListView`, `MuscleFilterSheetView`, `DataManager.dedupeCatalogExercisesIfNeeded`, `WorkoutSession.addExercise`, `WorkoutPlan.addExercise`, `Exercise.updateLastUsed`, `saveContext`, `IntentDonations.donateAddExercise/donateAddExercises`, `Haptics.selection`.
+- Calls: `FilteredExerciseListView`, `MuscleFilterSheetView`, `DataManager.dedupeCatalogExercisesIfNeeded`, `WorkoutSession.addExercise`, `WorkoutPlan.addExercise`, `Exercise.updateLastAddedAt`, `saveContext`, `IntentDonations.donateAddExercise/donateAddExercises`, `Haptics.selection`.
 
 ### `VillainArc/Views/Workout/FilteredExerciseListView.swift`
 - Does: Reusable exercise list for search/filter/sort/select with favorite toggling and optional single-selection mode.
@@ -626,16 +626,16 @@
 - `WorkoutSplit` owns many `WorkoutSplitDay` rows.
 - `WorkoutSplitDay` may reference one assigned `WorkoutPlan` (or be a rest day).
 - `PrescriptionChange` links source evidence (`sessionFrom`/`sourceExercisePerformance`/`sourceSetPerformance`) to targets (`targetPlan`/`targetExercisePrescription`/`targetSetPrescription`) and lifecycle state (`decision`, `outcome`).
-- `ExerciseHistory` stores aggregate stats per `catalogID` and owns `ProgressionPoint` rows.
+- `ExerciseHistory` stores aggregate stats plus completed-workout recency per `catalogID` and owns `ProgressionPoint` rows.
 - `RestTimeHistory` stores reusable recent rest durations.
 - `SharedModelContainer.schema` persists: `WorkoutSession`, `PreWorkoutContext`, `ExercisePerformance`, `SetPerformance`, `Exercise`, `AppSettings`, `ExerciseHistory`, `ProgressionPoint`, `RepRangePolicy`, `RestTimeHistory`, `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`, `WorkoutSplitDay`, `PrescriptionChange`, `UserProfile`.
 
 ### Data Model File Index
 
 ### `VillainArc/Data/Models/Exercise/Exercise.swift`
-- Does: Persisted exercise catalog row (name/muscles/equipment/favorite/last-used) plus normalized search metadata, shared exercise subtitle formatting, and system alternate names for Spotlight/App Intents.
+- Does: Persisted exercise catalog row (name/muscles/equipment/favorite/last-added) plus normalized search metadata, shared exercise subtitle formatting, and system alternate names for Spotlight/App Intents.
 - Called by: `DataManager` seeding/dedupe, exercise picker/add/replace flows, session/plan model constructors.
-- Calls: Search-token helpers (`exerciseSearchTokens`, `normalizedTokens`), fetch descriptors (`all`, `recentUsed`, `catalogExercises`).
+- Calls: Search-token helpers (`exerciseSearchTokens`, `normalizedTokens`), fetch descriptors (`all`, `recentlyAdded`, `catalogExercises`).
 
 ### `VillainArc/Data/Models/Exercise/ExerciseCatalog.swift`
 - Does: Static built-in exercise dataset (`all`) + lookup map (`byID`) + seed version (`catalogVersion`).
@@ -653,7 +653,7 @@
 - Calls: None (constants only).
 
 ### `VillainArc/Data/Models/Exercise/ExerciseHistory.swift`
-- Does: Derived per-exercise analytics cache (PRs, latest estimated 1RM, total sets/reps, cumulative volume, and progression points with reps).
+- Does: Derived per-exercise analytics cache (last completed timestamp, PRs, latest estimated 1RM, total sets/reps, cumulative volume, and progression points with reps).
 - Called by: `ExerciseHistoryUpdater`, `WorkoutSummaryView` (history/PR display), schema registration.
 - Calls: `ExercisePerformance` metric helpers, internal recalculation helpers, `forCatalogID` descriptor.
 
@@ -1036,7 +1036,7 @@
 ### `VillainArc/Intents/Exercise/ViewLastUsedExerciseIntent.swift`
 - Does: Opens the most recently used exercise that also has cached completed-history data after setup/bootstrap and no-active-flow checks.
 - Called by: Siri/Shortcuts/App Intent execution.
-- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `ExerciseHistory` fetch, `Exercise.all`, `AppRouter.popToRoot`, `AppRouter.navigate(.exerciseDetail)`, `OpenAppIntent`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `ExerciseHistory.recentCompleted`, `Exercise.withCatalogID`, `AppRouter.popToRoot`, `AppRouter.navigate(.exerciseDetail)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/Exercise/OpenExerciseIntent.swift`
 - Does: Opens the exercise detail/progress screen for a selected exercise after setup/bootstrap and no-active-flow checks.

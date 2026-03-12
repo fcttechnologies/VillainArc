@@ -21,9 +21,10 @@ import SwiftData
 /// One ExerciseHistory per unique catalogID.
 @Model
 final class ExerciseHistory {
-    #Index<ExerciseHistory>([\.catalogID])
+    #Index<ExerciseHistory>([\.catalogID], [\.lastCompletedAt])
 
     var catalogID: String = ""
+    var lastCompletedAt: Date? = nil
 
     // Session counts
     var totalSessions: Int = 0
@@ -69,17 +70,20 @@ final class ExerciseHistory {
             return
         }
 
-        totalSessions = performances.count
-        totalCompletedSets = performances.reduce(0) { $0 + $1.sortedSets.count }
-        totalCompletedReps = performances.reduce(0) { $0 + $1.totalCompletedReps }
-        cumulativeVolume = performances.reduce(0) { $0 + $1.totalVolume }
-        latestEstimated1RM = performances.first?.bestEstimated1RM ?? 0
+        let sortedPerformances = performances.sorted { $0.date > $1.date }
+
+        lastCompletedAt = sortedPerformances.first?.date
+        totalSessions = sortedPerformances.count
+        totalCompletedSets = sortedPerformances.reduce(0) { $0 + $1.sortedSets.count }
+        totalCompletedReps = sortedPerformances.reduce(0) { $0 + $1.totalCompletedReps }
+        cumulativeVolume = sortedPerformances.reduce(0) { $0 + $1.totalVolume }
+        latestEstimated1RM = sortedPerformances.first?.bestEstimated1RM ?? 0
         
         // Calculate PRs
-        calculatePRs(from: performances)
+        calculatePRs(from: sortedPerformances)
 
         // Store progression data for charting (last 10 sessions)
-        storeProgressionData(from: performances)
+        storeProgressionData(from: sortedPerformances)
     }
 
     /// Resets all statistics to default/zero values.
@@ -89,6 +93,7 @@ final class ExerciseHistory {
     /// - All completed workouts for this exercise have been deleted
     /// - No valid data exists to calculate from
     private func reset() {
+        lastCompletedAt = nil
         totalSessions = 0
         totalCompletedSets = 0
         totalCompletedReps = 0
@@ -159,5 +164,21 @@ final class ExerciseHistory {
             catalogIDs.contains(history.catalogID)
         }
         return FetchDescriptor(predicate: predicate)
+    }
+
+    static var recentsSort: [SortDescriptor<ExerciseHistory>] {
+        [
+            SortDescriptor(\ExerciseHistory.lastCompletedAt, order: .reverse),
+            SortDescriptor(\ExerciseHistory.catalogID)
+        ]
+    }
+
+    static func recentCompleted(limit: Int? = nil) -> FetchDescriptor<ExerciseHistory> {
+        let predicate = #Predicate<ExerciseHistory> { $0.lastCompletedAt != nil }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: recentsSort)
+        if let limit {
+            descriptor.fetchLimit = limit
+        }
+        return descriptor
     }
 }

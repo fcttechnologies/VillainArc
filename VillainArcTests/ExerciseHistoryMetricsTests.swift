@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 import Testing
 @testable import VillainArc
@@ -38,9 +39,20 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.bestWeight == 0)
         #expect(history.bestVolume == 0)
         #expect(history.bestReps == 24)
+        #expect(history.lastCompletedAt == performance.date)
         #expect(history.sortedProgressionPoints.count == 1)
         #expect(history.sortedProgressionPoints.first?.totalReps == 42)
         #expect(history.sortedProgressionPoints.first?.weight == 0)
         #expect(history.sortedProgressionPoints.first?.volume == 0)
+    }
+
+    @Test @MainActor
+    func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() {
+        let history = ExerciseHistory(catalogID: "push_ups")
+        history.lastCompletedAt = .now
+
+        history.recalculate(using: [])
+
+        #expect(history.lastCompletedAt == nil)
     }
 }

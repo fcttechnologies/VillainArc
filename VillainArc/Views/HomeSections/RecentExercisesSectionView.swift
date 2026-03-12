@@ -8,12 +8,13 @@ struct RecentExercisesSectionView: View {
     private let appRouter = AppRouter.shared
 
     init() {
-        _exercises = Query(Exercise.all)
-        _histories = Query()
+        _exercises = Query()
+        _histories = Query(ExerciseHistory.recentCompleted(limit: 3))
     }
 
     private var recentExercises: [Exercise] {
-        Array(exercises.filter { $0.lastUsed != nil }.prefix(3))
+        let exerciseByCatalogID = Dictionary(uniqueKeysWithValues: exercises.map { ($0.catalogID, $0) })
+        return histories.compactMap { exerciseByCatalogID[$0.catalogID] }
     }
 
     private var historyByCatalogID: [String: ExerciseHistory] {

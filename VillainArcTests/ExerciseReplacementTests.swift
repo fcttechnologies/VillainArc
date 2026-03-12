@@ -77,6 +77,7 @@ struct ExerciseReplacementTests {
         #expect(performance.catalogID == replacement.catalogID)
         #expect(performance.prescription == nil)
         #expect(performance.sortedSets.allSatisfy { $0.prescription == nil })
+        #expect(replacement.lastAddedAt != nil)
     }
 
     @Test @MainActor

@@ -51,7 +51,7 @@ Four sections: **Splits** (today's schedule), **Recent Workout** (last completed
 - `ExercisePerformance` and `ExercisePrescription` are initialized with at least one set. The editing UI only exposes set deletion when more than one set remains.
 - Built-in exercise catalog metadata is canonical for `name`, `musclesTargeted`, and `equipmentType`. When catalog seeding updates those fields, matching `ExercisePrescription` and `ExercisePerformance` snapshots are refreshed by `catalogID`.
 - Finishing a workout resolves incomplete sets before summary: logged unfinished sets can be marked complete, unfinished sets can be deleted, and any exercise left with zero sets is pruned. If every exercise is pruned, the workout itself is deleted instead of reaching summary.
-- `ExerciseHistory` is maintained only for exercises with completed performance history. When the last completed performance is removed, the history record is deleted and the exercise is removed from Spotlight.
+- `Exercise.lastAddedAt` tracks catalog-selection recency for add/replace flows. `ExerciseHistory.lastCompletedAt` tracks actual completed-workout recency for user-facing "used" ordering. When the last completed performance is removed, the history record is deleted and the exercise is removed from Spotlight.
 
 ---
 

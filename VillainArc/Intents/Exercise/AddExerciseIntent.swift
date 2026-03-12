@@ -23,7 +23,7 @@ struct AddExerciseIntent: AppIntent {
 
         if let workout = try? context.fetch(WorkoutSession.incomplete).first {
             workout.addExercise(resolvedExercise)
-            resolvedExercise.updateLastUsed()
+            resolvedExercise.updateLastAddedAt()
             saveContext(context: context)
             WorkoutActivityManager.update(for: workout)
             return .result(dialog: "Added \(resolvedExercise.name) to your workout.")
@@ -31,7 +31,7 @@ struct AddExerciseIntent: AppIntent {
 
         if let workoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
             workoutPlan.addExercise(resolvedExercise)
-            resolvedExercise.updateLastUsed()
+            resolvedExercise.updateLastAddedAt()
             saveContext(context: context)
             return .result(dialog: "Added \(resolvedExercise.name) to your template.")
         }

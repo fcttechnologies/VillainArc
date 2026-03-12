@@ -79,6 +79,7 @@ final class ExercisePrescription {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        exercise.updateLastAddedAt()
 
         if !keepSets {
             for set in sets ?? [] {

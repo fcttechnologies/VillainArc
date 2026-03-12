@@ -3,13 +3,13 @@ import SwiftData
 
 @Model
 final class Exercise {
-    #Index<Exercise>([\.catalogID], [\.lastUsed])
+    #Index<Exercise>([\.catalogID], [\.lastAddedAt])
 
     var catalogID: String = ""
     var name: String = ""
     var musclesTargeted: [Muscle] = []
     var aliases: [String] = []
-    var lastUsed: Date? = nil
+    var lastAddedAt: Date? = nil
     var favorite: Bool = false
     var isCustom: Bool = false
     var searchTokens: [String] = []
@@ -63,8 +63,8 @@ final class Exercise {
         rebuildSearchData()
     }
     
-    func updateLastUsed(to time: Date = .now) {
-        lastUsed = time
+    func updateLastAddedAt(to time: Date = .now) {
+        lastAddedAt = time
     }
     
     func toggleFavorite() {
@@ -123,7 +123,7 @@ nonisolated func normalizedSearchPhrase(_ value: String) -> String {
 extension Exercise {
     static var recentsSort: [SortDescriptor<Exercise>] {
         [
-            SortDescriptor(\Exercise.lastUsed, order: .reverse),
+            SortDescriptor(\Exercise.lastAddedAt, order: .reverse),
             SortDescriptor(\Exercise.name)
         ]
     }
@@ -137,8 +137,8 @@ extension Exercise {
         FetchDescriptor(sortBy: Exercise.recentsSort)
     }
 
-    static var recentUsed: FetchDescriptor<Exercise> {
-        let predicate = #Predicate<Exercise> { $0.lastUsed != nil }
+    static var recentlyAdded: FetchDescriptor<Exercise> {
+        let predicate = #Predicate<Exercise> { $0.lastAddedAt != nil }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: Exercise.recentsSort)
         descriptor.fetchLimit = 1
         return descriptor

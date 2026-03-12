@@ -52,7 +52,6 @@ struct ReplaceExerciseIntent: AppIntent {
         }
 
         activeExercise.replaceWith(resolvedExercise, keepSets: keepSets)
-        resolvedExercise.updateLastUsed()
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
 

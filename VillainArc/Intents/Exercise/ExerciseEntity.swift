@@ -51,10 +51,10 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
     @MainActor
     func suggestedEntities() async throws -> [ExerciseEntity] {
         let context = SharedModelContainer.container.mainContext
-        var descriptor = Exercise.all
-        descriptor.fetchLimit = 30
-        let exercises = (try? context.fetch(descriptor)) ?? []
-        return exercises.map(ExerciseEntity.init)
+        let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
+        let histories = (try? context.fetch(ExerciseHistory.recentCompleted())) ?? []
+        let sorted = sortExercisesByRecentCompletion(exercises, histories: histories)
+        return Array(sorted.prefix(30)).map(ExerciseEntity.init)
     }
 
     @MainActor
@@ -62,13 +62,16 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
         let queryTokens = normalizedTokens(for: trimmed)
         let context = SharedModelContainer.container.mainContext
-        let exercises = (try? context.fetch(FetchDescriptor<Exercise>(sortBy: Exercise.recentsSort))) ?? []
+        let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
+        let histories = (try? context.fetch(ExerciseHistory.recentCompleted())) ?? []
+        let historyByCatalogID = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
+        let sortedExercises = sortExercisesByRecentCompletion(exercises, histories: histories)
 
         if queryTokens.isEmpty {
-            return exercises.map(ExerciseEntity.init)
+            return sortedExercises.map(ExerciseEntity.init)
         }
 
-        let scored = exercises.compactMap { exercise in
+        let scored = sortedExercises.compactMap { exercise in
             let score = exerciseEntitySearchScore(for: exercise, query: trimmed, queryTokens: queryTokens)
             return score > 0 ? ExerciseSearchMatch(exercise: exercise, score: score) : nil
         }
@@ -77,7 +80,7 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
                 if left.score != right.score {
                     return left.score > right.score
                 }
-                return isOrderedBefore(left.exercise, right.exercise)
+                return isOrderedBefore(left.exercise, right.exercise, historyByCatalogID: historyByCatalogID)
             }
             return sorted.map { ExerciseEntity(exercise: $0.exercise) }
         }
@@ -89,7 +92,9 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         let fuzzyFiltered = exercises.filter { exercise in
             matchesSearchFuzzy(exercise, queryTokens: queryTokens)
         }
-        return fuzzyFiltered.map(ExerciseEntity.init)
+        return fuzzyFiltered
+            .sorted { isOrderedBefore($0, $1, historyByCatalogID: historyByCatalogID) }
+            .map(ExerciseEntity.init)
     }
     
     @MainActor
@@ -114,13 +119,18 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
         }
     }
 
-    private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
-        let leftDate = left.lastUsed ?? .distantPast
-        let rightDate = right.lastUsed ?? .distantPast
+    private func isOrderedBefore(_ left: Exercise, _ right: Exercise, historyByCatalogID: [String: ExerciseHistory]) -> Bool {
+        let leftDate = historyByCatalogID[left.catalogID]?.lastCompletedAt ?? .distantPast
+        let rightDate = historyByCatalogID[right.catalogID]?.lastCompletedAt ?? .distantPast
         if leftDate != rightDate {
             return leftDate > rightDate
         }
         return left.name.localizedStandardCompare(right.name) == .orderedAscending
+    }
+
+    private func sortExercisesByRecentCompletion(_ exercises: [Exercise], histories: [ExerciseHistory]) -> [Exercise] {
+        let historyByCatalogID = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
+        return exercises.sorted { isOrderedBefore($0, $1, historyByCatalogID: historyByCatalogID) }
     }
 }
 

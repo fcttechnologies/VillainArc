@@ -137,12 +137,12 @@ struct AddExerciseView: View {
         if let workout {
             for exercise in selectedExercises {
                 workout.addExercise(exercise)
-                exercise.updateLastUsed()
+                exercise.updateLastAddedAt()
             }
         } else if let plan {
             for exercise in selectedExercises {
                 plan.addExercise(exercise)
-                exercise.updateLastUsed()
+                exercise.updateLastAddedAt()
             }
         }
         let donatedExercises = selectedExercises

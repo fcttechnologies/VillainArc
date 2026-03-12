@@ -3,13 +3,14 @@ import SwiftData
 
 struct ExercisesListView: View {
     @Environment(\.modelContext) private var context
-    @Query(Exercise.all) private var exercises: [Exercise]
+    @Query private var exercises: [Exercise]
     @Query private var histories: [ExerciseHistory]
     @State private var searchText = ""
     @State private var favoritesOnly = false
 
     init() {
-        _histories = Query()
+        _exercises = Query()
+        _histories = Query(ExerciseHistory.recentCompleted())
     }
 
     private var hasFavorites: Bool {
@@ -26,7 +27,7 @@ struct ExercisesListView: View {
         let queryTokens = normalizedTokens(for: cleanText)
 
         if queryTokens.isEmpty {
-            return sourceExercises
+            return sourceExercises.sorted(by: isOrderedBefore)
         }
 
         let scored = exerciseSearchMatches(in: sourceExercises, queryTokens: queryTokens)
@@ -135,8 +136,8 @@ struct ExercisesListView: View {
     }
 
     private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
-        let leftDate = left.lastUsed ?? .distantPast
-        let rightDate = right.lastUsed ?? .distantPast
+        let leftDate = historyByCatalogID[left.catalogID]?.lastCompletedAt ?? .distantPast
+        let rightDate = historyByCatalogID[right.catalogID]?.lastCompletedAt ?? .distantPast
 
         if leftDate != rightDate {
             return leftDate > rightDate

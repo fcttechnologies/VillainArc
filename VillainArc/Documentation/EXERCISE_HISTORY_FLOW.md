@@ -33,6 +33,7 @@ The tradeoff is that rebuilds get slower as history grows. For the current app s
 One record per `catalogID`. Stores:
 
 **Session counts:**
+- `lastCompletedAt` — timestamp of the most recent completed performance for this exercise
 - `totalSessions` — number of completed workout performances for this exercise
 - `totalCompletedSets` — total sets across all sessions
 - `totalCompletedReps` — total reps across all sessions
@@ -50,13 +51,14 @@ One record per `catalogID`. Stores:
 
 ### recalculate(using:)
 
-This is the core method. Given an array of `ExercisePerformance` (already sorted by date descending from the fetch):
+This is the core method. Given an array of `ExercisePerformance`:
 
-1. If the array is empty, calls `reset()` which zeros everything and clears progression points
-2. Counts sessions, sets, reps, cumulative volume
-3. Gets `latestEstimated1RM` from the first (most recent) performance
-4. Calculates PRs: scans all performances for max estimated 1RM, max weight, max volume, max reps
-5. Stores progression data: takes the last 10 performances and creates `ProgressionPoint` rows
+1. If the array is empty, calls `reset()` which nils `lastCompletedAt`, zeros everything else, and clears progression points
+2. Sorts performances by date descending so recency fields are deterministic
+3. Sets `lastCompletedAt` and `latestEstimated1RM` from the first (most recent) performance
+4. Counts sessions, sets, reps, cumulative volume
+5. Calculates PRs: scans all performances for max estimated 1RM, max weight, max volume, max reps
+6. Stores progression data: takes the last 10 performances and creates `ProgressionPoint` rows
 
 ## ProgressionPoint
 

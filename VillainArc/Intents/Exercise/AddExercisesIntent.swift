@@ -42,7 +42,7 @@ struct AddExercisesIntent: AppIntent {
 
         for exercise in resolvedExercises {
             workout.addExercise(exercise)
-            exercise.updateLastUsed()
+            exercise.updateLastAddedAt()
         }
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
@@ -62,7 +62,7 @@ struct AddExercisesIntent: AppIntent {
 
         for exercise in resolvedExercises {
             plan.addExercise(exercise)
-            exercise.updateLastUsed()
+            exercise.updateLastAddedAt()
         }
         saveContext(context: context)
         let count = resolvedExercises.count

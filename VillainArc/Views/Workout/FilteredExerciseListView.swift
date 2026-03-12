@@ -235,8 +235,8 @@ struct FilteredExerciseListView: View {
     private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
         switch sortOption {
         case .mostRecent:
-            let leftDate = left.lastUsed ?? .distantPast
-            let rightDate = right.lastUsed ?? .distantPast
+            let leftDate = left.lastAddedAt ?? .distantPast
+            let rightDate = right.lastAddedAt ?? .distantPast
             if leftDate != rightDate {
                 return leftDate > rightDate
             }
@@ -246,8 +246,8 @@ struct FilteredExerciseListView: View {
             if nameComparison != .orderedSame {
                 return nameComparison == .orderedAscending
             }
-            let leftDate = left.lastUsed ?? .distantPast
-            let rightDate = right.lastUsed ?? .distantPast
+            let leftDate = left.lastAddedAt ?? .distantPast
+            let rightDate = right.lastAddedAt ?? .distantPast
             return leftDate > rightDate
         }
     }

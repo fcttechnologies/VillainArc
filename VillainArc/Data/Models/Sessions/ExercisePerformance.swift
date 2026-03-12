@@ -104,6 +104,7 @@ final class ExercisePerformance {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        exercise.updateLastAddedAt()
         prescription = nil
 
         // This exercise is no longer tied to the original plan prescription.
