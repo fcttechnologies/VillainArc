@@ -111,11 +111,13 @@ struct WorkoutPlansListView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let workoutPlansToDelete = offsets.map { filteredWorkoutPlans[$0] }
+        let linkedSplits = workoutPlansToDelete.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
         SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlansToDelete.map(\.id))
         for plan in workoutPlansToDelete {
             plan.deleteWithSuggestionCleanup(context: context)
         }
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: linkedSplits)
         if workoutPlansToDelete.count == 1, let plan = workoutPlansToDelete.first {
             Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: plan) }
         }
@@ -127,11 +129,13 @@ struct WorkoutPlansListView: View {
 
     private func deleteAllWorkoutPlans() {
         Haptics.selection()
+        let linkedSplits = workoutPlans.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
         SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
         for plan in workoutPlans {
             plan.deleteWithSuggestionCleanup(context: context)
         }
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: linkedSplits)
         Task { await IntentDonations.donateDeleteAllWorkoutPlans() }
         isEditing = false
         favoritesOnly = false

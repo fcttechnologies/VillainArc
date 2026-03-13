@@ -3,7 +3,9 @@ import SwiftData
 
 @Model
 final class WorkoutSplit {
+    #Index<WorkoutSplit>([\.id], [\.isActive])
 
+    var id: UUID = UUID()
     var title: String = ""
     var mode: SplitMode = SplitMode.weekly
     var isActive: Bool = false

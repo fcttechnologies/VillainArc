@@ -57,9 +57,18 @@ struct WorkoutSplitDayView: View {
         .animation(.easeInOut, value: splitDay.isRestDay)
         .onChange(of: splitDay.isRestDay) {
             saveContext(context: context)
+            reindexSplit()
         }
         .onChange(of: splitDay.name) {
             scheduleSave(context: context)
+            reindexSplit()
+        }
+        .onChange(of: splitDay.workoutPlan?.id) {
+            saveContext(context: context)
+            reindexSplit()
+        }
+        .onDisappear {
+            reindexSplit()
         }
         .sheet(isPresented: $showPlanPicker) {
             WorkoutPlanPickerView(selectedPlan: $splitDay.workoutPlan)
@@ -69,6 +78,7 @@ struct WorkoutSplitDayView: View {
                 let ordered = Muscle.allCases.filter { selection.contains($0) }
                 splitDay.targetMuscles = ordered
                 saveContext(context: context)
+                reindexSplit()
             }
         }
     }
@@ -105,6 +115,11 @@ struct WorkoutSplitDayView: View {
     private func weekdayName(for weekday: Int) -> String {
         let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         return names[weekday - 1]
+    }
+
+    private func reindexSplit() {
+        guard let split = splitDay.split else { return }
+        SpotlightIndexer.index(workoutSplit: split)
     }
 }
 

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import AppIntents
+import CoreSpotlight
 
 struct WorkoutSplitView: View {
     @Environment(\.modelContext) private var context
@@ -80,6 +81,7 @@ struct WorkoutSplitView: View {
                 .onDisappear {
                     split.title = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
                     saveContext(context: context)
+                    SpotlightIndexer.index(workoutSplit: split)
                 }
             }
         }
@@ -129,6 +131,10 @@ struct WorkoutSplitView: View {
             activity.title = entity.title
             activity.isEligibleForSearch = true
             activity.isEligibleForPrediction = true
+            activity.persistentIdentifier = NSUserActivityPersistentIdentifier(SpotlightIndexer.workoutSplitIdentifier(for: split.id))
+            let attributeSet = activity.contentAttributeSet ?? CSSearchableItemAttributeSet(contentType: .item)
+            attributeSet.relatedUniqueIdentifier = SpotlightIndexer.workoutSplitIdentifier(for: split.id)
+            activity.contentAttributeSet = attributeSet
             activity.appEntityIdentifier = .init(for: entity)
         }
     }
@@ -530,6 +536,7 @@ struct WorkoutSplitView: View {
             split.days?.append(newDay)
             withAnimation(.smooth) { selectedSplitDay = newDay }
             saveContext(context: context)
+            SpotlightIndexer.index(workoutSplit: split)
         } label: {
             VStack(spacing: 0) {
                 ZStack {
@@ -572,6 +579,7 @@ struct WorkoutSplitView: View {
         split.deleteDay(day)
         context.delete(day)
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
 
         let updated = split.sortedDays
         var nextIndex = currentIndex
@@ -594,6 +602,7 @@ struct WorkoutSplitView: View {
         for (index, day) in ordered.enumerated() { day.index = index }
         if let currentDay { split.rotationCurrentIndex = currentDay.index }
         scheduleSave(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
     }
 
     private func setCurrentRotationDay(_ day: WorkoutSplitDay, split: WorkoutSplit) {
@@ -613,6 +622,7 @@ struct WorkoutSplitView: View {
             split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
         }
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: allSplits)
     }
 
     private func missedDay(for split: WorkoutSplit) {
@@ -641,6 +651,7 @@ struct WorkoutSplitView: View {
     private func deleteSplit() {
         guard let split = currentSplit else { return }
         Haptics.selection()
+        SpotlightIndexer.deleteWorkoutSplit(split)
         context.delete(split)
         saveContext(context: context)
         if isOverride { dismiss() }
@@ -673,6 +684,7 @@ struct WorkoutSplitView: View {
         Haptics.selection()
         swapDays(first, second, split: split)
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
         cancelSwapMode()
     }
 

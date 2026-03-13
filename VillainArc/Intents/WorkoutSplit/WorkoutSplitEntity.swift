@@ -20,7 +20,7 @@ struct WorkoutSplitFullContent: Codable {
         let workoutPlan: PlanReference?
     }
 
-    let id: String
+    let id: UUID
     let title: String
     let summary: String
     let mode: String
@@ -35,7 +35,7 @@ struct WorkoutSplitEntity: AppEntity, IndexedEntity, Identifiable {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Workout Split")
     static let defaultQuery = WorkoutSplitEntityQuery()
 
-    let id: String
+    let id: UUID
     let title: String
     let summary: String
     let mode: String
@@ -54,19 +54,18 @@ struct WorkoutSplitEntity: AppEntity, IndexedEntity, Identifiable {
 @MainActor
 extension WorkoutSplitEntity {
     init(workoutSplit: WorkoutSplit) {
-        let splitID = workoutSplitEntityID(for: workoutSplit)
         let displayTitle = workoutSplitDisplayTitle(for: workoutSplit)
         let days = workoutSplit.sortedDays.map(makeDayContent)
         let summary = workoutSplitSummary(for: workoutSplit, days: days)
 
-        id = splitID
+        id = workoutSplit.id
         title = displayTitle
         self.summary = summary
         mode = workoutSplit.mode.rawValue
         isActive = workoutSplit.isActive
         dayNames = days.map { splitDayDisplayName(for: $0, mode: workoutSplit.mode) }
         fullContent = WorkoutSplitFullContent(
-            id: splitID,
+            id: workoutSplit.id,
             title: displayTitle,
             summary: summary,
             mode: workoutSplit.mode.rawValue,
@@ -101,10 +100,11 @@ struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
     func entities(for identifiers: [WorkoutSplitEntity.ID]) async throws -> [WorkoutSplitEntity] {
         guard !identifiers.isEmpty else { return [] }
         let context = SharedModelContainer.container.mainContext
-        let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
-        let entities = splits.map(WorkoutSplitEntity.init)
-        let byID = Dictionary(entities.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return identifiers.compactMap { byID[$0] }
+        let ids = identifiers
+        let predicate = #Predicate<WorkoutSplit> { ids.contains($0.id) }
+        let splits = (try? context.fetch(FetchDescriptor(predicate: predicate))) ?? []
+        let byID = Dictionary(splits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return identifiers.compactMap { byID[$0] }.map(WorkoutSplitEntity.init)
     }
 
     @MainActor
@@ -132,11 +132,6 @@ struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
                     || entity.dayNames.contains(where: { $0.localizedStandardContains(trimmed) })
             }
     }
-}
-
-@MainActor
-private func workoutSplitEntityID(for split: WorkoutSplit) -> String {
-    String(describing: split.persistentModelID)
 }
 
 private func makeDayContent(for day: WorkoutSplitDay) -> WorkoutSplitFullContent.Day {

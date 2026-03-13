@@ -168,6 +168,7 @@
 				Intents/WorkoutSplit/ManageWorkoutSplitsIntent.swift,
 				Intents/WorkoutSplit/OpenWorkoutSplitIntent.swift,
 				Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift,
+				Intents/WorkoutSplit/WorkoutSplitEntity.swift,
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
 		};

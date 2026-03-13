@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import AppIntents
+import CoreSpotlight
 
 struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -195,6 +196,10 @@ struct WorkoutDetailView: View {
             activity.title = session.title
             activity.isEligibleForSearch = true
             activity.isEligibleForPrediction = true
+            activity.persistentIdentifier = NSUserActivityPersistentIdentifier(SpotlightIndexer.workoutSessionIdentifier(for: session.id))
+            let attributeSet = activity.contentAttributeSet ?? CSSearchableItemAttributeSet(contentType: .item)
+            attributeSet.relatedUniqueIdentifier = SpotlightIndexer.workoutSessionIdentifier(for: session.id)
+            activity.contentAttributeSet = attributeSet
             let entity = WorkoutSessionEntity(workoutSession: session)
             activity.appEntityIdentifier = .init(for: entity)
         }

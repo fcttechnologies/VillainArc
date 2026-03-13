@@ -187,6 +187,7 @@ struct SplitBuilderView: View {
         
         context.insert(split)
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
 
         onSplitCreated(split)
         dismiss()
@@ -215,6 +216,7 @@ struct SplitBuilderView: View {
         }
         context.insert(split)
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
 
         onSplitCreated(split)
         dismiss()

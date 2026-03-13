@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import AppIntents
+import CoreSpotlight
 
 struct ExerciseDetailView: View {
     @Environment(\.modelContext) private var context
@@ -263,6 +264,10 @@ struct ExerciseDetailView: View {
             activity.title = exercise.name
             activity.isEligibleForSearch = true
             activity.isEligibleForPrediction = true
+            activity.persistentIdentifier = NSUserActivityPersistentIdentifier(SpotlightIndexer.exerciseIdentifier(for: exercise.catalogID))
+            let attributeSet = activity.contentAttributeSet ?? CSSearchableItemAttributeSet(contentType: .item)
+            attributeSet.relatedUniqueIdentifier = SpotlightIndexer.exerciseIdentifier(for: exercise.catalogID)
+            activity.contentAttributeSet = attributeSet
             let entity = ExerciseEntity(exercise: exercise)
             activity.appEntityIdentifier = .init(for: entity)
         }

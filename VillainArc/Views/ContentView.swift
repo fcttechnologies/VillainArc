@@ -82,6 +82,8 @@ struct ContentView: View {
                     ExerciseHistoryView(catalogID: catalogID)
                 case .workoutSplit(let autoPresentBuilder):
                     WorkoutSplitView(autoPresentBuilder: autoPresentBuilder)
+                case .workoutSplitDetail(let split):
+                    WorkoutSplitView(split: split)
                 }
             }
         }

@@ -31,6 +31,7 @@ final class AppRouter {
         case exerciseDetail(String)
         case exerciseHistory(String)
         case workoutSplit(autoPresentBuilder: Bool)
+        case workoutSplitDetail(WorkoutSplit)
     }
     
     var path = NavigationPath()
@@ -195,6 +196,19 @@ final class AppRouter {
             guard (try? context.fetch(Exercise.withCatalogID(catalogID)).first) != nil else { return }
             popToRoot()
             navigate(to: .exerciseDetail(catalogID))
+            return
+        }
+
+        if identifier.hasPrefix(SpotlightIndexer.workoutSplitIdentifierPrefix) {
+            let idString = String(identifier.dropFirst(SpotlightIndexer.workoutSplitIdentifierPrefix.count))
+            guard let id = UUID(uuidString: idString) else { return }
+            let predicate = #Predicate<WorkoutSplit> { $0.id == id }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            if let workoutSplit = try? context.fetch(descriptor).first {
+                popToRoot()
+                navigate(to: .workoutSplitDetail(workoutSplit))
+            }
         }
     }
 }

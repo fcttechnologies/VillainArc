@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import AppIntents
+import CoreSpotlight
 
 struct WorkoutPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -216,6 +217,10 @@ struct WorkoutPlanDetailView: View {
             activity.title = plan.title
             activity.isEligibleForSearch = true
             activity.isEligibleForPrediction = true
+            activity.persistentIdentifier = NSUserActivityPersistentIdentifier(SpotlightIndexer.workoutPlanIdentifier(for: plan.id))
+            let attributeSet = activity.contentAttributeSet ?? CSSearchableItemAttributeSet(contentType: .item)
+            attributeSet.relatedUniqueIdentifier = SpotlightIndexer.workoutPlanIdentifier(for: plan.id)
+            activity.contentAttributeSet = attributeSet
             let entity = WorkoutPlanEntity(workoutPlan: plan)
             activity.appEntityIdentifier = .init(for: entity)
         }
@@ -224,9 +229,11 @@ struct WorkoutPlanDetailView: View {
     private func deleteWorkoutPlan() {
         Haptics.selection()
         let deletedPlan = plan
+        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: plan)
         SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
         plan.deleteWithSuggestionCleanup(context: context)
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: linkedSplits)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()
     }

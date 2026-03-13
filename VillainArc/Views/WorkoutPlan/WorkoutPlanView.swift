@@ -71,6 +71,7 @@ struct WorkoutPlanView: View {
                             context.delete(plan)
                             saveContext(context: context)
                             SpotlightIndexer.index(workoutPlan: originalPlan)
+                            SpotlightIndexer.reindexLinkedWorkoutSplits(for: originalPlan)
                             dismiss()
                             return
                         }
@@ -80,6 +81,7 @@ struct WorkoutPlanView: View {
                         plan.clearCompletedSessionPerformanceReferences()
                         saveContext(context: context)
                         SpotlightIndexer.index(workoutPlan: plan)
+                        SpotlightIndexer.reindexLinkedWorkoutSplits(for: plan)
                         dismiss()
                     }
                     .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
@@ -267,18 +269,22 @@ struct WorkoutPlanView: View {
     private func deleteWorkoutPlanAndDismiss() {
         Haptics.selection()
         if let originalPlan {
+            let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: originalPlan)
             SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
             originalPlan.deleteWithSuggestionCleanup(context: context)
             context.delete(plan)
             try? context.save()
+            SpotlightIndexer.index(workoutSplits: linkedSplits)
             dismiss()
             return
         }
+        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: plan)
         if plan.completed {
             SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
         }
         plan.deleteWithSuggestionCleanup(context: context)
         try? context.save()
+        SpotlightIndexer.index(workoutSplits: linkedSplits)
         dismiss()
     }
 

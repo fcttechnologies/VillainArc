@@ -178,12 +178,14 @@ struct WorkoutSplitListView: View {
             split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
         }
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: visibleSplits)
     }
 
     private func setInactive(_ split: WorkoutSplit) {
         Haptics.selection()
         withAnimation(.smooth) { split.isActive = false }
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
     }
 
     private func deleteInactiveSplits(at offsets: IndexSet) {
@@ -195,6 +197,7 @@ struct WorkoutSplitListView: View {
             return current[index]
         }
         guard !toDelete.isEmpty else { return }
+        SpotlightIndexer.deleteWorkoutSplits(ids: toDelete.map(\.id))
         pendingDeletionIDs.formUnion(toDelete.map { $0.persistentModelID })
         DispatchQueue.main.async {
             for split in toDelete { context.delete(split) }

@@ -26,11 +26,13 @@ struct DeleteAllWorkoutPlansIntent: AppIntent {
             throw DeleteAllWorkoutPlansIntentError.cancelled
         }
 
+        let linkedSplits = workoutPlans.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
         SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
         for plan in workoutPlans {
             plan.deleteWithSuggestionCleanup(context: context)
         }
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: linkedSplits)
         return .result(dialog: "Deleted \(label).")
     }
 }

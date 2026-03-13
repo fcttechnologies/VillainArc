@@ -37,9 +37,11 @@ struct DeleteWorkoutPlanIntent: AppIntent {
             throw DeleteWorkoutPlanIntentError.cancelled
         }
 
+        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: storedPlan)
         SpotlightIndexer.deleteWorkoutPlan(id: storedPlan.id)
         storedPlan.deleteWithSuggestionCleanup(context: context)
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSplits: linkedSplits)
         return .result(dialog: "Workout plan deleted.")
     }
 }
