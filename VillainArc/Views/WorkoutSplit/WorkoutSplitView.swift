@@ -102,9 +102,13 @@ struct WorkoutSplitView: View {
             if autoPresentBuilder && allSplits.isEmpty {
                 showSplitBuilder = true
             }
+            presentSplitBuilderIfNeeded()
             refreshRotationIfNeeded()
             presentSplitListIfNeeded()
             Task { await IntentDonations.donateTrainingSummary() }
+        }
+        .onChange(of: router.showSplitBuilderFromIntent) { _, _ in
+            presentSplitBuilderIfNeeded()
         }
         .onChange(of: router.showWorkoutSplitListFromIntent) { _, _ in
             presentSplitListIfNeeded()
@@ -127,6 +131,12 @@ struct WorkoutSplitView: View {
             activity.isEligibleForPrediction = true
             activity.appEntityIdentifier = .init(for: entity)
         }
+    }
+
+    private func presentSplitBuilderIfNeeded() {
+        guard router.showSplitBuilderFromIntent else { return }
+        router.showSplitBuilderFromIntent = false
+        showSplitBuilder = true
     }
 
     private func presentSplitListIfNeeded() {

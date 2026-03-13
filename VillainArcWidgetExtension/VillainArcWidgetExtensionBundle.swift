@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct VillainArcWidgetExtensionBundle: WidgetBundle {
     var body: some Widget {
+        TodayLiftWidget()
         WorkoutLiveActivity()
     }
 }

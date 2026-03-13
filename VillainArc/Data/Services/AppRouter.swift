@@ -16,6 +16,7 @@ final class AppRouter {
     }
     var activeWorkoutPlanOriginal: WorkoutPlan?
     var showAddExerciseFromLiveActivity = false
+    var showSplitBuilderFromIntent = false
     var showWorkoutSplitListFromIntent = false
     var showWorkoutSettingsFromIntent = false
     var showRestTimerFromIntent = false

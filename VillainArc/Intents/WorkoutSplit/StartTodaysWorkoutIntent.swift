@@ -49,7 +49,6 @@ struct StartTodaysWorkoutIntent: AppIntent {
             throw StartTodaysWorkoutError.noWorkoutPlanForToday
         }
         
-        await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: workoutPlan)
         AppRouter.shared.startWorkoutSession(from: workoutPlan)
         return .result(opensIntent: OpenAppIntent())
     }

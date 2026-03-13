@@ -17,7 +17,7 @@
   - Hosts home sections including `RecentWorkoutSectionView` and `RecentExercisesSectionView`
   - Uses shared UI helpers (`navBar`, accessibility labels/ids)
 - `AppRouter.shared`
-  - Owns app navigation/workflow state (`path`, active workout/plan, active plan edit source, transient intent-driven sheet flags)
+  - Owns app navigation/workflow state (`path`, active workout/plan, active plan edit source, transient intent-driven sheet flags for split builder/list and workout utility sheets)
   - Reads/writes SwiftData through `SharedModelContainer.container.mainContext`
   - Persists via `saveContext`
   - Uses `SpotlightIndexer` prefixes when resolving Spotlight identifiers
@@ -517,7 +517,7 @@
 - Calls: `@Query(WorkoutPlan.all)`, `WorkoutPlanDetailView` (with select callback), `WorkoutPlanCardView`, `WorkoutPlanView` (new plan fullScreenCover), `ModelContext.insert/fetch`, `saveContext`, `IntentDonations.donateCreateWorkoutPlan`, `Haptics.selection`.
 
 ### `VillainArc/Views/WorkoutSplit/WorkoutSplitView.swift`
-- Does: Main split editor screen for the active split (or an override split). Shows day-paging TabView with capsule headers, options menu (rename, schedule adjustments, swap/rotate days, delete), and "Create New Split" bottom bar. When routed with `autoPresentBuilder`, it presents the split builder on first appearance. Also shows empty-state views when no splits or no active split exist, and publishes the current split as `com.villainarc.workoutSplit.view`.
+- Does: Main split editor screen for the active split (or an override split). Shows day-paging TabView with capsule headers, options menu (rename, schedule adjustments, swap/rotate days, delete), and "Create New Split" bottom bar. When routed with `autoPresentBuilder` or signaled by `AppRouter.showSplitBuilderFromIntent`, it presents the split builder; it also responds to `showWorkoutSplitListFromIntent`. Also shows empty-state views when no splits or no active split exist, and publishes the current split as `com.villainarc.workoutSplit.view`.
 - Called by: `ContentView` navigation destination for `.workoutSplit`, `WorkoutSplitListView` (navigation destination for inactive split tap), SwiftUI preview.
 - Calls: `@Query` over `WorkoutSplit`, `WorkoutSplitDayView`, `WorkoutSplitListView` (sheet), `SplitBuilderView` (sheet), `TextEntryEditorView`, `WorkoutSplitEntity`, `IntentDonations.donateTrainingSummary`, `IntentDonations.donateCreateWorkoutSplit`, `Haptics.selection`, `saveContext`, `scheduleSave`, split model operations (`refreshRotationIfNeeded`, `missedDay`, `resetSplit`, `updateCurrentIndex`, `deleteDay`), internal swap/rotation helpers.
 
@@ -1006,9 +1006,9 @@
 - Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `WorkoutSplit.active`, `WorkoutSplit.refreshRotationIfNeeded`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSplit)`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/WorkoutSplit/CreateWorkoutSplitIntent.swift`
-- Does: Opens the workout split screen and auto-presents the builder immediately after setup/bootstrap and no-active-flow checks.
+- Does: Opens the workout split screen and presents the builder immediately after setup/bootstrap and no-active-flow checks, even if the split screen is already visible.
 - Called by: Siri/Shortcuts, donations (`donateCreateWorkoutSplit`).
-- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSplit(autoPresentBuilder: true))`, `OpenAppIntent`.
+- Calls: `SetupGuard.requireReadyAndNoActiveFlow`, `AppRouter.showSplitBuilderFromIntent`, `AppRouter.popToRoot`, `AppRouter.navigate(.workoutSplit(autoPresentBuilder: false))`, `OpenAppIntent`.
 
 ### `VillainArc/Intents/WorkoutSplit/ManageWorkoutSplitsIntent.swift`
 - Does: Opens workout split management after setup/bootstrap, no-active-flow, and split-availability validation.
@@ -1178,11 +1178,16 @@
 ## 7) Extension Targets
 
 ### `VillainArcWidgetExtension/VillainArcWidgetExtensionBundle.swift`
-- Does: Widget extension entry point (`@main`) bundling workout live activity widget.
+- Does: Widget extension entry point (`@main`) bundling the home-screen `TodayLiftWidget` and the workout live activity widget.
 - Called by: `VillainArcWidgetExtensionExtension` target runtime.
-- Calls: `WorkoutLiveActivity`.
+- Calls: `TodayLiftWidget`, `WorkoutLiveActivity`.
 
-### `VillainArcWidgetExtension/VillainArcWidgetExtension.swift`
+### `VillainArcWidgetExtension/TodayLiftWidget.swift`
+- Does: Home-screen `TodayLiftWidget` timeline and views for active-workout, ready-to-train, rest-day, split-management, and no-plan states.
+- Called by: Widget extension runtime via bundle registration.
+- Calls: `SharedModelContainer`, `WorkoutSession`, `WorkoutSplit`, `WorkoutPlan`, shared split/workout intents (`OpenActiveWorkoutIntent`, `StartTodaysWorkoutIntent`, `OpenWorkoutSplitIntent`, `ManageWorkoutSplitsIntent`, `CreateWorkoutSplitIntent`).
+
+### `VillainArcWidgetExtension/ActiveWorkoutLiveActivity.swift`
 - Does: Lock-screen/dynamic-island live activity widget UI for workout state and controls.
 - Called by: Widget extension runtime via bundle registration.
 - Calls: `WorkoutActivityAttributes`, live activity intents (`LiveActivity*`), local formatting helpers.

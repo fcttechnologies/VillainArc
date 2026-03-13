@@ -38,6 +38,7 @@ struct ContentView: View {
                     .accessibilityIdentifier("homeRecentExercisesSection")
             }
             .navBar(title: "Home")
+            .scrollIndicators(.hidden)
             .toolbar {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {

@@ -150,6 +150,7 @@
 				Data/Services/AppRouter.swift,
 				Data/Services/DataManager.swift,
 				Data/Services/RestTimerState.swift,
+				Data/Services/SetupGuard.swift,
 				Data/Services/SpotlightIndexer.swift,
 				Data/SharedModelContainer.swift,
 				Helpers/ExerciseSearch.swift,
@@ -162,8 +163,15 @@
 				Intents/LiveActivity/LiveActivityCompleteSetIntent.swift,
 				Intents/LiveActivity/LiveActivityPauseRestTimerIntent.swift,
 				Intents/LiveActivity/LiveActivityResumeRestTimerIntent.swift,
+				Intents/OpenAppIntent.swift,
+				Intents/Workout/OpenActiveWorkoutIntent.swift,
+				Intents/Workout/StartWorkoutIntent.swift,
 				Intents/Workout/WorkoutSessionEntity.swift,
 				Intents/WorkoutPlan/WorkoutPlanEntity.swift,
+				Intents/WorkoutSplit/CreateWorkoutSplitIntent.swift,
+				Intents/WorkoutSplit/ManageWorkoutSplitsIntent.swift,
+				Intents/WorkoutSplit/OpenWorkoutSplitIntent.swift,
+				Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift,
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
 		};
