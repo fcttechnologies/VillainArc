@@ -64,14 +64,24 @@ func groupSuggestions(_ events: [SuggestionEvent]) -> [ExerciseSuggestionSection
 }
 
 func pendingSuggestionEvents(for plan: WorkoutPlan, in _: ModelContext) -> [SuggestionEvent] {
+    suggestionEvents(for: plan) { event in
+        event.decision == .pending || event.decision == .deferred
+    }
+}
+
+func pendingOutcomeSuggestionEvents(for plan: WorkoutPlan, in _: ModelContext) -> [SuggestionEvent] {
+    suggestionEvents(for: plan) { event in
+        event.outcome == .pending && (event.decision == .accepted || event.decision == .rejected)
+    }
+}
+
+private func suggestionEvents(for plan: WorkoutPlan, matching predicate: (SuggestionEvent) -> Bool) -> [SuggestionEvent] {
     var seenEventIDs = Set<UUID>()
     let exerciseChanges = plan.sortedExercises.flatMap { Array($0.changes ?? []) }
     let setChanges = plan.sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.changes ?? []) } }
     let allChanges = exerciseChanges + setChanges
 
-    let events = allChanges.compactMap(\.event).filter { event in
-        event.decision == .pending || event.decision == .deferred
-    }
+    let events = allChanges.compactMap(\.event).filter(predicate)
 
     return events.filter { event in
         seenEventIDs.insert(event.id).inserted

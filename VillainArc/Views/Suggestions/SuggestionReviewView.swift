@@ -32,6 +32,7 @@ struct SuggestionReviewView: View {
                             SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group) }, onReject: { onRejectGroup(group) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group) } : nil, showDecisionState: showDecisionState, actionableDecisions: actionableDecisions)
                         }
                     }
+                    .id(section.id)
                 }
             }
         }

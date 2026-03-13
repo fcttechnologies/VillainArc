@@ -12,6 +12,9 @@ struct WorkoutPlanDetailView: View {
     private let showsUseOnly: Bool
 
     @State private var showDeleteWorkoutPlanConfirmation = false
+    @State private var showSuggestionsSheet = false
+    @State private var suggestionsInitialTab: WorkoutPlanSuggestionsSheet.Tab = .toReview
+    @State private var focusedSuggestionExerciseID: UUID?
 
     init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil) {
         self.plan = plan
@@ -25,6 +28,18 @@ struct WorkoutPlanDetailView: View {
             return false
         }
         return todaysPlan.id == plan.id
+    }
+
+    private var toReviewSuggestionSections: [ExerciseSuggestionSection] {
+        groupSuggestions(pendingSuggestionEvents(for: plan, in: context))
+    }
+
+    private var awaitingOutcomeSuggestionSections: [ExerciseSuggestionSection] {
+        groupSuggestions(pendingOutcomeSuggestionEvents(for: plan, in: context))
+    }
+
+    private var hasSuggestionsSheetContent: Bool {
+        !toReviewSuggestionSections.isEmpty || !awaitingOutcomeSuggestionSections.isEmpty
     }
 
     var body: some View {
@@ -74,12 +89,28 @@ struct WorkoutPlanDetailView: View {
                         }
                     }
                 } header: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(exercise.name)
-                            .lineLimit(1)
-                        if let repRange = exercise.repRange, repRange.activeMode != .notSet {
-                            Text(repRange.displayText)
-                                .font(.subheadline)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(exercise.name)
+                                .lineLimit(1)
+                            if let repRange = exercise.repRange, repRange.activeMode != .notSet {
+                                Text(repRange.displayText)
+                                    .font(.subheadline)
+                            }
+                        }
+                        Spacer()
+                        if let pendingCount = pendingSuggestionCount(for: exercise), onSelect == nil {
+                            Button {
+                                openSuggestionsSheet(tab: .toReview, focusedExerciseID: exercise.id)
+                            } label: {
+                                Text("\(pendingCount)")
+                                    .bold()
+                                    .padding(1)
+                            }
+                            .buttonBorderShape(.circle)
+                            .buttonStyle(.glass)
+                            .accessibilityIdentifier("workoutPlanDetailSuggestionCount-\(exercise.id.uuidString)")
+                            .accessibilityLabel("\(pendingCount) suggestions to review")
                         }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
@@ -97,7 +128,24 @@ struct WorkoutPlanDetailView: View {
         .navigationTitle(plan.title)
         .navigationSubtitle(Text(plan.musclesTargeted()))
         .toolbarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showSuggestionsSheet) {
+            WorkoutPlanSuggestionsSheet(plan: plan, initialTab: suggestionsInitialTab, initialFocusedExerciseID: focusedSuggestionExerciseID)
+        }
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if hasSuggestionsSheetContent && onSelect == nil {
+                    Button {
+                        openSuggestionsSheet(
+                            tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview,
+                            focusedExerciseID: nil
+                        )
+                    } label: {
+                        Image(systemName: "sparkles")
+                    }
+                    .accessibilityIdentifier("workoutPlanDetailSuggestionsButton")
+                    .accessibilityHint("Shows suggested changes and pending outcomes for this workout plan.")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 if let onSelect {
                     Button("Select") {
@@ -105,6 +153,7 @@ struct WorkoutPlanDetailView: View {
                         onSelect()
                         dismiss()
                     }
+                    .fontWeight(.semibold)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSelectButton)
                     .accessibilityHint("Selects this workout plan.")
                 } else if !showsUseOnly {
@@ -192,6 +241,17 @@ struct WorkoutPlanDetailView: View {
                         .offset(x: 7, y: -7)
                 }
             }
+    }
+
+    private func pendingSuggestionCount(for exercise: ExercisePrescription) -> Int? {
+        let count = toReviewSuggestionSections.first(where: { $0.exercisePrescription.id == exercise.id })?.groups.count ?? 0
+        return count > 0 ? count : nil
+    }
+
+    private func openSuggestionsSheet(tab: WorkoutPlanSuggestionsSheet.Tab, focusedExerciseID: UUID?) {
+        suggestionsInitialTab = tab
+        focusedSuggestionExerciseID = focusedExerciseID
+        showSuggestionsSheet = true
     }
 }
 
