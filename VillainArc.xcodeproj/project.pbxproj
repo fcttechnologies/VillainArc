@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3518B8EA2F5E792A003A2879 /* CLAUDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 3518B8E92F5E792A003A2879 /* CLAUDE.md */; };
-		3518B8EC2F5E7931003A2879 /* AGENTS.md in Resources */ = {isa = PBXBuildFile; fileRef = 3518B8EB2F5E7931003A2879 /* AGENTS.md */; };
 		354CA66B2F535701005622B1 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66A2F535701005622B1 /* README.md */; };
 		FD68290A2F31190700C83480 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD6829092F31190700C83480 /* Intents.framework */; };
 		FD6829112F31190700C83480 /* VillainArcIntentsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -67,8 +65,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3518B8E92F5E792A003A2879 /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
-		3518B8EB2F5E7931003A2879 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		354CA66A2F535701005622B1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VillainArcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VillainArcIntentsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -260,8 +256,6 @@
 			children = (
 				354CA66A2F535701005622B1 /* README.md */,
 				FD93E5FA2F305206009569BB /* VillainArcWidgetExtensionExtension.entitlements */,
-				3518B8E92F5E792A003A2879 /* CLAUDE.md */,
-				3518B8EB2F5E7931003A2879 /* AGENTS.md */,
 				FDA193A12F16F90000CA57C5 /* .gitignore */,
 				FDA193922F16D14500CA57C5 /* VillainArc */,
 				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
@@ -453,8 +447,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				354CA66B2F535701005622B1 /* README.md in Resources */,
-				3518B8EA2F5E792A003A2879 /* CLAUDE.md in Resources */,
-				3518B8EC2F5E7931003A2879 /* AGENTS.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

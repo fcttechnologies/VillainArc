@@ -5,6 +5,9 @@ struct ExerciseSearchMatch {
     let score: Int
 }
 
+typealias ExerciseSearchScoreResolver = @MainActor (_ exercise: Exercise, _ query: String, _ queryTokens: [String]) -> Int
+typealias ExerciseFuzzyTokenResolver = @MainActor (_ exercise: Exercise) -> [String]
+
 nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
     let nameAndAliases = ([exercise.name] + exercise.aliases).joined(separator: " ")
     var seen = Set<String>()
@@ -67,15 +70,6 @@ func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     return score
 }
 
-@MainActor
-func exerciseSearchMatches(in exercises: [Exercise], queryTokens: [String]) -> [ExerciseSearchMatch] {
-    guard !queryTokens.isEmpty else { return [] }
-    return exercises.compactMap { exercise in
-        let score = exerciseSearchScore(for: exercise, queryTokens: queryTokens)
-        return score > 0 ? ExerciseSearchMatch(exercise: exercise, score: score) : nil
-    }
-}
-
 private nonisolated func tokenMatchScore(for token: String, in tokens: [String], exact: Int, prefix: Int) -> Int? {
     if tokens.contains(token) {
         return exact
@@ -93,6 +87,62 @@ func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
         return exercise.searchTokens
     }
     return exerciseSearchTokens(for: exercise)
+}
+
+@MainActor
+func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
+    guard !queryTokens.isEmpty else { return true }
+
+    let haystackTokens = cachedExerciseSearchTokens(for: exercise) + additionalTokens
+
+    return queryTokens.allSatisfy { queryToken in
+        let maxDistance = maximumFuzzyDistance(for: queryToken)
+        return haystackTokens.contains { token in
+            if token == queryToken {
+                return true
+            }
+            if maxDistance == 0 {
+                return false
+            }
+            if abs(token.count - queryToken.count) > maxDistance {
+                return false
+            }
+            return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
+        }
+    }
+}
+
+@MainActor
+func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrderedBefore: (Exercise, Exercise) -> Bool, score: ExerciseSearchScoreResolver, fuzzyAdditionalTokens: ExerciseFuzzyTokenResolver? = nil) -> [Exercise] {
+    let cleanText = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    let queryTokens = normalizedTokens(for: cleanText)
+
+    guard !queryTokens.isEmpty else {
+        return exercises.sorted(by: isOrderedBefore)
+    }
+
+    let scored = exercises.compactMap { exercise in
+        let resolvedScore = score(exercise, cleanText, queryTokens)
+        return resolvedScore > 0 ? ExerciseSearchMatch(exercise: exercise, score: resolvedScore) : nil
+    }
+    if !scored.isEmpty {
+        return scored.sorted { left, right in
+            if left.score != right.score {
+                return left.score > right.score
+            }
+            return isOrderedBefore(left.exercise, right.exercise)
+        }
+        .map(\.exercise)
+    }
+
+    guard shouldUseFuzzySearch(queryTokens: queryTokens) else { return [] }
+
+    let fuzzyFiltered = exercises.filter { exercise in
+        let extraTokens = fuzzyAdditionalTokens?(exercise) ?? []
+        return matchesExerciseFuzzy(exercise, queryTokens: queryTokens, additionalTokens: extraTokens)
+    }
+
+    return fuzzyFiltered.sorted(by: isOrderedBefore)
 }
 
 private nonisolated func phraseMatch(phraseTokens: [String], in tokens: [String]) -> Bool {

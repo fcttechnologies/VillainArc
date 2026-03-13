@@ -169,6 +169,7 @@ extension WorkoutSession {
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<WorkoutSession> { $0.status == done }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         if let limit {
             descriptor.fetchLimit = limit
         }

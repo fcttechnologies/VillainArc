@@ -51,75 +51,42 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
     @MainActor
     func suggestedEntities() async throws -> [ExerciseEntity] {
         let context = SharedModelContainer.container.mainContext
-        let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
-        let histories = (try? context.fetch(ExerciseHistory.recentCompleted())) ?? []
-        let ordering = ExerciseHistoryOrdering(histories: histories)
-        let sorted = ordering.ordered(exercises)
-        return Array(sorted.prefix(30)).map(ExerciseEntity.init)
+        let histories = (try? context.fetch(ExerciseHistory.recentCompleted(limit: 30))) ?? []
+        let recentCatalogIDs = histories.map(\.catalogID)
+        let recentExercises = fetchExercises(for: recentCatalogIDs, in: context)
+
+        if recentExercises.count >= 30 {
+            return Array(recentExercises.prefix(30)).map(ExerciseEntity.init)
+        }
+
+        let fallbackExercises = (try? context.fetch(Exercise.all)) ?? []
+        let seenCatalogIDs = Set(recentExercises.map(\.catalogID))
+        let backfillExercises = fallbackExercises.filter { !seenCatalogIDs.contains($0.catalogID) }
+        return Array((recentExercises + backfillExercises).prefix(30)).map(ExerciseEntity.init)
     }
 
     @MainActor
     func entities(matching string: String) async throws -> [ExerciseEntity] {
-        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        let queryTokens = normalizedTokens(for: trimmed)
         let context = SharedModelContainer.container.mainContext
         let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
         let histories = (try? context.fetch(ExerciseHistory.recentCompleted())) ?? []
         let ordering = ExerciseHistoryOrdering(histories: histories)
-        let sortedExercises = ordering.ordered(exercises)
-
-        if queryTokens.isEmpty {
-            return sortedExercises.map(ExerciseEntity.init)
-        }
-
-        let scored = sortedExercises.compactMap { exercise in
-            let score = exerciseEntitySearchScore(for: exercise, query: trimmed, queryTokens: queryTokens)
-            return score > 0 ? ExerciseSearchMatch(exercise: exercise, score: score) : nil
-        }
-        if !scored.isEmpty {
-            let sorted = scored.sorted { left, right in
-                if left.score != right.score {
-                    return left.score > right.score
-                }
-                return ordering.isOrderedBefore(left.exercise, right.exercise)
-            }
-            return sorted.map { ExerciseEntity(exercise: $0.exercise) }
-        }
-
-        guard shouldUseFuzzySearch(queryTokens: queryTokens) else {
-            return []
-        }
-
-        let fuzzyFiltered = exercises.filter { exercise in
-            matchesSearchFuzzy(exercise, queryTokens: queryTokens)
-        }
-        return fuzzyFiltered
-            .sorted(by: ordering.isOrderedBefore)
-            .map(ExerciseEntity.init)
-    }
-    
-    @MainActor
-    private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        guard !queryTokens.isEmpty else { return true }
-        let haystackTokens = cachedExerciseSearchTokens(for: exercise) + exerciseEntitySearchTokens(for: exercise)
-
-        return queryTokens.allSatisfy { queryToken in
-            let maxDistance = maximumFuzzyDistance(for: queryToken)
-            return haystackTokens.contains { token in
-                if token == queryToken {
-                    return true
-                }
-                if maxDistance == 0 {
-                    return false
-                }
-                if abs(token.count - queryToken.count) > maxDistance {
-                    return false
-                }
-                return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
-            }
-        }
+        let results = searchedExercises(in: exercises, query: string, orderedBy: ordering.isOrderedBefore, score: { exercise, query, queryTokens in
+                exerciseEntitySearchScore(for: exercise, query: query, queryTokens: queryTokens)
+            }, fuzzyAdditionalTokens: { exercise in
+                exerciseEntitySearchTokens(for: exercise)
+            })
+        return results.map(ExerciseEntity.init)
     }
 
+}
+
+@MainActor
+private func fetchExercises(for catalogIDs: [String], in context: ModelContext) -> [Exercise] {
+    guard !catalogIDs.isEmpty else { return [] }
+    let fetchedExercises = (try? context.fetch(Exercise.withCatalogIDs(catalogIDs))) ?? []
+    let exerciseByCatalogID = Dictionary(uniqueKeysWithValues: fetchedExercises.map { ($0.catalogID, $0) })
+    return catalogIDs.compactMap { exerciseByCatalogID[$0] }
 }
 
 @MainActor

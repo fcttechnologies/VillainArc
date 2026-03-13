@@ -1,216 +1,288 @@
-# Exercise History & Progression System
+# Exercise History Flow
 
-This document describes how VillainArc tracks exercise history, caches analytics, detects personal records, and drives the progression chart surfaces.
+This document explains the exercise-history side of the app: how histories are updated when a workout is truly saved, how that cached data powers the exercise-related screens, and where raw performance history is still used directly.
 
-It is based on the current code in:
+## Main Files
 
+- `Data/Services/ExerciseHistoryUpdater.swift`
 - `Data/Models/Exercise/ExerciseHistory.swift`
 - `Data/Models/Exercise/ProgressionPoint.swift`
-- `Data/Services/ExerciseHistoryUpdater.swift`
 - `Data/Models/Exercise/Exercise.swift`
-- `Data/Models/Sessions/ExercisePerformance.swift`
-- `Data/Models/Sessions/SetPerformance.swift`
-- `Views/Workout/WorkoutSummaryView.swift`
+- `Views/HomeSections/RecentExercisesSectionView.swift`
+- `Views/Exercise/ExercisesListView.swift`
 - `Views/Exercise/ExerciseDetailView.swift`
 - `Views/Exercise/ExerciseHistoryView.swift`
-- `Views/History/WorkoutsListView.swift`
+- `Views/Exercise/ExerciseProgressionFeedbackSheet.swift`
 - `Data/Services/SpotlightIndexer.swift`
 
-## Core Design
+## Core Idea
 
-`ExerciseHistory` is a **derived analytics cache** — one record per unique `catalogID`. It is always rebuilt from scratch by scanning all completed `ExercisePerformance` records for that exercise.
+VillainArc separates two kinds of exercise data:
 
-Why full rebuild instead of incremental updates:
+- raw workout data in `ExercisePerformance` and `SetPerformance`
+- cached exercise analytics in `ExerciseHistory`
 
-- **Correctness after deletions**: When a workout is deleted, incremental subtraction is error-prone. Full rebuild guarantees accuracy.
-- **Simplicity**: No drift, no accumulation bugs, no need to track deltas.
-- **Acceptable performance**: Typical rebuild is 50-200ms for 50 sessions. It runs after workouts (not during), so it does not affect logging UX.
+`ExerciseHistory` is the read-optimized layer used for recency, stats, charts, and most exercise-facing UI. It is not updated during logging. Instead, it is rebuilt at workout transition boundaries.
 
-The tradeoff is that rebuilds get slower as history grows. For the current app scale this is fine.
+That means the exercise area is mostly powered by a derived cache, not by scanning every workout every time the user opens an exercise screen.
 
-## ExerciseHistory Model
+## The Moment Histories Actually Update
 
-One record per `catalogID`. Stores:
+The main rebuild point is `WorkoutSummaryView.finishSummary()`.
 
-**Session counts:**
-- `lastCompletedAt` — timestamp of the most recent completed performance for this exercise
-- `totalSessions` — number of unique completed workout sessions for this exercise
-- `totalCompletedSets` — total sets across all sessions
-- `totalCompletedReps` — total reps across all sessions
-- `cumulativeVolume` — total weight × reps across all sessions
-- `latestEstimated1RM` — estimated 1RM from the most recent session
+When a workout is really finalized, summary does this sequence:
+1. defer still-pending suggestions
+2. clear active-only prescription links when needed
+3. call `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)`
+4. mark the workout `.done`
+5. save and dismiss
 
-**Personal Records:**
-- `bestEstimated1RM` — highest estimated 1RM ever achieved
-- `bestWeight` — heaviest weight ever used (any set)
-- `bestVolume` — highest single-session volume
-- `bestReps` — highest reps in a single set
+So the important rule is:
 
-**Progression data:**
-- `progressionPoints` — array of `ProgressionPoint` (cascade delete), stores the last 10 sessions for charting
+- exercise history updates when the summary is finalized, not when the user is still logging sets
 
-### recalculate(using:)
-
-This is the core method. Given an array of `ExercisePerformance`:
-
-1. If the array is empty, calls `reset()` which nils `lastCompletedAt`, zeros everything else, and clears progression points
-2. Collapses duplicate `ExercisePerformance` rows from the same `WorkoutSession` into one session summary
-3. Sorts those session summaries by date descending so recency fields are deterministic
-4. Sets `lastCompletedAt` and `latestEstimated1RM` from the most recent session summary
-5. Counts sessions by unique workout session, while still summing all sets, reps, and volume performed across duplicate blocks in that workout
-6. Calculates PRs from the session summaries: max estimated 1RM, max weight, max volume, max reps
-7. Stores progression data: takes the last 10 session summaries and creates one `ProgressionPoint` row per workout session
-
-## ProgressionPoint
-
-One timeseries data point for charting. Stores:
-
-- `date` — when the performance happened
-- `weight` — top weight used in that session
-- `totalReps` — total completed reps in that session
-- `volume` — total volume (weight × reps) for the session
-- `estimated1RM` — best estimated 1RM from that session
-
-These points drive the charts in `ExerciseDetailView`. The view uses a picker to let users switch between charting weight, volume, estimated 1RM, or reps over time.
+This is why the exercise home section, exercises list ordering, charts, and PR baselines all reflect only completed workout history.
 
 ## ExerciseHistoryUpdater
 
-The rebuild pipeline. All methods are `@MainActor` and `static`.
+`Data/Services/ExerciseHistoryUpdater.swift` is the rebuild pipeline.
 
-### updateHistoriesForCompletedWorkout
+### Completion Path
 
-Called from `WorkoutSummaryView.finishSummary()`. This is the primary update path.
+`updateHistoriesForCompletedWorkout(_ session, context:)` is called from `WorkoutSummaryView.finishSummary()`.
 
-1. Collects all `catalogID`s from the workout's exercises
-2. Batch-fetches all matching `ExercisePerformance` rows in one query using `ExercisePerformance.matching(catalogIDs:includingSessionID:)`, with `sets` prefetched so recalc does not trigger per-performance faults
-3. Batch-fetches existing `ExerciseHistory` rows in one query, with progression points prefetched internally during rebuild so chart-point resets do not fault one history at a time
-4. Batch-fetches matching `Exercise` rows in one query for Spotlight reindexing
-5. Rebuilds each affected history from the grouped performance map, creating `ExerciseHistory` on demand when the exercise is being completed for the first time
-6. Reindexes each affected exercise in Spotlight
+It:
+- collects the `catalogID`s from the workout’s exercises
+- batch-fetches matching `ExercisePerformance` rows
+- explicitly includes the just-finished session even though it is still in `.summary`
+- batch-fetches any existing `ExerciseHistory` rows
+- batch-fetches matching `Exercise` catalog rows
+- rebuilds each affected history from scratch
+- reindexes those exercises in Spotlight
 
-The `includingSessionID` parameter is important. At the time this runs, the workout is still in `.summary` status, not `.done`. The fetch descriptor normally only returns `.done` sessions. The `includingSessionID` override ensures the current session's data is included in the rebuild.
+That “include the current session” behavior is important. The workout is not yet `.done`, but the rebuild still needs to see it.
 
-### updateHistoriesForDeletedWorkout
+### Deletion Path
 
-Called after a workout session is deleted. It delegates to `updateHistoriesForDeletedCatalogIDs`, which batch-fetches all remaining completed performances for the affected exercises, batch-fetches matching histories and exercises, then either recalculates or deletes each history depending on whether any completed performances remain. It must be called AFTER the session is deleted from context, so the fetch won't include the deleted performances.
+When a completed workout is deleted from `WorkoutsListView` or `WorkoutDetailView`, the app calls:
 
-### updateHistoriesForDeletedCatalogIDs
+- `updateHistoriesForDeletedCatalogIDs(...)`
 
-This is the shared deletion path used by workout list/detail delete actions and workout delete intents:
+That path:
+- assumes the workout has already been deleted from context
+- fetches the remaining completed performances for the affected exercises
+- recalculates histories that still have data
+- deletes histories that no longer have any completed performances
+- updates exercise Spotlight indexing accordingly
 
-1. Collect the affected `catalogID`s before deleting the workout(s)
-2. Delete the workout session rows from context and remove their workout Spotlight entries
-3. Batch-fetch all remaining completed performances for those `catalogID`s
-4. Batch-fetch existing histories plus matching `Exercise` rows for exercise Spotlight maintenance
-5. For each affected `catalogID`:
-   - If performances remain: recalculate history and reindex the exercise
-   - If no performances remain: delete history and remove the exercise from Spotlight
-6. Save once at the end (or let the caller own the final save in intent flows)
+So histories are rebuilt on both:
+- workout completion
+- workout deletion
 
-### updateHistory (single exercise)
+## ExerciseHistory Model
 
-Updates or creates history for one `catalogID`. Three behaviors:
+`Data/Models/Exercise/ExerciseHistory.swift` stores one history row per exercise `catalogID`.
 
-- **No performances exist**: Deletes history if it exists, removes exercise from Spotlight
-- **Performances exist, no history**: Creates new history, recalculates, indexes in Spotlight
-- **Both exist**: Recalculates existing history
+The cache contains:
+- `lastCompletedAt`
+- `totalSessions`
+- `totalCompletedSets`
+- `totalCompletedReps`
+- `cumulativeVolume`
+- `latestEstimated1RM`
+- `bestEstimated1RM`
+- `bestWeight`
+- `bestVolume`
+- `bestReps`
+- `progressionPoints`
 
-### batchFetchHistories
+The key method is `recalculate(using performances:)`.
 
-Fetches all `ExerciseHistory` records for a set of `catalogID`s in a single query. Returns a dictionary keyed by `catalogID` for O(1) lookup. Used by both the updater and `WorkoutSummaryView.loadPRs()`.
+It:
+- resets to empty when there are no performances
+- groups performances by workout session
+- creates one session summary per workout
+- computes totals and PR-style aggregates from those summaries
+- stores up to 10 `ProgressionPoint` rows for charting
 
-## When History Updates Happen
+This grouping behavior matters because one workout can contain more than one `ExercisePerformance` for the same `catalogID`. The history layer collapses those into one workout-level summary before calculating sessions and chart points.
 
-| Trigger | Method Called | Context |
-|---------|-------------|---------|
-| Workout completed (summary dismissed) | `updateHistoriesForCompletedWorkout` | Includes current session |
-| Single workout deleted | `updateHistoriesForDeletedCatalogIDs` | After session deleted from context |
-| All workouts deleted | `updateHistoriesForDeletedCatalogIDs` | After bulk deletion |
-| Workout deleted from detail view | `updateHistoriesForDeletedCatalogIDs` | After session deleted |
+## ProgressionPoint
 
-History is never updated during active workout logging. It only runs at transition boundaries.
+`Data/Models/Exercise/ProgressionPoint.swift` is the chart point model used by exercise detail charts.
 
-## PR Detection
+Each point stores:
+- date
+- top weight
+- total reps
+- volume
+- estimated 1RM
 
-`WorkoutSummaryView.loadPRs()` detects PRs by comparing the just-finished workout against cached history:
+`ExerciseDetailView` uses these cached points instead of rebuilding chart data from raw performances on demand.
 
-1. Batch-fetches histories for all exercises in the workout
-2. For each exercise, calls `prTypesAndValues(for:history:)`:
-   - **Estimated 1RM PR**: `exercise.bestEstimated1RM > history.bestEstimated1RM` (or history is zero/missing)
-   - **Weight PR**: `exercise.bestWeight > history.bestWeight` (or history is zero/missing)
-   - **Volume PR**: combined workout volume for that `catalogID` is `> history.bestVolume` (or history is zero/missing)
-3. First-time exercises (no history yet) get PRs for any non-zero metrics
+## Exercise Home Section
 
-PR detection runs before exercise history is rebuilt. This is by design — comparing against the pre-updated cache is what makes the comparison meaningful. If history were rebuilt first, every session would match its own records.
+`Views/HomeSections/RecentExercisesSectionView.swift` is the home exercise card.
+
+It does not use `Exercise.lastAddedAt`. Instead, it uses:
+- all catalog `Exercise` rows
+- recent `ExerciseHistory` rows from `ExerciseHistory.recentCompleted(limit: 3)`
+- `ExerciseHistoryOrdering`
+
+That means the home card is driven by completed-workout recency, not picker recency.
+
+The display rows come from `Views/Components/ExerciseSummaryRow.swift`, and tapping through routes into the exercise area through `AppRouter`.
+
+If the home section looks wrong, the first files to inspect are:
+- `RecentExercisesSectionView.swift`
+- `ExerciseHistory.swift`
+- `ExerciseHistoryUpdater.swift`
+
+## Exercises List
+
+`Views/Exercise/ExercisesListView.swift` is the full exercise browser.
+
+It combines:
+- all `Exercise` catalog rows
+- all recent `ExerciseHistory` rows
+- `ExerciseHistoryOrdering`
+- `Helpers/ExerciseSearch.swift`
+- `Helpers/TextNormalization.swift`
+
+The important behavior is:
+- default ordering is based on `ExerciseHistory.lastCompletedAt`
+- search is still run against the catalog/search metadata in `Exercise`
+- favorites are stored on `Exercise`
+
+So the exercise list is a blend of:
+- catalog identity and searchability from `Exercise`
+- workout-based recency from `ExerciseHistory`
+
+If ordering is wrong but search looks fine, the issue is usually history-related, not list-UI-related.
 
 ## Exercise Detail View
 
-`ExerciseDetailView` is the read-only analytics screen for one exercise. It uses:
+`Views/Exercise/ExerciseDetailView.swift` is the main analytics screen for one exercise.
 
-- `@Query(Exercise.withCatalogID)` for the exercise catalog data
-- `@Query(ExerciseHistory.forCatalogID)` for the cached metrics
+It queries:
+- `Exercise.withCatalogID(...)` for the catalog row
+- `ExerciseHistory.forCatalogID(...)` for the cached analytics
 
-It does NOT scan `ExercisePerformance` directly. All data comes from the cache.
+It does not scan `ExercisePerformance` directly for its stat tiles or chart data.
 
-Display:
-- **Stat tiles** (`SummaryStatCard`): Shows non-zero metrics from the history (total sessions, total sets, total reps, best weight, best volume, best estimated 1RM, etc.)
-- **Progression chart**: Line chart with point marks using `ProgressionPoint` data. A picker lets users switch between weight, volume, estimated 1RM, and reps over time
-- **Footer button**: Links to `ExerciseHistoryView` for the full performance list
+The detail view uses `ExerciseHistory` for:
+- total sessions
+- completed sets and reps
+- cumulative volume
+- best reps
+- best weight
+- latest estimated 1RM
+- best volume
+- chart points through `progressionPoints`
+
+It also gates the AI progression surface through:
+- `ExerciseProgressionContextBuilder.minimumSessionCount`
+
+And it links to:
+- `ExerciseHistoryView` for raw completed performances
+- `ExerciseProgressionFeedbackSheet` for AI progression feedback
+
+This split is intentional:
+- `ExerciseDetailView` is the cached analytics surface
+- `ExerciseHistoryView` is the raw-performance drill-down
 
 ## Exercise History View
 
-`ExerciseHistoryView` shows every completed performance for one `catalogID`, sectioned by workout date. Each section displays a set grid with:
+`Views/Exercise/ExerciseHistoryView.swift` is the raw history screen.
 
-- Set label/type
-- Weight and reps
-- Rest time
-- Rep range
-- Per-set RPE badges (`RPEBadge`)
-- Notes
+Unlike `ExerciseDetailView`, this screen does query actual performances:
+- `ExercisePerformance.matching(catalogID: ...)`
 
-This view uses `@Query(ExercisePerformance.matching(...))` to fetch directly from performances, not from the cache. It's the detailed drill-down, not the analytics summary.
+It shows:
+- one section per completed performance
+- set grids
+- set type labels
+- reps, weight, rest
+- visible RPE badges
+- performance notes
 
-## Spotlight Integration
+This is where you go when you need the literal performed sets rather than cached aggregates.
 
-Exercise Spotlight eligibility is driven by `ExerciseHistory` presence:
+So the distinction is:
+- `ExerciseHistory` cache drives summary analytics
+- `ExercisePerformance` rows drive raw performance history
 
-- **Indexing**: When `ExerciseHistoryUpdater` creates or updates a history, it calls `SpotlightIndexer.index(exercise:)` for that exercise
-- **Deindexing**: When history is deleted (no performances remain), it calls `SpotlightIndexer.deleteExercise(catalogID:)`
+## Exercise Progression Feedback
 
-This means only exercises that have been used at least once appear in Spotlight search. Unused catalog exercises are not indexed.
+`Views/Exercise/ExerciseProgressionFeedbackSheet.swift` is the AI coaching surface attached to exercise detail.
 
-## History Lifecycle
+It depends on:
+- `Data/Services/AI/ExerciseProgression/ExerciseProgressionContextBuilder.swift`
+- `Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift`
+- cached history from `ExerciseHistory`
+- a small recent-performance window from `ExercisePerformance`
 
-**Creation**: An `ExerciseHistory` record is created the first time a workout is completed that includes that exercise. The rebuild pipeline creates it on demand when performances exist but no cached history row does.
+This feature does not mutate plans or suggestions. It is exercise-focused feedback layered on top of the exercise detail area.
 
-**Updates**: Every subsequent workout completion triggers a full recalculate for each exercise in that workout.
+## PR Detection and History
 
-**Deletion**: When the last completed performance for an exercise is removed (typically by deleting the only workout containing it), `updateHistory` finds zero performances and deletes the history record. The exercise is also removed from Spotlight.
+`WorkoutSummaryView` uses `ExerciseHistoryUpdater.batchFetchHistories(...)` before the history rebuild to compare the just-finished workout against the previous cache.
 
-## Edge Cases
+That is how PR detection works correctly:
+- compare current workout values against the old cache first
+- then rebuild the cache when summary is finalized
 
-### Bodyweight / no-load exercises
+If the app rebuilt history before checking PRs, the workout would be comparing against itself and the PR logic would be useless.
 
-Exercises with `weight == 0` on all sets still get valid history. `totalCompletedReps` and `bestReps` are the meaningful metrics. `ProgressionPoint.totalReps` provides the chart data. The detail view shows rep-based stats and hides weight-based ones when they're zero.
+## Spotlight and Exercise Eligibility
 
-### Exercises with no completed sets
+Exercise Spotlight behavior is tied to history presence, not just catalog existence.
 
-If a workout includes an exercise but no sets were marked complete, that exercise still appears in the performance history (it has a `ExercisePerformance` record). However, all metrics would be zero. The recalculation handles this gracefully — zero-metric sessions still count toward `totalSessions`.
-
-### Deleting the only workout with an exercise
-
-The exercise catalog entry (`Exercise`) is never deleted — it remains in the catalog. But the `ExerciseHistory` record is deleted, the exercise is removed from Spotlight, and the detail view shows empty state.
-
-### Multiple exercises with same catalogID in one workout
-
-Each exercise in a workout still has its own `ExercisePerformance`, and the rebuild fetch returns all of them. But `ExerciseHistory.recalculate(using:)` now collapses rows with the same `catalogID` and `workoutSession.id` into one session summary before computing totals, PRs, and progression points.
+`SpotlightIndexer` only keeps exercises indexed when completed history exists.
 
 That means:
-- `totalSessions` counts the workout once
-- `bestVolume` uses the combined volume for that exercise across the whole workout
-- progression charts show one point for that workout
-- `totalCompletedSets`, `totalCompletedReps`, and `cumulativeVolume` still include all work performed across duplicate exercise blocks
+- when a history row is created or updated, the exercise can be indexed
+- when the last completed performance disappears, the history row is deleted and the exercise is removed from Spotlight
 
-### History rebuild during summary
+The catalog row itself still exists. Only its history-backed visibility changes.
 
-The history rebuild in `finishSummary()` uses `includingSessionID` to include the current session. This means the session's data is reflected in the cache even before the session transitions to `.done`. Once it does transition, subsequent fetches (which filter on `.done` status) will naturally include it.
+## Recency Rules
+
+VillainArc has two different recency concepts:
+
+- `Exercise.lastAddedAt`: picker/add-replace recency
+- `ExerciseHistory.lastCompletedAt`: completed-workout recency
+
+User-facing exercise ordering in the home section and exercises list uses completed-workout recency through `ExerciseHistory`, not `lastAddedAt`.
+
+That distinction is important when debugging “why is this exercise showing up here?” behavior.
+
+## Common Edge Cases
+
+### No-load or bodyweight exercises
+
+Weight-based fields may stay zero, but history still works because reps-based totals and progression points still exist.
+
+### First-ever completion of an exercise
+
+The catalog `Exercise` row already exists, but the `ExerciseHistory` row is created on demand the first time the exercise appears in a completed workout.
+
+### Deleting the only workout for an exercise
+
+The catalog `Exercise` remains, but:
+- `ExerciseHistory` is deleted
+- the exercise disappears from history-driven Spotlight indexing
+- exercise detail falls back to its empty state
+
+### Multiple entries for the same exercise in one workout
+
+History aggregation collapses those rows into one workout-level summary before computing session counts and chart points.
+
+## What To Read By Problem
+
+- History did not update after finishing a workout: `WorkoutSummaryView.swift`, `ExerciseHistoryUpdater.swift`
+- Exercise disappeared or stayed in Spotlight incorrectly: `ExerciseHistoryUpdater.swift`, `SpotlightIndexer.swift`
+- Home exercise section ordering is wrong: `RecentExercisesSectionView.swift`, `ExerciseHistory.swift`
+- Exercises list ordering is wrong: `ExercisesListView.swift`, `ExerciseHistoryOrdering`
+- Detail screen stats or charts are wrong: `ExerciseDetailView.swift`, `ExerciseHistory.swift`, `ProgressionPoint.swift`
+- Raw exercise performance history is wrong: `ExerciseHistoryView.swift`, `ExercisePerformance.matching(...)`

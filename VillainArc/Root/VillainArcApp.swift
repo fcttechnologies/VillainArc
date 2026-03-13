@@ -1,4 +1,3 @@
-import AppIntents
 import CoreSpotlight
 import SwiftUI
 import SwiftData
@@ -8,11 +7,7 @@ struct VillainArcApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .task {
-                    cleanupEditingWorkoutPlanCopies()
-                    VillainArcShortcuts.updateAppShortcutParameters()
-                }
+            RootView()
                 .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
                     Task { @MainActor in
                         AppRouter.shared.handleSpotlight(userActivity)
@@ -31,16 +26,5 @@ struct VillainArcApp: App {
                 .onContinueUserActivity("com.villainarc.siri.endWorkout") { _ in }
         }
         .modelContainer(SharedModelContainer.container)
-    }
-
-    @MainActor
-    private func cleanupEditingWorkoutPlanCopies() {
-        let context = ModelContext(SharedModelContainer.container)
-        let editingCopies = (try? context.fetch(WorkoutPlan.editingCopies)) ?? []
-        guard !editingCopies.isEmpty else { return }
-        for copy in editingCopies {
-            context.delete(copy)
-        }
-        saveContext(context: context)
     }
 }

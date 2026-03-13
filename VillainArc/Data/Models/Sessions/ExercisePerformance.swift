@@ -233,6 +233,7 @@ extension ExercisePerformance {
         }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.fetchLimit = 1
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
         return descriptor
     }
     
@@ -242,6 +243,17 @@ extension ExercisePerformance {
             item.catalogID == catalogID && item.workoutSession?.status == done
         }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+    }
+
+    static func recentForProgressionFeedback(catalogID: String, limit: Int) -> FetchDescriptor<ExercisePerformance> {
+        let done = SessionStatus.done.rawValue
+        let predicate = #Predicate<ExercisePerformance> { item in
+            item.catalogID == catalogID && item.workoutSession?.status == done
+        }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        descriptor.fetchLimit = limit
+        descriptor.relationshipKeyPathsForPrefetching = [\.repRange, \.sets]
+        return descriptor
     }
 
     static func matching(catalogID: String, includingSessionID sessionID: UUID) -> FetchDescriptor<ExercisePerformance> {

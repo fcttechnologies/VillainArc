@@ -5,11 +5,6 @@ struct ExerciseSummaryRow: View {
     let exercise: Exercise
     let history: ExerciseHistory?
     private let appRouter = AppRouter.shared
-
-    init(exercise: Exercise, history: ExerciseHistory? = nil) {
-        self.exercise = exercise
-        self.history = history
-    }
     
     var body: some View {
         Button {

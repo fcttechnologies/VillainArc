@@ -84,6 +84,17 @@ final class AppRouter {
         activeWorkoutPlan = newWorkoutPlan
     }
 
+    func createWorkoutPlan(from workout: WorkoutSession) {
+        guard !hasActiveFlow() else { return }
+        Haptics.selection()
+        let newWorkoutPlan = WorkoutPlan(from: workout)
+        context.insert(newWorkoutPlan)
+        workout.workoutPlan = newWorkoutPlan
+        saveContext(context: context)
+        activeWorkoutPlanOriginal = nil
+        activeWorkoutPlan = newWorkoutPlan
+    }
+
     func editWorkoutPlan(_ plan: WorkoutPlan) {
         guard !hasActiveFlow(), plan.completed, !plan.isEditing else { return }
         Haptics.selection()

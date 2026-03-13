@@ -136,7 +136,9 @@ extension WorkoutPlan {
     }
     
     static var all: FetchDescriptor<WorkoutPlan> {
-        return FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
+        var descriptor = FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        return descriptor
     }
 
     static var editingCopies: FetchDescriptor<WorkoutPlan> {
@@ -146,6 +148,7 @@ extension WorkoutPlan {
 
     static var recent: FetchDescriptor<WorkoutPlan> {
         var descriptor = FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         descriptor.fetchLimit = 1
         return descriptor
     }

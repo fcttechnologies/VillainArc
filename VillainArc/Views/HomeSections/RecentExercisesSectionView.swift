@@ -2,18 +2,18 @@ import SwiftUI
 import SwiftData
 
 struct RecentExercisesSectionView: View {
-    @Query private var exercises: [Exercise]
-    @Query private var histories: [ExerciseHistory]
+    @Environment(\.modelContext) private var context
+    @Query(ExerciseHistory.recentCompleted(limit: 3)) private var histories: [ExerciseHistory]
+    @State private var exercises: [Exercise] = []
 
     private let appRouter = AppRouter.shared
 
-    init() {
-        _exercises = Query()
-        _histories = Query(ExerciseHistory.recentCompleted(limit: 3))
-    }
-
     private var historyOrdering: ExerciseHistoryOrdering {
         ExerciseHistoryOrdering(histories: histories)
+    }
+
+    private var recentCatalogIDs: [String] {
+        histories.map(\.catalogID)
     }
 
     private var recentExercises: [Exercise] {
@@ -39,6 +39,9 @@ struct RecentExercisesSectionView: View {
                 }
             }
         }
+        .task(id: recentCatalogIDs) {
+            fetchRecentExercises()
+        }
     }
 
     private var unavailableView: some View {
@@ -55,6 +58,18 @@ struct RecentExercisesSectionView: View {
         .accessibilityLabel("No Exercises Used")
         .accessibilityValue("Complete exercises in workouts to track progress here.")
         .accessibilityHint("Shows all tracked exercises.")
+    }
+
+    @MainActor
+    private func fetchRecentExercises() {
+        guard !recentCatalogIDs.isEmpty else {
+            exercises = []
+            return
+        }
+
+        let fetchedExercises = (try? context.fetch(Exercise.withCatalogIDs(recentCatalogIDs))) ?? []
+        let exerciseByCatalogID = Dictionary(uniqueKeysWithValues: fetchedExercises.map { ($0.catalogID, $0) })
+        exercises = recentCatalogIDs.compactMap { exerciseByCatalogID[$0] }
     }
 }
 

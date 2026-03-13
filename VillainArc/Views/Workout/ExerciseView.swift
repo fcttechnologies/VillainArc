@@ -15,6 +15,7 @@ struct ExerciseView: View {
     @State private var showExerciseHistorySheet = false
     @State private var restTimeUpdateDeltaSeconds = 0
     @State private var restTimeUpdateSeconds = 0
+    @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
 
     private var autoStartRestTimerEnabled: Bool {
         appSettings.first?.autoStartRestTimer ?? true
@@ -23,10 +24,6 @@ struct ExerciseView: View {
     init(exercise: ExercisePerformance, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
         self.onDeleteExercise = onDeleteExercise
-    }
-
-    private var previousSets: [SetPerformance] {
-        (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
     }
 
     private var shouldUseTargetReference: Bool {
@@ -43,9 +40,7 @@ struct ExerciseView: View {
     }
 
     private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
-        guard set.index < previousSets.count else { return nil }
-        let prevSet = previousSets[set.index]
-        return SetReferenceData(reps: prevSet.reps, weight: prevSet.weight, targetRPE: nil, actionLabel: "Use Previous")
+        previousReferenceBySetIndex[set.index]
     }
 
     private func referenceData(for set: SetPerformance) -> SetReferenceData? {
@@ -212,6 +207,9 @@ struct ExerciseView: View {
                 }
                 .presentationDetents([.medium, .large])
             }
+            .task(id: exercise.catalogID) {
+                loadPreviousReferenceData()
+            }
         }
     }
 
@@ -234,6 +232,18 @@ struct ExerciseView: View {
         restTimeUpdateDeltaSeconds = newRestSeconds - originalSeconds
         restTimeUpdateSeconds = newRestSeconds
         showRestTimeUpdateAlert = true
+    }
+
+    private func loadPreviousReferenceData() {
+        guard !shouldUseTargetReference else {
+            previousReferenceBySetIndex = [:]
+            return
+        }
+
+        let previousSets = (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
+        previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
+            (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, targetRPE: nil, actionLabel: "Use Previous"))
+        })
     }
 }
 

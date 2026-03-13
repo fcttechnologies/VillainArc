@@ -4,14 +4,9 @@ import SwiftData
 struct ExercisesListView: View {
     @Environment(\.modelContext) private var context
     @Query private var exercises: [Exercise]
-    @Query private var histories: [ExerciseHistory]
+    @Query(ExerciseHistory.recentCompleted()) private var histories: [ExerciseHistory]
     @State private var searchText = ""
     @State private var favoritesOnly = false
-
-    init() {
-        _exercises = Query()
-        _histories = Query(ExerciseHistory.recentCompleted())
-    }
 
     private var hasFavorites: Bool {
         exercises.contains(where: \.favorite)
@@ -23,30 +18,10 @@ struct ExercisesListView: View {
 
     private var filteredExercises: [Exercise] {
         let sourceExercises = favoritesOnly ? exercises.filter(\.favorite) : exercises
-        let cleanText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let queryTokens = normalizedTokens(for: cleanText)
-
-        if queryTokens.isEmpty {
-            return historyOrdering.ordered(sourceExercises)
-        }
-
-        let scored = exerciseSearchMatches(in: sourceExercises, queryTokens: queryTokens)
-        if !scored.isEmpty {
-            return scored
-                .sorted { left, right in
-                    if left.score != right.score {
-                        return left.score > right.score
-                    }
-                    return historyOrdering.isOrderedBefore(left.exercise, right.exercise)
-                }
-                .map(\.exercise)
-        }
-
-        guard shouldUseFuzzySearch(queryTokens: queryTokens) else { return [] }
-
-        return sourceExercises
-            .filter { matchesSearchFuzzy($0, queryTokens: queryTokens) }
-            .sorted(by: historyOrdering.isOrderedBefore)
+        return searchedExercises(in: sourceExercises, query: searchText, orderedBy: historyOrdering.isOrderedBefore, score: { exercise, _, queryTokens in
+                exerciseSearchScore(for: exercise, queryTokens: queryTokens)
+            }
+        )
     }
 
     var body: some View {
@@ -110,31 +85,6 @@ struct ExercisesListView: View {
         .tint(.yellow)
         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseFavoriteToggle(exercise))
     }
-
-    private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        if queryTokens.isEmpty {
-            return true
-        }
-
-        let haystackTokens = cachedExerciseSearchTokens(for: exercise)
-
-        return queryTokens.allSatisfy { queryToken in
-            let maxDistance = maximumFuzzyDistance(for: queryToken)
-            return haystackTokens.contains { token in
-                if token == queryToken {
-                    return true
-                }
-                if maxDistance == 0 {
-                    return false
-                }
-                if abs(token.count - queryToken.count) > maxDistance {
-                    return false
-                }
-                return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
-            }
-        }
-    }
-
 }
 
 #Preview {

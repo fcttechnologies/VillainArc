@@ -9,7 +9,6 @@ struct WorkoutDetailView: View {
     let workout: WorkoutSession
     
     @State private var showDeleteWorkoutConfirmation: Bool = false
-    @State private var newWorkoutPlan: WorkoutPlan?
     @State private var showPreWorkoutContextSheet = false
 
     private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
@@ -164,9 +163,6 @@ struct WorkoutDetailView: View {
                 }
             }
         }
-        .fullScreenCover(item: $newWorkoutPlan) {
-            WorkoutPlanView(plan: $0)
-        }
         .sheet(isPresented: $showPreWorkoutContextSheet) {
             NavigationStack {
                 List {
@@ -222,12 +218,7 @@ struct WorkoutDetailView: View {
 
     private func saveWorkoutAsPlan() {
         guard workout.workoutPlan == nil else { return }
-        Haptics.selection()
-        let plan = WorkoutPlan(from: workout)
-        context.insert(plan)
-        workout.workoutPlan = plan
-        saveContext(context: context)
-        newWorkoutPlan = plan
+        router.createWorkoutPlan(from: workout)
     }
 
     private func openWorkoutPlan(_ plan: WorkoutPlan) {

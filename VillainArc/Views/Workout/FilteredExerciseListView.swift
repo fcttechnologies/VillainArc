@@ -46,17 +46,11 @@ struct FilteredExerciseListView: View {
     }
     
     private var filteredExercises: [Exercise] {
-        let cleanText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let queryTokens = normalizedTokens(for: cleanText)
         let sourceExercises = (selectedOnly ? selectedExercises : allExercises).filter { !excludedCatalogIDs.contains($0.catalogID) }
         let needsFavoriteFilter = favoritesOnly && selectedOnly
         let needsMuscleFilter = !muscleFilters.isEmpty
         let needsFilters = needsFavoriteFilter || needsMuscleFilter
-        
-        if queryTokens.isEmpty && !needsFilters {
-            return sourceExercises
-        }
-        
+
         let baseFiltered = needsFilters ? sourceExercises.filter { exercise in
             let matchesFavorites = !needsFavoriteFilter || exercise.favorite
             let matchesMuscleFilter = !needsMuscleFilter ||
@@ -64,30 +58,10 @@ struct FilteredExerciseListView: View {
             
             return matchesFavorites && matchesMuscleFilter
         } : sourceExercises
-        
-        if queryTokens.isEmpty {
-            return baseFiltered
-        }
-        
-        let scored = exerciseSearchMatches(in: baseFiltered, queryTokens: queryTokens)
-        if !scored.isEmpty {
-            return scored.sorted { left, right in
-                if left.score != right.score {
-                    return left.score > right.score
-                }
-                return isOrderedBefore(left.exercise, right.exercise)
-            }.map(\.exercise)
-        }
 
-        guard shouldUseFuzzySearch(queryTokens: queryTokens) else { return [] }
-
-        let fuzzyFiltered = baseFiltered.filter { exercise in
-            matchesSearchFuzzy(exercise, queryTokens: queryTokens)
-        }
-        if fuzzyFiltered.isEmpty {
-            return []
-        }
-        return fuzzyFiltered.sorted(by: isOrderedBefore)
+        return searchedExercises(in: baseFiltered, query: searchText, orderedBy: isOrderedBefore, score: { exercise, _, queryTokens in
+                exerciseSearchScore(for: exercise, queryTokens: queryTokens)
+            })
     }
     
     var body: some View {
@@ -205,30 +179,6 @@ struct FilteredExerciseListView: View {
         } else {
             ContentUnavailableView.search(text: searchText)
                 .accessibilityIdentifier("filteredExerciseEmptySearchState")
-        }
-    }
-
-    private func matchesSearchFuzzy(_ exercise: Exercise, queryTokens: [String]) -> Bool {
-        if queryTokens.isEmpty {
-            return true
-        }
-        
-        let haystackTokens = cachedExerciseSearchTokens(for: exercise)
-        
-        return queryTokens.allSatisfy { queryToken in
-            let maxDistance = maximumFuzzyDistance(for: queryToken)
-            return haystackTokens.contains { token in
-                if token == queryToken {
-                    return true
-                }
-                if maxDistance == 0 {
-                    return false
-                }
-                if abs(token.count - queryToken.count) > maxDistance {
-                    return false
-                }
-                return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
-            }
         }
     }
 

@@ -2,14 +2,6 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var router = AppRouter.shared
-    @State private var onboardingManager = OnboardingManager()
-
-    private var onboardingBinding: Binding<Bool> {
-        Binding(
-            get: { onboardingManager.state.shouldPresentSheet },
-            set: { _ in }
-        )
-    }
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -37,7 +29,7 @@ struct ContentView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("homeRecentExercisesSection")
             }
-            .navBar(title: "Home")
+            .navBar(title: "Home", includePadding: false)
             .scrollIndicators(.hidden)
             .toolbar {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -63,19 +55,6 @@ struct ContentView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeOptionsMenu)
                     .accessibilityHint(AccessibilityText.homeOptionsMenuHint)
                 }
-            }
-            .task {
-                await onboardingManager.startOnboarding()
-            }
-            .onChange(of: onboardingManager.state) { _, newState in
-                guard newState == .ready else { return }
-                router.checkForUnfinishedData()
-            }
-            .sheet(isPresented: onboardingBinding) {
-                OnboardingView(manager: onboardingManager)
-                    .presentationDetents([.fraction(0.5)])
-                    .presentationBackground(Color(.systemBackground))
-                    .interactiveDismissDisabled(true)
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutSessionContainer(workout: $0)

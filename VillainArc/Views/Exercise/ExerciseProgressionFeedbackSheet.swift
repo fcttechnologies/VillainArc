@@ -16,7 +16,7 @@ struct ExerciseProgressionFeedbackSheet: View {
         self.catalogID = catalogID
         _exercises = Query(Exercise.withCatalogID(catalogID))
         _histories = Query(ExerciseHistory.forCatalogID(catalogID))
-        _performances = Query(ExercisePerformance.matching(catalogID: catalogID))
+        _performances = Query(ExercisePerformance.recentForProgressionFeedback(catalogID: catalogID, limit: ExerciseProgressionContextBuilder.maximumRecentPerformances))
     }
 
     private var exercise: Exercise? {

@@ -1,253 +1,266 @@
 # Workout Session Lifecycle
 
-This document describes the actual implementation of the workout session lifecycle in VillainArc, from creation through completion, including all status transitions, finish logic, and edge cases.
+This document explains how workout sessions move through the app: where they start, how the app prevents conflicting flows, how sessions resume on launch, what happens during logging, how finish and summary work, and which intents and live-activity actions participate in that lifecycle.
 
-It is based on the current code in:
+## Main Files
 
+- `Data/Services/AppRouter.swift`
 - `Data/Models/Sessions/WorkoutSession.swift`
 - `Data/Models/Sessions/ExercisePerformance.swift`
 - `Data/Models/Sessions/SetPerformance.swift`
-- `Data/Models/Sessions/PreWorkoutContext.swift`
-- `Data/Services/AppRouter.swift`
 - `Views/Workout/WorkoutSessionContainer.swift`
 - `Views/Workout/WorkoutView.swift`
 - `Views/Workout/WorkoutSummaryView.swift`
-- `Data/Models/Enums/Sessions/SessionStatus.swift`
-- `Data/Models/Enums/Sessions/Origin.swift`
+- `Views/Suggestions/DeferredSuggestionsView.swift`
 - `Data/LiveActivity/WorkoutActivityManager.swift`
+- `Data/Services/RestTimerState.swift`
 
-## Core Model
+## Session Model
 
-`WorkoutSession` is the root model for a workout in progress or completed. It stores:
+`WorkoutSession` is the root record for a workout in progress or a completed workout. It owns:
+- workout metadata like `title`, `notes`, `startedAt`, and `endedAt`
+- lifecycle state through `status`
+- the optional source `WorkoutPlan`
+- `PreWorkoutContext`
+- child `ExercisePerformance` rows and their `SetPerformance` rows
+- `activeExercise` for workout UI and live-activity state
+- `postEffort`
+- any `SuggestionEvent` rows generated from the session
 
-- `id`, `title`, `notes` — user-facing metadata
-- `status` — raw string backing `SessionStatus` (pending/active/summary/done)
-- `startedAt`, `endedAt` — timestamps
-- `origin` — provenance for the session (`.user`, `.plan`, `.session`, or `.ai`; current workout creation paths use `.user` and `.plan`)
-- `preWorkoutContext` — optional mood/notes captured before the workout (cascade delete)
-- `workoutPlan` — optional link to the source plan (nullify on plan delete)
-- `exercises` — array of `ExercisePerformance` (cascade delete)
-- `activeExercise` — the currently focused exercise (nullify)
-- `postEffort` — 1-10 effort rating set during summary
-- `createdSuggestionEvents` — grouped suggestions generated from this session
+Plan-based sessions are created with `WorkoutSession(from: plan)`. Empty workouts use the default initializer.
 
-Each `ExercisePerformance` owns an array of `SetPerformance` rows. Sets track weight, reps, set type, completion state, actual RPE, rest time, and optional back-references to their originating prescription/set prescription.
+## Session States
 
-## Session Status Lifecycle
+Workout sessions move through four states:
 
+```text
+pending -> active -> summary -> done
 ```
-pending → active → summary → done
-```
 
-- **pending**: Session has deferred/pending suggestions to review before the workout begins. Only happens for plan-based sessions.
-- **active**: User is logging sets. This is where the bulk of the workout happens.
-- **summary**: Workout is finished. User reviews stats, PRs, effort rating, and generated suggestions.
-- **done**: Locked. Summary has been dismissed, exercise histories rebuilt, all data finalized.
+- `pending`: the session is blocked on pre-workout suggestion review
+- `active`: the user is logging the workout
+- `summary`: the workout has been finished and is showing post-workout review
+- `done`: summary has been finalized and the workout is now a completed record
 
-`WorkoutSessionContainer` routes the UI based on `statusValue`:
+`Views/Workout/WorkoutSessionContainer.swift` is the UI router for those states:
+- `.pending` -> `Views/Suggestions/DeferredSuggestionsView.swift`
+- `.active` -> `Views/Workout/WorkoutView.swift`
+- `.summary` and `.done` -> `Views/Workout/WorkoutSummaryView.swift`
 
-- `.pending` → `DeferredSuggestionsView`
-- `.active` → `WorkoutView`
-- `.summary` / `.done` → `WorkoutSummaryView`
+## Where Sessions Start
 
-Transitions between these states are animated with a trailing-edge slide.
+There are three main ways a session begins.
 
-## Starting a Workout
+### 1. Start an Empty Workout
 
-There are two paths.
+Common entrypoints:
+- home "+" menu in `Views/ContentView.swift`
+- `Intents/Workout/StartWorkoutIntent.swift`
+- legacy Siri start-workout handoff into `AppRouter`
 
-### Freeform
+All of these eventually route into `AppRouter.startWorkoutSession()`, which:
+- checks that no active workout or plan flow already exists
+- creates a new `WorkoutSession()`
+- inserts and saves it
+- presents it through `activeWorkoutSession`
 
-`AppRouter.startWorkoutSession()`:
+### 2. Start From a Workout Plan
 
-1. Guards `hasActiveFlow()` — returns immediately if any workout or plan editing is active
-2. Creates a new `WorkoutSession()` with default title "New Workout", `.active` status, and `.user` origin
-3. A `PreWorkoutContext` is auto-created in the initializer
-4. Inserts into SwiftData context and saves
-5. Sets `activeWorkoutSession`, which triggers `ContentView`'s full-screen cover
+Common entrypoints:
+- `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
+- `Intents/WorkoutPlan/StartWorkoutWithPlanIntent.swift`
 
-### Plan-Based
+These route into `AppRouter.startWorkoutSession(from:)`, which:
+- checks that no active flow exists
+- creates `WorkoutSession(from: plan)`
+- inserts and saves it
+- sets the session to `.pending` instead of `.active` when the plan already has pending or deferred suggestion events
 
-`AppRouter.startWorkoutSession(from plan:)`:
+### 3. Start Today’s Workout From a Split
 
-1. Same `hasActiveFlow()` guard
-2. Creates `WorkoutSession(from: plan)` which:
-   - Copies `title` and `notes` from the plan
-   - Sets `origin = .plan`
-   - Links `workoutPlan = plan`
-   - Maps `plan.sortedExercises` into `ExercisePerformance` rows (each linked back to its `ExercisePrescription`)
-   - Updates `plan.lastUsed`
-3. Checks `pendingSuggestionEvents(for: plan, in: context)` — if any pending/deferred grouped suggestions exist, sets status to `.pending` instead of `.active`
-4. Inserts, saves, and presents
+Common entrypoints:
+- `Views/HomeSections/WorkoutSplitSectionView.swift`
+- `Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift`
 
-When performance rows are created from prescriptions, each `ExercisePerformance` gets its sets pre-populated from the plan's `SetPrescription` rows. Those live prescription back-references are still used during the active workout, and plan-started exercises also store immutable `originalTargetSnapshot` values while each linked `SetPerformance` freezes its `linkedTargetSetIndex`, so later historical suggestion logic does not depend on those links remaining forever.
+This path resolves the plan from the active split first, then still routes into `AppRouter.startWorkoutSession(from:)`.
 
-During a plan-based workout, if the user deletes a prescribed session set and later adds a set back, `ExercisePerformance.addSet()` only restores a prescription link when the deleted prescription was a **tail** slot — i.e., no remaining set is linked to a prescription with a higher index. This handles the common "delete last set, change my mind, add it back" case. If the deleted prescription would create a hole in the middle (e.g., deleting set 1 of 3 while sets 2 and 3 still carry their links), adding a set creates a new unlinked set at the end instead, since the user likely wants an extra set rather than the one they removed.
+## Single Active Flow Rule
 
-## Resuming Unfinished Work
+VillainArc enforces one active flow at a time through `AppRouter`.
 
-`AppRouter.checkForUnfinishedData()` runs on app launch from `ContentView`'s task:
+`AppRouter.hasActiveFlow()` blocks new flow entry when any of these are true:
+- a workout session is already being presented
+- a workout plan flow is already being presented
+- an incomplete workout session exists in persistence
+- an incomplete workout plan exists in persistence
 
-1. Guards `hasPresentedFlow` to avoid double-presenting
-2. First checks `WorkoutSession.incomplete` (any session not `.done`, limit 1)
-3. If found, calls `resumeWorkoutSession(workoutSession)` — sets `activeWorkoutSession` without creating a new session
-4. If no incomplete workout, checks `WorkoutPlan.resumableIncomplete` (any plan that's `!completed && !isEditing`, limit 1)
-5. If found, calls `resumeWorkoutPlanCreation(plan)`
+This is why UI buttons, App Intents, Siri handoffs, and Spotlight routes do not create parallel session/plan flows.
 
-Priority is always: **resume workout first**, then resume plan. This means if the user was editing a plan and started a workout, the workout takes precedence on relaunch.
+## Launch Resume
 
-## Active Flow Guards
+After onboarding is ready, `Root/RootView.swift` calls `AppRouter.checkForUnfinishedData()`.
 
-`hasActiveFlow()` prevents concurrent flows. It checks three conditions:
+That method:
+1. avoids double-presenting if a flow is already on screen
+2. checks for an incomplete `WorkoutSession`
+3. if none exists, checks for a resumable incomplete `WorkoutPlan`
 
-1. `hasPresentedFlow` — is a workout or plan already being presented in the UI?
-2. `hasPersistedIncompleteWorkoutSession()` — does an incomplete session exist in the database?
-3. `hasPersistedActivePlanWork()` — does an incomplete plan exist in the database?
+In normal use there should only be one active flow, but the router still applies this ordering defensively.
 
-This guard is checked before starting a new workout, creating a new plan, handling Spotlight results, or handling Siri workout commands. If any condition is true, the action is silently ignored.
+If an incomplete workout session exists, the app resumes it by setting `activeWorkoutSession` instead of creating a new one.
 
-## During the Workout
+## Active Workout Phase
 
-`WorkoutView` is the primary active-workout screen. Key behaviors:
+`Views/Workout/WorkoutView.swift` is the main active-workout screen.
 
-- **Exercise pager**: TabView showing one exercise at a time, with swipe navigation
-- **Add exercise**: Opens `AddExerciseView` modal to select from the catalog
-- **Set logging**: Each set row (`ExerciseSetRowView`) handles weight/reps input, completion toggling, set type changes, and RPE recording
-- **Reference column**: Exercises linked to a plan prescription show a Target column sourced only from each set's linked `SetPrescription`; unlinked rows show `-` instead of falling back to previous-by-index. Exercises without a linked prescription use previous-performance references.
-- **Rest timer**: Auto-starts on set completion via `RestTimerState.shared.start()`, shown in `RestTimerView` sheet
-- **Live Activity**: Started with `WorkoutActivityManager.start()` when the workout begins, updated on set completion and exercise changes, ended on finish/cancel
+During the active phase, the session lifecycle is shaped by:
+- exercise pages in `Views/Workout/ExerciseView.swift`
+- set rows in `Views/Components/ExerciseSetRowView.swift`
+- pre-workout context in `Views/Workout/PreWorkoutContextView.swift`
+- rest timer in `Views/Workout/RestTimerView.swift`
+- workout settings in `Views/Workout/WorkoutSettingsView.swift`
 
-If the workout is linked to a plan, completing the final remaining incomplete set also prewarms a generic Foundation Models `LanguageModelSession` in the background. That warm-up happens from:
-- `ExerciseSetRowView`
-- `RestTimerView`'s "Complete set" action
-- `CompleteActiveSetIntent`
-- `LiveActivityCompleteSetIntent`
+Important runtime behaviors:
+- `activeExercise` tracks which exercise is in focus
+- set completion updates `SetPerformance.complete` and `completedAt`
+- rest timer behavior goes through `RestTimerState.shared`
+- auto-start rest timer uses the set’s effective rest seconds and records recents in `RestTimeHistory`
+- plan-based workouts continue carrying live plan references during the active session
 
-The workout auto-tracks `activeExercise` for the live activity and intent system to know which exercise and set are currently in focus.
+Plan-based sessions also preserve frozen historical context:
+- exercise-level baseline through `ExercisePerformance.originalTargetSnapshot`
+- set-level slot mapping through `SetPerformance.linkedTargetSetIndex`
+
+Those fields matter later for suggestion history, but the details live in `SUGGESTION_AND_OUTCOME_FLOW.md`.
 
 ## Finishing a Workout
 
-The finish flow has two stages: resolving incomplete sets, then transitioning to summary.
+The finish action begins in `WorkoutView`, but the real finish logic lives in `WorkoutSession.finish(action:context:)`.
 
-### Stage 1: Incomplete Set Resolution
+Before a session can move to summary, VillainArc resolves incomplete sets. `WorkoutSession.unfinishedSetSummary` separates them into:
+- empty sets: no reps and no weight
+- logged-but-incomplete sets: user entered data but never marked them complete
 
-When the user taps "Finish", `WorkoutView` checks `unfinishedSetSummary`:
+Depending on the situation, the finish UI offers actions such as:
+- mark logged sets complete
+- delete unfinished sets
+- delete only empty sets
+- finish directly when nothing is unfinished
 
-`UnfinishedSetSummary` classifies incomplete sets into two buckets:
-- **Empty sets**: `reps == 0 && weight == 0` (never logged anything)
-- **Logged sets**: Have some data but were never marked complete
+`WorkoutSession.finish(...)` then:
+- applies the chosen cleanup
+- prunes empty exercises
+- deletes the workout entirely if every exercise is pruned
+- sets `status = .summary`
+- sets `endedAt`
+- clears `activeExercise`
 
-Based on these, the view presents different confirmation options:
+If all exercises are pruned, the result is `.workoutDeleted` and the session never reaches summary.
 
-| Case | Options |
-|------|---------|
-| `.none` | Finish directly (`.finish`) |
-| `.emptyOnly` | Delete empty sets (`.deleteEmpty`) |
-| `.loggedOnly` | Mark logged as complete (`.markLoggedComplete`) or delete them (`.deleteUnfinished`) |
-| `.emptyAndLogged` | Mark logged as complete + delete empty (`.markLoggedComplete`) or delete all unfinished (`.deleteUnfinished`) |
+## Summary Phase
 
-### Stage 2: WorkoutSession.finish()
+After a successful finish, `WorkoutSessionContainer` routes to `Views/Workout/WorkoutSummaryView.swift`.
 
-`finish(action:context:)` executes the chosen action:
+This screen is where the session becomes a finalized workout record. It handles:
+- summary UI and effort rating
+- PR detection using cached `ExerciseHistory`
+- older suggestion outcome resolution
+- new suggestion generation
+- suggestion review
+- save-as-plan actions
 
-- `.markLoggedComplete`: Marks logged sets as complete with timestamps. Deletes empty sets. Prunes empty exercises.
-- `.deleteUnfinished`: Deletes all incomplete sets (both logged and empty). Prunes empty exercises.
-- `.deleteEmpty`: Deletes only empty sets. Prunes empty exercises.
-- `.finish`: No set modifications (used when there are no unfinished sets).
+This document only covers the session-level part of that process:
+- older suggestions are evaluated first
+- new suggestions may be generated second
+- remaining pending suggestions are deferred when summary is finalized
 
-After the action, it:
-1. Sets status to `.summary`
-2. Sets `endedAt` to now
-3. Clears `activeExercise`
+## What “Really Saving” a Workout Means
 
-If the workout is plan-backed and is finished through `FinishWorkoutIntent`, the app also prewarms a generic Foundation Models `LanguageModelSession` before handing off to the summary screen. That intent path can bypass the normal "final remaining set completed" trigger.
+The final save happens in `WorkoutSummaryView.finishSummary()`.
 
-### Pruning
+That method:
+1. guards against double-finishing
+2. converts any still-pending generated suggestions to `deferred`
+3. clears active-only prescription links for plan-based historical use
+4. rebuilds exercise history through `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(...)`
+5. sets `workout.status = .done`
+6. saves the context
+7. dismisses the full-screen workout flow
 
-`pruneEmptyExercises(context:)` runs after set deletion. It removes any `ExercisePerformance` that has zero sets remaining. If ALL exercises are pruned (the entire workout becomes empty), the workout itself is deleted from context and the method returns `.workoutDeleted`.
+That is the point where the workout becomes a stable completed record.
 
-This is a critical edge case: if the user started a workout, added exercises, never logged anything, and then finishes with "delete all", the workout is silently removed rather than saved as an empty record. The UI detects the `.workoutDeleted` result and dismisses without showing summary.
+The important side effects are:
+- exercise analytics are rebuilt
+- exercise Spotlight eligibility may change through the history updater
+- plan-based sessions stop depending on active-only prescription links
+- undecided suggestions are pushed forward to the next plan-based session as deferred review
 
-## Summary and Done
+## Save As Plan From Summary
 
-`WorkoutSummaryView` is shown for both `.summary` and `.done` status.
+`WorkoutSummaryView` can also convert a finished workout into a plan.
 
-### On Appear (`.summary`)
+That path:
+- creates `WorkoutPlan(from: workout, completed: true)`
+- links the session back to the created plan
+- backfills `originalTargetSnapshot` for freeform exercises so the new plan has a frozen target baseline
+- saves and Spotlight-indexes the created plan
 
-A `.task(id: workout.id)` runs:
-1. `loadPRs()` — batch-fetches `ExerciseHistory` for all exercises in the workout, compares current performance against cached PRs
-2. `generateSuggestionsIfNeeded()` — only for plan-based workouts, see WORKOUT_PLAN_SUGGESTION_FLOW.md
+This does not replace final summary save. It is an additional action that can happen before the session is finalized as `.done`.
 
-If the workout is still freeform (`workout.workoutPlan == nil`), the summary also prewarms a generic Foundation Models `LanguageModelSession` in the background. This makes the later "Save as Workout Plan" path more responsive if the user chooses to create a plan from the finished workout.
+## Canceling a Session
 
-### PR Detection
+Cancel flows remove the incomplete session entirely.
 
-PRs are detected by comparing the just-finished workout's metrics against cached `ExerciseHistory`:
+The main paths are:
+- cancel from `WorkoutView`
+- `Intents/Workout/CancelWorkoutIntent.swift`
+- Siri cancel-workout handoff through `AppRouter.handleSiriCancelWorkout(...)`
 
-- **Estimated 1RM PR**: Current exercise `bestEstimated1RM` exceeds `history.bestEstimated1RM`
-- **Weight PR**: Current exercise `bestWeight` exceeds `history.bestWeight`
-- **Volume PR**: Current exercise `totalVolume` exceeds `history.bestVolume`
+Common cleanup behavior:
+- stop the rest timer
+- clear the active workout presentation
+- delete the session from SwiftData
+- end the live activity
 
-First-time exercises (no history yet) automatically get PRs for any non-zero metrics.
+Canceled sessions never reach summary, never rebuild exercise history, and never become completed workout records.
 
-### Finishing Summary
+## Session-Related Intents
 
-`finishSummary()` is called when the user dismisses the summary:
+These intents participate directly in the session lifecycle:
 
-1. Guards against double-finish with `isSaving` flag
-2. Calls `deferRemainingSuggestions()` — converts any still-`pending` suggestions to `.deferred`
-3. Calls `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout()` — rebuilds exercise history including this session
-4. Sets status to `.done`
-5. Saves context
-6. Dismisses the full-screen cover
+### Start / Open
 
-The suggestion deferral ensures undecided suggestions appear before the next plan-based workout in `DeferredSuggestionsView`.
+- `StartWorkoutIntent`: creates an empty workout session
+- `StartWorkoutWithPlanIntent`: creates a session from a specific completed plan
+- `StartTodaysWorkoutIntent`: resolves today’s split plan, then creates the session
+- `OpenActiveWorkoutIntent`: foregrounds the app so the active session can resume
 
-## Canceling a Workout
+### Active Workout Controls
 
-Cancel paths:
+- `OpenPreWorkoutContextIntent`
+- `OpenRestTimerIntent`
+- `OpenWorkoutSettingsIntent`
 
-**From WorkoutView**: Shows confirmation alert, then:
-1. Stops rest timer
-2. Clears `activeExercise`
-3. Deletes the session from context
-4. Clears `activeWorkoutSession`
-5. Ends live activity
+These do not create or mutate the session directly. They set router flags so `WorkoutView` opens the relevant sheet inside the active session.
 
-**From Siri** (`handleSiriCancelWorkout`): Same cleanup but triggered from `VillainArcApp`'s user activity handler.
+### Set Completion and Finish
 
-**From CancelWorkoutIntent**: Similar flow through the intent system.
+- `CompleteActiveSetIntent`: marks the next incomplete set complete, may auto-start rest timer, updates the live activity, and may prewarm Foundation Models near the end of a plan-based session
+- `FinishWorkoutIntent`: runs the same finish decision logic as the UI, indexes the workout, stops timer/live activity, and returns to the app
+- `CancelWorkoutIntent`: deletes the active incomplete session
 
-In all cases, the session and all its exercises/sets are cascade-deleted from SwiftData.
+## Live Activity Hooks
 
-## Live Activity Integration
+The workout live activity is managed by `Data/LiveActivity/WorkoutActivityManager.swift`.
 
-The live activity shows workout state on the lock screen and Dynamic Island.
+The main session-touching hooks are:
+- `WorkoutView.onAppear` -> `WorkoutActivityManager.start(workout:)`
+- set completion / exercise changes / timer changes -> `WorkoutActivityManager.update(for:)`
+- finish or cancel -> `WorkoutActivityManager.end()`
 
-- **Start**: `WorkoutActivityManager.start()` is called when `WorkoutView` appears, creating an `Activity<WorkoutActivityAttributes>`
-- **Update**: Called on set completion, exercise changes, rest timer state changes. Updates the content state with current exercise name, set info, timer state
-- **End**: Called on workout finish, cancel, or app termination cleanup. Uses `.default` dismissal policy
+Live activity actions can also mutate the active session:
+- `LiveActivityAddExerciseIntent` asks the app to open the add-exercise sheet
+- `LiveActivityCompleteSetIntent` completes the next incomplete set, may auto-start rest timer, updates the live activity, and may prewarm Foundation Models near the end of a plan-based session
+- pause/resume rest timer live-activity intents act through `RestTimerState`
 
-The activity manager also handles restoration — if the app relaunches with an incomplete workout, it checks for an existing activity and reconnects.
-
-## Edge Cases
-
-### Force-quit during workout
-
-The session persists in SwiftData. On next launch, `checkForUnfinishedData()` finds it and resumes. The live activity may have expired, but is re-created when `WorkoutView` appears.
-
-### All exercises pruned on finish
-
-If every exercise ends up with zero sets after the finish action, the workout is deleted entirely. The UI dismisses without showing summary. No exercise history is updated. No suggestions are generated.
-
-### Workout with only empty sets
-
-If the user added exercises but never logged any data, finishing with any delete action will prune all exercises, triggering the workout deletion path.
-
-### Summary screen for `.done` workouts
-
-`WorkoutSummaryView` handles both `.summary` (fresh) and `.done` (already finalized). The `.done` case just shows the stats — the finish button and suggestion actions are guarded by `isSaving` and status checks.
-
-### Concurrent flow prevention
-
-Multiple entry points (UI buttons, Siri, Shortcuts, Spotlight, Live Activity) all funnel through `AppRouter` which enforces `hasActiveFlow()`. If any flow is active, new starts are silently rejected.
+The live activity is a view onto the current incomplete session, not a separate lifecycle.

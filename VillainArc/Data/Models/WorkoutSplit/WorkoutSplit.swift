@@ -161,6 +161,7 @@ final class WorkoutSplit {
 extension WorkoutSplit {
     static var active: FetchDescriptor<WorkoutSplit> {
         var descriptor = FetchDescriptor(predicate: #Predicate<WorkoutSplit> { $0.isActive })
+        descriptor.relationshipKeyPathsForPrefetching = [\.days]
         descriptor.fetchLimit = 1
         return descriptor
     }

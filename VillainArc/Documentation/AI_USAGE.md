@@ -58,7 +58,7 @@ The test I apply: if I couldn't explain a piece of code in a code review or debu
 - **What I decided**: How these APIs fit into the app's existing patterns. API research doesn't change the architecture — it just saves time reading documentation.
 
 ### Codebase Documentation
-- **What AI did**: Generated `PROJECT_GUIDE.md`, `ARCHITECTURE.md`, and `WORKOUT_PLAN_SUGGESTION_FLOW.md` by reading the full codebase and synthesizing it. Also caught discrepancies between docs and actual code behavior.
+- **What AI did**: Generated `PROJECT_GUIDE.md`, `ARCHITECTURE.md`, and `SUGGESTION_AND_OUTCOME_FLOW.md` by reading the full codebase and synthesizing it. Also caught discrepancies between docs and actual code behavior.
 - **What I decided**: The documentation structure, what an AI agent needs to be useful on this codebase, and which discrepancies to fix. I reviewed every section for accuracy.
 
 ### Exercise Progression Feedback
