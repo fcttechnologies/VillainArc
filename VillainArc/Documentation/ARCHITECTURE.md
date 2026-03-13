@@ -355,32 +355,14 @@ This file is a structure map for the codebase. It explains what the important fi
 ### `Views/Exercise/ExerciseDetailView.swift`
 - Purpose: read-only analytics/detail screen for one exercise.
 - Called by: navigation and exercise intents.
-- Calls: `ExerciseHistory`, charts, progression feedback sheet, `ExerciseHistoryView`.
-- Read with: `Views/Exercise/ExerciseProgressionFeedbackSheet.swift`, `Views/Exercise/ExerciseHistoryView.swift`.
+- Calls: `ExerciseHistory`, charts, `ExerciseHistoryView`.
+- Read with: `Views/Exercise/ExerciseHistoryView.swift`.
 
 ### `Views/Exercise/ExerciseHistoryView.swift`
 - Purpose: raw completed-performance history for one exercise.
 - Called by: navigation, exercise detail, workout/plan sheets.
 - Calls: performance queries, `RPEBadge`, time-format helpers.
 - Read with: `Data/Models/Sessions/ExercisePerformance.swift`.
-
-### `Views/Exercise/ExerciseProgressionFeedbackSheet.swift`
-- Purpose: exercise-scoped AI progression feedback and follow-up chat.
-- Called by: `ExerciseDetailView`.
-- Calls: `ExerciseProgressionContextBuilder`, `ExerciseProgressionAssistant`, `FoundationModelPrewarmer`.
-- Read with: `Data/Services/AI/ExerciseProgression/*`.
-
-### `Data/Services/AI/ExerciseProgression/ExerciseProgressionContextBuilder.swift`
-- Purpose: builds bounded AI input from exercise history and recent performances.
-- Called by: `ExerciseDetailView`, `ExerciseProgressionFeedbackSheet`.
-- Calls: exercise-history and performance snapshot builders.
-- Read with: `ExerciseProgressionAssistant.swift`, `Data/Models/AIModels/ExerciseProgression/*`.
-
-### `Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift`
-- Purpose: UI-facing AI service for initial progression insight and follow-up chat.
-- Called by: `ExerciseProgressionFeedbackSheet`.
-- Calls: Foundation Models session APIs and exercise progression AI DTOs.
-- Read with: `ExerciseProgressionContextBuilder.swift`.
 
 ## Splits
 

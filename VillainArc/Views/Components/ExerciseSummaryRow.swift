@@ -12,11 +12,11 @@ struct ExerciseSummaryRow: View {
             Task { await IntentDonations.donateOpenExercise(exercise: exercise) }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(exercise.name)
                             .font(.title3)
-                            .lineLimit(2)
+                            .lineLimit(1)
                         Text(exercise.detailSubtitle)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -32,13 +32,8 @@ struct ExerciseSummaryRow: View {
                             .accessibilityHidden(true)
                     }
                 }
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) {
-                        metadataChips
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        metadataChips
-                    }
+                HStack {
+                    metadataChips
                 }
             }
             .fontWeight(.semibold)
@@ -49,49 +44,51 @@ struct ExerciseSummaryRow: View {
         }
         .buttonStyle(.borderless)
     }
-
+    
     @ViewBuilder
     private var metadataChips: some View {
         infoChip(systemImage: "clock.arrow.circlepath", text: lastUsedText)
+        Spacer()
         if let sessionText {
             infoChip(systemImage: "figure.strengthtraining.traditional", text: sessionText)
         }
+        Spacer()
         if let recordText {
             infoChip(systemImage: "trophy.fill", text: recordText)
         }
     }
-
+    
     private var lastUsedText: String {
         guard let lastUsed = history?.lastCompletedAt else { return "Not logged yet" }
         return lastUsed.formatted(.relative(presentation: .named, unitsStyle: .abbreviated))
     }
-
+    
     private var sessionText: String? {
         guard let history, history.totalSessions > 0 else { return nil }
         return "\(history.totalSessions) \(history.totalSessions == 1 ? "session" : "sessions")"
     }
-
+    
     private var recordText: String? {
         guard let history else { return nil }
         if history.bestWeight > 0 {
-            return "\(formattedWeight(history.bestWeight)) lb best"
+            return formattedWeightText(history.bestWeight)
         }
         if history.bestReps > 0 {
-            return "\(history.bestReps) rep best"
+            return "\(history.bestReps) reps"
         }
         return nil
     }
 
-    private func formattedWeight(_ weight: Double) -> String {
-        weight.formatted(.number.precision(.fractionLength(0...1)))
-    }
-
     private func infoChip(systemImage: String, text: String) -> some View {
-        Label(text, systemImage: systemImage)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.thinMaterial, in: Capsule())
+        HStack(spacing: 5) {
+            Image(systemName: systemImage)
+            Text(text)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.thinMaterial, in: Capsule())
     }
 }

@@ -256,10 +256,15 @@ extension WorkoutSession {
         case .finish:
             break
         }
-        
+
+        let finishedAt = Date()
+        for exercise in sortedExercises {
+            exercise.syncDateToLatestCompletedSet(sessionFinishedAt: finishedAt)
+        }
+
         ensurePreWorkoutFeelingDefault()
         status = SessionStatus.summary.rawValue
-        endedAt = Date()
+        endedAt = finishedAt
         activeExercise = nil
         return .finished
     }

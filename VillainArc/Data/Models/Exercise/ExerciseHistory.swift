@@ -220,7 +220,7 @@ private struct ExerciseHistorySessionSummary {
         guard let first = performances.first else { return nil }
 
         id = first.workoutSession?.id ?? first.id
-        date = performances.map(\.date).max() ?? first.date
+        date = performances.compactMap(\.latestCompletedSetAt).max() ?? performances.map(\.date).max() ?? first.date
         totalCompletedSets = performances.reduce(0) { $0 + $1.sortedSets.count }
         totalCompletedReps = performances.reduce(0) { $0 + $1.totalCompletedReps }
         totalVolume = performances.reduce(0) { $0 + $1.totalVolume }

@@ -306,4 +306,26 @@ struct WorkoutFinishTests {
         #expect(session.endedAt! >= before)
         #expect(session.endedAt! <= after)
     }
+
+    @Test @MainActor
+    func finish_updatesExerciseDateToLatestCompletedSetTime() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+
+        let session = makeSession(context: context, exerciseConfigs: [
+            (weight: 135, reps: 10, complete: true),
+            (weight: 145, reps: 8, complete: true),
+        ])
+        let exercise = try #require(session.exercises?.first)
+        let firstCompletedAt = Date(timeIntervalSince1970: 2_000)
+        let secondCompletedAt = firstCompletedAt.addingTimeInterval(180)
+        exercise.date = Date(timeIntervalSince1970: 1_000)
+        exercise.sortedSets[0].completedAt = firstCompletedAt
+        exercise.sortedSets[1].completedAt = secondCompletedAt
+
+        let result = session.finish(action: .finish, context: context)
+
+        #expect(result == .finished)
+        #expect(exercise.date == secondCompletedAt)
+    }
 }

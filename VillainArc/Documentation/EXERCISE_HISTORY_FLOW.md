@@ -12,7 +12,6 @@ This document explains the exercise-history side of the app: how histories are u
 - `Views/Exercise/ExercisesListView.swift`
 - `Views/Exercise/ExerciseDetailView.swift`
 - `Views/Exercise/ExerciseHistoryView.swift`
-- `Views/Exercise/ExerciseProgressionFeedbackSheet.swift`
 - `Data/Services/SpotlightIndexer.swift`
 
 ## Core Idea
@@ -180,12 +179,8 @@ The detail view uses `ExerciseHistory` for:
 - best volume
 - chart points through `progressionPoints`
 
-It also gates the AI progression surface through:
-- `ExerciseProgressionContextBuilder.minimumSessionCount`
-
 And it links to:
 - `ExerciseHistoryView` for raw completed performances
-- `ExerciseProgressionFeedbackSheet` for AI progression feedback
 
 This split is intentional:
 - `ExerciseDetailView` is the cached analytics surface
@@ -211,18 +206,6 @@ This is where you go when you need the literal performed sets rather than cached
 So the distinction is:
 - `ExerciseHistory` cache drives summary analytics
 - `ExercisePerformance` rows drive raw performance history
-
-## Exercise Progression Feedback
-
-`Views/Exercise/ExerciseProgressionFeedbackSheet.swift` is the AI coaching surface attached to exercise detail.
-
-It depends on:
-- `Data/Services/AI/ExerciseProgression/ExerciseProgressionContextBuilder.swift`
-- `Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift`
-- cached history from `ExerciseHistory`
-- a small recent-performance window from `ExercisePerformance`
-
-This feature does not mutate plans or suggestions. It is exercise-focused feedback layered on top of the exercise detail area.
 
 ## PR Detection and History
 

@@ -4,6 +4,8 @@ import Charts
 import AppIntents
 
 struct ExerciseDetailView: View {
+    @Environment(\.modelContext) private var context
+
     private enum ChartMetric: String, CaseIterable, Identifiable {
         case estimatedOneRepMax = "Est. 1RM"
         case topWeight = "Top Weight"
@@ -43,7 +45,8 @@ struct ExerciseDetailView: View {
     private let appRouter = AppRouter.shared
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
-    @State private var showProgressionFeedbackSheet = false
+    @State private var refreshResultMessage = ""
+    @State private var showRefreshResultAlert = false
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -82,10 +85,6 @@ struct ExerciseDetailView: View {
         history?.totalSessions ?? 0
     }
 
-    private var canShowProgressionFeedback: Bool {
-        totalSessions >= ExerciseProgressionContextBuilder.minimumSessionCount
-    }
-
     private var totalSets: Int {
         history?.totalCompletedSets ?? 0
     }
@@ -116,23 +115,23 @@ struct ExerciseDetailView: View {
         }
 
         if totalVolume > 0 {
-            items.append(.init(title: "Total Volume", value: "\(totalVolume.formatted(.number.precision(.fractionLength(0)))) lbs"))
+            items.append(.init(title: "Total Volume", value: formattedWeightText(totalVolume, fractionDigits: 0...0)))
         }
 
-        if let bestReps {
+        if totalSets > 1, let bestReps {
             items.append(.init(title: "Best Reps", value: "\(bestReps)"))
         }
 
         if let latestEstimatedOneRepMax {
-            items.append(.init(title: "Est. 1RM", value: "\(latestEstimatedOneRepMax.formatted(.number.precision(.fractionLength(0)))) lbs"))
+            items.append(.init(title: "Est. 1RM", value: formattedWeightText(latestEstimatedOneRepMax, fractionDigits: 0...0)))
         }
 
         if let bestWeight {
-            items.append(.init(title: "Best Weight", value: "\(bestWeight.formatted(.number.precision(.fractionLength(0)))) lbs"))
+            items.append(.init(title: "Best Weight", value: formattedWeightText(bestWeight)))
         }
 
-        if let bestVolume {
-            items.append(.init(title: "Best Volume", value: "\(bestVolume.formatted(.number.precision(.fractionLength(0)))) lbs"))
+        if totalSessions > 1, let bestVolume {
+            items.append(.init(title: "Best Volume", value: formattedWeightText(bestVolume, fractionDigits: 0...0)))
         }
 
         return items
@@ -249,8 +248,10 @@ struct ExerciseDetailView: View {
         .navigationTitle(displayName)
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showProgressionFeedbackSheet) {
-            ExerciseProgressionFeedbackSheet(catalogID: catalogID)
+        .alert("History Refreshed", isPresented: $showRefreshResultAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(refreshResultMessage)
         }
         .task(id: availableMetrics.map(\.rawValue).joined(separator: ",")) {
             if let firstMetric = availableMetrics.first, !availableMetrics.contains(selectedMetric) {
@@ -266,13 +267,15 @@ struct ExerciseDetailView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
         .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                if canShowProgressionFeedback {
-                    Button("Progress Feedback", systemImage: "sparkles") {
-                        showProgressionFeedbackSheet = true
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu("Options", systemImage: "ellipsis") {
+                    Button("Refresh History", systemImage: "arrow.clockwise") {
+                        refreshHistory()
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailProgressionFeedbackButton)
+                    .accessibilityIdentifier("exerciseDetailRefreshHistoryButton")
                 }
+                .accessibilityIdentifier("exerciseDetailOptionsMenu")
+                .accessibilityHint("Exercise actions.")
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
             ToolbarItem(placement: .bottomBar) {
@@ -308,6 +311,16 @@ struct ExerciseDetailView: View {
         case .reps:
             return repsPoints
         }
+    }
+
+    private func refreshHistory() {
+        ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
+        Haptics.selection()
+        let refreshedHistory = try? context.fetch(ExerciseHistory.forCatalogID(catalogID)).first
+        refreshResultMessage = refreshedHistory == nil
+            ? "History was rebuilt. If this exercise still has no completed sessions, it will stay empty."
+            : "History and progression points were rebuilt from completed workouts."
+        showRefreshResultAlert = true
     }
 }
 

@@ -314,16 +314,6 @@ The exercise area has three main user-facing screens:
 
 It can open:
 - `ExerciseHistoryView` for raw completed-performance history
-- `ExerciseProgressionFeedbackSheet` for AI progression analysis
-
-### Exercise Progression Feedback
-
-The exercise progression AI path is:
-- `Views/Exercise/ExerciseProgressionFeedbackSheet.swift`
-- `Data/Services/AI/ExerciseProgression/ExerciseProgressionContextBuilder.swift`
-- `Data/Services/AI/ExerciseProgression/ExerciseProgressionAssistant.swift`
-
-This feature is intentionally separate from the suggestion engine. It is exercise-detail coaching rather than plan mutation.
 
 If something looks wrong in exercise detail, inspect both the UI and the underlying `ExerciseHistoryUpdater` path.
 

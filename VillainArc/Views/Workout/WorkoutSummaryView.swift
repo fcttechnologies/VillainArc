@@ -427,20 +427,14 @@ struct WorkoutSummaryView: View {
     private func prValueText(type: PRType, value: Double) -> String {
         switch type {
         case .estimated1RM:
-            return "New Estimated 1RM: \(formatWeight(value))"
+            return "New Estimated 1RM: \(formattedWeightText(value))"
         case .maxWeight:
-            return "Max Weight: \(formatWeight(value))"
+            return "Max Weight: \(formattedWeightText(value))"
         case .maxReps:
             return "Max Reps: \(Int(value))"
         case .totalVolume:
-            return "Total Volume: \(formatWeight(value, allowFraction: false))"
+            return "Total Volume: \(formattedWeightText(value, fractionDigits: 0...0))"
         }
-    }
-
-    private func formatWeight(_ value: Double, allowFraction: Bool = true) -> String {
-        let precision = allowFraction ? 0...1 : 0...0
-        let formatted = value.formatted(.number.precision(.fractionLength(precision)))
-        return "\(formatted) lbs"
     }
 
     private func finishSummary() {

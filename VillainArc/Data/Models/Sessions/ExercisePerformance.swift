@@ -30,7 +30,6 @@ final class ExercisePerformance {
     // Adding exercise in session
     init(exercise: Exercise, workoutSession: WorkoutSession) {
         index = workoutSession.exercises?.count ?? 0
-        date = workoutSession.startedAt
         catalogID = exercise.catalogID
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
@@ -65,7 +64,6 @@ final class ExercisePerformance {
     @MainActor
     init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
         index = exercisePrescription.index
-        date = workoutSession.startedAt
         catalogID = exercisePrescription.catalogID
         name = exercisePrescription.name
         notes = exercisePrescription.notes
@@ -186,6 +184,34 @@ final class ExercisePerformance {
 extension ExercisePerformance: RestTimeEditable {}
 
 extension ExercisePerformance {
+    var latestCompletedSetAt: Date? {
+        sortedSets.compactMap { set in
+            guard set.complete else { return nil }
+            return set.completedAt
+        }
+        .max()
+    }
+
+    var allSetsComplete: Bool {
+        let sets = sortedSets
+        return !sets.isEmpty && sets.allSatisfy(\.complete)
+    }
+
+    @discardableResult
+    func syncDateToLatestCompletedSet(sessionFinishedAt: Date? = nil) -> Date {
+        guard allSetsComplete else { return date }
+        if let latestCompletedSetAt {
+            date = latestCompletedSetAt
+            return latestCompletedSetAt
+        }
+
+        if let sessionFinishedAt {
+            date = sessionFinishedAt
+        }
+
+        return date
+    }
+
     var bestEstimated1RM: Double? {
         sets?.compactMap(\.estimated1RM).max()
     }
@@ -243,17 +269,6 @@ extension ExercisePerformance {
             item.catalogID == catalogID && item.workoutSession?.status == done
         }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
-    }
-
-    static func recentForProgressionFeedback(catalogID: String, limit: Int) -> FetchDescriptor<ExercisePerformance> {
-        let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in
-            item.catalogID == catalogID && item.workoutSession?.status == done
-        }
-        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
-        descriptor.fetchLimit = limit
-        descriptor.relationshipKeyPathsForPrefetching = [\.repRange, \.sets]
-        return descriptor
     }
 
     static func matching(catalogID: String, includingSessionID sessionID: UUID) -> FetchDescriptor<ExercisePerformance> {

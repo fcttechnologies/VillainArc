@@ -215,7 +215,7 @@ struct OutcomeResolver {
 
         switch changeType {
         case .increaseWeight, .decreaseWeight:
-            return formatWeight(value)
+            return formattedWeightValue(value, fractionDigits: 0...2)
         case .increaseReps, .decreaseReps,
              .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
@@ -233,10 +233,6 @@ struct OutcomeResolver {
             }
             return String(roundedInt)
         }
-    }
-
-    private static func formatWeight(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...2)))
     }
 
     // MARK: - Merge

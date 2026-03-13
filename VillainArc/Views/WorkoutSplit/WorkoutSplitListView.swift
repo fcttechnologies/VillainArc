@@ -46,6 +46,10 @@ struct WorkoutSplitListView: View {
                                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSetInactiveButton)
                                 .accessibilityHint(AccessibilityText.workoutSplitSetInactiveHint)
                             }
+                        } header: {
+                            Text("Active Split")
+                                .font(.title3)
+                                .bold()
                         }
                         .listRowSeparator(.hidden)
                     }
@@ -76,8 +80,6 @@ struct WorkoutSplitListView: View {
                             Text("Inactive Splits")
                                 .font(.title3)
                                 .bold()
-                                .foregroundStyle(.primary)
-                                .textCase(nil)
                         }
                         .listRowSeparator(.hidden)
                     }
@@ -128,7 +130,7 @@ struct WorkoutSplitListView: View {
     private func splitRowContent(for split: WorkoutSplit, isActive: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(splitTitle(for: split))
-                .font(isActive ? .title : .title3)
+                .font(isActive ? .title2 : .title3)
                 .bold()
                 .lineLimit(1)
             Text(subtitleText(for: split, isActive: isActive))
