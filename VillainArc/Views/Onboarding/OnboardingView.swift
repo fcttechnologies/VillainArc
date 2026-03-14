@@ -79,7 +79,7 @@ struct OnboardingView: View {
 
     private var shouldRetryWhenBecomingActive: Bool {
         switch manager.state {
-        case .noiCloud, .cloudKitUnavailable:
+        case .noiCloud, .cloudKitAccountIssue, .cloudKitUnavailable:
             return true
         default:
             return false
@@ -155,11 +155,48 @@ struct OnboardingView: View {
                     .accessibilityHint(AccessibilityText.onboardingContinueWithoutiCloudHint)
 
                     Button {
-                        if let url = URL(string: "App-prefs:CASTLE") {
-                            UIApplication.shared.open(url)
-                        }
+                        openICloudSettings()
                     } label: {
                         Text("Enable iCloud in Settings")
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                    }
+                    .buttonSizing(.flexible)
+                    .buttonStyle(.glass)
+                    .accessibilityHint(AccessibilityText.onboardingEnableICloudHint)
+                }
+            }
+
+        case .cloudKitAccountIssue:
+            VStack(spacing: 16) {
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .font(.system(size: onboardingIconSize))
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
+
+                Text("Check Your iCloud Account")
+                    .font(.title2.bold())
+
+                Text("VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+
+                VStack(spacing: 12) {
+                    Button {
+                        Task { await manager.retry() }
+                    } label: {
+                        Text("Retry")
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                    }
+                    .buttonSizing(.flexible)
+                    .buttonStyle(.glassProminent)
+                    .accessibilityHint(AccessibilityText.onboardingRetryHint)
+
+                    Button {
+                        openICloudSettings()
+                    } label: {
+                        Text("Open iCloud Settings")
                             .padding(.vertical, 8)
                             .fontWeight(.semibold)
                     }
@@ -199,7 +236,7 @@ struct OnboardingView: View {
             OnboardingProgressStateView(title: "Syncing Your Data", message: "Checking iCloud for your existing workout history and profile...")
 
         case .syncingSlowNetwork:
-            OnboardingProgressStateView(title: "Still Syncing...", message: "This is taking longer than expected. Please wait while VillainArc finishes syncing.")
+            OnboardingProgressStateView(title: "Still Syncing...", message: "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing.")
 
         case .seeding:
             OnboardingProgressStateView(title: "Updating Exercises", message: "Preparing your exercise catalog...")
@@ -233,6 +270,11 @@ struct OnboardingView: View {
         case .profile, .finishing, .ready:
             EmptyView()
         }
+    }
+
+    private func openICloudSettings() {
+        guard let url = URL(string: "App-prefs:CASTLE") else { return }
+        UIApplication.shared.open(url)
     }
 }
 

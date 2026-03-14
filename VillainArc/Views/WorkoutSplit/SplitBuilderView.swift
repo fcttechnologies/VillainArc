@@ -17,8 +17,8 @@ struct SplitBuilderView: View {
             .navigationTitle("Create Split")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(role: .close) {
                         Haptics.selection()
                         dismiss()
                     }

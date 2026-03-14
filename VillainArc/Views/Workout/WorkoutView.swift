@@ -20,7 +20,10 @@ struct WorkoutView: View {
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
     }
@@ -374,9 +377,10 @@ struct WorkoutView: View {
     
     private func finishWorkout(action: WorkoutFinishAction) {
         let result = workout.finish(action: action, context: context)
-        
+
         switch result {
         case .finished:
+            workout.convertSetWeightsToKg(from: weightUnit)
             saveContext(context: context)
             SpotlightIndexer.index(workoutSession: workout)
             endWorkoutSession(shouldDismiss: false)

@@ -288,7 +288,7 @@ struct RestTimerView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     private func formattedWeight(_ weight: Double) -> String {
-        weightUnit.fromKg(weight).formatted(.number.precision(.fractionLength(0...2)))
+        weight.formatted(.number.precision(.fractionLength(0...2)))
     }
     
     private func deleteRecentTimes(at offsets: IndexSet) {

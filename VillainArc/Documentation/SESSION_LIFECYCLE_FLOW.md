@@ -73,6 +73,7 @@ Common entrypoints:
 These route into `AppRouter.startWorkoutSession(from:)`, which:
 - checks that no active flow exists
 - creates `WorkoutSession(from: plan)`
+- converts set weights from canonical kg into the current user unit before the workout UI starts logging
 - inserts and saves it
 - sets the session to `.pending` instead of `.active` when the plan already has pending or deferred suggestion events
 
@@ -206,6 +207,8 @@ That path:
 - saves and Spotlight-indexes the created plan
 
 This does not replace final summary save. It is an additional action that can happen before the session is finalized as `.done`.
+
+This summary path keeps the direct completed-plan creation flow. The separate "Save as Workout Plan" action from `WorkoutDetailView` instead routes through `AppRouter.createWorkoutPlan(from:)`, opens `WorkoutPlanView`, and converts the new editable plan into the user's current unit for editing.
 
 ## Canceling a Session
 

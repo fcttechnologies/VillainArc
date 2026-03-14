@@ -59,7 +59,7 @@ The test I apply: if I couldn't explain a piece of code in a code review or debu
 
 ### Weight and Height Unit System
 - **What AI did**: Propagated the unit system across ~20 files once the design was established — `WeightUnit`/`HeightUnit` enums, display/input conversion sites, rule engine threshold recalibration, Live Activity unit passing, and test assertion updates.
-- **What I decided**: Canonical kg storage with conversion only at display/input boundaries, enum storage on `AppSettings`, the Live Activity strategy for passing units without SwiftData access, and which rule thresholds to recalibrate.
+- **What I decided**: Canonical kg persistence, enum storage on `AppSettings`, temporary conversion of active session/editing-copy weights into the user's unit while those flows are on screen, the Live Activity strategy for passing units without SwiftData access, and which rule thresholds to recalibrate.
 
 ### Codebase Documentation
 - **What AI did**: Generated `PROJECT_GUIDE.md`, `ARCHITECTURE.md`, and `SUGGESTION_AND_OUTCOME_FLOW.md` by reading the full codebase and synthesizing it. Also caught discrepancies between docs and actual code behavior.

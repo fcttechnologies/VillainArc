@@ -1,12 +1,12 @@
 import SwiftUI
 import SwiftData
-import CoreData
 
 enum OnboardingState: Equatable {
     case launching
     case checking
     case noWiFi
     case noiCloud
+    case cloudKitAccountIssue
     case cloudKitUnavailable
     case syncing
     case syncingSlowNetwork
@@ -33,16 +33,13 @@ class OnboardingManager {
     var profile: UserProfile?
     private var context: ModelContext { SharedModelContainer.container.mainContext }
     private let networkMonitor = NetworkMonitor()
-    private var cloudKitObservationTask: Task<Void, Never>?
-    private var cloudKitWaiters: [CheckedContinuation<Void, Never>] = []
-    private var hasObservedCloudKitImportCompletion = false
     private var networkRetryTask: Task<Void, Never>?
-
-    init() {
-        startCloudKitImportObservation()
-    }
+    private var onboardingAttemptID = UUID()
 
     func startOnboarding() async {
+        let attemptID = UUID()
+        onboardingAttemptID = attemptID
+
         if DataManager.hasCompletedInitialBootstrap() {
             await handleReturningLaunch()
             return
@@ -67,24 +64,59 @@ class OnboardingManager {
 
         // Step 3: Check CloudKit availability
         let cloudKitStatus = await CloudKitStatusChecker.checkCloudKitAvailability()
-        guard cloudKitStatus == .available else {
+        guard attemptID == onboardingAttemptID else { return }
+
+        switch cloudKitStatus {
+        case .available:
+            break
+        case .accountIssue:
+            state = .cloudKitAccountIssue
+            return
+        case .unavailable:
             state = .cloudKitUnavailable
             return
         }
 
         // Step 4: Sync from CloudKit (if any data exists)
         state = .syncing
+        CloudKitImportMonitor.shared.prepareForBootstrapWait()
 
         // Show "slow network" message if taking > 15 seconds
         let slowNetworkTask = Task {
             try? await Task.sleep(for: .seconds(15))
+            guard attemptID == self.onboardingAttemptID else { return }
             if state == .syncing {
                 state = .syncingSlowNetwork
             }
         }
 
-        await waitForCloudKitImportCompletion()
+        let stalledSyncTask = Task {
+            try? await Task.sleep(for: .seconds(60))
+            guard attemptID == self.onboardingAttemptID else { return }
+            guard state == .syncing || state == .syncingSlowNetwork else { return }
+
+            state = .error(
+                "VillainArc couldn't confirm that your iCloud data finished syncing. Please try again."
+            )
+        }
+
+        let importStatus = await CloudKitImportMonitor.shared.waitForImportCompletion()
         slowNetworkTask.cancel()
+        stalledSyncTask.cancel()
+        guard attemptID == onboardingAttemptID else { return }
+
+        switch importStatus {
+        case .completed:
+            break
+        case .failed(let message):
+            state = .error("Unable to finish syncing your iCloud data: \(message)")
+            return
+        case .idle, .waiting, .importing:
+            state = .error("VillainArc couldn't confirm that your iCloud data finished syncing. Please try again.")
+            return
+        }
+
+        guard state == .syncing || state == .syncingSlowNetwork else { return }
 
         // Step 5: Seed exercises
         state = .seeding
@@ -92,6 +124,7 @@ class OnboardingManager {
             _ = try await DataManager.seedExercisesForOnboarding()
             SpotlightIndexer.reindexAll(context: context)
         } catch {
+            guard attemptID == onboardingAttemptID else { return }
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
             return
         }
@@ -99,6 +132,7 @@ class OnboardingManager {
         do {
             _ = try SystemState.ensureAppSettings(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
+            guard attemptID == onboardingAttemptID else { return }
             routeFromProfile(profile)
         } catch {
             state = .error("Failed to set up your profile: \(error.localizedDescription)")
@@ -195,8 +229,6 @@ class OnboardingManager {
     }
 
     private func transitionToReady() {
-        cloudKitObservationTask?.cancel()
-        cloudKitObservationTask = nil
         networkRetryTask?.cancel()
         networkRetryTask = nil
         networkMonitor.stop()
@@ -243,47 +275,6 @@ class OnboardingManager {
                     break
                 }
             }
-        }
-    }
-
-    private func startCloudKitImportObservation() {
-        guard cloudKitObservationTask == nil else { return }
-
-        cloudKitObservationTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-
-            for await notification in NotificationCenter.default.notifications(named: NSPersistentCloudKitContainer.eventChangedNotification) {
-                guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
-                    as? NSPersistentCloudKitContainer.Event else { continue }
-                guard event.type == .import, event.endDate != nil else { continue }
-
-                if let error = event.error {
-                    print("⚠️ CloudKit import completed with error: \(error)")
-                } else {
-                    print("✅ CloudKit import complete - safe to seed exercises")
-                }
-
-                hasObservedCloudKitImportCompletion = true
-                resumeCloudKitWaiters()
-            }
-        }
-    }
-
-    private func waitForCloudKitImportCompletion() async {
-        if hasObservedCloudKitImportCompletion {
-            return
-        }
-
-        await withCheckedContinuation { continuation in
-            cloudKitWaiters.append(continuation)
-        }
-    }
-
-    private func resumeCloudKitWaiters() {
-        let pendingWaiters = cloudKitWaiters
-        cloudKitWaiters.removeAll()
-        for waiter in pendingWaiters {
-            waiter.resume()
         }
     }
 }

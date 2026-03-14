@@ -214,6 +214,24 @@ extension WorkoutSession {
         }
     }
     
+    func convertSetWeightsToKg(from unit: WeightUnit) {
+        guard unit == .lbs else { return }
+        for exercise in exercises ?? [] {
+            for set in exercise.sets ?? [] {
+                set.weight = unit.toKg(set.weight)
+            }
+        }
+    }
+
+    func convertSetWeightsFromKg(to unit: WeightUnit) {
+        guard unit == .lbs else { return }
+        for exercise in exercises ?? [] {
+            for set in exercise.sets ?? [] {
+                set.weight = (unit.fromKg(set.weight) * 100).rounded() / 100
+            }
+        }
+    }
+
     @MainActor
     func finish(action: WorkoutFinishAction, context: ModelContext) -> WorkoutFinishResult {
         let summary = unfinishedSetSummary

@@ -109,7 +109,7 @@ A plan-based workout starts from:
 - `Intents/WorkoutPlan/StartWorkoutWithPlanIntent.swift`
 - `Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift`
 
-All of those go through `AppRouter.startWorkoutSession(from:)`, which creates `WorkoutSession(from: plan)`. If the plan has pending or deferred suggestion events, the new workout starts in `.pending` state so the user sees `DeferredSuggestionsView` before regular logging begins.
+All of those go through `AppRouter.startWorkoutSession(from:)`, which creates `WorkoutSession(from: plan)`, converts its set weights from canonical kg into the current `AppSettings.weightUnit` when needed, and then presents the session. If the plan has pending or deferred suggestion events, the new workout starts in `.pending` state so the user sees `DeferredSuggestionsView` before regular logging begins.
 
 The status-driven container for workouts is `Views/Workout/WorkoutSessionContainer.swift`:
 - `.pending` -> `Views/Suggestions/DeferredSuggestionsView.swift`
@@ -275,7 +275,9 @@ Plans can be created from:
 - `WorkoutPlanPickerView`
 - a completed workout via "Save as Workout Plan" from `WorkoutSummaryView` or `WorkoutDetailView`
 
-The full-screen editor is always `WorkoutPlanView`.
+The flows split in two ways:
+- home creation, picker-based creation, and "Save as Workout Plan" from `WorkoutDetailView` present `WorkoutPlanView`
+- `WorkoutSummaryView` can also create a completed plan directly with `WorkoutPlan(from: workout, completed: true)` without opening the editor
 
 ### Editing a Plan
 
@@ -284,8 +286,9 @@ Plan editing uses the copy-merge pattern. The original plan is not edited direct
 The flow is:
 1. `WorkoutPlanDetailView` calls `AppRouter.editWorkoutPlan(_:)`
 2. `WorkoutPlan.createEditingCopy(context:)` creates a temporary editing copy
-3. `WorkoutPlanView` edits the copy
-4. `WorkoutPlan.applyEditingCopy(...)` or cancel logic resolves the flow
+3. `AppRouter.editWorkoutPlan(_:)` converts the copy's target weights from canonical kg into the current user unit
+4. `WorkoutPlanView` edits the copy in that user unit
+5. `WorkoutPlanView` converts target weights back to kg before save, then `WorkoutPlan.applyEditingCopy(...)` or cancel logic resolves the flow
 
 This matters because manual edits can invalidate unresolved suggestions. `WorkoutPlan+Editing.swift` reconciles the edited copy against the original and deletes stale pending-outcome changes when needed.
 

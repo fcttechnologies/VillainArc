@@ -17,6 +17,8 @@ struct ExerciseView: View {
     @State private var restTimeUpdateSeconds = 0
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
 
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+
     private var autoStartRestTimerEnabled: Bool {
         appSettings.first?.autoStartRestTimer ?? true
     }
@@ -215,7 +217,7 @@ struct ExerciseView: View {
 
     private func addSet() {
         Haptics.selection()
-        exercise.addSet()
+        exercise.addSet(unit: weightUnit)
         saveContext(context: context)
         WorkoutActivityManager.update()
     }

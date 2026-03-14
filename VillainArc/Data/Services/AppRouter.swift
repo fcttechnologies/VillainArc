@@ -42,6 +42,10 @@ final class AppRouter {
         SharedModelContainer.container.mainContext
     }
 
+    private func weightUnit() -> WeightUnit {
+        (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
+    }
+
     private var hasPresentedFlow: Bool {
         activeWorkoutSession != nil || activeWorkoutPlan != nil
     }
@@ -89,6 +93,7 @@ final class AppRouter {
         guard !hasActiveFlow() else { return }
         Haptics.selection()
         let newWorkoutPlan = WorkoutPlan(from: workout)
+        newWorkoutPlan.convertTargetWeightsFromKg(to: weightUnit())
         context.insert(newWorkoutPlan)
         workout.workoutPlan = newWorkoutPlan
         saveContext(context: context)
@@ -100,22 +105,24 @@ final class AppRouter {
         guard !hasActiveFlow(), plan.completed, !plan.isEditing else { return }
         Haptics.selection()
         let editingCopy = plan.createEditingCopy(context: context)
+        editingCopy.convertTargetWeightsFromKg(to: weightUnit())
         saveContext(context: context)
         activeWorkoutPlanOriginal = plan
         activeWorkoutPlan = editingCopy
     }
-    
+
     func startWorkoutSession(from plan: WorkoutPlan) {
         guard !hasActiveFlow() else { return }
         Haptics.selection()
         let workoutSession = WorkoutSession(from: plan)
-        
+        workoutSession.convertSetWeightsFromKg(to: weightUnit())
+
         // Check for pending/deferred suggestions before starting
         let hasDeferredSuggestions = !pendingSuggestionEvents(for: plan, in: context).isEmpty
         if hasDeferredSuggestions {
             workoutSession.status = SessionStatus.pending.rawValue
         }
-        
+
         context.insert(workoutSession)
         saveContext(context: context)
         activeWorkoutSession = workoutSession

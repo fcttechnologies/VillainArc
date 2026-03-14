@@ -485,7 +485,7 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `Data/Models/Enums/WeightUnit.swift`, `Data/Models/AppSettings.swift`.
 
 ### `Data/Models/Enums/WeightUnit.swift`
-- Purpose: `WeightUnit` enum (`.kg` / `.lbs`) with `fromKg`, `toKg`, `display`, and `systemDefault` helpers. All weight is stored in kg; conversion happens only at display and input boundaries.
+- Purpose: `WeightUnit` enum (`.kg` / `.lbs`) with `fromKg`, `toKg`, `display`, and `systemDefault` helpers. Canonical persisted weight uses kg, while active `WorkoutSession` rows and editable `WorkoutPlan` copies may be converted into the user's current unit during logging or editing before save/finish paths normalize back to kg.
 - Called by: every view that shows or accepts a weight value, suggestion context, Live Activity manager.
 - Calls: none.
 - Read with: `Helpers/WeightFormatting.swift`, `Data/Models/AppSettings.swift`.

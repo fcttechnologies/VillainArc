@@ -8,11 +8,11 @@ enum WeightUnit: String, CaseIterable, Codable {
         Locale.current.measurementSystem == .us ? .lbs : .kg
     }
 
-    func fromKg(_ kg: Double) -> Double {
+    nonisolated func fromKg(_ kg: Double) -> Double {
         self == .lbs ? kg * 2.20462 : kg
     }
 
-    func toKg(_ value: Double) -> Double {
+    nonisolated func toKg(_ value: Double) -> Double {
         self == .lbs ? value * 0.453592 : value
     }
 

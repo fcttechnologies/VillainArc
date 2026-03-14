@@ -21,7 +21,25 @@ final class WorkoutPlan {
     var sortedExercises: [ExercisePrescription] {
         (exercises ?? []).sorted { $0.index < $1.index }
     }
-    
+
+    func convertTargetWeightsToKg(from unit: WeightUnit) {
+        guard unit == .lbs else { return }
+        for exercise in exercises ?? [] {
+            for set in exercise.sets ?? [] {
+                set.targetWeight = unit.toKg(set.targetWeight)
+            }
+        }
+    }
+
+    func convertTargetWeightsFromKg(to unit: WeightUnit) {
+        guard unit == .lbs else { return }
+        for exercise in exercises ?? [] {
+            for set in exercise.sets ?? [] {
+                set.targetWeight = (unit.fromKg(set.targetWeight) * 100).rounded() / 100
+            }
+        }
+    }
+
     init() {}
 
     // Test/sample initializer to reduce setup boilerplate.

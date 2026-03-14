@@ -439,6 +439,9 @@
     "Charts appear after at least 2 logged sessions for this exercise." : {
 
     },
+    "Check Your iCloud Account" : {
+
+    },
     "Checking iCloud for your existing workout history and profile..." : {
 
     },
@@ -1274,6 +1277,9 @@
     "Open Exercises" : {
 
     },
+    "Open iCloud Settings" : {
+
+    },
     "Open Pre Workout Context" : {
 
     },
@@ -2093,7 +2099,7 @@
     "That workout plan is no longer available." : {
 
     },
-    "This is taking longer than expected. Please wait while VillainArc finishes syncing." : {
+    "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing." : {
 
     },
     "This suggestion is based on previous times you logged this exercise or your usual rep goal." : {
@@ -2238,6 +2244,9 @@
 
     },
     "View Last Workout Plan" : {
+
+    },
+    "VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {
 
     },
     "VillainArc needs WiFi for first time setup to sync your workout data." : {

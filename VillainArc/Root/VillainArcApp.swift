@@ -4,6 +4,9 @@ import SwiftData
 
 @main
 struct VillainArcApp: App {
+    init() {
+        CloudKitImportMonitor.shared.start()
+    }
     
     var body: some Scene {
         WindowGroup {

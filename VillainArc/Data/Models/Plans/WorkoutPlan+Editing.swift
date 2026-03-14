@@ -94,7 +94,7 @@ extension WorkoutPlan {
         if original.type != copy.type {
             deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.changeSetType], context: context)
         }
-        if original.targetWeight != copy.targetWeight {
+        if abs(original.targetWeight - copy.targetWeight) > 0.01 {
             deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseWeight, .decreaseWeight], context: context)
         }
         if original.targetReps != copy.targetReps {

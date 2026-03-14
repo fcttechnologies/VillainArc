@@ -84,9 +84,11 @@ final class ExercisePerformance {
         return set.restSeconds
     }
 
-    func addSet() {
+    func addSet(unit: WeightUnit = .kg) {
         if let restoredPrescription = nextRestorableTailPrescription() {
-            sets?.append(SetPerformance(exercise: self, setPrescription: restoredPrescription))
+            let set = SetPerformance(exercise: self, setPrescription: restoredPrescription)
+            set.weight = (unit.fromKg(set.weight) * 100).rounded() / 100
+            sets?.append(set)
             reindexSetsByCurrentOrder()
             return
         }

@@ -36,6 +36,7 @@ There are two main plan-authoring paths:
 - `AppRouter.editWorkoutPlan(_:)`
   - only works for completed non-editing plans and only when there is no other active flow
   - calls `plan.createEditingCopy(context:)`
+  - converts the copy's target weights from canonical kg into the current `AppSettings.weightUnit`
   - stores the original in `activeWorkoutPlanOriginal`
   - presents the copy in `WorkoutPlanView`
 
@@ -70,16 +71,19 @@ At a high level the user can:
 - change set-level type, weight, reps, rest, and RPE
 - add and remove sets
 
+While the copy is on screen, weight fields use the current user unit. The save path converts those edited weights back to kg before the copy is merged into the original plan.
+
 Nothing in this phase touches the original plan.
 
 ## Saving an Existing Plan Edit
 
 When the user taps Done while editing an existing plan, `WorkoutPlanView` does:
 
-1. `originalPlan.applyEditingCopy(plan, context: context)`
-2. `context.delete(plan)` for the temporary copy
-3. `saveContext(context: context)`
-4. `SpotlightIndexer.index(workoutPlan: originalPlan)`
+1. `plan.convertTargetWeightsToKg(from: weightUnit)` if the current user unit is lbs
+2. `originalPlan.applyEditingCopy(plan, context: context)`
+3. `context.delete(plan)` for the temporary copy
+4. `saveContext(context: context)`
+5. `SpotlightIndexer.index(workoutPlan: originalPlan)`
 
 So the real merge work lives inside `applyEditingCopy`.
 

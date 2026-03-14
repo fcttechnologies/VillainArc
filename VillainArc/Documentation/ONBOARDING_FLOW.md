@@ -23,6 +23,7 @@ The startup path is split across `VillainArcApp`, `RootView`, and `ContentView`.
 
 `VillainArcApp`:
 - creates the shared SwiftData container from the app-group store
+- starts `CloudKitImportMonitor` before the onboarding flow begins
 - attaches CloudKit-backed persistence through `SharedModelContainer`
 
 `RootView`:
@@ -65,6 +66,8 @@ The order is:
 This is the key first-launch rule.
 
 `OnboardingManager` waits for CloudKit import completion before calling `DataManager.seedExercisesForOnboarding()`.
+
+The import observer starts at app launch through `CloudKitImportMonitor`, so onboarding is not relying on `OnboardingManager` being created first in order to see the completion event.
 
 The reason is to avoid duplicate catalog exercise objects.
 
@@ -272,6 +275,7 @@ So `SetupGuard` is not trying to replace all validation. It handles the shared b
 `OnboardingManager` can also route into blocking states before the app is ready:
 - no Wi-Fi
 - no iCloud
+- iCloud account issue
 - CloudKit unavailable
 - syncing slow network
 - generic bootstrap error

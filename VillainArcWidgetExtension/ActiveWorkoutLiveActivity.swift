@@ -229,8 +229,7 @@ private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> 
     
     if let weight = state.weight, weight > 0 {
         let unit = state.weightUnit ?? "lbs"
-        let displayWeight = unit == "lbs" ? weight * 2.20462 : weight
-        let formatted = displayWeight.formatted(.number.precision(.fractionLength(0...1)))
+        let formatted = weight.formatted(.number.precision(.fractionLength(0...1)))
         parts.append("\(formatted) \(unit)")
     }
     

@@ -108,10 +108,7 @@ struct ExerciseSetRowView: View {
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
-            TextField("Weight", value: Binding(
-                get: { weightUnit.fromKg(set.weight) },
-                set: { set.weight = weightUnit.toKg($0) }
-            ), format: .number)
+            TextField("Weight", value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .frame(maxWidth: fieldWidth)
@@ -138,7 +135,7 @@ struct ExerciseSetRowView: View {
                             set.reps = reps
                         }
                         if let weight = referenceData.weight {
-                            set.weight = weight
+                            set.weight = weightUnit.fromKg(weight)
                         }
                         saveContext(context: context)
                     }

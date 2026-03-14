@@ -15,6 +15,9 @@ struct WorkoutPlanView: View {
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var showDeletePlanConfirmation = false
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     init(plan: WorkoutPlan, originalPlan: WorkoutPlan? = nil) {
         self.plan = plan
@@ -66,6 +69,7 @@ struct WorkoutPlanView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
                         Haptics.selection()
+                        plan.convertTargetWeightsToKg(from: weightUnit)
                         if let originalPlan {
                             originalPlan.applyEditingCopy(plan, context: context)
                             context.delete(plan)
@@ -518,10 +522,7 @@ private struct WorkoutPlanSetRowView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetRepsField(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
 
-            TextField("Weight", value: Binding(
-                get: { weightUnit.fromKg(set.targetWeight) },
-                set: { set.targetWeight = weightUnit.toKg($0) }
-            ), format: .number)
+            TextField("Weight", value: $set.targetWeight, format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetWeightField(exercise, set: set))
