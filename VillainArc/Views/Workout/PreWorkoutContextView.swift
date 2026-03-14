@@ -5,6 +5,7 @@ struct PreWorkoutContextView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var preWorkoutContext: PreWorkoutContext
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
@@ -89,7 +90,7 @@ struct PreWorkoutContextView: View {
             .scaleEffect(isSelected ? 1.2 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(.bouncy, value: preWorkoutContext.feeling)
+        .animation(reduceMotion ? .none : .bouncy, value: preWorkoutContext.feeling)
         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodOption(level))
         .accessibilityLabel(level.displayName)
         .accessibilityHint("Sets your pre-workout mood.")

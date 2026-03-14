@@ -29,6 +29,7 @@ struct WorkoutSummaryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Query private var sessionSuggestionEvents: [SuggestionEvent]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
@@ -317,7 +318,7 @@ struct WorkoutSummaryView: View {
                 .scaleEffect(isSelected ? 1.15 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(.bouncy, value: isSelected)
+        .animation(reduceMotion ? .none : .bouncy, value: isSelected)
     }
 
     private func prRow(_ entry: PRItem) -> some View {

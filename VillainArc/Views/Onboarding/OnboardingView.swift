@@ -4,6 +4,7 @@ struct OnboardingView: View {
     @Bindable var manager: OnboardingManager
     @Environment(\.scenePhase) private var scenePhase
     @State private var path: [UserProfileOnboardingStep] = []
+    @ScaledMetric(relativeTo: .largeTitle) private var onboardingIconSize: CGFloat = 60
 
     var body: some View {
         Group {
@@ -100,7 +101,7 @@ struct OnboardingView: View {
         case .noWiFi:
             VStack(spacing: 16) {
                 Image(systemName: "wifi.slash")
-                    .font(.system(size: 60))
+                    .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.red)
 
                 Text("WiFi Required")
@@ -127,7 +128,7 @@ struct OnboardingView: View {
         case .noiCloud:
             VStack(spacing: 16) {
                 Image(systemName: "icloud.slash")
-                    .font(.system(size: 60))
+                    .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.orange)
 
                 Text("iCloud Disabled")
@@ -165,7 +166,7 @@ struct OnboardingView: View {
         case .cloudKitUnavailable:
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.icloud")
-                    .font(.system(size: 60))
+                    .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.red)
 
                 Text("Servers Unavailable")
@@ -198,7 +199,7 @@ struct OnboardingView: View {
         case .error(let message):
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 60))
+                    .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.red)
 
                 Text("Setup Error")

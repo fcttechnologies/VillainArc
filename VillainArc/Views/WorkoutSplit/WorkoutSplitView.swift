@@ -26,6 +26,7 @@ struct WorkoutSplitView: View {
 
     private let autoPresentBuilder: Bool
     private let weekdayInitials = ["S", "M", "T", "W", "T", "F", "S"]
+    @ScaledMetric(relativeTo: .caption) private var capsuleFontSize: CGFloat = 14
 
     private var isOverride: Bool { overrideSplit != nil }
 
@@ -419,7 +420,7 @@ struct WorkoutSplitView: View {
                         .fill(isSelected ? AnyShapeStyle(Color.blue.gradient) : AnyShapeStyle(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6)))
                         .shadow(color: isSelected ? Color.blue.opacity(0.45) : .clear, radius: 8, x: 0, y: 4)
                     Text(initial)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: capsuleFontSize, weight: .semibold))
                         .foregroundStyle(isSelected ? .white : Color.secondary)
                 }
                 .frame(width: 34, height: 34)
@@ -480,7 +481,7 @@ struct WorkoutSplitView: View {
                         .fill(isSelected ? AnyShapeStyle(Color.blue.gradient) : AnyShapeStyle(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6)))
                         .shadow(color: isSelected ? Color.blue.opacity(0.45) : .clear, radius: 8, x: 0, y: 4)
                     Text("\(dayNumber)")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: capsuleFontSize, weight: .semibold))
                         .foregroundStyle(isSelected ? .white : Color.secondary)
                 }
                 .frame(width: 34, height: 34)
@@ -543,7 +544,7 @@ struct WorkoutSplitView: View {
                     Circle()
                         .fill(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray6))
                     Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: capsuleFontSize, weight: .semibold))
                         .foregroundStyle(Color.secondary)
                 }
                 .frame(width: 34, height: 34)

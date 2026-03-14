@@ -37,6 +37,7 @@ struct ExerciseSetRowView: View {
     private let restTimer = RestTimerState.shared
     @State private var showOverrideTimerAlert = false
     @FocusState private var focusedField: Field?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
@@ -177,7 +178,7 @@ struct ExerciseSetRowView: View {
                 .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
             }
         }
-        .animation(.bouncy, value: set.complete)
+        .animation(reduceMotion ? .none : .bouncy, value: set.complete)
         .onChange(of: focusedField) { _, field in
             guard field != nil else { return }
             selectAllFocusedText()

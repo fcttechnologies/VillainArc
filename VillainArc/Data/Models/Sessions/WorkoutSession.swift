@@ -11,8 +11,7 @@ final class WorkoutSession {
     var status: String = SessionStatus.active.rawValue
     var startedAt: Date = Date()
     var endedAt: Date?
-    var origin: Origin = Origin.user
-    
+
     var statusValue: SessionStatus {
         get { SessionStatus(rawValue: status) ?? .active }
         set { status = newValue.rawValue }
@@ -39,14 +38,13 @@ final class WorkoutSession {
     }
 
     // Test/sample initializer to reduce setup boilerplate.
-    convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil, origin: Origin = .user) {
+    convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil) {
         self.init()
         self.title = title
         self.notes = notes
         self.statusValue = status
         self.startedAt = startedAt
         self.endedAt = endedAt
-        self.origin = origin
         self.preWorkoutContext = PreWorkoutContext()
     }
 
@@ -56,7 +54,6 @@ final class WorkoutSession {
         preWorkoutContext = PreWorkoutContext()
         title = plan.title
         notes = plan.notes
-        origin = .plan
         workoutPlan = plan
         exercises = plan.sortedExercises.map { ExercisePerformance(workoutSession: self, exercisePrescription: $0) }
         plan.lastUsed = .now

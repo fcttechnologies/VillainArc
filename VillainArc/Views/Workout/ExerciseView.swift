@@ -164,7 +164,7 @@ struct ExerciseView: View {
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)
-            .dynamicTypeSize(...DynamicTypeSize.large)
+            .dynamicTypeSize(...DynamicTypeSize.accessibility2)
             .simultaneousGesture(
                 TapGesture().onEnded {
                     dismissKeyboard()

@@ -199,7 +199,7 @@ enum SpotlightIndexer {
         priority += recencyPriorityBonus(for: workoutSession.endedAt ?? workoutSession.startedAt)
         priority += min(workoutSession.sortedExercises.count, 8)
 
-        if workoutSession.origin == .plan {
+        if workoutSession.workoutPlan != nil {
             priority += 4
         }
         if workoutSession.postEffort >= 8 {
@@ -394,7 +394,7 @@ enum SpotlightIndexer {
             "\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises"): \(exerciseSummary)."
         ]
 
-        if workoutSession.origin == .plan, let planTitle = workoutSession.workoutPlan?.title.trimmingCharacters(in: .whitespacesAndNewlines), !planTitle.isEmpty {
+        if let planTitle = workoutSession.workoutPlan?.title.trimmingCharacters(in: .whitespacesAndNewlines), !planTitle.isEmpty {
             parts.append("Started from plan \(planTitle).")
         }
         if workoutSession.postEffort > 0 {

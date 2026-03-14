@@ -6,6 +6,7 @@ struct MuscleFilterSheetView: View {
     @State private var showAdvanced = false
     let onConfirm: (Set<Muscle>) -> Void
     let showMinorMuscles: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(selectedMuscles: Set<Muscle>, showMinorMuscles: Bool = false, onConfirm: @escaping (Set<Muscle>) -> Void) {
         _selectedMuscles = State(initialValue: selectedMuscles)
@@ -70,7 +71,7 @@ struct MuscleFilterSheetView: View {
             }
             .navigationTitle("Muscles")
             .navigationBarTitleDisplayMode(.inline)
-            .animation(.bouncy, value: selectedMuscles)
+            .animation(reduceMotion ? .none : .bouncy, value: selectedMuscles)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if hasSelection {

@@ -9,6 +9,7 @@ struct RestTimerView: View {
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
     @State private var selectedSeconds = RestTimeDefaults.restSeconds
     @Bindable var workout: WorkoutSession
+    @ScaledMetric(relativeTo: .largeTitle) private var timerFontSize: CGFloat = 80
 
     private var autoStartRestTimerEnabled: Bool {
         appSettings.first?.autoStartRestTimer ?? true
@@ -198,7 +199,7 @@ struct RestTimerView: View {
                     adjustButton(deltaSeconds: -15)
 
                     Text(timerInterval: .now...endDate, countsDown: true)
-                        .font(.system(size: 80, weight: .bold))
+                        .font(.system(size: timerFontSize, weight: .bold))
                         .minimumScaleFactor(0.7)
 
                     adjustButton(deltaSeconds: 15)
@@ -213,7 +214,7 @@ struct RestTimerView: View {
                     adjustButton(deltaSeconds: -15)
 
                     Text(displayText)
-                        .font(.system(size: 80, weight: .bold))
+                        .font(.system(size: timerFontSize, weight: .bold))
                         .minimumScaleFactor(0.7)
 
                     adjustButton(deltaSeconds: 15)
@@ -221,7 +222,7 @@ struct RestTimerView: View {
                 .lineLimit(1)
             } else {
                 Text(displayText)
-                    .font(.system(size: 80, weight: .bold))
+                    .font(.system(size: timerFontSize, weight: .bold))
                     .contentTransition(.numericText())
             }
         }
