@@ -50,6 +50,10 @@ struct AIOutcomeChange {
 
 @Generable
 struct AIOutcomeGroupInput {
+    @Guide(description: "Suggestion category.")
+    let category: SuggestionCategory
+    @Guide(description: "How to judge this category.")
+    let categoryGuidance: String?
     @Guide(description: "Suggested changes.")
     let changes: [AIOutcomeChange]
     @Guide(description: "Original prescription.")

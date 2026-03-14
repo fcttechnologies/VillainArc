@@ -59,8 +59,10 @@ struct AIOutcomeInferrer {
         - Ignored: the athlete stayed close to the old targets or evidence of attempting the change is weak.
 
         Guidelines:
+        - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - For set-level changes, judge the targeted slot first.
         - For exercise-level rep-range changes, judge the working-set distribution against the new range or target.
+        - For warmup calibration, judge adherence and whether the set still behaves like a warmup relative to the main working or top sets.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds usually count as attempted.
         - For rest changes, matching the suggested rest alone is not enough; prefer Good only if performance also improved.
         - Use trainingStyle to focus on the sets that matter most.
@@ -84,8 +86,10 @@ struct AIOutcomeInferrer {
         - Too Easy: they effectively followed the suggested targets and clearly exceeded them.
 
         Guidelines:
+        - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - Compare actualPerformance to the suggested targets, with triggerPerformance as baseline.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds can count as following.
+        - For warmup calibration, judge whether they effectively used the suggested warmup load while the set still behaved like a warmup.
         - For rest changes, matching rest alone is not enough; look for better performance too.
         - Use trainingStyle to focus on the sets that matter most.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.

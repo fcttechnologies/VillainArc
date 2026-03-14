@@ -14,7 +14,7 @@ This document explains how VillainArc handles plan suggestions and their later o
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - `Data/Models/Suggestions/SuggestionEvent.swift`
 - `Data/Models/Suggestions/PrescriptionChange.swift`
-- `Data/Models/Plans/SuggestionGrouping.swift`
+- `Data/Models/Suggestions/SuggestionGrouping.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
 
 ## Core Model
@@ -129,8 +129,8 @@ It starts from the current workout’s live prescription links:
 That means only suggestions still attached to the active plan structure are considered.
 
 At the set level, the resolver is stricter:
-- the event must still point at a live `targetSetPrescription` or durable `targetSetIndex`
-- the current workout must contain a completed performed set still linked to that same target set
+- the event must still point at a live `targetSetPrescription`
+- the current workout must contain a completed performed set still linked to that exact target set
 
 If that evidence is missing, the resolver skips the event for now and leaves `outcome == .pending`.
 
@@ -139,7 +139,7 @@ If that evidence is missing, the resolver skips the event for now and leaves `ou
 This is the practical behavior:
 - if a set-level suggestion targets a set that the user simply did not complete this session, there is no evaluation evidence yet, so the outcome stays pending
 - if the user deletes a set or replaces an exercise during the session so the performed work is no longer linked to that original target, the resolver cannot confidently evaluate that suggestion in this workout
-- if the target still exists in the plan, the event can remain pending and be evaluated in a later workout when matching evidence appears again
+- if the target still exists in the plan, the event can remain pending and be evaluated in a later workout when a completed performed set is again linked to that same live target
 - if the user manually edits the plan and removes or invalidates that unresolved target before evaluation, `WorkoutPlan+Editing` deletes the unresolved suggestion event instead of keeping stale outcome work around
 
 So there are really two paths for unresolved suggestions:
@@ -166,13 +166,16 @@ This is why outcomes are not tied only to accepted changes. Rejected suggestions
 ### How Change Types Are Judged
 
 The deterministic rules are change-type specific:
-- weight changes check whether the user actually moved toward or reached the new load, then classify the result by reps relative to the active rep policy
+- weight changes usually check whether the user actually moved toward or reached the new load, then classify the result by reps relative to the active rep policy
 - rep changes check whether the user actually performed near the new rep target rather than the old one
 - rest changes check whether the user actually rested near the new target and then whether reps landed in a good zone
 - rep-range changes judge the full working-set distribution against the post-change range or target
 - set-type changes are basically binary: did the performed set type match the new target type
 
-This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver needs to know which performed set corresponds to the original target slot. It first prefers the live `targetSetPrescription`, then falls back to `targetSetIndex` matched against `SetPerformance.linkedTargetSetIndex`.
+There is one important category-specific exception:
+- `warmupCalibration` weight changes are judged by whether the adjusted set still behaved like a warmup relative to the working/top-set anchor, not by the normal working-set progression lens
+
+This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver only evaluates a set-scoped event when it can match a completed performed set through the live `targetSetPrescription`. Historical fields like `targetSetIndex` and `SetPerformance.linkedTargetSetIndex` are still valuable for generation, frozen snapshots, and UI labeling, but they are not used as authority for current set-level outcome resolution.
 
 ## New Suggestion Generation
 
@@ -192,7 +195,8 @@ For each exercise in the current plan-based session, the generator:
 - asks `RuleEngine` for candidate `SuggestionEventDraft`s
 
 After collecting drafts from all exercises, it:
-- resolves conflicts with `SuggestionDeduplicator`
+- suppresses drafts that are blocked by unresolved incompatible events already attached to the same live target scope
+- resolves remaining conflicts with `SuggestionDeduplicator`
 - converts surviving drafts into persisted `SuggestionEvent`s with child `PrescriptionChange`s
 
 ### What Generation Looks At
@@ -293,7 +297,7 @@ In practice this helps the app avoid showing conflicting suggestions for the sam
 
 ### Unresolved Overlap Blocking
 
-Before new drafts are persisted, `SuggestionGenerator` also checks the active plan for unresolved existing events on the same target scope.
+Before new drafts are deduplicated and persisted, `SuggestionGenerator` also checks the active plan for unresolved existing events on the same target scope.
 
 If an unresolved event is already attached to the same exercise/set and its category is incompatible with the new draft, the new draft is suppressed for now.
 
@@ -403,7 +407,7 @@ So deferred suggestions are not just a visual reminder. They are a real gate in 
 
 ## How Suggestions Are Represented in the UI
 
-The main UI helpers are in `Data/Models/Plans/SuggestionGrouping.swift`.
+The main UI helpers are in `Data/Models/Suggestions/SuggestionGrouping.swift`.
 
 `groupSuggestions(...)`:
 - groups `SuggestionEvent`s by target exercise

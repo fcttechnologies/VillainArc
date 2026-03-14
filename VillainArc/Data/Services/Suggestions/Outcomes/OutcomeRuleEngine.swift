@@ -10,7 +10,7 @@ struct OutcomeRuleEngine {
 
         switch change.changeType {
         case .increaseWeight, .decreaseWeight:
-            return evaluateWeightChange(change: change, event: event, exercisePerf: exercisePerf)
+            return evaluateWeightChange(change: change, event: event, exercisePerf: exercisePerf, trainingStyle: trainingStyle)
         case .increaseReps, .decreaseReps:
             return evaluateRepsChange(change: change, event: event, exercisePerf: exercisePerf)
         case .increaseRest, .decreaseRest:
@@ -41,20 +41,18 @@ struct OutcomeRuleEngine {
             return matched
         }
 
-        if let targetSetIndex = event.resolvedTargetSetIndex {
-            return completeSets.first(where: {
-                $0.linkedTargetSetIndex == targetSetIndex || $0.prescription?.index == targetSetIndex
-            })
-        }
-
         return nil
     }
 
     // MARK: - Weight Change
 
-    private static func evaluateWeightChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
+    private static func evaluateWeightChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
         guard event.isSetScoped,
               let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
+
+        if event.category == .warmupCalibration {
+            return evaluateWarmupWeightChange(change: change, setPerf: setPerf, exercisePerf: exercisePerf, trainingStyle: trainingStyle)
+        }
 
         let newWeight = change.newValue
         let oldWeight = change.previousValue
@@ -80,6 +78,34 @@ struct OutcomeRuleEngine {
             exercisePerf: exercisePerf,
             context: "weight change to \(newWeight)"
         )
+    }
+
+    private static func evaluateWarmupWeightChange(change: PrescriptionChange, setPerf: SetPerformance, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
+        let newWeight = change.newValue
+        let oldWeight = change.previousValue
+        let baseWeight = newWeight > 0 ? newWeight : oldWeight
+        let weightStep = weightTolerance(for: exercisePerf, baseWeight: baseWeight)
+        let actualWeight = setPerf.weight
+
+        let followedDirection = followedDirectionalTarget(actual: actualWeight, old: oldWeight, new: newWeight, tolerance: weightStep)
+        guard followedDirection else {
+            if abs(actualWeight - oldWeight) <= weightStep {
+                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Warmup load stayed near the old target (\(oldWeight)).")
+            }
+            return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Warmup load (\(actualWeight)) did not move toward the new target (\(newWeight)).")
+        }
+
+        guard setPerf.type == .warmup else {
+            return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "The adjusted set no longer behaved like a warmup.")
+        }
+
+        if let anchorWeight = workingAnchorWeight(in: exercisePerf, trainingStyle: trainingStyle),
+           anchorWeight > 0,
+           actualWeight >= anchorWeight * 0.9 {
+            return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Warmup load (\(actualWeight)) was too close to the main working load (\(anchorWeight)).")
+        }
+
+        return OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Warmup load moved toward the new target while still behaving like a warmup.")
     }
 
     // MARK: - Reps Change
@@ -254,6 +280,17 @@ struct OutcomeRuleEngine {
         let equipment = exercisePerf.equipmentType
         // Keep tolerance aligned with progression increment granularity.
         return MetricsCalculator.weightIncrement(for: baseWeight, primaryMuscle: primaryMuscle, equipmentType: equipment)
+    }
+
+    private static func workingAnchorWeight(in exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> Double? {
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: exercisePerf, overrideStyle: trainingStyle)
+        let workingSets = progressionSets.filter { $0.complete && $0.type == .working }
+        if let anchor = workingSets.map(\.weight).max(), anchor > 0 {
+            return anchor
+        }
+
+        let fallback = exercisePerf.sortedSets.filter { $0.complete && $0.type == .working }.map(\.weight).max() ?? 0
+        return fallback > 0 ? fallback : nil
     }
 
     // Computes the range that should be considered "new target state" for this change.

@@ -165,7 +165,7 @@ struct OutcomeResolver {
 
         let style = resolvedTrainingStyle(for: group)
 
-        return AIOutcomeGroupInput(changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
+        return AIOutcomeGroupInput(category: group.event.category, categoryGuidance: group.event.category.guidance(isSetScoped: group.event.isSetScoped, targetSetType: group.event.targetSetPrescription?.type, changeTypes: group.changes.map(\.changeType)), changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
     }
 
     private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {

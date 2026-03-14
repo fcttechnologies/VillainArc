@@ -32,9 +32,22 @@ struct RuleEngine {
 
     private struct RepEvidence {
         let sessionCount: Int
-        let minRep: Int
-        let maxRep: Int
         let representativeReps: [Int]
+        let sessionFloors: [Int]
+        let sessionCeilings: [Int]
+
+        var representativeMin: Int? {
+            representativeReps.min()
+        }
+
+        var representativeMax: Int? {
+            representativeReps.max()
+        }
+
+        var observedBandWidth: Int? {
+            guard let floor = sessionFloors.min(), let ceiling = sessionCeilings.max() else { return nil }
+            return ceiling - floor
+        }
     }
 
     static func evaluate(context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
@@ -53,7 +66,7 @@ struct RuleEngine {
 
         suggestions.append(contentsOf: setTypeHygieneSuggestions(context))
 
-        if !suggestions.contains(where: { $0.targetSetIndex != nil }) {
+        if !suggestions.contains(where: { $0.targetSetIndex != nil && $0.category != .recovery }) {
             suggestions.append(contentsOf: exerciseLevelRepRangeSuggestions(context))
         }
 
@@ -88,6 +101,7 @@ struct RuleEngine {
 
     private static func setTypeHygieneSuggestions(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         var suggestions: [SuggestionEventDraft] = []
+        suggestions.append(contentsOf: calibrateWarmupWeights(context))
         suggestions.append(contentsOf: dropSetWithoutBase(context))
         suggestions.append(contentsOf: warmupActingLikeWorkingSet(context))
         suggestions.append(contentsOf: regularActingLikeWarmup(context))
@@ -681,6 +695,67 @@ struct RuleEngine {
         return [makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason)]
     }
 
+    private static func calibrateWarmupWeights(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
+        let recent = recentPerformances(context)
+        guard recent.count >= 2 else { return [] }
+
+        let evidenceWindow = Array(recent.prefix(3))
+        var events: [SuggestionEventDraft] = []
+
+        for setPrescription in context.prescription.sortedSets where setPrescription.type == .warmup {
+            let increment = weightIncrement(for: max(setPrescription.targetWeight, 1), context: context)
+            guard increment > 0 else { continue }
+
+            var warmupWeights: [Double] = []
+            var anchorWeights: [Double] = []
+            var includesCurrent = false
+
+            for performance in evidenceWindow {
+                guard let warmupSet = matchingSetPerformance(in: performance, for: setPrescription, context: context),
+                      warmupSet.complete,
+                      warmupSet.type == .warmup,
+                      let anchorWeight = warmupAnchorWeight(in: performance, context: context) else {
+                    continue
+                }
+
+                if performance.id == context.performance.id {
+                    includesCurrent = true
+                }
+
+                warmupWeights.append(warmupSet.weight)
+                anchorWeights.append(anchorWeight)
+            }
+
+            guard includesCurrent, warmupWeights.count >= 2, anchorWeights.count == warmupWeights.count else { continue }
+
+            let currentTargetWeight = setPrescription.targetWeight
+            let ratioSamples = zip(warmupWeights, anchorWeights).map { weight, anchor in
+                guard anchor > 0 else { return 0.0 }
+                return weight / anchor
+            }
+
+            let aboveTargetCount = warmupWeights.filter { $0 >= currentTargetWeight + increment * 0.8 }.count
+            guard aboveTargetCount >= 2 else { continue }
+
+            guard let minRatio = ratioSamples.min(),
+                  let maxRatio = ratioSamples.max(),
+                  maxRatio - minRatio <= 0.15 else {
+                continue
+            }
+
+            let suggestedWeight = MetricsCalculator.roundToNearestPlate(median(of: warmupWeights))
+            guard suggestedWeight >= currentTargetWeight + increment * 0.8 else { continue }
+
+            let currentAnchor = anchorWeights.first ?? 0
+            guard currentAnchor > 0, suggestedWeight < currentAnchor * 0.9 else { continue }
+
+            let reason = "You've consistently used a heavier warmup as your working sets have climbed. Increase this warmup weight so it better bridges into your main sets."
+            events.append(makeSetEvent(context: context, category: .warmupCalibration, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentTargetWeight, newValue: suggestedWeight)], reasoning: reason))
+        }
+
+        return events
+    }
+
     private static func progressionWeightChangeIndices(_ context: ExerciseSuggestionContext) -> Set<Int> {
         // Returns the set indices that would receive a progression-based weight change.
         let recent = recentPerformances(context)
@@ -934,26 +1009,47 @@ struct RuleEngine {
         let performances = Array(recentPerformances(context).prefix(sessionsRequired))
         guard performances.count >= sessionsRequired else { return nil }
 
-        var allReps: [Int] = []
         var representativeReps: [Int] = []
+        var sessionFloors: [Int] = []
+        var sessionCeilings: [Int] = []
 
         for performance in performances {
             let progressionSets = primaryProgressionSets(from: performance, context: context).filter(\.complete)
             let reps = progressionSets.map(\.reps).filter { $0 > 0 }
             guard !reps.isEmpty else { return nil }
 
-            allReps.append(contentsOf: reps)
-            let average = Double(reps.reduce(0, +)) / Double(reps.count)
-            representativeReps.append(Int(average.rounded()))
+            let sortedReps = reps.sorted()
+            representativeReps.append(lowerMedian(of: sortedReps))
+            sessionFloors.append(sortedReps.first ?? 0)
+            sessionCeilings.append(sortedReps.last ?? 0)
         }
 
-        guard let minRep = allReps.min(), let maxRep = allReps.max() else { return nil }
-        return RepEvidence(sessionCount: performances.count, minRep: minRep, maxRep: maxRep, representativeReps: representativeReps)
+        return RepEvidence(sessionCount: performances.count, representativeReps: representativeReps, sessionFloors: sessionFloors, sessionCeilings: sessionCeilings)
     }
 
-    private static func normalizedRange(minRep: Int, maxRep: Int) -> (lower: Int, upper: Int)? {
-        let lower = max(1, minRep)
-        let upper = max(lower + 2, maxRep)
+    private static func lowerMedian(of sortedValues: [Int]) -> Int {
+        guard !sortedValues.isEmpty else { return 0 }
+        let index = (sortedValues.count - 1) / 2
+        return sortedValues[index]
+    }
+
+    private static func median(of values: [Double]) -> Double {
+        let sortedValues = values.sorted()
+        guard !sortedValues.isEmpty else { return 0 }
+        let index = (sortedValues.count - 1) / 2
+        return sortedValues[index]
+    }
+
+    private static func normalizedRange(evidence: RepEvidence) -> (lower: Int, upper: Int)? {
+        guard let representativeMin = evidence.representativeMin,
+              let representativeMax = evidence.representativeMax,
+              let robustFloor = evidence.sessionFloors.sorted()[safe: evidence.sessionFloors.count / 2],
+              let robustCeiling = evidence.sessionCeilings.sorted()[safe: evidence.sessionCeilings.count / 2] else {
+            return nil
+        }
+
+        let lower = max(1, min(representativeMin, robustFloor))
+        let upper = max(lower + 2, max(representativeMax, robustCeiling))
         guard upper - lower <= 4 else { return nil }
         return (lower, upper)
     }
@@ -962,7 +1058,7 @@ struct RuleEngine {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .notSet else { return nil }
         guard let evidence = repEvidence(context), evidence.sessionCount >= 3 else { return nil }
-        guard let desiredRange = normalizedRange(minRep: evidence.minRep, maxRep: evidence.maxRep) else { return nil }
+        guard let desiredRange = normalizedRange(evidence: evidence) else { return nil }
 
         let reason = "You've trained this exercise consistently for recent sessions without a rep range set. Add a range that matches how you already perform it."
         return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
@@ -972,12 +1068,13 @@ struct RuleEngine {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return nil }
         guard let evidence = repEvidence(context), evidence.sessionCount >= 3 else { return nil }
-
-        let distinctRepresentativeCount = Set(evidence.representativeReps).count
-        guard distinctRepresentativeCount >= 2 else { return nil }
-        guard evidence.minRep >= max(1, repRange.targetReps - 1) else { return nil }
-        guard evidence.maxRep >= repRange.targetReps + 1 else { return nil }
-        guard let desiredRange = normalizedRange(minRep: evidence.minRep, maxRep: evidence.maxRep) else { return nil }
+        guard let desiredRange = normalizedRange(evidence: evidence),
+              let representativeMin = evidence.representativeMin,
+              let representativeMax = evidence.representativeMax,
+              let observedBandWidth = evidence.observedBandWidth else { return nil }
+        guard observedBandWidth >= 2 || representativeMin != representativeMax else { return nil }
+        guard desiredRange.lower >= max(1, repRange.targetReps - 1) else { return nil }
+        guard desiredRange.upper >= repRange.targetReps + 1 else { return nil }
 
         let reason = "You perform this exercise across a rep band rather than one exact target. Switching to a range should better match how you train it."
         return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
@@ -992,20 +1089,22 @@ struct RuleEngine {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return nil }
         guard let evidence = repEvidence(context), evidence.sessionCount >= 3 else { return nil }
-        guard let desiredRange = normalizedRange(minRep: evidence.minRep, maxRep: evidence.maxRep) else { return nil }
+        guard let desiredRange = normalizedRange(evidence: evidence),
+              let representativeMin = evidence.representativeMin,
+              let representativeMax = evidence.representativeMax else { return nil }
 
         switch direction {
         case .up:
-            guard evidence.minRep >= repRange.upperRange - 1 else { return nil }
-            guard evidence.maxRep >= repRange.upperRange + 1 else { return nil }
+            guard representativeMin >= repRange.upperRange - 1 else { return nil }
+            guard representativeMax >= repRange.upperRange + 1 else { return nil }
             guard desiredRange.lower > repRange.lowerRange || desiredRange.upper > repRange.upperRange else { return nil }
 
             let reason = "You're consistently performing above your current rep band. Shift the range up so the prescription better matches your training."
             return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
 
         case .down:
-            guard evidence.maxRep <= repRange.lowerRange + 1 else { return nil }
-            guard evidence.minRep <= repRange.lowerRange - 1 else { return nil }
+            guard representativeMax <= repRange.lowerRange + 1 else { return nil }
+            guard representativeMin <= repRange.lowerRange - 1 else { return nil }
             guard desiredRange.lower < repRange.lowerRange || desiredRange.upper < repRange.upperRange else { return nil }
 
             let reason = "You're consistently performing below your current rep band. Shift the range down so the prescription better matches your training."
@@ -1041,6 +1140,17 @@ struct RuleEngine {
 
     private static func targetSet(for set: SetPerformance) -> SetPrescription? {
         set.prescription
+    }
+
+    private static func warmupAnchorWeight(in performance: ExercisePerformance, context: ExerciseSuggestionContext) -> Double? {
+        let progressionSets = primaryProgressionSets(from: performance, context: context).filter { $0.complete && $0.type == .working }
+        if let anchor = progressionSets.map(\.weight).max(), anchor > 0 {
+            return anchor
+        }
+
+        let workingSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
+        guard let fallback = workingSets.map(\.weight).max(), fallback > 0 else { return nil }
+        return fallback
     }
 
     private static func matchingSetPerformance(in performance: ExercisePerformance, for setPrescription: SetPrescription, context: ExerciseSuggestionContext, requireComplete: Bool = true) -> SetPerformance? {

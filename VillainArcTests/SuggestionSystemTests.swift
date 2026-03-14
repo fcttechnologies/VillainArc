@@ -523,6 +523,51 @@ struct SuggestionSystemTests {
         #expect(setTypeChange?.change.previousValue == Double(ExerciseSetType.warmup.rawValue))
         #expect(setTypeChange?.change.newValue == Double(ExerciseSetType.working.rawValue))
     }
+
+    @Test @MainActor
+    func warmupCalibration_increasesWarmupWeightWhenUserConsistentlyRampsHigher() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 10)
+        prescription.sortedSets[0].type = .warmup
+        prescription.sortedSets[0].targetWeight = 50
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        let previousPerformance = TestDataFactory.makePerformance(context: context, session: previousSession, prescription: prescription, sets: [(weight: 60, reps: 8, rest: 60, type: .warmup), (weight: 100, reps: 8, rest: 90, type: .working)])
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 60, reps: 8, rest: 60, type: .warmup), (weight: 105, reps: 8, rest: 90, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let warmupChange = flattenedChanges(from: suggestions).first(where: { $0.draft.category == .warmupCalibration && $0.change.changeType == .increaseWeight && $0.draft.targetSetIndex == 0 })
+
+        #expect(warmupChange != nil)
+        #expect(warmupChange?.change.previousValue == 50)
+        #expect(warmupChange?.change.newValue == 60)
+    }
+
+    @Test @MainActor
+    func warmupCalibration_usesTopSetAnchorForTopSetBackoffStyle() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 200, targetReps: 6, targetRest: 120, repRangeMode: .target)
+        prescription.sortedSets[0].type = .warmup
+        prescription.sortedSets[0].targetWeight = 100
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        let previousPerformance = TestDataFactory.makePerformance(context: context, session: previousSession, prescription: prescription, sets: [(weight: 120, reps: 8, rest: 60, type: .warmup), (weight: 200, reps: 6, rest: 120, type: .working), (weight: 150, reps: 10, rest: 120, type: .working)])
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 120, reps: 8, rest: 60, type: .warmup), (weight: 205, reps: 6, rest: 120, type: .working), (weight: 155, reps: 10, rest: 120, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .topSetBackoffs, weightUnit: .kg)
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let warmupChange = flattenedChanges(from: suggestions).first(where: { $0.draft.category == .warmupCalibration && $0.change.changeType == .increaseWeight && $0.draft.targetSetIndex == 0 })
+
+        #expect(warmupChange != nil)
+        #expect(warmupChange?.change.newValue == 120)
+    }
     
     @Test @MainActor
     func notSetRepRangeSuggestsInitialExerciseLevelRange() throws {
@@ -574,6 +619,59 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 7 })
         #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 9 })
+    }
+
+    @Test @MainActor
+    func targetRepRangeSuggestsRangeFromRepeatedWithinSessionBand() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+
+        let session1 = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        session1.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session1, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working), (weight: 100, reps: 10, rest: 90, type: .working)])
+
+        let session2 = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        session2.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session2, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working), (weight: 100, reps: 10, rest: 90, type: .working)])
+
+        let session3 = TestDataFactory.makeSession(context: context)
+        let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working), (weight: 100, reps: 10, rest: 90, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let exerciseChanges = exerciseLevelChanges(from: suggestions)
+
+        #expect(suggestions.contains { $0.targetSetIndex == nil })
+        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
+        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
+        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 7 })
+    }
+
+    @Test @MainActor
+    func targetRepRangeRobustFittingIgnoresSingleHighOutlierSet() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+
+        let session1 = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        session1.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session1, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working), (weight: 100, reps: 15, rest: 90, type: .working)])
+
+        let session2 = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        session2.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session2, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working), (weight: 100, reps: 10, rest: 90, type: .working)])
+
+        let session3 = TestDataFactory.makeSession(context: context)
+        let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working), (weight: 100, reps: 10, rest: 90, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let exerciseChanges = exerciseLevelChanges(from: suggestions)
+
+        #expect(suggestions.contains { $0.targetSetIndex == nil })
+        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
+        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeUpper && $0.newValue == 15 } == false)
     }
     
     @Test @MainActor
@@ -658,7 +756,79 @@ struct SuggestionSystemTests {
         set.prescription = nil
 
         let withoutLiveLink = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
-        #expect(withoutLiveLink?.outcome == .good)
+        #expect(withoutLiveLink == nil)
+    }
+
+    @Test @MainActor
+    func outcomeRuleEngine_warmupCalibrationGoodWhenFollowedAndStillWarmup() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.sortedSets[0].type = .warmup
+        prescription.sortedSets[0].targetWeight = 50
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+
+        guard let performance = workout.sortedExercises.first,
+              performance.sortedSets.count >= 2,
+              let warmupPrescription = prescription.sortedSets.first else {
+            Issue.record("Expected plan-backed performance with warmup and working sets.")
+            return
+        }
+
+        let warmupSet = performance.sortedSets[0]
+        let workingSet = performance.sortedSets[1]
+        warmupSet.type = .warmup
+        warmupSet.weight = 60
+        warmupSet.reps = 8
+        warmupSet.complete = true
+
+        workingSet.type = .working
+        workingSet.weight = 100
+        workingSet.reps = 8
+        workingSet.complete = true
+
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 50, newValue: 60)
+        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, targetSetIndex: warmupPrescription.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+
+        let result = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
+        #expect(result?.outcome == .good)
+    }
+
+    @Test @MainActor
+    func outcomeRuleEngine_warmupCalibrationTooAggressiveWhenWarmupBecomesTooHeavy() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.sortedSets[0].type = .warmup
+        prescription.sortedSets[0].targetWeight = 50
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+
+        guard let performance = workout.sortedExercises.first,
+              performance.sortedSets.count >= 2,
+              let warmupPrescription = prescription.sortedSets.first else {
+            Issue.record("Expected plan-backed performance with warmup and working sets.")
+            return
+        }
+
+        let warmupSet = performance.sortedSets[0]
+        let workingSet = performance.sortedSets[1]
+        warmupSet.type = .warmup
+        warmupSet.weight = 95
+        warmupSet.reps = 8
+        warmupSet.complete = true
+
+        workingSet.type = .working
+        workingSet.weight = 100
+        workingSet.reps = 8
+        workingSet.complete = true
+
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 50, newValue: 60)
+        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, targetSetIndex: warmupPrescription.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+
+        let result = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
+        #expect(result?.outcome == .tooAggressive)
     }
 
     @Test @MainActor
