@@ -91,7 +91,8 @@ struct SuggestionGroupRow: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.red)
-                    
+                    .accessibilityHint(AccessibilityText.suggestionRejectHint)
+
                     Button {
                         Haptics.selection()
                         onAccept()
@@ -101,16 +102,18 @@ struct SuggestionGroupRow: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.green)
-                    
+                    .accessibilityHint(AccessibilityText.suggestionAcceptHint)
+
                     if let onDefer {
                         Button {
                             Haptics.selection()
                             onDefer()
                         } label: {
-                            Text("Later")
+                            Text(AccessibilityText.suggestionDeferLabel)
                                 .fontWeight(.semibold)
                         }
                         .buttonStyle(.glass)
+                        .accessibilityHint(AccessibilityText.suggestionDeferHint)
                     }
                 }
                 .buttonSizing(.flexible)
@@ -177,21 +180,24 @@ struct SuggestionEmptyState {
 
 struct ChangeDescriptionRow: View {
     let change: PrescriptionChange
-    
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+
     var body: some View {
         Text(changeDescription)
             .font(.subheadline)
         .fontWeight(.semibold)
     }
-    
+
     private var changeDescription: String {
         let previous = change.previousValue
         let new = change.newValue
-        
+
         switch change.changeType {
         // Set-level
         case .increaseWeight, .decreaseWeight:
-            return "Weight: \(formatValue(previous)) → \(formatValue(new)) lbs"
+            return "Weight: \(weightUnit.display(previous)) → \(weightUnit.display(new))"
         case .increaseReps, .decreaseReps:
             return "Reps: \(Int(previous)) → \(Int(new))"
         case .increaseRest, .decreaseRest:
@@ -227,15 +233,8 @@ struct ChangeDescriptionRow: View {
             return "Clear rep range"
         }
     }
-    
-    
-    private func formatValue(_ value: Double) -> String {
-        if value.truncatingRemainder(dividingBy: 1) == 0 {
-            return String(Int(value))
-        }
-        return String(format: "%.1f", value)
-    }
 }
+
 
 
 @MainActor

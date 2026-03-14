@@ -270,6 +270,7 @@ private struct SelectTypeView: View {
                             Image(systemName: type.icon)
                                 .frame(width: 24)
                                 .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(type.rawValue)
                                     .font(.headline)
@@ -280,6 +281,7 @@ private struct SelectTypeView: View {
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
                         }
                     }
                     .buttonStyle(.plain)
@@ -313,6 +315,7 @@ private struct SelectModeView: View {
                         Image(systemName: "calendar")
                             .frame(width: 24)
                             .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Weekly")
                                 .font(.headline)
@@ -323,6 +326,7 @@ private struct SelectModeView: View {
                         Spacer()
                         Image(systemName: "chevron.right")
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                     }
                 }
                 .buttonStyle(.plain)
@@ -337,6 +341,7 @@ private struct SelectModeView: View {
                         Image(systemName: "arrow.2.circlepath")
                             .frame(width: 24)
                             .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Rotation")
                                 .font(.headline)
@@ -347,6 +352,7 @@ private struct SelectModeView: View {
                         Spacer()
                         Image(systemName: "chevron.right")
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                     }
                 }
                 .buttonStyle(.plain)
@@ -411,6 +417,7 @@ private struct SelectDaysView: View {
                                 .foregroundStyle(.secondary)
                             Image(systemName: "chevron.right")
                                 .foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
                         }
                     }
                     .buttonStyle(.plain)
@@ -506,6 +513,7 @@ private struct SelectRestDaysView: View {
                         Spacer()
                         Image(systemName: "chevron.right")
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                     }
                 }
                 .buttonStyle(.plain)
@@ -530,11 +538,12 @@ private struct SelectRestDaysView: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                 }
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderWeekendsYes)
-            
+
             Button {
                 Haptics.selection()
                 config.keepWeekendsFree = false
@@ -546,6 +555,7 @@ private struct SelectRestDaysView: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
                 }
             }
             .buttonStyle(.plain)

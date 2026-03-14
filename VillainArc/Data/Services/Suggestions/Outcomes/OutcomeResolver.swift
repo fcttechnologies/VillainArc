@@ -215,7 +215,7 @@ struct OutcomeResolver {
 
         switch changeType {
         case .increaseWeight, .decreaseWeight:
-            return formattedWeightValue(value, fractionDigits: 0...2)
+            return value.formatted(.number.precision(.fractionLength(0...2)))
         case .increaseReps, .decreaseReps,
              .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,

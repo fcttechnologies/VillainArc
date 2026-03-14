@@ -11,16 +11,12 @@ struct SetReferenceData {
         reps != nil || weight != nil
     }
 
-    var displayText: String {
+    func displayText(unit: WeightUnit) -> String {
         if let reps, reps > 0, (weight ?? 0) == 0 {
             return "\(reps) reps"
         }
         guard let reps, let weight else { return "-" }
-        return "\(reps)x\(Self.formattedWeight(weight))"
-    }
-
-    static func formattedWeight(_ weight: Double) -> String {
-        weight.formatted(.number.precision(.fractionLength(0...2)))
+        return "\(reps)x\(unit.fromKg(weight).formatted(.number.precision(.fractionLength(0...2))))"
     }
 }
 
@@ -41,6 +37,8 @@ struct ExerciseSetRowView: View {
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     private var autoStartRestTimerEnabled: Bool {
         appSettings.first?.autoStartRestTimer ?? true
@@ -101,7 +99,7 @@ struct ExerciseSetRowView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetMenu(exercise, set: set))
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
             .accessibilityValue(AccessibilityText.exerciseSetMenuValue(for: set))
-            .accessibilityHint("Opens set options.")
+            .accessibilityHint(AccessibilityText.exerciseSetMenuHint)
 
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
@@ -109,16 +107,19 @@ struct ExerciseSetRowView: View {
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
-                .accessibilityLabel("Reps")
-            TextField("Weight", value: $set.weight, format: .number)
+                .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
+            TextField("Weight", value: Binding(
+                get: { weightUnit.fromKg(set.weight) },
+                set: { set.weight = weightUnit.toKg($0) }
+            ), format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
-                .accessibilityLabel("Weight")
+                .accessibilityLabel(AccessibilityText.exerciseSetWeightLabel)
 
-            Text(referenceData?.displayText ?? "-")
+            Text(referenceData?.displayText(unit: weightUnit) ?? "-")
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .overlay(alignment: .topTrailing) {
@@ -261,10 +262,11 @@ struct ExerciseSetRowView: View {
 
     private var referenceValueText: String {
         guard let referenceData else { return "None" }
+        let text = referenceData.displayText(unit: weightUnit)
         if let targetRPE = referenceData.targetRPE {
-            return "\(referenceData.displayText), target RPE \(targetRPE)"
+            return "\(text), target RPE \(targetRPE)"
         }
-        return referenceData.displayText
+        return text
     }
 
     private var shouldPrewarmSuggestionModelsOnCompletion: Bool {

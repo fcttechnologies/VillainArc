@@ -41,7 +41,7 @@ struct AISetPerformanceSnapshot {
     let linkedTargetSetIndex: Int?
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
-    @Guide(description: "Weight used.")
+    @Guide(description: "Weight used, in kg.")
     let weight: Double
     @Guide(description: "Reps completed.")
     let reps: Int

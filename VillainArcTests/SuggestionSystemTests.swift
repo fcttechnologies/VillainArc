@@ -111,12 +111,12 @@ struct SuggestionSystemTests {
         let perf2 = TestDataFactory.makePerformance(context: context, session: session2, prescription: prescription, sets: [(weight: 200, reps: 10, rest: 90, type: .working), (weight: 200, reps: 10, rest: 90, type: .working), (weight: 150, reps: 12, rest: 90, type: .working)])
         
         // Evaluate with straight sets style
-        let straightContext = ExerciseSuggestionContext(session: session2, performance: perf2, prescription: prescription, history: [perf1], plan: plan, resolvedTrainingStyle: .straightSets)
+        let straightContext = ExerciseSuggestionContext(session: session2, performance: perf2, prescription: prescription, history: [perf1], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let straightSuggestions = RuleEngine.evaluate(context: straightContext)
         let straightWeightChanges = flattenedChanges(from: straightSuggestions).filter { $0.change.changeType == .increaseWeight }
         
         // Evaluate with top set backoffs style
-        let topSetContext = ExerciseSuggestionContext(session: session2, performance: perf2, prescription: prescription, history: [perf1], plan: plan, resolvedTrainingStyle: .topSetBackoffs)
+        let topSetContext = ExerciseSuggestionContext(session: session2, performance: perf2, prescription: prescription, history: [perf1], plan: plan, resolvedTrainingStyle: .topSetBackoffs, weightUnit: .kg)
         let topSetSuggestions = RuleEngine.evaluate(context: topSetContext)
         let topSetWeightChanges = flattenedChanges(from: topSetSuggestions).filter { $0.change.changeType == .increaseWeight }
         
@@ -128,8 +128,8 @@ struct SuggestionSystemTests {
         
         let straightValues = straightWeightChanges.map { $0.change.newValue }
         let topSetValues = topSetWeightChanges.map { $0.change.newValue }
-        #expect(straightValues.allSatisfy { $0 == 205 })
-        #expect(topSetValues.allSatisfy { $0 == 207.5 })
+        #expect(straightValues.allSatisfy { $0 == 202.5 })
+        #expect(topSetValues.allSatisfy { $0 == 203.75 })
         
         let topSetIndices = Set(topSetWeightChanges.compactMap { $0.draft.targetSetIndex })
         #expect(topSetIndices == Set([0, 1]))
@@ -212,7 +212,7 @@ struct SuggestionSystemTests {
         
         #expect(event.sortedChanges.count == 2)
         #expect(weightChange?.previousValue == 100)
-        #expect(weightChange?.newValue == 107.5)
+        #expect(weightChange?.newValue == 103.75)
         #expect(repChange?.previousValue == 10)
         #expect(repChange?.newValue == 8)
         #expect(event.sortedChanges.allSatisfy { $0.targetSetIndex == 0 })
@@ -323,7 +323,7 @@ struct SuggestionSystemTests {
         currentSet.restSeconds = 90
         currentSet.complete = true
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let repChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .increaseReps })
@@ -385,7 +385,7 @@ struct SuggestionSystemTests {
             set.complete = true
         }
 
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
 
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let repChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseReps }
@@ -405,7 +405,7 @@ struct SuggestionSystemTests {
         let currentSession = TestDataFactory.makeSession(context: context)
         let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightDecrease = flattenedChanges(from: suggestions).filter { $0.change.changeType == .decreaseWeight }
@@ -424,7 +424,7 @@ struct SuggestionSystemTests {
         let currentSession = TestDataFactory.makeSession(context: context)
         let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightDecrease = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .decreaseWeight })
@@ -432,7 +432,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease != nil)
         #expect(weightDecrease?.draft.targetSetIndex == 0)
         #expect(weightDecrease?.change.previousValue == 100)
-        #expect(weightDecrease?.change.newValue == 95)
+        #expect(weightDecrease?.change.newValue == 97.5)
     }
     
     @Test @MainActor
@@ -446,7 +446,7 @@ struct SuggestionSystemTests {
         let currentSession = TestDataFactory.makeSession(context: context)
         let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 100, reps: 10, rest: 90, type: .working), (weight: 100, reps: 7, rest: 60, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let allChanges = flattenedChanges(from: suggestions)
@@ -472,7 +472,7 @@ struct SuggestionSystemTests {
         let currentSession = TestDataFactory.makeSession(context: context)
         let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 110, reps: 8, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance, oldestPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance, oldestPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .increaseWeight && $0.change.previousValue == 100 })
@@ -491,7 +491,7 @@ struct SuggestionSystemTests {
         let currentSession = TestDataFactory.makeSession(context: context)
         let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 70, reps: 12, rest: 30, type: .dropSet)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let setTypeChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .changeSetType })
@@ -514,7 +514,7 @@ struct SuggestionSystemTests {
         let currentSession = TestDataFactory.makeSession(context: context)
         let currentPerformance = TestDataFactory.makePerformance(context: context, session: currentSession, prescription: prescription, sets: [(weight: 95, reps: 8, rest: 60, type: .warmup), (weight: 100, reps: 8, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let setTypeChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .changeSetType && $0.draft.targetSetIndex == 0 })
@@ -540,7 +540,7 @@ struct SuggestionSystemTests {
         let session3 = TestDataFactory.makeSession(context: context)
         let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 12, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
         
@@ -566,7 +566,7 @@ struct SuggestionSystemTests {
         let session3 = TestDataFactory.makeSession(context: context)
         let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
         
@@ -593,7 +593,7 @@ struct SuggestionSystemTests {
         let session3 = TestDataFactory.makeSession(context: context)
         let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 10, rest: 90, type: .working)])
         
-        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets)
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         
         #expect(suggestions.contains { $0.targetSetIndex != nil })

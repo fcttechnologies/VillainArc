@@ -66,7 +66,7 @@ So an event can represent one grouped recommendation while still carrying one or
 The links and indices matter for different reasons:
 - the live prescription relationships let the app mutate the current plan or find unresolved suggestions later
 - `targetSetIndex` preserves the intended target slot even if ordering shifts or the live set reference disappears
-- `previousValue` and `newValue` store the exact scalar delta so both rule evaluation and UI can reason about the change without recomputing it from the live plan
+- `previousValue` and `newValue` store the exact scalar delta so both rule evaluation and UI can reason about the change without recomputing it from the live plan — weight values are always stored in kg here, matching the canonical storage in `SetPrescription.targetWeight` and `SetPerformance.weight`; display conversion to the user's preferred unit happens only in the review UI
 
 ## The Two State Machines
 

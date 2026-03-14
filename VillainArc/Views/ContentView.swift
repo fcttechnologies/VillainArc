@@ -27,7 +27,7 @@ struct ContentView: View {
                 RecentExercisesSectionView()
                     .padding()
                     .accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("homeRecentExercisesSection")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentExercisesSection)
             }
             .navBar(title: "Home", includePadding: false)
             .scrollIndicators(.hidden)

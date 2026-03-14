@@ -7,6 +7,7 @@ struct ExerciseSuggestionContext {
     let history: [ExercisePerformance]
     let plan: WorkoutPlan
     let resolvedTrainingStyle: TrainingStyle
+    let weightUnit: WeightUnit
 }
 
 @MainActor
@@ -409,7 +410,7 @@ struct RuleEngine {
                 }
 
                 // Only count if they tried the prescribed load.
-                let attemptedWeight = abs(set.weight - setTarget.targetWeight) <= 2.5
+                let attemptedWeight = abs(set.weight - setTarget.targetWeight) <= 1.25
                 if !(set.reps < performanceRepRange.lower && attemptedWeight) {
                     sessionBelow = false
                     break
@@ -472,11 +473,11 @@ struct RuleEngine {
 
             guard weights.count == 3 else { continue }
 
-            // Require consistent deviation of > 5 lbs in one direction.
+            // Require consistent deviation of > 2.5 kg in one direction.
             let targetWeight = setPrescription.targetWeight
             let deltas = weights.map { $0 - targetWeight }
-            let allAbove = deltas.allSatisfy { $0 > 5 }
-            let allBelow = deltas.allSatisfy { $0 < -5 }
+            let allAbove = deltas.allSatisfy { $0 > 2.5 }
+            let allBelow = deltas.allSatisfy { $0 < -2.5 }
             guard allAbove || allBelow else { continue }
 
             let average = weights.reduce(0, +) / Double(weights.count)
@@ -484,7 +485,7 @@ struct RuleEngine {
             guard abs(newWeight - targetWeight) > 0.1 else { continue }
 
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
-            let reason = "You've used about \(MetricsCalculator.roundToNearestPlate(average)) lbs for three sessions. Update the prescription to match your working weight."
+            let reason = "You've used about \(context.weightUnit.display(MetricsCalculator.roundToNearestPlate(average))) for three sessions. Update the prescription to match your working weight."
 
             events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
         }
@@ -509,7 +510,7 @@ struct RuleEngine {
             for performance in lastTwo {
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context) else { continue }
 
-                let reducedLoad = set.weight < (setPrescription.targetWeight - 2.5)
+                let reducedLoad = set.weight < (setPrescription.targetWeight - 1.25)
                 let repsLow = repFloor.map { set.reps <= $0 } ?? false
 
                 if reducedLoad && repsLow {

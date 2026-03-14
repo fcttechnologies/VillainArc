@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct OnboardingView: View {
     @Bindable var manager: OnboardingManager
@@ -103,6 +104,7 @@ struct OnboardingView: View {
                 Image(systemName: "wifi.slash")
                     .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.red)
+                    .accessibilityHidden(true)
 
                 Text("WiFi Required")
                     .font(.title2.bold())
@@ -112,7 +114,7 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
 
                 Spacer()
-                
+
                 Button {
                     Task { await manager.retry() }
                 } label: {
@@ -122,6 +124,7 @@ struct OnboardingView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
+                .accessibilityHint(AccessibilityText.onboardingRetryHint)
             }
             .padding()
 
@@ -130,6 +133,7 @@ struct OnboardingView: View {
                 Image(systemName: "icloud.slash")
                     .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
 
                 Text("iCloud Disabled")
                     .font(.title2.bold())
@@ -148,6 +152,7 @@ struct OnboardingView: View {
                     }
                     .buttonSizing(.flexible)
                     .buttonStyle(.glassProminent)
+                    .accessibilityHint(AccessibilityText.onboardingContinueWithoutiCloudHint)
 
                     Button {
                         if let url = URL(string: "App-prefs:CASTLE") {
@@ -160,6 +165,7 @@ struct OnboardingView: View {
                     }
                     .buttonSizing(.flexible)
                     .buttonStyle(.glass)
+                    .accessibilityHint(AccessibilityText.onboardingEnableICloudHint)
                 }
             }
 
@@ -168,6 +174,7 @@ struct OnboardingView: View {
                 Image(systemName: "exclamationmark.icloud")
                     .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.red)
+                    .accessibilityHidden(true)
 
                 Text("Servers Unavailable")
                     .font(.title2.bold())
@@ -185,6 +192,7 @@ struct OnboardingView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
+                .accessibilityHint(AccessibilityText.onboardingRetryHint)
             }
 
         case .syncing:
@@ -201,6 +209,7 @@ struct OnboardingView: View {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: onboardingIconSize))
                     .foregroundStyle(.red)
+                    .accessibilityHidden(true)
 
                 Text("Setup Error")
                     .font(.title2.bold())
@@ -218,6 +227,7 @@ struct OnboardingView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
+                .accessibilityHint(AccessibilityText.onboardingRetryHint)
             }
 
         case .profile, .finishing, .ready:
@@ -337,44 +347,68 @@ private struct ProfileBirthdayStepView: View {
 private struct ProfileHeightStepView: View {
     @Bindable var manager: OnboardingManager
     @Binding var path: [UserProfileOnboardingStep]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    @State private var cm: Double
     @State private var feet: Int
     @State private var inches: Double
 
     private static let feetOptions = Array(3...8)
     private static let inchOptions = stride(from: 0.0, through: 11.5, by: 0.5).map { $0 }
+    private static let cmOptions = Array(100...250).map { Double($0) }
 
     init(manager: OnboardingManager, path: Binding<[UserProfileOnboardingStep]>) {
         self.manager = manager
         _path = path
-        _feet = State(initialValue: manager.profile?.heightFeet ?? 5)
-        _inches = State(initialValue: manager.profile?.heightInches ?? 10)
+        let storedCm = manager.profile?.heightCm ?? 177.0
+        _cm = State(initialValue: storedCm)
+        let totalInches = storedCm / 2.54
+        let f = max(3, min(8, Int(totalInches / 12)))
+        let i = (totalInches.truncatingRemainder(dividingBy: 12) * 2).rounded() / 2
+        _feet = State(initialValue: f)
+        _inches = State(initialValue: min(i, 11.5))
     }
+
+    private var heightUnit: HeightUnit { appSettings.first?.heightUnit ?? .imperial }
 
     var body: some View {
         VStack {
             Spacer()
-            
-            HStack {
-                Picker("Feet", selection: $feet) {
-                    ForEach(Self.feetOptions, id: \.self) { option in
-                        Text("\(option) ft").tag(option)
-                    }
-                }
-                .pickerStyle(.wheel)
 
-                Picker("Inches", selection: $inches) {
-                    ForEach(Self.inchOptions, id: \.self) { option in
-                        Text(inchesLabel(for: option)).tag(option)
+            if heightUnit == .imperial {
+                HStack {
+                    Picker("Feet", selection: $feet) {
+                        ForEach(Self.feetOptions, id: \.self) { option in
+                            Text("\(option) ft").tag(option)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+
+                    Picker("Inches", selection: $inches) {
+                        ForEach(Self.inchOptions, id: \.self) { option in
+                            Text(inchesLabel(for: option)).tag(option)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                Picker("Height (cm)", selection: $cm) {
+                    ForEach(Self.cmOptions, id: \.self) { option in
+                        Text("\(Int(option)) cm").tag(option)
                     }
                 }
                 .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
-            
+
             Spacer()
-            
+
             Button {
-                Task { await manager.saveHeight(feet: feet, inches: inches) }
+                let saveCm = heightUnit == .imperial
+                    ? HeightUnit.imperial.toCm(feet: feet, inches: inches)
+                    : cm
+                Task { await manager.saveHeight(cm: saveCm) }
             } label: {
                 Text("Finish")
                     .padding(.vertical, 8)

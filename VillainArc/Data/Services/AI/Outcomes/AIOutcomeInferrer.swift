@@ -87,7 +87,7 @@ struct AIOutcomeInferrer {
            - If rest was followed but none of these improved, classify as "Good" with low confidence (0.4-0.5), not high confidence.
 
         Tolerances:
-        - Weight: Within one plate increment (~2.5-5 lbs depending on equipment) counts as attempted.
+        - Weight: Within one plate increment (~1.25-2.5 kg depending on equipment) counts as attempted.
         - Reps: Within 1 rep of the new target counts as on track.
         - Rest: Within 15 seconds of the new target counts as attempted.
         - Rep range: Check if completed working set reps fall within the new range.
@@ -127,7 +127,7 @@ struct AIOutcomeInferrer {
         1. Compare actualPerformance against the suggested targets (changes interpreted relative to the active baseline prescription).
         1a. For set-level changes, use **targetSetIndex** as the primary way to identify which set slot the suggestion targeted.
         2. Check whether the user naturally arrived at the suggested values:
-           - Weight: within one increment (~2.5-5 lbs) of the suggested target.
+           - Weight: within one increment (~1.25-2.5 kg) of the suggested target.
            - Reps: within 1 rep of the suggested target.
            - Rest: within 15 seconds of the suggested target.
         3. Differentiate natural progression from coincidence by comparing against triggerPerformance. If the user was already trending toward the suggested value before the suggestion, that is weaker evidence of "followed anyway."

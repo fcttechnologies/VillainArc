@@ -31,7 +31,7 @@ struct ExercisesListView: View {
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     favoriteAction(for: exercise)
                 }
-                .accessibilityIdentifier("exerciseListRow-\(exercise.catalogID)")
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseListRow(exercise))
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -44,18 +44,18 @@ struct ExercisesListView: View {
             if exercises.isEmpty {
                 ContentUnavailableView("No Exercises", systemImage: "dumbbell", description: Text("Exercises will appear here once the catalog is available."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("exercisesListEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListEmptyState)
             } else if favoritesOnly && !hasFavorites {
                 ContentUnavailableView("No Favorites", systemImage: "star.slash", description: Text("Swipe right on an exercise to favorite it."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("exercisesListNoFavoritesState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListNoFavoritesState)
             } else if filteredExercises.isEmpty {
                 ContentUnavailableView.search(text: searchText)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("exercisesListSearchEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListSearchEmptyState)
             }
         }
-        .accessibilityIdentifier("exercisesListScrollView")
+        .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListScrollView)
         .navigationTitle("Exercises")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
@@ -63,9 +63,10 @@ struct ExercisesListView: View {
                 if !exercises.isEmpty {
                     Menu("Options", systemImage: "ellipsis") {
                         Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
-                            .accessibilityIdentifier("exercisesListFavoritesToggle")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListFavoritesToggle)
+                            .accessibilityHint(AccessibilityText.exercisesListFavoritesToggleHint)
                     }
-                    .accessibilityIdentifier("exercisesListOptionsMenu")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListOptionsMenu)
                 }
             }
         }

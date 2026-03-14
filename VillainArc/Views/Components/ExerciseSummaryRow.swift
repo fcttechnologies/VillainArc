@@ -1,10 +1,14 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
 struct ExerciseSummaryRow: View {
     let exercise: Exercise
     let history: ExerciseHistory?
     private let appRouter = AppRouter.shared
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     
     var body: some View {
         Button {
@@ -43,8 +47,12 @@ struct ExerciseSummaryRow: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(exercise.name)
+        .accessibilityValue(AccessibilityText.exerciseSummaryRowValue(lastUsed: lastUsedText, sessions: sessionText, record: recordText))
+        .accessibilityHint(AccessibilityText.exerciseSummaryRowHint)
     }
-    
+
     @ViewBuilder
     private var metadataChips: some View {
         infoChip(systemImage: "clock.arrow.circlepath", text: lastUsedText)
@@ -71,7 +79,7 @@ struct ExerciseSummaryRow: View {
     private var recordText: String? {
         guard let history else { return nil }
         if history.bestWeight > 0 {
-            return formattedWeightText(history.bestWeight)
+            return formattedWeightText(history.bestWeight, unit: weightUnit)
         }
         if history.bestReps > 0 {
             return "\(history.bestReps) reps"

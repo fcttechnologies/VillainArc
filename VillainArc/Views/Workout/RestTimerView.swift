@@ -25,8 +25,8 @@ struct RestTimerView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowSeparator(.hidden)
                 .accessibilityIdentifier("restTimerCountdown")
-                .accessibilityLabel("Rest timer")
-                .accessibilityValue(restTimer.isPaused ? "Paused" : restTimer.isRunning ? "Running" : "Ready")
+                .accessibilityLabel(AccessibilityText.restTimerLabel)
+                .accessibilityValue(restTimer.isPaused ? AccessibilityText.restTimerValuePaused : restTimer.isRunning ? AccessibilityText.restTimerValueRunning : AccessibilityText.restTimerValueReady)
                 
                 if !restTimer.isActive {
                     TimerDurationPicker(seconds: $selectedSeconds, showZero: false)
@@ -65,8 +65,8 @@ struct RestTimerView: View {
                                 .buttonBorderShape(.circle)
                                 .buttonStyle(.glassProminent)
                                 .tint(.blue)
-                                .accessibilityIdentifier("restTimerRecentStartButton-\(history.seconds)")
-                                .accessibilityLabel("Start \(secondsToTime(history.seconds)) timer")
+                                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerRecentStartButton(history))
+                                .accessibilityLabel(AccessibilityText.restTimerRecentStartLabel(seconds: history.seconds, secondsToTime: secondsToTime))
                                 .accessibilityHint("Starts the rest timer.")
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.restTimerRecentRow(history))
@@ -84,7 +84,7 @@ struct RestTimerView: View {
                         Haptics.selection()
                         dismiss()
                     }
-                    .accessibilityLabel("Close")
+                    .accessibilityLabel(AccessibilityText.restTimerCloseLabel)
                     .accessibilityIdentifier("restTimerCloseButton")
                 }
             }
@@ -194,6 +194,7 @@ struct RestTimerView: View {
                 Text("\(Image(systemName: "bell")) \(endDate.formatted(date: .omitted, time: .shortened))")
                     .font(.headline)
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
 
                 HStack(spacing: 12) {
                     adjustButton(deltaSeconds: -15)
@@ -253,10 +254,10 @@ struct RestTimerView: View {
             let isBodyweightSet = nextSet.reps > 0 && nextSet.weight == 0
             let setText = isBodyweightSet
                 ? "\(nextSet.reps) reps"
-                : "\(nextSet.reps)x\(weightText)lbs"
+                : "\(nextSet.reps)x\(weightText)\(weightUnit.rawValue)"
             let accessibilityValue = isBodyweightSet
                 ? "\(exercise.name), \(nextSet.reps) reps"
-                : "\(exercise.name), \(nextSet.reps) reps, \(weightText) pounds"
+                : "\(exercise.name), \(nextSet.reps) reps, \(weightText) \(weightUnit.rawValue)"
 
             HStack(spacing: 12) {
                 Text("\(exercise.name): \(setText)")
@@ -266,7 +267,7 @@ struct RestTimerView: View {
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
                     .accessibilityIdentifier(AccessibilityIdentifiers.restTimerNextSet)
-                    .accessibilityLabel("Next set")
+                    .accessibilityLabel(AccessibilityText.restTimerNextSetLabel)
                     .accessibilityValue(accessibilityValue)
 
                 Button {
@@ -278,14 +279,16 @@ struct RestTimerView: View {
                 .buttonStyle(.glass)
                 .tint(.blue)
                 .accessibilityIdentifier(AccessibilityIdentifiers.restTimerCompleteSetButton)
-                .accessibilityLabel("Complete set")
+                .accessibilityLabel(AccessibilityText.restTimerCompleteSetLabel)
                 .accessibilityHint("Marks the next set complete and restarts the timer.")
             }
         }
     }
 
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+
     private func formattedWeight(_ weight: Double) -> String {
-        weight.formatted(.number.precision(.fractionLength(0...2)))
+        weightUnit.fromKg(weight).formatted(.number.precision(.fractionLength(0...2)))
     }
     
     private func deleteRecentTimes(at offsets: IndexSet) {

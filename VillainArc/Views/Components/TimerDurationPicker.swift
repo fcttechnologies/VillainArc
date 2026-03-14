@@ -135,9 +135,9 @@ struct TimerDurationPicker: View {
                 seconds = stepSeconds
             }
         }
-        .accessibilityIdentifier("timerDurationPicker")
+        .accessibilityIdentifier(AccessibilityIdentifiers.timerDurationPicker)
         .accessibilityElement()
-        .accessibilityLabel("Timer duration")
+        .accessibilityLabel(AccessibilityText.timerDurationPickerLabel)
         .accessibilityValue(secondsToTime(seconds))
         .accessibilityAdjustableAction { direction in
             let delta = direction == .increment ? stepSeconds : -stepSeconds

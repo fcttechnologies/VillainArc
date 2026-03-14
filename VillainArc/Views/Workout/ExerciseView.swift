@@ -74,7 +74,7 @@ struct ExerciseView: View {
                                 Haptics.selection()
                                 showExerciseHistorySheet = true
                             }
-                            .accessibilityIdentifier("exerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryButton(exercise))
                             .accessibilityHint("Shows prior performances for this exercise.")
                             .labelStyle(.iconOnly)
                             .font(.title)

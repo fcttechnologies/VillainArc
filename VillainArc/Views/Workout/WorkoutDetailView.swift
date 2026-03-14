@@ -8,9 +8,12 @@ struct WorkoutDetailView: View {
     @Environment(\.modelContext) private var context
     var router = AppRouter.shared
     let workout: WorkoutSession
-    
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
     @State private var showDeleteWorkoutConfirmation: Bool = false
     @State private var showPreWorkoutContextSheet = false
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
 
@@ -56,7 +59,7 @@ struct WorkoutDetailView: View {
                                 Text(set.reps > 0 ? "\(set.reps)" : "-")
                                     .gridColumnAlignment(set.reps > 0 ? .leading : .center)
                                 Spacer()
-                                Text(set.weight > 0 ? "\(set.weight, format: .number) lbs" : "-")
+                                Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
                                     .gridColumnAlignment(set.weight > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
@@ -66,7 +69,7 @@ struct WorkoutDetailView: View {
                             .accessibilityElement(children: .ignore)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSet(exercise, set: set))
                             .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
-                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set))
+                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
                         }
                     }
                 } header: {
@@ -146,6 +149,7 @@ struct WorkoutDetailView: View {
                     } label: {
                         Image(systemName: "bolt.fill")
                             .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
                     }
                     .accessibilityIdentifier("workoutDetailPreWorkoutDrinkButton")
                     .accessibilityLabel("Pre workout context")

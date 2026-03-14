@@ -44,14 +44,14 @@ struct AddExerciseView: View {
                                 showCancelConfirmation = true
                             }
                         }
-                        .accessibilityLabel("Close")
-                        .accessibilityIdentifier("addExerciseCloseButton")
+                        .accessibilityLabel(AccessibilityText.addExerciseCloseLabel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseCloseButton)
                         .confirmationDialog("Discard selected exercises?", isPresented: $showCancelConfirmation) {
                             Button("Discard Selections", role: .destructive) {
                                 Haptics.selection()
                                 dismiss()
                             }
-                            .accessibilityIdentifier("addExerciseDiscardSelectionsButton")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseDiscardSelectionsButton)
                         } message: {
                             Text(confirmationMessage)
                         }
@@ -61,8 +61,8 @@ struct AddExerciseView: View {
                             Haptics.selection()
                             addSelectedExercises()
                         }
-                        .accessibilityLabel("Add Exercises")
-                        .accessibilityIdentifier("addExerciseConfirmButton")
+                        .accessibilityLabel(AccessibilityText.addExerciseConfirmLabel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseConfirmButton)
                         .accessibilityHint(confirmationHint)
                     }
                     ToolbarItem(placement: .bottomBar) {
@@ -75,17 +75,17 @@ struct AddExerciseView: View {
                                     }
                                 }
                             }
-                            .accessibilityIdentifier("addExerciseSortMenu")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseSortMenu)
                             Divider()
                             Toggle("Selected", systemImage: "checkmark.circle", isOn: $selectedOnly)
-                                .accessibilityIdentifier("addExerciseSelectedToggle")
+                                .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseSelectedToggle)
                             Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
                                 .accessibilityIdentifier("addExerciseFavoritesToggle")
                             Button("Muscle Filters", systemImage: "figure") {
                                 presentMuscleFilterSheet()
                             }
                             .accessibilityIdentifier("addExerciseMuscleFiltersButton")
-                            .accessibilityHint("Shows muscle filter options.")
+                            .accessibilityHint(AccessibilityText.addExerciseMuscleFiltersHint)
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)

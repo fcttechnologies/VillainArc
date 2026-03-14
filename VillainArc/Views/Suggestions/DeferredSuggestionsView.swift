@@ -37,15 +37,17 @@ struct DeferredSuggestionsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Skip") {
+                    Button(AccessibilityText.deferredSuggestionsSkipLabel) {
                         skipAll()
                     }
                     .tint(.red)
+                    .accessibilityHint(AccessibilityText.deferredSuggestionsSkipHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Accept All") {
+                    Button(AccessibilityText.deferredSuggestionsAcceptAllLabel) {
                         acceptAll()
                     }
+                    .accessibilityHint(AccessibilityText.deferredSuggestionsAcceptAllHint)
                 }
             }
             .task {

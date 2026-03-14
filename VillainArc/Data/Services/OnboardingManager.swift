@@ -139,10 +139,9 @@ class OnboardingManager {
         return await persistProfileAndAdvance()
     }
 
-    func saveHeight(feet: Int, inches: Double) async {
+    func saveHeight(cm: Double) async {
         guard let profile else { return }
-        profile.heightFeet = feet
-        profile.heightInches = inches
+        profile.heightCm = cm
 
         do {
             try context.save()

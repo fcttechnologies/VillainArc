@@ -9,6 +9,9 @@ struct ExerciseHistoryView: View {
 
     @Query private var exercises: [Exercise]
     @Query private var performances: [ExercisePerformance]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -64,7 +67,7 @@ struct ExerciseHistoryView: View {
                                 Text(set.reps > 0 ? "\(set.reps)" : "-")
                                     .gridColumnAlignment(set.reps > 0 ? .leading : .center)
                                 Spacer()
-                                Text(set.weight > 0 ? "\(set.weight, format: .number) lbs" : "-")
+                                Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
                                     .gridColumnAlignment(set.weight > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
@@ -97,10 +100,10 @@ struct ExerciseHistoryView: View {
             if performances.isEmpty {
                 ContentUnavailableView("No Exercise History", systemImage: "clock.arrow.circlepath", description: Text("Complete this exercise in a workout to see every performance here."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("exerciseHistoryEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryEmptyState)
             }
         }
-        .accessibilityIdentifier("exerciseHistoryList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryList)
         .navigationTitle(exercise?.name ?? "Exercise History")
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)

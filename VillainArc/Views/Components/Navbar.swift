@@ -26,8 +26,8 @@ struct CloseButton: View {
         }
         .buttonBorderShape(.circle)
         .buttonStyle(.glass)
-        .accessibilityIdentifier("navBarCloseButton")
-        .accessibilityHint("Closes the sheet.")
+        .accessibilityIdentifier(AccessibilityIdentifiers.navBarCloseButton)
+        .accessibilityHint(AccessibilityText.closeButtonHint)
     }
 }
 

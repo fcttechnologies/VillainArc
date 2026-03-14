@@ -110,7 +110,7 @@ struct FilteredExerciseListView: View {
             }
         }
         .scrollDismissesKeyboard(.immediately)
-        .accessibilityIdentifier("filteredExerciseList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseList)
         .overlay {
             if visibleExercises.isEmpty {
                 emptyStateView

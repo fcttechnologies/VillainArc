@@ -35,7 +35,7 @@ struct AISetPrescriptionSnapshot {
     let index: Int
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
-    @Guide(description: "Target weight.")
+    @Guide(description: "Target weight, in kg.")
     let targetWeight: Double
     @Guide(description: "Target reps.")
     let targetReps: Int

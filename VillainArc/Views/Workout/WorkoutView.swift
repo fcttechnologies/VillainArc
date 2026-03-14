@@ -54,8 +54,8 @@ struct WorkoutView: View {
                     } label: {
                         timerToolbarLabel
                     }
-                    .accessibilityIdentifier("workoutRestTimerButton")
-                    .accessibilityHint("Shows the rest timer.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutRestTimerButton)
+                    .accessibilityHint(AccessibilityText.workoutRestTimerHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     workoutOptionsToolbarLabel
@@ -67,8 +67,8 @@ struct WorkoutView: View {
                         prepareForAddExerciseSheet()
                         showAddExerciseSheet = true
                     }
-                    .accessibilityIdentifier("workoutAddExerciseButton")
-                    .accessibilityHint("Adds an exercise.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutAddExerciseButton)
+                    .accessibilityHint(AccessibilityText.workoutAddExerciseHint)
                 }
             }
             .sheet(isPresented: $showExerciseEditSheet) {
@@ -174,7 +174,7 @@ struct WorkoutView: View {
                     if workout.exercises?.isEmpty ?? true {
                         ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Click the '\(Image(systemName: "plus"))' icon to add some exercises."))
                             .containerRelativeFrame(.horizontal)
-                            .accessibilityIdentifier("workoutExercisesEmptyState")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisesEmptyState)
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
                             ExerciseView(exercise: exercise) {
@@ -192,7 +192,7 @@ struct WorkoutView: View {
             .scrollTargetBehavior(.paging)
             .scrollDisabled(workout.exercises?.isEmpty ?? true)
             .scrollPosition(id: $workout.activeExercise)
-            .accessibilityIdentifier("workoutExercisePager")
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisePager)
             .onAppear {
                 if workout.activeExercise == nil {
                     workout.activeExercise = workout.sortedExercises.first
@@ -236,14 +236,14 @@ struct WorkoutView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseListRow(exercise))
                 .accessibilityLabel(exercise.name)
                 .accessibilityValue(AccessibilityText.workoutExerciseListValue(for: exercise))
-                .accessibilityHint("Shows the exercise in the workout.")
+                .accessibilityHint(AccessibilityText.workoutExerciseListRowHint)
             }
             .onDelete(perform: deleteExercise)
             .onMove(perform: moveExercise)
         }
         .scrollIndicators(.hidden)
         .environment(\.editMode, .constant(.active))
-        .accessibilityIdentifier("workoutExerciseList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseList)
     }
 
     private func exerciseSetStatusText(totalSets: Int, completedSets: Int) -> LocalizedStringKey {
@@ -279,8 +279,8 @@ struct WorkoutView: View {
                 }
                 .labelStyle(.iconOnly)
                 .accessibilityLabel("Delete Workout")
-                .accessibilityIdentifier("workoutDeleteEmptyButton")
-                .accessibilityHint("Deletes this workout.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDeleteEmptyButton)
+                .accessibilityHint(AccessibilityText.workoutDeleteEmptyHint)
             } else {
                 Menu("Workout Options", systemImage: "ellipsis") {
                     Button("Workout Settings", systemImage: "gear") {
@@ -288,38 +288,38 @@ struct WorkoutView: View {
                         showWorkoutSettingsSheet = true
                         Task { await IntentDonations.donateOpenWorkoutSettings() }
                     }
-                    .accessibilityIdentifier("workoutSettingsButton")
-                    .accessibilityHint("Shows workout settings.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsButton)
+                    .accessibilityHint(AccessibilityText.workoutSettingsHint)
                     Button("Edit Exercises", systemImage: "pencil") {
                         Haptics.selection()
                         showExerciseEditSheet = true
                     }
-                    .accessibilityIdentifier("workoutEditExercisesButton")
-                    .accessibilityHint("Show the list of exercises.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutEditExercisesButton)
+                    .accessibilityHint(AccessibilityText.workoutEditExercisesHint)
                     Button("Finish Workout", systemImage: "checkmark", role: .confirm) {
                         showSaveConfirmation = true
                     }
                     .tint(.green)
-                    .accessibilityIdentifier("workoutFinishButton")
-                    .accessibilityHint("Finishes and saves the workout.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishButton)
+                    .accessibilityHint(AccessibilityText.workoutFinishHint)
                     Button("Cancel Workout", systemImage: "xmark", role: .destructive) {
                         showDeleteConfirmation = true
                     }
                     .tint(.red)
                     .buttonStyle(.glassProminent)
-                    .accessibilityIdentifier("workoutDeleteButton")
-                    .accessibilityHint("Deletes this workout.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDeleteButton)
+                    .accessibilityHint(AccessibilityText.workoutDeleteHint)
                 }
                 .labelStyle(.iconOnly)
-                .accessibilityIdentifier("workoutOptionsMenu")
-                .accessibilityHint("Workout actions.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutOptionsMenu)
+                .accessibilityHint(AccessibilityText.workoutOptionsMenuHint)
             }
         }
         .confirmationDialog("Cancel Workout", isPresented: $showDeleteConfirmation) {
             Button("Cancel Workout", role: .destructive) {
                 deleteWorkout()
             }
-            .accessibilityIdentifier("workoutConfirmDeleteButton")
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutConfirmDeleteButton)
         } message: {
             Text("Are you sure you want to delete this workout?")
         }
@@ -330,32 +330,32 @@ struct WorkoutView: View {
                 Button("Mark logged sets as complete") {
                     finishWorkout(action: .markLoggedComplete)
                 }
-                .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishMarkSetsCompleteButton)
                 Button("Delete all unfinished sets", role: .destructive) {
                     finishWorkout(action: .deleteUnfinished)
                 }
-                .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteIncompleteSetsButton)
             case .loggedOnly:
                 Button("Mark as complete") {
                     finishWorkout(action: .markLoggedComplete)
                 }
-                .accessibilityIdentifier("workoutFinishMarkSetsCompleteButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishMarkSetsCompleteButton)
                 Button("Delete these sets", role: .destructive) {
                     finishWorkout(action: .deleteUnfinished)
                 }
-                .accessibilityIdentifier("workoutFinishDeleteIncompleteSetsButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteIncompleteSetsButton)
             case .emptyOnly:
                 Button("Delete empty sets", role: .destructive) {
                     finishWorkout(action: .deleteEmpty)
                 }
-                .accessibilityIdentifier("workoutFinishDeleteEmptySetsButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteEmptySetsButton)
                 Button("Go back", role: .cancel) {}
-                    .accessibilityIdentifier("workoutFinishGoBackButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishGoBackButton)
             case .none:
                 Button("Finish", role: .confirm) {
                     finishWorkout(action: .finish)
                 }
-                .accessibilityIdentifier("workoutFinishConfirmButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishConfirmButton)
             }
         } message: {
             let summary = unfinishedSetSummary

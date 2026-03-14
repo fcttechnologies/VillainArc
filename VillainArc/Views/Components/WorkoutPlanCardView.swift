@@ -10,6 +10,7 @@ struct WorkoutPlanCardView: View {
                     if workoutPlan.favorite {
                         Image(systemName: "star.fill")
                             .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
                     }
                     Spacer()
                     Text(workoutPlan.title)
@@ -41,7 +42,7 @@ struct WorkoutPlanCardView: View {
         .fontDesign(.rounded)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(workoutPlan.title)
-        .accessibilityValue("\(workoutPlan.sortedExercises.count) exercises, \(workoutPlan.musclesTargeted())")
+        .accessibilityValue(AccessibilityText.workoutPlanCardValue(exerciseCount: workoutPlan.sortedExercises.count, muscles: workoutPlan.musclesTargeted()))
         .accessibilityHint(AccessibilityText.workoutPlanRowHint)
     }
 }

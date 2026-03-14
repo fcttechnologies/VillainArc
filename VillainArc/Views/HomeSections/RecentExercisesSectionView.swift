@@ -22,19 +22,19 @@ struct RecentExercisesSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HomeSectionHeaderButton(title: "Exercises", accessibilityIdentifier: "homeExercisesLink", accessibilityHint: "Shows all tracked exercises.") {
+            HomeSectionHeaderButton(title: "Exercises", accessibilityIdentifier: AccessibilityIdentifiers.homeExercisesLink, accessibilityHint: AccessibilityText.recentExercisesHeaderHint) {
                 appRouter.navigate(to: .exercisesList)
                 Task { await IntentDonations.donateOpenExercises() }
             }
 
             if recentExercises.isEmpty {
                 unavailableView
-                    .accessibilityIdentifier("recentExercisesEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.recentExercisesEmptyState)
             } else {
                 VStack(spacing: 10) {
                     ForEach(recentExercises) { exercise in
                         ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise))
-                            .accessibilityIdentifier("recentExerciseRow-\(exercise.catalogID)")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.recentExerciseRow(exercise))
                     }
                 }
             }
@@ -55,9 +55,9 @@ struct RecentExercisesSectionView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("No Exercises Used")
-        .accessibilityValue("Complete exercises in workouts to track progress here.")
-        .accessibilityHint("Shows all tracked exercises.")
+        .accessibilityLabel(AccessibilityText.recentExercisesUnavailableLabel)
+        .accessibilityValue(AccessibilityText.recentExercisesUnavailableValue)
+        .accessibilityHint(AccessibilityText.recentExercisesUnavailableHint)
     }
 
     @MainActor

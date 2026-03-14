@@ -16,8 +16,7 @@ final class UserProfile {
     var name: String = ""
     var birthday: Date?
     var dateJoined: Date = Date()
-    var heightFeet: Int?
-    var heightInches: Double?
+    var heightCm: Double?
 
     init() {}
 
@@ -36,7 +35,7 @@ final class UserProfile {
         if birthday == nil {
             return .birthday
         }
-        if heightFeet == nil || heightInches == nil {
+        if heightCm == nil {
             return .height
         }
         return nil

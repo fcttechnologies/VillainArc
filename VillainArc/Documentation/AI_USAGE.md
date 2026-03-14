@@ -57,6 +57,10 @@ The test I apply: if I couldn't explain a piece of code in a code review or debu
 - **What AI did**: Quick lookup for SwiftUI modifiers, NavigationStack patterns, SwiftData `@Query` predicate syntax, and CoreSpotlight indexing APIs.
 - **What I decided**: How these APIs fit into the app's existing patterns. API research doesn't change the architecture — it just saves time reading documentation.
 
+### Weight and Height Unit System
+- **What AI did**: Propagated the unit system across ~20 files once the design was established — `WeightUnit`/`HeightUnit` enums, display/input conversion sites, rule engine threshold recalibration, Live Activity unit passing, and test assertion updates.
+- **What I decided**: Canonical kg storage with conversion only at display/input boundaries, enum storage on `AppSettings`, the Live Activity strategy for passing units without SwiftData access, and which rule thresholds to recalibrate.
+
 ### Codebase Documentation
 - **What AI did**: Generated `PROJECT_GUIDE.md`, `ARCHITECTURE.md`, and `SUGGESTION_AND_OUTCOME_FLOW.md` by reading the full codebase and synthesizing it. Also caught discrepancies between docs and actual code behavior.
 - **What I decided**: The documentation structure, what an AI agent needs to be useful on this codebase, and which discrepancies to fix. I reviewed every section for accuracy.

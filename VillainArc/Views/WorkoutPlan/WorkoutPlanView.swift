@@ -370,7 +370,7 @@ private struct WorkoutPlanExerciseView: View {
                         Haptics.selection()
                         showExerciseHistorySheet = true
                     }
-                    .accessibilityIdentifier("workoutPlanExerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseHistoryButton(exercise))
                     .accessibilityHint("Shows prior performances for this exercise.")
                     .labelStyle(.iconOnly)
                     .font(.title)
@@ -455,7 +455,10 @@ private struct WorkoutPlanSetRowView: View {
     @Environment(\.modelContext) private var context
     @Bindable var set: SetPrescription
     @Bindable var exercise: ExercisePrescription
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @FocusState private var focusedField: Field?
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     var body: some View {
         Group {
@@ -515,7 +518,10 @@ private struct WorkoutPlanSetRowView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetRepsField(exercise, set: set))
                 .accessibilityLabel("Reps")
 
-            TextField("Weight", value: $set.targetWeight, format: .number)
+            TextField("Weight", value: Binding(
+                get: { weightUnit.fromKg(set.targetWeight) },
+                set: { set.targetWeight = weightUnit.toKg($0) }
+            ), format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetWeightField(exercise, set: set))

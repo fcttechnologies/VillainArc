@@ -18,5 +18,7 @@ struct SummaryStatCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AccessibilityText.summaryStatCardLabel(title: title, value: value))
     }
 }

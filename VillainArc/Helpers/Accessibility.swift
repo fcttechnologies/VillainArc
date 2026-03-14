@@ -29,6 +29,15 @@ enum AccessibilityIdentifiers {
     static let allWorkoutPlansLink = "allWorkoutPlansLink"
     static let recentWorkoutPlanEmptyState = "recentWorkoutPlanEmptyState"
 
+    // MARK: - RecentExercisesSectionView
+    static let homeRecentExercisesSection = "homeRecentExercisesSection"
+    static let homeExercisesLink = "homeExercisesLink"
+    static let recentExercisesEmptyState = "recentExercisesEmptyState"
+
+    static func recentExerciseRow(_ exercise: Exercise) -> String {
+        "recentExerciseRow-\(exercise.catalogID)"
+    }
+
     // MARK: - WorkoutsListView
     static let workoutsList = "workoutsList"
     static let workoutsDeleteAllButton = "workoutsDeleteAllButton"
@@ -63,6 +72,12 @@ enum AccessibilityIdentifiers {
     static func workoutDetailExerciseHeader(_ exercise: ExercisePerformance) -> String {
         "workoutDetailExerciseHeader-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
+
+    static func workoutDetailExerciseNotes(_ exercise: ExercisePerformance) -> String {
+        "workoutDetailExerciseNotes-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
+    }
+
+    static let workoutDetailList = "workoutDetailList"
 
     static func workoutDetailSet(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
         "workoutDetailSet-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
@@ -190,6 +205,56 @@ enum AccessibilityIdentifiers {
         "workoutPlanDetailExerciseHeader-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
     }
 
+    static func workoutPlanDetailExerciseNotes(_ exercise: ExercisePrescription) -> String {
+        "workoutPlanDetailExerciseNotes-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
+    }
+
+    static func workoutPlanDetailSuggestionCount(_ exercise: ExercisePrescription) -> String {
+        "workoutPlanDetailSuggestionCount-\(exercise.id.uuidString)"
+    }
+
+    static let workoutPlanDetailList = "workoutPlanDetailList"
+
+    static func workoutPlanExerciseHistoryButton(_ exercise: ExercisePrescription) -> String {
+        "workoutPlanExerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)"
+    }
+
+    static func exerciseListRow(_ exercise: Exercise) -> String {
+        "exerciseListRow-\(exercise.catalogID)"
+    }
+
+    // MARK: - ExercisesListView
+    static let exercisesListEmptyState = "exercisesListEmptyState"
+    static let exercisesListNoFavoritesState = "exercisesListNoFavoritesState"
+    static let exercisesListSearchEmptyState = "exercisesListSearchEmptyState"
+    static let exercisesListScrollView = "exercisesListScrollView"
+    static let exercisesListFavoritesToggle = "exercisesListFavoritesToggle"
+    static let exercisesListOptionsMenu = "exercisesListOptionsMenu"
+
+    // MARK: - ExerciseDetailView
+    static let exerciseDetailEmptyState = "exerciseDetailEmptyState"
+    static let exerciseDetailScrollView = "exerciseDetailScrollView"
+    static let exerciseDetailRefreshHistoryButton = "exerciseDetailRefreshHistoryButton"
+    static let exerciseDetailOptionsMenu = "exerciseDetailOptionsMenu"
+    static let exerciseDetailHistoryButton = "exerciseDetailHistoryButton"
+
+    // MARK: - ExerciseHistoryView
+    static let exerciseHistoryEmptyState = "exerciseHistoryEmptyState"
+    static let exerciseHistoryList = "exerciseHistoryList"
+
+    // MARK: - AddExerciseView
+    static let addExerciseCloseButton = "addExerciseCloseButton"
+    static let addExerciseDiscardSelectionsButton = "addExerciseDiscardSelectionsButton"
+    static let addExerciseConfirmButton = "addExerciseConfirmButton"
+    static let addExerciseSortMenu = "addExerciseSortMenu"
+    static let addExerciseSelectedToggle = "addExerciseSelectedToggle"
+
+    // MARK: - Navbar
+    static let navBarCloseButton = "navBarCloseButton"
+
+    // MARK: - TimerDurationPicker
+    static let timerDurationPicker = "timerDurationPicker"
+
     static let workoutPlanPickerList = "workoutPlanPickerList"
     static let workoutPlanPickerClearButton = "workoutPlanPickerClearButton"
     static let workoutPlanPickerCreateButton = "workoutPlanPickerCreateButton"
@@ -299,6 +364,37 @@ enum AccessibilityIdentifiers {
         "exerciseSetCancelReplaceTimerButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
     }
 
+    // MARK: - WorkoutView
+    static let workoutRestTimerButton = "workoutRestTimerButton"
+    static let workoutAddExerciseButton = "workoutAddExerciseButton"
+    static let workoutExercisesEmptyState = "workoutExercisesEmptyState"
+    static let workoutExercisePager = "workoutExercisePager"
+    static let workoutExerciseList = "workoutExerciseList"
+    static let workoutDeleteEmptyButton = "workoutDeleteEmptyButton"
+    static let workoutOptionsMenu = "workoutOptionsMenu"
+    static let workoutSettingsButton = "workoutSettingsButton"
+    static let workoutEditExercisesButton = "workoutEditExercisesButton"
+    static let workoutFinishButton = "workoutFinishButton"
+    static let workoutDeleteButton = "workoutDeleteButton"
+    static let workoutConfirmDeleteButton = "workoutConfirmDeleteButton"
+    static let workoutFinishMarkSetsCompleteButton = "workoutFinishMarkSetsCompleteButton"
+    static let workoutFinishDeleteIncompleteSetsButton = "workoutFinishDeleteIncompleteSetsButton"
+    static let workoutFinishDeleteEmptySetsButton = "workoutFinishDeleteEmptySetsButton"
+    static let workoutFinishGoBackButton = "workoutFinishGoBackButton"
+    static let workoutFinishConfirmButton = "workoutFinishConfirmButton"
+
+    // MARK: - WorkoutSummaryView
+    static let workoutSummaryTitleButton = "workoutSummaryTitleButton"
+    static let workoutSummaryNotesButton = "workoutSummaryNotesButton"
+    static let workoutSummarySaveAsPlanButton = "workoutSummarySaveAsPlanButton"
+    static let workoutSummaryDoneButton = "workoutSummaryDoneButton"
+    static let workoutSummaryPRSection = "workoutSummaryPRSection"
+    static let workoutSummaryPlanSavedRow = "workoutSummaryPlanSavedRow"
+
+    static func workoutSummaryEffortCard(_ value: Int) -> String {
+        "workoutSummaryEffortCard-\(value)"
+    }
+
     static let workoutTitleEditorField = "workoutTitleEditorField"
     static let workoutNotesEditorField = "workoutNotesEditorField"
     static let workoutPlanTitleEditorField = "workoutPlanTitleEditorField"
@@ -316,6 +412,23 @@ enum AccessibilityIdentifiers {
         let timestamp = Int(history.lastUsed.timeIntervalSince1970)
         return "restTimerRecent-\(history.seconds)-\(timestamp)"
     }
+
+    static func restTimerRecentStartButton(_ history: RestTimeHistory) -> String {
+        "restTimerRecentStartButton-\(history.seconds)"
+    }
+
+    static func exerciseHistoryButton(_ exercise: ExercisePerformance) -> String {
+        "exerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)"
+    }
+
+    static let filteredExerciseList = "filteredExerciseList"
+
+    // MARK: - WorkoutSettingsView
+    static let workoutSettingsAutoStartTimerToggle = "workoutSettingsAutoStartTimerToggle"
+    static let workoutSettingsAutoCompleteAfterRPEToggle = "workoutSettingsAutoCompleteAfterRPEToggle"
+    static let workoutSettingsNotificationsToggle = "workoutSettingsNotificationsToggle"
+    static let workoutSettingsLiveActivitiesToggle = "workoutSettingsLiveActivitiesToggle"
+    static let workoutSettingsRestartLiveActivityButton = "workoutSettingsRestartLiveActivityButton"
 
     static func restTimerAdjustButton(deltaSeconds: Int) -> String {
         let direction = deltaSeconds < 0 ? "minus" : "plus"
@@ -394,6 +507,12 @@ enum AccessibilityText {
     static let workoutPlansHeaderHint = "Shows all your workout plans."
     static let recentWorkoutPlanRowHint = "Shows details for your most recent workout plan."
 
+    // MARK: - RecentExercisesSectionView
+    static let recentExercisesHeaderHint = "Shows all tracked exercises."
+    static let recentExercisesUnavailableLabel = "No Exercises Used"
+    static let recentExercisesUnavailableValue = "Complete exercises in workouts to track progress here."
+    static let recentExercisesUnavailableHint = "Shows all tracked exercises."
+
     // MARK: - WorkoutsListView
     static let workoutRowHint = "Shows workout details."
     static let workoutsDeleteAllHint = "Deletes all completed workouts."
@@ -408,6 +527,36 @@ enum AccessibilityText {
     static let workoutPlansOptionsMenuHint = "Workout plans list options."
     static let workoutPlansEditHint = "Enters edit mode."
     static let workoutPlansFavoritesToggleHint = "Filters to favorite workout plans."
+
+    // MARK: - WorkoutDetailView
+    static let workoutDetailOpenWorkoutPlanHint = "Opens the linked workout plan."
+    static let workoutDetailSaveWorkoutPlanHint = "Saves this workout as a workout plan."
+    static let workoutDetailDeleteHint = "Deletes this workout."
+    static let workoutDetailOptionsMenuHint = "Workout actions."
+    static let workoutDetailPreWorkoutContextLabel = "Pre workout context"
+    static let workoutDetailPreWorkoutContextHint = "Shows pre workout details."
+    static let workoutDetailEffortLabel = "Post workout effort"
+
+    // MARK: - WorkoutPlanDetailView
+    static let workoutPlanDetailSuggestionsLabel = "AI suggestions"
+    static let workoutPlanDetailSuggestionsHint = "Shows suggested changes and pending outcomes for this workout plan."
+    static let workoutPlanDetailSelectHint = "Selects this workout plan."
+    static let workoutPlanDetailEditHint = "Edits this workout plan."
+    static let workoutPlanDetailDeleteHint = "Deletes this workout plan."
+    static let workoutPlanDetailOptionsMenuHint = "Workout plan actions."
+    static let workoutPlanDetailFavoriteHint = "Toggles favorite."
+    static let workoutPlanDetailStartWorkoutHint = "Starts a workout from this plan."
+
+    static func workoutPlanDetailSuggestionCountLabel(count: Int) -> String {
+        count == 1 ? "1 suggestion to review" : "\(count) suggestions to review"
+    }
+
+    static func workoutPlanDetailFavoriteLabel(isFavorite: Bool) -> String {
+        isFavorite ? "Remove from favorites" : "Add to favorites"
+    }
+
+    // MARK: - ExercisesListView
+    static let exercisesListFavoritesToggleHint = "Filters to favorite exercises."
 
     // MARK: - WorkoutSplitView
     static let workoutSplitRowHint = "Shows split details."
@@ -477,23 +626,23 @@ enum AccessibilityText {
         set.type == .working ? "Set \(set.index + 1)" : set.type.displayName
     }
 
-    static func exerciseSetValue(for set: SetPerformance) -> String {
+    static func exerciseSetValue(for set: SetPerformance, unit: WeightUnit) -> String {
         let repsText = set.reps == 1 ? "1 rep" : "\(set.reps) reps"
-        let weightText = set.weight.formatted(.number)
+        let weightText = unit.display(set.weight)
         if let visibleRPE = set.visibleRPE {
-            return "\(repsText), \(weightText) pounds, RPE \(visibleRPE)"
+            return "\(repsText), \(weightText), RPE \(visibleRPE)"
         }
-        return "\(repsText), \(weightText) pounds"
+        return "\(repsText), \(weightText)"
     }
 
-    static func exerciseSetValue(for set: SetPrescription) -> String {
+    static func exerciseSetValue(for set: SetPrescription, unit: WeightUnit) -> String {
         let hasReps = set.targetReps > 0
         let hasWeight = set.targetWeight > 0
         let hasTargetRPE = set.visibleTargetRPE != nil
         guard hasReps || hasWeight || hasTargetRPE else { return "No target set" }
 
         let repsText = hasReps ? (set.targetReps == 1 ? "1 rep" : "\(set.targetReps) reps") : "No reps target"
-        let weightText = hasWeight ? "\(set.targetWeight.formatted(.number)) pounds" : "No weight target"
+        let weightText = hasWeight ? unit.display(set.targetWeight) : "No weight target"
         if let visibleTargetRPE = set.visibleTargetRPE {
             return "\(repsText), \(weightText), target RPE \(visibleTargetRPE)"
         }
@@ -564,4 +713,123 @@ enum AccessibilityText {
 
         return parts.joined(separator: ", ")
     }
+
+    // MARK: - WorkoutView
+    static let workoutRestTimerHint = "Shows the rest timer."
+    static let workoutAddExerciseHint = "Adds an exercise."
+    static let workoutDeleteEmptyHint = "Deletes this workout."
+    static let workoutOptionsMenuHint = "Workout actions."
+    static let workoutSettingsHint = "Shows workout settings."
+    static let workoutEditExercisesHint = "Shows the list of exercises."
+    static let workoutFinishHint = "Finishes and saves the workout."
+    static let workoutDeleteHint = "Deletes this workout."
+    static let workoutExerciseListRowHint = "Shows the exercise in the workout."
+
+    // MARK: - WorkoutSummaryView
+    static let workoutSummaryTitleHint = "Edits the workout title."
+    static let workoutSummaryNotesHint = "Edits the workout notes."
+    static let workoutSummaryNotesLabel = "Notes"
+    static let workoutSummarySaveAsPlanHint = "Saves this workout as a reusable plan."
+    static let workoutSummaryDoneHint = "Saves and closes the workout summary."
+    static let workoutSummaryDoneLabel = "Done"
+    static let workoutSummaryPRSectionLabel = "Personal Records"
+    static let workoutSummaryPlanSavedLabel = "Saved as Workout Plan"
+
+    static func workoutSummaryEffortLabel(value: Int) -> String {
+        "Effort \(value)"
+    }
+
+    static func workoutSummaryEffortValue(value: Int, isSelected: Bool) -> String {
+        isSelected ? "Selected" : "Not selected"
+    }
+
+    static func workoutSummaryNotesValue(hasNotes: Bool, notes: String) -> String {
+        hasNotes ? notes : "No notes added."
+    }
+
+    static func workoutSummaryPRSectionValue(count: Int) -> String {
+        count == 1 ? "1 personal record" : "\(count) personal records"
+    }
+
+    // MARK: - SuggestionGroupRow
+    static let suggestionRejectHint = "Rejects this suggestion group."
+    static let suggestionAcceptHint = "Accepts this suggestion group."
+    static let suggestionDeferLabel = "Later"
+    static let suggestionDeferHint = "Defers this suggestion to review before the next workout."
+
+    // MARK: - DeferredSuggestionsView
+    static let deferredSuggestionsSkipLabel = "Skip"
+    static let deferredSuggestionsSkipHint = "Rejects all remaining suggestions and starts the workout."
+    static let deferredSuggestionsAcceptAllLabel = "Accept All"
+    static let deferredSuggestionsAcceptAllHint = "Applies all pending suggestions and starts the workout."
+
+    // MARK: - SummaryStatCard
+    static func summaryStatCardLabel(title: String, value: String) -> String {
+        "\(title), \(value)"
+    }
+
+    // MARK: - ExerciseSummaryRow
+    static let exerciseSummaryRowHint = "Shows exercise history and details."
+
+    static func exerciseSummaryRowValue(lastUsed: String, sessions: String?, record: String?) -> String {
+        var parts = [lastUsed]
+        if let sessions { parts.append(sessions) }
+        if let record { parts.append(record) }
+        return parts.joined(separator: ", ")
+    }
+
+    // MARK: - WorkoutPlanCardView
+    static func workoutPlanCardValue(exerciseCount: Int, muscles: String) -> String {
+        let exerciseText = exerciseCount == 1 ? "1 exercise" : "\(exerciseCount) exercises"
+        return "\(exerciseText), \(muscles)"
+    }
+
+    // MARK: - Navbar
+    static let closeButtonHint = "Closes the sheet."
+
+    // MARK: - TimerDurationPicker
+    static let timerDurationPickerLabel = "Timer duration"
+
+    // MARK: - RepRangeButton
+    static let repRangeButtonLabel = "Rep range"
+    static let repRangeButtonHint = "Edits the rep range."
+
+    // MARK: - ExerciseSetRowView
+    static let exerciseSetRepsLabel = "Reps"
+    static let exerciseSetWeightLabel = "Weight"
+    static let exerciseSetMenuHint = "Opens set options."
+
+    // MARK: - ExerciseDetailView
+    static let exerciseDetailOptionsMenuHint = "Exercise actions."
+
+    // MARK: - AddExerciseView
+    static let addExerciseCloseLabel = "Close"
+    static let addExerciseConfirmLabel = "Add Exercises"
+    static let addExerciseMuscleFiltersHint = "Shows muscle filter options."
+
+    // MARK: - OnboardingView
+    static let onboardingRetryHint = "Retries the current setup step."
+    static let onboardingContinueWithoutiCloudHint = "Continues setup without iCloud sync."
+    static let onboardingEnableICloudHint = "Opens iOS Settings to enable iCloud."
+
+    // MARK: - WorkoutSettingsView
+    static let workoutSettingsAutoStartTimerHint = "Automatically starts rest timer when a set is marked complete."
+    static let workoutSettingsAutoCompleteAfterRPEHint = "Automatically marks a set complete after selecting an RPE rating."
+    static let workoutSettingsNotificationsHint = "Sends a local notification when rest timer finishes."
+    static let workoutSettingsLiveActivitiesHint = "Shows a live activity on the Lock Screen during your workout."
+    static let workoutSettingsRestartLiveActivityHint = "Restarts the workout live activity if you dismissed it."
+
+    // MARK: - RestTimerView
+    static let restTimerLabel = "Rest timer"
+    static let restTimerValueReady = "Ready"
+    static let restTimerValueRunning = "Running"
+    static let restTimerValuePaused = "Paused"
+    static let restTimerCloseLabel = "Close"
+    static let restTimerNextSetLabel = "Next set"
+    static let restTimerCompleteSetLabel = "Complete set"
+
+    static func restTimerRecentStartLabel(seconds: Int, secondsToTime: (Int) -> String) -> String {
+        "Start \(secondsToTime(seconds)) timer"
+    }
+
 }

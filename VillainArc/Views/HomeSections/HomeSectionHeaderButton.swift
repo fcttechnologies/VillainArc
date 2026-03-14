@@ -15,6 +15,7 @@ struct HomeSectionHeaderButton: View {
                 Image(systemName: "chevron.right")
                     .foregroundStyle(.secondary)
                     .font(.title3)
+                    .accessibilityHidden(true)
             }
             .fontWeight(.semibold)
             .accessibilityElement(children: .combine)

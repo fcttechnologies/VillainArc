@@ -29,7 +29,10 @@ struct WorkoutSummaryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Query private var sessionSuggestionEvents: [SuggestionEvent]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
@@ -58,7 +61,7 @@ struct WorkoutSummaryView: View {
     }
 
     private var formattedTotalVolume: String {
-        "\(totalVolume.formatted(.number.precision(.fractionLength(0...1)))) lbs"
+        formattedWeightText(totalVolume, unit: weightUnit, fractionDigits: 0...1)
     }
 
     private var durationText: String {
@@ -106,10 +109,14 @@ struct WorkoutSummaryView: View {
                                 Image(systemName: "pencil")
                                     .font(.title2)
                                     .foregroundStyle(.secondary)
+                                    .accessibilityHidden(true)
                             }
                             .lineLimit(1)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryTitleButton)
+                        .accessibilityLabel(workout.title)
+                        .accessibilityHint(AccessibilityText.workoutSummaryTitleHint)
 
                         Text(formattedDateRange(start: workout.startedAt, end: workout.endedAt, includeTime: true))
                             .font(.headline)
@@ -149,6 +156,13 @@ struct WorkoutSummaryView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryNotesButton)
+                    .accessibilityLabel(AccessibilityText.workoutSummaryNotesLabel)
+                    .accessibilityValue(AccessibilityText.workoutSummaryNotesValue(
+                        hasNotes: !workout.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        notes: workout.notes
+                    ))
+                    .accessibilityHint(AccessibilityText.workoutSummaryNotesHint)
 
                     effortSection
 
@@ -196,6 +210,9 @@ struct WorkoutSummaryView: View {
                         }
                     }
                     .disabled(isGeneratingSuggestions || isSaving)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryDoneButton)
+                    .accessibilityLabel(AccessibilityText.workoutSummaryDoneLabel)
+                    .accessibilityHint(AccessibilityText.workoutSummaryDoneHint)
                 }
             }
             .task(id: workout.id) {
@@ -255,6 +272,7 @@ struct WorkoutSummaryView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title2)
                     .foregroundStyle(.green)
+                    .accessibilityHidden(true)
 
                 Text("Saved as Workout Plan")
                     .font(.headline)
@@ -262,6 +280,9 @@ struct WorkoutSummaryView: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPlanSavedRow)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(AccessibilityText.workoutSummaryPlanSavedLabel)
         } else if workout.workoutPlan == nil {
             Button {
                 saveWorkoutAsPlan()
@@ -273,6 +294,8 @@ struct WorkoutSummaryView: View {
             }
             .buttonStyle(.glassProminent)
             .buttonSizing(.flexible)
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummarySaveAsPlanButton)
+            .accessibilityHint(AccessibilityText.workoutSummarySaveAsPlanHint)
         } else {
             EmptyView()
         }
@@ -299,6 +322,9 @@ struct WorkoutSummaryView: View {
         }
         .padding(12)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPRSection)
+        .accessibilityLabel(AccessibilityText.workoutSummaryPRSectionLabel)
+        .accessibilityValue(AccessibilityText.workoutSummaryPRSectionValue(count: prCount))
     }
 
     private func effortCard(for value: Int) -> some View {
@@ -319,6 +345,9 @@ struct WorkoutSummaryView: View {
         }
         .buttonStyle(.plain)
         .animation(reduceMotion ? .none : .bouncy, value: isSelected)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryEffortCard(value))
+        .accessibilityLabel(AccessibilityText.workoutSummaryEffortLabel(value: value))
+        .accessibilityValue(AccessibilityText.workoutSummaryEffortValue(value: value, isSelected: isSelected))
     }
 
     private func prRow(_ entry: PRItem) -> some View {
@@ -428,13 +457,13 @@ struct WorkoutSummaryView: View {
     private func prValueText(type: PRType, value: Double) -> String {
         switch type {
         case .estimated1RM:
-            return "New Estimated 1RM: \(formattedWeightText(value))"
+            return "New Estimated 1RM: \(formattedWeightText(value, unit: weightUnit))"
         case .maxWeight:
-            return "Max Weight: \(formattedWeightText(value))"
+            return "Max Weight: \(formattedWeightText(value, unit: weightUnit))"
         case .maxReps:
             return "Max Reps: \(Int(value))"
         case .totalVolume:
-            return "Total Volume: \(formattedWeightText(value, fractionDigits: 0...0))"
+            return "Total Volume: \(formattedWeightText(value, unit: weightUnit, fractionDigits: 0...0))"
         }
     }
 

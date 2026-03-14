@@ -10,6 +10,7 @@ struct WorkoutActivityAttributes: ActivityAttributes {
         var setNumber: Int?
         var totalSets: Int?
         var weight: Double?
+        var weightUnit: String?
         var reps: Int?
         var targetRPE: Int?
         var timerEndDate: Date?

@@ -87,10 +87,10 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `Data/Models/UserProfile.swift`, `Data/Models/AppSettings.swift`.
 
 ### `Data/Models/AppSettings.swift`
-- Purpose: singleton app settings for timer behavior, notifications, live activities, and workout logging preferences.
-- Called by: settings UI, timer/live-activity services, bootstrap helpers.
+- Purpose: singleton app settings for timer behavior, notifications, live activities, workout logging preferences, and display units (weight and height).
+- Called by: settings UI, timer/live-activity services, bootstrap helpers, any view displaying weight or height.
 - Calls: singleton fetch helpers.
-- Read with: `Data/Services/SystemState.swift`, `Views/Workout/WorkoutSettingsView.swift`.
+- Read with: `Data/Services/SystemState.swift`, `Views/Workout/WorkoutSettingsView.swift`, `Data/Models/Enums/WeightUnit.swift`, `Data/Models/Enums/HeightUnit.swift`.
 
 ### `Data/Models/UserProfile.swift`
 - Purpose: user profile model used during onboarding and setup validation.
@@ -477,6 +477,24 @@ This file is a structure map for the codebase. It explains what the important fi
 - Called by: workout, exercise, timer, and snippet UI.
 - Calls: Foundation formatting APIs.
 - Read with: any view showing time or date ranges.
+
+### `Helpers/WeightFormatting.swift`
+- Purpose: `formattedWeightText` and `formattedWeightValue` helpers that convert a kg value to the user's preferred unit and format it with a label.
+- Called by: exercise detail, history, workout summary, workout detail, plan detail, and exercise summary views.
+- Calls: `WeightUnit.display` / `WeightUnit.fromKg`.
+- Read with: `Data/Models/Enums/WeightUnit.swift`, `Data/Models/AppSettings.swift`.
+
+### `Data/Models/Enums/WeightUnit.swift`
+- Purpose: `WeightUnit` enum (`.kg` / `.lbs`) with `fromKg`, `toKg`, `display`, and `systemDefault` helpers. All weight is stored in kg; conversion happens only at display and input boundaries.
+- Called by: every view that shows or accepts a weight value, suggestion context, Live Activity manager.
+- Calls: none.
+- Read with: `Helpers/WeightFormatting.swift`, `Data/Models/AppSettings.swift`.
+
+### `Data/Models/Enums/HeightUnit.swift`
+- Purpose: `HeightUnit` enum (`.cm` / `.imperial`) with `toCm`, `fromCm`, `displayString`, and `systemDefault` helpers. Height is stored as `heightCm` on `UserProfile`.
+- Called by: onboarding height step.
+- Calls: none.
+- Read with: `Data/Models/UserProfile.swift`, `Views/Onboarding/OnboardingView.swift`.
 
 ### `Views/Components/Navbar.swift`
 - Purpose: shared sheet/navigation title bars and close button behavior.

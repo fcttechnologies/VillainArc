@@ -31,9 +31,11 @@ struct WorkoutSettingsView: View {
         return Form {
             Section {
                 Toggle("Auto Start Rest Timer", isOn: $settings.autoStartRestTimer)
-                    .accessibilityIdentifier("workoutSettingsAutoStartTimerToggle")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoStartTimerToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsAutoStartTimerHint)
                 Toggle("Auto Complete After RPE", isOn: $settings.autoCompleteSetAfterRPE)
-                    .accessibilityIdentifier("workoutSettingsAutoCompleteAfterRPEToggle")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoCompleteAfterRPEToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsAutoCompleteAfterRPEHint)
             } header: {
                 Text("Set Logging")
             } footer: {
@@ -42,7 +44,8 @@ struct WorkoutSettingsView: View {
 
             Section {
                 Toggle("Send Notifications", isOn: $settings.restTimerNotificationsEnabled)
-                    .accessibilityIdentifier("workoutSettingsNotificationsToggle")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsNotificationsToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsNotificationsHint)
             } header: {
                 Text("Rest Timer")
             } footer: {
@@ -51,14 +54,15 @@ struct WorkoutSettingsView: View {
 
             Section {
                 Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
-                    .accessibilityIdentifier("workoutSettingsLiveActivitiesToggle")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
                 Button("Restart Live Activity", systemImage: "arrow.clockwise") {
                     Haptics.selection()
                     WorkoutActivityManager.restart(workout: workout)
                 }
                 .disabled(!settings.liveActivitiesEnabled)
-                .accessibilityIdentifier("workoutSettingsRestartLiveActivityButton")
-                .accessibilityHint("Restarts the workout live activity if you dismissed it.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRestartLiveActivityButton)
+                .accessibilityHint(AccessibilityText.workoutSettingsRestartLiveActivityHint)
             } header: {
                 Text("Live Activity")
             } footer: {

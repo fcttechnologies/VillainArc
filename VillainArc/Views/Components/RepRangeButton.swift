@@ -14,9 +14,9 @@ struct RepRangeButton: View {
                 .fontWeight(.semibold)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Rep range")
+        .accessibilityLabel(AccessibilityText.repRangeButtonLabel)
         .accessibilityValue(repRange.displayText)
         .accessibilityIdentifier(accessibilityIdentifier)
-        .accessibilityHint("Edits the rep range.")
+        .accessibilityHint(AccessibilityText.repRangeButtonHint)
     }
 }

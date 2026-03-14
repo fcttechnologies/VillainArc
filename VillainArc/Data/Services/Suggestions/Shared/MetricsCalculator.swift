@@ -91,24 +91,25 @@ struct MetricsCalculator {
         return sets.filter { $0.weight == maxWeight }.sorted { $0.index < $1.index }
     }
 
+    // All weight values are stored in kg. Increments are calibrated for kg plate sizes.
     static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType) -> Double {
         switch equipmentType {
         case .dumbbellSingle, .kettlebellSingle:
-            return currentWeight < 15 ? 2.5 : 5.0
+            return currentWeight < 7 ? 1.25 : 2.5
         case .dumbbells, .kettlebell:
             let perHand = max(0, currentWeight / 2)
-            return perHand < 15 ? 5.0 : 10.0
+            return perHand < 7 ? 2.5 : 5.0
         case .cableSingle:
-            return currentWeight < 30 ? 2.5 : 5.0
+            return currentWeight < 14 ? 1.25 : 2.5
         case .cables, .rope:
-            return currentWeight < 60 ? 5.0 : 10.0
+            return currentWeight < 27 ? 2.5 : 5.0
         case .machine, .smithMachine, .machineAssisted:
-            return currentWeight < 100 ? 5.0 : 10.0
+            return currentWeight < 45 ? 2.5 : 5.0
         case .barbell, .ezBar, .landmine:
             break
         case .bodyweight, .band, .plate, .weightedBall:
             if currentWeight <= 0 { return 0 }
-            return currentWeight < 25 ? 2.5 : 5.0
+            return currentWeight < 11 ? 1.25 : 2.5
         case .other:
             break
         }
@@ -120,32 +121,32 @@ struct MetricsCalculator {
         // Muscle-group based increments (larger jumps for bigger movers).
         switch primaryMuscle {
         case .chest, .shoulders, .back:
-            return 5.0
+            return 2.5
         case .biceps, .triceps:
-            return 5.0
+            return 2.5
         case .frontDelt, .sideDelt, .rearDelt, .lats, .lowerBack,
              .upperTraps, .lowerTraps, .midTraps, .rhomboids:
-            return 5.0
+            return 2.5
         case .longHeadBiceps, .shortHeadBiceps, .brachialis,
              .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps:
-            return 5.0
-        case .quads, .hamstrings, .glutes:
-            return 10.0
-        case .calves:
-            return 10.0
-        case .adductors, .abductors:
-            return 5.0
-        case .abs, .obliques, .upperAbs, .lowerAbs:
-            return 5.0
-        case .forearms, .wrists, .rotatorCuff:
             return 2.5
-        case .upperChest, .lowerChest, .midChest:
+        case .quads, .hamstrings, .glutes:
             return 5.0
+        case .calves:
+            return 5.0
+        case .adductors, .abductors:
+            return 2.5
+        case .abs, .obliques, .upperAbs, .lowerAbs:
+            return 2.5
+        case .forearms, .wrists, .rotatorCuff:
+            return 1.25
+        case .upperChest, .lowerChest, .midChest:
+            return 2.5
         }
     }
 
-    static func roundToNearestPlate(_ value: Double, plate: Double = 2.5) -> Double {
-        // Keeps weight changes on realistic plate increments.
+    // Default plate is 1.25 kg (smallest standard bumper/change plate).
+    static func roundToNearestPlate(_ value: Double, plate: Double = 1.25) -> Double {
         guard plate > 0 else { return value }
         return (value / plate).rounded() * plate
     }

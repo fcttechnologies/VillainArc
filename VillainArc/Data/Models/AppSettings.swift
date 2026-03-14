@@ -7,7 +7,9 @@ final class AppSettings {
     var autoCompleteSetAfterRPE: Bool = false
     var liveActivitiesEnabled: Bool = true
     var restTimerNotificationsEnabled: Bool = true
-
+    var weightUnit: WeightUnit = WeightUnit.systemDefault
+    var heightUnit: HeightUnit = HeightUnit.systemDefault
+    
     init() {}
 }
 

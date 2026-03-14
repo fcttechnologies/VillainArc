@@ -8,7 +8,10 @@ struct WorkoutPlanDetailView: View {
     @Environment(\.modelContext) private var context
     @Query private var splits: [WorkoutSplit]
     @Bindable var plan: WorkoutPlan
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     private let router = AppRouter.shared
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private let onSelect: (() -> Void)?
     private let showsUseOnly: Bool
 
@@ -76,7 +79,7 @@ struct WorkoutPlanDetailView: View {
                                 Text(set.targetReps > 0 ? "\(set.targetReps)" : "-")
                                     .gridColumnAlignment(set.targetReps > 0 ? .leading : .center)
                                 Spacer()
-                                Text(set.targetWeight > 0 ? "\(set.targetWeight, format: .number) lbs" : "-")
+                                Text(set.targetWeight > 0 ? formattedWeightText(set.targetWeight, unit: weightUnit) : "-")
                                     .gridColumnAlignment(set.targetWeight > 0 ? .leading : .center)
                                 Spacer()
                                 Text(set.targetRest > 0 ? secondsToTime(set.targetRest) : "-")
@@ -86,7 +89,7 @@ struct WorkoutPlanDetailView: View {
                             .accessibilityElement(children: .ignore)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: set))
                             .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
-                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set))
+                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
                         }
                     }
                 } header: {
@@ -142,9 +145,11 @@ struct WorkoutPlanDetailView: View {
                         )
                     } label: {
                         Image(systemName: "sparkles")
+                            .accessibilityHidden(true)
                     }
                     .accessibilityIdentifier("workoutPlanDetailSuggestionsButton")
-                    .accessibilityHint("Shows suggested changes and pending outcomes for this workout plan.")
+                    .accessibilityLabel(AccessibilityText.workoutPlanDetailSuggestionsLabel)
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailSuggestionsHint)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -192,6 +197,7 @@ struct WorkoutPlanDetailView: View {
                 }
                 .tint(plan.favorite ? .yellow : .primary)
                 .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
+                .accessibilityLabel(AccessibilityText.workoutPlanDetailFavoriteLabel(isFavorite: plan.favorite))
                 .accessibilityHint("Toggles favorite.")
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)

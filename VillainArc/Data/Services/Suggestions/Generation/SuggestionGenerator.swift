@@ -46,6 +46,8 @@ struct SuggestionGenerator {
         var allSuggestions: [SuggestionEventDraft] = []
         var resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle] = [:]
 
+        let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
+
         for exercisePerf in session.sortedExercises {
             guard let prescription = exercisePerf.prescription else { continue }
             
@@ -62,7 +64,7 @@ struct SuggestionGenerator {
 
             resolvedTrainingStyleByPrescriptionID[prescription.id] = resolvedTrainingStyle
 
-            let suggestionContext = ExerciseSuggestionContext(session: session, performance: exercisePerf, prescription: prescription, history: performanceHistory, plan: plan, resolvedTrainingStyle: resolvedTrainingStyle)
+            let suggestionContext = ExerciseSuggestionContext(session: session, performance: exercisePerf, prescription: prescription, history: performanceHistory, plan: plan, resolvedTrainingStyle: resolvedTrainingStyle, weightUnit: weightUnit)
 
             let candidateSuggestions = RuleEngine.evaluate(context: suggestionContext)
             allSuggestions.append(contentsOf: candidateSuggestions)

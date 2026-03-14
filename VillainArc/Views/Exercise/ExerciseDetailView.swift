@@ -28,12 +28,12 @@ struct ExerciseDetailView: View {
             }
         }
 
-        var unit: String {
+        func unitString(weightUnit: WeightUnit) -> String {
             switch self {
             case .reps:
                 return "reps"
             default:
-                return "lbs"
+                return weightUnit.rawValue
             }
         }
     }
@@ -42,8 +42,11 @@ struct ExerciseDetailView: View {
 
     @Query private var exercises: [Exercise]
     @Query private var histories: [ExerciseHistory]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private let appRouter = AppRouter.shared
+
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
     @State private var refreshResultMessage = ""
@@ -116,7 +119,7 @@ struct ExerciseDetailView: View {
         }
 
         if totalVolume > 0 {
-            items.append(.init(title: "Total Volume", value: formattedWeightText(totalVolume, fractionDigits: 0...0)))
+            items.append(.init(title: "Total Volume", value: formattedWeightText(totalVolume, unit: weightUnit, fractionDigits: 0...0)))
         }
 
         if totalSets > 1, let bestReps {
@@ -124,15 +127,15 @@ struct ExerciseDetailView: View {
         }
 
         if let latestEstimatedOneRepMax {
-            items.append(.init(title: "Est. 1RM", value: formattedWeightText(latestEstimatedOneRepMax, fractionDigits: 0...0)))
+            items.append(.init(title: "Est. 1RM", value: formattedWeightText(latestEstimatedOneRepMax, unit: weightUnit, fractionDigits: 0...0)))
         }
 
         if let bestWeight {
-            items.append(.init(title: "Best Weight", value: formattedWeightText(bestWeight)))
+            items.append(.init(title: "Best Weight", value: formattedWeightText(bestWeight, unit: weightUnit)))
         }
 
         if totalSessions > 1, let bestVolume {
-            items.append(.init(title: "Best Volume", value: formattedWeightText(bestVolume, fractionDigits: 0...0)))
+            items.append(.init(title: "Best Volume", value: formattedWeightText(bestVolume, unit: weightUnit, fractionDigits: 0...0)))
         }
 
         return items
@@ -144,7 +147,7 @@ struct ExerciseDetailView: View {
             .reversed()
             .compactMap { point in
                 guard point.estimated1RM > 0 else { return nil }
-                return ExerciseMetricPoint(date: point.date, value: point.estimated1RM)
+                return ExerciseMetricPoint(date: point.date, value: weightUnit.fromKg(point.estimated1RM))
             }
     }
 
@@ -154,7 +157,7 @@ struct ExerciseDetailView: View {
             .reversed()
             .compactMap { point in
                 guard point.weight > 0 else { return nil }
-                return ExerciseMetricPoint(date: point.date, value: point.weight)
+                return ExerciseMetricPoint(date: point.date, value: weightUnit.fromKg(point.weight))
             }
     }
 
@@ -164,7 +167,7 @@ struct ExerciseDetailView: View {
             .reversed()
             .compactMap { point in
                 guard point.volume > 0 else { return nil }
-                return ExerciseMetricPoint(date: point.date, value: point.volume)
+                return ExerciseMetricPoint(date: point.date, value: weightUnit.fromKg(point.volume))
             }
     }
 
@@ -191,7 +194,7 @@ struct ExerciseDetailView: View {
 
     private var latestMetricValueText: String {
         guard let activeMetric, let latestValue = points(for: activeMetric).last?.value else { return "" }
-        return "\(latestValue.formatted(.number.precision(.fractionLength(0)))) \(activeMetric.unit)"
+        return "\(latestValue.formatted(.number.precision(.fractionLength(0)))) \(activeMetric.unitString(weightUnit: weightUnit))"
     }
 
     var body: some View {
@@ -219,7 +222,7 @@ struct ExerciseDetailView: View {
                                     .font(.headline)
                             }
 
-                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint, unit: activeMetric.unit)
+                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint, unit: activeMetric.unitString(weightUnit: weightUnit))
 
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {
@@ -242,10 +245,10 @@ struct ExerciseDetailView: View {
             if !hasContent {
                 ContentUnavailableView("No Exercise History", systemImage: "chart.line.uptrend.xyaxis", description: Text("Complete this exercise in a workout to see progress and personal records."))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityIdentifier("exerciseDetailEmptyState")
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailEmptyState)
             }
         }
-        .accessibilityIdentifier("exerciseDetailScrollView")
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailScrollView)
         .navigationTitle(displayName)
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
@@ -277,10 +280,10 @@ struct ExerciseDetailView: View {
                     Button("Refresh History", systemImage: "arrow.clockwise") {
                         refreshHistory()
                     }
-                    .accessibilityIdentifier("exerciseDetailRefreshHistoryButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailRefreshHistoryButton)
                 }
-                .accessibilityIdentifier("exerciseDetailOptionsMenu")
-                .accessibilityHint("Exercise actions.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailOptionsMenu)
+                .accessibilityHint(AccessibilityText.exerciseDetailOptionsMenuHint)
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
             ToolbarItem(placement: .bottomBar) {
@@ -288,7 +291,7 @@ struct ExerciseDetailView: View {
                     Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
                         appRouter.navigate(to: .exerciseHistory(catalogID))
                     }
-                    .accessibilityIdentifier("exerciseDetailHistoryButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailHistoryButton)
                 }
             }
         }
