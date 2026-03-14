@@ -70,7 +70,8 @@ struct SuggestionGenerator {
             allSuggestions.append(contentsOf: candidateSuggestions)
         }
 
-        let deduplicated = SuggestionDeduplicator.process(suggestions: allSuggestions)
+        let unresolvedFiltered = filterDraftsBlockedByUnresolvedEvents(allSuggestions, plan: plan)
+        let deduplicated = SuggestionDeduplicator.process(suggestions: unresolvedFiltered)
         return buildSuggestionEvents(from: deduplicated, session: session, resolvedTrainingStyleByPrescriptionID: resolvedTrainingStyleByPrescriptionID)
     }
     
@@ -87,6 +88,29 @@ struct SuggestionGenerator {
         return (try? context.fetch(descriptor)) ?? []
     }
 
+    private static func filterDraftsBlockedByUnresolvedEvents(_ drafts: [SuggestionEventDraft], plan: WorkoutPlan) -> [SuggestionEventDraft] {
+        let existingEvents = collectPlanSuggestionEvents(plan)
+
+        return drafts.filter { draft in
+            !existingEvents.contains { event in
+                guard event.outcome == .pending else { return false }
+                guard event.targetExercisePrescription?.id == draft.targetExercisePrescription.id else { return false }
+                guard event.resolvedTargetSetIndex == draft.idScope.setIndex else { return false }
+                return !SuggestionDeduplicator.isCompatible(event.category, draft.category, isSetScoped: draft.idScope.setIndex != nil)
+            }
+        }
+    }
+
+    private static func collectPlanSuggestionEvents(_ plan: WorkoutPlan) -> [SuggestionEvent] {
+        var seenEventIDs = Set<UUID>()
+        let exerciseEvents = plan.sortedExercises.flatMap { Array($0.suggestionEvents ?? []) }
+        let setEvents = plan.sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.suggestionEvents ?? []) } }
+
+        return (exerciseEvents + setEvents).filter { event in
+            seenEventIDs.insert(event.id).inserted
+        }
+    }
+
     private static func buildSuggestionEvents(from drafts: [SuggestionEventDraft], session: WorkoutSession, resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle]) -> [SuggestionEvent] {
         let performanceByPrescriptionID = Dictionary(uniqueKeysWithValues: session.sortedExercises.compactMap { performance in
             performance.prescription.map { ($0.id, performance) }
@@ -100,16 +124,13 @@ struct SuggestionGenerator {
             let triggerPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerformance)
             let changes = draft.changes.map { change in
                 PrescriptionChange(
-                    targetExercisePrescription: draft.targetExercisePrescription,
-                    targetSetPrescription: draft.targetSetPrescription,
-                    targetSetIndex: draft.targetSetIndex,
                     changeType: change.changeType,
                     previousValue: change.previousValue,
                     newValue: change.newValue
                 )
             }
 
-            let event = SuggestionEvent(source: draft.source, catalogID: exercisePrescription.catalogID, sessionFrom: session, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, changeReasoning: draft.changeReasoning, changes: changes)
+            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, targetSetIndex: draft.targetSetIndex, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, changeReasoning: draft.changeReasoning, changes: changes)
             return event
         }
         .sorted { lhs, rhs in

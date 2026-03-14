@@ -8,14 +8,16 @@ struct PrescriptionChangeDraft {
 
 struct SuggestionEventDraft {
     let source: SuggestionSource
+    let category: SuggestionCategory
     let targetExercisePrescription: ExercisePrescription
     let targetSetPrescription: SetPrescription?
     let targetSetIndex: Int?
     let changeReasoning: String?
     let changes: [PrescriptionChangeDraft]
 
-    init(source: SuggestionSource = .rules, targetExercisePrescription: ExercisePrescription, targetSetPrescription: SetPrescription? = nil, targetSetIndex: Int? = nil, changeReasoning: String? = nil, changes: [PrescriptionChangeDraft]) {
+    init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, targetExercisePrescription: ExercisePrescription, targetSetPrescription: SetPrescription? = nil, targetSetIndex: Int? = nil, changeReasoning: String? = nil, changes: [PrescriptionChangeDraft]) {
         self.source = source
+        self.category = category
         self.targetExercisePrescription = targetExercisePrescription
         self.targetSetPrescription = targetSetPrescription
         self.targetSetIndex = targetSetIndex ?? targetSetPrescription?.index

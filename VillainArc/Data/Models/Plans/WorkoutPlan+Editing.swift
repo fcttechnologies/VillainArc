@@ -161,46 +161,44 @@ extension WorkoutPlan {
 
 extension WorkoutPlan {
     func deletePendingOutcomeChanges(context: ModelContext) {
-        let exerciseChanges = sortedExercises.flatMap { Array($0.changes ?? []) }
-        let setChanges = sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.changes ?? []) } }
-        deleteUnresolvedChanges(exerciseChanges + setChanges, context: context)
+        let exerciseEvents = sortedExercises.flatMap { Array($0.suggestionEvents ?? []) }
+        let setEvents = sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.suggestionEvents ?? []) } }
+        deleteUnresolvedEvents(exerciseEvents + setEvents, context: context)
     }
 
     func deletePendingOutcomeChanges(for exercise: ExercisePrescription, context: ModelContext) {
-        let exerciseChanges = Array(exercise.changes ?? [])
-        let setChanges = exercise.sortedSets.flatMap { $0.changes ?? [] }
-        deleteUnresolvedChanges(exerciseChanges + setChanges, context: context)
+        let exerciseEvents = Array(exercise.suggestionEvents ?? [])
+        let setEvents = exercise.sortedSets.flatMap { $0.suggestionEvents ?? [] }
+        deleteUnresolvedEvents(exerciseEvents + setEvents, context: context)
     }
 
     func deletePendingOutcomeChanges(for set: SetPrescription, context: ModelContext) {
-        deleteUnresolvedChanges(Array(set.changes ?? []), context: context)
+        deleteUnresolvedEvents(Array(set.suggestionEvents ?? []), context: context)
     }
 
     func deleteMatchingPendingOutcomeChanges(for exercise: ExercisePrescription, changeTypes: [ChangeType], context: ModelContext) {
-        let matching = Array(exercise.changes ?? []).filter { changeTypes.contains($0.changeType) }
-        deleteUnresolvedChanges(matching, context: context)
+        let matching = Array(exercise.suggestionEvents ?? []).filter { event in
+            event.sortedChanges.contains { changeTypes.contains($0.changeType) }
+        }
+        deleteUnresolvedEvents(matching, context: context)
     }
 
     func deleteMatchingPendingOutcomeChanges(for set: SetPrescription, changeTypes: [ChangeType], context: ModelContext) {
-        let matching = Array(set.changes ?? []).filter { changeTypes.contains($0.changeType) }
-        deleteUnresolvedChanges(matching, context: context)
+        let matching = Array(set.suggestionEvents ?? []).filter { event in
+            event.sortedChanges.contains { changeTypes.contains($0.changeType) }
+        }
+        deleteUnresolvedEvents(matching, context: context)
     }
 
-    private func deleteUnresolvedChanges(_ changes: [PrescriptionChange], context: ModelContext) {
-        var seenChangeIDs = Set<UUID>()
+    private func deleteUnresolvedEvents(_ events: [SuggestionEvent], context: ModelContext) {
         var seenEventIDs = Set<UUID>()
-        for change in changes where seenChangeIDs.insert(change.id).inserted {
-            deleteUnresolvedChange(change, seenEventIDs: &seenEventIDs, context: context)
+        for event in events where seenEventIDs.insert(event.id).inserted {
+            deleteUnresolvedEvent(event, context: context)
         }
     }
 
-    private func deleteUnresolvedChange(_ change: PrescriptionChange, seenEventIDs: inout Set<UUID>, context: ModelContext) {
-        if let event = change.event {
-            guard event.outcome == .pending else { return }
-            guard seenEventIDs.insert(event.id).inserted else { return }
-            context.delete(event)
-        } else {
-            context.delete(change)
-        }
+    private func deleteUnresolvedEvent(_ event: SuggestionEvent, context: ModelContext) {
+        guard event.outcome == .pending else { return }
+        context.delete(event)
     }
 }

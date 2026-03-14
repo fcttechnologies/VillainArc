@@ -17,10 +17,10 @@ final class ExercisePrescription {
     var activePerformance: ExercisePerformance?
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise)
     var sets: [SetPrescription]? = [SetPrescription]()
-    
-    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetExercisePrescription)
-    var changes: [PrescriptionChange]? = [PrescriptionChange]()
-    
+
+    @Relationship(deleteRule: .nullify)
+    var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
+
     var sortedSets: [SetPrescription] {
         (sets ?? []).sorted { $0.index < $1.index }
     }

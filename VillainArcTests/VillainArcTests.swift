@@ -14,14 +14,11 @@ struct VillainArcTests {
     
     @MainActor
     @discardableResult
-    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], in context: ModelContext, decision: Decision = .pending, outcome: Outcome = .pending, evaluatedAt: Date? = nil, setIndex: Int? = nil) -> SuggestionEvent {
-        let event = SuggestionEvent(catalogID: exercise.catalogID, sessionFrom: nil, decision: decision, outcome: outcome, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, evaluatedAt: evaluatedAt, changes: changes)
+    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], in context: ModelContext, decision: Decision = .pending, outcome: Outcome = .pending, evaluatedAt: Date? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance) -> SuggestionEvent {
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, targetSetIndex: targetSet?.index, decision: decision, outcome: outcome, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, evaluatedAt: evaluatedAt, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event
-            if let setIndex {
-                change.targetSetIndex = setIndex
-            }
         }
         return event
     }
@@ -43,26 +40,26 @@ struct VillainArcTests {
         guard let copySet1 else { return }
         
         copySet1.targetWeight = 140
+
+        let weightRuleChangeID = data.changes.first {
+            $0.changeType == .increaseWeight &&
+            $0.event?.targetSetPrescription?.id == data.benchSet1.id
+        }?.id
+        let repsRuleChangeID = data.changes.first {
+            $0.changeType == .decreaseReps &&
+            $0.event?.targetSetPrescription?.id == data.benchSet1.id
+        }?.id
+
         finishEditing(editCopy, originalPlan: data.plan, context: context)
         
         #expect(data.benchSet1.targetWeight == 140)
-        
-        let weightRuleChange = data.changes.first {
-            $0.changeType == .increaseWeight &&
-            $0.targetSetPrescription?.id == data.benchSet1.id
-        }
-        #expect(weightRuleChange != nil)
-        
-        let repsRuleChange = data.changes.first {
-            $0.changeType == .decreaseReps &&
-            $0.targetSetPrescription?.id == data.benchSet1.id
-        }
-        #expect(repsRuleChange != nil)
+        #expect(weightRuleChangeID != nil)
+        #expect(repsRuleChangeID != nil)
         
         let descriptor = FetchDescriptor<PrescriptionChange>()
         let allChanges = (try? context.fetch(descriptor)) ?? []
-        #expect(allChanges.contains { $0.id == weightRuleChange?.id } == false)
-        #expect(allChanges.contains { $0.id == repsRuleChange?.id } == false)
+        #expect(allChanges.contains { $0.id == weightRuleChangeID } == false)
+        #expect(allChanges.contains { $0.id == repsRuleChangeID } == false)
     }
     
     @Test @MainActor
@@ -81,20 +78,20 @@ struct VillainArcTests {
         #expect(copySet2 != nil)
         guard let copySet2 else { return }
         
+        let ruleChangeForSet2ID = data.changes.first {
+            $0.changeType == .increaseWeight &&
+            $0.previousValue == 155 &&
+            $0.event?.targetExercisePrescription?.id == data.bench.id
+        }?.id
+
         copyBench.deleteSet(copySet2)
         finishEditing(editCopy, originalPlan: data.plan, context: context)
         
         #expect((data.bench.sets ?? []).contains { $0.id == data.benchSet2.id } == false)
-        
-        let ruleChangeForSet2 = data.changes.first {
-            $0.changeType == .increaseWeight &&
-            $0.previousValue == 155 &&
-            $0.targetExercisePrescription?.id == data.bench.id
-        }
-        #expect(ruleChangeForSet2 != nil)
+        #expect(ruleChangeForSet2ID != nil)
         
         let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
-        #expect(remainingChanges.contains { $0.id == ruleChangeForSet2?.id } == false)
+        #expect(remainingChanges.contains { $0.id == ruleChangeForSet2ID } == false)
     }
     
     @Test @MainActor
@@ -104,9 +101,9 @@ struct VillainArcTests {
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
         
-        let resolvedChange = PrescriptionChange(targetExercisePrescription: data.bench, targetSetPrescription: data.benchSet2, changeType: .increaseWeight, previousValue: 155, newValue: 160)
+        let resolvedChange = PrescriptionChange(changeType: .increaseWeight, previousValue: 155, newValue: 160)
         context.insert(resolvedChange)
-        _ = insertSuggestionEvent(for: data.bench, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), setIndex: data.benchSet2.index)
+        let resolvedEvent = insertSuggestionEvent(for: data.bench, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), targetSet: data.benchSet2)
         
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyBench = (editCopy.exercises ?? []).first { $0.id == data.bench.id }
@@ -123,8 +120,8 @@ struct VillainArcTests {
         let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         let survivingResolvedChange = remainingChanges.first { $0.id == resolvedChange.id }
         #expect(survivingResolvedChange != nil)
-        #expect(survivingResolvedChange?.targetSetPrescription == nil)
-        #expect(survivingResolvedChange?.targetExercisePrescription?.id == data.bench.id)
+        #expect(resolvedEvent.targetSetPrescription == nil)
+        #expect(resolvedEvent.targetExercisePrescription?.id == data.bench.id)
     }
     
     @Test @MainActor
@@ -134,9 +131,9 @@ struct VillainArcTests {
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
         
-        let deferredDecrease = PrescriptionChange(targetExercisePrescription: data.bench, targetSetPrescription: data.benchSet1, changeType: .decreaseWeight, previousValue: 135, newValue: 125)
+        let deferredDecrease = PrescriptionChange(changeType: .decreaseWeight, previousValue: 135, newValue: 125)
         context.insert(deferredDecrease)
-        _ = insertSuggestionEvent(for: data.bench, changes: [deferredDecrease], in: context, decision: .deferred, setIndex: data.benchSet1.index)
+        _ = insertSuggestionEvent(for: data.bench, changes: [deferredDecrease], in: context, decision: .deferred, targetSet: data.benchSet1)
         
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyBench = (editCopy.exercises ?? []).first { $0.id == data.bench.id }
@@ -168,9 +165,9 @@ struct VillainArcTests {
         #expect(inclineSet != nil)
         guard let inclineSet else { return }
         
-        let setChange = PrescriptionChange(targetExercisePrescription: data.incline, targetSetPrescription: inclineSet, changeType: .increaseReps, previousValue: Double(inclineSet.targetReps), newValue: Double(inclineSet.targetReps + 2))
+        let setChange = PrescriptionChange(changeType: .increaseReps, previousValue: Double(inclineSet.targetReps), newValue: Double(inclineSet.targetReps + 2))
         context.insert(setChange)
-        let setEvent = insertSuggestionEvent(for: data.incline, changes: [setChange], in: context, decision: .accepted, setIndex: inclineSet.index)
+        let setEvent = insertSuggestionEvent(for: data.incline, changes: [setChange], in: context, decision: .accepted, targetSet: inclineSet)
         
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyIncline = (editCopy.exercises ?? []).first { $0.id == data.incline.id }
@@ -193,9 +190,9 @@ struct VillainArcTests {
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
         
-        let resolvedChange = PrescriptionChange(targetExercisePrescription: data.incline, changeType: .increaseRepRangeTarget, previousValue: 8, newValue: 10)
+        let resolvedChange = PrescriptionChange(changeType: .increaseRepRangeTarget, previousValue: 8, newValue: 10)
         context.insert(resolvedChange)
-        _ = insertSuggestionEvent(for: data.incline, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date())
+        _ = insertSuggestionEvent(for: data.incline, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), category: .repRangeConfiguration)
         
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyIncline = (editCopy.exercises ?? []).first { $0.id == data.incline.id }
@@ -213,7 +210,7 @@ struct VillainArcTests {
         
         let originalPendingChangeIDs = Set(
             data.changes
-                .filter { $0.targetExercisePrescription?.id == data.incline.id && $0.event?.outcome == .pending }
+                .filter { $0.event?.targetExercisePrescription?.id == data.incline.id && $0.event?.outcome == .pending }
                 .map(\.id)
         )
         
@@ -231,7 +228,7 @@ struct VillainArcTests {
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
         
-        let flysRuleChange = data.changes.first { $0.targetExercisePrescription?.id == data.flys.id }
+        let flysRuleChange = data.changes.first { $0.event?.targetExercisePrescription?.id == data.flys.id }
         #expect(flysRuleChange != nil)
         guard let flysRuleChange else { return }
         flysRuleChange.event?.decision = .deferred
@@ -239,13 +236,13 @@ struct VillainArcTests {
         let flysSet = data.flys.sortedSets.first
         #expect(flysSet != nil)
         guard let flysSet else { return }
-        let pendingAcceptedChange = PrescriptionChange(targetExercisePrescription: data.flys, targetSetPrescription: flysSet, changeType: .increaseRest, previousValue: Double(flysSet.targetRest), newValue: Double(flysSet.targetRest + 15))
+        let pendingAcceptedChange = PrescriptionChange(changeType: .increaseRest, previousValue: Double(flysSet.targetRest), newValue: Double(flysSet.targetRest + 15))
         context.insert(pendingAcceptedChange)
-        _ = insertSuggestionEvent(for: data.flys, changes: [pendingAcceptedChange], in: context, decision: .accepted, setIndex: flysSet.index)
+        _ = insertSuggestionEvent(for: data.flys, changes: [pendingAcceptedChange], in: context, decision: .accepted, targetSet: flysSet, category: .recovery)
         
-        let resolvedChange = PrescriptionChange(targetExercisePrescription: data.flys, targetSetPrescription: flysSet, changeType: .increaseWeight, previousValue: 40, newValue: 45)
+        let resolvedChange = PrescriptionChange(changeType: .increaseWeight, previousValue: 40, newValue: 45)
         context.insert(resolvedChange)
-        _ = insertSuggestionEvent(for: data.flys, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), setIndex: flysSet.index)
+        _ = insertSuggestionEvent(for: data.flys, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), targetSet: flysSet)
         
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyFlys = (editCopy.exercises ?? []).first { $0.id == data.flys.id }
@@ -290,7 +287,7 @@ struct VillainArcTests {
         let data = makePlanWithRuleSuggestions(in: context)
         
         let initialChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
-        let pendingFlysChangeCount = initialChanges.filter { $0.targetExercisePrescription?.id == data.flys.id && $0.event?.outcome == .pending }.count
+        let pendingFlysChangeCount = initialChanges.filter { $0.event?.targetExercisePrescription?.id == data.flys.id && $0.event?.outcome == .pending }.count
         
         let editCopy = data.plan.createEditingCopy(context: context)
         let copyFlys = (editCopy.exercises ?? []).first { $0.id == data.flys.id }
@@ -339,9 +336,9 @@ struct VillainArcTests {
         let context = ModelContext(container)
         let data = makePlanWithRuleSuggestions(in: context)
         
-        let resolvedChange = PrescriptionChange(targetExercisePrescription: data.bench, targetSetPrescription: data.benchSet1, changeType: .increaseWeight, previousValue: 135, newValue: 140)
+        let resolvedChange = PrescriptionChange(changeType: .increaseWeight, previousValue: 135, newValue: 140)
         context.insert(resolvedChange)
-        _ = insertSuggestionEvent(for: data.bench, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), setIndex: data.benchSet1.index)
+        _ = insertSuggestionEvent(for: data.bench, changes: [resolvedChange], in: context, decision: .accepted, outcome: .good, evaluatedAt: Date(), targetSet: data.benchSet1)
         
         data.plan.deleteWithSuggestionCleanup(context: context)
         try context.save()

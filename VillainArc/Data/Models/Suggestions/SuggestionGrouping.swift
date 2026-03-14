@@ -7,20 +7,11 @@ struct SuggestionGroup: Identifiable {
     var id: UUID { event.id }
     var changes: [PrescriptionChange] { event.sortedChanges }
 
-    private var targetSetPrescription: SetPrescription? {
-        changes.compactMap(\.targetSetPrescription).first
-    }
-
-    private var targetSetIndex: Int? {
-        changes.compactMap(\.targetSetIndex).first
-            ?? changes.compactMap(\.targetSetPrescription?.index).first
-    }
-
     var label: String {
-        if let set = targetSetPrescription {
+        if let set = event.targetSetPrescription {
             return "Set \(set.index + 1)"
         }
-        if let index = targetSetIndex {
+        if let index = event.resolvedTargetSetIndex {
             return "Set \(index + 1)"
         }
         return "Rep Range"
@@ -37,21 +28,17 @@ struct ExerciseSuggestionSection: Identifiable {
 
 func groupSuggestions(_ events: [SuggestionEvent]) -> [ExerciseSuggestionSection] {
     let byExercise = Dictionary(grouping: events) { event in
-        event.changes?.compactMap(\.targetExercisePrescription).first?.id
+        event.targetExercisePrescription?.id
     }
 
     return byExercise.compactMap { (_, exerciseEvents) in
-        guard let exercise = exerciseEvents.first?.changes?.compactMap(\.targetExercisePrescription).first else { return nil }
+        guard let exercise = exerciseEvents.first?.targetExercisePrescription else { return nil }
 
         let groups = exerciseEvents
             .map { SuggestionGroup(event: $0) }
             .sorted { lhs, rhs in
-                let lhsOrder = lhs.changes.compactMap(\.targetSetIndex).first
-                    ?? lhs.changes.compactMap(\.targetSetPrescription?.index).first
-                    ?? Int.max
-                let rhsOrder = rhs.changes.compactMap(\.targetSetIndex).first
-                    ?? rhs.changes.compactMap(\.targetSetPrescription?.index).first
-                    ?? Int.max
+                let lhsOrder = lhs.event.resolvedTargetSetIndex ?? Int.max
+                let rhsOrder = rhs.event.resolvedTargetSetIndex ?? Int.max
                 if lhsOrder != rhsOrder {
                     return lhsOrder < rhsOrder
                 }
@@ -77,11 +64,9 @@ func pendingOutcomeSuggestionEvents(for plan: WorkoutPlan, in _: ModelContext) -
 
 private func suggestionEvents(for plan: WorkoutPlan, matching predicate: (SuggestionEvent) -> Bool) -> [SuggestionEvent] {
     var seenEventIDs = Set<UUID>()
-    let exerciseChanges = plan.sortedExercises.flatMap { Array($0.changes ?? []) }
-    let setChanges = plan.sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.changes ?? []) } }
-    let allChanges = exerciseChanges + setChanges
-
-    let events = allChanges.compactMap(\.event).filter(predicate)
+    let exerciseEvents = plan.sortedExercises.flatMap { Array($0.suggestionEvents ?? []) }
+    let setEvents = plan.sortedExercises.flatMap { $0.sortedSets.flatMap { Array($0.suggestionEvents ?? []) } }
+    let events = (exerciseEvents + setEvents).filter(predicate)
 
     return events.filter { event in
         seenEventIDs.insert(event.id).inserted

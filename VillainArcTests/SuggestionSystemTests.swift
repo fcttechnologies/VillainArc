@@ -167,7 +167,7 @@ struct SuggestionSystemTests {
         #expect(generated.isEmpty == false)
         #expect(generated.allSatisfy { $0.sessionFrom?.id == workout.id })
         #expect(generated.allSatisfy { $0.catalogID == prescription.catalogID })
-        #expect(generated.allSatisfy { ($0.changes ?? []).allSatisfy { $0.targetExercisePrescription?.workoutPlan?.id == plan.id } })
+        #expect(generated.allSatisfy { $0.targetExercisePrescription?.workoutPlan?.id == plan.id })
     }
     
     @Test @MainActor
@@ -215,7 +215,7 @@ struct SuggestionSystemTests {
         #expect(weightChange?.newValue == 103.75)
         #expect(repChange?.previousValue == 10)
         #expect(repChange?.newValue == 8)
-        #expect(event.sortedChanges.allSatisfy { $0.targetSetIndex == 0 })
+        #expect(event.targetSetIndex == 0)
         #expect(event.changeReasoning?.contains("significantly overshot the target") == true)
     }
 
@@ -609,14 +609,14 @@ struct SuggestionSystemTests {
             return
         }
         
-        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [])
+        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: set, targetSetIndex: set.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [])
         context.insert(event)
         
-        let weightChange = PrescriptionChange(event: event, targetExercisePrescription: prescription, targetSetPrescription: set, changeType: .increaseWeight, previousValue: 135, newValue: 140)
-        let repChange = PrescriptionChange(event: event, targetExercisePrescription: prescription, targetSetPrescription: set, changeType: .decreaseReps, previousValue: 10, newValue: 8)
+        let weightChange = PrescriptionChange(event: event, changeType: .increaseWeight, previousValue: 135, newValue: 140)
+        let repChange = PrescriptionChange(event: event, changeType: .decreaseReps, previousValue: 10, newValue: 8)
         event.changes = [weightChange, repChange]
-        prescription.changes = [weightChange, repChange]
-        set.changes = [weightChange, repChange]
+        prescription.suggestionEvents = [event]
+        set.suggestionEvents = [event]
         
         let pendingEvents = pendingSuggestionEvents(for: plan, in: context)
         #expect(pendingEvents.count == 1)
@@ -649,21 +649,116 @@ struct SuggestionSystemTests {
         set.restSeconds = 90
         set.complete = true
 
-        let change = PrescriptionChange(
-            targetExercisePrescription: prescription,
-            targetSetPrescription: setPrescription,
-            targetSetIndex: setPrescription.index,
-            changeType: .increaseWeight,
-            previousValue: 95,
-            newValue: 100
-        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 95, newValue: 100)
+        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, targetSetIndex: setPrescription.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
 
-        let matched = OutcomeRuleEngine.evaluate(change: change, exercisePerf: performance, trainingStyle: .straightSets)
+        let matched = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(matched?.outcome == .good)
 
         set.prescription = nil
 
-        let withoutLiveLink = OutcomeRuleEngine.evaluate(change: change, exercisePerf: performance, trainingStyle: .straightSets)
-        #expect(withoutLiveLink == nil)
+        let withoutLiveLink = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
+        #expect(withoutLiveLink?.outcome == .good)
+    }
+
+    @Test @MainActor
+    func suggestionDeduplicator_keepsPerformanceAndRecoveryForSameSet() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        guard let set = prescription.sortedSets.first else {
+            Issue.record("Expected set.")
+            return
+        }
+
+        let performance = SuggestionEventDraft(
+            category: .performance,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: set,
+            changes: [PrescriptionChangeDraft(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)]
+        )
+        let recovery = SuggestionEventDraft(
+            category: .recovery,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: set,
+            changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)]
+        )
+
+        let result = SuggestionDeduplicator.process(suggestions: [performance, recovery])
+        #expect(result.count == 2)
+        #expect(Set(result.map(\.category)) == Set([.performance, .recovery]))
+    }
+
+    @Test @MainActor
+    func suggestionDeduplicator_structureSuppressesPerformanceForSameSet() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .target)
+        guard let set = prescription.sortedSets.first else {
+            Issue.record("Expected set.")
+            return
+        }
+
+        let structure = SuggestionEventDraft(
+            category: .structure,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: set,
+            changes: [PrescriptionChangeDraft(changeType: .changeSetType, previousValue: Double(ExerciseSetType.warmup.rawValue), newValue: Double(ExerciseSetType.working.rawValue))]
+        )
+        let performance = SuggestionEventDraft(
+            category: .performance,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: set,
+            changes: [PrescriptionChangeDraft(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)]
+        )
+
+        let result = SuggestionDeduplicator.process(suggestions: [performance, structure])
+        #expect(result.count == 1)
+        #expect(result.first?.category == .structure)
+    }
+
+    @Test @MainActor
+    func generateSuggestions_blocksSetScopedPerformanceWhenUnresolvedPerformanceExists() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
+        prescription.musclesTargeted = [.chest]
+        prescription.equipmentType = .barbell
+
+        guard let setPrescription = prescription.sortedSets.first else {
+            Issue.record("Expected set prescription.")
+            return
+        }
+
+        let priorEvent = SuggestionEvent(
+            category: .performance,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            targetSetIndex: setPrescription.index,
+            decision: .accepted,
+            outcome: .pending,
+            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []),
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets,
+            changes: [PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)]
+        )
+        context.insert(priorEvent)
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+        workout.statusValue = .summary
+
+        guard let performance = workout.sortedExercises.first,
+              let set = performance.sortedSets.first else {
+            Issue.record("Expected plan-backed performance with one set.")
+            return
+        }
+
+        set.weight = 100
+        set.reps = 13
+        set.restSeconds = 90
+        set.complete = true
+
+        let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
+        #expect(generated.isEmpty)
     }
 }

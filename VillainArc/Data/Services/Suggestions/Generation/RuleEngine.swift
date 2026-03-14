@@ -147,7 +147,7 @@ struct RuleEngine {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
             }
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
         }
 
         return events
@@ -174,7 +174,7 @@ struct RuleEngine {
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -226,7 +226,7 @@ struct RuleEngine {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
             }
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
         }
 
         return events
@@ -265,7 +265,7 @@ struct RuleEngine {
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -325,7 +325,7 @@ struct RuleEngine {
             let newReps = min(upper, reps + 1)
             guard newReps > setPrescription.targetReps else { continue }
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(newReps))], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(newReps))], reasoning: reason))
         }
 
         return events
@@ -378,7 +378,7 @@ struct RuleEngine {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
             }
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps && setPrescription.targetReps != lower ? repsReason : nil)))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps && setPrescription.targetReps != lower ? repsReason : nil)))
         }
 
         return events
@@ -438,7 +438,7 @@ struct RuleEngine {
             let decrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(max(0, currentWeight - decrement))
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -487,7 +487,7 @@ struct RuleEngine {
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
             let reason = "You've used about \(context.weightUnit.display(MetricsCalculator.roundToNearestPlate(average))) for three sessions. Update the prescription to match your working weight."
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -527,7 +527,7 @@ struct RuleEngine {
 
             let reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -600,7 +600,7 @@ struct RuleEngine {
             let current = setPrescription.targetRest
             let newValue = current + restIncrement
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .recovery, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
         }
 
         return events
@@ -651,7 +651,7 @@ struct RuleEngine {
             let current = setPrescription.targetRest
             let newValue = current + increment
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .recovery, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
         }
 
         return events
@@ -678,7 +678,7 @@ struct RuleEngine {
 
         let reason = "Drop sets work best after a heavy working set. Converting the first drop set to regular gives it a proper anchor."
 
-        return [makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason)]
+        return [makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason)]
     }
 
     private static func progressionWeightChangeIndices(_ context: ExerciseSuggestionContext) -> Set<Int> {
@@ -760,7 +760,7 @@ struct RuleEngine {
             guard hitCount >= 2 else { continue }
 
             let reason = "This warmup set is within 10% of your top working weight in recent sessions. Consider marking it as a regular set."
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason))
         }
 
         return events
@@ -792,7 +792,7 @@ struct RuleEngine {
             guard hitCount >= 2 else { continue }
 
             let reason = "This set is much lighter than your top working weight. Consider marking it as a warmup."
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.warmup.rawValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.warmup.rawValue))], reasoning: reason))
         }
 
         return events
@@ -855,7 +855,7 @@ struct RuleEngine {
 
             let reason = "You've logged this set as \(firstType.displayName) for the last two sessions. Update the prescription to match."
 
-            events.append(makeSetEvent(context: context, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(firstType.rawValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(firstType.rawValue))], reasoning: reason))
         }
 
         return events
@@ -965,7 +965,7 @@ struct RuleEngine {
         guard let desiredRange = normalizedRange(minRep: evidence.minRep, maxRep: evidence.maxRep) else { return nil }
 
         let reason = "You've trained this exercise consistently for recent sessions without a rep range set. Add a range that matches how you already perform it."
-        return makeRepRangeEvent(context: context, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+        return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
     }
 
     private static func suggestTargetToRange(_ context: ExerciseSuggestionContext) -> SuggestionEventDraft? {
@@ -980,7 +980,7 @@ struct RuleEngine {
         guard let desiredRange = normalizedRange(minRep: evidence.minRep, maxRep: evidence.maxRep) else { return nil }
 
         let reason = "You perform this exercise across a rep band rather than one exact target. Switching to a range should better match how you train it."
-        return makeRepRangeEvent(context: context, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+        return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
     }
 
     private enum RangeShiftDirection {
@@ -1001,7 +1001,7 @@ struct RuleEngine {
             guard desiredRange.lower > repRange.lowerRange || desiredRange.upper > repRange.upperRange else { return nil }
 
             let reason = "You're consistently performing above your current rep band. Shift the range up so the prescription better matches your training."
-            return makeRepRangeEvent(context: context, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+            return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
 
         case .down:
             guard evidence.maxRep <= repRange.lowerRange + 1 else { return nil }
@@ -1009,7 +1009,7 @@ struct RuleEngine {
             guard desiredRange.lower < repRange.lowerRange || desiredRange.upper < repRange.upperRange else { return nil }
 
             let reason = "You're consistently performing below your current rep band. Shift the range down so the prescription better matches your training."
-            return makeRepRangeEvent(context: context, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+            return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
         }
     }
 
@@ -1066,15 +1066,15 @@ struct RuleEngine {
         PrescriptionChangeDraft(changeType: changeType, previousValue: previousValue, newValue: newValue)
     }
 
-    private static func makeSetEvent(context: ExerciseSuggestionContext, setPrescription: SetPrescription, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
-        SuggestionEventDraft(targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, targetSetIndex: setPrescription.index, changeReasoning: reasoning, changes: changes)
+    private static func makeSetEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, setPrescription: SetPrescription, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, targetSetIndex: setPrescription.index, changeReasoning: reasoning, changes: changes)
     }
 
-    private static func makeExerciseEvent(context: ExerciseSuggestionContext, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
-        SuggestionEventDraft(targetExercisePrescription: context.prescription, changeReasoning: reasoning, changes: changes)
+    private static func makeExerciseEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, changeReasoning: reasoning, changes: changes)
     }
 
-    private static func makeRepRangeEvent(context: ExerciseSuggestionContext, desiredMode: RepRangeMode, desiredLower: Int, desiredUpper: Int, desiredTarget: Int, reasoning: String?) -> SuggestionEventDraft? {
+    private static func makeRepRangeEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, desiredMode: RepRangeMode, desiredLower: Int, desiredUpper: Int, desiredTarget: Int, reasoning: String?) -> SuggestionEventDraft? {
         guard let repRange = context.prescription.repRange else { return nil }
 
         var changes: [PrescriptionChangeDraft] = []
@@ -1096,7 +1096,7 @@ struct RuleEngine {
         }
 
         guard !changes.isEmpty else { return nil }
-        return makeExerciseEvent(context: context, changes: changes, reasoning: reasoning)
+        return makeExerciseEvent(context: context, category: category, changes: changes, reasoning: reasoning)
     }
 
     private static func combineReasoning(_ reasons: String?...) -> String? {

@@ -238,24 +238,24 @@ struct ChangeDescriptionRow: View {
 
 
 @MainActor
-func applyChange(_ change: PrescriptionChange, context: ModelContext) {
+func applyChange(_ change: PrescriptionChange, in event: SuggestionEvent, context: ModelContext) {
     switch change.changeType {
     case .increaseWeight, .decreaseWeight:
-        change.targetSetPrescription?.targetWeight = change.newValue
+        event.targetSetPrescription?.targetWeight = change.newValue
     case .increaseReps, .decreaseReps:
-        change.targetSetPrescription?.targetReps = Int(change.newValue)
+        event.targetSetPrescription?.targetReps = Int(change.newValue)
     case .increaseRest, .decreaseRest:
-        change.targetSetPrescription?.targetRest = Int(change.newValue)
+        event.targetSetPrescription?.targetRest = Int(change.newValue)
     case .changeSetType:
-        change.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue)) ?? .working
+        event.targetSetPrescription?.type = ExerciseSetType(rawValue: Int(change.newValue)) ?? .working
     case .increaseRepRangeLower, .decreaseRepRangeLower:
-        change.targetExercisePrescription?.repRange?.lowerRange = Int(change.newValue)
+        event.targetExercisePrescription?.repRange?.lowerRange = Int(change.newValue)
     case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-        change.targetExercisePrescription?.repRange?.upperRange = Int(change.newValue)
+        event.targetExercisePrescription?.repRange?.upperRange = Int(change.newValue)
     case .increaseRepRangeTarget, .decreaseRepRangeTarget:
-        change.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue)
+        event.targetExercisePrescription?.repRange?.targetReps = Int(change.newValue)
     case .changeRepRangeMode:
-        change.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue)) ?? .notSet
+        event.targetExercisePrescription?.repRange?.activeMode = RepRangeMode(rawValue: Int(change.newValue)) ?? .notSet
     }
 }
 
@@ -263,7 +263,7 @@ func applyChange(_ change: PrescriptionChange, context: ModelContext) {
 func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .accepted
     for change in group.changes {
-        applyChange(change, context: context)
+        applyChange(change, in: group.event, context: context)
     }
     saveContext(context: context)
 }

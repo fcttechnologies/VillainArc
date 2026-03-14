@@ -13,7 +13,7 @@ This document explains how VillainArc handles plan suggestions and their later o
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - `Data/Models/Suggestions/SuggestionEvent.swift`
-- `Data/Models/Plans/PrescriptionChange.swift`
+- `Data/Models/Suggestions/PrescriptionChange.swift`
 - `Data/Models/Plans/SuggestionGrouping.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
 
@@ -45,7 +45,9 @@ The important detail is why those fields exist:
 - `evaluatedPerformanceSnapshot` later freezes the workout that was used to judge whether the suggestion worked
 - `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens
 - `changeReasoning` and `outcomeReason` give both the review UI and future debugging a human-readable explanation
-- live plan links on child changes let the app still apply, gate, or clean up unresolved suggestions while the target prescription still exists
+- `targetExercisePrescription` and optional `targetSetPrescription` keep the live plan target on the event itself
+- `targetSetIndex` preserves the intended target slot even if ordering shifts or the live set reference disappears
+- `category` identifies the event family (`performance`, `recovery`, `structure`, `repRangeConfiguration`, and future buckets) so deduplication and unresolved-overlap blocking can reason at the event level
 
 ### PrescriptionChange
 
@@ -56,17 +58,14 @@ Each `PrescriptionChange` stores one concrete mutation, such as:
 - set type change
 - rep range changes
 
-It may point to:
-- `targetExercisePrescription`
-- `targetSetPrescription`
-- `targetSetIndex`
-
 So an event can represent one grouped recommendation while still carrying one or more exact plan deltas.
 
-The links and indices matter for different reasons:
-- the live prescription relationships let the app mutate the current plan or find unresolved suggestions later
-- `targetSetIndex` preserves the intended target slot even if ordering shifts or the live set reference disappears
-- `previousValue` and `newValue` store the exact scalar delta so both rule evaluation and UI can reason about the change without recomputing it from the live plan — weight values are always stored in kg here, matching the canonical storage in `SetPrescription.targetWeight` and `SetPerformance.weight`; display conversion to the user's preferred unit happens only in the review UI
+The scalar rows deliberately do not own live plan targets anymore. They only store:
+- the change type
+- the previous value
+- the new value
+
+That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values are always stored in kg here, matching the canonical storage in `SetPrescription.targetWeight` and `SetPerformance.weight`; display conversion to the user's preferred unit happens only in the review UI.
 
 ## The Two State Machines
 
@@ -125,12 +124,12 @@ Outcome resolution does not scan every historical suggestion in the database.
 It starts from the current workout’s live prescription links:
 - current `ExercisePerformance.prescription`
 - current `SetPerformance.prescription`
-- each prescription’s attached `PrescriptionChange`s
+- each prescription’s attached `SuggestionEvent`s
 
 That means only suggestions still attached to the active plan structure are considered.
 
 At the set level, the resolver is stricter:
-- the change must still point at a live `targetSetPrescription` or set index
+- the event must still point at a live `targetSetPrescription` or durable `targetSetIndex`
 - the current workout must contain a completed performed set still linked to that same target set
 
 If that evidence is missing, the resolver skips the event for now and leaves `outcome == .pending`.
@@ -173,7 +172,7 @@ The deterministic rules are change-type specific:
 - rep-range changes judge the full working-set distribution against the post-change range or target
 - set-type changes are basically binary: did the performed set type match the new target type
 
-This is why set-level prescription links matter so much. For weight, reps, rest, and set-type changes, the resolver needs to know which performed set corresponds to the original target slot.
+This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver needs to know which performed set corresponds to the original target slot. It first prefers the live `targetSetPrescription`, then falls back to `targetSetIndex` matched against `SetPerformance.linkedTargetSetIndex`.
 
 ## New Suggestion Generation
 
@@ -264,6 +263,8 @@ Once drafts survive deduplication, `SuggestionGenerator` turns them into real `S
 
 At that point it stores:
 - the triggering workout session via `sessionFrom`
+- the live target exercise and optional target set on the event itself
+- the suggestion `category`
 - a frozen target snapshot representing what the plan prescribed during the triggering session
 - a frozen performance snapshot representing what the user actually performed in that session
 - the resolved training style used when interpreting the exercise
@@ -274,14 +275,34 @@ That stored context is what later makes review, deferral, outcome resolution, an
 
 ### Deduplication
 
-`SuggestionDeduplicator` groups candidate drafts by target scope and keeps only one winner for each scope.
+`SuggestionDeduplicator` groups candidate drafts by target scope and then selects the compatible set of winners for that scope.
 
-Its preferences are:
+Current behavior:
+- exercise-scoped drafts still keep only one winner
+- set-scoped drafts may keep more than one event only when the categories are compatible
+- right now the only allowed multi-event set combination is `performance` + `recovery`
+- `structure`, `volume`, `warmupCalibration`, and `repRangeConfiguration` currently suppress other categories on the same set in the same pass
+
+Its ordering preferences are:
+- higher-priority categories first
 - higher-priority change types first
 - then drafts with more complete grouped changes
 - then larger total magnitude
 
-In practice this helps the app avoid showing multiple conflicting suggestions for the same exercise or set target in one summary pass.
+In practice this helps the app avoid showing conflicting suggestions for the same exercise or set target while still allowing a small number of sensible combinations, such as a load progression plus a recovery tweak.
+
+### Unresolved Overlap Blocking
+
+Before new drafts are persisted, `SuggestionGenerator` also checks the active plan for unresolved existing events on the same target scope.
+
+If an unresolved event is already attached to the same exercise/set and its category is incompatible with the new draft, the new draft is suppressed for now.
+
+That means:
+- an unresolved set-level `performance` event blocks new set-level `performance` drafts for that same target
+- an unresolved set-level `structure` event blocks everything else on that target
+- exercise-level rep-range configuration suggestions do not pile up while an earlier one is still unresolved
+
+This keeps the generator from repeatedly proposing overlapping changes before the older suggestion has been reviewed or evaluated.
 
 ## How Suggestions Are Reviewed in Summary
 
@@ -338,7 +359,7 @@ If any `pending` or `deferred` events exist for that plan, the new session start
 
 ### What Counts as Pending Before Workout Start
 
-`pendingSuggestionEvents(...)` walks the plan’s exercise and set change relationships and returns unique parent `SuggestionEvent`s whose decision is:
+`pendingSuggestionEvents(...)` walks the plan’s exercise and set event relationships and returns unique `SuggestionEvent`s whose decision is:
 - `pending`
 - `deferred`
 

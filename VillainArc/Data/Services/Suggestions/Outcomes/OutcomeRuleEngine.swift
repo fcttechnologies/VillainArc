@@ -5,23 +5,23 @@ import Foundation
 struct OutcomeRuleEngine {
 
     /// Routes each change type to the matching rule evaluator.
-    static func evaluate(change: PrescriptionChange, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
+    static func evaluate(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
         let regularSets = relevantWorkingSets(in: exercisePerf, trainingStyle: trainingStyle)
 
         switch change.changeType {
         case .increaseWeight, .decreaseWeight:
-            return evaluateWeightChange(change: change, exercisePerf: exercisePerf)
+            return evaluateWeightChange(change: change, event: event, exercisePerf: exercisePerf)
         case .increaseReps, .decreaseReps:
-            return evaluateRepsChange(change: change, exercisePerf: exercisePerf)
+            return evaluateRepsChange(change: change, event: event, exercisePerf: exercisePerf)
         case .increaseRest, .decreaseRest:
-            return evaluateSetRestChange(change: change, exercisePerf: exercisePerf)
+            return evaluateSetRestChange(change: change, event: event, exercisePerf: exercisePerf)
         case .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
              .increaseRepRangeTarget, .decreaseRepRangeTarget,
              .changeRepRangeMode:
             return evaluateRepRangeChange(change: change, regularSets: regularSets, exercisePerf: exercisePerf)
         case .changeSetType:
-            return evaluateSetTypeChange(change: change, exercisePerf: exercisePerf)
+            return evaluateSetTypeChange(change: change, event: event, exercisePerf: exercisePerf)
         }
     }
 
@@ -33,12 +33,18 @@ struct OutcomeRuleEngine {
 
     // MARK: - Match Set Performance
 
-    private static func matchSetPerformance(for change: PrescriptionChange, in exercisePerf: ExercisePerformance) -> SetPerformance? {
+    private static func matchSetPerformance(for event: SuggestionEvent, in exercisePerf: ExercisePerformance) -> SetPerformance? {
         let completeSets = exercisePerf.sortedSets.filter { $0.complete }
 
-        if let setPrescriptionID = change.targetSetPrescription?.id,
+        if let setPrescriptionID = event.targetSetPrescription?.id,
            let matched = completeSets.first(where: { $0.prescription?.id == setPrescriptionID }) {
             return matched
+        }
+
+        if let targetSetIndex = event.resolvedTargetSetIndex {
+            return completeSets.first(where: {
+                $0.linkedTargetSetIndex == targetSetIndex || $0.prescription?.index == targetSetIndex
+            })
         }
 
         return nil
@@ -46,9 +52,9 @@ struct OutcomeRuleEngine {
 
     // MARK: - Weight Change
 
-    private static func evaluateWeightChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              change.targetSetIndex != nil || change.targetSetPrescription != nil else { return nil }
+    private static func evaluateWeightChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
+        guard event.isSetScoped,
+              let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
         let newWeight = change.newValue
         let oldWeight = change.previousValue
@@ -78,9 +84,9 @@ struct OutcomeRuleEngine {
 
     // MARK: - Reps Change
 
-    private static func evaluateRepsChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              change.targetSetIndex != nil || change.targetSetPrescription != nil else { return nil }
+    private static func evaluateRepsChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
+        guard event.isSetScoped,
+              let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
         let newReps = Int(change.newValue)
         let oldReps = Int(change.previousValue)
@@ -105,9 +111,9 @@ struct OutcomeRuleEngine {
 
     // MARK: - Set-Level Rest Change
 
-    private static func evaluateSetRestChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
-              change.targetSetIndex != nil || change.targetSetPrescription != nil else { return nil }
+    private static func evaluateSetRestChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
+        guard event.isSetScoped,
+              let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
         let newRest = Int(change.newValue)
         let oldRest = Int(change.previousValue)
@@ -169,8 +175,8 @@ struct OutcomeRuleEngine {
 
     // MARK: - Set Type Change
 
-    private static func evaluateSetTypeChange(change: PrescriptionChange, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard let setPerf = matchSetPerformance(for: change, in: exercisePerf),
+    private static func evaluateSetTypeChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
+        guard let setPerf = matchSetPerformance(for: event, in: exercisePerf),
               let newType = ExerciseSetType(rawValue: Int(change.newValue)) else { return nil }
 
         // Type changes are binary: exact type match means success, otherwise ignored.

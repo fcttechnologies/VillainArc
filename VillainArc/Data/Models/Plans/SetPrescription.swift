@@ -13,8 +13,8 @@ final class SetPrescription {
     var exercise: ExercisePrescription?
     @Relationship(deleteRule: .nullify)
     var activePerformance: SetPerformance?
-    @Relationship(deleteRule: .nullify, inverse: \PrescriptionChange.targetSetPrescription)
-    var changes: [PrescriptionChange]? = [PrescriptionChange]()
+    @Relationship(deleteRule: .nullify)
+    var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
 
     var visibleTargetRPE: Int? {
         guard type != .warmup, targetRPE > 0 else { return nil }

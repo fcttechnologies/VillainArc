@@ -14,12 +14,11 @@ struct PlanEditingTestData {
 
 @MainActor
 func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestData {
-    func makeEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], setIndex: Int? = nil, reasoning: String? = nil) -> SuggestionEvent {
-        let event = SuggestionEvent(catalogID: exercise.catalogID, sessionFrom: nil, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
+    func makeEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, targetSetIndex: targetSet?.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event
-            change.targetSetIndex = setIndex
         }
         return event
     }
@@ -39,16 +38,16 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
     bench.reindexSets()
     plan.exercises?.append(bench)
     
-    let change1 = PrescriptionChange(targetExercisePrescription: bench, targetSetPrescription: benchSet1, changeType: .increaseWeight, previousValue: 135, newValue: 145)
+    let change1 = PrescriptionChange(changeType: .increaseWeight, previousValue: 135, newValue: 145)
     context.insert(change1)
     
-    let change2 = PrescriptionChange(targetExercisePrescription: bench, targetSetPrescription: benchSet1, changeType: .decreaseReps, previousValue: 10, newValue: 8)
+    let change2 = PrescriptionChange(changeType: .decreaseReps, previousValue: 10, newValue: 8)
     context.insert(change2)
     
-    let change3 = PrescriptionChange(targetExercisePrescription: bench, targetSetPrescription: benchSet2, changeType: .increaseWeight, previousValue: 155, newValue: 160)
+    let change3 = PrescriptionChange(changeType: .increaseWeight, previousValue: 155, newValue: 160)
     context.insert(change3)
-    _ = makeEvent(for: bench, changes: [change1, change2], setIndex: benchSet1.index)
-    _ = makeEvent(for: bench, changes: [change3], setIndex: benchSet2.index)
+    _ = makeEvent(for: bench, changes: [change1, change2], targetSet: benchSet1)
+    _ = makeEvent(for: bench, changes: [change3], targetSet: benchSet2)
     
     // Exercise 2: Incline DB with rep range suggestions.
     let inclineExercise = Exercise(from: ExerciseCatalog.byID["dumbbell_incline_bench_press"]!)
@@ -59,15 +58,15 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
     }
     plan.exercises?.append(incline)
     
-    let change4 = PrescriptionChange(targetExercisePrescription: incline, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
+    let change4 = PrescriptionChange(changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
     context.insert(change4)
     
-    let change5 = PrescriptionChange(targetExercisePrescription: incline, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
+    let change5 = PrescriptionChange(changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
     context.insert(change5)
     
-    let change6 = PrescriptionChange(targetExercisePrescription: incline, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
+    let change6 = PrescriptionChange(changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
     context.insert(change6)
-    _ = makeEvent(for: incline, changes: [change4, change5, change6])
+    _ = makeEvent(for: incline, changes: [change4, change5, change6], category: .repRangeConfiguration)
     
     // Exercise 3: Flys with rest time suggestion.
     let flysExercise = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
@@ -78,9 +77,9 @@ func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestDat
     plan.exercises?.append(flys)
     
     let flysSet = flys.sortedSets.first!
-    let change7 = PrescriptionChange(targetExercisePrescription: flys, targetSetPrescription: flysSet, changeType: .increaseRest, previousValue: 60, newValue: 90)
+    let change7 = PrescriptionChange(changeType: .increaseRest, previousValue: 60, newValue: 90)
     context.insert(change7)
-    _ = makeEvent(for: flys, changes: [change7], setIndex: flysSet.index, reasoning: "Recovery needs increased")
+    _ = makeEvent(for: flys, changes: [change7], targetSet: flysSet, category: .recovery, reasoning: "Recovery needs increased")
     
     for (index, exercise) in (plan.exercises ?? []).enumerated() {
         exercise.index = index

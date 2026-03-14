@@ -243,13 +243,13 @@ This file is a structure map for the codebase. It explains what the important fi
 ## Suggestions
 
 ### `Data/Models/Suggestions/SuggestionEvent.swift`
-- Purpose: grouped persisted suggestion record with shared decision/outcome state and snapshots.
+- Purpose: grouped persisted suggestion record with shared decision/outcome state, live plan target links, category metadata, and frozen snapshots.
 - Called by: suggestion generation, review UI, outcome evaluation.
 - Calls: child-change ordering helpers.
-- Read with: `Data/Models/Plans/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
+- Read with: `Data/Models/Suggestions/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
 
-### `Data/Models/Plans/PrescriptionChange.swift`
-- Purpose: scalar change inside a suggestion event, including live target references and durable target-set indexing.
+### `Data/Models/Suggestions/PrescriptionChange.swift`
+- Purpose: scalar before/after change row inside a suggestion event.
 - Called by: suggestion generation, review UI, outcome logic, plan editing cleanup.
 - Calls: none.
 - Read with: `SuggestionEvent.swift`, `SuggestionGrouping.swift`.
@@ -273,7 +273,7 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `SuggestionEventDraft.swift`, `MetricsCalculator.swift`.
 
 ### `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
-- Purpose: resolves conflicts between generated suggestion drafts.
+- Purpose: resolves conflicts between generated suggestion drafts using scope and category compatibility rules.
 - Called by: `SuggestionGenerator`.
 - Calls: internal scope/priority helpers.
 - Read with: `SuggestionEventDraft.swift`.

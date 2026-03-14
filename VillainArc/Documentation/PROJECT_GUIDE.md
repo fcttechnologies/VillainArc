@@ -256,6 +256,13 @@ The generator uses:
 - `AITrainingStyleClassifier` only when style detection is ambiguous
 - frozen suggestion context from `ExercisePerformance.originalTargetSnapshot`
 - frozen set matching from `SetPerformance.linkedTargetSetIndex`
+- event-level category metadata to separate performance, recovery, structure, and rep-range configuration suggestions
+
+The persisted `SuggestionEvent` now owns the live target exercise/set links for review, cleanup, and outcome resolution. Child `PrescriptionChange` rows stay scalar-only and describe the exact before/after deltas inside that one event.
+
+`SuggestionDeduplicator` no longer blindly keeps only one winner for every set target. It now uses event categories and compatibility rules, so the app can keep a small number of non-conflicting suggestions for the same set when appropriate while still suppressing incompatible combinations.
+
+Before new drafts are persisted, the generator also checks for unresolved existing events on the same target scope. If an older unresolved event is still attached to that exercise/set and its category conflicts with the new draft, the new draft is suppressed until the older one is resolved.
 
 ## Workout Plans and Plan Editing
 

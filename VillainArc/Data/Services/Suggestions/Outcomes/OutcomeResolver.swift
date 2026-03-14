@@ -44,7 +44,7 @@ struct OutcomeResolver {
         for group in groups {
             let groupTrainingStyle = resolvedTrainingStyle(for: group)
             for change in group.changes {
-                ruleResults[change.id] = OutcomeRuleEngine.evaluate(change: change, exercisePerf: group.exercisePerf, trainingStyle: groupTrainingStyle)
+                ruleResults[change.id] = OutcomeRuleEngine.evaluate(change: change, event: group.event, exercisePerf: group.exercisePerf, trainingStyle: groupTrainingStyle)
             }
         }
 
@@ -112,12 +112,12 @@ struct OutcomeResolver {
         }
 
         for prescription in prescriptions {
-            for change in prescription.changes ?? [] {
-                appendIfEligible(change.event)
+            for event in prescription.suggestionEvents ?? [] {
+                appendIfEligible(event)
             }
             for set in prescription.sortedSets {
-                for change in set.changes ?? [] {
-                    appendIfEligible(change.event)
+                for event in set.suggestionEvents ?? [] {
+                    appendIfEligible(event)
                 }
             }
         }
@@ -129,10 +129,9 @@ struct OutcomeResolver {
 
     private static func buildGroups(eligible: [SuggestionEvent], perfByPrescriptionID: [UUID: ExercisePerformance]) -> [OutcomeGroup] {
         eligible.compactMap { event in
-            guard let prescription = event.changes?.compactMap(\.targetExercisePrescription).first else { return nil }
+            guard let prescription = event.targetExercisePrescription else { return nil }
             guard let exercisePerf = perfByPrescriptionID[prescription.id] else { return nil }
-            let setPrescription = event.changes?.compactMap(\.targetSetPrescription).first
-            return OutcomeGroup(event: event, exercisePerf: exercisePerf, prescription: prescription, setPrescription: setPrescription)
+            return OutcomeGroup(event: event, exercisePerf: exercisePerf, prescription: prescription, setPrescription: event.targetSetPrescription)
         }
     }
 
@@ -145,8 +144,8 @@ struct OutcomeResolver {
         let aiChanges: [AIOutcomeChange] = group.changes.map { change in
             AIOutcomeChange(
                 changeType: change.changeType,
-                scope: (change.targetSetIndex != nil || change.targetSetPrescription != nil) ? .set : .exercise,
-                targetSetIndex: change.targetSetIndex ?? change.targetSetPrescription?.index,
+                scope: group.event.isSetScoped ? .set : .exercise,
+                targetSetIndex: group.event.resolvedTargetSetIndex,
                 previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
                 newValue: formattedChangeValue(change.newValue, changeType: change.changeType)
             )
@@ -170,7 +169,7 @@ struct OutcomeResolver {
     }
 
     private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
-        guard group.changes.contains(where: { $0.targetSetIndex != nil || $0.targetSetPrescription != nil }) else { return true }
+        guard group.event.isSetScoped else { return true }
         guard let setPrescriptionID = group.setPrescription?.id else { return false }
         return group.exercisePerf.sortedSets.contains { set in
             set.complete && set.prescription?.id == setPrescriptionID

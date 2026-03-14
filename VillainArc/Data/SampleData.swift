@@ -59,12 +59,11 @@ class PreviewDataContainer {
     }
 
     @discardableResult
-    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, setIndex: Int? = nil, reasoning: String? = nil) -> SuggestionEvent {
-        let event = SuggestionEvent(catalogID: exercise.catalogID, sessionFrom: session, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
+    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, setIndex: Int? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: session, targetExercisePrescription: exercise, targetSetPrescription: targetSet, targetSetIndex: setIndex ?? targetSet?.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event
-            change.targetSetIndex = setIndex
         }
         return event
     }
@@ -318,16 +317,16 @@ class PreviewDataContainer {
         let s2 = SetPrescription(exercisePrescription: benchPrescription, setType: .working, targetWeight: 155, targetReps: 8, index: 1)
         benchPrescription.sets?.append(s2)
         
-        let change1 = PrescriptionChange(targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .increaseWeight, previousValue: 135, newValue: 145)
+        let change1 = PrescriptionChange(changeType: .increaseWeight, previousValue: 135, newValue: 145)
         context.insert(change1)
 
-        let change2 = PrescriptionChange(targetExercisePrescription: benchPrescription, targetSetPrescription: s1, changeType: .decreaseReps, previousValue: 10, newValue: 8)
+        let change2 = PrescriptionChange(changeType: .decreaseReps, previousValue: 10, newValue: 8)
         context.insert(change2)
 
-        let change3 = PrescriptionChange(targetExercisePrescription: benchPrescription, targetSetPrescription: s2, changeType: .increaseWeight, previousValue: 155, newValue: 160)
+        let change3 = PrescriptionChange(changeType: .increaseWeight, previousValue: 155, newValue: 160)
         context.insert(change3)
-        insertSuggestionEvent(for: benchPrescription, changes: [change1, change2], session: session, setIndex: s1.index, reasoning: "Hit all reps last 3 sessions")
-        insertSuggestionEvent(for: benchPrescription, changes: [change3], session: session, setIndex: s2.index)
+        insertSuggestionEvent(for: benchPrescription, changes: [change1, change2], session: session, targetSet: s1, reasoning: "Hit all reps last 3 sessions")
+        insertSuggestionEvent(for: benchPrescription, changes: [change3], session: session, targetSet: s2)
         
         // Exercise 2: Incline DB (Group: Rep Range)
         let incline = Exercise(from: ExerciseCatalog.byID["dumbbell_incline_bench_press"]!)
@@ -336,15 +335,15 @@ class PreviewDataContainer {
         inclinePrescription.repRange?.targetReps = 8
         plan.exercises?.append(inclinePrescription)
         
-        let change4 = PrescriptionChange(targetExercisePrescription: inclinePrescription, changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
+        let change4 = PrescriptionChange(changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
         context.insert(change4)
 
-        let change5 = PrescriptionChange(targetExercisePrescription: inclinePrescription, changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
+        let change5 = PrescriptionChange(changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
         context.insert(change5)
 
-        let change6 = PrescriptionChange(targetExercisePrescription: inclinePrescription, changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
+        let change6 = PrescriptionChange(changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
         context.insert(change6)
-        insertSuggestionEvent(for: inclinePrescription, changes: [change4, change5, change6], session: session, reasoning: "Switching to range for hypertrophy phase")
+        insertSuggestionEvent(for: inclinePrescription, changes: [change4, change5, change6], session: session, category: .repRangeConfiguration, reasoning: "Switching to range for hypertrophy phase")
         
         // Exercise 3: Flys (Group: Rest Time)
         let flys = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
@@ -354,9 +353,9 @@ class PreviewDataContainer {
         flysPrescription.sets?.append(flysSet1)
         plan.exercises?.append(flysPrescription)
         
-        let change7 = PrescriptionChange(targetExercisePrescription: flysPrescription, targetSetPrescription: flysSet1, changeType: .increaseRest, previousValue: 60, newValue: 90)
+        let change7 = PrescriptionChange(changeType: .increaseRest, previousValue: 60, newValue: 90)
         context.insert(change7)
-        insertSuggestionEvent(for: flysPrescription, changes: [change7], session: session, setIndex: flysSet1.index, reasoning: "Recovery needs increased")
+        insertSuggestionEvent(for: flysPrescription, changes: [change7], session: session, targetSet: flysSet1, category: .recovery, reasoning: "Recovery needs increased")
     }
 
     // MARK: - Suggestion Generation Scenario
