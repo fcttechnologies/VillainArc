@@ -40,14 +40,14 @@ struct WorkoutPlanPickerView: View {
                         dismiss()
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerClearButton)
-                    .accessibilityHint("Removes the selected workout plan.")
+                    .accessibilityHint(AccessibilityText.workoutPlanPickerClearHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create", systemImage: "plus") {
                         createWorkoutPlan()
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerCreateButton)
-                    .accessibilityHint("Creates a new workout plan to select.")
+                    .accessibilityHint(AccessibilityText.workoutPlanPickerCreateHint)
                 }
             }
             .overlay {

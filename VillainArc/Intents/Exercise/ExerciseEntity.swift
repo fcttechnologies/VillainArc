@@ -22,7 +22,7 @@ extension ExerciseEntity {
     init(exercise: Exercise) {
         id = exercise.catalogID
         name = exercise.name
-        equipment = exercise.equipmentType.rawValue
+        equipment = exercise.equipmentType.displayName
         alternateNames = exercise.systemAlternateNames
     }
 }

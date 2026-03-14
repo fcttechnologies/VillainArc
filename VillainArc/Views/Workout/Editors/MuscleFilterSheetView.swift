@@ -49,10 +49,10 @@ struct MuscleFilterSheetView: View {
                             }
                             .buttonStyle(.plain)
                             .padding(.horizontal)
-                            .accessibilityIdentifier("muscleFilterAdvancedToggle")
-                            .accessibilityLabel("Advanced muscles")
-                            .accessibilityValue(showAdvanced ? "Expanded" : "Collapsed")
-                            .accessibilityHint("Shows minor muscles.")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterAdvancedToggle)
+                            .accessibilityLabel(AccessibilityText.muscleFilterAdvancedLabel)
+                            .accessibilityValue(AccessibilityText.muscleFilterAdvancedValue(isExpanded: showAdvanced))
+                            .accessibilityHint(AccessibilityText.muscleFilterAdvancedHint)
 
                             if showAdvanced {
                                 FlowLayout(spacing: chipSpacing) {
@@ -78,15 +78,15 @@ struct MuscleFilterSheetView: View {
                         Button("Clear") {
                             clearSelection()
                         }
-                        .accessibilityIdentifier("muscleFilterClearButton")
-                        .accessibilityHint("Clears all selected muscles.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterClearButton)
+                        .accessibilityHint(AccessibilityText.muscleFilterClearHint)
                     } else {
                         Button(role: .close) {
                             Haptics.selection()
                             dismiss()
                         }
-                        .accessibilityLabel("Close")
-                        .accessibilityIdentifier("muscleFilterCloseButton")
+                        .accessibilityLabel(AccessibilityText.muscleFilterCloseLabel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterCloseButton)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -95,11 +95,11 @@ struct MuscleFilterSheetView: View {
                         onConfirm(selectedMuscles)
                         dismiss()
                     }
-                    .accessibilityLabel("Apply Filters")
-                    .accessibilityIdentifier("muscleFilterConfirmButton")
+                    .accessibilityLabel(AccessibilityText.muscleFilterApplyLabel)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterConfirmButton)
                 }
             }
-            .accessibilityIdentifier("muscleFilterSheet")
+            .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterSheet)
         }
     }
 
@@ -126,7 +126,7 @@ struct MuscleFilterSheetView: View {
         Button {
             toggleMuscle(muscle)
         } label: {
-            Text(muscle.rawValue)
+            Text(muscle.displayName)
                 .foregroundStyle(selectedMuscles.contains(muscle) ? .white : .primary)
                 .lineLimit(1)
                 .padding(.vertical, 10)
@@ -136,9 +136,9 @@ struct MuscleFilterSheetView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterChip(muscle))
-        .accessibilityLabel(muscle.rawValue)
+        .accessibilityLabel(muscle.displayName)
         .accessibilityAddTraits(selectedMuscles.contains(muscle) ? .isSelected : [])
-        .accessibilityHint("Toggles this muscle filter.")
+        .accessibilityHint(AccessibilityText.muscleFilterChipHint)
     }
 }
 

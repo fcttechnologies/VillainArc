@@ -21,9 +21,9 @@ nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
     }
 
     add(nameAndAliases)
-    add(exercise.equipmentType.rawValue)
+    add(exercise.equipmentType.displayName)
     if let primaryMuscle = exercise.musclesTargeted.first {
-        add(primaryMuscle.rawValue)
+        add(primaryMuscle.displayName)
     }
 
     return tokens
@@ -36,8 +36,8 @@ func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     let nameTokens = normalizedTokens(for: exercise.name)
     let aliasTokenGroups = exercise.aliases.map { normalizedTokens(for: $0) }
     let aliasTokens = aliasTokenGroups.flatMap { $0 }
-    let equipmentTokens = normalizedTokens(for: exercise.equipmentType.rawValue)
-    let primaryMuscleTokens = exercise.musclesTargeted.first.map { normalizedTokens(for: $0.rawValue) } ?? []
+    let equipmentTokens = normalizedTokens(for: exercise.equipmentType.displayName)
+    let primaryMuscleTokens = exercise.musclesTargeted.first.map { normalizedTokens(for: $0.displayName) } ?? []
 
     var score = 0
     for token in queryTokens {

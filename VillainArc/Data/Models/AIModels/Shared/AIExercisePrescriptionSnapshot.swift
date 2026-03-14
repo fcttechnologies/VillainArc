@@ -3,11 +3,11 @@ import FoundationModels
 
 @Generable
 struct AIExercisePrescriptionSnapshot {
-    @Guide(description: "Exercise identity.")
+    @Guide(description: "Exercise.")
     let exercise: AIExerciseIdentitySnapshot
-    @Guide(description: "Rep range if configured.")
+    @Guide(description: "Rep range.")
     let repRange: AIRepRangeSnapshot?
-    @Guide(description: "Prescribed sets.")
+    @Guide(description: "Target sets.")
     let sets: [AISetPrescriptionSnapshot]
 
     init(exercise: AIExerciseIdentitySnapshot, repRange: AIRepRangeSnapshot?, sets: [AISetPrescriptionSnapshot]) {
@@ -31,15 +31,15 @@ struct AIExercisePrescriptionSnapshot {
 
 @Generable
 struct AISetPrescriptionSnapshot {
-    @Guide(description: "0-based set index.")
+    @Guide(description: "Set index.")
     let index: Int
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
-    @Guide(description: "Target weight, in kg.")
+    @Guide(description: "Target weight kg.")
     let targetWeight: Double
     @Guide(description: "Target reps.")
     let targetReps: Int
-    @Guide(description: "Target rest seconds.")
+    @Guide(description: "Target rest sec.")
     let targetRest: Int
 
     init(index: Int, setType: AIExerciseSetType, targetWeight: Double, targetReps: Int, targetRest: Int) {

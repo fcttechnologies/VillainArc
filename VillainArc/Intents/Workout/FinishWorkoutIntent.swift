@@ -19,9 +19,6 @@ struct FinishWorkoutIntent: AppIntent {
         }
 
         let summary = workoutSession.unfinishedSetSummary
-        let loggedSetLabel = setCountString(summary.loggedCount)
-        let emptySetLabel = setCountString(summary.emptyCount, adjective: "empty")
-        let loggedVerb = summary.loggedCount == 1 ? "isnt" : "arent"
         let finishAction: WorkoutFinishAction
         switch summary.caseType {
         case .none:
@@ -31,7 +28,7 @@ struct FinishWorkoutIntent: AppIntent {
             let deleteOption = IntentChoiceOption(title: "Delete all unfinished sets", style: .destructive)
             let choice = try await requestChoice(
                 between: [markOption, deleteOption, .cancel],
-                dialog: IntentDialog("You have \(loggedSetLabel) logged and \(emptySetLabel) with no data.")
+                dialog: IntentDialog(emptyAndLoggedDialog(loggedCount: summary.loggedCount, emptyCount: summary.emptyCount))
             )
             switch choice.style {
             case .default:
@@ -46,7 +43,7 @@ struct FinishWorkoutIntent: AppIntent {
             let deleteOption = IntentChoiceOption(title: "Delete these sets", style: .destructive)
             let choice = try await requestChoice(
                 between: [markOption, deleteOption, .cancel],
-                dialog: IntentDialog("You have \(loggedSetLabel) with data but \(loggedVerb) marked complete.")
+                dialog: IntentDialog(loggedOnlyDialog(loggedCount: summary.loggedCount))
             )
             switch choice.style {
             case .default:
@@ -60,7 +57,7 @@ struct FinishWorkoutIntent: AppIntent {
             let deleteOption = IntentChoiceOption(title: "Delete empty sets", style: .destructive)
             let choice = try await requestChoice(
                 between: [deleteOption, .cancel],
-                dialog: IntentDialog("You have \(emptySetLabel).\nTo finish, either log them or remove them.")
+                dialog: IntentDialog(emptyOnlyDialog(emptyCount: summary.emptyCount))
             )
             switch choice.style {
             case .destructive:
@@ -94,13 +91,24 @@ struct FinishWorkoutIntent: AppIntent {
     }
 }
 
-private func setCountString(_ count: Int, adjective: String? = nil) -> String {
-    let value = count == 1 ? "1" : "\(count)"
-    let suffix = count == 1 ? "set" : "sets"
-    if let adjective {
-        return "\(value) \(adjective) \(suffix)"
+private func emptyAndLoggedDialog(loggedCount: Int, emptyCount: Int) -> LocalizedStringResource {
+    let loggedLabel = loggedCount == 1 ? String(localized: "1 logged set") : String(localized: "\(loggedCount) logged sets")
+    let emptyLabel = emptyCount == 1 ? String(localized: "1 empty set") : String(localized: "\(emptyCount) empty sets")
+    return LocalizedStringResource("You have \(loggedLabel) and \(emptyLabel) with no data.")
+}
+
+private func loggedOnlyDialog(loggedCount: Int) -> LocalizedStringResource {
+    if loggedCount == 1 {
+        return "You have 1 set with data, but it is not marked complete."
     }
-    return "\(value) \(suffix)"
+    return "You have \(loggedCount) sets with data, but they are not marked complete."
+}
+
+private func emptyOnlyDialog(emptyCount: Int) -> LocalizedStringResource {
+    if emptyCount == 1 {
+        return "You have 1 empty set.\nLog it or remove it before finishing."
+    }
+    return "You have \(emptyCount) empty sets.\nLog them or remove them before finishing."
 }
 
 enum FinishWorkoutError: Error, CustomLocalizedStringResourceConvertible {

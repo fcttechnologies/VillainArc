@@ -83,7 +83,7 @@ struct ExerciseSetRowView: View {
                             }
                         }
                     } label: {
-                        Label("RPE\(set.rpe == 0 ? "" : ": \(set.rpe)")", systemImage: "flame.fill")
+                        Label(actualRPELabel, systemImage: "flame.fill")
                         Text(RPEValue.menuSubtitle(for: set.visibleRPE, style: .actual))
                     }
                 }
@@ -206,7 +206,7 @@ struct ExerciseSetRowView: View {
             Button("Keep Current", role: .cancel) {}
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCancelReplaceTimerButton(exercise, set: set))
         } message: {
-            Text("Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
+            Text(replaceTimerPrompt)
         }
     }
 
@@ -272,6 +272,17 @@ struct ExerciseSetRowView: View {
     private var shouldPrewarmSuggestionModelsOnCompletion: Bool {
         guard let workout = exercise.workoutSession, workout.workoutPlan != nil else { return false }
         return workout.isFinalIncompleteSet(set)
+    }
+
+    private var actualRPELabel: String {
+        if set.rpe == 0 {
+            return String(localized: "RPE")
+        }
+        return String(localized: "RPE: \(set.rpe)")
+    }
+
+    private var replaceTimerPrompt: String {
+        String(localized: "Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
     }
 
     private var setIndicator: some View {

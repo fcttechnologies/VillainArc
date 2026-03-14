@@ -14,7 +14,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                 if exercise.sortedSets.isEmpty {
                     Text("Add sets first to change their rest times.")
                         .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("restTimeEmptySetsMessage")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.restTimeEmptySetsMessage)
                 } else {
                     ForEach(exercise.sortedSets, id: \.index) { set in
                         restTimeRow(
@@ -34,7 +34,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
         .navBar(title: "Set Rest Times") {
             CloseButton()
         }
-        .accessibilityIdentifier("restTimeEditorForm")
+        .accessibilityIdentifier(AccessibilityIdentifiers.restTimeEditorForm)
         .onDisappear {
             saveContext(context: context)
         }
@@ -71,7 +71,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.restTimeRowButton(title))
                 .accessibilityLabel(title)
                 .accessibilityValue(secondsToTime(seconds.wrappedValue))
-                .accessibilityHint("Shows duration picker.")
+                .accessibilityHint(AccessibilityText.restTimeRowHint)
                 .contextMenu {
                     Button("Copy") {
                         copySeconds(seconds.wrappedValue)
@@ -83,10 +83,10 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                         }
                     }
                 }
-                .accessibilityAction(named: "Copy") {
+                .accessibilityAction(named: AccessibilityText.copyActionLabel) {
                     copySeconds(seconds.wrappedValue)
                 }
-                .accessibilityAction(named: "Paste") {
+                .accessibilityAction(named: AccessibilityText.pasteActionLabel) {
                     pasteSeconds(into: seconds)
                 }
             }

@@ -70,7 +70,7 @@ struct AddExerciseView: View {
                             Menu("Sort", systemImage: "arrow.up.arrow.down") {
                                 Picker("Sort Options", selection: $exerciseSort) {
                                     ForEach(ExerciseSortOption.allCases, id: \.self) { option in
-                                        Text(option.rawValue)
+                                        Text(option.displayName)
                                             .tag(option)
                                     }
                                 }
@@ -80,24 +80,24 @@ struct AddExerciseView: View {
                             Toggle("Selected", systemImage: "checkmark.circle", isOn: $selectedOnly)
                                 .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseSelectedToggle)
                             Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
-                                .accessibilityIdentifier("addExerciseFavoritesToggle")
+                                .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFavoritesToggle)
                             Button("Muscle Filters", systemImage: "figure") {
                                 presentMuscleFilterSheet()
                             }
-                            .accessibilityIdentifier("addExerciseMuscleFiltersButton")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseMuscleFiltersButton)
                             .accessibilityHint(AccessibilityText.addExerciseMuscleFiltersHint)
                         }
                         .labelStyle(.iconOnly)
                         .menuOrder(.fixed)
-                        .accessibilityIdentifier("addExerciseFiltersMenu")
-                        .accessibilityHint("Shows filter options.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFiltersMenu)
+                        .accessibilityHint(AccessibilityText.addExerciseFiltersHint)
                     }
                     ToolbarSpacer(.fixed, placement: .bottomBar)
                     DefaultToolbarItem(kind: .search, placement: .bottomBar)
                 }
                 .searchable(text: $searchText)
                 .searchPresentationToolbarBehavior(.avoidHidingContent)
-                .accessibilityIdentifier("addExerciseListContainer")
+                .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseListContainer)
                 .sheet(isPresented: $showMuscleFilterSheet) {
                     MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
                         selectedMuscles = updatedMuscles
@@ -169,6 +169,15 @@ struct AddExerciseView: View {
 enum ExerciseSortOption: String, CaseIterable {
     case mostRecent = "Most Recent"
     case alphabetical = "Alphabetical"
+
+    var displayName: String {
+        switch self {
+        case .mostRecent:
+            return String(localized: "Most Recent")
+        case .alphabetical:
+            return String(localized: "Alphabetical")
+        }
+    }
 
     var sortDescriptors: [SortDescriptor<Exercise>] {
         switch self {

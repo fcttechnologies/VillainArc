@@ -51,7 +51,7 @@ struct WorkoutPlanDetailView: View {
             if !plan.notes.isEmpty {
                 Section("Plan Notes") {
                     Text(plan.notes)
-                        .accessibilityIdentifier("workoutPlanDetailNotesText")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailNotesText)
                 }
             }
 
@@ -113,8 +113,8 @@ struct WorkoutPlanDetailView: View {
                             }
                             .buttonBorderShape(.circle)
                             .buttonStyle(.glass)
-                            .accessibilityIdentifier("workoutPlanDetailSuggestionCount-\(exercise.id.uuidString)")
-                            .accessibilityLabel("\(pendingCount) suggestions to review")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSuggestionCount(exercise))
+                            .accessibilityLabel(AccessibilityText.workoutPlanDetailSuggestionCountLabel(count: pendingCount))
                         }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
@@ -122,13 +122,13 @@ struct WorkoutPlanDetailView: View {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
                             .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier("workoutPlanDetailExerciseNotes-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseNotes(exercise))
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExercise(exercise))
             }
         }
-        .accessibilityIdentifier("workoutPlanDetailList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
         .navigationTitle(plan.title)
         .navigationSubtitle(Text(plan.musclesTargeted()))
         .toolbarTitleDisplayMode(.inline)
@@ -147,7 +147,7 @@ struct WorkoutPlanDetailView: View {
                         Image(systemName: "sparkles")
                             .accessibilityHidden(true)
                     }
-                    .accessibilityIdentifier("workoutPlanDetailSuggestionsButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSuggestionsButton)
                     .accessibilityLabel(AccessibilityText.workoutPlanDetailSuggestionsLabel)
                     .accessibilityHint(AccessibilityText.workoutPlanDetailSuggestionsHint)
                 }
@@ -161,28 +161,28 @@ struct WorkoutPlanDetailView: View {
                     }
                     .fontWeight(.semibold)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSelectButton)
-                    .accessibilityHint("Selects this workout plan.")
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailSelectHint)
                 } else if !showsUseOnly {
                     Menu("Options", systemImage: "ellipsis") {
                         Button("Edit Plan", systemImage: "pencil") {
                             router.editWorkoutPlan(plan)
                         }
-                        .accessibilityIdentifier("templateDetailEditButton")
-                        .accessibilityHint("Edits this template.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailEditButton)
+                        .accessibilityHint(AccessibilityText.workoutPlanDetailEditHint)
 
                         Button("Delete Workout Plan", systemImage: "trash", role: .destructive) {
                             showDeleteWorkoutPlanConfirmation = true
                         }
-                        .accessibilityIdentifier("workoutPlanDetailDeleteButton")
-                        .accessibilityHint("Deletes this workout plan.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailDeleteButton)
+                        .accessibilityHint(AccessibilityText.workoutPlanDetailDeleteHint)
                     }
-                    .accessibilityIdentifier("workoutPlanDetailOptionsMenu")
-                    .accessibilityHint("Workout Plan actions.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailOptionsMenu)
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailOptionsMenuHint)
                     .confirmationDialog("Delete Workout Plan?", isPresented: $showDeleteWorkoutPlanConfirmation) {
                         Button("Delete", role: .destructive) {
                             deleteWorkoutPlan()
                         }
-                        .accessibilityIdentifier("workoutPlanDetailConfirmDeleteButton")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailConfirmDeleteButton)
                     } message: {
                         Text("Are you sure you want to delete this workout plan?")
                     }
@@ -196,9 +196,9 @@ struct WorkoutPlanDetailView: View {
                     Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
                 }
                 .tint(plan.favorite ? .yellow : .primary)
-                .accessibilityIdentifier("workoutPlanDetailFavoriteButton")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailFavoriteButton)
                 .accessibilityLabel(AccessibilityText.workoutPlanDetailFavoriteLabel(isFavorite: plan.favorite))
-                .accessibilityHint("Toggles favorite.")
+                .accessibilityHint(AccessibilityText.workoutPlanDetailFavoriteHint)
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
             
@@ -214,8 +214,8 @@ struct WorkoutPlanDetailView: View {
                         }
                         dismiss()
                     }
-                    .accessibilityIdentifier("workoutPlanDetailStartWorkoutButton")
-                    .accessibilityHint("Starts a workout from this plan.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailStartWorkoutButton)
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
                 }
             }
         }

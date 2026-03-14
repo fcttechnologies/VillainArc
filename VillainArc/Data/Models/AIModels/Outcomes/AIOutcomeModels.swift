@@ -36,44 +36,44 @@ enum AIOutcome: String {
 
 @Generable
 struct AIOutcomeChange {
-    @Guide(description: "Type of change that was suggested.")
+    @Guide(description: "Change type.")
     let changeType: ChangeType
-    @Guide(description: "Whether this change applies to the whole exercise prescription or one specific target set.")
+    @Guide(description: "Exercise or set.")
     let scope: AIChangeScope
-    @Guide(description: "0-based target set slot for set-level changes. Nil for exercise-level changes.")
+    @Guide(description: "Target set index.")
     let targetSetIndex: Int?
-    @Guide(description: "Previous value before the change (e.g., \"135.0\" for weight, \"10\" for reps, \"90\" for rest seconds, \"Warm Up Set\" for set type, \"Range\" for rep range mode).")
+    @Guide(description: "Old scalar or label.")
     let previousValue: String?
-    @Guide(description: "New value after the change (e.g., \"140.0\" for weight, \"12\" for reps, \"120\" for rest seconds, \"Regular Set\" for set type, \"Target\" for rep range mode).")
+    @Guide(description: "Suggested scalar or label.")
     let newValue: String?
 }
 
 @Generable
 struct AIOutcomeGroupInput {
-    @Guide(description: "The group of changes that were suggested together.")
+    @Guide(description: "Suggested changes.")
     let changes: [AIOutcomeChange]
-    @Guide(description: "The exercise prescription before the changes were applied.")
+    @Guide(description: "Original prescription.")
     let prescription: AIExercisePrescriptionSnapshot
-    @Guide(description: "What the user performed in the session that triggered these suggestions (last time).")
+    @Guide(description: "Trigger workout.")
     let triggerPerformance: AIExercisePerformanceSnapshot
-    @Guide(description: "What the user actually performed in the evaluation session (this time).")
+    @Guide(description: "Evaluation workout.")
     let actualPerformance: AIExercisePerformanceSnapshot
-    @Guide(description: "How the user structures their sets: Straight Sets, Ascending Pyramid, Descending Pyramid, Ascending, Top Set Then Backoffs, or Unknown. Use this to focus evaluation on the right sets.")
+    @Guide(description: "Training style.")
     let trainingStyle: TrainingStyle?
-    @Guide(description: "Rule engine outcome for this group, if available. Nil means rules were inconclusive.")
+    @Guide(description: "Rule hint.")
     let ruleOutcome: AIOutcome?
-    @Guide(description: "Rule engine confidence (0.0–1.0). Nil if rules were inconclusive.")
+    @Guide(description: "Rule confidence.")
     let ruleConfidence: Double?
-    @Guide(description: "Rule engine reasoning. Nil if rules were inconclusive.")
+    @Guide(description: "Rule reason.")
     let ruleReason: String?
 }
 
 @Generable
 struct AIOutcomeInferenceOutput {
-    @Guide(description: "The evaluated outcome: good, tooAggressive, tooEasy, or ignored.")
+    @Guide(description: "Outcome.")
     let outcome: AIOutcome
-    @Guide(description: "Confidence in the outcome from 0.0 to 1.0.")
+    @Guide(description: "Confidence 0 to 1.")
     let confidence: Double
-    @Guide(description: "Brief explanation for why this outcome was chosen.")
+    @Guide(description: "Short reason.")
     let reason: String
 }

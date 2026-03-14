@@ -8,11 +8,11 @@ enum RepRangeMode: Int, CaseIterable, Codable {
     var displayName: String {
         switch self {
         case .notSet:
-            return "Not Set"
+            return String(localized: "Not Set")
         case .target:
-            return "Target"
+            return String(localized: "Target")
         case .range:
-            return "Range"
+            return String(localized: "Range")
         }
     }
 }

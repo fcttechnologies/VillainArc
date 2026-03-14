@@ -143,7 +143,7 @@ struct WorkoutSplitListView: View {
     }
 
     private func splitTitle(for split: WorkoutSplit) -> String {
-        if split.title.isEmpty { return split.mode == .weekly ? "Weekly Split" : "Rotation Split" }
+        if split.title.isEmpty { return split.mode.defaultTitle }
         return split.title
     }
 
@@ -153,17 +153,31 @@ struct WorkoutSplitListView: View {
             case .weekly:
                 let offset = split.normalizedWeeklyOffset
                 let behindDays = abs(offset)
-                let status = behindDays == 0 ? "On schedule" : "\(behindDays) day\(behindDays == 1 ? "" : "s") behind"
-                return "Weekly · \(status)"
+                let status: String
+                switch behindDays {
+                case 0:
+                    status = String(localized: "On schedule")
+                case 1:
+                    status = String(localized: "1 day behind")
+                default:
+                    status = String(localized: "\(behindDays) days behind")
+                }
+                return String(localized: "Weekly · \(status)")
             case .rotation:
                 let count = max(1, split.sortedDays.count)
                 let dayNumber = (split.todaysDayIndex ?? 0) + 1
-                return "Rotation · Cycle Day \(dayNumber) of \(count)"
+                return String(localized: "Rotation · Cycle Day \(dayNumber) of \(count)")
             }
         }
         switch split.mode {
-        case .weekly: return "Weekly"
-        case .rotation: return "Rotation · \(split.days?.count ?? 0) day cycle"
+        case .weekly:
+            return split.mode.displayName
+        case .rotation:
+            let cycleDays = split.days?.count ?? 0
+            if cycleDays == 1 {
+                return String(localized: "Rotation · 1 day cycle")
+            }
+            return String(localized: "Rotation · \(cycleDays) days cycle")
         }
     }
 

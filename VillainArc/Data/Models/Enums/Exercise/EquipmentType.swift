@@ -24,6 +24,47 @@ enum EquipmentType: String, Codable, CaseIterable {
 }
 
 extension EquipmentType {
+    var displayName: String {
+        switch self {
+        case .barbell:
+            return String(localized: "Barbell")
+        case .bodyweight:
+            return String(localized: "Bodyweight")
+        case .band:
+            return String(localized: "Band")
+        case .cables:
+            return String(localized: "Cable (Double)")
+        case .cableSingle:
+            return String(localized: "Cable (Single)")
+        case .dumbbells:
+            return String(localized: "Dumbbell (Double)")
+        case .dumbbellSingle:
+            return String(localized: "Dumbbell (Single)")
+        case .ezBar:
+            return String(localized: "EZ Bar")
+        case .kettlebell:
+            return String(localized: "Kettlebell (Double)")
+        case .kettlebellSingle:
+            return String(localized: "Kettlebell (Single)")
+        case .machine:
+            return String(localized: "Machine")
+        case .landmine:
+            return String(localized: "Landmine")
+        case .machineAssisted:
+            return String(localized: "Machine Assisted")
+        case .plate:
+            return String(localized: "Plate")
+        case .rope:
+            return String(localized: "Rope")
+        case .smithMachine:
+            return String(localized: "Smith Machine")
+        case .weightedBall:
+            return String(localized: "Weighted Ball")
+        case .other:
+            return String(localized: "Other")
+        }
+    }
+
     nonisolated var systemAlternateNamePrefixes: [String] {
         switch self {
         case .barbell:

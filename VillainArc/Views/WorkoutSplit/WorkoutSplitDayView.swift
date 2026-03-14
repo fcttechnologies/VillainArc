@@ -113,7 +113,10 @@ struct WorkoutSplitDayView: View {
     }
     
     private func weekdayName(for weekday: Int) -> String {
-        let names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        let names = Calendar.current.weekdaySymbols
+        guard weekday >= 1 && weekday <= names.count else {
+            return String(localized: "Day \(weekday)")
+        }
         return names[weekday - 1]
     }
 

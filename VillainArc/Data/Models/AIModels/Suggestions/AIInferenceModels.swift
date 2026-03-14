@@ -3,12 +3,12 @@ import FoundationModels
 
 @Generable
 struct AIInferenceInput {
-    @Guide(description: "Current exercise performance.")
+    @Guide(description: "Current performance.")
     let performance: AIExercisePerformanceSnapshot
 }
 
 @Generable
 struct AIInferenceOutput {
-    @Guide(description: "Classified training style. Nil if unable to determine.")
+    @Guide(description: "Training style.")
     let trainingStyleClassification: TrainingStyle?
 }

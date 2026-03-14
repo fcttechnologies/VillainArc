@@ -303,8 +303,8 @@ enum SpotlightIndexer {
 
         add(exercise.name)
         exercise.systemAlternateNames.forEach(add)
-        add(exercise.equipmentType.rawValue)
-        exercise.musclesTargeted.map(\.rawValue).forEach(add)
+        add(exercise.equipmentType.displayName)
+        exercise.musclesTargeted.map(\.displayName).forEach(add)
         add("Exercise")
 
         return keywords
@@ -313,21 +313,21 @@ enum SpotlightIndexer {
     private static func workoutSplitDisplayTitle(for workoutSplit: WorkoutSplit) -> String {
         let trimmed = workoutSplit.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return workoutSplit.mode == .weekly ? "Weekly Split" : "Rotation Split"
+            return workoutSplit.mode.defaultTitle
         }
         return trimmed
     }
 
     private static func workoutSplitSpotlightDescription(for workoutSplit: WorkoutSplit) -> String {
         let days = workoutSplit.sortedDays
-        let modeLabel = workoutSplit.mode == .weekly ? "Weekly split" : "Rotation split"
+        let modeLabel = workoutSplit.mode.summaryLabel
         let dayCount = days.count
         let daySummary = dayCount == 1 ? "1 day" : "\(dayCount) days"
         let highlightedNames = Array(days.prefix(4).map(splitDaySpotlightLabel(for:)))
         let namesSummary = ListFormatter.localizedString(byJoining: highlightedNames)
         let linkedPlanTitles = uniqueStrings(from: days.compactMap { $0.workoutPlan?.title })
         let planSummary = ListFormatter.localizedString(byJoining: Array(linkedPlanTitles.prefix(3)))
-        let muscles = uniqueStrings(from: days.flatMap { $0.resolvedMuscles.map(\.rawValue) })
+        let muscles = uniqueStrings(from: days.flatMap { $0.resolvedMuscles.map(\.displayName) })
         let muscleSummary = ListFormatter.localizedString(byJoining: Array(muscles.prefix(3)))
 
         var parts: [String] = [
@@ -363,7 +363,7 @@ enum SpotlightIndexer {
         }
 
         add(workoutSplitDisplayTitle(for: workoutSplit))
-        add(workoutSplit.mode.rawValue)
+        add(workoutSplit.mode.displayName)
         add("Workout Split")
         if workoutSplit.isActive {
             add("Active Split")
@@ -377,7 +377,7 @@ enum SpotlightIndexer {
             if let planTitle = day.workoutPlan?.title {
                 add(planTitle)
             }
-            day.resolvedMuscles.map(\.rawValue).forEach(add)
+            day.resolvedMuscles.map(\.displayName).forEach(add)
         }
 
         return keywords
@@ -408,7 +408,7 @@ enum SpotlightIndexer {
         let exerciseCount = workoutPlan.sortedExercises.count
         let exerciseList = ListFormatter.localizedString(byJoining: Array(workoutPlan.sortedExercises.prefix(4).map(\.name)))
         let exerciseSummary = exerciseList.isEmpty ? "No exercises yet" : exerciseList
-        let majorMuscles = Array(workoutPlan.majorMuscles.prefix(3).map(\.rawValue))
+        let majorMuscles = Array(workoutPlan.majorMuscles.prefix(3).map(\.displayName))
 
         var parts: [String] = [
             "\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises"): \(exerciseSummary)."

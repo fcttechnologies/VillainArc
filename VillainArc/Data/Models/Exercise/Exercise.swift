@@ -16,13 +16,13 @@ final class Exercise {
     var equipmentType: EquipmentType = EquipmentType.bodyweight
 
     var displayMuscle: String {
-        musclesTargeted.first?.rawValue ?? "Unknown Muscle"
+        musclesTargeted.first?.displayName ?? String(localized: "Unknown Muscle")
     }
 
     var detailSubtitle: String {
-        let majorMuscles = ListFormatter.localizedString(byJoining: Array(musclesTargeted.filter(\.isMajor).prefix(3).map(\.rawValue)))
+        let majorMuscles = ListFormatter.localizedString(byJoining: Array(musclesTargeted.filter(\.isMajor).prefix(3).map(\.displayName)))
         let muscles = majorMuscles.isEmpty ? displayMuscle : majorMuscles
-        let equipment = equipmentType.rawValue
+        let equipment = equipmentType.displayName
         return muscles.isEmpty ? equipment : "\(muscles) • \(equipment)"
     }
 

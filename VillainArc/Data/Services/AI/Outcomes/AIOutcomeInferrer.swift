@@ -48,95 +48,49 @@ struct AIOutcomeInferrer {
 
     private static var appliedInstructions: String {
         """
-        You are a strength training analyst. Your job is to evaluate how a group of accepted/applied prescription changes played out based on the user's actual workout performance.
+        Evaluate one accepted or applied suggestion group and return one AIOutcome.
+        Compare actualPerformance to the suggested targets, using triggerPerformance as the baseline.
+        Use targetSetIndex or linkedTargetSetIndex over raw set order when possible.
 
-        You are given:
-        - **changes**: The group of changes that were suggested together. Each has a changeType, scope, optional targetSetIndex, previousValue, and newValue. Together these tell you what was different between the old and new prescription.
-        - **prescription**: The exercise prescription BEFORE the changes were applied. This shows the original targets (sets with weight/reps/rest, rep range policy, rest time policy).
-        - **triggerPerformance**: What the user performed in the PREVIOUS session — the workout that triggered these suggestions.
-        - **actualPerformance**: What the user performed in the CURRENT session — the workout being evaluated.
-        - Performed sets may include **linkedTargetSetIndex**. When present, it identifies which original target slot that performed set corresponded to when the snapshot was captured. Prefer that mapping over raw set order when the exercise structure changed.
-        - **trainingStyle**: How the user structures their sets (e.g., Straight Sets, Top Set Then Backoffs, Ascending Pyramid). Use this to understand which sets matter most for evaluation.
-        - **ruleOutcome / ruleConfidence / ruleReason**: What the deterministic rule engine concluded (may be nil if rules were inconclusive).
+        Outcome meanings:
+        - Good: the athlete attempted the new targets and landed in a reasonable zone.
+        - Too Aggressive: the athlete attempted the new targets and clearly struggled.
+        - Too Easy: the athlete attempted the new targets and clearly exceeded the targets.
+        - Ignored: the athlete stayed close to the old targets or evidence of attempting the change is weak.
 
-        All sets in actualPerformance and triggerPerformance are completed sets. There are no incomplete or empty sets.
-
-        Your task is to determine a single outcome for the entire group:
-        - **"Good"**: The user attempted the new targets and performance fell within an acceptable range.
-        - **"Too Aggressive"**: The user attempted the new targets but struggled — reps dropped below the rep range floor, couldn't maintain the prescribed weight, etc.
-        - **"Too Easy"**: The user attempted the new targets and significantly exceeded expectations — reps were well above the upper bound, weight was trivially light.
-        - **"Ignored"**: The user did not appear to attempt the new targets. Their performance stayed close to the old prescription values.
-
-        How to evaluate:
-        1. Look at each change's previousValue → newValue to understand what was suggested.
-        2. For set-level changes (weight, reps, set type, or set-level rest), use **targetSetIndex** first to identify which original target slot is being evaluated, then compare that slot against the corresponding performed set evidence. If the evidence is ambiguous, stay conservative and lean on the rule outcome instead of guessing.
-        3. For exercise-level changes (rep range mode/bounds/target), compare all completed working sets in actualPerformance to the new targets.
-        4. Use triggerPerformance as baseline context — this is what the user was doing before the suggestion.
-        5. Compare actualPerformance against the new targets (prescription + changes applied) to evaluate.
-        6. Use trainingStyle to focus evaluation on the right sets:
-           - **Top Set Then Backoffs**: Focus on the heavy cluster (top 1-3 sets near max weight). Backoff sets at lighter weight are intentional volume work — do not penalize lower weight on those sets or label them "Too Easy."
-           - **Ascending Pyramid / Ascending**: Focus on the peak-weight sets. Earlier lighter sets are ramp-up sets.
-           - **Descending Pyramid**: Focus on the first (heaviest) sets. Later lighter sets are expected drop-off.
-           - **Straight Sets**: All working sets matter equally.
-        7. For rest-related changes (`increaseRest`, `decreaseRest`), do not rely on adherence alone:
-           - First verify rest was actually followed (within tolerance).
-           - Then evaluate effectiveness versus triggerPerformance at comparable weight:
-             - Did rep drop across sets improve? (e.g., set 1 to set 3 rep difference shrank by 1+ rep)
-             - Did in-range hit rate improve? (more sets landing within the rep range)
-             - Did the athlete sustain reps better? (later sets lost fewer reps than before)
-           - If rest was followed but none of these improved, classify as "Good" with low confidence (0.4-0.5), not high confidence.
-
-        Tolerances:
-        - Weight: Within one plate increment (~1.25-2.5 kg depending on equipment) counts as attempted.
-        - Reps: Within 1 rep of the new target counts as on track.
-        - Rest: Within 15 seconds of the new target counts as attempted.
-        - Rep range: Check if completed working set reps fall within the new range.
-        - Set type: Check if the actual set type matches the new type.
-
-        If the rule engine provided an outcome, use it as a strong hint, but do not be afraid to disagree if the broader context suggests otherwise.
-        Be conservative with confidence. Use high confidence (>= 0.7) only when the data clearly supports your conclusion.
+        Guidelines:
+        - For set-level changes, judge the targeted slot first.
+        - For exercise-level rep-range changes, judge the working-set distribution against the new range or target.
+        - Weight within one normal increment, reps within 1, and rest within 15 seconds usually count as attempted.
+        - For rest changes, matching the suggested rest alone is not enough; prefer Good only if performance also improved.
+        - Use trainingStyle to focus on the sets that matter most.
+        - In Top Set Then Backoffs, weigh the heavy top sets more than the lighter backoff sets.
+        - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
+        - If evidence is ambiguous, prefer Ignored or the rule hint.
+        - Keep reason brief. Use high confidence only when evidence is clear.
         """
     }
 
     private static var rejectedInstructions: String {
         """
-        You are a strength training analyst. These changes were suggested but were not applied to the plan. Evaluate whether the athlete still followed the suggested targets anyway, or if their performance validates the suggestion was correct.
+        Evaluate one rejected suggestion group and return one AIOutcome.
+        Decide whether the athlete effectively followed the suggested targets anyway, or whether the missed change was validated by performance.
+        Use targetSetIndex or linkedTargetSetIndex over raw set order when possible.
 
-        You are given:
-        - **changes**: Suggested prescription changes (changeType, scope, optional targetSetIndex, old value -> suggested value).
-        - **prescription**: The baseline prescription that remained active for this workout (these suggestions were not applied).
-        - **triggerPerformance**: The prior session that triggered the suggestions.
-        - **actualPerformance**: The current session being evaluated.
-        - Performed sets may include **linkedTargetSetIndex**. When present, it identifies which original target slot that performed set corresponded to when the snapshot was captured. Prefer that mapping over raw set order when the exercise structure changed.
-        - **trainingStyle**: How the user structures their sets (e.g., Straight Sets, Top Set Then Backoffs). Use this to understand which sets matter most.
-        - **ruleOutcome / ruleConfidence / ruleReason**: Deterministic rule hint (optional).
+        Outcome meanings:
+        - Good: they substantially matched the suggested targets anyway, or performance clearly validates a safety-oriented suggestion they skipped.
+        - Ignored: default when they stayed near the old targets or evidence is mixed.
+        - Too Aggressive: they effectively followed the suggested targets and clearly struggled.
+        - Too Easy: they effectively followed the suggested targets and clearly exceeded them.
 
-        All sets in actualPerformance and triggerPerformance are completed sets. There are no incomplete or empty sets.
-
-        Key distinction — there are two ways a rejected suggestion can be validated:
-        1. **Naturally followed**: The user independently arrived at the suggested targets (e.g., suggestion was to increase weight to 140, user loaded 140 on their own). This means the suggestion was directionally correct even though it was rejected.
-        2. **Would have helped**: The user stayed at old targets and their performance shows the suggestion was warranted (e.g., suggestion was to decrease weight, user kept old weight and reps dropped further below range).
-
-        Output guidance:
-        - **"Good"**: Clear evidence the user substantially matched the suggested targets anyway (case 1), OR clear evidence the suggestion was correct and performance suffered without it (case 2 — but only for safety suggestions like weight decreases or rest increases).
-        - **"Ignored"**: The user did not follow the suggested targets and performance does not strongly validate the suggestion. This is the default when evidence is mixed or ambiguous.
-        - **"Too Aggressive"**: Only use if the user followed the suggested targets anyway and struggled. Rare for rejected changes.
-        - **"Too Easy"**: Only use if the user followed the suggested targets anyway and significantly exceeded them. Rare for rejected changes.
-
-        How to evaluate:
-        1. Compare actualPerformance against the suggested targets (changes interpreted relative to the active baseline prescription).
-        1a. For set-level changes, use **targetSetIndex** as the primary way to identify which set slot the suggestion targeted.
-        2. Check whether the user naturally arrived at the suggested values:
-           - Weight: within one increment (~1.25-2.5 kg) of the suggested target.
-           - Reps: within 1 rep of the suggested target.
-           - Rest: within 15 seconds of the suggested target.
-        3. Differentiate natural progression from coincidence by comparing against triggerPerformance. If the user was already trending toward the suggested value before the suggestion, that is weaker evidence of "followed anyway."
-        4. For rest-related suggestions, "followed anyway" requires both adherence to the suggested rest AND an effectiveness signal:
-           - Rep drop across sets improved by 1+ rep compared to triggerPerformance.
-           - Or in-range hit rate improved.
-           - Matching rest seconds alone without improved outcomes = "Ignored."
-        5. Use trainingStyle context the same way as for applied changes — focus evaluation on the sets that matter for the style.
-        6. If evidence is mixed or ambiguous, choose **"Ignored"** with moderate/low confidence (0.3-0.5).
+        Guidelines:
+        - Compare actualPerformance to the suggested targets, with triggerPerformance as baseline.
+        - Weight within one normal increment, reps within 1, and rest within 15 seconds can count as following.
+        - For rest changes, matching rest alone is not enough; look for better performance too.
+        - Use trainingStyle to focus on the sets that matter most.
+        - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
+        - If evidence is ambiguous, prefer Ignored with lower confidence.
+        - Keep reason brief.
         """
     }
 

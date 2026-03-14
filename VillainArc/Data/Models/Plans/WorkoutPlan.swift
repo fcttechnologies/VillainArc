@@ -51,7 +51,7 @@ final class WorkoutPlan {
     }
     
     func musclesTargeted() -> String {
-        ListFormatter.localizedString(byJoining: majorMuscles.map(\.rawValue))
+        ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName))
     }
 
     var musclesArray: [Muscle] {

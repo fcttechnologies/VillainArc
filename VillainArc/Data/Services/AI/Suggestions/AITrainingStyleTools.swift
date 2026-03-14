@@ -5,25 +5,15 @@ import FoundationModels
 struct RecentExercisePerformancesTool: Tool, Sendable {
     let name = "getRecentExercisePerformances"
     let description = """
-        Get detailed performance history for the last N workout sessions (max 5).
-        Each performance includes date and all sets with weights, reps, rest, and set type.
-        
-        Use this when you need more context to classify the user's training style or rep range:
-        - Look at weight patterns across sets to determine training style
-        - Look at rep counts across sessions to determine a consistent rep range
-        - Compare multiple sessions for pattern consistency
-        
-        Best practices:
-        - Start with limit=2-3 for efficiency
-        - Use limit=5 only when the current session data is ambiguous
-        - Performances are sorted most recent first (index 0 = most recent)
-        
-        Returns: Array of detailed performance snapshots with dates and all completed sets.
+        Fetch up to 5 recent exercise performances, sorted newest first.
+        Use only when the current session is ambiguous.
         """
 
     @Generable
     struct Arguments {
+        @Guide(description: "Exercise catalog id.")
         let catalogID: String
+        @Guide(description: "How many sessions.", .range(1...5))
         let limit: Int
     }
 

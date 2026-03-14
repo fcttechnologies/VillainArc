@@ -3,13 +3,13 @@ import FoundationModels
 
 @Generable
 struct AIExercisePerformanceSnapshot {
-    @Guide(description: "Exercise identity.")
+    @Guide(description: "Exercise.")
     let exercise: AIExerciseIdentitySnapshot
-    @Guide(description: "ISO 8601 workout date.")
+    @Guide(description: "Workout date.")
     let date: String
-    @Guide(description: "Rep range if configured.")
+    @Guide(description: "Rep range.")
     let repRange: AIRepRangeSnapshot?
-    @Guide(description: "Completed and logged sets.")
+    @Guide(description: "Completed sets.")
     let sets: [AISetPerformanceSnapshot]
 
     init(performance: ExercisePerformance) {
@@ -35,17 +35,17 @@ struct AIExercisePerformanceSnapshot {
 
 @Generable
 struct AISetPerformanceSnapshot {
-    @Guide(description: "0-based set index.")
+    @Guide(description: "Set index.")
     let index: Int
-    @Guide(description: "Original target-slot index this performed set was linked to when the snapshot was captured, if any.")
+    @Guide(description: "Original target slot.")
     let linkedTargetSetIndex: Int?
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
-    @Guide(description: "Weight used, in kg.")
+    @Guide(description: "Weight in kg.")
     let weight: Double
-    @Guide(description: "Reps completed.")
+    @Guide(description: "Reps.")
     let reps: Int
-    @Guide(description: "Rest seconds recorded.")
+    @Guide(description: "Rest seconds.")
     let restSeconds: Int
 
     init(set: SetPerformance) {

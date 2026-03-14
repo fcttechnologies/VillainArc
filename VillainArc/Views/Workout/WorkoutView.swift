@@ -42,7 +42,7 @@ struct WorkoutView: View {
                     Task { await IntentDonations.donateOpenPreWorkoutContext() }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
-                .accessibilityHint("Updates your pre-workout energy.")
+                .accessibilityHint(AccessibilityText.workoutPreMoodHint)
             }
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
@@ -172,7 +172,7 @@ struct WorkoutView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 0) {
                     if workout.exercises?.isEmpty ?? true {
-                        ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Click the '\(Image(systemName: "plus"))' icon to add some exercises."))
+                        ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Tap the \(Image(systemName: "plus")) button to add exercises."))
                             .containerRelativeFrame(.horizontal)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisesEmptyState)
                     } else {
@@ -219,7 +219,7 @@ struct WorkoutView: View {
                             .bold()
                             .lineLimit(1)
                         HStack(alignment: .bottom) {
-                            Text(exercise.equipmentType.rawValue)
+                            Text(exercise.equipmentType.displayName)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
                                 .font(.headline)
@@ -278,7 +278,7 @@ struct WorkoutView: View {
                     deleteWorkout()
                 }
                 .labelStyle(.iconOnly)
-                .accessibilityLabel("Delete Workout")
+                .accessibilityLabel(AccessibilityText.workoutDeleteEmptyLabel)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutDeleteEmptyButton)
                 .accessibilityHint(AccessibilityText.workoutDeleteEmptyHint)
             } else {
@@ -361,11 +361,11 @@ struct WorkoutView: View {
             let summary = unfinishedSetSummary
             switch summary.caseType {
             case .emptyAndLogged:
-                Text("You have ^[\(summary.loggedCount) logged set](inflect: true) and ^[\(summary.emptyCount) set](inflect: true) with no data.")
+                Text("You have ^[\(summary.loggedCount) logged set](inflect: true) and ^[\(summary.emptyCount) empty set](inflect: true) with no data.")
             case .loggedOnly:
-                Text("You have ^[\(summary.loggedCount) set](inflect: true) with data but \(summary.loggedCount == 1 ? "isnt" : "arent") marked complete.")
+                Text("You have ^[\(summary.loggedCount) set](inflect: true) with data, but not marked complete.")
             case .emptyOnly:
-                Text("You have ^[\(summary.emptyCount) empty set](inflect: true).\nTo finish, either log them or remove them.")
+                Text("You have ^[\(summary.emptyCount) empty set](inflect: true).\nLog them or remove them before finishing.")
             case .none:
                 Text("Finish and save workout?")
             }

@@ -16,7 +16,7 @@ struct RepRangeEditorView: View {
                             .tag(mode)
                     }
                 }
-                .accessibilityIdentifier("repRangeModePicker")
+                .accessibilityIdentifier(AccessibilityIdentifiers.repRangeModePicker)
             } footer: {
                 Text(modeFooterText)
             }
@@ -24,12 +24,12 @@ struct RepRangeEditorView: View {
             Section {
                 if repRange.activeMode == .target {
                     Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
-                        .accessibilityIdentifier("repRangeTargetStepper")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.repRangeTargetStepper)
                 } else if repRange.activeMode == .range {
                     Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
-                        .accessibilityIdentifier("repRangeLowerStepper")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.repRangeLowerStepper)
                     Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: (repRange.lowerRange + 1)...200)
-                        .accessibilityIdentifier("repRangeUpperStepper")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.repRangeUpperStepper)
                 }
             } footer: {
                 if repRange.activeMode == .target || repRange.activeMode == .range {
@@ -57,9 +57,9 @@ struct RepRangeEditorView: View {
                     .buttonStyle(.borderless)
                     .listRowBackground(Color.blue.opacity(0.2))
                     .accessibilityIdentifier(AccessibilityIdentifiers.repRangeSuggestionButton(catalogID: catalogID, index: 0))
-                    .accessibilityLabel("Rep range suggestion")
+                    .accessibilityLabel(AccessibilityText.repRangeSuggestionLabel)
                     .accessibilityValue(suggestion.accessibilityValue)
-                    .accessibilityHint("Applies this rep range.")
+                    .accessibilityHint(AccessibilityText.repRangeSuggestionHint)
                 } header: {
                     Text("Suggested")
                 } footer: {
@@ -72,7 +72,7 @@ struct RepRangeEditorView: View {
         .navBar(title: "Rep Range") {
             CloseButton()
         }
-        .accessibilityIdentifier("repRangeForm")
+        .accessibilityIdentifier(AccessibilityIdentifiers.repRangeForm)
         .onChange(of: repRange.activeMode) {
             Haptics.selection()
             saveContext(context: context)

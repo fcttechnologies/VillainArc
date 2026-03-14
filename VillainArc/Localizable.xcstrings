@@ -1,0 +1,2505 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    " " : {
+
+    },
+    "-" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ is a rest day." : {
+
+    },
+    "%@ is already the active exercise." : {
+
+    },
+    "%@ training is %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ training is %2$@."
+          }
+        }
+      }
+    },
+    "%@ training: %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ training: %2$@."
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@, RPE %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, RPE %3$lld"
+          }
+        }
+      }
+    },
+    "%@, %@, target RPE %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, target RPE %3$lld"
+          }
+        }
+      }
+    },
+    "%@, %lld reps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld reps"
+          }
+        }
+      }
+    },
+    "%@, %lld reps, %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld reps, %3$@ %4$@"
+          }
+        }
+      }
+    },
+    "%@, RPE %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, RPE %2$lld"
+          }
+        }
+      }
+    },
+    "%@, target RPE %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, target RPE %2$lld"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld cm" : {
+
+    },
+    "%lld days" : {
+
+    },
+    "%lld days behind" : {
+
+    },
+    "%lld empty sets" : {
+
+    },
+    "%lld exercises" : {
+
+    },
+    "%lld ft" : {
+
+    },
+    "%lld logged sets" : {
+
+    },
+    "%lld personal records" : {
+
+    },
+    "%lld reps" : {
+
+    },
+    "%lld Selected" : {
+
+    },
+    "%lld sets" : {
+
+    },
+    "%lld suggestions to review" : {
+
+    },
+    "%lld/%lld sets complete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld sets complete"
+          }
+        }
+      }
+    },
+    "^[%lld set](inflect: true)" : {
+
+    },
+    "1 day behind" : {
+
+    },
+    "1 empty set" : {
+
+    },
+    "1 exercise" : {
+
+    },
+    "1 logged set" : {
+
+    },
+    "1 personal record" : {
+
+    },
+    "1 rep" : {
+
+    },
+    "1 set" : {
+
+    },
+    "1 suggestion to review" : {
+
+    },
+    "A repeating cycle not tied to calendar days" : {
+
+    },
+    "Abductors" : {
+
+    },
+    "Abs" : {
+
+    },
+    "Accept" : {
+
+    },
+    "Accept All" : {
+
+    },
+    "Accept or reject these changes before starting your workout." : {
+
+    },
+    "Accepts this suggestion group." : {
+
+    },
+    "Action" : {
+
+    },
+    "Active Split" : {
+
+    },
+    "Add ${exercise}" : {
+
+    },
+    "Add ${exercises}" : {
+
+    },
+    "Add day" : {
+
+    },
+    "Add days to your split to get started." : {
+
+    },
+    "Add Exercise" : {
+
+    },
+    "Add Exercises" : {
+
+    },
+    "Add notes" : {
+
+    },
+    "Add Set" : {
+
+    },
+    "Add sets first to change their rest times." : {
+
+    },
+    "Add to favorites" : {
+
+    },
+    "Added %@ to your template." : {
+
+    },
+    "Added %@ to your workout." : {
+
+    },
+    "Added %lld exercises to your workout plan." : {
+
+    },
+    "Added %lld exercises to your workout." : {
+
+    },
+    "Added exercise to your workout plan." : {
+
+    },
+    "Added exercise to your workout." : {
+
+    },
+    "Adds a new rotation day." : {
+
+    },
+    "Adds a new set." : {
+
+    },
+    "Adds an exercise to the workout session or workout plan." : {
+
+    },
+    "Adds an exercise." : {
+
+    },
+    "Adds exercises to the workout session or workout plan." : {
+
+    },
+    "Adds this exercise to your selection." : {
+
+    },
+    "Adductors" : {
+
+    },
+    "Adjusts the rest timer." : {
+
+    },
+    "Advanced" : {
+
+    },
+    "Advanced muscles" : {
+
+    },
+    "After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it will also start the timer." : {
+
+    },
+    "AI suggestions" : {
+
+    },
+    "All sets complete" : {
+
+    },
+    "All Splits" : {
+
+    },
+    "Allow 0:00" : {
+
+    },
+    "Alphabetical" : {
+
+    },
+    "Alternate between upper and lower body" : {
+
+    },
+    "Applies all pending suggestions and starts the workout." : {
+
+    },
+    "Applies this rep range." : {
+
+    },
+    "Apply Filters" : {
+
+    },
+    "Are you sure you want to cancel this workout plan?" : {
+
+    },
+    "Are you sure you want to delete all previous workouts?" : {
+
+    },
+    "Are you sure you want to delete all workout plans?" : {
+
+    },
+    "Are you sure you want to delete this split?" : {
+
+    },
+    "Are you sure you want to delete this workout plan?" : {
+
+    },
+    "Are you sure you want to delete this workout?" : {
+
+    },
+    "Arnold Split" : {
+
+    },
+    "Auto Complete After RPE" : {
+
+    },
+    "Auto Start Rest Timer" : {
+
+    },
+    "Automatically marks a set complete after selecting an RPE rating." : {
+
+    },
+    "Automatically starts rest timer when a set is marked complete." : {
+
+    },
+    "Awaiting Outcome" : {
+
+    },
+    "Back" : {
+
+    },
+    "Band" : {
+
+    },
+    "Barbell" : {
+
+    },
+    "Biceps" : {
+
+    },
+    "Birthday" : {
+
+    },
+    "Body Part" : {
+
+    },
+    "Bodyweight" : {
+
+    },
+    "Brachialis" : {
+
+    },
+    "Cable (Double)" : {
+
+    },
+    "Cable (Single)" : {
+
+    },
+    "Calves" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel Plan" : {
+
+    },
+    "Cancel Workout" : {
+
+    },
+    "Cancel Workout Plan?" : {
+
+    },
+    "Cancels and deletes the current workout session." : {
+
+    },
+    "Cancels swapping days." : {
+
+    },
+    "Cannot finish a workout with no exercises." : {
+
+    },
+    "Change Title" : {
+
+    },
+    "Change workout plan" : {
+
+    },
+    "Charts appear after at least 2 logged sessions for this exercise." : {
+
+    },
+    "Checking iCloud for your existing workout history and profile..." : {
+
+    },
+    "Checking System Status..." : {
+
+    },
+    "Chest" : {
+
+    },
+    "Classic bodybuilding split" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear Sets" : {
+
+    },
+    "Clear sets and start fresh" : {
+
+    },
+    "Clears all selected muscles." : {
+
+    },
+    "Close" : {
+
+    },
+    "Closes the sheet." : {
+
+    },
+    "Collapsed" : {
+
+    },
+    "Complete Active Set" : {
+
+    },
+    "Complete exercises in workouts to track progress here." : {
+
+    },
+    "Complete set" : {
+
+    },
+    "Complete Set" : {
+
+    },
+    "Complete this exercise in a workout before opening its history." : {
+
+    },
+    "Complete this exercise in a workout to see every performance here." : {
+
+    },
+    "Complete this exercise in a workout to see progress and personal records." : {
+
+    },
+    "Completed set %lld of %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Completed set %1$lld of %2$@."
+          }
+        }
+      }
+    },
+    "Completes the next incomplete set in your workout session." : {
+
+    },
+    "Confirm" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Continue Without iCloud" : {
+
+    },
+    "Continues setup without iCloud sync." : {
+
+    },
+    "Controls local rest timer completion notifications." : {
+
+    },
+    "Copy" : {
+
+    },
+    "Couldn't determine today's workout." : {
+
+    },
+    "Couldn't determine your training day." : {
+
+    },
+    "Create" : {
+
+    },
+    "Create a split to plan your training days." : {
+
+    },
+    "Create a workout plan to assign it here." : {
+
+    },
+    "Create a workout split to plan your training routine." : {
+
+    },
+    "Create from Scratch" : {
+
+    },
+    "Create New Split" : {
+
+    },
+    "Create Split" : {
+
+    },
+    "Create workout plan" : {
+
+    },
+    "Create Workout Plan" : {
+
+    },
+    "Create Workout Split" : {
+
+    },
+    "Creates a completed workout plan from a completed workout." : {
+
+    },
+    "Creates a new workout plan" : {
+
+    },
+    "Creates a new workout plan to select." : {
+
+    },
+    "Creates a new workout plan." : {
+
+    },
+    "Creates a new workout split." : {
+
+    },
+    "Current" : {
+
+    },
+    "Date" : {
+
+    },
+    "Day" : {
+
+    },
+    "Day %lld" : {
+
+    },
+    "Decrease rest time by 15 seconds" : {
+
+    },
+    "Defers this suggestion to review before the next workout." : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete \"%@\"? This action cannot be undone." : {
+
+    },
+    "Delete %@? This action cannot be undone." : {
+
+    },
+    "Delete ${workout}" : {
+
+    },
+    "Delete ${workoutPlan}" : {
+
+    },
+    "Delete All" : {
+
+    },
+    "Delete all unfinished sets" : {
+
+    },
+    "Delete All Workout Plans" : {
+
+    },
+    "Delete all workout plans canceled." : {
+
+    },
+    "Delete All Workout Plans?" : {
+
+    },
+    "Delete All Workouts" : {
+
+    },
+    "Delete all workouts canceled." : {
+
+    },
+    "Delete All Workouts?" : {
+
+    },
+    "Delete Day" : {
+
+    },
+    "Delete empty sets" : {
+
+    },
+    "Delete Exercise" : {
+
+    },
+    "Delete Plan" : {
+
+    },
+    "Delete Plan?" : {
+
+    },
+    "Delete Set" : {
+
+    },
+    "Delete Split" : {
+
+    },
+    "Delete Split?" : {
+
+    },
+    "Delete these sets" : {
+
+    },
+    "Delete Workout" : {
+
+    },
+    "Delete workout canceled." : {
+
+    },
+    "Delete Workout Plan" : {
+
+    },
+    "Delete workout plan canceled." : {
+
+    },
+    "Delete Workout Plan?" : {
+
+    },
+    "Deleted %@." : {
+
+    },
+    "Deletes a completed workout." : {
+
+    },
+    "Deletes a workout plan." : {
+
+    },
+    "Deletes all completed workout plans." : {
+
+    },
+    "Deletes all completed workouts." : {
+
+    },
+    "Deletes all workout plans." : {
+
+    },
+    "Deletes this day." : {
+
+    },
+    "Deletes this exercise." : {
+
+    },
+    "Deletes this split." : {
+
+    },
+    "Deletes this workout plan." : {
+
+    },
+    "Deletes this workout." : {
+
+    },
+    "Discard selected exercises?" : {
+
+    },
+    "Discard Selections" : {
+
+    },
+    "Done" : {
+
+    },
+    "Done Editing" : {
+
+    },
+    "Drop Set" : {
+
+    },
+    "Dumbbell (Double)" : {
+
+    },
+    "Dumbbell (Single)" : {
+
+    },
+    "Duration" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit ${workoutPlan}" : {
+
+    },
+    "Edit Exercises" : {
+
+    },
+    "Edit Plan" : {
+
+    },
+    "Edit Workout Plan" : {
+
+    },
+    "Edits rest times." : {
+
+    },
+    "Edits the rep range." : {
+
+    },
+    "Edits the workout notes." : {
+
+    },
+    "Edits the workout title." : {
+
+    },
+    "Edits this workout plan." : {
+
+    },
+    "Effort" : {
+
+    },
+    "Effort %lld" : {
+
+    },
+    "Enable iCloud in Settings" : {
+
+    },
+    "Enjoy the day off." : {
+
+    },
+    "Enjoy your day off!" : {
+
+    },
+    "Enters edit mode." : {
+
+    },
+    "Est. 1RM" : {
+
+    },
+    "Exercise" : {
+
+    },
+    "Exercise actions." : {
+
+    },
+    "Exercise marked as favorite." : {
+
+    },
+    "Exercise not found." : {
+
+    },
+    "Exercise removed from favorites." : {
+
+    },
+    "Exercises" : {
+
+    },
+    "Exercises will appear here once the catalog is available." : {
+
+    },
+    "Exits edit mode." : {
+
+    },
+    "Expanded" : {
+
+    },
+    "EZ Bar" : {
+
+    },
+    "Favorite" : {
+
+    },
+    "Favorites" : {
+
+    },
+    "Feet" : {
+
+    },
+    "Felt" : {
+
+    },
+    "Filters" : {
+
+    },
+    "Filters to favorite exercises." : {
+
+    },
+    "Filters to favorite workout plans." : {
+
+    },
+    "Finish" : {
+
+    },
+    "Finish and save workout?" : {
+
+    },
+    "Finish creating the workout plan before editing it." : {
+
+    },
+    "Finish creating the workout plan before opening it." : {
+
+    },
+    "Finish creating the workout plan before starting a workout from it." : {
+
+    },
+    "Finish the workout before opening its details." : {
+
+    },
+    "Finish the workout before saving it as a plan." : {
+
+    },
+    "Finish Workout" : {
+
+    },
+    "Finishes and saves the workout." : {
+
+    },
+    "Finishes the current workout session." : {
+
+    },
+    "Focus on glutes, legs, and sculpting upper body" : {
+
+    },
+    "Forearms" : {
+
+    },
+    "Friday" : {
+
+    },
+    "Front Delt" : {
+
+    },
+    "Full Body" : {
+
+    },
+    "Generating suggestions..." : {
+
+    },
+    "Glutes" : {
+
+    },
+    "Go back" : {
+
+    },
+    "Good" : {
+
+    },
+    "Great" : {
+
+    },
+    "Hamstrings" : {
+
+    },
+    "Height (cm)" : {
+
+    },
+    "History" : {
+
+    },
+    "History Refreshed" : {
+
+    },
+    "Hourglass" : {
+
+    },
+    "How are you feeling?" : {
+
+    },
+    "How do you want to schedule it?" : {
+
+    },
+    "How long should the rest timer be?" : {
+
+    },
+    "How many days per week?" : {
+
+    },
+    "iCloud Disabled" : {
+
+    },
+    "If the next set is a drop set, rest time is skipped." : {
+
+    },
+    "In your last workout, you did %@." : {
+
+    },
+    "Inactive Splits" : {
+
+    },
+    "Inches" : {
+
+    },
+    "Increase rest time by 15 seconds" : {
+
+    },
+    "Keep Current" : {
+
+    },
+    "Keep existing sets" : {
+
+    },
+    "Keep Sets" : {
+
+    },
+    "Keep weekends free?" : {
+
+    },
+    "Kettlebell (Double)" : {
+
+    },
+    "Kettlebell (Single)" : {
+
+    },
+    "Landmine" : {
+
+    },
+    "Last Workout Summary" : {
+
+    },
+    "Later" : {
+
+    },
+    "Lateral Head (Triceps)" : {
+
+    },
+    "Latest" : {
+
+    },
+    "Lats" : {
+
+    },
+    "Live Activity" : {
+
+    },
+    "Long Head (Biceps)" : {
+
+    },
+    "Long Head (Triceps)" : {
+
+    },
+    "Long-press for options." : {
+
+    },
+    "Lower Abs" : {
+
+    },
+    "Lower Back" : {
+
+    },
+    "Lower Chest" : {
+
+    },
+    "Lower Traps" : {
+
+    },
+    "Lower: %lld" : {
+
+    },
+    "Machine" : {
+
+    },
+    "Machine Assisted" : {
+
+    },
+    "Makes this split active." : {
+
+    },
+    "Makes this split inactive." : {
+
+    },
+    "Manage Workout Splits" : {
+
+    },
+    "Mark as complete" : {
+
+    },
+    "Mark complete" : {
+
+    },
+    "Mark incomplete" : {
+
+    },
+    "Mark logged sets as complete" : {
+
+    },
+    "Mark workout plans as favorite to see them here." : {
+
+    },
+    "Marks the next set complete and restarts the timer." : {
+
+    },
+    "Marks this day as a rest day." : {
+
+    },
+    "Medial Head (Triceps)" : {
+
+    },
+    "Metric" : {
+
+    },
+    "Mid Chest" : {
+
+    },
+    "Mid Traps" : {
+
+    },
+    "Missed a Day" : {
+
+    },
+    "Missed One Day" : {
+
+    },
+    "Monday" : {
+
+    },
+    "Most Recent" : {
+
+    },
+    "Moves back one day in the rotation." : {
+
+    },
+    "Moves forward one day in the rotation." : {
+
+    },
+    "Moves the split schedule back one day." : {
+
+    },
+    "Moves the split schedule forward one day." : {
+
+    },
+    "Moves the weekly split back by one day." : {
+
+    },
+    "Muscle Filters" : {
+
+    },
+    "Muscles" : {
+
+    },
+    "Name" : {
+
+    },
+    "Names this split day." : {
+
+    },
+    "New Exercise" : {
+
+    },
+    "Next set" : {
+
+    },
+    "No" : {
+
+    },
+    "No active exercise to replace." : {
+
+    },
+    "No active rest timer to stop." : {
+
+    },
+    "No Active Split" : {
+
+    },
+    "No Active Timer" : {
+
+    },
+    "No active workout found." : {
+
+    },
+    "No active workout or workout plan found." : {
+
+    },
+    "No completed workouts to delete." : {
+
+    },
+    "No current workout session or workout plan found." : {
+
+    },
+    "No current workout session to cancel." : {
+
+    },
+    "No Exercise History" : {
+
+    },
+    "No Exercises" : {
+
+    },
+    "No Exercises Added" : {
+
+    },
+    "No exercises are available yet." : {
+
+    },
+    "No exercises found to add." : {
+
+    },
+    "No Exercises Selected" : {
+
+    },
+    "No exercises selected." : {
+
+    },
+    "No Exercises Used" : {
+
+    },
+    "No Favorites" : {
+
+    },
+    "No Favorites Selected" : {
+
+    },
+    "No incomplete sets found." : {
+
+    },
+    "No notes added." : {
+
+    },
+    "No paused rest timer to resume." : {
+
+    },
+    "No plan selected for this day." : {
+
+    },
+    "No Previous Workouts" : {
+
+    },
+    "No quick-fill options." : {
+
+    },
+    "No reps target" : {
+
+    },
+    "No running rest timer to pause." : {
+
+    },
+    "No Split Day Configured" : {
+
+    },
+    "No Splits" : {
+
+    },
+    "No target set" : {
+
+    },
+    "No weight target" : {
+
+    },
+    "No Workout Plans" : {
+
+    },
+    "No Workout Plans Created" : {
+
+    },
+    "No workout plans to delete." : {
+
+    },
+    "No workout session found." : {
+
+    },
+    "No workout session to start a rest timer in." : {
+
+    },
+    "No workout session to update." : {
+
+    },
+    "No Workout Split" : {
+
+    },
+    "No, train any day" : {
+
+    },
+    "Not selected" : {
+
+    },
+    "Not Set" : {
+
+    },
+    "Notes" : {
+
+    },
+    "Notes (optional)" : {
+
+    },
+    "Notes: %@" : {
+
+    },
+    "Obliques" : {
+
+    },
+    "OK" : {
+
+    },
+    "Okay" : {
+
+    },
+    "On schedule" : {
+
+    },
+    "One muscle group per day" : {
+
+    },
+    "Only completed workout plans can be deleted." : {
+
+    },
+    "Only completed workout plans can be favorited." : {
+
+    },
+    "Only completed workouts can be deleted." : {
+
+    },
+    "Open ${exercise}" : {
+
+    },
+    "Open ${workout}" : {
+
+    },
+    "Open ${workoutPlan}" : {
+
+    },
+    "Open Active Workout" : {
+
+    },
+    "Open all splits to set one as active or create a new one." : {
+
+    },
+    "Open Exercise" : {
+
+    },
+    "Open Exercises" : {
+
+    },
+    "Open Pre Workout Context" : {
+
+    },
+    "Open Rest Timer" : {
+
+    },
+    "Open Today's Plan" : {
+
+    },
+    "Open Villain Arc" : {
+
+    },
+    "Open Workout" : {
+
+    },
+    "Open workout plan" : {
+
+    },
+    "Open Workout Plan" : {
+
+    },
+    "Open Workout Settings" : {
+
+    },
+    "Open Workout Split" : {
+
+    },
+    "Opens a specific workout plan." : {
+
+    },
+    "Opens a specific workout." : {
+
+    },
+    "Opens iOS Settings to enable iCloud." : {
+
+    },
+    "Opens pre workout context for your active workout." : {
+
+    },
+    "Opens progress and history for a specific exercise." : {
+
+    },
+    "Opens set options." : {
+
+    },
+    "Opens settings for your active workout." : {
+
+    },
+    "Opens the linked workout plan." : {
+
+    },
+    "Opens the rest timer for your active workout." : {
+
+    },
+    "Opens the workout plan for today." : {
+
+    },
+    "Opens today's workout plan from your active split." : {
+
+    },
+    "Opens workout split creation." : {
+
+    },
+    "Opens workout split settings." : {
+
+    },
+    "Opens your active workout split." : {
+
+    },
+    "Opens your active workout." : {
+
+    },
+    "Opens your exercises list." : {
+
+    },
+    "Opens your workout history." : {
+
+    },
+    "Opens your workout plans list." : {
+
+    },
+    "Opens your workout splits." : {
+
+    },
+    "Options" : {
+
+    },
+    "Or pick a template" : {
+
+    },
+    "Other" : {
+
+    },
+    "Paste" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Pause Rest Timer" : {
+
+    },
+    "Paused" : {
+
+    },
+    "Pauses the current rest timer." : {
+
+    },
+    "Pauses the rest timer." : {
+
+    },
+    "Personal Records" : {
+
+    },
+    "Pick two days to swap." : {
+
+    },
+    "Plan Notes" : {
+
+    },
+    "Plate" : {
+
+    },
+    "Post workout effort" : {
+
+    },
+    "Pre workout context" : {
+
+    },
+    "Pre Workout Context" : {
+
+    },
+    "Pre-workout energy drink" : {
+
+    },
+    "Preparing your exercise catalog..." : {
+
+    },
+    "Previous" : {
+
+    },
+    "Progress Charts" : {
+
+    },
+    "Push / Pull / Legs" : {
+
+    },
+    "Quads" : {
+
+    },
+    "Range" : {
+
+    },
+    "Ready" : {
+
+    },
+    "Rear Delt" : {
+
+    },
+    "Recent workout" : {
+
+    },
+    "Recent workout plan" : {
+
+    },
+    "Recents" : {
+
+    },
+    "Refresh History" : {
+
+    },
+    "Reject" : {
+
+    },
+    "Rejects all remaining suggestions and starts the workout." : {
+
+    },
+    "Rejects this suggestion group." : {
+
+    },
+    "Remove from favorites" : {
+
+    },
+    "Removes the selected workout plan." : {
+
+    },
+    "Removes this exercise from your selection." : {
+
+    },
+    "Removing the last exercise will delete this plan." : {
+
+    },
+    "Rename Split" : {
+
+    },
+    "Rep range" : {
+
+    },
+    "Rep range suggestion" : {
+
+    },
+    "Replace" : {
+
+    },
+    "Replace canceled." : {
+
+    },
+    "Replace current exercise with ${newExercise}" : {
+
+    },
+    "Replace Exercise" : {
+
+    },
+    "Replace Rest Timer?" : {
+
+    },
+    "Replaced %@ with %@, kept existing sets." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Replaced %1$@ with %2$@, kept existing sets."
+          }
+        }
+      }
+    },
+    "Replaced %@ with %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Replaced %1$@ with %2$@."
+          }
+        }
+      }
+    },
+    "Replaces the current exercise in the active workout with a different one." : {
+
+    },
+    "Replaces the current exercise with the selected one." : {
+
+    },
+    "Replaces this exercise with another." : {
+
+    },
+    "Reps" : {
+
+    },
+    "Reset Offset" : {
+
+    },
+    "Resets the weekly split offset to today." : {
+
+    },
+    "Rest" : {
+
+    },
+    "Rest Day" : {
+
+    },
+    "Rest Days" : {
+
+    },
+    "Rest days are perfect for unwinding and recharging." : {
+
+    },
+    "Rest timer" : {
+
+    },
+    "Rest Timer" : {
+
+    },
+    "Rest Timer Action" : {
+
+    },
+    "Rest Timer Control" : {
+
+    },
+    "Rest timer duration must be greater than zero." : {
+
+    },
+    "Rest timer is already paused." : {
+
+    },
+    "Rest timer is already running." : {
+
+    },
+    "Rest timer paused." : {
+
+    },
+    "Rest timer resumed." : {
+
+    },
+    "Rest timer started for %@." : {
+
+    },
+    "Rest timer stopped." : {
+
+    },
+    "Rest Times" : {
+
+    },
+    "Restart Live Activity" : {
+
+    },
+    "Restarts the workout live activity if you dismissed it." : {
+
+    },
+    "Resume" : {
+
+    },
+    "Resume Rest Timer" : {
+
+    },
+    "Resumes the paused rest timer." : {
+
+    },
+    "Resumes the rest timer." : {
+
+    },
+    "Retries the current setup step." : {
+
+    },
+    "Retry" : {
+
+    },
+    "Returns the weekly split to today." : {
+
+    },
+    "Review Suggestions" : {
+
+    },
+    "Rhomboids" : {
+
+    },
+    "Rope" : {
+
+    },
+    "Rotate Backward" : {
+
+    },
+    "Rotate Days" : {
+
+    },
+    "Rotate Forward" : {
+
+    },
+    "Rotates all split days by one." : {
+
+    },
+    "Rotation" : {
+
+    },
+    "Rotation · %lld days cycle" : {
+
+    },
+    "Rotation · 1 day cycle" : {
+
+    },
+    "Rotation · Cycle Day %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Rotation · Cycle Day %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Rotation split" : {
+
+    },
+    "Rotation Split" : {
+
+    },
+    "Rotator Cuff" : {
+
+    },
+    "RPE" : {
+
+    },
+    "RPE: %lld" : {
+
+    },
+    "Running" : {
+
+    },
+    "Same workout on the same day every week" : {
+
+    },
+    "Saturday" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save ${workout} as workout plan" : {
+
+    },
+    "Save as Workout Plan" : {
+
+    },
+    "Save Workout as Plan" : {
+
+    },
+    "Saved as Workout Plan" : {
+
+    },
+    "Saves and closes the workout summary." : {
+
+    },
+    "Saves this workout as a reusable plan." : {
+
+    },
+    "Saves this workout as a workout plan." : {
+
+    },
+    "Saving your profile and finishing setup..." : {
+
+    },
+    "Schedule Type" : {
+
+    },
+    "Select" : {
+
+    },
+    "Select %@" : {
+
+    },
+    "Select a workout plan" : {
+
+    },
+    "Select exercises to see them here." : {
+
+    },
+    "Select favorite exercises to see them here." : {
+
+    },
+    "Select Plan" : {
+
+    },
+    "Select workout plan" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Selected Date" : {
+
+    },
+    "Selects a workout plan for this day." : {
+
+    },
+    "Selects the target muscles for this day." : {
+
+    },
+    "Selects this workout plan." : {
+
+    },
+    "Send Notifications" : {
+
+    },
+    "Sends a local notification when rest timer finishes." : {
+
+    },
+    "Servers Unavailable" : {
+
+    },
+    "Set" : {
+
+    },
+    "Set %lld" : {
+
+    },
+    "Set Active" : {
+
+    },
+    "Set as Current Day" : {
+
+    },
+    "Set Inactive" : {
+
+    },
+    "Set Logging" : {
+
+    },
+    "Set one of your splits as active." : {
+
+    },
+    "Sets this day as the current rotation day." : {
+
+    },
+    "Sets your pre-workout mood." : {
+
+    },
+    "Setting up Villain Arc" : {
+
+    },
+    "Setup Error" : {
+
+    },
+    "Shifts every day back by one." : {
+
+    },
+    "Shifts every day forward by one." : {
+
+    },
+    "Short Head (Biceps)" : {
+
+    },
+    "Shoulders" : {
+
+    },
+    "Show Exercise History" : {
+
+    },
+    "Show history for ${exercise}" : {
+
+    },
+    "Show Live Activity" : {
+
+    },
+    "Show Workout History" : {
+
+    },
+    "Show Workout Plans" : {
+
+    },
+    "Shows a live activity on the Lock Screen during your workout." : {
+
+    },
+    "Shows actions for the active split." : {
+
+    },
+    "Shows all tracked exercises." : {
+
+    },
+    "Shows all your workout plans." : {
+
+    },
+    "Shows completed performance history for a specific exercise." : {
+
+    },
+    "Shows details for your most recent workout plan." : {
+
+    },
+    "Shows details for your most recent workout." : {
+
+    },
+    "Shows duration picker." : {
+
+    },
+    "Shows exercise history and details." : {
+
+    },
+    "Shows filter options." : {
+
+    },
+    "Shows minor muscles." : {
+
+    },
+    "Shows muscle filter options." : {
+
+    },
+    "Shows pre workout details." : {
+
+    },
+    "Shows prior performances for this exercise." : {
+
+    },
+    "Shows split actions." : {
+
+    },
+    "Shows split day details." : {
+
+    },
+    "Shows split details." : {
+
+    },
+    "Shows suggested changes and pending outcomes for this workout plan." : {
+
+    },
+    "Shows the exercise in the workout." : {
+
+    },
+    "Shows the list of exercises." : {
+
+    },
+    "Shows the most recently used exercise that has recorded history." : {
+
+    },
+    "Shows the rest timer." : {
+
+    },
+    "Shows workout and workout plan options." : {
+
+    },
+    "Shows workout details." : {
+
+    },
+    "Shows workout plan details." : {
+
+    },
+    "Shows workout settings." : {
+
+    },
+    "Shows workout split details." : {
+
+    },
+    "Shows your active workout split." : {
+
+    },
+    "Shows your most recent completed workout." : {
+
+    },
+    "Shows your most recent workout plan." : {
+
+    },
+    "Shows your most recent workout." : {
+
+    },
+    "Shows your most recently used workout plan." : {
+
+    },
+    "Shows your workout history." : {
+
+    },
+    "Shows your workout split settings." : {
+
+    },
+    "Sick" : {
+
+    },
+    "Side Delt" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Skip Day" : {
+
+    },
+    "Smith Machine" : {
+
+    },
+    "Sort" : {
+
+    },
+    "Sort Options" : {
+
+    },
+    "Split actions" : {
+
+    },
+    "Split by movement pattern" : {
+
+    },
+    "Split Day Name" : {
+
+    },
+    "Split options" : {
+
+    },
+    "Split Options" : {
+
+    },
+    "Start" : {
+
+    },
+    "Start a new timer for %@?" : {
+
+    },
+    "Start a timer for %@" : {
+
+    },
+    "Start empty workout" : {
+
+    },
+    "Start Empty Workout" : {
+
+    },
+    "Start from Scratch" : {
+
+    },
+    "Start Rest Timer" : {
+
+    },
+    "Start rest timer for ${duration}" : {
+
+    },
+    "Start Timer" : {
+
+    },
+    "Start Today's Workout" : {
+
+    },
+    "Start Workout" : {
+
+    },
+    "Start workout session with ${workoutPlan}" : {
+
+    },
+    "Start Workout with Plan" : {
+
+    },
+    "Starting Up" : {
+
+    },
+    "Starts a new workout session." : {
+
+    },
+    "Starts a rest timer." : {
+
+    },
+    "Starts a workout from this plan." : {
+
+    },
+    "Starts a workout session from a workout plan." : {
+
+    },
+    "Starts an empty workout session." : {
+
+    },
+    "Starts editing a workout plan using the plan editing flow." : {
+
+    },
+    "Starts the rest timer." : {
+
+    },
+    "Starts today's workout from your active split." : {
+
+    },
+    "Still Syncing..." : {
+
+    },
+    "Stop" : {
+
+    },
+    "Stop Rest Timer" : {
+
+    },
+    "Stop Timer" : {
+
+    },
+    "Stops the current rest timer." : {
+
+    },
+    "Stops the rest timer." : {
+
+    },
+    "Suggested" : {
+
+    },
+    "Suggestion State" : {
+
+    },
+    "Suggestions" : {
+
+    },
+    "Sunday" : {
+
+    },
+    "Swap Days" : {
+
+    },
+    "Swaps the selected days." : {
+
+    },
+    "Swipe right on an exercise to favorite it." : {
+
+    },
+    "Syncing Your Data" : {
+
+    },
+    "Tap the %@ button to add exercises." : {
+
+    },
+    "Tap the %@ button to create a workout plan." : {
+
+    },
+    "Tap the %@ button to start your first workout." : {
+
+    },
+    "Target" : {
+
+    },
+    "Target muscles" : {
+
+    },
+    "Target Muscles" : {
+
+    },
+    "Target RPE" : {
+
+    },
+    "Target RPE: %lld" : {
+
+    },
+    "Target: %lld" : {
+
+    },
+    "Tells you about your last workout session." : {
+
+    },
+    "Tells you what you're training on a specific day." : {
+
+    },
+    "Templates are just a starting point. You can adjust the split to fit your needs after you create it." : {
+
+    },
+    "That exercise is no longer available." : {
+
+    },
+    "That workout is no longer available." : {
+
+    },
+    "That workout plan is no longer available." : {
+
+    },
+    "This is taking longer than expected. Please wait while VillainArc finishes syncing." : {
+
+    },
+    "This suggestion is based on previous times you logged this exercise or your usual rep goal." : {
+
+    },
+    "This workout is already linked to a workout plan." : {
+
+    },
+    "Thursday" : {
+
+    },
+    "Timer duration" : {
+
+    },
+    "Tired" : {
+
+    },
+    "To Review" : {
+
+    },
+    "Today" : {
+
+    },
+    "Today is a rest day! Enjoy your recovery." : {
+
+    },
+    "Today is your rest day" : {
+
+    },
+    "Toggle Exercise Favorite" : {
+
+    },
+    "Toggle favorite for ${exercise}" : {
+
+    },
+    "Toggle favorite for ${workoutPlan}" : {
+
+    },
+    "Toggle Workout Plan Favorite" : {
+
+    },
+    "Toggles favorite status for a workout plan." : {
+
+    },
+    "Toggles favorite status for an exercise." : {
+
+    },
+    "Toggles favorite." : {
+
+    },
+    "Toggles this muscle filter." : {
+
+    },
+    "Toggles whether you took a pre-workout drink." : {
+
+    },
+    "Tomorrow" : {
+
+    },
+    "Took pre workout" : {
+
+    },
+    "Top Weight" : {
+
+    },
+    "Train your entire body each session" : {
+
+    },
+    "Training Day" : {
+
+    },
+    "Training Days" : {
+
+    },
+    "Training Summary" : {
+
+    },
+    "Triceps" : {
+
+    },
+    "Tuesday" : {
+
+    },
+    "Turn off live activities completely or restart the current one if it was dismissed accidentally." : {
+
+    },
+    "Type" : {
+
+    },
+    "Unable to connect to iCloud right now. Please check your internet connection and try again." : {
+
+    },
+    "Undo" : {
+
+    },
+    "Unfavorite" : {
+
+    },
+    "Unknown Muscle" : {
+
+    },
+    "Unnamed split day" : {
+
+    },
+    "Update" : {
+
+    },
+    "Update Rest Timer?" : {
+
+    },
+    "Updates your pre-workout energy." : {
+
+    },
+    "Updating Exercises" : {
+
+    },
+    "Upper / Lower" : {
+
+    },
+    "Upper Abs" : {
+
+    },
+    "Upper Chest" : {
+
+    },
+    "Upper Traps" : {
+
+    },
+    "Upper: %lld" : {
+
+    },
+    "Value" : {
+
+    },
+    "View Exercise History" : {
+
+    },
+    "View Last Used Exercise" : {
+
+    },
+    "View Last Workout" : {
+
+    },
+    "View Last Workout Plan" : {
+
+    },
+    "VillainArc needs WiFi for first time setup to sync your workout data." : {
+
+    },
+    "Volume" : {
+
+    },
+    "Want to update rest timer to reflect the new set rest time?" : {
+
+    },
+    "Warm Up Set" : {
+
+    },
+    "Wednesday" : {
+
+    },
+    "Weekly" : {
+
+    },
+    "Weekly · %@" : {
+
+    },
+    "Weekly split" : {
+
+    },
+    "Weekly Split" : {
+
+    },
+    "Weight" : {
+
+    },
+    "Weighted Ball" : {
+
+    },
+    "What about existing sets?" : {
+
+    },
+    "What am I training ${day}" : {
+
+    },
+    "What should happen to the existing sets?" : {
+
+    },
+    "What type of split do you want to create?" : {
+
+    },
+    "What's your height?" : {
+
+    },
+    "What's your name?" : {
+
+    },
+    "When's your birthday?" : {
+
+    },
+    "Which exercise history would you like to open?" : {
+
+    },
+    "Which exercise should replace it?" : {
+
+    },
+    "Which exercise would you like to open?" : {
+
+    },
+    "Which exercise would you like to update?" : {
+
+    },
+    "Which exercise?" : {
+
+    },
+    "Which exercises?" : {
+
+    },
+    "Which workout plan would you like to delete?" : {
+
+    },
+    "Which workout plan would you like to edit?" : {
+
+    },
+    "Which workout plan would you like to open?" : {
+
+    },
+    "Which workout plan would you like to update?" : {
+
+    },
+    "Which workout plan would you like to use?" : {
+
+    },
+    "Which workout would you like to delete?" : {
+
+    },
+    "Which workout would you like to open?" : {
+
+    },
+    "Which workout would you like to save as a plan?" : {
+
+    },
+    "WiFi Required" : {
+
+    },
+    "Working Set" : {
+
+    },
+    "Workout" : {
+
+    },
+    "Workout actions." : {
+
+    },
+    "Workout cancelled." : {
+
+    },
+    "Workout deleted because no completed sets remained." : {
+
+    },
+    "Workout deleted." : {
+
+    },
+    "Workout finish canceled." : {
+
+    },
+    "Workout Notes" : {
+
+    },
+    "Workout Options" : {
+
+    },
+    "Workout Plan" : {
+
+    },
+    "Workout plan actions." : {
+
+    },
+    "Workout plan deleted." : {
+
+    },
+    "Workout plan marked as favorite." : {
+
+    },
+    "Workout plan removed from favorites." : {
+
+    },
+    "Workout Plans" : {
+
+    },
+    "Workout plans list options." : {
+
+    },
+    "Workout Settings" : {
+
+    },
+    "Workout split" : {
+
+    },
+    "Workout Split" : {
+
+    },
+    "Workout Splits" : {
+
+    },
+    "Workouts" : {
+
+    },
+    "Wrapping Things Up" : {
+
+    },
+    "Wrists" : {
+
+    },
+    "Yes" : {
+
+    },
+    "Yes, keep weekends free" : {
+
+    },
+    "You are currently working on a workout plan. Finish that first." : {
+
+    },
+    "You are currently working out, finish that first." : {
+
+    },
+    "You are hitting: %@." : {
+
+    },
+    "You don't have a completed workout plan yet." : {
+
+    },
+    "You don't have a workout plan assigned for today." : {
+
+    },
+    "You don't have an active workout split." : {
+
+    },
+    "You don't have any workout plans yet." : {
+
+    },
+    "You don't have any workout splits yet." : {
+
+    },
+    "You have %@ and %@ with no data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You have %1$@ and %2$@ with no data."
+          }
+        }
+      }
+    },
+    "You have %lld empty sets.\nLog them or remove them before finishing." : {
+
+    },
+    "You have %lld sets with data, but they are not marked complete." : {
+
+    },
+    "You have ^[%lld empty set](inflect: true).\nLog them or remove them before finishing." : {
+
+    },
+    "You have ^[%lld logged set](inflect: true) and ^[%lld empty set](inflect: true) with no data." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You have ^[%1$lld logged set](inflect: true) and ^[%2$lld empty set](inflect: true) with no data."
+          }
+        }
+      }
+    },
+    "You have ^[%lld set](inflect: true) with data, but not marked complete." : {
+
+    },
+    "You have 1 empty set.\nLog it or remove it before finishing." : {
+
+    },
+    "You have 1 set with data, but it is not marked complete." : {
+
+    },
+    "You haven't completed a workout." : {
+
+    },
+    "You haven't completed any exercises with tracked history yet." : {
+
+    },
+    "You need to launch and finish setting up the app before you can use this feature." : {
+
+    },
+    "You're already working out. Resume it first or cancel it." : {
+
+    },
+    "Your created workout plans will appear here." : {
+
+    },
+    "Your split doesn't have any days set up yet." : {
+
+    },
+    "Your workout data won't sync across devices or be backed up if you delete the app." : {
+
+    },
+    "Your workout history will appear here." : {
+
+    }
+  },
+  "version" : "1.0"
+}

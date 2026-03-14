@@ -3,13 +3,13 @@ import FoundationModels
 
 @Generable
 struct AIRepRangeSnapshot {
-    @Guide(description: "Rep range mode.")
+    @Guide(description: "Mode.")
     let mode: AIRepRangeMode
-    @Guide(description: "Lower bound for range mode.")
+    @Guide(description: "Lower bound.")
     let lower: Int?
-    @Guide(description: "Upper bound for range mode.")
+    @Guide(description: "Upper bound.")
     let upper: Int?
-    @Guide(description: "Target reps for target mode.")
+    @Guide(description: "Target reps.")
     let target: Int?
 
     init(mode: AIRepRangeMode, lower: Int? = nil, upper: Int? = nil, target: Int? = nil) {

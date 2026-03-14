@@ -61,7 +61,7 @@ struct ExerciseView: View {
                         .lineLimit(1)
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(exercise.equipmentType.rawValue)
+                            Text(exercise.equipmentType.displayName)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
                             if let repRange = exercise.repRange {
@@ -75,7 +75,7 @@ struct ExerciseView: View {
                                 showExerciseHistorySheet = true
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryButton(exercise))
-                            .accessibilityHint("Shows prior performances for this exercise.")
+                            .accessibilityHint(AccessibilityText.workoutPlanExerciseHistoryHint)
                             .labelStyle(.iconOnly)
                             .font(.title)
                             .tint(.primary)
@@ -85,7 +85,7 @@ struct ExerciseView: View {
                                 showRestTimeEditor = true
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
-                            .accessibilityHint("Edits rest times.")
+                            .accessibilityHint(AccessibilityText.workoutPlanExerciseRestTimesHint)
                             .labelStyle(.iconOnly)
                             .font(.title)
                             .tint(.primary)
@@ -109,7 +109,7 @@ struct ExerciseView: View {
                         Label("Replace Exercise", systemImage: "arrow.triangle.2.circlepath")
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseReplaceButton(exercise))
-                    .accessibilityHint("Replaces this exercise with another.")
+                    .accessibilityHint(AccessibilityText.workoutPlanExerciseReplaceHint)
                     if let onDeleteExercise {
                         Button(role: .destructive) {
                             Haptics.selection()
@@ -118,7 +118,7 @@ struct ExerciseView: View {
                             Label("Delete Exercise", systemImage: "trash")
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDeleteButton(exercise))
-                        .accessibilityHint("Deletes this exercise.")
+                        .accessibilityHint(AccessibilityText.workoutPlanExerciseDeleteHint)
                     }
                 }
                 .padding(.horizontal)
@@ -160,7 +160,7 @@ struct ExerciseView: View {
                 .buttonSizing(.flexible)
                 .padding(.horizontal)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseAddSetButton(exercise))
-                .accessibilityHint("Adds a new set.")
+                .accessibilityHint(AccessibilityText.workoutPlanExerciseAddSetHint)
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)

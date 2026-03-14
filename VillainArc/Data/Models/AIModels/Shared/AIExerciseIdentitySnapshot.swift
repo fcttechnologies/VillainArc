@@ -3,13 +3,13 @@ import FoundationModels
 
 @Generable
 struct AIExerciseIdentitySnapshot {
-    @Guide(description: "Unique exercise catalog identifier.")
+    @Guide(description: "Catalog id.")
     let catalogID: String
-    @Guide(description: "Exercise name.")
+    @Guide(description: "Name.")
     let exerciseName: String
     @Guide(description: "Target muscles.")
     let musclesTargeted: [Muscle]
-    @Guide(description: "Primary equipment type.")
+    @Guide(description: "Equipment.")
     let equipmentType: EquipmentType
 
     init(catalogID: String, exerciseName: String, musclesTargeted: [Muscle], equipmentType: EquipmentType) {

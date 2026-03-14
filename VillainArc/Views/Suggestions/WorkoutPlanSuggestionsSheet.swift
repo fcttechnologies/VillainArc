@@ -7,6 +7,15 @@ struct WorkoutPlanSuggestionsSheet: View {
         case awaitingOutcome = "Awaiting Outcome"
 
         var id: String { rawValue }
+
+        var displayName: String {
+            switch self {
+            case .toReview:
+                return String(localized: "To Review")
+            case .awaitingOutcome:
+                return String(localized: "Awaiting Outcome")
+            }
+        }
     }
 
     let plan: WorkoutPlan
@@ -42,7 +51,7 @@ struct WorkoutPlanSuggestionsSheet: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Picker("Suggestion State", selection: $selectedTab) {
                             ForEach(Tab.allCases) { tab in
-                                Text(tab.rawValue).tag(tab)
+                                Text(tab.displayName).tag(tab)
                             }
                         }
                         .pickerStyle(.segmented)

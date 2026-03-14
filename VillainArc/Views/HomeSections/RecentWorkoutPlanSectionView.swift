@@ -13,7 +13,7 @@ struct RecentWorkoutPlanSectionView: View {
             }
 
             if recentWorkoutPlan.isEmpty {
-                ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Click the '\(Image(systemName: "plus"))' to create a workout plan."))
+                ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Tap the \(Image(systemName: "plus")) button to create a workout plan."))
                     .frame(maxWidth: .infinity)
                     .glassEffect(.regular, in: .rect(cornerRadius: 12))
                     .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutPlanEmptyState)

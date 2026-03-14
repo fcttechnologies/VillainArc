@@ -19,11 +19,11 @@ enum ExerciseSetType: Int, Codable, CaseIterable {
     nonisolated var displayName : String {
         switch self {
         case .working:
-            return "Working Set"
+            return String(localized: "Working Set")
         case .warmup:
-            return "Warm Up Set"
+            return String(localized: "Warm Up Set")
         case .dropSet:
-            return "Drop Set"
+            return String(localized: "Drop Set")
         }
     }
 

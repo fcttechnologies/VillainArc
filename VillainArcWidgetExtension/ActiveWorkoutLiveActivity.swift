@@ -3,6 +3,11 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
+private enum WorkoutLiveActivityAccessibilityText {
+    static let resumeRestTimerLabel = String(localized: "Resume rest timer")
+    static let completeSetLabel = String(localized: "Complete next set")
+}
+
 struct WorkoutLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
@@ -49,6 +54,8 @@ struct WorkoutLiveActivity: Widget {
                             .lineLimit(1)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                        .accessibilityValue(formatSeconds(remaining))
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -70,6 +77,7 @@ struct WorkoutLiveActivity: Widget {
                                     .font(.body)
                                     .fontWeight(.bold)
                             }
+                            .accessibilityLabel(WorkoutLiveActivityAccessibilityText.completeSetLabel)
                         }
                         .padding(.leading, 6)
                     } else if !context.state.hasExercises {
@@ -156,6 +164,8 @@ struct WorkoutLiveActivityExpandedView: View {
                         .fontDesign(.rounded)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                    .accessibilityValue(formatSeconds(remaining))
                 }
             }
             
@@ -181,6 +191,7 @@ struct WorkoutLiveActivityExpandedView: View {
                             .fontWeight(.bold)
                     }
                     .buttonStyle(.borderedProminent)
+                    .accessibilityLabel(WorkoutLiveActivityAccessibilityText.completeSetLabel)
                 }
             } else if !state.hasExercises {
                 Button(intent: LiveActivityAddExerciseIntent()) {

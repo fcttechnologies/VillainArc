@@ -32,8 +32,8 @@ struct ReplaceExerciseView: View {
                         Haptics.selection()
                         dismiss()
                     }
-                    .accessibilityLabel("Close")
-                    .accessibilityIdentifier("replaceExerciseCloseButton")
+                    .accessibilityLabel(AccessibilityText.replaceExerciseCloseLabel)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseCloseButton)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Replace") {
@@ -41,8 +41,8 @@ struct ReplaceExerciseView: View {
                         showSetsConfirmation = true
                     }
                     .disabled(selectedExercise == nil)
-                    .accessibilityIdentifier("replaceExerciseConfirmButton")
-                    .accessibilityHint("Replaces the current exercise with the selected one.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseConfirmButton)
+                    .accessibilityHint(AccessibilityText.replaceExerciseConfirmHint)
                     .confirmationDialog("What about existing sets?", isPresented: $showSetsConfirmation) {
                         Button("Keep Sets") {
                             guard let selected = selectedExercise else { return }
@@ -63,23 +63,23 @@ struct ReplaceExerciseView: View {
                         Menu("Sort", systemImage: "arrow.up.arrow.down") {
                             Picker("Sort Options", selection: $exerciseSort) {
                                 ForEach(ExerciseSortOption.allCases, id: \.self) { option in
-                                    Text(option.rawValue)
+                                    Text(option.displayName)
                                         .tag(option)
                                 }
                             }
                         }
                         Divider()
                         Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
-                            .accessibilityIdentifier("replaceExerciseFavoritesToggle")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseFavoritesToggle)
                         Button("Muscle Filters", systemImage: "figure") {
                             Haptics.selection()
                             showMuscleFilterSheet = true
                         }
-                        .accessibilityIdentifier("replaceExerciseMuscleFiltersButton")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseMuscleFiltersButton)
                     }
                     .labelStyle(.iconOnly)
                     .menuOrder(.fixed)
-                    .accessibilityIdentifier("replaceExerciseFiltersMenu")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseFiltersMenu)
                 }
                 ToolbarSpacer(.fixed, placement: .bottomBar)
                 DefaultToolbarItem(kind: .search, placement: .bottomBar)

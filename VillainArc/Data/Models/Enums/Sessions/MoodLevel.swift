@@ -26,6 +26,19 @@ enum MoodLevel: String, Codable, CaseIterable {
     }
 
     var displayName: String {
-        rawValue.capitalized
+        switch self {
+        case .notSet:
+            return String(localized: "Not Set")
+        case .sick:
+            return String(localized: "Sick")
+        case .tired:
+            return String(localized: "Tired")
+        case .okay:
+            return String(localized: "Okay")
+        case .good:
+            return String(localized: "Good")
+        case .great:
+            return String(localized: "Great")
+        }
     }
 }

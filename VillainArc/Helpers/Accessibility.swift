@@ -248,6 +248,10 @@ enum AccessibilityIdentifiers {
     static let addExerciseConfirmButton = "addExerciseConfirmButton"
     static let addExerciseSortMenu = "addExerciseSortMenu"
     static let addExerciseSelectedToggle = "addExerciseSelectedToggle"
+    static let addExerciseFavoritesToggle = "addExerciseFavoritesToggle"
+    static let addExerciseMuscleFiltersButton = "addExerciseMuscleFiltersButton"
+    static let addExerciseFiltersMenu = "addExerciseFiltersMenu"
+    static let addExerciseListContainer = "addExerciseListContainer"
 
     // MARK: - Navbar
     static let navBarCloseButton = "navBarCloseButton"
@@ -260,6 +264,26 @@ enum AccessibilityIdentifiers {
     static let workoutPlanPickerCreateButton = "workoutPlanPickerCreateButton"
     static let workoutPlanDetailSelectButton = "workoutPlanDetailSelectButton"
     static let workoutPlanDetailUseButton = "workoutPlanDetailUseButton"
+    static let workoutPlanDetailNotesText = "workoutPlanDetailNotesText"
+    static let workoutPlanDetailSuggestionsButton = "workoutPlanDetailSuggestionsButton"
+    static let workoutPlanDetailEditButton = "workoutPlanDetailEditButton"
+    static let workoutPlanDetailDeleteButton = "workoutPlanDetailDeleteButton"
+    static let workoutPlanDetailOptionsMenu = "workoutPlanDetailOptionsMenu"
+    static let workoutPlanDetailConfirmDeleteButton = "workoutPlanDetailConfirmDeleteButton"
+    static let workoutPlanDetailFavoriteButton = "workoutPlanDetailFavoriteButton"
+    static let workoutPlanDetailStartWorkoutButton = "workoutPlanDetailStartWorkoutButton"
+    static let workoutPlanCancelButton = "workoutPlanCancelButton"
+    static let workoutPlanConfirmCancelButton = "workoutPlanConfirmCancelButton"
+    static let workoutPlanSaveButton = "workoutPlanSaveButton"
+    static let workoutPlanEditExercisesButton = "workoutPlanEditExercisesButton"
+    static let workoutPlanAddExerciseButton = "workoutPlanAddExerciseButton"
+    static let workoutPlanExercisesEmptyState = "workoutPlanExercisesEmptyState"
+    static let workoutPlanEditingForm = "workoutPlanEditingForm"
+    static let workoutPlanExerciseList = "workoutPlanExerciseList"
+
+    static func workoutPlanExerciseView(_ exercise: ExercisePrescription) -> String {
+        "workoutPlanExerciseView-\(exercise.catalogID)-\(exercise.index)"
+    }
 
     // MARK: - WorkoutSplitView
     static let workoutSplitList = "workoutSplitList"
@@ -403,6 +427,32 @@ enum AccessibilityIdentifiers {
     static let preWorkoutMoodSheet = "preWorkoutMoodSheet"
     static let preWorkoutMoodNotesField = "preWorkoutMoodNotesField"
     static let preWorkoutEnergyDrinkCard = "preWorkoutEnergyDrinkCard"
+    static let replaceExerciseCloseButton = "replaceExerciseCloseButton"
+    static let replaceExerciseConfirmButton = "replaceExerciseConfirmButton"
+    static let replaceExerciseFavoritesToggle = "replaceExerciseFavoritesToggle"
+    static let replaceExerciseMuscleFiltersButton = "replaceExerciseMuscleFiltersButton"
+    static let replaceExerciseFiltersMenu = "replaceExerciseFiltersMenu"
+    static let workoutDetailNotesText = "workoutDetailNotesText"
+    static let workoutDetailOpenWorkoutPlanButton = "workoutDetailOpenWorkoutPlanButton"
+    static let workoutDetailSaveWorkoutPlanButton = "workoutDetailSaveWorkoutPlanButton"
+    static let workoutDetailDeleteButton = "workoutDetailDeleteButton"
+    static let workoutDetailOptionsMenu = "workoutDetailOptionsMenu"
+    static let workoutDetailConfirmDeleteButton = "workoutDetailConfirmDeleteButton"
+    static let workoutDetailPreWorkoutContextButton = "workoutDetailPreWorkoutContextButton"
+    static let workoutDetailPreWorkoutDrinkButton = "workoutDetailPreWorkoutDrinkButton"
+    static let workoutDetailEffortDisplay = "workoutDetailEffortDisplay"
+    static let muscleFilterAdvancedToggle = "muscleFilterAdvancedToggle"
+    static let muscleFilterClearButton = "muscleFilterClearButton"
+    static let muscleFilterCloseButton = "muscleFilterCloseButton"
+    static let muscleFilterConfirmButton = "muscleFilterConfirmButton"
+    static let muscleFilterSheet = "muscleFilterSheet"
+    static let restTimeEmptySetsMessage = "restTimeEmptySetsMessage"
+    static let restTimeEditorForm = "restTimeEditorForm"
+    static let repRangeModePicker = "repRangeModePicker"
+    static let repRangeTargetStepper = "repRangeTargetStepper"
+    static let repRangeLowerStepper = "repRangeLowerStepper"
+    static let repRangeUpperStepper = "repRangeUpperStepper"
+    static let repRangeForm = "repRangeForm"
 
     static func preWorkoutMoodOption(_ mood: MoodLevel) -> String {
         "preWorkoutMoodOption-\(slug(mood.displayName))"
@@ -422,6 +472,10 @@ enum AccessibilityIdentifiers {
     }
 
     static let filteredExerciseList = "filteredExerciseList"
+    static let filteredExerciseEmptySelectedState = "filteredExerciseEmptySelectedState"
+    static let filteredExerciseEmptyFavoritesSelectedState = "filteredExerciseEmptyFavoritesSelectedState"
+    static let filteredExerciseEmptyFavoritesState = "filteredExerciseEmptyFavoritesState"
+    static let filteredExerciseEmptySearchState = "filteredExerciseEmptySearchState"
 
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerToggle = "workoutSettingsAutoStartTimerToggle"
@@ -435,6 +489,14 @@ enum AccessibilityIdentifiers {
         return "restTimerAdjustButton-\(direction)-\(abs(deltaSeconds))"
     }
 
+    static let restTimerCountdown = "restTimerCountdown"
+    static let restTimerDurationPicker = "restTimerDurationPicker"
+    static let restTimerList = "restTimerList"
+    static let restTimerCloseButton = "restTimerCloseButton"
+    static let restTimerStopButton = "restTimerStopButton"
+    static let restTimerPauseButton = "restTimerPauseButton"
+    static let restTimerResumeButton = "restTimerResumeButton"
+    static let restTimerStartButton = "restTimerStartButton"
     static let restTimerNextSet = "restTimerNextSet"
     static let restTimerCompleteSetButton = "restTimerCompleteSetButton"
 
@@ -478,205 +540,224 @@ enum AccessibilityIdentifiers {
 }
 
 enum AccessibilityText {
+    private static func localized(_ key: String.LocalizationValue) -> String {
+        String(localized: key)
+    }
+
     // MARK: - ContentView
-    static let homeWorkoutSplitLabel = "Workout split"
-    static let homeWorkoutSplitHint = "Shows your active workout split."
-    static let homeRecentWorkoutLabel = "Recent workout"
-    static let homeRecentWorkoutHint = "Shows your most recent workout."
-    static let homeRecentWorkoutPlanLabel = "Recent workout plan"
-    static let homeRecentWorkoutPlanHint = "Shows your most recent workout plan."
-    static let homeOptionsMenuLabel = "Options"
-    static let homeOptionsMenuHint = "Shows workout and workout plan options."
-    static let homeStartWorkoutLabel = "Start empty workout"
-    static let homeStartWorkoutHint = "Starts a new workout session."
-    static let homeCreatePlanLabel = "Create workout plan"
-    static let homeCreatePlanHint = "Creates a new workout plan."
+    static let homeWorkoutSplitLabel = localized("Workout split")
+    static let homeWorkoutSplitHint = localized("Shows your active workout split.")
+    static let homeRecentWorkoutLabel = localized("Recent workout")
+    static let homeRecentWorkoutHint = localized("Shows your most recent workout.")
+    static let homeRecentWorkoutPlanLabel = localized("Recent workout plan")
+    static let homeRecentWorkoutPlanHint = localized("Shows your most recent workout plan.")
+    static let homeOptionsMenuLabel = localized("Options")
+    static let homeOptionsMenuHint = localized("Shows workout and workout plan options.")
+    static let homeStartWorkoutLabel = localized("Start empty workout")
+    static let homeStartWorkoutHint = localized("Starts a new workout session.")
+    static let homeCreatePlanLabel = localized("Create workout plan")
+    static let homeCreatePlanHint = localized("Creates a new workout plan.")
 
     // MARK: - WorkoutSplitSectionView
-    static let workoutSplitHeaderHint = "Shows your workout split settings."
-    static let workoutSplitUnavailableHint = "Opens workout split settings."
-    static let workoutSplitActiveRowHint = "Shows workout split details."
-    static let workoutSplitPlanButtonLabel = "Open workout plan"
-    static let workoutSplitPlanButtonHint = "Opens the workout plan for today."
+    static let workoutSplitHeaderHint = localized("Shows your workout split settings.")
+    static let workoutSplitUnavailableHint = localized("Opens workout split settings.")
+    static let workoutSplitActiveRowHint = localized("Shows workout split details.")
+    static let workoutSplitPlanButtonLabel = localized("Open workout plan")
+    static let workoutSplitPlanButtonHint = localized("Opens the workout plan for today.")
 
     // MARK: - RecentWorkoutSectionView
-    static let workoutHistoryHeaderHint = "Shows your workout history."
-    static let recentWorkoutRowHint = "Shows details for your most recent workout."
+    static let workoutHistoryHeaderHint = localized("Shows your workout history.")
+    static let recentWorkoutRowHint = localized("Shows details for your most recent workout.")
 
     // MARK: - RecentWorkoutPlanSectionView
-    static let workoutPlansHeaderHint = "Shows all your workout plans."
-    static let recentWorkoutPlanRowHint = "Shows details for your most recent workout plan."
+    static let workoutPlansHeaderHint = localized("Shows all your workout plans.")
+    static let recentWorkoutPlanRowHint = localized("Shows details for your most recent workout plan.")
 
     // MARK: - RecentExercisesSectionView
-    static let recentExercisesHeaderHint = "Shows all tracked exercises."
-    static let recentExercisesUnavailableLabel = "No Exercises Used"
-    static let recentExercisesUnavailableValue = "Complete exercises in workouts to track progress here."
-    static let recentExercisesUnavailableHint = "Shows all tracked exercises."
+    static let recentExercisesHeaderHint = localized("Shows all tracked exercises.")
+    static let recentExercisesUnavailableLabel = localized("No Exercises Used")
+    static let recentExercisesUnavailableValue = localized("Complete exercises in workouts to track progress here.")
+    static let recentExercisesUnavailableHint = localized("Shows all tracked exercises.")
 
     // MARK: - WorkoutsListView
-    static let workoutRowHint = "Shows workout details."
-    static let workoutsDeleteAllHint = "Deletes all completed workouts."
-    static let workoutsDoneEditingHint = "Exits edit mode."
-    static let workoutsEditHint = "Enters edit mode."
+    static let workoutRowHint = localized("Shows workout details.")
+    static let workoutsDeleteAllHint = localized("Deletes all completed workouts.")
+    static let workoutsDoneEditingHint = localized("Exits edit mode.")
+    static let workoutsEditHint = localized("Enters edit mode.")
 
     // MARK: - WorkoutPlansListView
-    static let workoutPlanRowHint = "Shows workout plan details."
-    static let workoutPlansDeleteAllHint = "Deletes all workout plans."
-    static let workoutPlansDoneEditingHint = "Exits edit mode."
-    static let workoutPlansOptionsMenuLabel = "Options"
-    static let workoutPlansOptionsMenuHint = "Workout plans list options."
-    static let workoutPlansEditHint = "Enters edit mode."
-    static let workoutPlansFavoritesToggleHint = "Filters to favorite workout plans."
+    static let workoutPlanRowHint = localized("Shows workout plan details.")
+    static let workoutPlansDeleteAllHint = localized("Deletes all workout plans.")
+    static let workoutPlansDoneEditingHint = localized("Exits edit mode.")
+    static let workoutPlansOptionsMenuLabel = localized("Options")
+    static let workoutPlansOptionsMenuHint = localized("Workout plans list options.")
+    static let workoutPlansEditHint = localized("Enters edit mode.")
+    static let workoutPlansFavoritesToggleHint = localized("Filters to favorite workout plans.")
 
     // MARK: - WorkoutDetailView
-    static let workoutDetailOpenWorkoutPlanHint = "Opens the linked workout plan."
-    static let workoutDetailSaveWorkoutPlanHint = "Saves this workout as a workout plan."
-    static let workoutDetailDeleteHint = "Deletes this workout."
-    static let workoutDetailOptionsMenuHint = "Workout actions."
-    static let workoutDetailPreWorkoutContextLabel = "Pre workout context"
-    static let workoutDetailPreWorkoutContextHint = "Shows pre workout details."
-    static let workoutDetailEffortLabel = "Post workout effort"
+    static let workoutDetailOpenWorkoutPlanHint = localized("Opens the linked workout plan.")
+    static let workoutDetailSaveWorkoutPlanHint = localized("Saves this workout as a workout plan.")
+    static let workoutDetailDeleteHint = localized("Deletes this workout.")
+    static let workoutDetailOptionsMenuHint = localized("Workout actions.")
+    static let workoutDetailPreWorkoutContextLabel = localized("Pre workout context")
+    static let workoutDetailPreWorkoutContextHint = localized("Shows pre workout details.")
+    static let workoutDetailEffortLabel = localized("Post workout effort")
+    static let workoutPreMoodHint = localized("Updates your pre-workout energy.")
+    static let workoutDeleteEmptyLabel = localized("Delete Workout")
 
     // MARK: - WorkoutPlanDetailView
-    static let workoutPlanDetailSuggestionsLabel = "AI suggestions"
-    static let workoutPlanDetailSuggestionsHint = "Shows suggested changes and pending outcomes for this workout plan."
-    static let workoutPlanDetailSelectHint = "Selects this workout plan."
-    static let workoutPlanDetailEditHint = "Edits this workout plan."
-    static let workoutPlanDetailDeleteHint = "Deletes this workout plan."
-    static let workoutPlanDetailOptionsMenuHint = "Workout plan actions."
-    static let workoutPlanDetailFavoriteHint = "Toggles favorite."
-    static let workoutPlanDetailStartWorkoutHint = "Starts a workout from this plan."
+    static let workoutPlanDetailSuggestionsLabel = localized("AI suggestions")
+    static let workoutPlanDetailSuggestionsHint = localized("Shows suggested changes and pending outcomes for this workout plan.")
+    static let workoutPlanDetailSelectHint = localized("Selects this workout plan.")
+    static let workoutPlanDetailEditHint = localized("Edits this workout plan.")
+    static let workoutPlanDetailDeleteHint = localized("Deletes this workout plan.")
+    static let workoutPlanDetailOptionsMenuHint = localized("Workout plan actions.")
+    static let workoutPlanDetailFavoriteHint = localized("Toggles favorite.")
+    static let workoutPlanDetailStartWorkoutHint = localized("Starts a workout from this plan.")
 
     static func workoutPlanDetailSuggestionCountLabel(count: Int) -> String {
-        count == 1 ? "1 suggestion to review" : "\(count) suggestions to review"
+        count == 1 ? localized("1 suggestion to review") : localized("\(count) suggestions to review")
     }
 
     static func workoutPlanDetailFavoriteLabel(isFavorite: Bool) -> String {
-        isFavorite ? "Remove from favorites" : "Add to favorites"
+        isFavorite ? localized("Remove from favorites") : localized("Add to favorites")
     }
 
+    // MARK: - WorkoutPlanPickerView
+    static let workoutPlanPickerClearHint = localized("Removes the selected workout plan.")
+    static let workoutPlanPickerCreateHint = localized("Creates a new workout plan to select.")
+
+    // MARK: - WorkoutPlanView
+    static let workoutPlanEditExercisesHint = localized("Shows the list of exercises.")
+    static let workoutPlanAddExerciseHint = localized("Adds an exercise.")
+    static let workoutPlanExerciseAddSetHint = localized("Adds a new set.")
+    static let workoutPlanExerciseHistoryHint = localized("Shows prior performances for this exercise.")
+    static let workoutPlanExerciseRestTimesHint = localized("Edits rest times.")
+    static let workoutPlanExerciseReplaceHint = localized("Replaces this exercise with another.")
+    static let workoutPlanExerciseDeleteHint = localized("Deletes this exercise.")
+
     // MARK: - ExercisesListView
-    static let exercisesListFavoritesToggleHint = "Filters to favorite exercises."
+    static let exercisesListFavoritesToggleHint = localized("Filters to favorite exercises.")
 
     // MARK: - WorkoutSplitView
-    static let workoutSplitRowHint = "Shows split details."
-    static let workoutSplitCreateHint = "Creates a new workout split."
-    static let workoutSplitActiveActionsLabel = "Split actions"
-    static let workoutSplitActiveActionsHint = "Shows actions for the active split."
-    static let workoutSplitMissedDayHint = "Moves the weekly split back by one day."
-    static let workoutSplitResetOffsetHint = "Resets the weekly split offset to today."
-    static let workoutSplitRotationPreviousHint = "Moves back one day in the rotation."
-    static let workoutSplitRotationAdvanceHint = "Moves forward one day in the rotation."
-    static let workoutSplitSetActiveHint = "Makes this split active."
-    static let workoutSplitSetInactiveHint = "Makes this split inactive."
-    static let workoutSplitSelectPlanHint = "Selects a workout plan for this day."
-    static let workoutSplitSelectPlanLabel = "Select workout plan"
-    static let workoutSplitSelectPlanValue = "No plan selected for this day."
+    static let workoutSplitRowHint = localized("Shows split details.")
+    static let workoutSplitCreateHint = localized("Creates a new workout split.")
+    static let workoutSplitActiveActionsLabel = localized("Split actions")
+    static let workoutSplitActiveActionsHint = localized("Shows actions for the active split.")
+    static let workoutSplitMissedDayHint = localized("Moves the weekly split back by one day.")
+    static let workoutSplitResetOffsetHint = localized("Resets the weekly split offset to today.")
+    static let workoutSplitRotationPreviousHint = localized("Moves back one day in the rotation.")
+    static let workoutSplitRotationAdvanceHint = localized("Moves forward one day in the rotation.")
+    static let workoutSplitSetActiveHint = localized("Makes this split active.")
+    static let workoutSplitSetInactiveHint = localized("Makes this split inactive.")
+    static let workoutSplitSelectPlanHint = localized("Selects a workout plan for this day.")
+    static let workoutSplitSelectPlanLabel = localized("Select workout plan")
+    static let workoutSplitSelectPlanValue = localized("No plan selected for this day.")
 
     // MARK: - WorkoutSplitCreationView
-    static let workoutSplitSwapCancelHint = "Cancels swapping days."
-    static let workoutSplitSwapConfirmHint = "Swaps the selected days."
-    static let workoutSplitSwapModeHint = "Pick two days to swap."
-    static let workoutSplitRotationSetCurrentDayHint = "Sets this day as the current rotation day."
-    static let workoutSplitCapsuleHint = "Shows split day details."
-    static let workoutSplitAddRotationDayHint = "Adds a new rotation day."
-    static let workoutSplitAddRotationDayLabel = "Add day"
-    static let workoutSplitDeleteDayHint = "Deletes this day."
-    static let workoutSplitOptionsMenuLabel = "Split options"
-    static let workoutSplitOptionsMenuHint = "Shows split actions."
-    static let workoutSplitRotateMenuHint = "Rotates all split days by one."
-    static let workoutSplitRotateBackwardHint = "Moves the split schedule back one day."
-    static let workoutSplitRotateForwardHint = "Moves the split schedule forward one day."
-    static let workoutSplitDeleteHint = "Deletes this split."
+    static let workoutSplitSwapCancelHint = localized("Cancels swapping days.")
+    static let workoutSplitSwapConfirmHint = localized("Swaps the selected days.")
+    static let workoutSplitSwapModeHint = localized("Pick two days to swap.")
+    static let workoutSplitRotationSetCurrentDayHint = localized("Sets this day as the current rotation day.")
+    static let workoutSplitCapsuleHint = localized("Shows split day details.")
+    static let workoutSplitAddRotationDayHint = localized("Adds a new rotation day.")
+    static let workoutSplitAddRotationDayLabel = localized("Add day")
+    static let workoutSplitDeleteDayHint = localized("Deletes this day.")
+    static let workoutSplitOptionsMenuLabel = localized("Split options")
+    static let workoutSplitOptionsMenuHint = localized("Shows split actions.")
+    static let workoutSplitRotateMenuHint = localized("Rotates all split days by one.")
+    static let workoutSplitRotateBackwardHint = localized("Moves the split schedule back one day.")
+    static let workoutSplitRotateForwardHint = localized("Moves the split schedule forward one day.")
+    static let workoutSplitDeleteHint = localized("Deletes this split.")
 
     static func workoutSplitWeekdayCapsuleLabel(_ weekdayName: String) -> String {
-        "Select \(weekdayName)"
+        localized("Select \(weekdayName)")
     }
 
     static func workoutSplitRotationCapsuleLabel(dayNumber: Int) -> String {
-        "Day \(dayNumber)"
+        localized("Day \(dayNumber)")
     }
 
     // MARK: - WorkoutSplitDayView
-    static let workoutSplitRestDayToggleHint = "Marks this day as a rest day."
-    static let workoutSplitDayNameHint = "Names this split day."
-    static let workoutSplitDayPlanButtonHint = "Selects a workout plan for this day."
-    static let workoutSplitTargetMusclesLabel = "Target muscles"
-    static let workoutSplitTargetMusclesHint = "Selects the target muscles for this day."
+    static let workoutSplitRestDayToggleHint = localized("Marks this day as a rest day.")
+    static let workoutSplitDayNameHint = localized("Names this split day.")
+    static let workoutSplitDayPlanButtonHint = localized("Selects a workout plan for this day.")
+    static let workoutSplitTargetMusclesLabel = localized("Target muscles")
+    static let workoutSplitTargetMusclesHint = localized("Selects the target muscles for this day.")
 
     static func workoutSplitPlanButtonLabel(hasPlan: Bool) -> String {
-        hasPlan ? "Change workout plan" : "Select workout plan"
+        hasPlan ? localized("Change workout plan") : localized("Select workout plan")
     }
 
     static func workoutRowLabel(for workout: WorkoutSession) -> String {
         let dateText = workout.startedAt.formatted(.dateTime.month(.abbreviated).day().year())
-        return "\(workout.title), \(dateText)"
+        return localized("\(workout.title), \(dateText)")
     }
 
     static func workoutRowValue(for workout: WorkoutSession) -> String {
         let count = workout.exercises?.count ?? 0
-        return count == 1 ? "1 exercise" : "\(count) exercises"
+        return count == 1 ? localized("1 exercise") : localized("\(count) exercises")
     }
 
     static func exerciseSetLabel(for set: SetPerformance) -> String {
-        set.type == .working ? "Set \(set.index + 1)" : set.type.displayName
+        set.type == .working ? localized("Set \(set.index + 1)") : set.type.displayName
     }
 
     static func exerciseSetLabel(for set: SetPrescription) -> String {
-        set.type == .working ? "Set \(set.index + 1)" : set.type.displayName
+        set.type == .working ? localized("Set \(set.index + 1)") : set.type.displayName
     }
 
     static func exerciseSetValue(for set: SetPerformance, unit: WeightUnit) -> String {
-        let repsText = set.reps == 1 ? "1 rep" : "\(set.reps) reps"
+        let repsText = set.reps == 1 ? localized("1 rep") : localized("\(set.reps) reps")
         let weightText = unit.display(set.weight)
         if let visibleRPE = set.visibleRPE {
-            return "\(repsText), \(weightText), RPE \(visibleRPE)"
+            return localized("\(repsText), \(weightText), RPE \(visibleRPE)")
         }
-        return "\(repsText), \(weightText)"
+        return localized("\(repsText), \(weightText)")
     }
 
     static func exerciseSetValue(for set: SetPrescription, unit: WeightUnit) -> String {
         let hasReps = set.targetReps > 0
         let hasWeight = set.targetWeight > 0
         let hasTargetRPE = set.visibleTargetRPE != nil
-        guard hasReps || hasWeight || hasTargetRPE else { return "No target set" }
+        guard hasReps || hasWeight || hasTargetRPE else { return localized("No target set") }
 
-        let repsText = hasReps ? (set.targetReps == 1 ? "1 rep" : "\(set.targetReps) reps") : "No reps target"
-        let weightText = hasWeight ? unit.display(set.targetWeight) : "No weight target"
+        let repsText = hasReps ? (set.targetReps == 1 ? localized("1 rep") : localized("\(set.targetReps) reps")) : localized("No reps target")
+        let weightText = hasWeight ? unit.display(set.targetWeight) : localized("No weight target")
         if let visibleTargetRPE = set.visibleTargetRPE {
-            return "\(repsText), \(weightText), target RPE \(visibleTargetRPE)"
+            return localized("\(repsText), \(weightText), target RPE \(visibleTargetRPE)")
         }
-        return "\(repsText), \(weightText)"
+        return localized("\(repsText), \(weightText)")
     }
 
     static func exerciseSetMenuLabel(for set: SetPerformance) -> String {
-        "Set \(set.index + 1)"
+        localized("Set \(set.index + 1)")
     }
 
     static func exerciseSetMenuValue(for set: SetPerformance) -> String {
         if let visibleRPE = set.visibleRPE {
-            return "\(set.type.displayName), RPE \(visibleRPE)"
+            return localized("\(set.type.displayName), RPE \(visibleRPE)")
         }
         return set.type.displayName
     }
 
     static func exerciseSetMenuLabel(for set: SetPrescription) -> String {
-        "Set \(set.index + 1)"
+        localized("Set \(set.index + 1)")
     }
 
     static func exerciseSetMenuValue(for set: SetPrescription) -> String {
         if let visibleTargetRPE = set.visibleTargetRPE {
-            return "\(set.type.displayName), target RPE \(visibleTargetRPE)"
+            return localized("\(set.type.displayName), target RPE \(visibleTargetRPE)")
         }
         return set.type.displayName
     }
 
     static func exerciseSetCompletionLabel(isComplete: Bool) -> String {
-        isComplete ? "Mark incomplete" : "Mark complete"
+        isComplete ? localized("Mark incomplete") : localized("Mark complete")
     }
 
     static func exerciseSetCountText(_ count: Int) -> String {
-        count == 1 ? "1 set" : "\(count) sets"
+        count == 1 ? localized("1 set") : localized("\(count) sets")
     }
 
     static func workoutExerciseListValue(for exercise: ExercisePerformance) -> String {
@@ -684,152 +765,199 @@ enum AccessibilityText {
         let completedSets = exercise.sortedSets.filter { $0.complete }.count
         let setsText: String
         if totalSets > 0, completedSets == totalSets {
-            setsText = "All sets complete"
+            setsText = localized("All sets complete")
         } else if completedSets > 0 {
-            setsText = "\(completedSets)/\(totalSets) sets complete"
+            setsText = localized("\(completedSets)/\(totalSets) sets complete")
         } else {
             setsText = exerciseSetCountText(totalSets)
         }
-        return "\(exercise.equipmentType.rawValue), \(setsText)"
+        return localized("\(exercise.equipmentType.displayName), \(setsText)")
     }
 
     static func workoutPlanExerciseListValue(for exercise: ExercisePrescription) -> String {
         let setsText = exerciseSetCountText(exercise.sortedSets.count)
-        return "\(exercise.equipmentType.rawValue), \(setsText)"
+        return localized("\(exercise.equipmentType.displayName), \(setsText)")
     }
 
     static func exerciseCatalogValue(for exercise: Exercise, isSelected: Bool) -> String {
         var parts: [String] = []
 
-        parts.append(exercise.equipmentType.rawValue)
+        parts.append(exercise.equipmentType.displayName)
 
         if exercise.favorite {
-            parts.append("Favorite")
+            parts.append(localized("Favorite"))
         }
 
         if isSelected {
-            parts.append("Selected")
+            parts.append(localized("Selected"))
         }
 
         return parts.joined(separator: ", ")
     }
 
     // MARK: - WorkoutView
-    static let workoutRestTimerHint = "Shows the rest timer."
-    static let workoutAddExerciseHint = "Adds an exercise."
-    static let workoutDeleteEmptyHint = "Deletes this workout."
-    static let workoutOptionsMenuHint = "Workout actions."
-    static let workoutSettingsHint = "Shows workout settings."
-    static let workoutEditExercisesHint = "Shows the list of exercises."
-    static let workoutFinishHint = "Finishes and saves the workout."
-    static let workoutDeleteHint = "Deletes this workout."
-    static let workoutExerciseListRowHint = "Shows the exercise in the workout."
+    static let workoutRestTimerHint = localized("Shows the rest timer.")
+    static let workoutAddExerciseHint = localized("Adds an exercise.")
+    static let workoutDeleteEmptyHint = localized("Deletes this workout.")
+    static let workoutOptionsMenuHint = localized("Workout actions.")
+    static let workoutSettingsHint = localized("Shows workout settings.")
+    static let workoutEditExercisesHint = localized("Shows the list of exercises.")
+    static let workoutFinishHint = localized("Finishes and saves the workout.")
+    static let workoutDeleteHint = localized("Deletes this workout.")
+    static let workoutExerciseListRowHint = localized("Shows the exercise in the workout.")
 
     // MARK: - WorkoutSummaryView
-    static let workoutSummaryTitleHint = "Edits the workout title."
-    static let workoutSummaryNotesHint = "Edits the workout notes."
-    static let workoutSummaryNotesLabel = "Notes"
-    static let workoutSummarySaveAsPlanHint = "Saves this workout as a reusable plan."
-    static let workoutSummaryDoneHint = "Saves and closes the workout summary."
-    static let workoutSummaryDoneLabel = "Done"
-    static let workoutSummaryPRSectionLabel = "Personal Records"
-    static let workoutSummaryPlanSavedLabel = "Saved as Workout Plan"
+    static let workoutSummaryTitleHint = localized("Edits the workout title.")
+    static let workoutSummaryNotesHint = localized("Edits the workout notes.")
+    static let workoutSummaryNotesLabel = localized("Notes")
+    static let workoutSummarySaveAsPlanHint = localized("Saves this workout as a reusable plan.")
+    static let workoutSummaryDoneHint = localized("Saves and closes the workout summary.")
+    static let workoutSummaryDoneLabel = localized("Done")
+    static let workoutSummaryPRSectionLabel = localized("Personal Records")
+    static let workoutSummaryPlanSavedLabel = localized("Saved as Workout Plan")
 
     static func workoutSummaryEffortLabel(value: Int) -> String {
-        "Effort \(value)"
+        localized("Effort \(value)")
     }
 
     static func workoutSummaryEffortValue(value: Int, isSelected: Bool) -> String {
-        isSelected ? "Selected" : "Not selected"
+        isSelected ? localized("Selected") : localized("Not selected")
     }
 
     static func workoutSummaryNotesValue(hasNotes: Bool, notes: String) -> String {
-        hasNotes ? notes : "No notes added."
+        hasNotes ? notes : localized("No notes added.")
     }
 
     static func workoutSummaryPRSectionValue(count: Int) -> String {
-        count == 1 ? "1 personal record" : "\(count) personal records"
+        count == 1 ? localized("1 personal record") : localized("\(count) personal records")
     }
 
     // MARK: - SuggestionGroupRow
-    static let suggestionRejectHint = "Rejects this suggestion group."
-    static let suggestionAcceptHint = "Accepts this suggestion group."
-    static let suggestionDeferLabel = "Later"
-    static let suggestionDeferHint = "Defers this suggestion to review before the next workout."
+    static let suggestionRejectHint = localized("Rejects this suggestion group.")
+    static let suggestionAcceptHint = localized("Accepts this suggestion group.")
+    static let suggestionDeferLabel = localized("Later")
+    static let suggestionDeferHint = localized("Defers this suggestion to review before the next workout.")
 
     // MARK: - DeferredSuggestionsView
-    static let deferredSuggestionsSkipLabel = "Skip"
-    static let deferredSuggestionsSkipHint = "Rejects all remaining suggestions and starts the workout."
-    static let deferredSuggestionsAcceptAllLabel = "Accept All"
-    static let deferredSuggestionsAcceptAllHint = "Applies all pending suggestions and starts the workout."
+    static let deferredSuggestionsSkipLabel = localized("Skip")
+    static let deferredSuggestionsSkipHint = localized("Rejects all remaining suggestions and starts the workout.")
+    static let deferredSuggestionsAcceptAllLabel = localized("Accept All")
+    static let deferredSuggestionsAcceptAllHint = localized("Applies all pending suggestions and starts the workout.")
 
     // MARK: - SummaryStatCard
     static func summaryStatCardLabel(title: String, value: String) -> String {
-        "\(title), \(value)"
+        localized("\(title), \(value)")
     }
 
     // MARK: - ExerciseSummaryRow
-    static let exerciseSummaryRowHint = "Shows exercise history and details."
+    static let exerciseSummaryRowHint = localized("Shows exercise history and details.")
 
     static func exerciseSummaryRowValue(lastUsed: String, sessions: String?, record: String?) -> String {
         var parts = [lastUsed]
         if let sessions { parts.append(sessions) }
         if let record { parts.append(record) }
-        return parts.joined(separator: ", ")
+        return localized("\(parts.joined(separator: ", "))")
     }
 
     // MARK: - WorkoutPlanCardView
     static func workoutPlanCardValue(exerciseCount: Int, muscles: String) -> String {
-        let exerciseText = exerciseCount == 1 ? "1 exercise" : "\(exerciseCount) exercises"
-        return "\(exerciseText), \(muscles)"
+        let exerciseText = exerciseCount == 1 ? localized("1 exercise") : localized("\(exerciseCount) exercises")
+        return localized("\(exerciseText), \(muscles)")
     }
 
     // MARK: - Navbar
-    static let closeButtonHint = "Closes the sheet."
+    static let closeButtonHint = localized("Closes the sheet.")
 
     // MARK: - TimerDurationPicker
-    static let timerDurationPickerLabel = "Timer duration"
+    static let timerDurationPickerLabel = localized("Timer duration")
 
     // MARK: - RepRangeButton
-    static let repRangeButtonLabel = "Rep range"
-    static let repRangeButtonHint = "Edits the rep range."
+    static let repRangeButtonLabel = localized("Rep range")
+    static let repRangeButtonHint = localized("Edits the rep range.")
 
     // MARK: - ExerciseSetRowView
-    static let exerciseSetRepsLabel = "Reps"
-    static let exerciseSetWeightLabel = "Weight"
-    static let exerciseSetMenuHint = "Opens set options."
+    static let exerciseSetRepsLabel = localized("Reps")
+    static let exerciseSetWeightLabel = localized("Weight")
+    static let exerciseSetMenuHint = localized("Opens set options.")
 
     // MARK: - ExerciseDetailView
-    static let exerciseDetailOptionsMenuHint = "Exercise actions."
+    static let exerciseDetailOptionsMenuHint = localized("Exercise actions.")
 
     // MARK: - AddExerciseView
-    static let addExerciseCloseLabel = "Close"
-    static let addExerciseConfirmLabel = "Add Exercises"
-    static let addExerciseMuscleFiltersHint = "Shows muscle filter options."
+    static let addExerciseCloseLabel = localized("Close")
+    static let addExerciseConfirmLabel = localized("Add Exercises")
+    static let addExerciseMuscleFiltersHint = localized("Shows muscle filter options.")
+    static let addExerciseFiltersHint = localized("Shows filter options.")
+    static let exerciseSelectionRemoveHint = localized("Removes this exercise from your selection.")
+    static let exerciseSelectionAddHint = localized("Adds this exercise to your selection.")
+
+    // MARK: - ReplaceExerciseView
+    static let replaceExerciseCloseLabel = localized("Close")
+    static let replaceExerciseConfirmHint = localized("Replaces the current exercise with the selected one.")
+
+    // MARK: - PreWorkoutContextView
+    static let preWorkoutEnergyDrinkLabel = localized("Pre-workout energy drink")
+    static let preWorkoutEnergyDrinkHint = localized("Toggles whether you took a pre-workout drink.")
+    static let preWorkoutMoodHint = localized("Sets your pre-workout mood.")
+
+    static func yesNoValue(_ isTrue: Bool) -> String {
+        isTrue ? localized("Yes") : localized("No")
+    }
+
+    // MARK: - MuscleFilterSheetView
+    static let muscleFilterAdvancedLabel = localized("Advanced muscles")
+    static let muscleFilterAdvancedHint = localized("Shows minor muscles.")
+    static let muscleFilterClearHint = localized("Clears all selected muscles.")
+    static let muscleFilterCloseLabel = localized("Close")
+    static let muscleFilterApplyLabel = localized("Apply Filters")
+    static let muscleFilterChipHint = localized("Toggles this muscle filter.")
+
+    static func muscleFilterAdvancedValue(isExpanded: Bool) -> String {
+        isExpanded ? localized("Expanded") : localized("Collapsed")
+    }
+
+    // MARK: - RestTimeEditorView
+    static let restTimeRowHint = localized("Shows duration picker.")
+    static let copyActionLabel = localized("Copy")
+    static let pasteActionLabel = localized("Paste")
+
+    // MARK: - RepRangeEditorView
+    static let repRangeSuggestionLabel = localized("Rep range suggestion")
+    static let repRangeSuggestionHint = localized("Applies this rep range.")
 
     // MARK: - OnboardingView
-    static let onboardingRetryHint = "Retries the current setup step."
-    static let onboardingContinueWithoutiCloudHint = "Continues setup without iCloud sync."
-    static let onboardingEnableICloudHint = "Opens iOS Settings to enable iCloud."
+    static let onboardingRetryHint = localized("Retries the current setup step.")
+    static let onboardingContinueWithoutiCloudHint = localized("Continues setup without iCloud sync.")
+    static let onboardingEnableICloudHint = localized("Opens iOS Settings to enable iCloud.")
 
     // MARK: - WorkoutSettingsView
-    static let workoutSettingsAutoStartTimerHint = "Automatically starts rest timer when a set is marked complete."
-    static let workoutSettingsAutoCompleteAfterRPEHint = "Automatically marks a set complete after selecting an RPE rating."
-    static let workoutSettingsNotificationsHint = "Sends a local notification when rest timer finishes."
-    static let workoutSettingsLiveActivitiesHint = "Shows a live activity on the Lock Screen during your workout."
-    static let workoutSettingsRestartLiveActivityHint = "Restarts the workout live activity if you dismissed it."
+    static let workoutSettingsAutoStartTimerHint = localized("Automatically starts rest timer when a set is marked complete.")
+    static let workoutSettingsAutoCompleteAfterRPEHint = localized("Automatically marks a set complete after selecting an RPE rating.")
+    static let workoutSettingsNotificationsHint = localized("Sends a local notification when rest timer finishes.")
+    static let workoutSettingsLiveActivitiesHint = localized("Shows a live activity on the Lock Screen during your workout.")
+    static let workoutSettingsRestartLiveActivityHint = localized("Restarts the workout live activity if you dismissed it.")
 
     // MARK: - RestTimerView
-    static let restTimerLabel = "Rest timer"
-    static let restTimerValueReady = "Ready"
-    static let restTimerValueRunning = "Running"
-    static let restTimerValuePaused = "Paused"
-    static let restTimerCloseLabel = "Close"
-    static let restTimerNextSetLabel = "Next set"
-    static let restTimerCompleteSetLabel = "Complete set"
+    static let restTimerLabel = localized("Rest timer")
+    static let restTimerValueReady = localized("Ready")
+    static let restTimerValueRunning = localized("Running")
+    static let restTimerValuePaused = localized("Paused")
+    static let restTimerCloseLabel = localized("Close")
+    static let restTimerNextSetLabel = localized("Next set")
+    static let restTimerCompleteSetLabel = localized("Complete set")
+    static let restTimerStartHint = localized("Starts the rest timer.")
+    static let restTimerStopHint = localized("Stops the rest timer.")
+    static let restTimerPauseHint = localized("Pauses the rest timer.")
+    static let restTimerResumeHint = localized("Resumes the rest timer.")
+    static let restTimerAdjustHint = localized("Adjusts the rest timer.")
+    static let restTimerCompleteAndRestartHint = localized("Marks the next set complete and restarts the timer.")
+
+    static func restTimerAdjustLabel(deltaSeconds: Int) -> String {
+        deltaSeconds < 0 ? localized("Decrease rest time by 15 seconds") : localized("Increase rest time by 15 seconds")
+    }
 
     static func restTimerRecentStartLabel(seconds: Int, secondsToTime: (Int) -> String) -> String {
-        "Start \(secondsToTime(seconds)) timer"
+        localized("Start a timer for \(secondsToTime(seconds))")
     }
 
 }

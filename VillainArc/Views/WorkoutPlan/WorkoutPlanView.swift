@@ -53,12 +53,12 @@ struct WorkoutPlanView: View {
                         }
                     }
                     .labelStyle(.iconOnly)
-                    .accessibilityIdentifier("workoutPlanCancelButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanCancelButton)
                     .confirmationDialog("Cancel Workout Plan?", isPresented: $showCancelWorkoutPlanConfirmation) {
                         Button("Cancel Plan", role: .destructive) {
                             deleteWorkoutPlanAndDismiss()
                         }
-                        .accessibilityIdentifier("workoutPlanConfirmCancelButton")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanConfirmCancelButton)
                     } message: {
                         Text("Are you sure you want to cancel this workout plan?")
                     }
@@ -85,7 +85,7 @@ struct WorkoutPlanView: View {
                         dismiss()
                     }
                     .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
-                    .accessibilityIdentifier("workoutPlanSaveButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSaveButton)
                 }
                 ToolbarItem(placement: .bottomBar) {
                     if !plan.sortedExercises.isEmpty {
@@ -93,8 +93,8 @@ struct WorkoutPlanView: View {
                             Haptics.selection()
                             showExerciseEditSheet = true
                         }
-                        .accessibilityIdentifier("workoutPlanEditExercisesButton")
-                        .accessibilityHint("Shows the list of exercises.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanEditExercisesButton)
+                        .accessibilityHint(AccessibilityText.workoutPlanEditExercisesHint)
                     }
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -103,8 +103,8 @@ struct WorkoutPlanView: View {
                         Haptics.selection()
                         showAddExerciseSheet = true
                     }
-                    .accessibilityIdentifier("workoutPlanAddExerciseButton")
-                    .accessibilityHint("Adds an exercise.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanAddExerciseButton)
+                    .accessibilityHint(AccessibilityText.workoutPlanAddExerciseHint)
                 }
             }
             .sheet(isPresented: $showExerciseEditSheet) {
@@ -168,15 +168,15 @@ struct WorkoutPlanView: View {
     private var planDetailView: some View {
         ScrollView {
             if plan.sortedExercises.isEmpty {
-                ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Click the '\(Image(systemName: "plus"))' icon to add some exercises."))
+                ContentUnavailableView("No Exercises Added", systemImage: "dumbbell.fill", description: Text("Tap the \(Image(systemName: "plus")) button to add exercises."))
                     .padding(.horizontal)
                     .containerRelativeFrame([.horizontal, .vertical])
-                    .accessibilityIdentifier("workoutPlanExercisesEmptyState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExercisesEmptyState)
             } else {
                 LazyVStack(spacing: 60) {
                     ForEach(plan.sortedExercises) { exercise in
                         WorkoutPlanExerciseView(exercise: exercise, onDelete: { deleteExercise(exercise) })
-                            .accessibilityIdentifier("workoutPlanExerciseView-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseView(exercise))
                     }
                 }
                 Spacer(minLength: 75)
@@ -188,7 +188,7 @@ struct WorkoutPlanView: View {
                 dismissKeyboard()
             }
         )
-        .accessibilityIdentifier("workoutPlanEditingForm")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanEditingForm)
     }
     
     private var exerciseListView: some View {
@@ -200,7 +200,7 @@ struct WorkoutPlanView: View {
                         .bold()
                         .lineLimit(1)
                     HStack(alignment: .bottom) {
-                        Text(exercise.equipmentType.rawValue)
+                        Text(exercise.equipmentType.displayName)
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                             .font(.headline)
@@ -220,7 +220,7 @@ struct WorkoutPlanView: View {
         }
         .scrollIndicators(.hidden)
         .environment(\.editMode, .constant(.active))
-        .accessibilityIdentifier("workoutPlanExerciseList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseList)
     }
     
     private func deleteExercise(offsets: IndexSet) {
@@ -345,19 +345,19 @@ private struct WorkoutPlanExerciseView: View {
             .buttonSizing(.flexible)
             .padding(.horizontal)
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseAddSetButton(exercise))
-            .accessibilityHint("Adds a new set.")
+            .accessibilityHint(AccessibilityText.workoutPlanExerciseAddSetHint)
         }
     }
 
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(exercise.name)
-                .font(.title3)
-                .bold()
-                .lineLimit(1)
+                Text(exercise.name)
+                    .font(.title3)
+                    .bold()
+                    .lineLimit(1)
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(exercise.equipmentType.rawValue)
+                    Text(exercise.equipmentType.displayName)
                         .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
                     if let repRange = exercise.repRange {
@@ -371,7 +371,7 @@ private struct WorkoutPlanExerciseView: View {
                         showExerciseHistorySheet = true
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseHistoryButton(exercise))
-                    .accessibilityHint("Shows prior performances for this exercise.")
+                    .accessibilityHint(AccessibilityText.workoutPlanExerciseHistoryHint)
                     .labelStyle(.iconOnly)
                     .font(.title)
                     .tint(.primary)
@@ -381,7 +381,7 @@ private struct WorkoutPlanExerciseView: View {
                         showRestTimeEditor = true
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRestTimesButton(exercise))
-                    .accessibilityHint("Edits rest times.")
+                    .accessibilityHint(AccessibilityText.workoutPlanExerciseRestTimesHint)
                     .labelStyle(.iconOnly)
                     .font(.title)
                     .tint(.primary)
@@ -405,7 +405,7 @@ private struct WorkoutPlanExerciseView: View {
                 Label("Replace Exercise", systemImage: "arrow.triangle.2.circlepath")
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseReplaceButton(exercise))
-            .accessibilityHint("Replaces this exercise with another.")
+            .accessibilityHint(AccessibilityText.workoutPlanExerciseReplaceHint)
             if let onDelete {
                 Button(role: .destructive) {
                     Haptics.selection()
@@ -414,7 +414,7 @@ private struct WorkoutPlanExerciseView: View {
                     Label("Delete Exercise", systemImage: "trash")
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseDeleteButton(exercise))
-                .accessibilityHint("Deletes this exercise.")
+                .accessibilityHint(AccessibilityText.workoutPlanExerciseDeleteHint)
             }
         }
         .sheet(isPresented: $showRepRangeEditor) {
@@ -494,7 +494,7 @@ private struct WorkoutPlanSetRowView: View {
                             }
                         }
                     } label: {
-                        Label("Target RPE\(set.targetRPE == 0 ? "" : ": \(set.targetRPE)")", systemImage: "flag.fill")
+                        Label(targetRPELabel, systemImage: "flag.fill")
                         Text(RPEValue.menuSubtitle(for: set.visibleTargetRPE, style: .target))
                     }
                 }
@@ -510,13 +510,13 @@ private struct WorkoutPlanSetRowView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetMenu(exercise, set: set))
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
             .accessibilityValue(AccessibilityText.exerciseSetMenuValue(for: set))
-            .accessibilityHint("Opens set options.")
+            .accessibilityHint(AccessibilityText.exerciseSetMenuHint)
 
             TextField("Reps", value: $set.targetReps, format: .number)
                 .keyboardType(.numberPad)
                 .focused($focusedField, equals: .reps)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetRepsField(exercise, set: set))
-                .accessibilityLabel("Reps")
+                .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
 
             TextField("Weight", value: Binding(
                 get: { weightUnit.fromKg(set.targetWeight) },
@@ -525,7 +525,7 @@ private struct WorkoutPlanSetRowView: View {
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetWeightField(exercise, set: set))
-                .accessibilityLabel("Weight")
+                .accessibilityLabel(AccessibilityText.exerciseSetWeightLabel)
         }
         .onChange(of: focusedField) { _, field in
             guard field != nil else { return }
@@ -551,6 +551,13 @@ private struct WorkoutPlanSetRowView: View {
         Haptics.selection()
         set.targetRPE = value
         saveContext(context: context)
+    }
+
+    private var targetRPELabel: String {
+        if set.targetRPE == 0 {
+            return String(localized: "Target RPE")
+        }
+        return String(localized: "Target RPE: \(set.targetRPE)")
     }
 
     private var setIndicator: some View {

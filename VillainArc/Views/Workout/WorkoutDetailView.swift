@@ -32,7 +32,7 @@ struct WorkoutDetailView: View {
             if !workout.notes.isEmpty {
                 Section("Workout Notes") {
                     Text(workout.notes)
-                        .accessibilityIdentifier("workoutDetailNotesText")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailNotesText)
                 }
             }
             ForEach(workout.sortedExercises) { exercise in
@@ -86,13 +86,13 @@ struct WorkoutDetailView: View {
                     if !exercise.notes.isEmpty {
                         Text("Notes: \(exercise.notes)")
                             .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier("workoutDetailExerciseNotes-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseNotes(exercise))
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
             }
         }
-        .accessibilityIdentifier("workoutDetailList")
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailList)
         .navigationTitle(workout.title)
         .navigationSubtitle(Text(formattedDateRange(start: workout.startedAt, end: workout.endedAt, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
@@ -103,28 +103,28 @@ struct WorkoutDetailView: View {
                         Button("Open Workout Plan", systemImage: "arrowshape.turn.up.right") {
                             openWorkoutPlan(linkedPlan)
                         }
-                        .accessibilityIdentifier("workoutDetailOpenWorkoutPlanButton")
-                        .accessibilityHint("Opens the linked workout plan.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailOpenWorkoutPlanButton)
+                        .accessibilityHint(AccessibilityText.workoutDetailOpenWorkoutPlanHint)
                     } else {
                         Button("Save as Workout Plan", systemImage: "list.clipboard") {
                             saveWorkoutAsPlan()
                         }
-                        .accessibilityIdentifier("workoutDetailSaveWorkoutPlanButton")
-                        .accessibilityHint("Saves this workout as a workout plan.")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSaveWorkoutPlanButton)
+                        .accessibilityHint(AccessibilityText.workoutDetailSaveWorkoutPlanHint)
                     }
                     Button("Delete Workout", systemImage: "trash", role: .destructive) {
                         showDeleteWorkoutConfirmation = true
                     }
-                    .accessibilityIdentifier("workoutDetailDeleteButton")
-                    .accessibilityHint("Deletes this workout.")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailDeleteButton)
+                    .accessibilityHint(AccessibilityText.workoutDetailDeleteHint)
                 }
-                .accessibilityIdentifier("workoutDetailOptionsMenu")
-                .accessibilityHint("Workout actions.")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailOptionsMenu)
+                .accessibilityHint(AccessibilityText.workoutDetailOptionsMenuHint)
                 .confirmationDialog("Delete Workout", isPresented: $showDeleteWorkoutConfirmation) {
                     Button("Delete", role: .destructive) {
                         deleteWorkout()
                     }
-                    .accessibilityIdentifier("workoutDetailConfirmDeleteButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailConfirmDeleteButton)
                 } message: {
                     Text("Are you sure you want to delete this workout?")
                 }
@@ -138,10 +138,10 @@ struct WorkoutDetailView: View {
                             .font(.title)
                             .frame(width: 28, height: 28)
                     }
-                    .accessibilityIdentifier("workoutDetailPreWorkoutContextButton")
-                    .accessibilityLabel("Pre workout context")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton)
+                    .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
                     .accessibilityValue(preWorkoutAccessibilityValue)
-                    .accessibilityHint("Shows pre workout details.")
+                    .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
                 }
                 if preWorkoutContext?.tookPreWorkout == true {
                     Button {
@@ -151,10 +151,10 @@ struct WorkoutDetailView: View {
                             .foregroundStyle(.yellow)
                             .accessibilityHidden(true)
                     }
-                    .accessibilityIdentifier("workoutDetailPreWorkoutDrinkButton")
-                    .accessibilityLabel("Pre workout context")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton)
+                    .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
                     .accessibilityValue(preWorkoutAccessibilityValue)
-                    .accessibilityHint("Shows pre workout details.")
+                    .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
                 }
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -162,8 +162,8 @@ struct WorkoutDetailView: View {
                 ToolbarItem(placement: .bottomBar) {
                     effortRingLabel
                         .accessibilityElement(children: .ignore)
-                        .accessibilityIdentifier("workoutDetailEffortDisplay")
-                        .accessibilityLabel("Post workout effort")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailEffortDisplay)
+                        .accessibilityLabel(AccessibilityText.workoutDetailEffortLabel)
                         .accessibilityValue(postWorkoutEffortText ?? "")
                 }
             }

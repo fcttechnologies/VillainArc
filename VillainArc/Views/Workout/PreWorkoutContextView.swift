@@ -52,9 +52,9 @@ struct PreWorkoutContextView: View {
                             .contentTransition(.symbolEffect)
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutEnergyDrinkCard)
-                    .accessibilityLabel("Pre-workout energy drink")
-                    .accessibilityValue(isSelected ? "Yes" : "No")
-                    .accessibilityHint("Toggles whether you took a pre-workout drink.")
+                    .accessibilityLabel(AccessibilityText.preWorkoutEnergyDrinkLabel)
+                    .accessibilityValue(AccessibilityText.yesNoValue(isSelected))
+                    .accessibilityHint(AccessibilityText.preWorkoutEnergyDrinkHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
@@ -93,7 +93,7 @@ struct PreWorkoutContextView: View {
         .animation(reduceMotion ? .none : .bouncy, value: preWorkoutContext.feeling)
         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodOption(level))
         .accessibilityLabel(level.displayName)
-        .accessibilityHint("Sets your pre-workout mood.")
+        .accessibilityHint(AccessibilityText.preWorkoutMoodHint)
     }
 }
 

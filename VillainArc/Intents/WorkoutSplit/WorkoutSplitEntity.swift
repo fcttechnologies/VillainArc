@@ -61,14 +61,14 @@ extension WorkoutSplitEntity {
         id = workoutSplit.id
         title = displayTitle
         self.summary = summary
-        mode = workoutSplit.mode.rawValue
+        mode = workoutSplit.mode.displayName
         isActive = workoutSplit.isActive
         dayNames = days.map { splitDayDisplayName(for: $0, mode: workoutSplit.mode) }
         fullContent = WorkoutSplitFullContent(
             id: workoutSplit.id,
             title: displayTitle,
             summary: summary,
-            mode: workoutSplit.mode.rawValue,
+            mode: workoutSplit.mode.displayName,
             isActive: workoutSplit.isActive,
             weeklySplitOffset: workoutSplit.weeklySplitOffset,
             rotationCurrentIndex: workoutSplit.rotationCurrentIndex,
@@ -140,7 +140,7 @@ private func makeDayContent(for day: WorkoutSplitDay) -> WorkoutSplitFullContent
         weekday: day.weekday,
         name: normalizedSplitDayName(day.name),
         isRestDay: day.isRestDay,
-        targetMuscles: day.resolvedMuscles.map(\.rawValue),
+        targetMuscles: day.resolvedMuscles.map(\.displayName),
         workoutPlan: workoutPlanReferenceContent(for: day.workoutPlan)
     )
 }
@@ -163,13 +163,13 @@ private func splitDayDisplayName(for day: WorkoutSplitFullContent.Day, mode: Spl
         return planTitle
     }
     if day.isRestDay {
-        return "Rest Day"
+        return String(localized: "Rest Day")
     }
     switch mode {
     case .weekly:
         return weekdayName(for: day.weekday)
     case .rotation:
-        return "Day \(day.index + 1)"
+        return String(localized: "Day \(day.index + 1)")
     }
 }
 
@@ -183,7 +183,7 @@ private func weekdayName(for weekday: Int) -> String {
 private func workoutSplitDisplayTitle(for split: WorkoutSplit) -> String {
     let trimmed = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
-        return split.mode == .weekly ? "Weekly Split" : "Rotation Split"
+        return split.mode.defaultTitle
     }
     return trimmed
 }
@@ -191,7 +191,7 @@ private func workoutSplitDisplayTitle(for split: WorkoutSplit) -> String {
 @MainActor
 private func workoutSplitSummary(for split: WorkoutSplit, days: [WorkoutSplitFullContent.Day]) -> String {
     let dayCount = days.count
-    let base = split.mode == .weekly ? "Weekly split" : "Rotation split"
+    let base = split.mode.summaryLabel
     let dayText = "\(dayCount) \(dayCount == 1 ? "day" : "days")"
     guard let currentDay = split.todaysSplitDay else {
         return "\(base) • \(dayText)"
@@ -200,7 +200,7 @@ private func workoutSplitSummary(for split: WorkoutSplit, days: [WorkoutSplitFul
     let currentDayContent = makeDayContent(for: currentDay)
     let currentLabel = splitDayDisplayName(for: currentDayContent, mode: split.mode)
 
-    let labelPrefix = split.mode == .weekly ? "Today" : "Current"
+    let labelPrefix = split.mode == .weekly ? String(localized: "Today") : String(localized: "Current")
     return "\(base) • \(dayText) • \(labelPrefix): \(currentLabel)"
 }
 

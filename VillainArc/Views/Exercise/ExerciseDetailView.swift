@@ -15,6 +15,19 @@ struct ExerciseDetailView: View {
 
         var id: String { rawValue }
 
+        var displayName: String {
+            switch self {
+            case .estimatedOneRepMax:
+                return String(localized: "Est. 1RM")
+            case .topWeight:
+                return String(localized: "Top Weight")
+            case .volume:
+                return String(localized: "Volume")
+            case .reps:
+                return String(localized: "Reps")
+            }
+        }
+
         var tint: Color {
             switch self {
             case .estimatedOneRepMax:
@@ -212,7 +225,7 @@ struct ExerciseDetailView: View {
                     if let activeMetric {
                         VStack(alignment: .leading, spacing: 14) {
                             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                                Text(activeMetric.rawValue)
+                                Text(activeMetric.displayName)
                                     .font(.headline)
                                 Spacer()
                                 Text("Latest")
@@ -227,7 +240,7 @@ struct ExerciseDetailView: View {
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {
                                     ForEach(availableMetrics) { metric in
-                                        Text(metric.rawValue).tag(metric)
+                                        Text(metric.displayName).tag(metric)
                                     }
                                 }
                                 .pickerStyle(.segmented)

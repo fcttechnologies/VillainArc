@@ -108,7 +108,7 @@ struct TrainingSummaryIntent: AppIntent {
 
         guard let workoutPlan = splitDay.workoutPlan else {
             let majorMuscles = splitDay.targetMuscles.filter(\.isMajor)
-            let musclesSummary = ListFormatter.localizedString(byJoining: majorMuscles.map(\.rawValue))
+            let musclesSummary = ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName))
             if !musclesSummary.isEmpty {
                 return .result(dialog: "You are hitting: \(musclesSummary).")
             }

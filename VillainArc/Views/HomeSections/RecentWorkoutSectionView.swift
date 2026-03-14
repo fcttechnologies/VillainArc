@@ -13,7 +13,7 @@ struct RecentWorkoutSectionView: View {
             }
 
             if recentWorkout.isEmpty {
-                ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Click the '\(Image(systemName: "plus"))' to start your first workout."))
+                ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Tap the \(Image(systemName: "plus")) button to start your first workout."))
                     .frame(maxWidth: .infinity)
                     .glassEffect(.regular, in: .rect(cornerRadius: 12))
                     .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutEmptyState)

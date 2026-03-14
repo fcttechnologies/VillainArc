@@ -85,7 +85,7 @@ struct FilteredExerciseListView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
                     .accessibilityLabel(exercise.name)
                     .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: true))
-                    .accessibilityHint("Removes this exercise from your selection.")
+                    .accessibilityHint(AccessibilityText.exerciseSelectionRemoveHint)
                 } else {
                     Button {
                         Haptics.selection()
@@ -105,7 +105,7 @@ struct FilteredExerciseListView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
                     .accessibilityLabel(exercise.name)
                     .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: false))
-                    .accessibilityHint("Adds this exercise to your selection.")
+                    .accessibilityHint(AccessibilityText.exerciseSelectionAddHint)
                 }
             }
         }
@@ -133,7 +133,7 @@ struct FilteredExerciseListView: View {
                 }
                 .font(.headline)
                 HStack {
-                    Text(exercise.equipmentType.rawValue)
+                    Text(exercise.equipmentType.displayName)
                     Spacer()
                     Text(exercise.displayMuscle)
                 }
@@ -167,18 +167,18 @@ struct FilteredExerciseListView: View {
     private var emptyStateView: some View {
         if selectedOnly && selectedExercises.isEmpty {
             ContentUnavailableView("No Exercises Selected", systemImage: "checkmark.circle", description: Text("Select exercises to see them here."))
-                .accessibilityIdentifier("filteredExerciseEmptySelectedState")
+                .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseEmptySelectedState)
         } else if favoritesOnly && !hasFavorites {
             if selectedOnly {
                 ContentUnavailableView("No Favorites Selected", systemImage: "star", description: Text("Select favorite exercises to see them here."))
-                    .accessibilityIdentifier("filteredExerciseEmptyFavoritesSelectedState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseEmptyFavoritesSelectedState)
             } else {
                 ContentUnavailableView("No Favorites", systemImage: "star", description: Text("Swipe right on an exercise to favorite it."))
-                    .accessibilityIdentifier("filteredExerciseEmptyFavoritesState")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseEmptyFavoritesState)
             }
         } else {
             ContentUnavailableView.search(text: searchText)
-                .accessibilityIdentifier("filteredExerciseEmptySearchState")
+                .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseEmptySearchState)
         }
     }
 
