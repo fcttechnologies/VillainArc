@@ -238,11 +238,13 @@ When the summary is dismissed, any remaining pending suggestions are auto-conver
 
 ### Outcome Resolution
 
-Outcome resolution evaluates how earlier suggestions actually played out after the next workout. That happens in:
+Outcome resolution evaluates how earlier suggestions actually played out after subsequent workouts. That happens in:
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 
-The deterministic path uses performed workout data. `AIOutcomeInferrer` is only a fallback for lower-confidence cases.
+Outcomes are not resolved after a single workout. Each time `resolveOutcomes` runs it appends one `EvaluationHistoryEntry` to the eligible event. The outcome only finalizes when `evaluationHistory.count >= event.requiredEvaluationCount`, with the single exception that `tooAggressive` always resolves immediately — one session showing a change is too hard is sufficient to stop. When the threshold is reached, a safety-weighted priority (`tooAggressive > good > tooEasy > ignored`) picks the winner across all accumulated entries.
+
+The deterministic `OutcomeRuleEngine` path runs first. `AIOutcomeInferrer` is only a fallback for lower-confidence cases.
 
 ### New Suggestion Generation
 
@@ -255,7 +257,7 @@ The generator uses:
 - `MetricsCalculator` for deterministic training-style and progression logic
 - `AITrainingStyleClassifier` only when style detection is ambiguous
 - frozen suggestion context from `ExercisePerformance.originalTargetSnapshot`
-- frozen set matching from `SetPerformance.linkedTargetSetIndex`
+- frozen set matching from `SetPerformance.originalTargetSetID` (UUID-based, survives plan reindexing)
 - event-level category metadata to separate performance, recovery, structure, and rep-range configuration suggestions
 
 The persisted `SuggestionEvent` now owns the live target exercise/set links for review, cleanup, and outcome resolution. Child `PrescriptionChange` rows stay scalar-only and describe the exact before/after deltas inside that one event.

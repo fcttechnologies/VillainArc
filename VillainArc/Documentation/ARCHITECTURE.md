@@ -125,7 +125,7 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `Data/Models/Sessions/SetPerformance.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
 
 ### `Data/Models/Sessions/SetPerformance.swift`
-- Purpose: per-set performed data including completion state, actual values, optional frozen target-set index.
+- Purpose: per-set performed data including completion state, actual values, and `originalTargetSetID` for historical target-set matching even after live plan reindexing.
 - Called by: `ExercisePerformance`, set row UI, suggestion and outcome logic.
 - Calls: computed helpers for rest, volume, and estimated 1RM.
 - Read with: `Views/Components/ExerciseSetRowView.swift`, `Data/Models/Plans/SetPrescription.swift`.
@@ -243,7 +243,7 @@ This file is a structure map for the codebase. It explains what the important fi
 ## Suggestions
 
 ### `Data/Models/Suggestions/SuggestionEvent.swift`
-- Purpose: grouped persisted suggestion record with shared decision/outcome state, live plan target links, category metadata, and frozen snapshots.
+- Purpose: grouped persisted suggestion record with shared decision/outcome state, live plan target links, category metadata, frozen snapshots, `evaluationHistory: [EvaluationHistoryEntry]` for multi-session accumulation, and `requiredEvaluationCount` controlling how many sessions are needed before the outcome finalizes.
 - Called by: suggestion generation, review UI, outcome evaluation.
 - Calls: child-change ordering helpers.
 - Read with: `Data/Models/Suggestions/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
@@ -255,13 +255,13 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `SuggestionEvent.swift`, `SuggestionGrouping.swift`.
 
 ### `Data/Models/Suggestions/SuggestionSnapshots.swift`
-- Purpose: frozen target/performance context used by suggestion history and AI inputs.
+- Purpose: frozen target/performance context used by suggestion history and AI inputs. Also defines `EvaluationHistoryEntry` (per-session partial outcome stored in `SuggestionEvent.evaluationHistory`).
 - Called by: performance models, suggestion generation, outcome evaluation, AI DTO builders.
 - Calls: snapshot mappers from plans and performances.
-- Read with: `ExercisePerformance.swift`, `SetPerformance.swift`, `AIModels/*`.
+- Read with: `ExercisePerformance.swift`, `SetPerformance.swift`, `SuggestionEvent.swift`, `AIModels/*`.
 
 ### `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
-- Purpose: top-level post-workout suggestion generation entrypoint.
+- Purpose: top-level post-workout suggestion generation entrypoint. Also assigns `requiredEvaluationCount` on each generated event based on change type and category.
 - Called by: `WorkoutSummaryView`.
 - Calls: `MetricsCalculator`, `AITrainingStyleClassifier`, `RuleEngine`, `SuggestionDeduplicator`, SwiftData persistence.
 - Read with: `RuleEngine.swift`, `SuggestionDeduplicator.swift`, `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`.
@@ -279,10 +279,10 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `SuggestionEventDraft.swift`.
 
 ### `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
-- Purpose: top-level evaluation of older suggestions against the next completed workout.
+- Purpose: top-level multi-session outcome evaluator. Appends one `EvaluationHistoryEntry` per workout to each eligible event, finalizes the outcome when `requiredEvaluationCount` is reached (or immediately for `tooAggressive`), and applies safety-weighted priority across all history entries. Includes within-invocation and cross-invocation dedup guards.
 - Called by: `WorkoutSummaryView`.
 - Calls: `OutcomeRuleEngine`, `AIOutcomeInferrer`, suggestion mutation helpers.
-- Read with: `OutcomeRuleEngine.swift`, `SuggestionEvent.swift`.
+- Read with: `OutcomeRuleEngine.swift`, `SuggestionEvent.swift`, `SuggestionSnapshots.swift`.
 
 ### `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - Purpose: deterministic outcome scoring logic.
@@ -539,3 +539,15 @@ This file is a structure map for the codebase. It explains what the important fi
 ### `VillainArcTests/ExerciseHistoryMetricsTests.swift`
 - Purpose: protects rep-based history metrics and progression points.
 - Read with: `ExerciseHistory.swift`, `ExerciseHistoryUpdater.swift`.
+
+### `VillainArcTests/UUIDTargetTrackingTests.swift`
+- Purpose: protects UUID-based historical set matching, verifying that `originalTargetSetID` on `SetPerformance` and copied target-set UUIDs inside snapshots survive reindexing and plan edits.
+- Read with: `SetPerformance.swift`, `SuggestionSnapshots.swift`.
+
+### `VillainArcTests/OutcomeRuleEngineTests.swift`
+- Purpose: direct unit tests for every `OutcomeRuleEngine` change-type evaluator, covering all outcome paths (good, tooAggressive, tooEasy, ignored, nil) and edge cases like warmup calibration and `tooEasyBuffer` boundaries.
+- Read with: `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`.
+
+### `VillainArcTests/MultiSessionEvaluationTests.swift`
+- Purpose: integration tests for `OutcomeResolver.resolveOutcomes`, the multi-session history accumulation model, `requiredEvaluationCount` assignment via `SuggestionGenerator`, eligibility filtering, dedup guards, and safety-weighted priority finalization.
+- Read with: `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`, `SuggestionEvent.swift`.

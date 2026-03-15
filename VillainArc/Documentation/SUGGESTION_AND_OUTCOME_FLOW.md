@@ -32,7 +32,8 @@ The suggestion system is built around two persisted model layers:
 - grouped decision state
 - grouped outcome state
 - frozen trigger snapshots
-- optional evaluated-performance snapshot
+- evaluation history (a list of per-session partial outcome entries)
+- required evaluation count threshold
 - training style
 - reasoning text
 - child `PrescriptionChange` rows
@@ -42,7 +43,9 @@ This is the main object shown in review UI and the main object whose decision/ou
 The important detail is why those fields exist:
 - `triggerTargetSnapshot` freezes what the plan prescribed when the suggestion was created
 - `triggerPerformanceSnapshot` freezes what the user actually did in the triggering workout
-- `evaluatedPerformanceSnapshot` later freezes the workout that was used to judge whether the suggestion worked
+- `evaluationHistory` accumulates one `EvaluationHistoryEntry` per evaluated workout session, each carrying a performance snapshot, a partial outcome, confidence, and reason
+- `latestEvaluationSnapshot` is a computed shortcut to `evaluationHistory.last?.snapshot`
+- `requiredEvaluationCount` is the number of sessions that must be evaluated before the outcome is finalized; set at generation time based on change type and category
 - `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens
 - `changeReasoning` and `outcomeReason` give both the review UI and future debugging a human-readable explanation
 - `targetExercisePrescription` and optional `targetSetPrescription` keep the live plan target on the event itself
@@ -66,6 +69,16 @@ Each `PrescriptionChange` stores one concrete mutation, such as:
 So an event can represent one grouped recommendation while still carrying one or more exact plan deltas.
 
 That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values are always stored in kg here, matching the canonical storage in `SetPrescription.targetWeight` and `SetPerformance.weight`; display conversion to the user's preferred unit happens only in the review UI.
+
+### EvaluationHistoryEntry
+
+`EvaluationHistoryEntry` is a `Codable` value type stored inside `SuggestionEvent.evaluationHistory`. Each entry represents one workout session's evaluation of the suggestion:
+
+- `sourceSessionID`: the `WorkoutSession.id` that produced this entry — used for cross-invocation dedup
+- `snapshot`: `ExercisePerformanceSnapshot` frozen at evaluation time — allows `latestEvaluationSnapshot` to surface the most recent evidence
+- `partialOutcome`: the outcome determined for this session
+- `confidence`: rule-engine or AI confidence (0–1)
+- `reason`: prefixed explanation string (`[Rules]`, `[AI]`, or `[AI override]`)
 
 ## The Two State Machines
 
@@ -146,6 +159,45 @@ So there are really two paths for unresolved suggestions:
 - wait for a future workout if the target still exists
 - get deleted during plan editing if the target itself was manually changed away
 
+### Multi-Session Confirmation
+
+Outcomes are not finalized after a single workout. Instead, the resolver accumulates evidence across multiple sessions before committing.
+
+Each time the resolver evaluates an eligible event for a given workout, it appends one `EvaluationHistoryEntry` to `event.evaluationHistory`. That entry stores:
+- `sourceSessionID`: the `WorkoutSession.id` that produced this entry
+- `snapshot`: `ExercisePerformanceSnapshot` of what the user did in that session
+- `partialOutcome`: the outcome determined for this session (good, tooAggressive, tooEasy, ignored)
+- `confidence`: how confident the rule or AI was
+- `reason`: a human-readable explanation prefixed with `[Rules]`, `[AI]`, or `[AI override]`
+
+The outcome only finalizes when either of these is true:
+- `evaluationHistory.count >= event.requiredEvaluationCount` (enough sessions accumulated)
+- the current session's partial outcome is `tooAggressive` (decisive — resolved immediately regardless of threshold)
+
+`tooAggressive` is the only decisive outcome because one session showing a change is actively too hard is sufficient to stop. All other outcomes (`good`, `tooEasy`, `ignored`) require the full threshold so a single noisy workout does not short-circuit multi-session confirmation.
+
+### Safety-Weighted Priority at Finalization
+
+When the threshold is reached, the winner is not simply the most recent entry or a majority vote.
+
+The resolver applies a safety-weighted priority across all accumulated history entries:
+
+```
+tooAggressive > good > tooEasy > ignored
+```
+
+The first outcome in that priority order that appears in any entry wins. The `outcomeReason` is taken from that winning entry.
+
+This means a single `tooAggressive` in the history always wins, even if the other entries were `good`. And `good` beats `tooEasy` to avoid treating a plateau as progress.
+
+### Deduplication Guards
+
+The resolver has two dedup layers to prevent double-counting:
+
+**Within-invocation dedup**: Each resolver call tracks a `processedEventIDs: Set<UUID>`. The AI pass and the rule-only fallback pass both share this set, so an event can only get one entry per `resolveOutcomes` call even if it appears in both passes.
+
+**Cross-invocation dedup**: Before appending a new entry, the resolver checks `event.evaluationHistory` for any existing entry whose `sourceSessionID` matches the current workout's ID. If one exists, the append is skipped. This prevents calling `resolveOutcomes` twice for the same workout from inflating the history.
+
 ### Deterministic First, AI Second
 
 `OutcomeRuleEngine` runs first for each change.
@@ -155,11 +207,7 @@ So there are really two paths for unresolved suggestions:
 - AI confidence is high enough
 - the AI outcome disagrees with the rule result
 
-The merged outcome is written back to the `SuggestionEvent` itself:
-- `outcome`
-- `outcomeReason`
-- `evaluatedAt`
-- `evaluatedPerformanceSnapshot`
+The merged outcome is stored as a `partialOutcome` in the new `EvaluationHistoryEntry`. Once the threshold is reached, the safety-weighted priority selects the final `event.outcome`, `event.outcomeReason`, and `event.evaluatedAt`.
 
 This is why outcomes are not tied only to accepted changes. Rejected suggestions can still get evaluated later if the user effectively trained in line with them anyway.
 
@@ -282,6 +330,12 @@ At that point it stores:
 - the resolved training style used when interpreting the exercise
 - the grouped reasoning text
 - one or more `PrescriptionChange` rows with the exact before/after scalar values
+- `requiredEvaluationCount`: how many sessions must be evaluated before the outcome finalizes
+
+The required count is assigned at generation time based on category and change type:
+- `warmupCalibration`, `structure`, `volume` → always 1 (structural/safety signals need no confirmation)
+- `increaseWeight`, `increaseReps`, `increaseRest`, and any rep-range change → 2 (progressions need multi-session confirmation)
+- `decreaseWeight`, `decreaseReps`, `decreaseRest`, `changeSetType` → 1 (safety/cleanup changes resolve immediately)
 
 That stored context is what later makes review, deferral, outcome resolution, and history debugging possible even after live prescription links get cleared for historical sessions.
 
