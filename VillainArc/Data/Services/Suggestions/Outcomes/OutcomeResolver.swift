@@ -77,15 +77,17 @@ struct OutcomeResolver {
             return results
         }
 
-        // Step 5: Merge phase — apply outcomes to each event.
+        // Step 5: Merge phase — apply outcome entries to each event.
+        var processedEventIDs = Set<UUID>()
+
         for (index, pair) in aiGroupInputs.enumerated() {
             let aiOutput = aiResults[index]
-            applyOutcomeIfPossible(event: pair.group.event, changes: pair.group.changes, exercisePerf: pair.group.exercisePerf, ruleResults: ruleResults, aiOutput: aiOutput)
+            applyOutcomeIfPossible(event: pair.group.event, changes: pair.group.changes, exercisePerf: pair.group.exercisePerf, ruleResults: ruleResults, aiOutput: aiOutput, sessionID: workout.id, processedIDs: &processedEventIDs)
         }
 
-        // Apply rule-only results for any remaining pending events.
+        // Rule-only fallback for any events not already processed.
         for group in groups {
-            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: nil)
+            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: nil, sessionID: workout.id, processedIDs: &processedEventIDs)
         }
 
         // Step 6: Persist
@@ -102,10 +104,7 @@ struct OutcomeResolver {
         var eligible: [SuggestionEvent] = []
 
         func appendIfEligible(_ event: SuggestionEvent?) {
-            guard let event,
-                  event.outcome == .pending,
-                  event.createdAt < workout.startedAt,
-                  event.decision == .accepted || event.decision == .rejected else { return }
+            guard let event, event.outcome == .pending, event.createdAt < workout.startedAt, event.decision == .accepted || event.decision == .rejected else { return }
             if seen.insert(event.id).inserted {
                 eligible.append(event)
             }
@@ -142,13 +141,7 @@ struct OutcomeResolver {
 
         // Convert changes to AI-friendly format.
         let aiChanges: [AIOutcomeChange] = group.changes.map { change in
-            AIOutcomeChange(
-                changeType: change.changeType,
-                scope: group.event.isSetScoped ? .set : .exercise,
-                triggerTargetSetIndex: group.event.triggerTargetSetIndex,
-                previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
-                newValue: formattedChangeValue(change.newValue, changeType: change.changeType)
-            )
+            AIOutcomeChange(changeType: change.changeType, scope: group.event.isSetScoped ? .set : .exercise, triggerTargetSetIndex: group.event.triggerTargetSetIndex, previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType), newValue: formattedChangeValue(change.newValue, changeType: change.changeType))
         }
         guard !aiChanges.isEmpty else { return nil }
 
@@ -182,10 +175,7 @@ struct OutcomeResolver {
     }
 
     private static func buildPrescriptionSnapshot(group: OutcomeGroup) -> AIExercisePrescriptionSnapshot {
-        AIExercisePrescriptionSnapshot(
-            exercise: AIExerciseIdentitySnapshot(prescription: group.prescription),
-            targetSnapshot: group.event.triggerTargetSnapshot
-        )
+        AIExercisePrescriptionSnapshot(exercise: AIExerciseIdentitySnapshot(prescription: group.prescription), targetSnapshot: group.event.triggerTargetSnapshot)
     }
 
     /// Picks the most representative rule signal for a group.
@@ -260,26 +250,43 @@ struct OutcomeResolver {
         return ResolvedOutcome(outcome: ruleOutcome.outcome, reason: "[Rules] \(ruleOutcome.reason)")
     }
 
-    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?) {
+    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, processedIDs: inout Set<UUID>) {
         guard event.outcome == .pending, event.evaluatedAt == nil else { return }
+        // Within-invocation dedup: prevents both the AI pass and the fallback pass from appending in the same call.
+        guard processedIDs.insert(event.id).inserted else { return }
+        // Cross-invocation dedup: prevents repeated resolver calls for the same workout from inflating the history.
+        guard !event.evaluationHistory.contains(where: { $0.sourceSessionID == sessionID }) else { return }
+
         let groupRuleSignal = aggregateRuleSignal(changes: changes, ruleResults: ruleResults)
         guard let resolved = mergeOutcome(rule: groupRuleSignal, ai: aiOutput) else { return }
-        applyResolvedOutcome(resolved, to: event, exercisePerf: exercisePerf)
-    }
 
-    private static func applyResolvedOutcome(_ resolved: ResolvedOutcome, to event: SuggestionEvent, exercisePerf: ExercisePerformance) {
-        event.outcome = resolved.outcome
-        event.outcomeReason = resolved.reason
+        let entry = EvaluationHistoryEntry(sourceSessionID: sessionID, snapshot: ExercisePerformanceSnapshot(performance: exercisePerf), partialOutcome: resolved.outcome, confidence: groupRuleSignal?.confidence ?? aiOutput?.confidence ?? 0.5, reason: resolved.reason)
+        event.evaluationHistory.append(entry)
+
+        // Only tooAggressive always resolves immediately — one session showing the change is
+        // actively too hard is sufficient to stop. good, tooEasy, and ignored should honor the
+        // threshold so a single noisy workout doesn't short-circuit multi-session confirmation.
+        let isDecisive: Bool
+        switch resolved.outcome {
+        case .tooAggressive:
+            isDecisive = true
+        case .tooEasy, .ignored, .good:
+            isDecisive = false
+        default:
+            isDecisive = false
+        }
+        guard isDecisive || event.evaluationHistory.count >= event.requiredEvaluationCount else { return }
+
+        // Safety-weighted priority across all accumulated entries.
+        let priority: [Outcome] = [.tooAggressive, .good, .tooEasy, .ignored]
+        guard let winning = priority.first(where: { o in event.evaluationHistory.contains { $0.partialOutcome == o } }), let winningEntry = event.evaluationHistory.first(where: { $0.partialOutcome == winning }) else { return }
+
+        event.outcome = winning
+        event.outcomeReason = winningEntry.reason
         event.evaluatedAt = Date()
-        event.evaluatedPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerf)
     }
 
     private static func buildAIPerformanceSnapshot(from snapshot: ExercisePerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot, prescription: ExercisePrescription, date: Date) -> AIExercisePerformanceSnapshot {
-        AIExercisePerformanceSnapshot(
-            exercise: AIExerciseIdentitySnapshot(prescription: prescription),
-            date: date,
-            snapshot: snapshot,
-            targetSnapshot: targetSnapshot
-        )
+        AIExercisePerformanceSnapshot(exercise: AIExerciseIdentitySnapshot(prescription: prescription), date: date, snapshot: snapshot, targetSnapshot: targetSnapshot)
     }
 }

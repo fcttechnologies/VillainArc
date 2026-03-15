@@ -79,6 +79,32 @@ struct SuggestionGenerator {
         let snapshot: AIExercisePerformanceSnapshot
     }
 
+    private static func requiredEvaluationCount(for changes: [PrescriptionChangeDraft], category: SuggestionCategory) -> Int {
+        // Category-level overrides take precedence.
+        switch category {
+        case .warmupCalibration, .structure, .volume:
+            return 1
+        default:
+            break
+        }
+        // Key by the strictest change type in the group.
+        return changes.map { requiredCount(for: $0.changeType) }.max() ?? 1
+    }
+
+    private static func requiredCount(for changeType: ChangeType) -> Int {
+        switch changeType {
+        case .increaseWeight, .increaseReps, .increaseRest:
+            return 2
+        case .increaseRepRangeLower, .decreaseRepRangeLower,
+             .increaseRepRangeUpper, .decreaseRepRangeUpper,
+             .increaseRepRangeTarget, .decreaseRepRangeTarget,
+             .changeRepRangeMode:
+            return 2
+        default:
+            return 1
+        }
+    }
+
     private static func fetchCompletedPerformances(catalogID: String, limit: Int? = nil, context: ModelContext) -> [ExercisePerformance] {
         // Pull the most recent completed sessions for this exercise.
         var descriptor = ExercisePerformance.matching(catalogID: catalogID)
@@ -127,14 +153,11 @@ struct SuggestionGenerator {
             let triggerTargetSnapshot = exercisePerformance.originalTargetSnapshot ?? ExerciseTargetSnapshot(prescription: exercisePrescription)
             let triggerPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerformance)
             let changes = draft.changes.map { change in
-                PrescriptionChange(
-                    changeType: change.changeType,
-                    previousValue: change.previousValue,
-                    newValue: change.newValue
-                )
+                PrescriptionChange(changeType: change.changeType, previousValue: change.previousValue, newValue: change.newValue)
             }
 
-            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, changeReasoning: draft.changeReasoning, changes: changes)
+            let requiredCount = requiredEvaluationCount(for: draft.changes, category: draft.category)
+            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, changeReasoning: draft.changeReasoning, changes: changes)
             return event
         }
         .sorted { lhs, rhs in

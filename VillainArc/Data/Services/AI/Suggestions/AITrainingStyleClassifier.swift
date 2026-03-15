@@ -8,9 +8,7 @@ struct AITrainingStyleClassifier {
         let model = SystemLanguageModel.default
         guard case .available = model.availability else { return nil }
 
-        let tools: [any Tool] = [
-            RecentExercisePerformancesTool()
-        ]
+        let tools: [any Tool] = [RecentExercisePerformancesTool()]
 
         let input = AIInferenceInput(performance: performance)
 

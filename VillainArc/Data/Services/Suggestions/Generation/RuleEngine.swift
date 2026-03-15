@@ -153,9 +153,7 @@ struct RuleEngine {
                 ? "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight to keep progressing."
                 : "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight and keep reps at \(lower)."
 
-            var draftChanges: [PrescriptionChangeDraft] = [
-                makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)
-            ]
+            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
 
             if shouldResetReps {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
@@ -205,8 +203,7 @@ struct RuleEngine {
 
         let lastTwo = Array(recent.prefix(2))
         let nearTopInBoth = lastTwo.allSatisfy { performance in
-            guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                  performanceRepRange.mode == .range else { return false }
+            guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
             return progressionSets.allSatisfy { $0.reps >= performanceRepRange.upper - 1 }
@@ -232,9 +229,7 @@ struct RuleEngine {
                 ? "You've been near the top of your rep range (\(upper)) for two sessions on your primary sets. Increase weight to keep progressing."
                 : "You've been near the top of your rep range (\(upper)) for two sessions on your primary sets. Increase weight and keep reps at \(lower)."
 
-            var draftChanges: [PrescriptionChangeDraft] = [
-                makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)
-            ]
+            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
 
             if shouldResetReps {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
@@ -256,8 +251,7 @@ struct RuleEngine {
 
         let lastTwo = Array(recent.prefix(2))
         let nearTargetInBoth = lastTwo.allSatisfy { performance in
-            guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                  performanceRepRange.mode == .target else { return false }
+            guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
             return progressionSets.allSatisfy { $0.reps >= performanceRepRange.target }
@@ -384,9 +378,7 @@ struct RuleEngine {
             let jumpWeight = currentWeight + (baseIncrement * 1.5)
             let newWeight = MetricsCalculator.roundToNearestPlate(jumpWeight)
 
-            var draftChanges: [PrescriptionChangeDraft] = [
-                makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)
-            ]
+            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
 
             if shouldResetReps, setPrescription.targetReps != lower {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
@@ -411,8 +403,7 @@ struct RuleEngine {
         var belowCount = 0
 
         for performance in lastThree {
-            guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                  performanceRepRange.mode == .range else { continue }
+            guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { continue }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { continue }
 
@@ -478,8 +469,7 @@ struct RuleEngine {
 
             var weights: [Double] = []
             for performance in lastThree {
-                guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context),
-                      set.type == .working else {
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context), set.type == .working else {
                     continue
                 }
                 weights.append(set.weight)
@@ -608,8 +598,7 @@ struct RuleEngine {
 
         var events: [SuggestionEventDraft] = []
         for index in currentTriggered {
-            guard let set = context.performance.sortedSets[safe: index],
-                  let setPrescription = targetSet(for: set) else { continue }
+            guard let set = context.performance.sortedSets[safe: index], let setPrescription = targetSet(for: set) else { continue }
 
             let current = setPrescription.targetRest
             let newValue = current + restIncrement
@@ -660,8 +649,7 @@ struct RuleEngine {
         var events: [SuggestionEventDraft] = []
         for set in progressionSets {
             // Skip drop/superset chains where effective rest is intentionally zero.
-            guard set.effectiveRestSeconds > 0,
-                  let setPrescription = targetSet(for: set) else { continue }
+            guard set.effectiveRestSeconds > 0, let setPrescription = targetSet(for: set) else { continue }
             let current = setPrescription.targetRest
             let newValue = current + increment
 
@@ -685,8 +673,7 @@ struct RuleEngine {
             return !hasRegularBefore
         }
 
-        guard let dropSet = targetDrop,
-              let setPrescription = targetSet(for: dropSet) else {
+        guard let dropSet = targetDrop, let setPrescription = targetSet(for: dropSet) else {
             return []
         }
 
@@ -711,10 +698,7 @@ struct RuleEngine {
             var includesCurrent = false
 
             for performance in evidenceWindow {
-                guard let warmupSet = matchingSetPerformance(in: performance, for: setPrescription, context: context),
-                      warmupSet.complete,
-                      warmupSet.type == .warmup,
-                      let anchorWeight = warmupAnchorWeight(in: performance, context: context) else {
+                guard let warmupSet = matchingSetPerformance(in: performance, for: setPrescription, context: context), warmupSet.complete, warmupSet.type == .warmup, let anchorWeight = warmupAnchorWeight(in: performance, context: context) else {
                     continue
                 }
 
@@ -737,9 +721,7 @@ struct RuleEngine {
             let aboveTargetCount = warmupWeights.filter { $0 >= currentTargetWeight + increment * 0.8 }.count
             guard aboveTargetCount >= 2 else { continue }
 
-            guard let minRatio = ratioSamples.min(),
-                  let maxRatio = ratioSamples.max(),
-                  maxRatio - minRatio <= 0.15 else {
+            guard let minRatio = ratioSamples.min(), let maxRatio = ratioSamples.max(), maxRatio - minRatio <= 0.15 else {
                 continue
             }
 
@@ -770,15 +752,13 @@ struct RuleEngine {
         switch repRange.activeMode {
         case .range:
             let hitTopInBoth = lastTwo.allSatisfy { performance in
-                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                      performanceRepRange.mode == .range else { return false }
+                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= performanceRepRange.upper }
             }
             let overshootInBoth = lastTwo.allSatisfy { performance in
-                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                      performanceRepRange.mode == .range else { return false }
+                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= performanceRepRange.upper - 1 }
@@ -788,15 +768,13 @@ struct RuleEngine {
 
         case .target:
             let exceededInBoth = lastTwo.allSatisfy { performance in
-                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                      performanceRepRange.mode == .target else { return false }
+                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= performanceRepRange.target + 1 }
             }
             let overshootInBoth = lastTwo.allSatisfy { performance in
-                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
-                      performanceRepRange.mode == .target else { return false }
+                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
                 return sets.allSatisfy { $0.reps >= performanceRepRange.target }
@@ -1041,10 +1019,7 @@ struct RuleEngine {
     }
 
     private static func normalizedRange(evidence: RepEvidence) -> (lower: Int, upper: Int)? {
-        guard let representativeMin = evidence.representativeMin,
-              let representativeMax = evidence.representativeMax,
-              let robustFloor = evidence.sessionFloors.sorted()[safe: evidence.sessionFloors.count / 2],
-              let robustCeiling = evidence.sessionCeilings.sorted()[safe: evidence.sessionCeilings.count / 2] else {
+        guard let representativeMin = evidence.representativeMin, let representativeMax = evidence.representativeMax, let robustFloor = evidence.sessionFloors.sorted()[safe: evidence.sessionFloors.count / 2], let robustCeiling = evidence.sessionCeilings.sorted()[safe: evidence.sessionCeilings.count / 2] else {
             return nil
         }
 
@@ -1068,10 +1043,7 @@ struct RuleEngine {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return nil }
         guard let evidence = repEvidence(context), evidence.sessionCount >= 3 else { return nil }
-        guard let desiredRange = normalizedRange(evidence: evidence),
-              let representativeMin = evidence.representativeMin,
-              let representativeMax = evidence.representativeMax,
-              let observedBandWidth = evidence.observedBandWidth else { return nil }
+        guard let desiredRange = normalizedRange(evidence: evidence), let representativeMin = evidence.representativeMin, let representativeMax = evidence.representativeMax, let observedBandWidth = evidence.observedBandWidth else { return nil }
         guard observedBandWidth >= 2 || representativeMin != representativeMax else { return nil }
         guard desiredRange.lower >= max(1, repRange.targetReps - 1) else { return nil }
         guard desiredRange.upper >= repRange.targetReps + 1 else { return nil }
@@ -1154,9 +1126,7 @@ struct RuleEngine {
     }
 
     private static func matchingSetPerformance(in performance: ExercisePerformance, for setPrescription: SetPrescription, context: ExerciseSuggestionContext, requireComplete: Bool = true) -> SetPerformance? {
-        let candidateSets = requireComplete
-            ? performance.sortedSets.filter(\.complete)
-            : performance.sortedSets
+        let candidateSets = requireComplete ? performance.sortedSets.filter(\.complete) : performance.sortedSets
 
         if performance.id == context.performance.id {
             return candidateSets.first(where: { $0.prescription?.id == setPrescription.id })
@@ -1166,9 +1136,7 @@ struct RuleEngine {
     }
 
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
-        let primaryMuscle = context.prescription.musclesTargeted.first
-            ?? context.performance.musclesTargeted.first
-            ?? .chest
+        let primaryMuscle = context.prescription.musclesTargeted.first ?? context.performance.musclesTargeted.first ?? .chest
         return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType)
     }
 

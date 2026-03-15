@@ -4,20 +4,12 @@ import FoundationModels
 struct AIOutcomeInferrer {
     /// Evaluates outcome for groups that were accepted/applied in the plan.
     static func inferApplied(input: AIOutcomeGroupInput) async -> AIOutcomeInferenceOutput? {
-        await infer(
-            input: input,
-            instructions: appliedInstructions,
-            promptHeader: "Evaluate the outcome of these accepted or applied prescription changes based on the user's actual performance."
-        )
+        await infer(input: input,instructions: appliedInstructions, promptHeader: "Evaluate the outcome of these accepted or applied prescription changes based on the user's actual performance.")
     }
 
     /// Evaluates outcome for groups that were rejected/not applied in the plan.
     static func inferRejected(input: AIOutcomeGroupInput) async -> AIOutcomeInferenceOutput? {
-        await infer(
-            input: input,
-            instructions: rejectedInstructions,
-            promptHeader: "These prescription changes were suggested but not applied. Determine whether the user followed them anyway."
-        )
+        await infer(input: input, instructions: rejectedInstructions, promptHeader: "These prescription changes were suggested but not applied. Determine whether the user followed them anyway.")
     }
 
     /// Backward-compatible convenience entry point.
@@ -36,10 +28,7 @@ struct AIOutcomeInferrer {
                 ""
                 input
             }
-            let response = try await session.respond(
-                to: prompt,
-                generating: AIOutcomeInferenceOutput.self
-            )
+            let response = try await session.respond(to: prompt, generating: AIOutcomeInferenceOutput.self)
             return validate(response.content)
         } catch {
             return nil

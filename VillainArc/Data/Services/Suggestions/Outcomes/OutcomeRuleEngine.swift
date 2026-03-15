@@ -73,11 +73,7 @@ struct OutcomeRuleEngine {
         }
 
         // Once target load was attempted, classify by rep performance.
-        return evaluateRepsInRange(
-            actualReps: setPerf.reps,
-            exercisePerf: exercisePerf,
-            context: "weight change to \(newWeight)"
-        )
+        return evaluateRepsInRange(actualReps: setPerf.reps, exercisePerf: exercisePerf, context: "weight change to \(newWeight)")
     }
 
     private static func evaluateWarmupWeightChange(change: PrescriptionChange, setPerf: SetPerformance, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
@@ -99,9 +95,7 @@ struct OutcomeRuleEngine {
             return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "The adjusted set no longer behaved like a warmup.")
         }
 
-        if let anchorWeight = workingAnchorWeight(in: exercisePerf, trainingStyle: trainingStyle),
-           anchorWeight > 0,
-           actualWeight >= anchorWeight * 0.9 {
+        if let anchorWeight = workingAnchorWeight(in: exercisePerf, trainingStyle: trainingStyle), anchorWeight > 0, actualWeight >= anchorWeight * 0.9 {
             return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Warmup load (\(actualWeight)) was too close to the main working load (\(anchorWeight)).")
         }
 
@@ -111,8 +105,7 @@ struct OutcomeRuleEngine {
     // MARK: - Reps Change
 
     private static func evaluateRepsChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard event.isSetScoped,
-              let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
+        guard event.isSetScoped, let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
         let newReps = Int(change.newValue)
         let oldReps = Int(change.previousValue)
@@ -128,18 +121,13 @@ struct OutcomeRuleEngine {
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual reps (\(actualReps)) not close to new target (\(newReps)).")
         }
 
-        return evaluateRepsInRange(
-            actualReps: actualReps,
-            exercisePerf: exercisePerf,
-            context: "reps change to \(newReps)"
-        )
+        return evaluateRepsInRange(actualReps: actualReps, exercisePerf: exercisePerf, context: "reps change to \(newReps)")
     }
 
     // MARK: - Set-Level Rest Change
 
     private static func evaluateSetRestChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard event.isSetScoped,
-              let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
+        guard event.isSetScoped, let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
         let newRest = Int(change.newValue)
         let oldRest = Int(change.previousValue)
@@ -156,11 +144,7 @@ struct OutcomeRuleEngine {
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual rest (\(actualRest)s) not close to new target (\(newRest)s).")
         }
 
-        return evaluateRepsInRange(
-            actualReps: setPerf.reps,
-            exercisePerf: exercisePerf,
-            context: "rest change to \(newRest)s"
-        )
+        return evaluateRepsInRange(actualReps: setPerf.reps, exercisePerf: exercisePerf, context: "rest change to \(newRest)s")
     }
 
     // MARK: - Rep Range Change
@@ -202,8 +186,7 @@ struct OutcomeRuleEngine {
     // MARK: - Set Type Change
 
     private static func evaluateSetTypeChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard let setPerf = matchSetPerformance(for: event, in: exercisePerf),
-              let newType = ExerciseSetType(rawValue: Int(change.newValue)) else { return nil }
+        guard let setPerf = matchSetPerformance(for: event, in: exercisePerf), let newType = ExerciseSetType(rawValue: Int(change.newValue)) else { return nil }
 
         // Type changes are binary: exact type match means success, otherwise ignored.
         if setPerf.type == newType {

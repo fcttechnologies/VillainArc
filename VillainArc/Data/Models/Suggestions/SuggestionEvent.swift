@@ -26,9 +26,11 @@ final class SuggestionEvent {
 
     var triggerPerformanceSnapshot: ExercisePerformanceSnapshot = ExercisePerformanceSnapshot.empty
     var triggerTargetSnapshot: ExerciseTargetSnapshot = ExerciseTargetSnapshot.empty
-    var evaluatedPerformanceSnapshot: ExercisePerformanceSnapshot?
 
     var trainingStyle: TrainingStyle = TrainingStyle.unknown
+
+    var requiredEvaluationCount: Int = 1
+    var evaluationHistory: [EvaluationHistoryEntry] = []
 
     var createdAt: Date = Date()
     var evaluatedAt: Date?
@@ -52,6 +54,10 @@ final class SuggestionEvent {
         targetSetPrescription != nil || triggerTargetSetID != nil
     }
 
+    var latestEvaluationSnapshot: ExercisePerformanceSnapshot? {
+        evaluationHistory.last?.snapshot
+    }
+
     var sortedChanges: [PrescriptionChange] {
         (changes ?? []).sorted { lhs, rhs in
             let lhsOrder = changeOrder(for: lhs.changeType)
@@ -65,7 +71,7 @@ final class SuggestionEvent {
 
     init() {}
 
-    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, evaluatedPerformanceSnapshot: ExercisePerformanceSnapshot? = nil, trainingStyle: TrainingStyle, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = []) {
+    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = []) {
         self.init()
         self.source = source
         self.category = category
@@ -78,8 +84,8 @@ final class SuggestionEvent {
         self.outcome = outcome
         self.triggerPerformanceSnapshot = triggerPerformanceSnapshot
         self.triggerTargetSnapshot = triggerTargetSnapshot
-        self.evaluatedPerformanceSnapshot = evaluatedPerformanceSnapshot
         self.trainingStyle = trainingStyle
+        self.requiredEvaluationCount = requiredEvaluationCount
         self.createdAt = createdAt
         self.evaluatedAt = evaluatedAt
         self.changeReasoning = changeReasoning

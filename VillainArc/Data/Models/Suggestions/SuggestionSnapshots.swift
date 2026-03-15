@@ -223,6 +223,14 @@ struct ExerciseTargetSnapshot: Codable, Sendable {
     }
 }
 
+struct EvaluationHistoryEntry: Codable, Sendable {
+    var sourceSessionID: UUID
+    var snapshot: ExercisePerformanceSnapshot
+    var partialOutcome: Outcome
+    var confidence: Double
+    var reason: String
+}
+
 struct ExercisePerformanceSnapshot: Codable, Sendable {
     var date: Date
     var notes: String
