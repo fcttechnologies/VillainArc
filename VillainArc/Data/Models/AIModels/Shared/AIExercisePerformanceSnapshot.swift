@@ -16,14 +16,14 @@ struct AIExercisePerformanceSnapshot {
         exercise = AIExerciseIdentitySnapshot(performance: performance)
         date = Self.iso8601String(from: performance.date)
         repRange = AIRepRangeSnapshot(policy: performance.repRange)
-        sets = performance.sortedSets.map { AISetPerformanceSnapshot(set: $0) }
+        sets = performance.sortedSets.map { AISetPerformanceSnapshot(set: $0, targetSnapshot: performance.originalTargetSnapshot) }
     }
 
-    init(exercise: AIExerciseIdentitySnapshot, date: Date, snapshot: ExercisePerformanceSnapshot) {
+    init(exercise: AIExerciseIdentitySnapshot, date: Date, snapshot: ExercisePerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot? = nil) {
         self.exercise = exercise
         self.date = Self.iso8601String(from: date)
         repRange = AIRepRangeSnapshot(snapshot: snapshot.repRange)
-        sets = snapshot.sets.map { AISetPerformanceSnapshot(snapshot: $0) }
+        sets = snapshot.sets.map { AISetPerformanceSnapshot(snapshot: $0, targetSnapshot: targetSnapshot) }
     }
 
     private static func iso8601String(from date: Date) -> String {
@@ -38,7 +38,7 @@ struct AISetPerformanceSnapshot {
     @Guide(description: "Set index.")
     let index: Int
     @Guide(description: "Original target slot.")
-    let linkedTargetSetIndex: Int?
+    let originalTargetSetIndex: Int?
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
     @Guide(description: "Weight in kg.")
@@ -48,21 +48,32 @@ struct AISetPerformanceSnapshot {
     @Guide(description: "Rest seconds.")
     let restSeconds: Int
 
-    init(set: SetPerformance) {
+    init(set: SetPerformance, targetSnapshot: ExerciseTargetSnapshot?) {
         index = set.index
-        linkedTargetSetIndex = set.linkedTargetSetIndex ?? set.prescription?.index
+        originalTargetSetIndex = Self.resolveOriginalTargetSetIndex(
+            targetSetID: set.originalTargetSetID ?? set.prescription?.id,
+            targetSnapshot: targetSnapshot
+        )
         setType = AIExerciseSetType(from: set.type)
         weight = set.weight
         reps = set.reps
         restSeconds = set.restSeconds
     }
 
-    init(snapshot: SetPerformanceSnapshot) {
+    init(snapshot: SetPerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot?) {
         index = snapshot.index
-        linkedTargetSetIndex = snapshot.linkedTargetSetIndex
+        originalTargetSetIndex = Self.resolveOriginalTargetSetIndex(
+            targetSetID: snapshot.originalTargetSetID,
+            targetSnapshot: targetSnapshot
+        )
         setType = AIExerciseSetType(from: snapshot.type)
         weight = snapshot.weight
         reps = snapshot.reps
         restSeconds = snapshot.restSeconds
+    }
+
+    private static func resolveOriginalTargetSetIndex(targetSetID: UUID?, targetSnapshot: ExerciseTargetSnapshot?) -> Int? {
+        guard let targetSetID, let targetSnapshot else { return nil }
+        return targetSnapshot.sets.first(where: { $0.targetSetID == targetSetID })?.index
     }
 }

@@ -59,8 +59,8 @@ class PreviewDataContainer {
     }
 
     @discardableResult
-    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, setIndex: Int? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
-        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: session, targetExercisePrescription: exercise, targetSetPrescription: targetSet, targetSetIndex: setIndex ?? targetSet?.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
+    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: session, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event

@@ -19,7 +19,7 @@ final class SuggestionEvent {
     @Relationship(deleteRule: .nullify, inverse: \SetPrescription.suggestionEvents)
     var targetSetPrescription: SetPrescription?
 
-    var targetSetIndex: Int?
+    var triggerTargetSetID: UUID?
 
     var decision: Decision = Decision.pending
     var outcome: Outcome = Outcome.pending
@@ -39,12 +39,17 @@ final class SuggestionEvent {
     @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.event)
     var changes: [PrescriptionChange]? = [PrescriptionChange]()
 
-    var resolvedTargetSetIndex: Int? {
-        targetSetIndex ?? targetSetPrescription?.index
+    var currentTargetSetIndex: Int? {
+        targetSetPrescription?.index
+    }
+
+    var triggerTargetSetIndex: Int? {
+        guard let triggerTargetSetID else { return nil }
+        return triggerTargetSnapshot.sets.first(where: { $0.targetSetID == triggerTargetSetID })?.index
     }
 
     var isSetScoped: Bool {
-        resolvedTargetSetIndex != nil
+        targetSetPrescription != nil || triggerTargetSetID != nil
     }
 
     var sortedChanges: [PrescriptionChange] {
@@ -60,7 +65,7 @@ final class SuggestionEvent {
 
     init() {}
 
-    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, targetSetIndex: Int? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, evaluatedPerformanceSnapshot: ExercisePerformanceSnapshot? = nil, trainingStyle: TrainingStyle, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = []) {
+    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, evaluatedPerformanceSnapshot: ExercisePerformanceSnapshot? = nil, trainingStyle: TrainingStyle, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = []) {
         self.init()
         self.source = source
         self.category = category
@@ -68,7 +73,7 @@ final class SuggestionEvent {
         self.sessionFrom = sessionFrom
         self.targetExercisePrescription = targetExercisePrescription
         self.targetSetPrescription = targetSetPrescription
-        self.targetSetIndex = targetSetIndex ?? targetSetPrescription?.index
+        self.triggerTargetSetID = triggerTargetSetID ?? targetSetPrescription?.id
         self.decision = decision
         self.outcome = outcome
         self.triggerPerformanceSnapshot = triggerPerformanceSnapshot

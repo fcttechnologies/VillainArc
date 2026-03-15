@@ -50,7 +50,7 @@ struct AIOutcomeInferrer {
         """
         Evaluate one accepted or applied suggestion group and return one AIOutcome.
         Compare actualPerformance to the suggested targets, using triggerPerformance as the baseline.
-        Use targetSetIndex or linkedTargetSetIndex over raw set order when possible.
+        Use triggerTargetSetIndex or originalTargetSetIndex over raw set order when possible.
 
         Outcome meanings:
         - Good: the athlete attempted the new targets and landed in a reasonable zone.
@@ -77,7 +77,7 @@ struct AIOutcomeInferrer {
         """
         Evaluate one rejected suggestion group and return one AIOutcome.
         Decide whether the athlete effectively followed the suggested targets anyway, or whether the missed change was validated by performance.
-        Use targetSetIndex or linkedTargetSetIndex over raw set order when possible.
+        Use triggerTargetSetIndex or originalTargetSetIndex over raw set order when possible.
 
         Outcome meanings:
         - Good: they substantially matched the suggested targets anyway, or performance clearly validates a safety-oriented suggestion they skipped.

@@ -66,7 +66,7 @@ struct RuleEngine {
 
         suggestions.append(contentsOf: setTypeHygieneSuggestions(context))
 
-        if !suggestions.contains(where: { $0.targetSetIndex != nil && $0.category != .recovery }) {
+        if !suggestions.contains(where: { $0.targetSetPrescription != nil && $0.category != .recovery }) {
             suggestions.append(contentsOf: exerciseLevelRepRangeSuggestions(context))
         }
 
@@ -1128,10 +1128,10 @@ struct RuleEngine {
             return TargetSetContext(snapshot: SetTargetSnapshot(prescription: prescription))
         }
 
-        guard let targetIndex = set.linkedTargetSetIndex else {
+        guard let targetSetID = set.originalTargetSetID else {
             return nil
         }
-        guard let snapshot = performance.originalTargetSnapshot?.sets.first(where: { $0.index == targetIndex }) else {
+        guard let snapshot = performance.originalTargetSnapshot?.sets.first(where: { $0.targetSetID == targetSetID }) else {
             return nil
         }
 
@@ -1162,7 +1162,7 @@ struct RuleEngine {
             return candidateSets.first(where: { $0.prescription?.id == setPrescription.id })
         }
 
-        return candidateSets.first(where: { $0.linkedTargetSetIndex == setPrescription.index })
+        return candidateSets.first(where: { $0.originalTargetSetID == setPrescription.id })
     }
 
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
@@ -1177,7 +1177,7 @@ struct RuleEngine {
     }
 
     private static func makeSetEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, setPrescription: SetPrescription, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
-        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, targetSetIndex: setPrescription.index, changeReasoning: reasoning, changes: changes)
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, changeReasoning: reasoning, changes: changes)
     }
 
     private static func makeExerciseEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {

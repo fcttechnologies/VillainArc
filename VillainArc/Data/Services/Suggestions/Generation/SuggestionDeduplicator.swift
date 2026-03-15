@@ -32,7 +32,7 @@ struct SuggestionDeduplicator {
         guard !scopedSuggestions.isEmpty else { return [] }
 
         let sorted = scopedSuggestions.sorted(by: isPreferred(_:over:))
-        let isSetScoped = sorted.first?.idScope.setIndex != nil
+        let isSetScoped = sorted.first?.idScope.setID != nil
 
         guard isSetScoped else {
             return sorted.prefix(1).map { $0 }

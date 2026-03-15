@@ -46,8 +46,13 @@ The important detail is why those fields exist:
 - `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens
 - `changeReasoning` and `outcomeReason` give both the review UI and future debugging a human-readable explanation
 - `targetExercisePrescription` and optional `targetSetPrescription` keep the live plan target on the event itself
-- `targetSetIndex` preserves the intended target slot even if ordering shifts or the live set reference disappears
+- `triggerTargetSetID` preserves which original target set the event referred to, even if live links later disappear
 - `category` identifies the event family (`performance`, `recovery`, `structure`, `repRangeConfiguration`, and future buckets) so deduplication and unresolved-overlap blocking can reason at the event level
+
+One important modeling rule now is:
+- live prescription relationships are the source of truth for current plan behavior
+- copied UUIDs inside snapshots/events are the source of truth for historical matching
+- indices are kept only for order, labels, and human-readable context
 
 ### PrescriptionChange
 
@@ -59,11 +64,6 @@ Each `PrescriptionChange` stores one concrete mutation, such as:
 - rep range changes
 
 So an event can represent one grouped recommendation while still carrying one or more exact plan deltas.
-
-The scalar rows deliberately do not own live plan targets anymore. They only store:
-- the change type
-- the previous value
-- the new value
 
 That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values are always stored in kg here, matching the canonical storage in `SetPrescription.targetWeight` and `SetPerformance.weight`; display conversion to the user's preferred unit happens only in the review UI.
 
@@ -175,7 +175,7 @@ The deterministic rules are change-type specific:
 There is one important category-specific exception:
 - `warmupCalibration` weight changes are judged by whether the adjusted set still behaved like a warmup relative to the working/top-set anchor, not by the normal working-set progression lens
 
-This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver only evaluates a set-scoped event when it can match a completed performed set through the live `targetSetPrescription`. Historical fields like `targetSetIndex` and `SetPerformance.linkedTargetSetIndex` are still valuable for generation, frozen snapshots, and UI labeling, but they are not used as authority for current set-level outcome resolution.
+This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver only evaluates a set-scoped event when it can match a completed performed set through the live `targetSetPrescription`. Historical fields and copied snapshot IDs are still valuable for generation, frozen snapshots, AI context, and fallback labeling, but they are not used as authority for current set-level outcome resolution.
 
 ## New Suggestion Generation
 
@@ -214,12 +214,19 @@ When the rule engine compares older workouts to the current prescription, it doe
 
 For older performances it uses:
 - `ExercisePerformance.originalTargetSnapshot`
-- `SetPerformance.linkedTargetSetIndex`
+- `SetPerformance.originalTargetSetID`
 
 That lets it ask questions like:
 - what rep range was this exercise using in that earlier session?
-- which performed set corresponded to target slot 1 or 2 back then?
+- which original target set did this performed set correspond to back then?
 - did the user actually attempt the prescribed weight at that time?
+
+The important improvement here is that historical matching is no longer keyed by set index. Instead:
+- each `SetTargetSnapshot` carries the original target set UUID
+- each historical `SetPerformance` carries `originalTargetSetID`
+- the rule engine matches historical performed sets back to the correct original target set by UUID
+
+This matters because indices can change after structural edits, but the copied UUID still points at the same logical target set.
 
 ### Training Style
 
@@ -268,6 +275,7 @@ Once drafts survive deduplication, `SuggestionGenerator` turns them into real `S
 At that point it stores:
 - the triggering workout session via `sessionFrom`
 - the live target exercise and optional target set on the event itself
+- the original target set UUID for set-scoped events
 - the suggestion `category`
 - a frozen target snapshot representing what the plan prescribed during the triggering session
 - a frozen performance snapshot representing what the user actually performed in that session
@@ -276,6 +284,28 @@ At that point it stores:
 - one or more `PrescriptionChange` rows with the exact before/after scalar values
 
 That stored context is what later makes review, deferral, outcome resolution, and history debugging possible even after live prescription links get cleared for historical sessions.
+
+### Why Structural Set Changes Are Now Safe
+
+The current model is intentionally split into two coordinate systems:
+
+- live plan space
+  - current `ExercisePrescription`
+  - current `SetPrescription`
+  - current set ordering by `index`
+- frozen historical space
+  - `ExerciseTargetSnapshot`
+  - `ExercisePerformanceSnapshot`
+  - copied target-set UUIDs inside snapshots and events
+
+That split is what makes future structural set edits workable.
+
+If the app later adds or removes warmup/working sets and reindexes the live plan:
+- current generation and current outcome resolution still use live prescription relationships
+- historical rule evaluation still uses copied target-set UUIDs inside the frozen snapshots
+- AI can still talk about set numbers because snapshot order is preserved separately from identity
+
+So changing live set order later does not erase which original set a historical performance or set-scoped event was referring to.
 
 ### Deduplication
 
@@ -421,6 +451,10 @@ Each visible row is labeled using either:
 
 This is why the UI can still show a meaningful target label even when some live references are weaker or have already shifted.
 
+The labeling rule is:
+- prefer the live `targetSetPrescription.index`
+- fall back to the frozen trigger snapshot index only when the live link is gone
+
 ## Manual Plan Editing and Pending Suggestions
 
 Manual plan edits can make unresolved suggestion events stale.
@@ -455,3 +489,22 @@ That path:
 - immediately reruns the suggestion pipeline against that new plan-backed session
 
 So a freeform workout can enter the suggestion system from summary if it is converted into a plan there.
+
+## Next Feature: Structural Set Changes
+
+The next planned extension is structural set changes, such as:
+- add/remove working sets
+- add/remove warmup sets
+
+Why the current model supports this well:
+- live set relationships already drive current generation, application, and set-level outcome resolution
+- historical matching is now UUID-based instead of index-based
+- snapshots still preserve human-readable set order for UI and AI
+
+What still needs to be added for that feature:
+- new structural `ChangeType`s for warmup/working set count changes
+- deterministic plan mutation helpers to insert/remove those sets
+- exercise-level outcome rules for structural changes
+- matching manual-edit cleanup for unresolved structural suggestions
+
+The important takeaway is that the hard part, historical identity through reindexing, is now handled by copied target-set UUIDs instead of fragile set indices.

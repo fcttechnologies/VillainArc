@@ -13,7 +13,7 @@ struct SuggestionSystemTests {
     
     @MainActor
     private func exerciseLevelChanges(from drafts: [SuggestionEventDraft]) -> [PrescriptionChangeDraft] {
-        drafts.filter { $0.targetSetIndex == nil }.flatMap(\.changes)
+        drafts.filter { $0.targetSetPrescription == nil }.flatMap(\.changes)
     }
     
     // MARK: - Training Style Detection Tests
@@ -131,7 +131,7 @@ struct SuggestionSystemTests {
         #expect(straightValues.allSatisfy { $0 == 202.5 })
         #expect(topSetValues.allSatisfy { $0 == 203.75 })
         
-        let topSetIndices = Set(topSetWeightChanges.compactMap { $0.draft.targetSetIndex })
+        let topSetIndices = Set(topSetWeightChanges.compactMap { $0.draft.targetSetPrescription?.index })
         #expect(topSetIndices == Set([0, 1]))
     }
     
@@ -215,7 +215,7 @@ struct SuggestionSystemTests {
         #expect(weightChange?.newValue == 103.75)
         #expect(repChange?.previousValue == 10)
         #expect(repChange?.newValue == 8)
-        #expect(event.targetSetIndex == 0)
+        #expect(event.triggerTargetSetID == set.prescription?.id)
         #expect(event.changeReasoning?.contains("significantly overshot the target") == true)
     }
 
@@ -250,8 +250,8 @@ struct SuggestionSystemTests {
 
         let snapshotSets = event.triggerPerformanceSnapshot.sets.sorted { $0.index < $1.index }
         #expect(snapshotSets.count == 2)
-        #expect(snapshotSets[0].linkedTargetSetIndex == 0)
-        #expect(snapshotSets[1].linkedTargetSetIndex == 1)
+        #expect(snapshotSets[0].originalTargetSetID == prescription.sortedSets[0].id)
+        #expect(snapshotSets[1].originalTargetSetID == prescription.sortedSets[1].id)
     }
     
     @Test @MainActor
@@ -307,7 +307,7 @@ struct SuggestionSystemTests {
         
         #expect(previousPerformance.originalTargetSnapshot != nil)
         previousSession.clearPrescriptionLinksForHistoricalUse()
-        #expect(previousSet.linkedTargetSetIndex == 0)
+        #expect(previousSet.originalTargetSetID == prescription.sortedSets[0].id)
         
         let currentSession = WorkoutSession(from: plan)
         context.insert(currentSession)
@@ -332,7 +332,7 @@ struct SuggestionSystemTests {
         if let repChange {
             #expect(repChange.change.previousValue == 8)
             #expect(repChange.change.newValue == 9)
-            #expect(repChange.draft.targetSetIndex == 0)
+            #expect(repChange.draft.targetSetPrescription?.index == 0)
         }
     }
 
@@ -368,7 +368,7 @@ struct SuggestionSystemTests {
         #expect(previousPerformance.sortedSets[0].prescription?.index == 1)
 
         previousSession.clearPrescriptionLinksForHistoricalUse()
-        #expect(previousPerformance.sortedSets[0].linkedTargetSetIndex == 1)
+        #expect(previousPerformance.sortedSets[0].originalTargetSetID == prescription.sortedSets[1].id)
 
         let currentSession = WorkoutSession(from: plan)
         context.insert(currentSession)
@@ -390,8 +390,8 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let repChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseReps }
 
-        #expect(repChanges.contains { $0.draft.targetSetIndex == 1 })
-        #expect(repChanges.contains { $0.draft.targetSetIndex == 0 } == false)
+        #expect(repChanges.contains { $0.draft.targetSetPrescription?.index == 1 })
+        #expect(repChanges.contains { $0.draft.targetSetPrescription?.index == 0 } == false)
     }
     
     @Test @MainActor
@@ -430,7 +430,7 @@ struct SuggestionSystemTests {
         let weightDecrease = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .decreaseWeight })
         
         #expect(weightDecrease != nil)
-        #expect(weightDecrease?.draft.targetSetIndex == 0)
+        #expect(weightDecrease?.draft.targetSetPrescription?.index == 0)
         #expect(weightDecrease?.change.previousValue == 100)
         #expect(weightDecrease?.change.newValue == 97.5)
     }
@@ -450,12 +450,12 @@ struct SuggestionSystemTests {
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let allChanges = flattenedChanges(from: suggestions)
-        let restChange = allChanges.first(where: { $0.change.changeType == .increaseRest && $0.draft.targetSetIndex == 1 })
+        let restChange = allChanges.first(where: { $0.change.changeType == .increaseRest && $0.draft.targetSetPrescription?.index == 1 })
         
         #expect(restChange != nil)
         #expect(restChange?.change.previousValue == 90)
         #expect(restChange?.change.newValue == 105)
-        #expect(allChanges.contains(where: { $0.change.changeType == .increaseRest && $0.draft.targetSetIndex == 0 }) == false)
+        #expect(allChanges.contains(where: { $0.change.changeType == .increaseRest && $0.draft.targetSetPrescription?.index == 0 }) == false)
     }
     
     @Test @MainActor
@@ -478,7 +478,7 @@ struct SuggestionSystemTests {
         let weightChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .increaseWeight && $0.change.previousValue == 100 })
         
         #expect(weightChange != nil)
-        #expect(weightChange?.draft.targetSetIndex == 0)
+        #expect(weightChange?.draft.targetSetPrescription?.index == 0)
         #expect(weightChange?.change.newValue == 110)
     }
     
@@ -497,7 +497,7 @@ struct SuggestionSystemTests {
         let setTypeChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .changeSetType })
         
         #expect(setTypeChange != nil)
-        #expect(setTypeChange?.draft.targetSetIndex == 0)
+        #expect(setTypeChange?.draft.targetSetPrescription?.index == 0)
         #expect(setTypeChange?.change.newValue == Double(ExerciseSetType.working.rawValue))
     }
     
@@ -517,7 +517,7 @@ struct SuggestionSystemTests {
         let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
-        let setTypeChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .changeSetType && $0.draft.targetSetIndex == 0 })
+        let setTypeChange = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .changeSetType && $0.draft.targetSetPrescription?.index == 0 })
         
         #expect(setTypeChange != nil)
         #expect(setTypeChange?.change.previousValue == Double(ExerciseSetType.warmup.rawValue))
@@ -540,7 +540,7 @@ struct SuggestionSystemTests {
         let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
 
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
-        let warmupChange = flattenedChanges(from: suggestions).first(where: { $0.draft.category == .warmupCalibration && $0.change.changeType == .increaseWeight && $0.draft.targetSetIndex == 0 })
+        let warmupChange = flattenedChanges(from: suggestions).first(where: { $0.draft.category == .warmupCalibration && $0.change.changeType == .increaseWeight && $0.draft.targetSetPrescription?.index == 0 })
 
         #expect(warmupChange != nil)
         #expect(warmupChange?.change.previousValue == 50)
@@ -563,7 +563,7 @@ struct SuggestionSystemTests {
         let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerformance, prescription: prescription, history: [previousPerformance], plan: plan, resolvedTrainingStyle: .topSetBackoffs, weightUnit: .kg)
 
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
-        let warmupChange = flattenedChanges(from: suggestions).first(where: { $0.draft.category == .warmupCalibration && $0.change.changeType == .increaseWeight && $0.draft.targetSetIndex == 0 })
+        let warmupChange = flattenedChanges(from: suggestions).first(where: { $0.draft.category == .warmupCalibration && $0.change.changeType == .increaseWeight && $0.draft.targetSetPrescription?.index == 0 })
 
         #expect(warmupChange != nil)
         #expect(warmupChange?.change.newValue == 120)
@@ -589,7 +589,7 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
         
-        #expect(suggestions.contains { $0.targetSetIndex == nil })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil })
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 10 })
     }
@@ -615,7 +615,7 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
         
-        #expect(suggestions.contains { $0.targetSetIndex == nil })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil })
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 7 })
         #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 9 })
@@ -642,7 +642,7 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
 
-        #expect(suggestions.contains { $0.targetSetIndex == nil })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil })
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
         #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 7 })
@@ -669,7 +669,7 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
 
-        #expect(suggestions.contains { $0.targetSetIndex == nil })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil })
         #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeUpper && $0.newValue == 15 } == false)
     }
@@ -694,8 +694,8 @@ struct SuggestionSystemTests {
         let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         
-        #expect(suggestions.contains { $0.targetSetIndex != nil })
-        #expect(suggestions.contains { $0.targetSetIndex == nil } == false)
+        #expect(suggestions.contains { $0.targetSetPrescription != nil })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil } == false)
     }
     
     @Test @MainActor
@@ -707,7 +707,7 @@ struct SuggestionSystemTests {
             return
         }
         
-        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: set, targetSetIndex: set.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [])
+        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: set, triggerTargetSetID: set.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [])
         context.insert(event)
         
         let weightChange = PrescriptionChange(event: event, changeType: .increaseWeight, previousValue: 135, newValue: 140)
@@ -748,7 +748,7 @@ struct SuggestionSystemTests {
         set.complete = true
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 95, newValue: 100)
-        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, targetSetIndex: setPrescription.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
 
         let matched = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(matched?.outcome == .good)
@@ -789,7 +789,7 @@ struct SuggestionSystemTests {
         workingSet.complete = true
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 50, newValue: 60)
-        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, targetSetIndex: warmupPrescription.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, triggerTargetSetID: warmupPrescription.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
 
         let result = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(result?.outcome == .good)
@@ -825,7 +825,7 @@ struct SuggestionSystemTests {
         workingSet.complete = true
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 50, newValue: 60)
-        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, targetSetIndex: warmupPrescription.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, triggerTargetSetID: warmupPrescription.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
 
         let result = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(result?.outcome == .tooAggressive)
@@ -903,10 +903,10 @@ struct SuggestionSystemTests {
             sessionFrom: nil,
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
-            targetSetIndex: setPrescription.index,
+            triggerTargetSetID: setPrescription.id,
             decision: .accepted,
             outcome: .pending,
-            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []),
+            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []),
             triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets,
             changes: [PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)]

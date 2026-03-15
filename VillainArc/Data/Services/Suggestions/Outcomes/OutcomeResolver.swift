@@ -145,7 +145,7 @@ struct OutcomeResolver {
             AIOutcomeChange(
                 changeType: change.changeType,
                 scope: group.event.isSetScoped ? .set : .exercise,
-                targetSetIndex: group.event.resolvedTargetSetIndex,
+                triggerTargetSetIndex: group.event.triggerTargetSetIndex,
                 previousValue: formattedChangeValue(change.previousValue, changeType: change.changeType),
                 newValue: formattedChangeValue(change.newValue, changeType: change.changeType)
             )
@@ -155,7 +155,7 @@ struct OutcomeResolver {
         // Build prescription snapshot (the "before" state) from the frozen trigger target snapshot.
         let prescriptionSnapshot = buildPrescriptionSnapshot(group: group)
 
-        let triggerSnapshot = buildAIPerformanceSnapshot(from: group.event.triggerPerformanceSnapshot, prescription: group.prescription, date: group.event.createdAt)
+        let triggerSnapshot = buildAIPerformanceSnapshot(from: group.event.triggerPerformanceSnapshot, targetSnapshot: group.event.triggerTargetSnapshot, prescription: group.prescription, date: group.event.createdAt)
 
         // Actual performance: what the user did this time.
         let actualSnapshot = AIExercisePerformanceSnapshot(performance: group.exercisePerf)
@@ -274,11 +274,12 @@ struct OutcomeResolver {
         event.evaluatedPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerf)
     }
 
-    private static func buildAIPerformanceSnapshot(from snapshot: ExercisePerformanceSnapshot, prescription: ExercisePrescription, date: Date) -> AIExercisePerformanceSnapshot {
+    private static func buildAIPerformanceSnapshot(from snapshot: ExercisePerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot, prescription: ExercisePrescription, date: Date) -> AIExercisePerformanceSnapshot {
         AIExercisePerformanceSnapshot(
             exercise: AIExerciseIdentitySnapshot(prescription: prescription),
             date: date,
-            snapshot: snapshot
+            snapshot: snapshot,
+            targetSnapshot: targetSnapshot
         )
     }
 }

@@ -11,22 +11,22 @@ struct SuggestionEventDraft {
     let category: SuggestionCategory
     let targetExercisePrescription: ExercisePrescription
     let targetSetPrescription: SetPrescription?
-    let targetSetIndex: Int?
+    let triggerTargetSetID: UUID?
     let changeReasoning: String?
     let changes: [PrescriptionChangeDraft]
 
-    init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, targetExercisePrescription: ExercisePrescription, targetSetPrescription: SetPrescription? = nil, targetSetIndex: Int? = nil, changeReasoning: String? = nil, changes: [PrescriptionChangeDraft]) {
+    init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, targetExercisePrescription: ExercisePrescription, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, changeReasoning: String? = nil, changes: [PrescriptionChangeDraft]) {
         self.source = source
         self.category = category
         self.targetExercisePrescription = targetExercisePrescription
         self.targetSetPrescription = targetSetPrescription
-        self.targetSetIndex = targetSetIndex ?? targetSetPrescription?.index
+        self.triggerTargetSetID = triggerTargetSetID ?? targetSetPrescription?.id
         self.changeReasoning = changeReasoning
         self.changes = changes
     }
 
     var idScope: EventKey {
-        EventKey(exerciseID: targetExercisePrescription.id, setIndex: targetSetIndex ?? targetSetPrescription?.index)
+        EventKey(exerciseID: targetExercisePrescription.id, setID: targetSetPrescription?.id)
     }
 
     var catalogID: String { targetExercisePrescription.catalogID }
@@ -38,5 +38,5 @@ struct SuggestionEventDraft {
 
 struct EventKey: Hashable {
     let exerciseID: UUID
-    let setIndex: Int?
+    let setID: UUID?
 }

@@ -11,7 +11,7 @@ struct SuggestionGroup: Identifiable {
         if let set = event.targetSetPrescription {
             return "Set \(set.index + 1)"
         }
-        if let index = event.resolvedTargetSetIndex {
+        if let index = event.triggerTargetSetIndex {
             return "Set \(index + 1)"
         }
         return "Rep Range"
@@ -37,8 +37,8 @@ func groupSuggestions(_ events: [SuggestionEvent]) -> [ExerciseSuggestionSection
         let groups = exerciseEvents
             .map { SuggestionGroup(event: $0) }
             .sorted { lhs, rhs in
-                let lhsOrder = lhs.event.resolvedTargetSetIndex ?? Int.max
-                let rhsOrder = rhs.event.resolvedTargetSetIndex ?? Int.max
+                let lhsOrder = lhs.event.currentTargetSetIndex ?? lhs.event.triggerTargetSetIndex ?? Int.max
+                let rhsOrder = rhs.event.currentTargetSetIndex ?? rhs.event.triggerTargetSetIndex ?? Int.max
                 if lhsOrder != rhsOrder {
                     return lhsOrder < rhsOrder
                 }

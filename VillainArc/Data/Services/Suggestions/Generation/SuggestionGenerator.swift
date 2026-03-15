@@ -95,8 +95,12 @@ struct SuggestionGenerator {
             !existingEvents.contains { event in
                 guard event.outcome == .pending else { return false }
                 guard event.targetExercisePrescription?.id == draft.targetExercisePrescription.id else { return false }
-                guard event.resolvedTargetSetIndex == draft.idScope.setIndex else { return false }
-                return !SuggestionDeduplicator.isCompatible(event.category, draft.category, isSetScoped: draft.idScope.setIndex != nil)
+                if let draftSetID = draft.targetSetPrescription?.id {
+                    guard event.targetSetPrescription?.id == draftSetID else { return false }
+                } else {
+                    guard event.targetSetPrescription == nil else { return false }
+                }
+                return !SuggestionDeduplicator.isCompatible(event.category, draft.category, isSetScoped: draft.idScope.setID != nil)
             }
         }
     }
@@ -130,7 +134,7 @@ struct SuggestionGenerator {
                 )
             }
 
-            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, targetSetIndex: draft.targetSetIndex, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, changeReasoning: draft.changeReasoning, changes: changes)
+            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, changeReasoning: draft.changeReasoning, changes: changes)
             return event
         }
         .sorted { lhs, rhs in

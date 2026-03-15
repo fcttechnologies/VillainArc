@@ -40,8 +40,8 @@ struct AIOutcomeChange {
     let changeType: ChangeType
     @Guide(description: "Exercise or set.")
     let scope: AIChangeScope
-    @Guide(description: "Target set index.")
-    let targetSetIndex: Int?
+    @Guide(description: "Original target slot from the trigger snapshot.")
+    let triggerTargetSetIndex: Int?
     @Guide(description: "Old scalar or label.")
     let previousValue: String?
     @Guide(description: "Suggested scalar or label.")

@@ -1,4 +1,5 @@
 import SwiftData
+import Foundation
 @testable import VillainArc
 
 @MainActor
@@ -15,7 +16,7 @@ struct PlanEditingTestData {
 @MainActor
 func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestData {
     func makeEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
-        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, targetSetIndex: targetSet?.index, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event
