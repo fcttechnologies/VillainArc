@@ -142,9 +142,12 @@ struct OutcomeResolver {
         guard !aiChanges.isEmpty else { return nil }
 
         // Build prescription snapshot (the "before" state) from the frozen trigger target snapshot.
-        let prescriptionSnapshot = buildPrescriptionSnapshot(group: group)
+        guard let prescriptionSnapshot = buildPrescriptionSnapshot(group: group) else { return nil }
+        guard let triggerPerf = group.event.triggerPerformance,
+              let triggerTargetSnapshot = group.event.triggerTargetSnapshot else { return nil }
 
-        let triggerSnapshot = buildAIPerformanceSnapshot(from: group.event.triggerPerformanceSnapshot, targetSnapshot: group.event.triggerTargetSnapshot, prescription: group.prescription, date: group.event.createdAt)
+        let triggerPerformanceSnapshot = ExercisePerformanceSnapshot(performance: triggerPerf)
+        let triggerSnapshot = buildAIPerformanceSnapshot(from: triggerPerformanceSnapshot, targetSnapshot: triggerTargetSnapshot, prescription: group.prescription, date: group.event.createdAt)
 
         // Actual performance: what the user did this time.
         let actualSnapshot = AIExercisePerformanceSnapshot(performance: group.exercisePerf)
@@ -184,8 +187,9 @@ struct OutcomeResolver {
         return storedStyle != .unknown ? storedStyle : MetricsCalculator.detectTrainingStyle(group.exercisePerf.sortedSets)
     }
 
-    private static func buildPrescriptionSnapshot(group: OutcomeGroup) -> AIExercisePrescriptionSnapshot {
-        AIExercisePrescriptionSnapshot(exercise: AIExerciseIdentitySnapshot(prescription: group.prescription), targetSnapshot: group.event.triggerTargetSnapshot)
+    private static func buildPrescriptionSnapshot(group: OutcomeGroup) -> AIExercisePrescriptionSnapshot? {
+        guard let targetSnapshot = group.event.triggerTargetSnapshot else { return nil }
+        return AIExercisePrescriptionSnapshot(exercise: AIExerciseIdentitySnapshot(prescription: group.prescription), targetSnapshot: targetSnapshot)
     }
 
     /// Returns true when the change represents the core progression intent of a group.
@@ -317,35 +321,25 @@ struct OutcomeResolver {
         guard event.outcome == .pending, event.evaluatedAt == nil else { return }
         // Within-invocation dedup: prevents both the AI pass and the fallback pass from appending in the same call.
         guard processedIDs.insert(event.id).inserted else { return }
-        // Cross-invocation dedup: prevents repeated resolver calls for the same workout from inflating the history.
-        guard !event.evaluationHistory.contains(where: { $0.sourceSessionID == sessionID }) else { return }
+        // Cross-invocation dedup: check stored scalar on evaluations to avoid traversing relationships.
+        let existingEvaluations = event.evaluations ?? []
+        guard !existingEvaluations.contains(where: { $0.sourceWorkoutSessionID == sessionID }) else { return }
 
         let groupRuleSignal = aggregateRuleSignal(changes: changes, ruleResults: ruleResults)
         guard let resolved = mergeOutcome(rule: groupRuleSignal, ai: aiOutput) else { return }
 
-        let entry = EvaluationHistoryEntry(sourceSessionID: sessionID, snapshot: ExercisePerformanceSnapshot(performance: exercisePerf), partialOutcome: resolved.outcome, confidence: resolved.confidence, reason: resolved.reason)
-        event.evaluationHistory.append(entry)
+        let evaluation = SuggestionEvaluation(event: event, performance: exercisePerf, sourceWorkoutSessionID: sessionID, partialOutcome: resolved.outcome, confidence: resolved.confidence, reason: resolved.reason)
+        exercisePerf.modelContext?.insert(evaluation)
 
-        // Only tooAggressive always resolves immediately — one session showing the change is
-        // actively too hard is sufficient to stop. good, tooEasy, and ignored should honor the
-        // threshold so a single noisy workout doesn't short-circuit multi-session confirmation.
-        let isDecisive: Bool
-        switch resolved.outcome {
-        case .tooAggressive:
-            isDecisive = true
-        case .tooEasy, .ignored, .good, .insufficient:
-            isDecisive = false
-        default:
-            isDecisive = false
-        }
-        guard isDecisive || event.evaluationHistory.count >= event.requiredEvaluationCount else { return }
+        let allEvaluations = existingEvaluations + [evaluation]
+        guard allEvaluations.count >= event.requiredEvaluationCount else { return }
 
-        // Safety-weighted priority across all accumulated entries.
+        // Safety-weighted priority across all accumulated evaluations.
         let priority: [Outcome] = [.tooAggressive, .insufficient, .good, .tooEasy, .ignored]
-        guard let winning = priority.first(where: { o in event.evaluationHistory.contains { $0.partialOutcome == o } }), let winningEntry = event.evaluationHistory.first(where: { $0.partialOutcome == winning }) else { return }
+        guard let winning = priority.first(where: { o in allEvaluations.contains { $0.partialOutcome == o } }), let winningEval = allEvaluations.first(where: { $0.partialOutcome == winning }) else { return }
 
         event.outcome = winning
-        event.outcomeReason = winningEntry.reason
+        event.outcomeReason = winningEval.reason
         event.evaluatedAt = Date()
     }
 

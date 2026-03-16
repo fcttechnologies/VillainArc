@@ -35,7 +35,7 @@ struct DeleteAllWorkoutsIntent: AppIntent {
 
         SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))
         for workout in workouts {
-            context.delete(workout)
+            workout.isHidden = true
         }
 
         ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context, save: false)

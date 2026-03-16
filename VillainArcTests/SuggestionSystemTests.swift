@@ -864,7 +864,7 @@ struct SuggestionSystemTests {
 
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightDriftAdjustment = flattenedChanges(from: suggestions).first {
-            $0.change.changeType == .increaseWeight && $0.draft.ruleID == .matchActualWeight
+            $0.change.changeType == .increaseWeight && $0.draft.rule == .matchActualWeight
         }
 
         #expect(weightDriftAdjustment == nil,
@@ -1184,7 +1184,8 @@ struct SuggestionSystemTests {
             return
         }
 
-        let snapshotSets = event.triggerPerformanceSnapshot.sets.sorted { $0.index < $1.index }
+        let triggerPerf = try #require(event.triggerPerformance)
+        let snapshotSets = ExercisePerformanceSnapshot(performance: triggerPerf).sets.sorted { $0.index < $1.index }
         #expect(snapshotSets.count == 2)
         #expect(snapshotSets[0].originalTargetSetID == prescription.sortedSets[0].id)
         #expect(snapshotSets[1].originalTargetSetID == prescription.sortedSets[1].id)
@@ -2285,7 +2286,7 @@ struct SuggestionSystemTests {
             return
         }
         
-        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: set, triggerTargetSetID: set.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [])
+        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: set, triggerTargetSetID: set.id, trainingStyle: .straightSets, changes: [])
         context.insert(event)
         
         let weightChange = PrescriptionChange(event: event, changeType: .increaseWeight, previousValue: 135, newValue: 140)
@@ -2306,9 +2307,9 @@ struct SuggestionSystemTests {
 
     @Test @MainActor
     func suggestionConfidenceTier_mapsPersistedScores() {
-        let exploratory = SuggestionEvent(catalogID: "test", sessionFrom: nil, triggerPerformanceSnapshot: .empty, triggerTargetSnapshot: .empty, trainingStyle: .straightSets, suggestionConfidence: 0.5)
-        let moderate = SuggestionEvent(catalogID: "test", sessionFrom: nil, triggerPerformanceSnapshot: .empty, triggerTargetSnapshot: .empty, trainingStyle: .straightSets, suggestionConfidence: 0.7)
-        let strong = SuggestionEvent(catalogID: "test", sessionFrom: nil, triggerPerformanceSnapshot: .empty, triggerTargetSnapshot: .empty, trainingStyle: .straightSets, suggestionConfidence: 0.9)
+        let exploratory = SuggestionEvent(catalogID: "test", sessionFrom: nil, trainingStyle: .straightSets, suggestionConfidence: 0.5)
+        let moderate = SuggestionEvent(catalogID: "test", sessionFrom: nil, trainingStyle: .straightSets, suggestionConfidence: 0.7)
+        let strong = SuggestionEvent(catalogID: "test", sessionFrom: nil, trainingStyle: .straightSets, suggestionConfidence: 0.9)
 
         #expect(exploratory.suggestionConfidenceTier == .exploratory)
         #expect(moderate.suggestionConfidenceTier == .moderate)
@@ -2324,9 +2325,9 @@ struct SuggestionSystemTests {
             return
         }
 
-        let heuristicDraft = SuggestionEventDraft(category: .recovery, targetExercisePrescription: prescription, targetSetPrescription: set, ruleID: .stagnationIncreaseRest, evidenceStrength: .heuristic, changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)])
-        let patternDraft = SuggestionEventDraft(category: .performance, targetExercisePrescription: prescription, targetSetPrescription: set, ruleID: .confirmedProgressionTarget, evidenceStrength: .pattern, changes: [PrescriptionChangeDraft(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)])
-        let directDraft = SuggestionEventDraft(category: .recovery, targetExercisePrescription: prescription, targetSetPrescription: set, ruleID: .shortRestPerformanceDrop, evidenceStrength: .directTargetEvidence, changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)])
+        let heuristicDraft = SuggestionEventDraft(category: .recovery, targetExercisePrescription: prescription, targetSetPrescription: set, rule: .stagnationIncreaseRest, evidenceStrength: .heuristic, changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)])
+        let patternDraft = SuggestionEventDraft(category: .performance, targetExercisePrescription: prescription, targetSetPrescription: set, rule: .confirmedProgressionTarget, evidenceStrength: .pattern, changes: [PrescriptionChangeDraft(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)])
+        let directDraft = SuggestionEventDraft(category: .recovery, targetExercisePrescription: prescription, targetSetPrescription: set, rule: .shortRestPerformanceDrop, evidenceStrength: .directTargetEvidence, changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)])
 
         #expect(SuggestionGenerator.suggestionConfidence(for: heuristicDraft) == 0.5)
         #expect(SuggestionGenerator.suggestionConfidence(for: patternDraft) == 0.7)
@@ -2355,7 +2356,7 @@ struct SuggestionSystemTests {
         set.complete = true
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 95, newValue: 100)
-        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+        let event = SuggestionEvent(catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, triggerPerformance: performance, trainingStyle: .straightSets, changes: [change])
 
         let matched = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(matched?.outcome == .good)
@@ -2396,7 +2397,7 @@ struct SuggestionSystemTests {
         workingSet.complete = true
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 50, newValue: 60)
-        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, triggerTargetSetID: warmupPrescription.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, triggerTargetSetID: warmupPrescription.id, triggerPerformance: performance, trainingStyle: .straightSets, changes: [change])
 
         let result = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(result?.outcome == .good)
@@ -2432,7 +2433,7 @@ struct SuggestionSystemTests {
         workingSet.complete = true
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 50, newValue: 60)
-        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, triggerTargetSetID: warmupPrescription.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription), trainingStyle: .straightSets, changes: [change])
+        let event = SuggestionEvent(category: .warmupCalibration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: warmupPrescription, triggerTargetSetID: warmupPrescription.id, triggerPerformance: performance, trainingStyle: .straightSets, changes: [change])
 
         let result = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: performance, trainingStyle: .straightSets)
         #expect(result?.outcome == .tooAggressive)
@@ -2532,7 +2533,7 @@ struct SuggestionSystemTests {
             category: .recovery,
             targetExercisePrescription: prescription,
             targetSetPrescription: set,
-            ruleID: .stagnationIncreaseRest,
+            rule: .stagnationIncreaseRest,
             evidenceStrength: .heuristic,
             changeReasoning: "Progress has plateaued.",
             changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 120)]
@@ -2541,7 +2542,7 @@ struct SuggestionSystemTests {
             category: .recovery,
             targetExercisePrescription: prescription,
             targetSetPrescription: set,
-            ruleID: .shortRestPerformanceDrop,
+            rule: .shortRestPerformanceDrop,
             evidenceStrength: .directTargetEvidence,
             changeReasoning: "Your rest periods are repeatedly shorter than prescribed.",
             changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)]
@@ -2549,7 +2550,7 @@ struct SuggestionSystemTests {
 
         let result = SuggestionDeduplicator.process(suggestions: [plateauDriven, directRecovery])
         #expect(result.count == 1)
-        #expect(result.first?.ruleID == .shortRestPerformanceDrop)
+        #expect(result.first?.rule == .shortRestPerformanceDrop)
         #expect(result.first?.changes.first?.newValue == 105)
     }
 
@@ -2566,7 +2567,7 @@ struct SuggestionSystemTests {
             category: .recovery,
             targetExercisePrescription: prescription,
             targetSetPrescription: set,
-            ruleID: .stagnationIncreaseRest,
+            rule: .stagnationIncreaseRest,
             evidenceStrength: .pattern,
             changeReasoning: "Smaller increase.",
             changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)]
@@ -2575,7 +2576,7 @@ struct SuggestionSystemTests {
             category: .recovery,
             targetExercisePrescription: prescription,
             targetSetPrescription: set,
-            ruleID: .shortRestPerformanceDrop,
+            rule: .shortRestPerformanceDrop,
             evidenceStrength: .pattern,
             changeReasoning: "Larger increase.",
             changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 120)]
@@ -2614,8 +2615,6 @@ struct SuggestionSystemTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets,
             changes: [weightChange, repsChange]
         )
@@ -2656,8 +2655,6 @@ struct SuggestionSystemTests {
             catalogID: prescription.catalogID,
             sessionFrom: nil,
             targetExercisePrescription: prescription,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets,
             changes: [lowerChange, upperChange]
         )
@@ -2703,8 +2700,6 @@ struct SuggestionSystemTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets,
             changes: [change]
         )
@@ -2740,8 +2735,6 @@ struct SuggestionSystemTests {
             triggerTargetSetID: setPrescription.id,
             decision: .accepted,
             outcome: .pending,
-            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []),
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets,
             changes: [PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)]
         )
@@ -2787,8 +2780,6 @@ struct SuggestionSystemTests {
             triggerTargetSetID: setPrescription.id,
             decision: .accepted,
             outcome: .pending,
-            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: prescription.repRange), sets: []),
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets,
             changes: [PrescriptionChange(changeType: .changeSetType, previousValue: Double(ExerciseSetType.warmup.rawValue), newValue: Double(ExerciseSetType.working.rawValue))]
         )

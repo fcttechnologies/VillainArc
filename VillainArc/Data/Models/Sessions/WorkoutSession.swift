@@ -8,6 +8,7 @@ final class WorkoutSession {
     var id: UUID = UUID()
     var title: String = "New Workout"
     var notes: String = ""
+    var isHidden: Bool = false
     var status: String = SessionStatus.active.rawValue
     var startedAt: Date = Date()
     var endedAt: Date?
@@ -175,7 +176,7 @@ extension WorkoutSession {
     
     static func completedSessions(limit: Int? = nil) -> FetchDescriptor<WorkoutSession> {
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<WorkoutSession> { $0.status == done }
+        let predicate = #Predicate<WorkoutSession> { $0.status == done && $0.isHidden == false }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
         descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         if let limit {

@@ -20,6 +20,10 @@ final class ExercisePerformance {
     var activeInSession: WorkoutSession?
     @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.activePerformance)
     var prescription: ExercisePrescription?
+    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.triggerPerformance)
+    var triggeredSuggestions: [SuggestionEvent]?
+    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvaluation.performance)
+    var suggestionEvaluations: [SuggestionEvaluation]?
     @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise)
     var sets: [SetPerformance]? = [SetPerformance]()
     
@@ -288,44 +292,45 @@ extension ExercisePerformance {
         let catalogID = exercise.catalogID
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in
-            item.catalogID == catalogID && item.workoutSession?.status == done
+            item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
         }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.fetchLimit = 1
         descriptor.relationshipKeyPathsForPrefetching = [\.sets]
         return descriptor
     }
-    
-    static func matching(catalogID: String) -> FetchDescriptor<ExercisePerformance> {
-        let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in
-            item.catalogID == catalogID && item.workoutSession?.status == done
-        }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
-    }
 
-    static func matching(catalogID: String, includingSessionID sessionID: UUID) -> FetchDescriptor<ExercisePerformance> {
+    static func matching(catalogID: String, includingHidden: Bool = false) -> FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in
-            item.catalogID == catalogID && (item.workoutSession?.status == done || item.workoutSession?.id == sessionID)
-        }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        let predicate = includingHidden
+            ? #Predicate<ExercisePerformance> { item in
+                item.catalogID == catalogID && item.workoutSession?.status == done
+              }
+            : #Predicate<ExercisePerformance> { item in
+                item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
+              }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        return descriptor
     }
 
     static func matching(catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in
-            catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done
+            catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
         }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        return descriptor
     }
 
-    static func matching(catalogIDs: [String], includingSessionID sessionID: UUID) -> FetchDescriptor<ExercisePerformance> {
-        let done = SessionStatus.done.rawValue
+    static func forSession(_ sessionID: UUID, catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
         let predicate = #Predicate<ExercisePerformance> { item in
-            catalogIDs.contains(item.catalogID) && (item.workoutSession?.status == done || item.workoutSession?.id == sessionID)
+            item.workoutSession?.id == sessionID && catalogIDs.contains(item.catalogID)
         }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        return descriptor
     }
 
     static func withCatalogID(_ catalogID: String) -> FetchDescriptor<ExercisePerformance> {
@@ -336,7 +341,7 @@ extension ExercisePerformance {
     static var completedAll: FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in
-            item.workoutSession?.status == done
+            item.workoutSession?.status == done && item.workoutSession?.isHidden == false
         }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
     }

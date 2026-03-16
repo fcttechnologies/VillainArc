@@ -13,7 +13,6 @@ final class PrescriptionChange {
 
     init() {}
 
-    // Test/sample initializer to reduce setup boilerplate.
     convenience init(event: SuggestionEvent? = nil, changeType: ChangeType = .increaseWeight, previousValue: Double = 0, newValue: Double = 0) {
         self.init()
         self.event = event

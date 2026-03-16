@@ -1373,28 +1373,28 @@ struct RuleEngine {
 
     private static func makeSetEvent(
         context: ExerciseSuggestionContext,
-        ruleID: SuggestionRuleID,
+        ruleID: SuggestionRule,
         category: SuggestionCategory,
         setPrescription: SetPrescription,
         evidenceStrength: SuggestionEvidenceStrength = .pattern,
         changes: [PrescriptionChangeDraft],
         reasoning: String?
     ) -> SuggestionEventDraft {
-        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, ruleID: ruleID, evidenceStrength: evidenceStrength, changeReasoning: reasoning, changes: changes)
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, rule: ruleID, evidenceStrength: evidenceStrength, changeReasoning: reasoning, changes: changes)
     }
 
     private static func makeExerciseEvent(
         context: ExerciseSuggestionContext,
-        ruleID: SuggestionRuleID,
+        ruleID: SuggestionRule,
         category: SuggestionCategory,
         evidenceStrength: SuggestionEvidenceStrength = .pattern,
         changes: [PrescriptionChangeDraft],
         reasoning: String?
     ) -> SuggestionEventDraft {
-        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, ruleID: ruleID, evidenceStrength: evidenceStrength, changeReasoning: reasoning, changes: changes)
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, rule: ruleID, evidenceStrength: evidenceStrength, changeReasoning: reasoning, changes: changes)
     }
 
-    private static func makeRepRangeEvent(context: ExerciseSuggestionContext, ruleID: SuggestionRuleID, category: SuggestionCategory, desiredMode: RepRangeMode, desiredLower: Int, desiredUpper: Int, desiredTarget: Int, reasoning: String?) -> SuggestionEventDraft? {
+    private static func makeRepRangeEvent(context: ExerciseSuggestionContext, ruleID: SuggestionRule, category: SuggestionCategory, desiredMode: RepRangeMode, desiredLower: Int, desiredUpper: Int, desiredTarget: Int, reasoning: String?) -> SuggestionEventDraft? {
         guard let repRange = context.prescription.repRange else { return nil }
 
         var changes: [PrescriptionChangeDraft] = []

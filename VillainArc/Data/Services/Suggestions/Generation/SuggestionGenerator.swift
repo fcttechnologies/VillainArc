@@ -107,7 +107,7 @@ struct SuggestionGenerator {
 
     private static func fetchCompletedPerformances(catalogID: String, limit: Int? = nil, context: ModelContext) -> [ExercisePerformance] {
         // Pull the most recent completed sessions for this exercise.
-        var descriptor = ExercisePerformance.matching(catalogID: catalogID)
+        var descriptor = ExercisePerformance.matching(catalogID: catalogID, includingHidden: true)
         if let limit {
             descriptor.fetchLimit = limit
         }
@@ -150,14 +150,12 @@ struct SuggestionGenerator {
             let exercisePrescription = draft.targetExercisePrescription
             guard let exercisePerformance = performanceByPrescriptionID[exercisePrescription.id] else { return nil }
 
-            let triggerTargetSnapshot = exercisePerformance.originalTargetSnapshot ?? ExerciseTargetSnapshot(prescription: exercisePrescription)
-            let triggerPerformanceSnapshot = ExercisePerformanceSnapshot(performance: exercisePerformance)
             let changes = draft.changes.map { change in
                 PrescriptionChange(changeType: change.changeType, previousValue: change.previousValue, newValue: change.newValue)
             }
 
             let requiredCount = requiredEvaluationCount(for: draft.changes, category: draft.category)
-            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, changeReasoning: draft.changeReasoning, changes: changes, suggestionConfidence: suggestionConfidence(for: draft))
+            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformance: exercisePerformance, ruleID: draft.rule, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, changeReasoning: draft.changeReasoning, changes: changes, suggestionConfidence: suggestionConfidence(for: draft))
             return event
         }
         .sorted { lhs, rhs in

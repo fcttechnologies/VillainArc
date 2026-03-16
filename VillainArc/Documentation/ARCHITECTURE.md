@@ -243,10 +243,10 @@ This file is a structure map for the codebase. It explains what the important fi
 ## Suggestions
 
 ### `Data/Models/Suggestions/SuggestionEvent.swift`
-- Purpose: grouped persisted suggestion record with shared decision/outcome state, live plan target links, category metadata, frozen snapshots, `evaluationHistory: [EvaluationHistoryEntry]` for multi-session accumulation, and `requiredEvaluationCount` controlling how many sessions are needed before the outcome finalizes.
+- Purpose: grouped persisted suggestion record with shared decision/outcome state, live plan target links, trigger-performance links, category metadata, `evaluations: [SuggestionEvaluation]` for multi-session accumulation, and `requiredEvaluationCount` controlling how many sessions are needed before the outcome finalizes.
 - Called by: suggestion generation, review UI, outcome evaluation.
 - Calls: child-change ordering helpers.
-- Read with: `Data/Models/Suggestions/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
+- Read with: `Data/Models/Suggestions/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionEvaluation.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
 
 Also stores the persisted suggestion confidence used to classify actionable suggestion cards into lightweight review tiers such as `Strong`, `Moderate`, and `Exploratory`.
 
@@ -257,10 +257,16 @@ Also stores the persisted suggestion confidence used to classify actionable sugg
 - Read with: `SuggestionEvent.swift`, `SuggestionGrouping.swift`.
 
 ### `Data/Models/Suggestions/SuggestionSnapshots.swift`
-- Purpose: frozen target/performance context used by suggestion history and AI inputs. Also defines `EvaluationHistoryEntry` (per-session partial outcome stored in `SuggestionEvent.evaluationHistory`).
+- Purpose: frozen target/performance value snapshots used by performances, suggestion history, and AI inputs. `SuggestionEvent` now reaches trigger-time target context through `triggerPerformance.originalTargetSnapshot` rather than persisting duplicate trigger snapshots on the event itself.
 - Called by: performance models, suggestion generation, outcome evaluation, AI DTO builders.
 - Calls: snapshot mappers from plans and performances.
 - Read with: `ExercisePerformance.swift`, `SetPerformance.swift`, `SuggestionEvent.swift`, `AIModels/*`.
+
+### `Data/Models/Suggestions/SuggestionEvaluation.swift`
+- Purpose: persisted per-workout outcome evaluation row for one suggestion event, including the evaluated performance relationship, partial outcome, confidence, reason, and source workout session ID used for deduplication.
+- Called by: `OutcomeResolver`.
+- Calls: none.
+- Read with: `SuggestionEvent.swift`, `ExercisePerformance.swift`.
 
 ### `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
 - Purpose: top-level post-workout suggestion generation entrypoint. Also assigns `requiredEvaluationCount` on each generated event based on change type and category, and persists the first-pass suggestion confidence derived from draft evidence strength.
@@ -285,10 +291,10 @@ Context-aware note: after the progression evidence window is selected, the rule 
 - Read with: `SuggestionEventDraft.swift`.
 
 ### `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
-- Purpose: top-level multi-session outcome evaluator. Appends one `EvaluationHistoryEntry` per workout to each eligible event, finalizes the outcome when `requiredEvaluationCount` is reached (or immediately for `tooAggressive`), and applies safety-weighted priority across all history entries. Includes within-invocation and cross-invocation dedup guards.
+- Purpose: top-level multi-session outcome evaluator. Persists one `SuggestionEvaluation` per workout to each eligible event, finalizes the outcome when `requiredEvaluationCount` is reached, and applies safety-weighted priority across all stored evaluations. Includes within-invocation and cross-invocation dedup guards.
 - Called by: `WorkoutSummaryView`.
 - Calls: `OutcomeRuleEngine`, `AIOutcomeInferrer`, suggestion mutation helpers.
-- Read with: `OutcomeRuleEngine.swift`, `SuggestionEvent.swift`, `SuggestionSnapshots.swift`.
+- Read with: `OutcomeRuleEngine.swift`, `SuggestionEvent.swift`, `SuggestionEvaluation.swift`, `SuggestionSnapshots.swift`.
 
 ### `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - Purpose: deterministic outcome scoring logic.

@@ -4,8 +4,8 @@ import Testing
 @testable import VillainArc
 
 // Tests for the multi-session evaluation system:
-// - SuggestionEvent model (evaluationHistory, requiredEvaluationCount)
-// - OutcomeResolver.resolveOutcomes integration (history accumulation, early resolve,
+// - SuggestionEvent model (evaluations, requiredEvaluationCount)
+// - OutcomeResolver.resolveOutcomes integration (evaluation accumulation,
 //   threshold finalization, dedup, eligibility filtering)
 // - SuggestionGenerator.generateSuggestions requiredEvaluationCount assignment
 @Suite(.serialized)
@@ -36,6 +36,15 @@ struct MultiSessionEvaluationTests {
         )
         let setPrescription = prescription.sortedSets.first!
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 8, rest: 90, type: .working)]
+        )
+
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
         context.insert(change)
 
@@ -46,8 +55,7 @@ struct MultiSessionEvaluationTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets,
             requiredEvaluationCount: requiredEvaluationCount,
             createdAt: Date().addingTimeInterval(-createdSecondsAgo),
@@ -97,6 +105,15 @@ struct MultiSessionEvaluationTests {
         prescription.repRange?.targetReps = targetReps
         let setPrescription = prescription.sortedSets.first!
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: targetReps, rest: 90, type: .working)]
+        )
+
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
         context.insert(change)
 
@@ -107,8 +124,7 @@ struct MultiSessionEvaluationTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets,
             requiredEvaluationCount: requiredEvaluationCount,
             createdAt: Date().addingTimeInterval(-createdSecondsAgo),
@@ -138,29 +154,15 @@ struct MultiSessionEvaluationTests {
         )
         let restOwnerSet = prescription.sortedSets[0]
 
-        let triggerSnapshot = ExercisePerformanceSnapshot(
-            date: .now,
-            notes: "",
-            repRange: RepRangeSnapshot(policy: prescription.repRange),
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
             sets: [
-                SetPerformanceSnapshot(
-                    originalTargetSetID: prescription.sortedSets[0].id,
-                    index: 0,
-                    type: .working,
-                    weight: 100,
-                    reps: 8,
-                    restSeconds: 90,
-                    rpe: 0
-                ),
-                SetPerformanceSnapshot(
-                    originalTargetSetID: prescription.sortedSets[1].id,
-                    index: 1,
-                    type: .working,
-                    weight: 100,
-                    reps: 6,
-                    restSeconds: 90,
-                    rpe: 0
-                )
+                (weight: 100, reps: 8, rest: 90, type: .working),
+                (weight: 100, reps: 6, rest: 90, type: .working)
             ]
         )
 
@@ -174,8 +176,7 @@ struct MultiSessionEvaluationTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: restOwnerSet,
             triggerTargetSetID: restOwnerSet.id,
-            triggerPerformanceSnapshot: triggerSnapshot,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets,
             requiredEvaluationCount: 1,
             createdAt: Date().addingTimeInterval(-createdSecondsAgo),
@@ -187,42 +188,43 @@ struct MultiSessionEvaluationTests {
         return (plan, prescription, event)
     }
 
-    // MARK: - Model: evaluationHistory
+    // MARK: - Model: evaluations
 
     @Test @MainActor
-    func evaluationHistory_isEmptyByDefault() throws {
+    func evaluations_isEmptyByDefault() throws {
         let context = try TestDataFactory.makeContext()
         let (_, _, _, event) = makeEventForOutcomeResolver(context: context)
 
-        #expect(event.evaluationHistory.isEmpty)
+        #expect((event.evaluations ?? []).isEmpty)
     }
 
     @Test @MainActor
-    func latestEvaluationSnapshot_returnsNil_whenHistoryIsEmpty() throws {
+    func latestEvaluation_returnsNil_whenEvaluationsIsEmpty() throws {
         let context = try TestDataFactory.makeContext()
         let (_, _, _, event) = makeEventForOutcomeResolver(context: context)
 
-        #expect(event.latestEvaluationSnapshot == nil)
+        #expect(event.latestEvaluation == nil)
     }
 
     @Test @MainActor
-    func latestEvaluationSnapshot_returnsLastEntry() throws {
+    func latestEvaluation_returnsLastEntry() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription, _, event) = makeEventForOutcomeResolver(context: context)
 
         let session1 = TestDataFactory.makeSession(context: context)
         let perf1 = TestDataFactory.makePerformance(context: context, session: session1, prescription: prescription,
             sets: [(weight: 100, reps: 8, rest: 90, type: .working)])
-        let entry1 = EvaluationHistoryEntry(sourceSessionID: session1.id, snapshot: ExercisePerformanceSnapshot(performance: perf1), partialOutcome: .good, confidence: 0.9, reason: "first")
+        let eval1 = SuggestionEvaluation(event: event, performance: perf1, sourceWorkoutSessionID: session1.id, partialOutcome: .good, confidence: 0.9, reason: "first")
+        eval1.evaluatedAt = Date().addingTimeInterval(-60)
+        context.insert(eval1)
 
         let session2 = TestDataFactory.makeSession(context: context)
         let perf2 = TestDataFactory.makePerformance(context: context, session: session2, prescription: prescription,
             sets: [(weight: 105, reps: 10, rest: 90, type: .working)])
-        let entry2 = EvaluationHistoryEntry(sourceSessionID: session2.id, snapshot: ExercisePerformanceSnapshot(performance: perf2), partialOutcome: .tooEasy, confidence: 0.85, reason: "second")
+        let eval2 = SuggestionEvaluation(event: event, performance: perf2, sourceWorkoutSessionID: session2.id, partialOutcome: .tooEasy, confidence: 0.85, reason: "second")
+        context.insert(eval2)
 
-        event.evaluationHistory = [entry1, entry2]
-
-        #expect(event.latestEvaluationSnapshot?.sets.first?.weight == 105)
+        #expect(event.latestEvaluation?.performance?.sortedSets.first?.weight == 105)
     }
 
     // MARK: - Single session does not finalize (requiredCount = 2)
@@ -236,7 +238,7 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.count == 1)
+        #expect((event.evaluations ?? []).count == 1)
         #expect(event.outcome == .pending)
         #expect(event.evaluatedAt == nil)
     }
@@ -251,7 +253,7 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.count == 1)
+        #expect((event.evaluations ?? []).count == 1)
         #expect(event.outcome == .pending)
         #expect(event.evaluatedAt == nil)
     }
@@ -266,25 +268,47 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.count == 1)
+        #expect((event.evaluations ?? []).count == 1)
         #expect(event.outcome == .pending)
     }
 
-    // MARK: - tooAggressive always finalizes immediately
+    // MARK: - tooAggressive does NOT finalize early (requires full evaluation count)
 
     @Test @MainActor
-    func tooAggressive_finalizesAfterSingleSession_evenWithRequiredCount2() async throws {
+    func singleTooAggressiveSession_doesNotFinalize_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
-        // reps=4, floor=6 → tooAggressive → immediate resolution
+        // reps=4, floor=6 → tooAggressive — but no early resolution, requires full count
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
             actualWeight: 102.5, actualReps: 4)
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.outcome == .tooAggressive)
-        #expect(event.evaluatedAt != nil)
-        #expect(event.evaluationHistory.count == 1)
+        #expect((event.evaluations ?? []).count == 1)
+        #expect(event.outcome == .pending)
+        #expect(event.evaluatedAt == nil)
+    }
+
+    /// Pre-injects a SuggestionEvaluation into the event for multi-session test setup.
+    @MainActor
+    @discardableResult
+    private func injectPriorEvaluation(
+        context: ModelContext,
+        event: SuggestionEvent,
+        sessionID: UUID = UUID(),
+        partialOutcome: Outcome,
+        confidence: Double,
+        reason: String
+    ) -> SuggestionEvaluation {
+        let eval = SuggestionEvaluation()
+        eval.event = event
+        eval.sourceWorkoutSessionID = sessionID
+        eval.partialOutcome = partialOutcome
+        eval.confidence = confidence
+        eval.reason = reason
+        eval.evaluatedAt = Date().addingTimeInterval(-60)
+        context.insert(eval)
+        return eval
     }
 
     // MARK: - Two sessions finalize at threshold
@@ -294,20 +318,18 @@ struct MultiSessionEvaluationTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Simulate "session 1" by pre-injecting a history entry, avoiding SwiftData one-to-one conflict
-        // (two ExercisePerformance objects for the same prescription nullify each other's inverse link).
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
-        event.evaluationHistory = [prevEntry]
+        // Simulate "session 1" by pre-injecting an evaluation.
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
         #expect(event.outcome == .pending)
 
-        // Session 2: run through resolver; history=[good, good] ≥ requiredCount=2 → finalizes.
+        // Session 2: run through resolver; evaluations=[good, good] ≥ requiredCount=2 → finalizes.
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
             actualWeight: 102.5, actualReps: 8)
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         #expect(event.outcome == .good)
         #expect(event.evaluatedAt != nil)
-        #expect(event.evaluationHistory.count == 2)
+        #expect((event.evaluations ?? []).count == 2)
     }
 
     @Test @MainActor
@@ -316,9 +338,8 @@ struct MultiSessionEvaluationTests {
         // reps=14 exceeds range ceiling+buffer consistently → tooEasy
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Simulate "session 1" by pre-injecting a history entry, avoiding SwiftData one-to-one conflict.
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated first session")
-        event.evaluationHistory = [prevEntry]
+        // Simulate "session 1" by pre-injecting an evaluation.
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated first session")
         #expect(event.outcome == .pending)
 
         // Session 2: reps=14 → tooEasy; history=[tooEasy, tooEasy] ≥ requiredCount=2 → finalizes.
@@ -337,12 +358,11 @@ struct MultiSessionEvaluationTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Pre-inject session 1 as "good", avoiding SwiftData one-to-one conflict.
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
-        event.evaluationHistory = [prevEntry]
+        // Pre-inject session 1 as "good".
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
 
-        // Session 2 → tooAggressive (reps=4 below floor). tooAggressive is decisive → resolves immediately.
-        // Safety priority across history=[good, tooAggressive]: tooAggressive > good → wins.
+        // Session 2 → tooAggressive (reps=4 below floor).
+        // Safety priority across evaluations=[good, tooAggressive]: tooAggressive > good → wins.
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
             actualWeight: 102.5, actualReps: 4)
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
@@ -355,9 +375,8 @@ struct MultiSessionEvaluationTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Pre-inject session 1 as "ignored", avoiding SwiftData one-to-one conflict.
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .ignored, confidence: 0.9, reason: "[Rules] simulated first session")
-        event.evaluationHistory = [prevEntry]
+        // Pre-inject session 1 as "ignored".
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .ignored, confidence: 0.9, reason: "[Rules] simulated first session")
 
         // Session 2: weight=102.5 (followed suggestion), reps=8 in range → good.
         // At threshold: history=[ignored, good]. Priority: good > ignored.
@@ -373,9 +392,8 @@ struct MultiSessionEvaluationTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Pre-inject session 1 as "tooEasy", avoiding SwiftData one-to-one conflict.
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated first session")
-        event.evaluationHistory = [prevEntry]
+        // Pre-inject session 1 as "tooEasy".
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated first session")
 
         // Session 2: reps=8 in range → good.
         // At threshold: history=[tooEasy, good]. Priority: good > tooEasy.
@@ -391,8 +409,7 @@ struct MultiSessionEvaluationTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .insufficient, confidence: 0.65, reason: "[Rules] simulated insufficient session")
-        event.evaluationHistory = [prevEntry]
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .insufficient, confidence: 0.65, reason: "[Rules] simulated insufficient session")
 
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
             actualWeight: 102.5, actualReps: 8)
@@ -413,8 +430,8 @@ struct MultiSessionEvaluationTests {
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        // Second call with same session ID must be rejected by sourceSessionID guard
-        #expect(event.evaluationHistory.count == 1)
+        // Second call with same session ID must be rejected by sourceWorkoutSessionID guard
+        #expect((event.evaluations ?? []).count == 1)
     }
 
     @Test @MainActor
@@ -422,17 +439,16 @@ struct MultiSessionEvaluationTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 3)
 
-        // Simulate session 1 by pre-injecting a history entry, avoiding SwiftData one-to-one conflict.
+        // Simulate session 1 by pre-injecting an evaluation.
         let prevSessionID = UUID()
-        let prevEntry = EvaluationHistoryEntry(sourceSessionID: prevSessionID, snapshot: .empty, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
-        event.evaluationHistory = [prevEntry]
+        injectPriorEvaluation(context: context, event: event, sessionID: prevSessionID, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
 
         // Session 2 runs through the actual resolver — must append exactly one new entry.
         let session2 = makeCompletedSession(context: context, plan: plan, prescription: prescription)
         await OutcomeResolver.resolveOutcomes(for: session2, context: context)
 
-        #expect(event.evaluationHistory.count == 2)
-        let sessionIDs = Set(event.evaluationHistory.map { $0.sourceSessionID })
+        #expect((event.evaluations ?? []).count == 2)
+        let sessionIDs = Set((event.evaluations ?? []).map { $0.sourceWorkoutSessionID })
         #expect(sessionIDs.count == 2) // unique session IDs
         #expect(sessionIDs.contains(prevSessionID))
         #expect(sessionIDs.contains(session2.id))
@@ -447,6 +463,15 @@ struct MultiSessionEvaluationTests {
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100)
         let setPrescription = prescription.sortedSets.first!
         let plan = prescription.workoutPlan!
+
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 8, rest: 90, type: .working)]
+        )
 
         let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
         context.insert(change)
@@ -464,8 +489,7 @@ struct MultiSessionEvaluationTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets,
             requiredEvaluationCount: 1,
             createdAt: session.startedAt.addingTimeInterval(10), // after session start
@@ -477,7 +501,7 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.isEmpty)
+        #expect((event.evaluations ?? []).isEmpty)
         #expect(event.outcome == .pending)
     }
 
@@ -491,7 +515,7 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.isEmpty)
+        #expect((event.evaluations ?? []).isEmpty)
         #expect(event.outcome == .pending)
     }
 
@@ -508,7 +532,7 @@ struct MultiSessionEvaluationTests {
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         // With requiredCount=1, a single session should finalize
-        #expect(event.evaluationHistory.count == 1)
+        #expect((event.evaluations ?? []).count == 1)
     }
 
     @Test @MainActor
@@ -523,7 +547,7 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.isEmpty)
+        #expect((event.evaluations ?? []).isEmpty)
     }
 
     @Test @MainActor
@@ -561,8 +585,8 @@ struct MultiSessionEvaluationTests {
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription)
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        // Already finalized → evaluationHistory stays empty, outcome unchanged
-        #expect(event.evaluationHistory.isEmpty)
+        // Already finalized → evaluations stays empty, outcome unchanged
+        #expect((event.evaluations ?? []).isEmpty)
         #expect(event.outcome == .good)
     }
 
@@ -709,10 +733,10 @@ struct MultiSessionEvaluationTests {
         }
     }
 
-    // MARK: - History entry content
+    // MARK: - Evaluation content
 
     @Test @MainActor
-    func evaluationHistoryEntry_storesCorrectSessionID() async throws {
+    func evaluation_storesCorrectSessionID() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
@@ -720,11 +744,11 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.evaluationHistory.first?.sourceSessionID == session.id)
+        #expect((event.evaluations ?? []).first?.sourceWorkoutSessionID == session.id)
     }
 
     @Test @MainActor
-    func evaluationHistoryEntry_storesPerformanceSnapshot() async throws {
+    func evaluation_storesPerformanceRelationship() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
@@ -732,14 +756,14 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        let snapshot = event.evaluationHistory.first?.snapshot
-        #expect(snapshot != nil)
-        #expect(snapshot?.sets.first?.weight == 102.5)
-        #expect(snapshot?.sets.first?.reps == 8)
+        let performance = (event.evaluations ?? []).first?.performance
+        #expect(performance != nil)
+        #expect(performance?.sortedSets.first?.weight == 102.5)
+        #expect(performance?.sortedSets.first?.reps == 8)
     }
 
     @Test @MainActor
-    func evaluationHistoryEntry_reasonContainsRulesPrefix() async throws {
+    func evaluation_reasonContainsRulesPrefix() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
@@ -747,7 +771,7 @@ struct MultiSessionEvaluationTests {
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        let reason = event.evaluationHistory.first?.reason ?? ""
+        let reason = (event.evaluations ?? []).first?.reason ?? ""
         #expect(reason.hasPrefix("[Rules]") || reason.hasPrefix("[AI]") || reason.hasPrefix("[AI override]"))
     }
 
@@ -805,7 +829,7 @@ struct MultiSessionEvaluationTests {
 
         #expect(event.outcome != .pending)
         #expect(event.evaluatedAt != nil)
-        #expect(event.evaluationHistory.count == 1)
+        #expect((event.evaluations ?? []).count == 1)
     }
 
     @Test @MainActor
@@ -842,8 +866,6 @@ struct MultiSessionEvaluationTests {
                 catalogID: prescription.catalogID,
                 sessionFrom: nil,
                 targetExercisePrescription: prescription,
-                triggerPerformanceSnapshot: .empty,
-                triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
                 trainingStyle: .straightSets,
                 requiredEvaluationCount: 1,
                 createdAt: Date().addingTimeInterval(-3600),
@@ -870,7 +892,7 @@ struct MultiSessionEvaluationTests {
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         // Both events should be evaluated independently
-        #expect(event1.evaluationHistory.count == 1)
-        #expect(event2.evaluationHistory.count == 1)
+        #expect((event1.evaluations ?? []).count == 1)
+        #expect((event2.evaluations ?? []).count == 1)
     }
 }

@@ -70,8 +70,7 @@ struct ExerciseHistoryUpdater {
     private static func batchFetchPerformances(for catalogIDs: Set<String>, context: ModelContext) -> [String: [ExercisePerformance]] {
         guard !catalogIDs.isEmpty else { return [:] }
         let ids = Array(catalogIDs)
-        var descriptor = ExercisePerformance.matching(catalogIDs: ids)
-        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        let descriptor = ExercisePerformance.matching(catalogIDs: ids)
         let performances = (try? context.fetch(descriptor)) ?? []
         return Dictionary(grouping: performances, by: \.catalogID)
     }
@@ -79,10 +78,17 @@ struct ExerciseHistoryUpdater {
     private static func batchFetchPerformances(for catalogIDs: Set<String>, includingSessionID sessionID: UUID, context: ModelContext) -> [String: [ExercisePerformance]] {
         guard !catalogIDs.isEmpty else { return [:] }
         let ids = Array(catalogIDs)
-        var descriptor = ExercisePerformance.matching(catalogIDs: ids, includingSessionID: sessionID)
-        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
-        let performances = (try? context.fetch(descriptor)) ?? []
-        return Dictionary(grouping: performances, by: \.catalogID)
+
+        // Fetch completed non-hidden performances
+        let completed = (try? context.fetch(ExercisePerformance.matching(catalogIDs: ids))) ?? []
+
+        // Fetch current session's performances (not yet marked done)
+        let current = (try? context.fetch(ExercisePerformance.forSession(sessionID, catalogIDs: ids))) ?? []
+
+        // Merge, deduplicating by identity
+        let completedIDs = Set(completed.map(\.id))
+        let merged = completed + current.filter { !completedIDs.contains($0.id) }
+        return Dictionary(grouping: merged, by: \.catalogID)
     }
 
     private static func batchFetchExercises(for catalogIDs: Set<String>, context: ModelContext) -> [String: Exercise] {

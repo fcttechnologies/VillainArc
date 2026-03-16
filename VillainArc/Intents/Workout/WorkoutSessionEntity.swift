@@ -129,7 +129,7 @@ struct WorkoutSessionEntityQuery: EntityQuery, EntityStringQuery {
         } else {
             let done = SessionStatus.done.rawValue
             let predicate = #Predicate<WorkoutSession> {
-                $0.status == done && $0.title.localizedStandardContains(trimmed)
+                $0.status == done && $0.isHidden == false && $0.title.localizedStandardContains(trimmed)
             }
             var base = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\WorkoutSession.startedAt, order: .reverse), SortDescriptor(\WorkoutSession.title)])
             base.relationshipKeyPathsForPrefetching = [\.exercises]

@@ -213,15 +213,16 @@ struct WorkoutDetailView: View {
         Haptics.selection()
         let deletedWorkout = workout
         SpotlightIndexer.deleteWorkoutSession(id: workout.id)
-        // Collect all affected catalogIDs before deleting
+        // Collect all affected catalogIDs before hiding
         var affectedCatalogIDs = Set<String>()
         affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
-        context.delete(workout)
-        
+        workout.isHidden = true
+        saveContext(context: context)
+
         ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context)
 
         Task { await IntentDonations.donateDeleteWorkout(workout: deletedWorkout) }
-        
+
         dismiss()
     }
 

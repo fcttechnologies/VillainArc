@@ -15,7 +15,7 @@ struct VillainArcTests {
     @MainActor
     @discardableResult
     private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], in context: ModelContext, decision: Decision = .pending, outcome: Outcome = .pending, evaluatedAt: Date? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance) -> SuggestionEvent {
-        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, decision: decision, outcome: outcome, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, evaluatedAt: evaluatedAt, changes: changes)
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, decision: decision, outcome: outcome, trainingStyle: .straightSets, evaluatedAt: evaluatedAt, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event

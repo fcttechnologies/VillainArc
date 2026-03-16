@@ -24,13 +24,20 @@ final class SuggestionEvent {
     var decision: Decision = Decision.pending
     var outcome: Outcome = Outcome.pending
 
-    var triggerPerformanceSnapshot: ExercisePerformanceSnapshot = ExercisePerformanceSnapshot.empty
-    var triggerTargetSnapshot: ExerciseTargetSnapshot = ExerciseTargetSnapshot.empty
+    @Relationship(deleteRule: .nullify)
+    var triggerPerformance: ExercisePerformance?
+
+    var ruleID: SuggestionRule?
+    var decisionReason: DecisionReason?
+    var userFeedback: UserFeedback?
 
     var trainingStyle: TrainingStyle = TrainingStyle.unknown
 
     var requiredEvaluationCount: Int = 1
-    var evaluationHistory: [EvaluationHistoryEntry] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \SuggestionEvaluation.event)
+    var evaluations: [SuggestionEvaluation]? = [SuggestionEvaluation]()
+
     var suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore
 
     var createdAt: Date = Date()
@@ -46,17 +53,21 @@ final class SuggestionEvent {
         targetSetPrescription?.index
     }
 
+    var triggerTargetSnapshot: ExerciseTargetSnapshot? {
+        triggerPerformance?.originalTargetSnapshot
+    }
+
     var triggerTargetSetIndex: Int? {
-        guard let triggerTargetSetID else { return nil }
-        return triggerTargetSnapshot.sets.first(where: { $0.targetSetID == triggerTargetSetID })?.index
+        guard let triggerTargetSetID, let snapshot = triggerTargetSnapshot else { return nil }
+        return snapshot.sets.first(where: { $0.targetSetID == triggerTargetSetID })?.index
     }
 
     var isSetScoped: Bool {
         targetSetPrescription != nil || triggerTargetSetID != nil
     }
 
-    var latestEvaluationSnapshot: ExercisePerformanceSnapshot? {
-        evaluationHistory.last?.snapshot
+    var latestEvaluation: SuggestionEvaluation? {
+        (evaluations ?? []).sorted { $0.evaluatedAt < $1.evaluatedAt }.last
     }
 
     var suggestionConfidenceTier: SuggestionConfidenceTier { SuggestionConfidenceTier(score: suggestionConfidence) }
@@ -74,7 +85,7 @@ final class SuggestionEvent {
 
     init() {}
 
-    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = [], suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore) {
+    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformance: ExercisePerformance? = nil, ruleID: SuggestionRule? = nil, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = [], suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore) {
         self.init()
         self.source = source
         self.category = category
@@ -85,8 +96,8 @@ final class SuggestionEvent {
         self.triggerTargetSetID = triggerTargetSetID ?? targetSetPrescription?.id
         self.decision = decision
         self.outcome = outcome
-        self.triggerPerformanceSnapshot = triggerPerformanceSnapshot
-        self.triggerTargetSnapshot = triggerTargetSnapshot
+        self.triggerPerformance = triggerPerformance
+        self.ruleID = ruleID
         self.trainingStyle = trainingStyle
         self.requiredEvaluationCount = requiredEvaluationCount
         self.createdAt = createdAt

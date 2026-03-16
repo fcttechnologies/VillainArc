@@ -1,28 +1,5 @@
 import Foundation
 
-enum SuggestionRuleID: String {
-    case immediateProgressionRange
-    case immediateProgressionTarget
-    case confirmedProgressionRange
-    case confirmedProgressionTarget
-    case steadyRepIncreaseWithinRange
-    case largeOvershootProgression
-    case belowRangeWeightDecrease
-    case matchActualWeight
-    case reducedWeightToHitReps
-    case shortRestPerformanceDrop
-    case stagnationIncreaseRest
-    case dropSetWithoutBase
-    case calibrateWarmupWeights
-    case warmupActingLikeWorkingSet
-    case regularActingLikeWarmup
-    case setTypeMismatch
-    case suggestInitialRange
-    case suggestTargetToRange
-    case suggestShiftedRangeUp
-    case suggestShiftedRangeDown
-}
-
 enum SuggestionEvidenceStrength: Int {
     case heuristic = 0
     case pattern = 1
@@ -41,18 +18,18 @@ struct SuggestionEventDraft {
     let targetExercisePrescription: ExercisePrescription
     let targetSetPrescription: SetPrescription?
     let triggerTargetSetID: UUID?
-    let ruleID: SuggestionRuleID?
+    let rule: SuggestionRule?
     let evidenceStrength: SuggestionEvidenceStrength
     let changeReasoning: String?
     let changes: [PrescriptionChangeDraft]
 
-    init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, targetExercisePrescription: ExercisePrescription, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, ruleID: SuggestionRuleID? = nil, evidenceStrength: SuggestionEvidenceStrength = .pattern, changeReasoning: String? = nil, changes: [PrescriptionChangeDraft]) {
+    init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, targetExercisePrescription: ExercisePrescription, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, rule: SuggestionRule? = nil, evidenceStrength: SuggestionEvidenceStrength = .pattern, changeReasoning: String? = nil, changes: [PrescriptionChangeDraft]) {
         self.source = source
         self.category = category
         self.targetExercisePrescription = targetExercisePrescription
         self.targetSetPrescription = targetSetPrescription
         self.triggerTargetSetID = triggerTargetSetID ?? targetSetPrescription?.id
-        self.ruleID = ruleID
+        self.rule = rule
         self.evidenceStrength = evidenceStrength
         self.changeReasoning = changeReasoning
         self.changes = changes

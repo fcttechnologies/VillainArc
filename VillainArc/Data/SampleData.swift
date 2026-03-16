@@ -28,7 +28,8 @@ class PreviewDataContainer {
             WorkoutSplit.self,
             WorkoutSplitDay.self,
             SuggestionEvent.self,
-            PrescriptionChange.self
+            PrescriptionChange.self,
+            SuggestionEvaluation.self
         ])
 
         do {
@@ -60,7 +61,7 @@ class PreviewDataContainer {
 
     @discardableResult
     private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
-        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: session, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, triggerPerformanceSnapshot: ExercisePerformanceSnapshot(date: .now, notes: "", repRange: RepRangeSnapshot(policy: exercise.repRange), sets: []), triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: exercise), trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
+        let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: session, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)
         for change in changes {
             change.event = event

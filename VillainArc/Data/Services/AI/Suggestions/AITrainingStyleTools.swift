@@ -19,7 +19,7 @@ struct RecentExercisePerformancesTool: Tool, Sendable {
 
     func call(arguments: Arguments) async throws -> [AIExercisePerformanceSnapshot] {
         let context = await ModelContext(SharedModelContainer.container)
-        var descriptor = ExercisePerformance.matching(catalogID: arguments.catalogID)
+        var descriptor = ExercisePerformance.matching(catalogID: arguments.catalogID, includingHidden: true)
         descriptor.fetchLimit = max(1, min(arguments.limit, 5))
         let performances = (try? context.fetch(descriptor)) ?? []
         return performances.map { AIExercisePerformanceSnapshot(performance: $0) }

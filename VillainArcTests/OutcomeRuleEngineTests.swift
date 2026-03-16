@@ -40,27 +40,14 @@ struct OutcomeRuleEngineTests {
             upperRange: upperRange
         )
         let setPrescription = prescription.sortedSets.first!
-        let triggerSnapshot: ExercisePerformanceSnapshot
-        if let triggerReps {
-            triggerSnapshot = ExercisePerformanceSnapshot(
-                date: .now,
-                notes: "",
-                repRange: RepRangeSnapshot(policy: prescription.repRange),
-                sets: [
-                    SetPerformanceSnapshot(
-                        originalTargetSetID: setPrescription.id,
-                        index: setPrescription.index,
-                        type: triggerSetType ?? actualSetType,
-                        weight: triggerWeight ?? targetWeight,
-                        reps: triggerReps,
-                        restSeconds: triggerRest ?? actualRest,
-                        rpe: 0
-                    )
-                ]
-            )
-        } else {
-            triggerSnapshot = .empty
-        }
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [(weight: triggerWeight ?? targetWeight, reps: triggerReps ?? targetReps, rest: triggerRest ?? actualRest, type: triggerSetType ?? actualSetType)]
+        )
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context,
@@ -75,10 +62,10 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: triggerSnapshot,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerformance,
             trainingStyle: .straightSets
         )
+
         context.insert(event)
         return (event, perf, setPrescription)
     }
@@ -106,6 +93,14 @@ struct OutcomeRuleEngineTests {
         if repRangeMode == .target {
             prescription.repRange?.targetReps = targetRepsForTarget
         }
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: actualRepsPerSet.map { (weight: 100.0, reps: $0, rest: 90, type: ExerciseSetType.working) }
+        )
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context,
@@ -118,8 +113,7 @@ struct OutcomeRuleEngineTests {
             catalogID: prescription.catalogID,
             sessionFrom: nil,
             targetExercisePrescription: prescription,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -154,6 +148,18 @@ struct OutcomeRuleEngineTests {
             prescription.repRange?.targetReps = targetReps
         }
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: targetReps, rest: oldRest, type: .working),
+                (weight: triggerDownstreamWeight, reps: triggerDownstreamReps, rest: oldRest, type: .working)
+            ]
+        )
+
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context,
@@ -165,32 +171,6 @@ struct OutcomeRuleEngineTests {
             ]
         )
 
-        let triggerSnapshot = ExercisePerformanceSnapshot(
-            date: .now,
-            notes: "",
-            repRange: RepRangeSnapshot(policy: prescription.repRange),
-            sets: [
-                SetPerformanceSnapshot(
-                    originalTargetSetID: prescription.sortedSets[0].id,
-                    index: 0,
-                    type: .working,
-                    weight: 100,
-                    reps: targetReps,
-                    restSeconds: oldRest,
-                    rpe: 0
-                ),
-                SetPerformanceSnapshot(
-                    originalTargetSetID: prescription.sortedSets[1].id,
-                    index: 1,
-                    type: .working,
-                    weight: triggerDownstreamWeight,
-                    reps: triggerDownstreamReps,
-                    restSeconds: oldRest,
-                    rpe: 0
-                )
-            ]
-        )
-
         let event = SuggestionEvent(
             category: .recovery,
             catalogID: prescription.catalogID,
@@ -198,8 +178,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: prescription.sortedSets[0],
             triggerTargetSetID: prescription.sortedSets[0].id,
-            triggerPerformanceSnapshot: triggerSnapshot,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -440,8 +419,6 @@ struct OutcomeRuleEngineTests {
             catalogID: prescription.catalogID,
             sessionFrom: nil,
             targetExercisePrescription: prescription,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -708,6 +685,19 @@ struct OutcomeRuleEngineTests {
         )
         prescription.sortedSets[1].type = .dropSet
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 90, type: .working),
+                (weight: 80, reps: 8, rest: 60, type: .dropSet),
+                (weight: 100, reps: 8, rest: 90, type: .working)
+            ]
+        )
+
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context,
@@ -720,17 +710,6 @@ struct OutcomeRuleEngineTests {
             ]
         )
 
-        let triggerSnapshot = ExercisePerformanceSnapshot(
-            date: .now,
-            notes: "",
-            repRange: RepRangeSnapshot(policy: prescription.repRange),
-            sets: [
-                SetPerformanceSnapshot(originalTargetSetID: prescription.sortedSets[0].id, index: 0, type: .working, weight: 100, reps: 8, restSeconds: 90, rpe: 0),
-                SetPerformanceSnapshot(originalTargetSetID: prescription.sortedSets[1].id, index: 1, type: .dropSet, weight: 80, reps: 8, restSeconds: 60, rpe: 0),
-                SetPerformanceSnapshot(originalTargetSetID: prescription.sortedSets[2].id, index: 2, type: .working, weight: 100, reps: 8, restSeconds: 90, rpe: 0)
-            ]
-        )
-
         let event = SuggestionEvent(
             category: .recovery,
             catalogID: prescription.catalogID,
@@ -738,8 +717,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: prescription.sortedSets[0],
             triggerTargetSetID: prescription.sortedSets[0].id,
-            triggerPerformanceSnapshot: triggerSnapshot,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -1015,6 +993,16 @@ struct OutcomeRuleEngineTests {
         prescription.sortedSets.forEach { $0.index += 1 }
         prescription.sets?.insert(warmupSlot, at: 0)
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context, session: triggerSession, prescription: prescription,
+            sets: [
+                (weight: 60, reps: 10, rest: 60, type: .warmup),
+                (weight: 100, reps: 8, rest: 90, type: .working)
+            ]
+        )
+
         let session = TestDataFactory.makeSession(context: context)
         // warmup=70, working=100 → 70 < 100*0.9=90 → good
         let perf = TestDataFactory.makePerformance(
@@ -1025,8 +1013,7 @@ struct OutcomeRuleEngineTests {
             ]
         )
 
-        let warmupSetPerf = perf.sortedSets.first(where: { $0.type == .warmup })!
-        let warmupSetPrescription = warmupSetPerf.prescription!
+        let warmupSetPrescription = warmupSlot
 
         let event = SuggestionEvent(
             category: .warmupCalibration,
@@ -1035,8 +1022,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: warmupSetPrescription,
             triggerTargetSetID: warmupSetPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -1060,6 +1046,16 @@ struct OutcomeRuleEngineTests {
         prescription.sortedSets.forEach { $0.index += 1 }
         prescription.sets?.insert(warmupSlot, at: 0)
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context, session: triggerSession, prescription: prescription,
+            sets: [
+                (weight: 80, reps: 10, rest: 60, type: .warmup),
+                (weight: 100, reps: 8, rest: 90, type: .working)
+            ]
+        )
+
         let session = TestDataFactory.makeSession(context: context)
         // warmup=95, working=100 → 95 >= 100*0.9=90 → tooAggressive
         let perf = TestDataFactory.makePerformance(
@@ -1070,8 +1066,7 @@ struct OutcomeRuleEngineTests {
             ]
         )
 
-        let warmupSetPerf = perf.sortedSets.first(where: { $0.type == .warmup })!
-        let warmupSetPrescription = warmupSetPerf.prescription!
+        let warmupSetPrescription = warmupSlot
 
         let event = SuggestionEvent(
             category: .warmupCalibration,
@@ -1080,8 +1075,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: warmupSetPrescription,
             triggerTargetSetID: warmupSetPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -1112,6 +1106,12 @@ struct OutcomeRuleEngineTests {
             targetReps: 8, repRangeMode: .range, lowerRange: 8, upperRange: 12
         )
         let setPrescription = prescription.sortedSets.first!
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context, session: triggerSession, prescription: prescription,
+            sets: [(weight: 100, reps: 8, rest: 90, type: .working)]
+        )
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context, session: session, prescription: prescription,
@@ -1125,8 +1125,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -1154,6 +1153,12 @@ struct OutcomeRuleEngineTests {
             targetReps: 8, repRangeMode: .range, lowerRange: 8, upperRange: 12
         )
         let setPrescription = prescription.sortedSets.first!
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context, session: triggerSession, prescription: prescription,
+            sets: [(weight: 100, reps: 8, rest: 90, type: .working)]
+        )
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context, session: session, prescription: prescription,
@@ -1166,8 +1171,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)
@@ -1197,6 +1201,19 @@ struct OutcomeRuleEngineTests {
             targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12
         )
         let setPrescription = prescription.sortedSets.first!
+        // Create trigger performance BEFORE mutating the live range, so originalTargetSnapshot freezes 8-12.
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 90, type: .working),
+                (weight: 100, reps: 6, rest: 90, type: .working)
+            ]
+        )
+
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context, session: session, prescription: prescription,
@@ -1205,6 +1222,7 @@ struct OutcomeRuleEngineTests {
                 (weight: 100, reps: 10, rest: 90, type: .working)
             ]
         )
+
         let event = SuggestionEvent(
             category: .recovery,
             catalogID: prescription.catalogID,
@@ -1212,32 +1230,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(
-                date: .now,
-                notes: "",
-                repRange: RepRangeSnapshot(policy: prescription.repRange),
-                sets: [
-                    SetPerformanceSnapshot(
-                        originalTargetSetID: prescription.sortedSets[0].id,
-                        index: 0,
-                        type: .working,
-                        weight: 100,
-                        reps: 8,
-                        restSeconds: 90,
-                        rpe: 0
-                    ),
-                    SetPerformanceSnapshot(
-                        originalTargetSetID: prescription.sortedSets[1].id,
-                        index: 1,
-                        type: .working,
-                        weight: 100,
-                        reps: 6,
-                        restSeconds: 90,
-                        rpe: 0
-                    )
-                ]
-            ),
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets
         )
         context.insert(event)

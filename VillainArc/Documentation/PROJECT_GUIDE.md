@@ -174,7 +174,7 @@ The related read-only completed-workout screens are:
 - `Views/History/WorkoutsListView.swift`
 - `Views/Workout/WorkoutDetailView.swift`
 
-Those screens also matter because deleting a workout must update derived exercise history and Spotlight state.
+Those screens also matter because hiding a completed workout from history must update derived exercise history and Spotlight state.
 
 ## Exercise History Updating
 
@@ -188,8 +188,8 @@ That cache is `Data/Models/Exercise/ExerciseHistory.swift`. It stores:
 
 The rebuild logic is `Data/Services/ExerciseHistoryUpdater.swift`. It runs after:
 - workout completion from `WorkoutSummaryView`
-- workout deletion from `WorkoutsListView`
-- workout deletion from `WorkoutDetailView`
+- workout hiding from `WorkoutsListView`
+- workout hiding from `WorkoutDetailView`
 
 It batch-fetches performances, rebuilds each affected history from scratch, and also updates exercise Spotlight eligibility through `SpotlightIndexer`.
 
@@ -242,7 +242,7 @@ Outcome resolution evaluates how earlier suggestions actually played out after s
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 
-Outcomes are not resolved after a single workout. Each time `resolveOutcomes` runs it appends one `EvaluationHistoryEntry` to the eligible event. The outcome only finalizes when `evaluationHistory.count >= event.requiredEvaluationCount`, with the single exception that `tooAggressive` always resolves immediately — one session showing a change is too hard is sufficient to stop. When the threshold is reached, a safety-weighted priority (`tooAggressive > insufficient > good > tooEasy > ignored`) picks the winner across all accumulated entries. For recovery changes, the targeted set owns the rest interval, but the resolver judges whether that interval helped the following working set, and it only evaluates when that downstream linked evidence still exists.
+Outcomes are not resolved after a single workout. Each time `resolveOutcomes` runs it creates one `SuggestionEvaluation` linked to the eligible event and the current evaluated `ExercisePerformance`. The outcome only finalizes when `event.evaluations.count >= event.requiredEvaluationCount`. When the threshold is reached, a safety-weighted priority (`tooAggressive > insufficient > good > tooEasy > ignored`) picks the winner across all accumulated evaluations. For recovery changes, the targeted set owns the rest interval, but the resolver judges whether that interval helped the following working set, and it only evaluates when that downstream linked evidence still exists.
 
 The deterministic `OutcomeRuleEngine` path runs first. `AIOutcomeInferrer` is only a fallback for lower-confidence cases that still have enough current structural evidence to judge the event.
 

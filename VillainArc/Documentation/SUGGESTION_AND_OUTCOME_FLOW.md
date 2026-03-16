@@ -13,15 +13,17 @@ This document explains how VillainArc handles plan suggestions and their later o
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - `Data/Models/Suggestions/SuggestionEvent.swift`
+- `Data/Models/Suggestions/SuggestionEvaluation.swift`
 - `Data/Models/Suggestions/PrescriptionChange.swift`
 - `Data/Models/Suggestions/SuggestionGrouping.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
 
 ## Core Model
 
-The suggestion system is built around two persisted model layers:
+The suggestion system is built around three persisted model layers:
 
 - `SuggestionEvent`: the grouped review/evaluation unit
+- `SuggestionEvaluation`: one persisted outcome-evaluation pass for one later workout
 - `PrescriptionChange`: the scalar change rows inside that event
 
 ### SuggestionEvent
@@ -31,8 +33,8 @@ The suggestion system is built around two persisted model layers:
 - the target exercise identity (`catalogID`)
 - grouped decision state
 - grouped outcome state
-- frozen trigger snapshots
-- evaluation history (a list of per-session partial outcome entries)
+- the triggering performance relationship (`triggerPerformance`)
+- persisted evaluation rows (`evaluations`)
 - required evaluation count threshold
 - training style
 - reasoning text
@@ -41,10 +43,10 @@ The suggestion system is built around two persisted model layers:
 This is the main object shown in review UI and the main object whose decision/outcome state changes over time.
 
 The important detail is why those fields exist:
-- `triggerTargetSnapshot` freezes what the plan prescribed when the suggestion was created
-- `triggerPerformanceSnapshot` freezes what the user actually did in the triggering workout
-- `evaluationHistory` accumulates one `EvaluationHistoryEntry` per evaluated workout session, each carrying a performance snapshot, a partial outcome, confidence, and reason
-- `latestEvaluationSnapshot` is a computed shortcut to `evaluationHistory.last?.snapshot`
+- `triggerPerformance` points at the immutable triggering `ExercisePerformance`
+- `triggerTargetSnapshot` is now computed from `triggerPerformance.originalTargetSnapshot`, so the event still has frozen trigger-time prescription context without duplicating the snapshot onto the event
+- `evaluations` accumulates one `SuggestionEvaluation` per evaluated workout session
+- `latestEvaluation` is a computed shortcut to the newest persisted evaluation row
 - `requiredEvaluationCount` is the number of sessions that must be evaluated before the outcome is finalized; set at generation time based on change type and category
 - `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens, including whether the session behaved like straight sets, a feeder ramp into a heavy cluster, a reverse pyramid, a top-set/backoff structure, rest-pause or cluster-style work, drop-set-dominant work, or an ambiguous pattern
 - `suggestionConfidence` stores the persisted strength of the suggestion itself, derived from the draft's evidence strength and surfaced in review UI as a simple tier label
@@ -71,15 +73,16 @@ So an event can represent one grouped recommendation while still carrying one or
 
 That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values inside `PrescriptionChange` and `SetPrescription.targetWeight` are canonical kg. Active `SetPerformance.weight` values are temporarily converted into the user's preferred unit while the workout or editable plan copy is live, then normalized back to kg before summary-driven suggestion and outcome work runs.
 
-### EvaluationHistoryEntry
+### SuggestionEvaluation
 
-`EvaluationHistoryEntry` is a `Codable` value type stored inside `SuggestionEvent.evaluationHistory`. Each entry represents one workout session's evaluation of the suggestion:
+`SuggestionEvaluation` is a persisted model row linked to both the suggestion event and the evaluated `ExercisePerformance`. Each row represents one workout session's evaluation of the suggestion:
 
-- `sourceSessionID`: the `WorkoutSession.id` that produced this entry — used for cross-invocation dedup
-- `snapshot`: `ExercisePerformanceSnapshot` frozen at evaluation time — allows `latestEvaluationSnapshot` to surface the most recent evidence
+- `sourceWorkoutSessionID`: the `WorkoutSession.id` that produced this row — used for cross-invocation dedup
+- `performance`: the evaluated `ExercisePerformance`
 - `partialOutcome`: the outcome determined for this session
 - `confidence`: rule-engine or AI confidence (0–1)
 - `reason`: prefixed explanation string (`[Rules]`, `[AI]`, or `[AI override]`)
+- `evaluatedAt`: when this evaluation row was written
 
 ## The Two State Machines
 
@@ -165,18 +168,17 @@ So there are really two paths for unresolved suggestions:
 
 Outcomes are not finalized after a single workout. Instead, the resolver accumulates evidence across multiple sessions before committing.
 
-Each time the resolver evaluates an eligible event for a given workout, it appends one `EvaluationHistoryEntry` to `event.evaluationHistory`. That entry stores:
-- `sourceSessionID`: the `WorkoutSession.id` that produced this entry
-- `snapshot`: `ExercisePerformanceSnapshot` of what the user did in that session
+Each time the resolver evaluates an eligible event for a given workout, it creates one `SuggestionEvaluation` linked to that event. That row stores:
+- `sourceWorkoutSessionID`: the `WorkoutSession.id` that produced this evaluation
+- `performance`: the evaluated `ExercisePerformance`
 - `partialOutcome`: the outcome determined for this session (good, tooAggressive, tooEasy, insufficient, ignored)
 - `confidence`: how confident the rule or AI was
 - `reason`: a human-readable explanation prefixed with `[Rules]`, `[AI]`, or `[AI override]`
 
-The outcome only finalizes when either of these is true:
-- `evaluationHistory.count >= event.requiredEvaluationCount` (enough sessions accumulated)
-- the current session's partial outcome is `tooAggressive` (decisive — resolved immediately regardless of threshold)
+The outcome only finalizes when:
+- `event.evaluations.count >= event.requiredEvaluationCount` (enough sessions accumulated)
 
-`tooAggressive` is the only decisive outcome because one session showing a change is actively too hard is sufficient to stop. All other outcomes (`insufficient`, `good`, `tooEasy`, `ignored`) require the full threshold so a single noisy workout does not short-circuit multi-session confirmation.
+All outcome types now honor the full threshold, including `tooAggressive`, so a single noisy workout does not short-circuit multi-session confirmation.
 
 ### Safety-Weighted Priority at Finalization
 
@@ -198,7 +200,7 @@ The resolver has two dedup layers to prevent double-counting:
 
 **Within-invocation dedup**: Each resolver call tracks a `processedEventIDs: Set<UUID>`. AI results are keyed by event and merged into the single apply pass, and `processedEventIDs` still ensures an eligible event can only append one entry per `resolveOutcomes` call.
 
-**Cross-invocation dedup**: Before appending a new entry, the resolver checks `event.evaluationHistory` for any existing entry whose `sourceSessionID` matches the current workout's ID. If one exists, the append is skipped. This prevents calling `resolveOutcomes` twice for the same workout from inflating the history.
+**Cross-invocation dedup**: Before inserting a new evaluation row, the resolver checks `event.evaluations` for any existing row whose `sourceWorkoutSessionID` matches the current workout's ID. If one exists, the insert is skipped. This prevents calling `resolveOutcomes` twice for the same workout from inflating the history.
 
 ### Deterministic First, AI Second
 
@@ -221,7 +223,7 @@ When AI is available, it can override only when:
 - AI confidence is meaningfully stronger than the rule signal
 - lower-confidence rule paths use a looser override threshold than mid-confidence ones
 
-The merged outcome is stored as a `partialOutcome` in the new `EvaluationHistoryEntry`. Once the threshold is reached, the safety-weighted priority selects the final `event.outcome`, `event.outcomeReason`, and `event.evaluatedAt`.
+The merged outcome is stored as `partialOutcome` on the new `SuggestionEvaluation`. Once the threshold is reached, the safety-weighted priority selects the final `event.outcome`, `event.outcomeReason`, and `event.evaluatedAt`.
 
 This is why outcomes are not tied only to accepted changes. Rejected suggestions can still get evaluated later if the user effectively trained in line with them anyway.
 
@@ -365,11 +367,10 @@ Once drafts survive deduplication, `SuggestionGenerator` turns them into real `S
 
 At that point it stores:
 - the triggering workout session via `sessionFrom`
+- the triggering `ExercisePerformance` via `triggerPerformance`
 - the live target exercise and optional target set on the event itself
 - the original target set UUID for set-scoped events
 - the suggestion `category`
-- a frozen target snapshot representing what the plan prescribed during the triggering session
-- a frozen performance snapshot representing what the user actually performed in that session
 - the resolved training style used when interpreting the exercise
 - the grouped reasoning text
 - one or more `PrescriptionChange` rows with the exact before/after scalar values
@@ -380,7 +381,7 @@ The required count is assigned at generation time based on category and change t
 - `increaseWeight`, `increaseReps`, `increaseRest`, and any rep-range change → 2 (progressions need multi-session confirmation)
 - `decreaseWeight`, `decreaseReps`, `decreaseRest`, `changeSetType` → 1 (safety/cleanup changes resolve immediately)
 
-That stored context is what later makes review, deferral, outcome resolution, and history debugging possible even after live prescription links get cleared for historical sessions.
+That stored context is what later makes review, deferral, outcome resolution, and history debugging possible. The event no longer duplicates trigger snapshots itself; instead it reaches the frozen trigger-time target state through `triggerPerformance.originalTargetSnapshot`.
 
 ### Why Structural Set Changes Are Now Safe
 

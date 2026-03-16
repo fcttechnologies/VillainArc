@@ -25,6 +25,15 @@ struct OutcomeResolverGroupingTests {
     ) -> SuggestionEvent {
         let setPrescription = prescription.sortedSets.first!
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [(weight: weightOld, reps: repsOld, rest: 90, type: .working)]
+        )
+
         let weightChange = PrescriptionChange(changeType: .increaseWeight, previousValue: weightOld, newValue: weightNew)
         let repsChange = PrescriptionChange(changeType: .decreaseReps, previousValue: Double(repsOld), newValue: Double(repsNew))
         context.insert(weightChange)
@@ -37,8 +46,7 @@ struct OutcomeResolverGroupingTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets,
             requiredEvaluationCount: requiredEvaluationCount,
             createdAt: Date().addingTimeInterval(-3600),
@@ -159,6 +167,15 @@ struct OutcomeResolverGroupingTests {
         )
         let setPrescription = prescription.sortedSets.first!
 
+        let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        triggerSession.statusValue = .done
+        let triggerPerf = TestDataFactory.makePerformance(
+            context: context,
+            session: triggerSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 10, rest: 90, type: .working)]
+        )
+
         let repsChange = PrescriptionChange(changeType: .decreaseReps, previousValue: 10, newValue: 8)
         let restChange = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
         context.insert(repsChange)
@@ -171,8 +188,7 @@ struct OutcomeResolverGroupingTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
-            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            triggerPerformance: triggerPerf,
             trainingStyle: .straightSets,
             requiredEvaluationCount: 1,
             createdAt: Date().addingTimeInterval(-3600),

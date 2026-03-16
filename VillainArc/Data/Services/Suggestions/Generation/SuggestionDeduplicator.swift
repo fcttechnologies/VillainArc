@@ -118,8 +118,8 @@ struct SuggestionDeduplicator {
             return lhsMagnitude > rhsMagnitude
         }
 
-        let lhsRuleID = lhs.ruleID?.rawValue ?? ""
-        let rhsRuleID = rhs.ruleID?.rawValue ?? ""
+        let lhsRuleID = lhs.rule?.rawValue ?? ""
+        let rhsRuleID = rhs.rule?.rawValue ?? ""
         if lhsRuleID != rhsRuleID {
             return lhsRuleID < rhsRuleID
         }

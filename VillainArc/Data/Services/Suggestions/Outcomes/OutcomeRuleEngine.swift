@@ -125,14 +125,14 @@ struct OutcomeRuleEngine {
         let context = followThrough == .full
             ? "weight change to \(newWeight)"
             : "partial weight change toward \(newWeight)"
-        let baseSignal = evaluateRepsInRange(actualReps: setPerf.reps, frozenRepRange: event.triggerTargetSnapshot.repRange, context: context)
+        let baseSignal = evaluateRepsInRange(actualReps: setPerf.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: context)
         let adjustedSignal = adjustSignalForFollowThrough(baseSignal, strength: followThrough, actual: actualWeight, old: oldWeight, new: newWeight, metricName: "weight")
 
         if difficultyDirection(for: change) == .easier {
             return evaluateSupportiveSetOutcome(
                 adjustedSignal: adjustedSignal,
                 triggerSet: triggerSetPerformance(for: event),
-                frozenRepRange: event.triggerTargetSnapshot.repRange,
+                frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty,
                 actualReps: setPerf.reps,
                 context: "Load reduction"
             )
@@ -199,14 +199,14 @@ struct OutcomeRuleEngine {
         let context = followThrough == .full
             ? "reps change to \(newReps)"
             : "partial reps change toward \(newReps)"
-        let baseSignal = evaluateRepsInRange(actualReps: actualReps, frozenRepRange: event.triggerTargetSnapshot.repRange, context: context)
+        let baseSignal = evaluateRepsInRange(actualReps: actualReps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: context)
         let adjustedSignal = adjustSignalForFollowThrough(baseSignal, strength: followThrough, actual: Double(actualReps), old: Double(oldReps), new: Double(newReps), metricName: "reps")
 
         if difficultyDirection(for: change) == .easier {
             return evaluateSupportiveSetOutcome(
                 adjustedSignal: adjustedSignal,
                 triggerSet: triggerSetPerformance(for: event),
-                frozenRepRange: event.triggerTargetSnapshot.repRange,
+                frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty,
                 actualReps: actualReps,
                 context: "Rep reduction"
             )
@@ -253,8 +253,8 @@ struct OutcomeRuleEngine {
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual rest (\(actualRest)s) not close to new target (\(newRest)s).")
         }
 
-        let currentSignal = evaluateRepsInRange(actualReps: comparison.actualDownstreamSet.reps, frozenRepRange: event.triggerTargetSnapshot.repRange, context: "recovery after rest change to \(newRest)s on the following set")
-        let triggerSignal = evaluateRepsInRange(actualReps: comparison.triggerDownstreamSet.reps, frozenRepRange: event.triggerTargetSnapshot.repRange, context: "trigger performance on the following set")
+        let currentSignal = evaluateRepsInRange(actualReps: comparison.actualDownstreamSet.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: "recovery after rest change to \(newRest)s on the following set")
+        let triggerSignal = evaluateRepsInRange(actualReps: comparison.triggerDownstreamSet.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: "trigger performance on the following set")
 
         let weightTolerance = OutcomeRuleEngine.weightTolerance(
             for: exercisePerf,
@@ -300,7 +300,7 @@ struct OutcomeRuleEngine {
         // Evaluate against the post-change range/mode. Use the rep range frozen at
         // suggestion-creation time so that a later range change on the live prescription
         // doesn't shift the evaluation window retroactively.
-        let newRange = effectiveNewRepRange(change: change, frozenRepRange: event.triggerTargetSnapshot.repRange)
+        let newRange = effectiveNewRepRange(change: change, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty)
         guard let floor = newRange.floor, let ceiling = newRange.ceiling else { return nil }
 
         let reps = regularSets.map { $0.reps }
@@ -417,7 +417,8 @@ struct OutcomeRuleEngine {
     }
 
     private static func triggerSetPerformance(for event: SuggestionEvent) -> SetPerformanceSnapshot? {
-        let triggerSets = event.triggerPerformanceSnapshot.sets.sorted { $0.index < $1.index }
+        guard let triggerPerf = event.triggerPerformance else { return nil }
+        let triggerSets = ExercisePerformanceSnapshot(performance: triggerPerf).sets.sorted { $0.index < $1.index }
 
         if let triggerTargetSetID = event.triggerTargetSetID,
            let triggerSet = triggerSets.first(where: { $0.originalTargetSetID == triggerTargetSetID }) {
@@ -487,7 +488,8 @@ struct OutcomeRuleEngine {
     }
 
     private static func nextTriggerWorkingSet(for event: SuggestionEvent) -> SetPerformanceSnapshot? {
-        let triggerSets = event.triggerPerformanceSnapshot.sets.sorted { $0.index < $1.index }
+        guard let triggerPerf = event.triggerPerformance else { return nil }
+        let triggerSets = ExercisePerformanceSnapshot(performance: triggerPerf).sets.sorted { $0.index < $1.index }
 
         if let triggerTargetSetID = event.triggerTargetSetID,
            let triggerSet = triggerSets.first(where: { $0.originalTargetSetID == triggerTargetSetID }) {
