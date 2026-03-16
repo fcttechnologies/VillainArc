@@ -31,6 +31,7 @@ final class SuggestionEvent {
 
     var requiredEvaluationCount: Int = 1
     var evaluationHistory: [EvaluationHistoryEntry] = []
+    var suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore
 
     var createdAt: Date = Date()
     var evaluatedAt: Date?
@@ -58,6 +59,8 @@ final class SuggestionEvent {
         evaluationHistory.last?.snapshot
     }
 
+    var suggestionConfidenceTier: SuggestionConfidenceTier { SuggestionConfidenceTier(score: suggestionConfidence) }
+
     var sortedChanges: [PrescriptionChange] {
         (changes ?? []).sorted { lhs, rhs in
             let lhsOrder = changeOrder(for: lhs.changeType)
@@ -71,7 +74,7 @@ final class SuggestionEvent {
 
     init() {}
 
-    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = []) {
+    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformanceSnapshot: ExercisePerformanceSnapshot, triggerTargetSnapshot: ExerciseTargetSnapshot, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = [], suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore) {
         self.init()
         self.source = source
         self.category = category
@@ -90,6 +93,7 @@ final class SuggestionEvent {
         self.evaluatedAt = evaluatedAt
         self.changeReasoning = changeReasoning
         self.outcomeReason = outcomeReason
+        self.suggestionConfidence = max(0, min(1, suggestionConfidence))
         self.changes = changes
         for change in changes {
             change.event = self

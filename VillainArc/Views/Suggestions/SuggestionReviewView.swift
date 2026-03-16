@@ -63,6 +63,12 @@ struct SuggestionGroupRow: View {
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(visibleDecisionState.tint)
+                } else if let visibleConfidenceState {
+                    Text(visibleConfidenceState.label)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(visibleConfidenceState.tint)
+                        .accessibilityLabel(AccessibilityText.suggestionConfidenceLabel(visibleConfidenceState.label))
                 }
             }
 
@@ -146,6 +152,8 @@ struct SuggestionGroupRow: View {
         let trimmed = group.event.changeReasoning?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    private var visibleConfidenceState: ConfidenceState? { actionableDecisions.contains(group.event.decision) ? ConfidenceState(tier: group.event.suggestionConfidenceTier) : nil }
 }
 
 private struct DecisionState {
@@ -155,6 +163,13 @@ private struct DecisionState {
     static let accepted = DecisionState(label: "Accepted", tint: .green)
     static let rejected = DecisionState(label: "Rejected", tint: .red)
     static let deferred = DecisionState(label: "Deferred", tint: .orange)
+}
+
+private struct ConfidenceState {
+    let label: String
+    let tint: Color
+
+    init(tier: SuggestionConfidenceTier) { label = tier.label; tint = tier == .strong ? .blue : tier == .moderate ? .orange : .secondary }
 }
 
 struct SuggestionEmptyState {

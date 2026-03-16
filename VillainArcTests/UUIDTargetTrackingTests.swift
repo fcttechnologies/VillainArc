@@ -183,9 +183,7 @@ struct UUIDTargetTrackingTests {
     @Test @MainActor
     func confirmedProgressionRange_firesForCorrectSetsAfterWarmupAddShiftsWorkingSetIndices() throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
-        prescription.musclesTargeted = [.chest]
-        prescription.equipmentType   = .barbell
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
         let w1ID = prescription.sortedSets[0].id
         let w2ID = prescription.sortedSets[1].id
@@ -347,9 +345,7 @@ struct UUIDTargetTrackingTests {
     func historicalTargetWeightLookup_usesSnapshotUUIDToConfirmAttemptedLoadAfterWarmupAddReindex() throws {
         let context = try TestDataFactory.makeContext()
         // Single working set. User repeatedly fails to hit the lower rep bound.
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
-        prescription.musclesTargeted = [.chest]
-        prescription.equipmentType   = .barbell
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
         let w1ID = prescription.sortedSets[0].id
 
@@ -410,9 +406,7 @@ struct UUIDTargetTrackingTests {
     @Test @MainActor
     func doubleReindex_UUIDMatchingUnbrokenAfterAddWarmupThenRemoveWarmup() throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
-        prescription.musclesTargeted = [.chest]
-        prescription.equipmentType   = .barbell
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
         let w1ID = prescription.sortedSets[0].id
         let w2ID = prescription.sortedSets[1].id

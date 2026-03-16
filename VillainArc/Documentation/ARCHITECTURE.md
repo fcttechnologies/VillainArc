@@ -248,6 +248,8 @@ This file is a structure map for the codebase. It explains what the important fi
 - Calls: child-change ordering helpers.
 - Read with: `Data/Models/Suggestions/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
 
+Also stores the persisted suggestion confidence used to classify actionable suggestion cards into lightweight review tiers such as `Strong`, `Moderate`, and `Exploratory`.
+
 ### `Data/Models/Suggestions/PrescriptionChange.swift`
 - Purpose: scalar before/after change row inside a suggestion event.
 - Called by: suggestion generation, review UI, outcome logic, plan editing cleanup.
@@ -261,7 +263,7 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `ExercisePerformance.swift`, `SetPerformance.swift`, `SuggestionEvent.swift`, `AIModels/*`.
 
 ### `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
-- Purpose: top-level post-workout suggestion generation entrypoint. Also assigns `requiredEvaluationCount` on each generated event based on change type and category.
+- Purpose: top-level post-workout suggestion generation entrypoint. Also assigns `requiredEvaluationCount` on each generated event based on change type and category, and persists the first-pass suggestion confidence derived from draft evidence strength.
 - Called by: `WorkoutSummaryView`.
 - Calls: `MetricsCalculator`, `AITrainingStyleClassifier`, `RuleEngine`, `SuggestionDeduplicator`, SwiftData persistence.
 - Read with: `RuleEngine.swift`, `SuggestionDeduplicator.swift`, `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`.
@@ -271,6 +273,10 @@ This file is a structure map for the codebase. It explains what the important fi
 - Called by: `SuggestionGenerator`.
 - Calls: `MetricsCalculator`, model helpers, draft builders.
 - Read with: `SuggestionEventDraft.swift`, `MetricsCalculator.swift`.
+
+Style-aware note: progression and plateau rules do not read every completed set equally. They first ask `MetricsCalculator` for the style-specific progression evidence window, so feeder ramps, top-set structures, reverse pyramids, true rest-pause clusters, and explicit warmup or drop-set structure can change which sets count as primary evidence. Ordinary short-rest straight sets are intentionally kept out of the rest-pause bucket.
+
+Context-aware note: after the progression evidence window is selected, the rule engine also uses a deterministic progression profile derived from exercise context. That profile changes how strict the engine is about immediate progression, confirmed progression, overshoot jumps, regression, and cleanup, so heavy compounds, stable machine work, large-jump dumbbell lifts, and bodyweight or assisted movements do not all share identical thresholds. The most conservative below-range regression behavior is intentionally limited to the conservative profiles rather than applied to every lift.
 
 ### `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
 - Purpose: resolves conflicts between generated suggestion drafts using scope and category compatibility rules.
@@ -290,11 +296,15 @@ This file is a structure map for the codebase. It explains what the important fi
 - Calls: `MetricsCalculator`, change-type-specific evaluators.
 - Read with: `PrescriptionChange.swift`, `SetPerformance.swift`.
 
+Style-aware note: outcome scoring reuses the stored or freshly resolved training style whenever it needs a representative working-set view. That keeps later evaluation aligned with the same structural lens used during suggestion generation instead of flattening every exercise into generic straight-set logic.
+
 ### `Data/Services/AI/Suggestions/AITrainingStyleClassifier.swift` and `Data/Services/AI/Suggestions/AITrainingStyleTools.swift`
 - Purpose: on-device fallback classifier and history tool used when deterministic training-style detection is ambiguous.
 - Called by: `SuggestionGenerator`.
 - Calls: Foundation Models session APIs, recent-performance fetches, AI DTOs.
 - Read with: `MetricsCalculator.swift`, `Data/Models/AIModels/Suggestions/*`.
+
+The fallback classifier now has narrower structural descriptions so it can better distinguish feeder ramps, reverse pyramids, top-set/backoff structures, rest-pause or cluster-style work, and drop-set-dominant work. It also treats explicit `warmup` and `dropSet` markers as strong structural evidence instead of inferring everything from load order alone.
 
 ### `Data/Services/AI/Outcomes/AIOutcomeInferrer.swift`
 - Purpose: on-device fallback evaluator for grouped suggestion outcomes.
@@ -319,6 +329,8 @@ This file is a structure map for the codebase. It explains what the important fi
 - Called by: `DeferredSuggestionsView`, `WorkoutSummaryView`.
 - Calls: action closures, change-application helpers, save helpers.
 - Read with: `Data/Models/Plans/SuggestionGrouping.swift`.
+
+Also renders the persisted suggestion confidence tier on actionable cards so pending suggestions do not all appear equally strong at a glance.
 
 ## Exercise Catalog and History
 

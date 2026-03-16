@@ -5,3 +5,4 @@
 # local build/output artifacts
 build/
 appstore-screenshots/
+.DerivedData/

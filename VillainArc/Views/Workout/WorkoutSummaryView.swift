@@ -158,10 +158,7 @@ struct WorkoutSummaryView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryNotesButton)
                     .accessibilityLabel(AccessibilityText.workoutSummaryNotesLabel)
-                    .accessibilityValue(AccessibilityText.workoutSummaryNotesValue(
-                        hasNotes: !workout.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                        notes: workout.notes
-                    ))
+                    .accessibilityValue(AccessibilityText.workoutSummaryNotesValue(hasNotes: !workout.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, notes: workout.notes))
                     .accessibilityHint(AccessibilityText.workoutSummaryNotesHint)
 
                     effortSection
@@ -397,14 +394,7 @@ struct WorkoutSummaryView: View {
         return orderedCatalogIDs.compactMap { catalogID in
             guard let grouped = groupedExercises[catalogID], let first = grouped.first else { return nil }
 
-            return WorkoutExercisePRSummary(
-                catalogID: catalogID,
-                exerciseName: first.name,
-                bestEstimated1RM: grouped.compactMap(\.bestEstimated1RM).max(),
-                bestWeight: grouped.compactMap(\.bestWeight).max(),
-                bestReps: grouped.compactMap(\.bestReps).max(),
-                totalVolume: grouped.reduce(0) { $0 + $1.totalVolume }
-            )
+            return WorkoutExercisePRSummary(catalogID: catalogID, exerciseName: first.name, bestEstimated1RM: grouped.compactMap(\.bestEstimated1RM).max(), bestWeight: grouped.compactMap(\.bestWeight).max(), bestReps: grouped.compactMap(\.bestReps).max(), totalVolume: grouped.reduce(0) { $0 + $1.totalVolume })
         }
     }
 

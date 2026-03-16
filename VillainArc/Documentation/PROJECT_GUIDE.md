@@ -260,7 +260,13 @@ The generator uses:
 - frozen set matching from `SetPerformance.originalTargetSetID` (UUID-based, survives plan reindexing)
 - event-level category metadata to separate performance, recovery, structure, and rep-range configuration suggestions
 
+Training-style resolution now uses both load structure and explicit set typing. Warmup ramps are treated as strong evidence that real progression evidence starts later, while explicit drop sets help identify fatigue-oriented continuation work that should not drive normal load progression. Rest-pause detection is also intentionally narrow so ordinary short-rest straight sets do not lose normal progression evidence. That lets feeder ramps, reverse pyramids, top-set/backoff structures, true rest-pause or cluster-style work, and drop-set-dominant sessions map to more useful progression evidence windows than the older broad style buckets did.
+
+Progression decisions are also now context-aware beyond plate math. The suggestion engine uses small deterministic progression profiles derived from exercise context such as `equipmentType`, `catalogID`, and lift class, so stable machine work, large-jump dumbbell work, and bodyweight or assisted movements no longer all share the same burden of proof for progression, regression, or cleanup suggestions. Heavy-compound handling is intentionally scoped to reviewed built-in catalog exercises for now rather than every possible barbell movement, and the more conservative below-range regression behavior is applied only to those conservative profiles rather than globally.
+
 The persisted `SuggestionEvent` now owns the live target exercise/set links for review, cleanup, and outcome resolution. Child `PrescriptionChange` rows stay scalar-only and describe the exact before/after deltas inside that one event.
+
+Suggestion events also now persist a simple suggestion confidence score derived from draft evidence strength. In review flows, that is surfaced as a lightweight `Strong`, `Moderate`, or `Exploratory` label on pending/actionable cards so users can quickly distinguish direct evidence from heuristic suggestions.
 
 `SuggestionDeduplicator` no longer blindly keeps only one winner for every set target. It now uses event categories and compatibility rules, so the app can keep a small number of non-conflicting suggestions for the same set when appropriate while still suppressing incompatible combinations.
 

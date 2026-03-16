@@ -837,6 +837,7 @@ enum AccessibilityText {
     static let suggestionAcceptHint = localized("Accepts this suggestion group.")
     static let suggestionDeferLabel = localized("Later")
     static let suggestionDeferHint = localized("Defers this suggestion to review before the next workout.")
+    static func suggestionConfidenceLabel(_ label: String) -> String { localized("Suggestion strength \(label)") }
 
     // MARK: - DeferredSuggestionsView
     static let deferredSuggestionsSkipLabel = localized("Skip")

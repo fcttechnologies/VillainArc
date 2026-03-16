@@ -55,7 +55,25 @@ struct SuggestionSystemTests {
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .topSetBackoffs)
     }
-    
+
+    @Test @MainActor
+    func detectTrainingStyle_feederRamp() {
+        let sets = [80.0, 90.0, 100.0, 100.0].enumerated().map { (i, w) in
+            TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8)
+        }
+        let style = MetricsCalculator.detectTrainingStyle(sets)
+        #expect(style == .feederRamp)
+    }
+
+    @Test @MainActor
+    func detectTrainingStyle_reversePyramid() {
+        let sets = [100.0, 90.0, 90.0].enumerated().map { (i, w) in
+            TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8)
+        }
+        let style = MetricsCalculator.detectTrainingStyle(sets)
+        #expect(style == .reversePyramid)
+    }
+
     @Test @MainActor
     func detectTrainingStyle_ascending() {
         // Spread > 10% of avg (not straight), all weights >= max*0.8 (not topSetBackoffs), monotonically increasing
@@ -127,6 +145,117 @@ struct SuggestionSystemTests {
     func detectTrainingStyle_unknownForEmptySets() {
         let style = MetricsCalculator.detectTrainingStyle([])
         #expect(style == .unknown)
+    }
+
+    @Test @MainActor
+    func detectTrainingStyle_ignoresExplicitWarmupRamp_beforeStraightTopSets() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
+
+        let warmup1 = SetPrescription(exercisePrescription: prescription, setType: .warmup, targetWeight: 50, targetReps: 10, targetRest: 60, index: -2)
+        let warmup2 = SetPrescription(exercisePrescription: prescription, setType: .warmup, targetWeight: 75, targetReps: 6, targetRest: 60, index: -1)
+        prescription.sets?.append(warmup1)
+        prescription.sets?.append(warmup2)
+        prescription.reindexSets()
+
+        let session = TestDataFactory.makeSession(context: context)
+        let performance = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 50, reps: 10, rest: 60, type: .warmup),
+                (weight: 75, reps: 6, rest: 60, type: .warmup),
+                (weight: 100, reps: 8, rest: 90, type: .working),
+                (weight: 100, reps: 7, rest: 90, type: .working),
+                (weight: 100, reps: 6, rest: 90, type: .working)
+            ]
+        )
+
+        let style = MetricsCalculator.detectTrainingStyle(performance.sortedSets)
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+
+        #expect(style == .straightSets)
+        #expect(progressionSets.map(\.weight) == [100, 100, 100])
+        #expect(progressionSets.allSatisfy { $0.type == .working })
+    }
+
+    @Test @MainActor
+    func detectTrainingStyle_restPauseCluster_whenSameLoadUsesVeryShortRest() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+
+        let session = TestDataFactory.makeSession(context: context)
+        let performance = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 30, type: .working),
+                (weight: 100, reps: 5, rest: 30, type: .working),
+                (weight: 100, reps: 3, rest: 30, type: .working)
+            ]
+        )
+
+        let style = MetricsCalculator.detectTrainingStyle(performance.sortedSets)
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+
+        #expect(style == .restPauseCluster)
+        #expect(progressionSets.count == 1)
+        #expect(progressionSets.first?.index == 0)
+    }
+
+    @Test @MainActor
+    func detectTrainingStyle_shortRestStraightSets_doNotCollapseIntoRestPauseCluster() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 10, repRangeMode: .range, lowerRange: 8, upperRange: 12)
+
+        let session = TestDataFactory.makeSession(context: context)
+        let performance = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 10, rest: 30, type: .working),
+                (weight: 100, reps: 9, rest: 30, type: .working),
+                (weight: 100, reps: 8, rest: 30, type: .working)
+            ]
+        )
+
+        let style = MetricsCalculator.detectTrainingStyle(performance.sortedSets)
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+
+        #expect(style == .straightSets)
+        #expect(progressionSets.map(\.index) == [0, 1, 2])
+    }
+
+    @Test @MainActor
+    func detectTrainingStyle_dropSetCluster_whenExplicitDropSetsDominate() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+        for set in prescription.sortedSets {
+            set.type = .dropSet
+        }
+
+        let session = TestDataFactory.makeSession(context: context)
+        let performance = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 30, type: .dropSet),
+                (weight: 90, reps: 7, rest: 30, type: .dropSet),
+                (weight: 80, reps: 6, rest: 30, type: .dropSet)
+            ]
+        )
+
+        let style = MetricsCalculator.detectTrainingStyle(performance.sortedSets)
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+
+        #expect(style == .dropSetCluster)
+        #expect(progressionSets.isEmpty)
     }
     
     // MARK: - Style Increment Multiplier (via doubleProgressionTarget)
@@ -221,6 +350,81 @@ struct SuggestionSystemTests {
     }
 
     @Test @MainActor
+    func selectProgressionSets_feederRamp_usesFlatTopClusterOnly() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
+        let session = TestDataFactory.makeSession(context: context)
+        let performance = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 80, reps: 10, rest: 90, type: .working),
+                (weight: 90, reps: 9, rest: 90, type: .working),
+                (weight: 100, reps: 8, rest: 90, type: .working),
+                (weight: 100, reps: 8, rest: 90, type: .working)
+            ]
+        )
+
+        let detectedStyle = MetricsCalculator.detectTrainingStyle(performance.sortedSets)
+        let progressionSets = MetricsCalculator.selectProgressionSets(from: performance)
+
+        #expect(detectedStyle == .feederRamp)
+        #expect(progressionSets.map(\.weight) == [100, 100])
+        #expect(progressionSets.map(\.index) == [2, 3])
+    }
+
+    @Test @MainActor
+    func immediateProgressionRange_feederRamp_targetsOnlyTopCluster() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "machine_chest_press",
+            workingSets: 4,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+        prescription.sortedSets[0].targetWeight = 80
+        prescription.sortedSets[1].targetWeight = 90
+        prescription.sortedSets[2].targetWeight = 100
+        prescription.sortedSets[3].targetWeight = 100
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [
+                (weight: 80, reps: 10, rest: 90, type: .working),
+                (weight: 90, reps: 9, rest: 90, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working)
+            ]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [],
+            plan: plan,
+            resolvedTrainingStyle: .feederRamp,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightChangeIndices = Set(flattenedChanges(from: suggestions).filter {
+            $0.change.changeType == .increaseWeight
+        }.compactMap { $0.draft.targetSetPrescription?.index })
+
+        #expect(weightChangeIndices == Set([2, 3]))
+    }
+
+    @Test @MainActor
     func weightIncrement_usesFiveKgForWhitelistedBarbellPulls() {
         let increment = MetricsCalculator.weightIncrement(
             for: 100,
@@ -242,6 +446,429 @@ struct SuggestionSystemTests {
         )
 
         #expect(increment == 2.5)
+    }
+
+    @Test @MainActor
+    func progressionProfile_keepsDefaultThresholdsForNonReviewedBarbellCatalogIDs() {
+        let profile = MetricsCalculator.progressionProfile(
+            primaryMuscle: .back,
+            equipmentType: .barbell,
+            catalogID: "barbell_shrugs"
+        )
+
+        #expect(profile.kind == .default)
+        #expect(profile.allowsImmediateLoadProgression)
+        #expect(profile.confirmedRangeMargin == 1)
+    }
+
+    @Test @MainActor
+    func immediateProgressionRange_heavyCompoundWaitsForConfirmation_whileStableMachineCanProgressNow() throws {
+        let context = try TestDataFactory.makeContext()
+
+        let (barbellPlan, barbellPrescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "barbell_bench_press",
+            workingSets: 2,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+        let barbellSession = TestDataFactory.makeSession(context: context)
+        let barbellPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: barbellSession,
+            prescription: barbellPrescription,
+            sets: [
+                (weight: 100, reps: 10, rest: 90, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working)
+            ]
+        )
+        let barbellContext = ExerciseSuggestionContext(
+            session: barbellSession,
+            performance: barbellPerformance,
+            prescription: barbellPrescription,
+            history: [],
+            plan: barbellPlan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let (machinePlan, machinePrescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "machine_chest_press",
+            workingSets: 2,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+        let machineSession = TestDataFactory.makeSession(context: context)
+        let machinePerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: machineSession,
+            prescription: machinePrescription,
+            sets: [
+                (weight: 100, reps: 10, rest: 90, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working)
+            ]
+        )
+        let machineContext = ExerciseSuggestionContext(
+            session: machineSession,
+            performance: machinePerformance,
+            prescription: machinePrescription,
+            history: [],
+            plan: machinePlan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let barbellSuggestions = RuleEngine.evaluate(context: barbellContext)
+        let machineSuggestions = RuleEngine.evaluate(context: machineContext)
+
+        let barbellWeightIncrease = flattenedChanges(from: barbellSuggestions).first { $0.change.changeType == .increaseWeight }
+        let machineWeightIncrease = flattenedChanges(from: machineSuggestions).first { $0.change.changeType == .increaseWeight }
+
+        #expect(barbellWeightIncrease == nil,
+            "Heavy compounds should not jump load immediately on a single top-of-range session")
+        #expect(machineWeightIncrease != nil,
+            "Stable machine work should still progress immediately when all primary sets hit the top of the range")
+    }
+
+    @Test @MainActor
+    func confirmedProgressionRange_heavyCompound_requiresExactTopAcrossTwoSessions() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "barbell_bench_press",
+            workingSets: 2,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        let previousPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 9, rest: 90, type: .working),
+                (weight: 100, reps: 9, rest: 90, type: .working)
+            ]
+        )
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 9, rest: 90, type: .working),
+                (weight: 100, reps: 9, rest: 90, type: .working)
+            ]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [previousPerformance],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightIncrease = flattenedChanges(from: suggestions).first { $0.change.changeType == .increaseWeight }
+        let repIncrease = flattenedChanges(from: suggestions).first { $0.change.changeType == .increaseReps }
+
+        #expect(weightIncrease == nil,
+            "Heavy compounds should not load-progress just because two sessions are one rep shy of the top")
+        #expect(repIncrease != nil,
+            "When load progression is held back on a heavy compound, rep progression should remain available within the range")
+    }
+
+    @Test @MainActor
+    func confirmedProgressionRange_heavyCompound_fires_whenAllSetsHitCeilingAcrossTwoSessions() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "barbell_bench_press",
+            workingSets: 2,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        let previousPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 10, rest: 90, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working)
+            ]
+        )
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 10, rest: 90, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working)
+            ]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [previousPerformance],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightIncreaseCount = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseWeight }.count
+
+        #expect(weightIncreaseCount == 2,
+            "Heavy compounds should still load-progress once two sessions clearly hit the top of the range")
+    }
+
+    @Test @MainActor
+    func belowRangeWeightDecrease_heavyCompound_requiresThreeDocumentedMisses() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "barbell_bench_press",
+            workingSets: 1,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let olderSession = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        olderSession.statusValue = .done
+        let olderPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: olderSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 8, rest: 90, type: .working)]
+        )
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        let previousPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 7, rest: 90, type: .working)]
+        )
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 7, rest: 90, type: .working)]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [previousPerformance, olderPerformance],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightDecrease = flattenedChanges(from: suggestions).first { $0.change.changeType == .decreaseWeight }
+
+        #expect(weightDecrease == nil,
+            "Heavy compounds should not lower load after only two documented below-range misses")
+    }
+
+    @Test @MainActor
+    func belowRangeWeightDecrease_heavyCompound_requiresFullFourSessionWindow() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "barbell_bench_press",
+            workingSets: 1,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let oldestSession = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        oldestSession.statusValue = .done
+        let oldestPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: oldestSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 7, rest: 90, type: .working)]
+        )
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        let previousPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 7, rest: 90, type: .working)]
+        )
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [(weight: 100, reps: 7, rest: 90, type: .working)]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [previousPerformance, oldestPerformance],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightDecrease = flattenedChanges(from: suggestions).first { $0.change.changeType == .decreaseWeight }
+
+        #expect(weightDecrease == nil,
+            "Heavy compounds should not lower load until the full four-session evidence window exists")
+    }
+
+    @Test @MainActor
+    func largeJumpDumbbell_prefersRepIncreaseOverLoadIncrease_whenTwoSessionsAreOneRepShy() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "dumbbell_bench_press",
+            workingSets: 2,
+            targetWeight: 30,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        let previousPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [
+                (weight: 30, reps: 9, rest: 90, type: .working),
+                (weight: 30, reps: 9, rest: 90, type: .working)
+            ]
+        )
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [
+                (weight: 30, reps: 9, rest: 90, type: .working),
+                (weight: 30, reps: 9, rest: 90, type: .working)
+            ]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [previousPerformance],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightIncrease = flattenedChanges(from: suggestions).first { $0.change.changeType == .increaseWeight }
+        let repIncreaseCount = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseReps }.count
+
+        #expect(weightIncrease == nil,
+            "Large-jump dumbbell work should prefer rep progression before adding load when sessions are only one rep shy of the ceiling")
+        #expect(repIncreaseCount == 2,
+            "Large-jump dumbbell work should keep progressing by reps within the range when that is the safer next step")
+    }
+
+    @Test @MainActor
+    func matchActualWeight_doesNotRewriteDumbbellPrescription_forSingleImplementStepDrift() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "dumbbell_bench_press",
+            workingSets: 1,
+            targetWeight: 30,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let oldest = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        oldest.statusValue = .done
+        let oldestPerf = TestDataFactory.makePerformance(context: context, session: oldest, prescription: prescription, sets: [(weight: 35, reps: 8, rest: 90, type: .working)])
+
+        let previous = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previous.statusValue = .done
+        let previousPerf = TestDataFactory.makePerformance(context: context, session: previous, prescription: prescription, sets: [(weight: 35, reps: 8, rest: 90, type: .working)])
+
+        let current = TestDataFactory.makeSession(context: context)
+        let currentPerf = TestDataFactory.makePerformance(context: context, session: current, prescription: prescription, sets: [(weight: 35, reps: 8, rest: 90, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: current,
+            performance: currentPerf,
+            prescription: prescription,
+            history: [previousPerf, oldestPerf],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .kg
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightDriftAdjustment = flattenedChanges(from: suggestions).first {
+            $0.change.changeType == .increaseWeight && $0.draft.ruleID == .matchActualWeight
+        }
+
+        #expect(weightDriftAdjustment == nil,
+            "A single dumbbell implement step above prescription should not be treated as settled plan drift after only three repeated sessions")
     }
 
     @Test @MainActor
@@ -285,6 +912,7 @@ struct SuggestionSystemTests {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(
             context: context,
+            catalogID: "machine_chest_press",
             workingSets: 2,
             targetWeight: 100,
             targetReps: 8,
@@ -352,10 +980,11 @@ struct SuggestionSystemTests {
     }
 
     @Test @MainActor
-    func confirmedProgressionRange_fires_whenLastSetMissesCeilingByOneAcrossTwoSessions() throws {
+    func confirmedProgressionRange_fires_whenStableMachineWorkIsOneRepShyAcrossTwoSessions() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(
             context: context,
+            catalogID: "machine_chest_press",
             workingSets: 4,
             targetWeight: 100,
             targetReps: 8,
@@ -364,8 +993,6 @@ struct SuggestionSystemTests {
             lowerRange: 8,
             upperRange: 12
         )
-        prescription.musclesTargeted = [.chest]
-        prescription.equipmentType = .barbell
 
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
         previousSession.statusValue = .done
@@ -409,7 +1036,7 @@ struct SuggestionSystemTests {
         let repChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .decreaseReps }
 
         #expect(weightChanges.count == 4,
-            "Confirmed range progression should fire after two sessions when every set is at ceiling or one rep shy")
+            "Stable machine work should still progress after two sessions when every set is at ceiling or one rep shy")
         #expect(repChanges.isEmpty,
             "Rep reset should not be emitted when the prescription is already at the lower bound")
     }
@@ -417,10 +1044,8 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func generatedSuggestionsAttachSessionEventContext() async throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 200, targetReps: 8, repRangeMode: .target)
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 3, targetWeight: 200, targetReps: 8, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
-        prescription.musclesTargeted = [.chest]
-        prescription.equipmentType = .barbell
         
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
         previousSession.statusValue = .done
@@ -448,6 +1073,40 @@ struct SuggestionSystemTests {
         #expect(generated.allSatisfy { $0.catalogID == prescription.catalogID })
         #expect(generated.allSatisfy { $0.targetExercisePrescription?.workoutPlan?.id == plan.id })
     }
+
+    @Test @MainActor
+    func generateSuggestions_persistsConfidenceOnSuggestionEvents() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: previousSession, prescription: prescription, sets: [(weight: 100, reps: 9, rest: 90, type: .working)])
+
+        let workout = WorkoutSession(from: plan)
+        context.insert(workout)
+        workout.statusValue = .summary
+
+        guard let performance = workout.sortedExercises.first,
+              let set = performance.sortedSets.first else {
+            Issue.record("Expected a plan-backed performance with one set.")
+            return
+        }
+
+        set.weight = 100
+        set.reps = 9
+        set.restSeconds = 90
+        set.complete = true
+
+        let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
+        guard let event = generated.first(where: { $0.category == .performance }) else {
+            Issue.record("Expected a generated performance suggestion.")
+            return
+        }
+
+        #expect(event.suggestionConfidence == 0.7)
+        #expect(event.suggestionConfidenceTier == .moderate)
+    }
     
     @Test @MainActor
     func generateSuggestions_returnsEmptyForFreeformWorkout() async throws {
@@ -462,9 +1121,7 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func generateSuggestions_deduplicatesOvershootToSingleStrongerEvent() async throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
-        prescription.musclesTargeted = [.chest]
-        prescription.equipmentType = .barbell
+        let (plan, _) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         
         let workout = WorkoutSession(from: plan)
         context.insert(workout)
@@ -491,7 +1148,7 @@ struct SuggestionSystemTests {
         
         #expect(event.sortedChanges.count == 2)
         #expect(weightChange?.previousValue == 100)
-        #expect(weightChange?.newValue == 103.75)
+        #expect(weightChange?.newValue == 107.5)
         #expect(repChange?.previousValue == 10)
         #expect(repChange?.newValue == 8)
         #expect(event.triggerTargetSetID == set.prescription?.id)
@@ -501,7 +1158,7 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func generateSuggestions_triggerSnapshotPreservesLinkedTargetSetIndices() async throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
 
         let workout = WorkoutSession(from: plan)
@@ -695,7 +1352,7 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func belowRangeWeightDecrease_triggersAfterTwoBelowRangeSessionsAtTargetLoad() throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
         let previousPerformance = TestDataFactory.makePerformance(context: context, session: previousSession, prescription: prescription, sets: [(weight: 100, reps: 7, rest: 90, type: .working)])
@@ -711,7 +1368,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease != nil)
         #expect(weightDecrease?.draft.targetSetPrescription?.index == 0)
         #expect(weightDecrease?.change.previousValue == 100)
-        #expect(weightDecrease?.change.newValue == 97.5)
+        #expect(weightDecrease?.change.newValue == 95.0)
     }
 
     @Test @MainActor
@@ -737,7 +1394,7 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func reducedWeightToHitReps_triggers_whenOneReducedLoadSessionFallsBelowRangeFloor() throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
         let previousPerformance = TestDataFactory.makePerformance(context: context, session: previousSession, prescription: prescription, sets: [(weight: 97.5, reps: 7, rest: 90, type: .working)])
@@ -1125,7 +1782,7 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func matchActualWeight_updatesPrescriptionAfterThreeConsistentHigherLoads() throws {
         let context = try TestDataFactory.makeContext()
-        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         
         let oldestSession = TestDataFactory.makeSession(context: context, daysAgo: 6)
         let oldestPerformance = TestDataFactory.makePerformance(context: context, session: oldestSession, prescription: prescription, sets: [(weight: 110, reps: 8, rest: 90, type: .working)])
@@ -1648,6 +2305,35 @@ struct SuggestionSystemTests {
     }
 
     @Test @MainActor
+    func suggestionConfidenceTier_mapsPersistedScores() {
+        let exploratory = SuggestionEvent(catalogID: "test", sessionFrom: nil, triggerPerformanceSnapshot: .empty, triggerTargetSnapshot: .empty, trainingStyle: .straightSets, suggestionConfidence: 0.5)
+        let moderate = SuggestionEvent(catalogID: "test", sessionFrom: nil, triggerPerformanceSnapshot: .empty, triggerTargetSnapshot: .empty, trainingStyle: .straightSets, suggestionConfidence: 0.7)
+        let strong = SuggestionEvent(catalogID: "test", sessionFrom: nil, triggerPerformanceSnapshot: .empty, triggerTargetSnapshot: .empty, trainingStyle: .straightSets, suggestionConfidence: 0.9)
+
+        #expect(exploratory.suggestionConfidenceTier == .exploratory)
+        #expect(moderate.suggestionConfidenceTier == .moderate)
+        #expect(strong.suggestionConfidenceTier == .strong)
+    }
+
+    @Test @MainActor
+    func suggestionConfidence_usesEvidenceStrengthMapping() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .target)
+        guard let set = prescription.sortedSets.first else {
+            Issue.record("Expected a set for confidence mapping test.")
+            return
+        }
+
+        let heuristicDraft = SuggestionEventDraft(category: .recovery, targetExercisePrescription: prescription, targetSetPrescription: set, ruleID: .stagnationIncreaseRest, evidenceStrength: .heuristic, changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)])
+        let patternDraft = SuggestionEventDraft(category: .performance, targetExercisePrescription: prescription, targetSetPrescription: set, ruleID: .confirmedProgressionTarget, evidenceStrength: .pattern, changes: [PrescriptionChangeDraft(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)])
+        let directDraft = SuggestionEventDraft(category: .recovery, targetExercisePrescription: prescription, targetSetPrescription: set, ruleID: .shortRestPerformanceDrop, evidenceStrength: .directTargetEvidence, changes: [PrescriptionChangeDraft(changeType: .increaseRest, previousValue: 90, newValue: 105)])
+
+        #expect(SuggestionGenerator.suggestionConfidence(for: heuristicDraft) == 0.5)
+        #expect(SuggestionGenerator.suggestionConfidence(for: patternDraft) == 0.7)
+        #expect(SuggestionGenerator.suggestionConfidence(for: directDraft) == 0.9)
+    }
+
+    @Test @MainActor
     func outcomeRuleEngine_requiresLiveSetPrescriptionLinkForSetLevelChanges() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 95, targetReps: 8, targetRest: 90, repRangeMode: .target)
@@ -2129,14 +2815,14 @@ struct SuggestionSystemTests {
 
     // MARK: - confirmedProgressionTarget / immediateProgressionTarget (Issue 2-A fix)
 
-    /// Two sessions, both at target - 1 reps: confirmedProgressionTarget should fire.
-    /// Before the fix, `>= target` was required, so a session at reps=7 (target=8) was blocked.
-    /// After the fix, `>= target - 1` mirrors the `upper - 1` softening in confirmedProgressionRange.
+    /// Two machine-based sessions, both at target - 1 reps: confirmedProgressionTarget should fire.
+    /// Stable accessory work keeps the softer target-1 confirmation threshold even though
+    /// heavier compound and large-jump profiles now require exact target hits.
     @Test @MainActor
     func confirmedProgressionTarget_firesWhenAllSetsAtTargetMinusOne_twoSessions() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(
-            context: context, workingSets: 1, targetWeight: 100, targetReps: 8,
+            context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8,
             targetRest: 90, repRangeMode: .target
         )
         // targetReps on RepRangePolicy defaults to 8; confirm explicitly.
@@ -2167,7 +2853,7 @@ struct SuggestionSystemTests {
 
         let hasWeightIncrease = generated.contains { $0.sortedChanges.contains { $0.changeType == .increaseWeight } }
         #expect(hasWeightIncrease,
-            "confirmedProgressionTarget should fire when both sessions are at target-1 (reps=7, target=8)")
+            "confirmedProgressionTarget should still fire for stable machine work when both sessions are at target-1 (reps=7, target=8)")
     }
 
     /// Two sessions where reps are well below target — confirmedProgressionTarget must not fire.
@@ -2218,7 +2904,7 @@ struct SuggestionSystemTests {
     func matchActualWeight_doesNotSuggestActualWeight_whenProgressionRulesBlockIt() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(
-            context: context, workingSets: 1, targetWeight: 100, targetReps: 8,
+            context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8,
             targetRest: 90, repRangeMode: .target
         )
         prescription.repRange?.targetReps = 8
@@ -2278,7 +2964,7 @@ struct SuggestionSystemTests {
     func matchActualWeight_usesMedian_notAverage() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(
-            context: context, workingSets: 1, targetWeight: 100, targetReps: 8,
+            context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8,
             targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12
         )
 

@@ -46,7 +46,8 @@ The important detail is why those fields exist:
 - `evaluationHistory` accumulates one `EvaluationHistoryEntry` per evaluated workout session, each carrying a performance snapshot, a partial outcome, confidence, and reason
 - `latestEvaluationSnapshot` is a computed shortcut to `evaluationHistory.last?.snapshot`
 - `requiredEvaluationCount` is the number of sessions that must be evaluated before the outcome is finalized; set at generation time based on change type and category
-- `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens
+- `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens, including whether the session behaved like straight sets, a feeder ramp into a heavy cluster, a reverse pyramid, a top-set/backoff structure, rest-pause or cluster-style work, drop-set-dominant work, or an ambiguous pattern
+- `suggestionConfidence` stores the persisted strength of the suggestion itself, derived from the draft's evidence strength and surfaced in review UI as a simple tier label
 - `changeReasoning` and `outcomeReason` give both the review UI and future debugging a human-readable explanation
 - `targetExercisePrescription` and optional `targetSetPrescription` keep the live plan target on the event itself
 - `triggerTargetSetID` preserves which original target set the event referred to, even if live links later disappear
@@ -300,6 +301,16 @@ Training style is resolved through:
 
 So AI is a fallback, not the primary path.
 
+The resolved style now uses both load order and explicit set types:
+
+- explicit `warmup` sets strongly suggest that true progression evidence begins after the ramp
+- explicit `dropSet` sets strongly suggest fatigue-oriented continuation work
+- working-set structure can resolve into straight sets, ascending, ascending pyramid, descending pyramid, feeder ramp, reverse pyramid, top set plus backoffs, rest-pause or cluster-style work, drop-set clusters, or unknown
+
+The practical goal is not perfect labeling. It is choosing the right progression evidence window and avoiding obvious cases where warmups, feeders, or fatigue clusters distort normal progression logic.
+
+Training style is only one half of the progression lens. After the engine selects the relevant progression sets, it now also applies an exercise-context progression profile derived from things like `equipmentType`, `catalogID`, and lift class. That profile adjusts how aggressive the engine should be about immediate progression, confirmed progression, overshoot jumps, regression, and load-drift cleanup. The heavy-compound branch is intentionally limited to reviewed built-in catalog exercises right now, so uncategorized or future custom barbell movements still fall back to the default profile until they are explicitly reviewed.
+
 ### Main Rule Buckets
 
 `RuleEngine` is organized into a few buckets:
@@ -320,6 +331,22 @@ In practice it looks at signals like:
 - whether recent rep evidence suggests a target should become a range, or a range should shift up or down
 
 Most of those rules use the current session plus the last 1-3 completed performances for the same exercise.
+
+One important detail is that "progression sets" are style-aware rather than always meaning "all working sets":
+
+- feeder ramps bias toward the trailing heavy cluster
+- top-set/backoff and reverse-pyramid structures bias toward the heaviest sets
+- true rest-pause clusters bias toward the first hard mini-set rather than the full fatigue chain, but ordinary short-rest straight sets are intentionally left out of that bucket
+- drop-set clusters are prevented from driving normal load progression
+- explicit warmups are excluded from normal progression evidence
+
+Once those progression sets are chosen, exercise context changes how the rules react to them:
+
+- heavier compounds require cleaner confirmation before load increases
+- stable machine or controlled accessory work can still progress on softer repeated evidence
+- large-jump dumbbell work prefers rep progression before load jumps
+- heavier or less stable contexts require stronger repeated misses before regression or plan-drift cleanup
+- the conservative below-range regression profiles wait for the full evidence window, while softer profiles still allow shorter repeated-miss confirmation
 
 ### Current Session Plus Previous Performed Work
 

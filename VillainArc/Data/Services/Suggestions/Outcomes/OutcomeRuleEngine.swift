@@ -312,7 +312,9 @@ struct OutcomeRuleEngine {
         let difficulty = difficultyDirection(for: change)
 
         // If at least half the sets miss in one direction, classify directional mismatch.
-        if !belowFloor.isEmpty && belowFloor.count >= reps.count / 2 {
+        // Use count * 2 >= reps.count to get true >=50% without integer-division truncation
+        // (e.g. reps.count/2 = 1 for 3 sets, which would fire on just 1 miss).
+        if !belowFloor.isEmpty && belowFloor.count * 2 >= reps.count {
             let outcome: Outcome = difficulty == .easier ? .insufficient : .tooAggressive
             let reason: String
             if difficulty == .easier {
@@ -322,7 +324,7 @@ struct OutcomeRuleEngine {
             }
             return OutcomeSignal(outcome: outcome, confidence: 0.8, reason: reason)
         }
-        if !aboveCeiling.isEmpty && aboveCeiling.count >= reps.count / 2 {
+        if !aboveCeiling.isEmpty && aboveCeiling.count * 2 >= reps.count {
             return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Multiple sets (\(aboveCeiling)) exceeded the new range ceiling (\(ceiling)) + buffer (\(buffer)).")
         }
 

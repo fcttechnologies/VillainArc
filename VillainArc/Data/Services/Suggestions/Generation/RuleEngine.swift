@@ -131,6 +131,8 @@ struct RuleEngine {
         // Range mode progression: if primary sets reach the top of the range now, progress immediately.
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
+        let profile = progressionProfile(for: context)
+        guard profile.allowsImmediateLoadProgression else { return [] }
         let lower = repRange.lowerRange
         let upper = repRange.upperRange
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
@@ -172,6 +174,8 @@ struct RuleEngine {
         // Target mode progression: if primary sets exceed the target now, progress immediately.
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return [] }
+        let profile = progressionProfile(for: context)
+        guard profile.allowsImmediateLoadProgression else { return [] }
         let target = repRange.targetReps
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
@@ -199,28 +203,34 @@ struct RuleEngine {
     private static func confirmedProgressionRange(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
+        let profile = progressionProfile(for: context)
         let lower = repRange.lowerRange
         let upper = repRange.upperRange
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
         guard !qualifiesForImmediateLoadProgression(context) else { return [] }
+        let requiredReps = max(lower, upper - profile.confirmedRangeMargin)
 
         let lastTwo = Array(recent.prefix(2))
         let nearTopInBoth = lastTwo.allSatisfy { performance in
             guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
-            guard progressionSets.allSatisfy({ $0.reps >= performanceRepRange.upper - 1 }) else { return false }
-            return !hasStrongComparableContextMiss(in: performance, primarySets: progressionSets, repThreshold: performanceRepRange.upper - 1)
+            let threshold = max(performanceRepRange.lower, performanceRepRange.upper - profile.confirmedRangeMargin)
+            guard progressionSets.allSatisfy({ $0.reps >= threshold }) else { return false }
+            return !hasStrongComparableContextMiss(in: performance, primarySets: progressionSets, repThreshold: threshold)
         }
         guard nearTopInBoth else { return [] }
 
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
-        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: upper - 1) else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: requiredReps) else { return [] }
 
         var events: [SuggestionEventDraft] = []
         let repsReason = "Reset reps to \(lower) to account for the added weight."
+        let evidenceDescription = profile.confirmedRangeMargin == 0
+            ? "You've hit the top of your rep range (\(upper)) for two sessions on your primary sets."
+            : "You've been at or within one rep of the top of your rep range (\(upper)) for two sessions on your primary sets."
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
@@ -232,8 +242,8 @@ struct RuleEngine {
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
-                ? "You've been near the top of your rep range (\(upper)) for two sessions on your primary sets. Increase weight to keep progressing."
-                : "You've been near the top of your rep range (\(upper)) for two sessions on your primary sets. Increase weight and keep reps at \(lower)."
+                ? "\(evidenceDescription) Increase weight to keep progressing."
+                : "\(evidenceDescription) Increase weight and keep reps at \(lower)."
 
             var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
 
@@ -250,27 +260,32 @@ struct RuleEngine {
     private static func confirmedProgressionTarget(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return [] }
+        let profile = progressionProfile(for: context)
         let target = repRange.targetReps
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
         guard !qualifiesForImmediateLoadProgression(context) else { return [] }
+        let requiredReps = max(1, target - profile.confirmedTargetMargin)
 
         let lastTwo = Array(recent.prefix(2))
         let nearTargetInBoth = lastTwo.allSatisfy { performance in
             guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
-            guard progressionSets.allSatisfy({ $0.reps >= performanceRepRange.target - 1 }) else { return false }
-            return !hasStrongComparableContextMiss(in: performance, primarySets: progressionSets, repThreshold: performanceRepRange.target - 1)
+            let threshold = max(1, performanceRepRange.target - profile.confirmedTargetMargin)
+            guard progressionSets.allSatisfy({ $0.reps >= threshold }) else { return false }
+            return !hasStrongComparableContextMiss(in: performance, primarySets: progressionSets, repThreshold: threshold)
         }
         guard nearTargetInBoth else { return [] }
 
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
-        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: target) else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: requiredReps) else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let reason = "You've consistently been at or within one rep of your target (\(target)) on your primary sets. Increase weight to keep progressing."
+        let reason = profile.confirmedTargetMargin == 0
+            ? "You've consistently hit your target (\(target)) on your primary sets. Increase weight to keep progressing."
+            : "You've consistently been at or within one rep of your target (\(target)) on your primary sets. Increase weight to keep progressing."
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
@@ -351,6 +366,7 @@ struct RuleEngine {
         // Large overshoot: one emphatically strong session is enough for a larger jump.
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode != .notSet else { return [] }
+        let profile = progressionProfile(for: context)
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
@@ -362,10 +378,10 @@ struct RuleEngine {
             lower = repRange.lowerRange
             shouldResetReps = true
             let upper = repRange.upperRange
-            overshootMet = progressionSets.allSatisfy { $0.reps >= upper + 3 }
+            overshootMet = progressionSets.allSatisfy { $0.reps >= upper + profile.overshootRangeExtraReps }
         case .target:
             let target = repRange.targetReps
-            overshootMet = progressionSets.allSatisfy { $0.reps >= target + 4 }
+            overshootMet = progressionSets.allSatisfy { $0.reps >= target + profile.overshootTargetExtraReps }
         case .notSet:
             return []
         }
@@ -381,9 +397,10 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            // Larger jump = 1.5x the usual increment.
+            // Overshoot jumps still respect exercise context. Large-jump implements and
+            // heavier compounds use a more conservative multiplier than small stable moves.
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let jumpWeight = currentWeight + (baseIncrement * 1.5)
+            let jumpWeight = currentWeight + (baseIncrement * profile.overshootIncrementMultiplier)
             let newWeight = MetricsCalculator.roundToNearestPlate(jumpWeight)
 
             var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
@@ -402,15 +419,19 @@ struct RuleEngine {
         // Range mode safety: below lower bound in 2 of last 3 -> reduce weight.
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
+        let profile = progressionProfile(for: context)
         let lower = repRange.lowerRange
         let recent = recentPerformances(context)
-        guard recent.count >= 2 else { return [] }
+        let requiresFullWindow = profile.belowRangeRequiredCount >= 3
+        let minimumSessionCount = requiresFullWindow ? profile.belowRangeWindowSize : profile.belowRangeRequiredCount
+        guard recent.count >= minimumSessionCount else { return [] }
 
-        // Evidence window: last 3 sessions, need 2 sessions below range.
-        let lastThree = Array(recent.prefix(3))
+        // Evidence window scales by lift context so heavier or more awkward loading
+        // schemes require stronger repeated misses before regressing.
+        let evidenceWindow = Array(recent.prefix(profile.belowRangeWindowSize))
         var belowCount = 0
 
-        for performance in lastThree {
+        for performance in evidenceWindow {
             guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { continue }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { continue }
@@ -422,8 +443,12 @@ struct RuleEngine {
                     break
                 }
 
-                // Only count if they tried the prescribed load.
-                let attemptedWeight = abs(set.weight - setTarget.targetWeight) <= 1.25
+                // Only count if they meaningfully attempted the prescribed load.
+                let attemptedWeight = abs(set.weight - setTarget.targetWeight) <= attemptedWeightTolerance(
+                    for: setTarget.targetWeight,
+                    context: context,
+                    profile: profile
+                )
                 if !(set.reps < performanceRepRange.lower && attemptedWeight) {
                     sessionBelow = false
                     break
@@ -435,13 +460,18 @@ struct RuleEngine {
             }
         }
 
-        guard belowCount >= 2 else { return [] }
+        guard belowCount >= profile.belowRangeRequiredCount else { return [] }
 
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let reason = "You fell below the minimum rep target (\(lower)) in 2 of your last 3 sessions. Reduce weight slightly to stay in range."
+        let reason: String
+        if requiresFullWindow {
+            reason = "You fell below the minimum rep target (\(lower)) in \(profile.belowRangeRequiredCount) of your last \(profile.belowRangeWindowSize) sessions while still attempting the prescribed load. Reduce weight slightly to stay in range."
+        } else {
+            reason = "You repeatedly fell below the minimum rep target (\(lower)) in recent sessions while still attempting the prescribed load. Reduce weight slightly to stay in range."
+        }
 
         for set in progressionSets {
             guard let setPrescription = targetSet(for: set) else { continue }
@@ -460,13 +490,15 @@ struct RuleEngine {
     private static func matchActualWeight(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Cleanup: user consistently uses a different weight -> update prescription weight.
         let recent = recentPerformances(context)
-        guard recent.count >= 3 else { return [] }
+        let profile = progressionProfile(for: context)
+        guard recent.count >= profile.matchActualWeightSessionsRequired else { return [] }
 
         // Avoid fighting progression rules: if a progression weight increase is already warranted, skip cleanup.
         let progressionIndices = progressionWeightChangeIndices(context)
 
-        // Require 3 data points (stability).
-        let lastThree = Array(recent.prefix(3))
+        // Require a profile-specific number of data points so heavier lifts do not rewrite
+        // prescriptions off short-term drift while stable accessories still adapt.
+        let recentEvidence = Array(recent.prefix(profile.matchActualWeightSessionsRequired))
         var events: [SuggestionEventDraft] = []
 
         for setPrescription in context.prescription.sortedSets {
@@ -476,33 +508,33 @@ struct RuleEngine {
             }
 
             var weights: [Double] = []
-            for performance in lastThree {
+            for performance in recentEvidence {
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context), set.type == .working else {
                     continue
                 }
                 weights.append(set.weight)
             }
 
-            guard weights.count == 3 else { continue }
+            guard weights.count == profile.matchActualWeightSessionsRequired else { continue }
 
-            // Require consistent deviation of > 2.5 kg in one direction.
             let targetWeight = setPrescription.targetWeight
+            let increment = weightIncrement(for: targetWeight, context: context)
+            let deviationThreshold = max(1.25, increment * profile.meaningfulDeviationIncrementMultiplier)
             let deltas = weights.map { $0 - targetWeight }
-            let allAbove = deltas.allSatisfy { $0 > 2.5 }
-            let allBelow = deltas.allSatisfy { $0 < -2.5 }
+            let allAbove = deltas.allSatisfy { $0 > deviationThreshold }
+            let allBelow = deltas.allSatisfy { $0 < -deviationThreshold }
             guard allAbove || allBelow else { continue }
 
             // Stability filter: skip if weights are trending (spread wider than one increment
             // indicates active progression rather than a stable calibration discrepancy).
             let spread = weights.max()! - weights.min()!
-            let increment = weightIncrement(for: targetWeight, context: context)
             guard spread <= increment else { continue }
 
             let newWeight = MetricsCalculator.roundToNearestPlate(median(of: weights))
             guard abs(newWeight - targetWeight) > 0.1 else { continue }
 
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
-            let reason = "You've used about \(context.weightUnit.display(newWeight)) for three sessions. Update the prescription to match your working weight."
+            let reason = "You've used about \(context.weightUnit.display(newWeight)) for \(profile.matchActualWeightSessionsRequired) sessions. Update the prescription to match your working weight."
 
             events.append(makeSetEvent(context: context, ruleID: .matchActualWeight, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
         }
@@ -513,9 +545,10 @@ struct RuleEngine {
     private static func reducedWeightToHitReps(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Cleanup: user regularly lowers weight to hit reps -> reduce prescribed load.
         let recent = recentPerformances(context)
-        guard recent.count >= 2 else { return [] }
+        let profile = progressionProfile(for: context)
+        guard recent.count >= profile.reducedWeightSessionsRequired else { return [] }
 
-        let lastTwo = Array(recent.prefix(2))
+        let evidenceWindow = Array(recent.prefix(profile.reducedWeightSessionsRequired))
 
         var events: [SuggestionEventDraft] = []
 
@@ -523,8 +556,9 @@ struct RuleEngine {
             var reducedWeights: [Double] = []
             var atOrBelowFloorCount = 0
             var belowFloorCount = 0
+            let reducedLoadThreshold = meaningfulReducedLoadThreshold(for: setPrescription.targetWeight, context: context, profile: profile)
 
-            for performance in lastTwo {
+            for performance in evidenceWindow {
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context),
                       let setTarget = historicalOrCurrentTargetSet(for: set, context: context),
                       let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
@@ -532,7 +566,7 @@ struct RuleEngine {
                     continue
                 }
 
-                let reducedLoad = set.weight < (setTarget.targetWeight - 1.25)
+                let reducedLoad = set.weight <= (setTarget.targetWeight - reducedLoadThreshold)
                 let atOrBelowFloor = set.reps <= floor
                 let belowFloor = set.reps < floor
 
@@ -549,7 +583,9 @@ struct RuleEngine {
             // load and at least one of those sessions still falls below the minimum target.
             // Two "reduced load + exactly at floor" sessions are acceptable execution, not
             // enough evidence that the prescription itself should be lowered.
-            guard atOrBelowFloorCount >= 2, belowFloorCount >= 1, !reducedWeights.isEmpty else { continue }
+            guard atOrBelowFloorCount >= profile.reducedWeightSessionsRequired,
+                  belowFloorCount >= 1,
+                  !reducedWeights.isEmpty else { continue }
 
             let average = reducedWeights.reduce(0, +) / Double(reducedWeights.count)
             let newWeight = MetricsCalculator.roundToNearestPlate(average)
@@ -607,12 +643,12 @@ struct RuleEngine {
         // Use style-aware e1RM: for top-set styles, measure stagnation from the progression sets only.
         let e1rms: [Double]
         switch context.resolvedTrainingStyle {
-        case .topSetBackoffs, .descendingPyramid:
+        case .topSetBackoffs, .descendingPyramid, .feederRamp, .reversePyramid, .restPauseCluster, .dropSetCluster:
             e1rms = recent.compactMap { perf in
                 let progressionSets = primaryProgressionSets(from: perf, context: context)
                 return progressionSets.compactMap(\.estimated1RM).max()
             }
-        default:
+        case .straightSets, .ascendingPyramid, .ascending, .unknown:
             e1rms = recent.compactMap(\.bestEstimated1RM)
         }
         guard e1rms.count >= 3 else { return [] }
@@ -744,41 +780,32 @@ struct RuleEngine {
 
         let lastTwo = Array(recent.prefix(2))
         let repRange = context.prescription.repRange ?? RepRangePolicy()
+        let profile = progressionProfile(for: context)
         guard repRange.activeMode != .notSet else { return [] }
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
 
         switch repRange.activeMode {
         case .range:
-            let hitTopInBoth = lastTwo.allSatisfy { performance in
+            let warrantedInBoth = lastTwo.allSatisfy { performance in
                 guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= performanceRepRange.upper }
+                let threshold = max(performanceRepRange.lower, performanceRepRange.upper - profile.confirmedRangeMargin)
+                return sets.allSatisfy { $0.reps >= threshold }
             }
-            let overshootInBoth = lastTwo.allSatisfy { performance in
-                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
-                let sets = primaryProgressionSets(from: performance, context: context)
-                guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= performanceRepRange.upper - 1 }
-            }
-            guard hitTopInBoth || overshootInBoth else { return [] }
+            guard warrantedInBoth else { return [] }
             return Set(progressionSets.map(\.index))
 
         case .target:
-            let exceededInBoth = lastTwo.allSatisfy { performance in
+            let warrantedInBoth = lastTwo.allSatisfy { performance in
                 guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= performanceRepRange.target + 1 }
+                let threshold = max(1, performanceRepRange.target - profile.confirmedTargetMargin)
+                return sets.allSatisfy { $0.reps >= threshold }
             }
-            let overshootInBoth = lastTwo.allSatisfy { performance in
-                guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
-                let sets = primaryProgressionSets(from: performance, context: context)
-                guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= performanceRepRange.target - 1 }
-            }
-            guard exceededInBoth || overshootInBoth else { return [] }
+            guard warrantedInBoth else { return [] }
             return Set(progressionSets.map(\.index))
 
         case .notSet:
@@ -828,9 +855,9 @@ struct RuleEngine {
         // Cleanup: only demote an early working set when it consistently behaves like an isolated
         // light outlier before the real working cluster, not merely because the session ramps.
         switch context.resolvedTrainingStyle {
-        case .ascending, .ascendingPyramid, .topSetBackoffs:
+        case .ascending, .ascendingPyramid, .topSetBackoffs, .feederRamp:
             return []
-        case .straightSets, .descendingPyramid, .unknown:
+        case .straightSets, .descendingPyramid, .reversePyramid, .restPauseCluster, .dropSetCluster, .unknown:
             break
         }
 
@@ -987,6 +1014,8 @@ struct RuleEngine {
 
     private static func qualifiesForImmediateLoadProgression(_ context: ExerciseSuggestionContext) -> Bool {
         let repRange = context.prescription.repRange ?? RepRangePolicy()
+        let profile = progressionProfile(for: context)
+        guard profile.allowsImmediateLoadProgression else { return false }
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return false }
 
@@ -1032,6 +1061,8 @@ struct RuleEngine {
     private static func styleIncrementMultiplier(_ context: ExerciseSuggestionContext) -> Double {
         switch context.resolvedTrainingStyle {
         case .topSetBackoffs:
+            return 1.25
+        case .reversePyramid:
             return 1.25
         default:
             return 1.0
@@ -1315,6 +1346,25 @@ struct RuleEngine {
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
         let primaryMuscle = context.prescription.musclesTargeted.first ?? context.performance.musclesTargeted.first ?? .chest
         return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType, catalogID: context.prescription.catalogID)
+    }
+
+    private static func progressionProfile(for context: ExerciseSuggestionContext) -> ProgressionProfile {
+        let primaryMuscle = context.prescription.musclesTargeted.first ?? context.performance.musclesTargeted.first ?? .chest
+        return MetricsCalculator.progressionProfile(
+            primaryMuscle: primaryMuscle,
+            equipmentType: context.prescription.equipmentType,
+            catalogID: context.prescription.catalogID
+        )
+    }
+
+    private static func attemptedWeightTolerance(for targetWeight: Double, context: ExerciseSuggestionContext, profile: ProgressionProfile) -> Double {
+        let increment = weightIncrement(for: targetWeight, context: context)
+        return max(1.25, increment * profile.attemptedWeightToleranceIncrementMultiplier)
+    }
+
+    private static func meaningfulReducedLoadThreshold(for targetWeight: Double, context: ExerciseSuggestionContext, profile: ProgressionProfile) -> Double {
+        let increment = weightIncrement(for: targetWeight, context: context)
+        return max(1.25, increment * profile.reducedLoadIncrementMultiplier)
     }
 
     private static func makeChangeDraft(changeType: ChangeType, previousValue: Double, newValue: Double) -> PrescriptionChangeDraft {

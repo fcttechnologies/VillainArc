@@ -157,7 +157,7 @@ struct SuggestionGenerator {
             }
 
             let requiredCount = requiredEvaluationCount(for: draft.changes, category: draft.category)
-            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, changeReasoning: draft.changeReasoning, changes: changes)
+            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformanceSnapshot: triggerPerformanceSnapshot, triggerTargetSnapshot: triggerTargetSnapshot, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, changeReasoning: draft.changeReasoning, changes: changes, suggestionConfidence: suggestionConfidence(for: draft))
             return event
         }
         .sorted { lhs, rhs in
@@ -165,6 +165,17 @@ struct SuggestionGenerator {
                 return lhs.createdAt > rhs.createdAt
             }
             return lhs.catalogID < rhs.catalogID
+        }
+    }
+
+    static func suggestionConfidence(for draft: SuggestionEventDraft) -> Double {
+        switch draft.evidenceStrength {
+        case .heuristic:
+            return SuggestionConfidenceTier.exploratory.defaultScore
+        case .pattern:
+            return SuggestionConfidenceTier.moderate.defaultScore
+        case .directTargetEvidence:
+            return SuggestionConfidenceTier.strong.defaultScore
         }
     }
 }
