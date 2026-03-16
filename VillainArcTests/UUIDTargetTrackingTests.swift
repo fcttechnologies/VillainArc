@@ -300,6 +300,47 @@ struct UUIDTargetTrackingTests {
         #expect(mismatchForW2 == nil, "W2 was logged correctly — no mismatch expected.")
     }
 
+    @Test @MainActor
+    func setTypeMismatch_requiresThreeSessionsForDropSetReclassification() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
+        prescription.repRange?.targetReps = 8
+        prescription.sortedSets[0].type = .dropSet
+
+        let histSession = WorkoutSession(from: plan)
+        context.insert(histSession)
+        guard let histPerf = histSession.sortedExercises.first, histPerf.sortedSets.count == 1 else {
+            Issue.record("Expected historical performance with 1 set.")
+            return
+        }
+        histPerf.sortedSets[0].type = .working
+        histPerf.sortedSets[0].weight = 100
+        histPerf.sortedSets[0].reps = 8
+        histPerf.sortedSets[0].complete = true
+        histSession.clearPrescriptionLinksForHistoricalUse()
+
+        let currentSession = WorkoutSession(from: plan)
+        context.insert(currentSession)
+        guard let currentPerf = currentSession.sortedExercises.first, currentPerf.sortedSets.count == 1 else {
+            Issue.record("Expected current performance with 1 set.")
+            return
+        }
+        currentPerf.sortedSets[0].type = .working
+        currentPerf.sortedSets[0].weight = 100
+        currentPerf.sortedSets[0].reps = 8
+        currentPerf.sortedSets[0].complete = true
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession, performance: currentPerf, prescription: prescription,
+            history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
+        )
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let typeChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .changeSetType }
+
+        #expect(typeChanges.isEmpty,
+            "Drop-set reclassification should need 3 sessions of consistent evidence, not 2")
+    }
+
     // MARK: - belowRangeWeightDecrease resolves target weight from snapshot UUID after reindex
 
     @Test @MainActor

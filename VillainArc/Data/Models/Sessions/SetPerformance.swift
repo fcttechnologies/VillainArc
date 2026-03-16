@@ -73,3 +73,27 @@ final class SetPerformance {
 }
 
 extension SetPerformance: RestTimeEditableSet {}
+
+extension SetPerformance {
+    @MainActor
+    func applyAcceptedSuggestionChange(_ change: PrescriptionChange, weightUnit: WeightUnit) {
+        switch change.changeType {
+        case .increaseWeight, .decreaseWeight:
+            weight = weightUnit.fromKg(change.newValue)
+        case .increaseReps, .decreaseReps:
+            reps = Int(change.newValue)
+        case .increaseRest, .decreaseRest:
+            restSeconds = Int(change.newValue)
+        case .changeSetType:
+            type = ExerciseSetType(rawValue: Int(change.newValue)) ?? .working
+            if type == .warmup {
+                rpe = 0
+            }
+        case .increaseRepRangeLower, .decreaseRepRangeLower,
+             .increaseRepRangeUpper, .decreaseRepRangeUpper,
+             .increaseRepRangeTarget, .decreaseRepRangeTarget,
+             .changeRepRangeMode:
+            break
+        }
+    }
+}

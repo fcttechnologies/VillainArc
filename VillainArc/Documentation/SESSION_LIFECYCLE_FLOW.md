@@ -77,6 +77,11 @@ These route into `AppRouter.startWorkoutSession(from:)`, which:
 - inserts and saves it
 - sets the session to `.pending` instead of `.active` when the plan already has pending or deferred suggestion events
 
+For plan-based sessions, unit handling is intentionally split:
+- the saved plan stays canonical kg
+- the active session copy stores set weights in the current user unit while the workout is being edited/logged
+- frozen target snapshots created from the plan stay canonical kg
+
 ### 3. Start Today’s Workout From a Split
 
 Common entrypoints:
@@ -195,6 +200,7 @@ The important side effects are:
 - exercise Spotlight eligibility may change through the history updater
 - plan-based sessions stop depending on active-only prescription links
 - undecided suggestions are pushed forward to the next plan-based session as deferred review
+- active-session set weights have already been converted back from the user unit into canonical kg before summary-driven suggestion and outcome work runs
 
 ## Save As Plan From Summary
 

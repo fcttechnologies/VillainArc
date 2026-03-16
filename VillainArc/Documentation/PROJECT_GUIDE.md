@@ -242,9 +242,9 @@ Outcome resolution evaluates how earlier suggestions actually played out after s
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 
-Outcomes are not resolved after a single workout. Each time `resolveOutcomes` runs it appends one `EvaluationHistoryEntry` to the eligible event. The outcome only finalizes when `evaluationHistory.count >= event.requiredEvaluationCount`, with the single exception that `tooAggressive` always resolves immediately — one session showing a change is too hard is sufficient to stop. When the threshold is reached, a safety-weighted priority (`tooAggressive > good > tooEasy > ignored`) picks the winner across all accumulated entries.
+Outcomes are not resolved after a single workout. Each time `resolveOutcomes` runs it appends one `EvaluationHistoryEntry` to the eligible event. The outcome only finalizes when `evaluationHistory.count >= event.requiredEvaluationCount`, with the single exception that `tooAggressive` always resolves immediately — one session showing a change is too hard is sufficient to stop. When the threshold is reached, a safety-weighted priority (`tooAggressive > insufficient > good > tooEasy > ignored`) picks the winner across all accumulated entries. For recovery changes, the targeted set owns the rest interval, but the resolver judges whether that interval helped the following working set, and it only evaluates when that downstream linked evidence still exists.
 
-The deterministic `OutcomeRuleEngine` path runs first. `AIOutcomeInferrer` is only a fallback for lower-confidence cases.
+The deterministic `OutcomeRuleEngine` path runs first. `AIOutcomeInferrer` is only a fallback for lower-confidence cases that still have enough current structural evidence to judge the event.
 
 ### New Suggestion Generation
 

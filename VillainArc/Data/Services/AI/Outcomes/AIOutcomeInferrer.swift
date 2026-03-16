@@ -45,15 +45,17 @@ struct AIOutcomeInferrer {
         - Good: the athlete attempted the new targets and landed in a reasonable zone.
         - Too Aggressive: the athlete attempted the new targets and clearly struggled.
         - Too Easy: the athlete attempted the new targets and clearly exceeded the targets.
+        - Insufficient: the athlete followed the change, but it did not meaningfully solve the problem or improve the downstream set enough.
         - Ignored: the athlete stayed close to the old targets or evidence of attempting the change is weak.
 
         Guidelines:
         - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - For set-level changes, judge the targeted slot first.
+        - For easing changes like lower weight or lower rep targets, prefer Insufficient over Good when the athlete followed the easier target but performance still did not meaningfully improve.
         - For exercise-level rep-range changes, judge the working-set distribution against the new range or target.
         - For warmup calibration, judge adherence and whether the set still behaves like a warmup relative to the main working or top sets.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds usually count as attempted.
-        - For rest changes, matching the suggested rest alone is not enough; prefer Good only if performance also improved.
+        - For rest changes, matching the suggested rest alone is not enough; judge the following set, not just the rest-owning set. Prefer Insufficient when rest was followed but the following set did not meaningfully improve.
         - Use trainingStyle to focus on the sets that matter most.
         - In Top Set Then Backoffs, weigh the heavy top sets more than the lighter backoff sets.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
@@ -70,6 +72,7 @@ struct AIOutcomeInferrer {
 
         Outcome meanings:
         - Good: they substantially matched the suggested targets anyway, or performance clearly validates a safety-oriented suggestion they skipped.
+        - Insufficient: they effectively followed the suggested targets, but the result still did not solve the problem.
         - Ignored: default when they stayed near the old targets or evidence is mixed.
         - Too Aggressive: they effectively followed the suggested targets and clearly struggled.
         - Too Easy: they effectively followed the suggested targets and clearly exceeded them.
@@ -77,9 +80,10 @@ struct AIOutcomeInferrer {
         Guidelines:
         - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - Compare actualPerformance to the suggested targets, with triggerPerformance as baseline.
+        - For easing changes like lower weight or lower rep targets, prefer Insufficient when they effectively followed the easier target but the underlying performance problem still did not improve.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds can count as following.
         - For warmup calibration, judge whether they effectively used the suggested warmup load while the set still behaved like a warmup.
-        - For rest changes, matching rest alone is not enough; look for better performance too.
+        - For rest changes, matching rest alone is not enough; judge the following set and use Insufficient when the rest change was followed but did not produce enough benefit.
         - Use trainingStyle to focus on the sets that matter most.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
         - If evidence is ambiguous, prefer Ignored with lower confidence.

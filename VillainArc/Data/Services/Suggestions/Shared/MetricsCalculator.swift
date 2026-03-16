@@ -1,12 +1,27 @@
 import Foundation
 
 struct MetricsCalculator {
+    static func isPlanAnchored(_ set: SetPerformance) -> Bool {
+        set.prescription != nil || set.originalTargetSetID != nil
+    }
+
     static func selectProgressionSets(from performance: ExercisePerformance, overrideStyle: TrainingStyle? = nil) -> [SetPerformance] {
         let sets = performance.sortedSets.filter(\.complete)
         guard !sets.isEmpty else { return [] }
 
+        let anchoredSets = sets.filter(isPlanAnchored(_:))
+        let anchoredWorkingSets = anchoredSets.filter { $0.type == .working }
         let workingSets = sets.filter { $0.type == .working }
-        let candidates = workingSets.isEmpty ? sets : workingSets
+        let candidates: [SetPerformance]
+
+        if !anchoredWorkingSets.isEmpty {
+            candidates = anchoredWorkingSets
+        } else if !anchoredSets.isEmpty {
+            candidates = anchoredSets
+        } else {
+            candidates = workingSets.isEmpty ? sets : workingSets
+        }
+
         let style = overrideStyle ?? detectTrainingStyle(candidates)
         return setsForStyle(style, from: candidates)
     }
@@ -19,15 +34,15 @@ struct MetricsCalculator {
         case .straightSets:
             return orderedSets
         case .ascendingPyramid:
-            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
+            return topWeightedSets(from: orderedSets, limit: 3)
         case .descendingPyramid:
             return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
         case .ascending:
-            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
+            return topWeightedSets(from: orderedSets, limit: 3)
         case .topSetBackoffs:
             return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.92)
         case .unknown:
-            return heavyClusterSets(from: orderedSets, maxWeight: maxWeight, thresholdRatio: 0.95)
+            return topWeightedSets(from: orderedSets, limit: 2)
         }
     }
 
@@ -43,24 +58,15 @@ struct MetricsCalculator {
         guard maxWeight > 0 else { return .unknown }
         let avgWeight = weights.reduce(0, +) / Double(weights.count)
 
-        // Straight sets: all weights within 10% of average.
-        if avgWeight > 0 {
-            let allSimilar = weights.allSatisfy { abs($0 - avgWeight) < avgWeight * 0.1 }
-            if allSimilar {
-                return .straightSets
-            }
-        }
-
         // Top set + backoffs: a cluster of heavy sets at top, the rest significantly lighter.
-        let heavyCluster = weights.filter { $0 >= maxWeight * 0.9 }
-        let lightSets = weights.filter { $0 < maxWeight * 0.8 }
-        if heavyCluster.count >= 1 && heavyCluster.count <= 3 && lightSets.count >= 1 {
+        if isTopSetBackoffs(weights: weights, maxWeight: maxWeight) {
             return .topSetBackoffs
         }
 
         // Ascending: weights monotonically increase (with small tolerance), heaviest is last.
         let ascendingCount = zip(weights, weights.dropFirst()).filter { $0 <= $1 }.count
-        if ascendingCount >= analysisSets.count - 2 && weights.last == maxWeight {
+        let hasStrictIncrease = zip(weights, weights.dropFirst()).contains { $0 < $1 }
+        if hasStrictIncrease && ascendingCount >= analysisSets.count - 2 && weights.last == maxWeight {
             return .ascending
         }
 
@@ -70,13 +76,94 @@ struct MetricsCalculator {
             return .descendingPyramid
         }
 
-        // Ascending pyramid: max weight is in the middle (not first or last).
-        let maxIndex = weights.firstIndex(of: maxWeight) ?? 0
-        if maxIndex > 0 && maxIndex < weights.count - 1 {
+        // Ascending pyramid: weights rise into a middle peak, then fall away.
+        if isAscendingPyramid(weights: weights, maxWeight: maxWeight) {
             return .ascendingPyramid
         }
 
+        if hasInteriorPeakOrPlateau(weights: weights, maxWeight: maxWeight) {
+            return .unknown
+        }
+
+        // Straight sets are a fallback, not a primary structural pattern. Keep the window
+        // fairly tight so modest ramps/backoffs do not get over-classified as straight sets.
+        if avgWeight > 0 {
+            let allSimilar = weights.allSatisfy { abs($0 - avgWeight) <= avgWeight * 0.08 }
+            if allSimilar {
+                return .straightSets
+            }
+        }
+
         return .unknown
+    }
+
+    private static func isTopSetBackoffs(weights: [Double], maxWeight: Double) -> Bool {
+        guard weights.count >= 3 else { return false }
+
+        let heavyIndices = weights.enumerated().compactMap { index, weight in
+            weight >= maxWeight * 0.9 ? index : nil
+        }
+        let lightIndices = weights.enumerated().compactMap { index, weight in
+            weight < maxWeight * 0.8 ? index : nil
+        }
+
+        guard heavyIndices.count >= 1, heavyIndices.count <= 3, !lightIndices.isEmpty else { return false }
+        guard let lastHeavyIndex = heavyIndices.last, let firstLightIndex = lightIndices.first else { return false }
+        guard lastHeavyIndex < firstLightIndex else { return false }
+
+        let backoffWeights = Array(weights[(lastHeavyIndex + 1)...])
+        guard !backoffWeights.isEmpty else { return false }
+
+        let backoffSpread = (backoffWeights.max() ?? 0) - (backoffWeights.min() ?? 0)
+        return backoffSpread <= maxWeight * 0.08
+    }
+
+    private static func isAscendingPyramid(weights: [Double], maxWeight: Double) -> Bool {
+        guard let maxIndex = weights.firstIndex(of: maxWeight), maxIndex > 0, maxIndex < weights.count - 1 else {
+            return false
+        }
+
+        let climb = Array(weights[...maxIndex])
+        let descent = Array(weights[maxIndex...])
+
+        let climbsCleanly = zip(climb, climb.dropFirst()).allSatisfy { $0 < $1 }
+        let descendsCleanly = zip(descent, descent.dropFirst()).allSatisfy { $0 > $1 }
+        let peakProminence = maxWeight * 0.1
+        let risesMeaningfully = maxWeight - (climb.min() ?? maxWeight) >= peakProminence
+        let fallsMeaningfully = maxWeight - (descent.min() ?? maxWeight) >= peakProminence
+
+        return climbsCleanly && descendsCleanly && risesMeaningfully && fallsMeaningfully
+    }
+
+    private static func hasInteriorPeakOrPlateau(weights: [Double], maxWeight: Double) -> Bool {
+        guard weights.count >= 4 else { return false }
+        let plateauThreshold = maxWeight * 0.98
+        let heavyIndices = weights.enumerated().compactMap { index, weight in
+            weight >= plateauThreshold ? index : nil
+        }
+
+        guard heavyIndices.count >= 2 else { return false }
+
+        guard let firstHeavy = heavyIndices.first,
+              let lastHeavy = heavyIndices.last,
+              firstHeavy > 0,
+              lastHeavy < weights.count - 1 else {
+            return false
+        }
+
+        let heavyClusterIsContiguous = zip(heavyIndices, heavyIndices.dropFirst()).allSatisfy { next, following in
+            following == next + 1
+        }
+        guard heavyClusterIsContiguous else { return false }
+
+        let beforeCluster = Array(weights[..<firstHeavy])
+        let afterCluster = Array(weights[(lastHeavy + 1)...])
+        guard !beforeCluster.isEmpty, !afterCluster.isEmpty else { return false }
+
+        let climbsIntoPeak = zip(beforeCluster, beforeCluster.dropFirst()).allSatisfy { $0 <= $1 } && (beforeCluster.last ?? 0) <= maxWeight
+        let fallsAwayFromPeak = zip(afterCluster, afterCluster.dropFirst()).allSatisfy { $0 >= $1 } && (afterCluster.first ?? maxWeight) <= maxWeight
+
+        return climbsIntoPeak && fallsAwayFromPeak
     }
 
     private static func heavyClusterSets(from sets: [SetPerformance], maxWeight: Double, thresholdRatio: Double) -> [SetPerformance] {
@@ -91,8 +178,23 @@ struct MetricsCalculator {
         return sets.filter { $0.weight == maxWeight }.sorted { $0.index < $1.index }
     }
 
+    private static func topWeightedSets(from sets: [SetPerformance], limit: Int) -> [SetPerformance] {
+        guard limit > 0 else { return [] }
+
+        let selected = sets
+            .sorted {
+                if $0.weight != $1.weight {
+                    return $0.weight > $1.weight
+                }
+                return $0.index < $1.index
+            }
+            .prefix(limit)
+
+        return selected.sorted { $0.index < $1.index }
+    }
+
     // All weight values are stored in kg. Increments are calibrated for kg plate sizes.
-    static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType) -> Double {
+    static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType, catalogID: String? = nil) -> Double {
         switch equipmentType {
         case .dumbbellSingle, .kettlebellSingle:
             return currentWeight < 7 ? 1.25 : 2.5
@@ -114,7 +216,36 @@ struct MetricsCalculator {
             break
         }
 
+        if let catalogID, shouldUseLargeBarbellPullIncrement(catalogID: catalogID, equipmentType: equipmentType) {
+            return 5.0
+        }
+
         return muscleBasedIncrement(for: currentWeight, primaryMuscle: primaryMuscle)
+    }
+
+    private static func shouldUseLargeBarbellPullIncrement(catalogID: String, equipmentType: EquipmentType) -> Bool {
+        switch equipmentType {
+        case .barbell, .landmine:
+            break
+        default:
+            return false
+        }
+
+        let largePullAndHingeOverrides: Set<String> = [
+            "barbell_bent_over_row",
+            "barbell_reverse_grip_bent_over_row",
+            "barbell_pendlay_row",
+            "barbell_deadlift",
+            "barbell_sumo_deadlift",
+            "deficit_deadlift",
+            "trap_bar_deadlift",
+            "barbell_romanian_deadlift",
+            "good_mornings",
+            "rack_pulls",
+            "t_bar_rows"
+        ]
+
+        return largePullAndHingeOverrides.contains(catalogID)
     }
 
     private static func muscleBasedIncrement(for currentWeight: Double, primaryMuscle: Muscle) -> Double {

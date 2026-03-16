@@ -68,7 +68,7 @@ Each `PrescriptionChange` stores one concrete mutation, such as:
 
 So an event can represent one grouped recommendation while still carrying one or more exact plan deltas.
 
-That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values are always stored in kg here, matching the canonical storage in `SetPrescription.targetWeight` and `SetPerformance.weight`; display conversion to the user's preferred unit happens only in the review UI.
+That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values inside `PrescriptionChange` and `SetPrescription.targetWeight` are canonical kg. Active `SetPerformance.weight` values are temporarily converted into the user's preferred unit while the workout or editable plan copy is live, then normalized back to kg before summary-driven suggestion and outcome work runs.
 
 ### EvaluationHistoryEntry
 
@@ -97,6 +97,7 @@ Suggestions have two separate lifecycles.
 - `good`: the suggestion looks like it worked
 - `tooAggressive`: the change appears too hard
 - `tooEasy`: the change appears too easy
+- `insufficient`: the change was followed, but it did not meaningfully fix the targeted problem
 - `ignored`: the user did not really follow the suggestion
 
 The important distinction is:
@@ -166,7 +167,7 @@ Outcomes are not finalized after a single workout. Instead, the resolver accumul
 Each time the resolver evaluates an eligible event for a given workout, it appends one `EvaluationHistoryEntry` to `event.evaluationHistory`. That entry stores:
 - `sourceSessionID`: the `WorkoutSession.id` that produced this entry
 - `snapshot`: `ExercisePerformanceSnapshot` of what the user did in that session
-- `partialOutcome`: the outcome determined for this session (good, tooAggressive, tooEasy, ignored)
+- `partialOutcome`: the outcome determined for this session (good, tooAggressive, tooEasy, insufficient, ignored)
 - `confidence`: how confident the rule or AI was
 - `reason`: a human-readable explanation prefixed with `[Rules]`, `[AI]`, or `[AI override]`
 
@@ -174,7 +175,7 @@ The outcome only finalizes when either of these is true:
 - `evaluationHistory.count >= event.requiredEvaluationCount` (enough sessions accumulated)
 - the current session's partial outcome is `tooAggressive` (decisive — resolved immediately regardless of threshold)
 
-`tooAggressive` is the only decisive outcome because one session showing a change is actively too hard is sufficient to stop. All other outcomes (`good`, `tooEasy`, `ignored`) require the full threshold so a single noisy workout does not short-circuit multi-session confirmation.
+`tooAggressive` is the only decisive outcome because one session showing a change is actively too hard is sufficient to stop. All other outcomes (`insufficient`, `good`, `tooEasy`, `ignored`) require the full threshold so a single noisy workout does not short-circuit multi-session confirmation.
 
 ### Safety-Weighted Priority at Finalization
 
@@ -183,7 +184,7 @@ When the threshold is reached, the winner is not simply the most recent entry or
 The resolver applies a safety-weighted priority across all accumulated history entries:
 
 ```
-tooAggressive > good > tooEasy > ignored
+tooAggressive > insufficient > good > tooEasy > ignored
 ```
 
 The first outcome in that priority order that appears in any entry wins. The `outcomeReason` is taken from that winning entry.
@@ -194,7 +195,7 @@ This means a single `tooAggressive` in the history always wins, even if the othe
 
 The resolver has two dedup layers to prevent double-counting:
 
-**Within-invocation dedup**: Each resolver call tracks a `processedEventIDs: Set<UUID>`. The AI pass and the rule-only fallback pass both share this set, so an event can only get one entry per `resolveOutcomes` call even if it appears in both passes.
+**Within-invocation dedup**: Each resolver call tracks a `processedEventIDs: Set<UUID>`. AI results are keyed by event and merged into the single apply pass, and `processedEventIDs` still ensures an eligible event can only append one entry per `resolveOutcomes` call.
 
 **Cross-invocation dedup**: Before appending a new entry, the resolver checks `event.evaluationHistory` for any existing entry whose `sourceSessionID` matches the current workout's ID. If one exists, the append is skipped. This prevents calling `resolveOutcomes` twice for the same workout from inflating the history.
 
@@ -202,10 +203,22 @@ The resolver has two dedup layers to prevent double-counting:
 
 `OutcomeRuleEngine` runs first for each change.
 
-`AIOutcomeInferrer` is only a fallback for lower-confidence cases. The resolver can let AI override a rule result only when:
-- the rule confidence is low
-- AI confidence is high enough
+`AIOutcomeInferrer` is only a fallback for lower-confidence cases. The resolver now gates AI calls so high-confidence deterministic results skip model inference entirely.
+
+AI still does not run unless the current workout has enough evidence to judge that event shape at all. In particular:
+- set-scoped events still require a completed performed set linked to the live target set
+- recovery events also require the downstream completed working set that the rest change is supposed to help
+- if that structural evidence is missing, the event stays pending instead of asking AI to infer across the gap
+
+The resolver uses this shape:
+- if there is no rule signal, AI may decide the partial outcome
+- if rule confidence is below `0.85`, AI runs as a second opinion
+- if rule confidence is high (`>= 0.85`), rules win without invoking AI
+
+When AI is available, it can override only when:
 - the AI outcome disagrees with the rule result
+- AI confidence is meaningfully stronger than the rule signal
+- lower-confidence rule paths use a looser override threshold than mid-confidence ones
 
 The merged outcome is stored as a `partialOutcome` in the new `EvaluationHistoryEntry`. Once the threshold is reached, the safety-weighted priority selects the final `event.outcome`, `event.outcomeReason`, and `event.evaluatedAt`.
 
@@ -214,14 +227,17 @@ This is why outcomes are not tied only to accepted changes. Rejected suggestions
 ### How Change Types Are Judged
 
 The deterministic rules are change-type specific:
-- weight changes usually check whether the user actually moved toward or reached the new load, then classify the result by reps relative to the active rep policy
+- weight changes usually check whether the user actually moved toward or reached the new load, then classify the result by reps relative to the frozen trigger-time rep policy
 - rep changes check whether the user actually performed near the new rep target rather than the old one
-- rest changes check whether the user actually rested near the new target and then whether reps landed in a good zone
+- for easing performance changes like lower weight or lower rep targets, low-confidence `good` is reserved for partial-but-promising attempts; `insufficient` means the athlete meaningfully followed the easier target but it still did not improve the problem enough
+- rest changes check whether the user actually followed the interval using the set's `effectiveRestSeconds`, then judge the following working set against the trigger workout. Modest same-direction overshoots still count as weaker evidence, but large overshoots no longer score as a clean test of the suggested interval
 - rep-range changes judge the full working-set distribution against the post-change range or target
 - set-type changes are basically binary: did the performed set type match the new target type
 
 There is one important category-specific exception:
 - `warmupCalibration` weight changes are judged by whether the adjusted set still behaved like a warmup relative to the working/top-set anchor, not by the normal working-set progression lens
+
+For recovery suggestions, the set-level target owns the rest interval, but the effect is judged on the next completed working set. In practice that means a rest increase on set `N` is evaluated by checking whether the athlete actually used that interval and whether set `N+1` improved or at least recovered from the original failure mode. If the interval was followed but the downstream set still did not improve enough, the resolver records `insufficient` rather than over-crediting the suggestion as `good`. If the athlete only succeeds by resting materially longer than the suggested new interval, that also resolves as `insufficient` rather than a clean `good`, because the suggestion direction was right but the amount was still not enough.
 
 This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver only evaluates a set-scoped event when it can match a completed performed set through the live `targetSetPrescription`. Historical fields and copied snapshot IDs are still valuable for generation, frozen snapshots, AI context, and fallback labeling, but they are not used as authority for current set-level outcome resolution.
 
@@ -368,8 +384,9 @@ So changing live set order later does not erase which original set a historical 
 Current behavior:
 - exercise-scoped drafts still keep only one winner
 - set-scoped drafts may keep more than one event only when the categories are compatible
-- right now the only allowed multi-event set combination is `performance` + `recovery`
-- `structure`, `volume`, `warmupCalibration`, and `repRangeConfiguration` currently suppress other categories on the same set in the same pass
+- the default allowed multi-event set combination is still `performance` + `recovery`
+- one additional narrow coexistence rule now exists: `changeSetType -> .working` may survive alongside one same-set `performance` or `recovery` draft in the same generation pass
+- `volume`, `warmupCalibration`, `repRangeConfiguration`, and most `structure` drafts still suppress other categories on the same set in the same pass
 
 Its ordering preferences are:
 - higher-priority categories first
@@ -470,6 +487,8 @@ Available actions:
 Accepting from `DeferredSuggestionsView` still uses `acceptGroup(...)`, so it:
 - marks the event accepted
 - mutates the live plan immediately
+- hydrates the already-created pending session copy to match the accepted target
+- refreshes that exercise's frozen target snapshot from the updated plan prescription so the session is attempting the accepted target state, not the stale pre-review one
 
 ### Reject in Deferred Review
 

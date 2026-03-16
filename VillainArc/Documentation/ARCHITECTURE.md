@@ -545,7 +545,7 @@ This file is a structure map for the codebase. It explains what the important fi
 - Read with: `SetPerformance.swift`, `SuggestionSnapshots.swift`.
 
 ### `VillainArcTests/OutcomeRuleEngineTests.swift`
-- Purpose: direct unit tests for every `OutcomeRuleEngine` change-type evaluator, covering all outcome paths (good, tooAggressive, tooEasy, ignored, nil) and edge cases like warmup calibration and `tooEasyBuffer` boundaries.
+- Purpose: direct unit tests for every `OutcomeRuleEngine` change-type evaluator, covering all outcome paths (good, tooAggressive, tooEasy, insufficient, ignored, nil) and edge cases like warmup calibration, downstream rest evaluation, and `tooEasyBuffer` boundaries.
 - Read with: `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`.
 
 ### `VillainArcTests/MultiSessionEvaluationTests.swift`

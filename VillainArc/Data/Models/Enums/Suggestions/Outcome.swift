@@ -5,5 +5,6 @@ enum Outcome: String, Codable {
     case good
     case tooAggressive
     case tooEasy
+    case insufficient
     case ignored
 }

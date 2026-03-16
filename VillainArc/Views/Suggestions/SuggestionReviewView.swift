@@ -265,6 +265,7 @@ func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     for change in group.changes {
         applyChange(change, in: group.event, context: context)
     }
+    hydratePendingSessionCopy(for: group.event, context: context)
     saveContext(context: context)
 }
 
@@ -278,4 +279,15 @@ func rejectGroup(_ group: SuggestionGroup, context: ModelContext) {
 func deferGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .deferred
     saveContext(context: context)
+}
+
+@MainActor
+private func hydratePendingSessionCopy(for event: SuggestionEvent, context: ModelContext) {
+    guard let workout = event.targetExercisePrescription?.activePerformance?.workoutSession,
+          workout.statusValue == .pending else {
+        return
+    }
+
+    let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
+    workout.applyAcceptedSuggestionEvent(event, weightUnit: weightUnit)
 }

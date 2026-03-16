@@ -13,6 +13,7 @@ struct ExerciseSuggestionContext {
 @MainActor
 struct RuleEngine {
     private struct TargetSetContext {
+        let targetSetID: UUID?
         let index: Int
         let type: ExerciseSetType
         let targetWeight: Double
@@ -21,6 +22,7 @@ struct RuleEngine {
         let targetRPE: Int
 
         init(snapshot: SetTargetSnapshot) {
+            targetSetID = snapshot.targetSetID
             index = snapshot.index
             type = snapshot.type
             targetWeight = snapshot.targetWeight
@@ -134,6 +136,7 @@ struct RuleEngine {
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
         guard progressionSets.allSatisfy({ $0.reps >= upper }) else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: upper) else { return [] }
 
         var events: [SuggestionEventDraft] = []
         let repsReason = "Reset reps to \(lower) to account for the added weight."
@@ -159,7 +162,7 @@ struct RuleEngine {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
             }
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
+            events.append(makeSetEvent(context: context, ruleID: .immediateProgressionRange, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
         }
 
         return events
@@ -173,6 +176,7 @@ struct RuleEngine {
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
         guard progressionSets.allSatisfy({ $0.reps >= target + 1 }) else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: target + 1) else { return [] }
 
         var events: [SuggestionEventDraft] = []
         let reason = "You exceeded your rep target (\(target)) on your primary sets this session. Increase weight to keep progressing."
@@ -186,7 +190,7 @@ struct RuleEngine {
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .immediateProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -206,12 +210,14 @@ struct RuleEngine {
             guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .range else { return false }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
-            return progressionSets.allSatisfy { $0.reps >= performanceRepRange.upper - 1 }
+            guard progressionSets.allSatisfy({ $0.reps >= performanceRepRange.upper - 1 }) else { return false }
+            return !hasStrongComparableContextMiss(in: performance, primarySets: progressionSets, repThreshold: performanceRepRange.upper - 1)
         }
         guard nearTopInBoth else { return [] }
 
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: upper - 1) else { return [] }
 
         var events: [SuggestionEventDraft] = []
         let repsReason = "Reset reps to \(lower) to account for the added weight."
@@ -235,7 +241,7 @@ struct RuleEngine {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
             }
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
+            events.append(makeSetEvent(context: context, ruleID: .confirmedProgressionRange, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps ? repsReason : nil)))
         }
 
         return events
@@ -254,15 +260,17 @@ struct RuleEngine {
             guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
             let progressionSets = primaryProgressionSets(from: performance, context: context)
             guard !progressionSets.isEmpty else { return false }
-            return progressionSets.allSatisfy { $0.reps >= performanceRepRange.target }
+            guard progressionSets.allSatisfy({ $0.reps >= performanceRepRange.target - 1 }) else { return false }
+            return !hasStrongComparableContextMiss(in: performance, primarySets: progressionSets, repThreshold: performanceRepRange.target - 1)
         }
         guard nearTargetInBoth else { return [] }
 
         let progressionSets = primaryProgressionSets(from: context.performance, context: context)
         guard !progressionSets.isEmpty else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: target) else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let reason = "You've consistently reached your rep target (\(target)) on your primary sets. Increase weight to keep progressing."
+        let reason = "You've consistently been at or within one rep of your target (\(target)) on your primary sets. Increase weight to keep progressing."
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
@@ -273,7 +281,7 @@ struct RuleEngine {
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .confirmedProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -333,7 +341,7 @@ struct RuleEngine {
             let newReps = min(upper, reps + 1)
             guard newReps > setPrescription.targetReps else { continue }
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(newReps))], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .steadyRepIncreaseWithinRange, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(newReps))], reasoning: reason))
         }
 
         return events
@@ -384,7 +392,7 @@ struct RuleEngine {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
             }
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps && setPrescription.targetReps != lower ? repsReason : nil)))
+            events.append(makeSetEvent(context: context, ruleID: .largeOvershootProgression, category: .performance, setPrescription: setPrescription, changes: draftChanges, reasoning: combineReasoning(weightReason, shouldResetReps && setPrescription.targetReps != lower ? repsReason : nil)))
         }
 
         return events
@@ -443,7 +451,7 @@ struct RuleEngine {
             let decrement = weightIncrement(for: currentWeight, context: context)
             let newWeight = MetricsCalculator.roundToNearestPlate(max(0, currentWeight - decrement))
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .belowRangeWeightDecrease, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -484,14 +492,19 @@ struct RuleEngine {
             let allBelow = deltas.allSatisfy { $0 < -2.5 }
             guard allAbove || allBelow else { continue }
 
-            let average = weights.reduce(0, +) / Double(weights.count)
-            let newWeight = MetricsCalculator.roundToNearestPlate(average)
+            // Stability filter: skip if weights are trending (spread wider than one increment
+            // indicates active progression rather than a stable calibration discrepancy).
+            let spread = weights.max()! - weights.min()!
+            let increment = weightIncrement(for: targetWeight, context: context)
+            guard spread <= increment else { continue }
+
+            let newWeight = MetricsCalculator.roundToNearestPlate(median(of: weights))
             guard abs(newWeight - targetWeight) > 0.1 else { continue }
 
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
-            let reason = "You've used about \(context.weightUnit.display(MetricsCalculator.roundToNearestPlate(average))) for three sessions. Update the prescription to match your working weight."
+            let reason = "You've used about \(context.weightUnit.display(newWeight)) for three sessions. Update the prescription to match your working weight."
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .matchActualWeight, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -503,27 +516,40 @@ struct RuleEngine {
         guard recent.count >= 2 else { return [] }
 
         let lastTwo = Array(recent.prefix(2))
-        let repFloor = repFloor(context)
 
         var events: [SuggestionEventDraft] = []
 
         for setPrescription in context.prescription.sortedSets where setPrescription.type == .working {
             var reducedWeights: [Double] = []
-            var hitCount = 0
+            var atOrBelowFloorCount = 0
+            var belowFloorCount = 0
 
             for performance in lastTwo {
-                guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context) else { continue }
+                guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context),
+                      let setTarget = historicalOrCurrentTargetSet(for: set, context: context),
+                      let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context),
+                      let floor = repFloor(for: performanceRepRange) else {
+                    continue
+                }
 
-                let reducedLoad = set.weight < (setPrescription.targetWeight - 1.25)
-                let repsLow = repFloor.map { set.reps <= $0 } ?? false
+                let reducedLoad = set.weight < (setTarget.targetWeight - 1.25)
+                let atOrBelowFloor = set.reps <= floor
+                let belowFloor = set.reps < floor
 
-                if reducedLoad && repsLow {
-                    hitCount += 1
+                if reducedLoad && atOrBelowFloor {
+                    atOrBelowFloorCount += 1
                     reducedWeights.append(set.weight)
+                    if belowFloor {
+                        belowFloorCount += 1
+                    }
                 }
             }
 
-            guard hitCount >= 2, !reducedWeights.isEmpty else { continue }
+            // We only adapt the prescription downward when the athlete repeatedly reduces
+            // load and at least one of those sessions still falls below the minimum target.
+            // Two "reduced load + exactly at floor" sessions are acceptable execution, not
+            // enough evidence that the prescription itself should be lowered.
+            guard atOrBelowFloorCount >= 2, belowFloorCount >= 1, !reducedWeights.isEmpty else { continue }
 
             let average = reducedWeights.reduce(0, +) / Double(reducedWeights.count)
             let newWeight = MetricsCalculator.roundToNearestPlate(average)
@@ -531,7 +557,7 @@ struct RuleEngine {
 
             let reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
 
-            events.append(makeSetEvent(context: context, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .reducedWeightToHitReps, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -546,64 +572,28 @@ struct RuleEngine {
         let lastTwo = Array(recent.prefix(2))
 
         let restIncrement = 15
+        let repeatedEvidence = recentRecoveryEvidence(
+            context: context,
+            performances: lastTwo,
+            mode: .underRested
+        )
+        guard !repeatedEvidence.isEmpty else { return [] }
 
-        func triggerSetIndices(in performance: ExercisePerformance) -> [Int] {
-            var indices: [Int] = []
-            let sets = performance.sortedSets
-            let repFloorForPerformance: Int? = {
-                guard let repRange = historicalOrCurrentRepRange(for: performance, context: context) else { return nil }
-                switch repRange.mode {
-                case .range:
-                    return repRange.lower
-                case .target:
-                    return repRange.target
-                case .notSet:
-                    return nil
-                }
-            }()
+        let currentTriggered = recoveryEvidence(in: context.performance, context: context, mode: .underRested)
+        let currentTargetIDs = Set(currentTriggered.keys).intersection(repeatedEvidence)
+        guard !currentTargetIDs.isEmpty else { return [] }
 
-            for idx in 1..<sets.count {
-                let currentSet = sets[idx]
-                guard currentSet.complete, currentSet.type == .working else { continue }
-
-                let prevSet = sets[idx - 1]
-                let effectiveRest = performance.effectiveRestSeconds(after: prevSet)
-                guard effectiveRest > 0 else { continue }
-
-                guard let setTarget = historicalOrCurrentTargetSet(for: currentSet, context: context) else { continue }
-                let targetRest = setTarget.targetRest
-
-                let actualRest = currentSet.restSeconds
-                guard actualRest < targetRest - 15 else { continue }
-
-                let previousRegular = sets[..<idx].last { $0.type == .working && $0.complete }
-                let repDrop = previousRegular.map { $0.reps - currentSet.reps } ?? 0
-                let belowFloor = repFloorForPerformance.map { currentSet.reps < $0 } ?? false
-
-                if repDrop >= 2 || belowFloor {
-                    indices.append(currentSet.index)
-                }
-            }
-
-            return indices
-        }
-
-        let triggeredLastTwo = lastTwo.map(triggerSetIndices)
-        guard triggeredLastTwo.allSatisfy({ !$0.isEmpty }) else { return [] }
-
-        let currentTriggered = Set(triggerSetIndices(in: context.performance))
-        guard !currentTriggered.isEmpty else { return [] }
-
-        let reason = "Your rest periods are shorter than prescribed and reps drop across sets. Increasing rest should help you stay in range."
+        let reason = "Your rest periods are repeatedly shorter than prescribed and the following set falls to the floor or below. Increasing rest should help the next set stay productive."
 
         var events: [SuggestionEventDraft] = []
-        for index in currentTriggered {
-            guard let set = context.performance.sortedSets[safe: index], let setPrescription = targetSet(for: set) else { continue }
+        for targetSetID in currentTargetIDs {
+            guard let evidence = currentTriggered[targetSetID],
+                  let setPrescription = targetSet(for: evidence.restOwnerSet) else { continue }
 
             let current = setPrescription.targetRest
             let newValue = current + restIncrement
 
-            events.append(makeSetEvent(context: context, category: .recovery, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .shortRestPerformanceDrop, category: .recovery, setPrescription: setPrescription, evidenceStrength: .directTargetEvidence, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
         }
 
         return events
@@ -640,20 +630,29 @@ struct RuleEngine {
         // If they're hitting targets consistently, progression rules will handle weight increases.
         guard isStrugglingWithTargets(context: context, recent: recent) else { return [] }
 
-        let increment = 15
-        let reason = "Progress has plateaued and you're struggling to hit targets. Adding rest may help recovery and performance."
+        let repeatedRecoveryLimits = recentRecoveryEvidence(
+            context: context,
+            performances: Array(recent.prefix(3)),
+            mode: .prescribedRecoveryLimited,
+            minimumOccurrences: 2
+        )
+        guard !repeatedRecoveryLimits.isEmpty else { return [] }
 
-        let progressionSets = primaryProgressionSets(from: context.performance, context: context)
-        guard !progressionSets.isEmpty else { return [] }
+        let increment = 15
+        let reason = "Progress has plateaued, and the same recovery interval repeatedly leaves the following set at the floor or below even when you follow the prescribed rest. Adding rest may help recovery and performance."
+
+        let currentEvidence = recoveryEvidence(in: context.performance, context: context, mode: .prescribedRecoveryLimited)
+        let targetIDs = Set(currentEvidence.keys).intersection(repeatedRecoveryLimits)
+        guard !targetIDs.isEmpty else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        for set in progressionSets {
-            // Skip drop/superset chains where effective rest is intentionally zero.
-            guard set.effectiveRestSeconds > 0, let setPrescription = targetSet(for: set) else { continue }
+        for targetID in targetIDs {
+            guard let evidence = currentEvidence[targetID],
+                  let setPrescription = targetSet(for: evidence.restOwnerSet) else { continue }
             let current = setPrescription.targetRest
             let newValue = current + increment
 
-            events.append(makeSetEvent(context: context, category: .recovery, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .stagnationIncreaseRest, category: .recovery, setPrescription: setPrescription, evidenceStrength: .heuristic, changes: [makeChangeDraft(changeType: .increaseRest, previousValue: Double(current), newValue: Double(newValue))], reasoning: reason))
         }
 
         return events
@@ -679,7 +678,7 @@ struct RuleEngine {
 
         let reason = "Drop sets work best after a heavy working set. Converting the first drop set to regular gives it a proper anchor."
 
-        return [makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason)]
+        return [makeSetEvent(context: context, ruleID: .dropSetWithoutBase, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason)]
     }
 
     private static func calibrateWarmupWeights(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
@@ -732,7 +731,7 @@ struct RuleEngine {
             guard currentAnchor > 0, suggestedWeight < currentAnchor * 0.9 else { continue }
 
             let reason = "You've consistently used a heavier warmup as your working sets have climbed. Increase this warmup weight so it better bridges into your main sets."
-            events.append(makeSetEvent(context: context, category: .warmupCalibration, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentTargetWeight, newValue: suggestedWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .calibrateWarmupWeights, category: .warmupCalibration, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentTargetWeight, newValue: suggestedWeight)], reasoning: reason))
         }
 
         return events
@@ -777,7 +776,7 @@ struct RuleEngine {
                 guard let performanceRepRange = historicalOrCurrentRepRange(for: performance, context: context), performanceRepRange.mode == .target else { return false }
                 let sets = primaryProgressionSets(from: performance, context: context)
                 guard !sets.isEmpty else { return false }
-                return sets.allSatisfy { $0.reps >= performanceRepRange.target }
+                return sets.allSatisfy { $0.reps >= performanceRepRange.target - 1 }
             }
             guard exceededInBoth || overshootInBoth else { return [] }
             return Set(progressionSets.map(\.index))
@@ -802,10 +801,16 @@ struct RuleEngine {
             for performance in lastTwo {
                 // Compare warmup weight to the max regular set in that session.
                 let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
-                guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0 else { continue }
+                guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0,
+                      let maxWorkingEstimated1RM = regularSets.compactMap(\.estimated1RM).max(), maxWorkingEstimated1RM > 0 else { continue }
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context) else { continue }
 
-                if set.weight >= maxWeight * 0.9 {
+                // A heavy feeder warmup in an ascending pyramid can legitimately sit near the
+                // top working weight. Only reclassify it when it also behaves like working
+                // effort, not just when the load is heavy.
+                let warmupLooksWorking = (set.estimated1RM ?? 0) >= maxWorkingEstimated1RM * 0.95
+
+                if set.weight >= maxWeight * 0.9 && warmupLooksWorking {
                     hitCount += 1
                 }
             }
@@ -813,14 +818,22 @@ struct RuleEngine {
             guard hitCount >= 2 else { continue }
 
             let reason = "This warmup set is within 10% of your top working weight in recent sessions. Consider marking it as a regular set."
-            events.append(makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .warmupActingLikeWorkingSet, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.working.rawValue))], reasoning: reason))
         }
 
         return events
     }
 
     private static func regularActingLikeWarmup(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
-        // Cleanup: early regular set <70% of top regular weight in two sessions -> suggest warmup.
+        // Cleanup: only demote an early working set when it consistently behaves like an isolated
+        // light outlier before the real working cluster, not merely because the session ramps.
+        switch context.resolvedTrainingStyle {
+        case .ascending, .ascendingPyramid, .topSetBackoffs:
+            return []
+        case .straightSets, .descendingPyramid, .unknown:
+            break
+        }
+
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
@@ -832,20 +845,23 @@ struct RuleEngine {
             var hitCount = 0
 
             for performance in lastTwo {
-                // Compare this early regular set to the session's max regular set.
                 let regularSets = performance.sortedSets.filter { $0.complete && $0.type == .working }
                 guard let maxWeight = regularSets.map(\.weight).max(), maxWeight > 0 else { continue }
+                guard let maxWorkingEstimated1RM = regularSets.compactMap(\.estimated1RM).max(), maxWorkingEstimated1RM > 0 else { continue }
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context) else { continue }
+                guard set.weight < maxWeight * 0.7 else { continue }
+                guard isolatedLightSetLeadsIntoWorkingCluster(set: set, in: regularSets, maxWeight: maxWeight) else { continue }
 
-                if set.weight < maxWeight * 0.7 {
-                    hitCount += 1
-                }
+                let setEstimated1RM = set.estimated1RM ?? 0
+                guard setEstimated1RM < maxWorkingEstimated1RM * 0.8 else { continue }
+
+                hitCount += 1
             }
 
             guard hitCount >= 2 else { continue }
 
-            let reason = "This set is much lighter than your top working weight. Consider marking it as a warmup."
-            events.append(makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.warmup.rawValue))], reasoning: reason))
+            let reason = "This early set consistently behaves like a light feeder before your true working cluster. Consider marking it as a warmup."
+            events.append(makeSetEvent(context: context, ruleID: .regularActingLikeWarmup, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(ExerciseSetType.warmup.rawValue))], reasoning: reason))
         }
 
         return events
@@ -874,9 +890,9 @@ struct RuleEngine {
             // Check if any progression sets were below floor
             let anyBelowFloor = progressionSets.contains { $0.reps < targetFloor }
 
-            // OR check if reps are barely hitting floor (within 1 rep)
-            // This catches "technically hitting but clearly struggling"
-            let barelyHitting = progressionSets.allSatisfy { $0.reps <= targetFloor + 1 }
+            // Treat "at the floor" as struggling, but do not penalize floor+1 in range mode.
+            // That rep count is still normal in-range execution during consolidation phases.
+            let barelyHitting = progressionSets.allSatisfy { $0.reps <= targetFloor }
 
             if anyBelowFloor || barelyHitting {
                 strugglingCount += 1
@@ -892,30 +908,81 @@ struct RuleEngine {
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
-        let lastTwo = Array(recent.prefix(2))
+        let evidenceWindow = Array(recent.prefix(3))
         var events: [SuggestionEventDraft] = []
 
         for setPrescription in context.prescription.sortedSets {
             var types: [ExerciseSetType] = []
 
-            for performance in lastTwo {
+            for performance in evidenceWindow {
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context) else { continue }
                 types.append(set.type)
             }
 
-            guard types.count == 2, let firstType = types.first, types.allSatisfy({ $0 == firstType }) else { continue }
+            let requiredEvidence = requiredSetTypeMismatchEvidence(from: setPrescription.type, toLoggedTypeInRecentSessions: types.first)
+            guard types.count >= requiredEvidence else { continue }
+
+            let recentTypes = Array(types.prefix(requiredEvidence))
+            guard let firstType = recentTypes.first, recentTypes.allSatisfy({ $0 == firstType }) else { continue }
             guard firstType != setPrescription.type else { continue }
 
-            let reason = "You've logged this set as \(firstType.displayName) for the last two sessions. Update the prescription to match."
+            let reason = "You've logged this set as \(firstType.displayName) for the last \(requiredEvidence) sessions. Update the prescription to match."
 
-            events.append(makeSetEvent(context: context, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(firstType.rawValue))], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .setTypeMismatch, category: .structure, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .changeSetType, previousValue: Double(setPrescription.type.rawValue), newValue: Double(firstType.rawValue))], reasoning: reason))
         }
 
         return events
     }
 
+    private static func requiredSetTypeMismatchEvidence(from prescribedType: ExerciseSetType, toLoggedTypeInRecentSessions loggedType: ExerciseSetType?) -> Int {
+        guard let loggedType else { return 2 }
+        return prescribedType == .dropSet || loggedType == .dropSet ? 3 : 2
+    }
+
+    private enum RecoveryEvidenceMode {
+        case underRested
+        case prescribedRecoveryLimited
+    }
+
+    private struct RecoveryEvidence {
+        let restOwnerSet: SetPerformance
+        let laggingSet: SetPerformance
+        let targetRest: Int
+        let actualRest: Int
+        let repDrop: Int
+        let floor: Int
+        let belowFloor: Bool
+        let atFloor: Bool
+    }
+
     private static func primaryProgressionSets(from performance: ExercisePerformance, context: ExerciseSuggestionContext) -> [SetPerformance] {
         MetricsCalculator.selectProgressionSets(from: performance, overrideStyle: context.resolvedTrainingStyle)
+    }
+
+    private static func hasStrongComparableContextMiss(
+        in performance: ExercisePerformance,
+        primarySets: [SetPerformance],
+        repThreshold: Int
+    ) -> Bool {
+        guard !primarySets.isEmpty, repThreshold > 0 else { return false }
+
+        let contextualSets = performance.sortedSets.filter { set in
+            set.complete && set.type == .working && !MetricsCalculator.isPlanAnchored(set)
+        }
+        guard !contextualSets.isEmpty else { return false }
+
+        let maxPrimaryWeight = primarySets.map(\.weight).max() ?? 0
+        guard maxPrimaryWeight > 0 else { return false }
+
+        let comparableWeightFloor = maxPrimaryWeight * 0.9
+        let primaryMinReps = primarySets.map(\.reps).min() ?? repThreshold
+
+        return contextualSets.contains { set in
+            guard set.weight >= comparableWeightFloor else { return false }
+            let clearlyBelowTarget = set.reps <= repThreshold - 2
+            let clearlyBelowPrimaryCluster = set.reps <= primaryMinReps - 3
+            return clearlyBelowTarget || clearlyBelowPrimaryCluster
+        }
     }
 
     private static func qualifiesForImmediateLoadProgression(_ context: ExerciseSuggestionContext) -> Bool {
@@ -925,9 +992,12 @@ struct RuleEngine {
 
         switch repRange.activeMode {
         case .range:
-            return progressionSets.allSatisfy { $0.reps >= repRange.upperRange }
+            guard progressionSets.allSatisfy({ $0.reps >= repRange.upperRange }) else { return false }
+            return !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: repRange.upperRange)
         case .target:
-            return progressionSets.allSatisfy { $0.reps >= repRange.targetReps + 1 }
+            let threshold = repRange.targetReps + 1
+            guard progressionSets.allSatisfy({ $0.reps >= threshold }) else { return false }
+            return !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: threshold)
         case .notSet:
             return false
         }
@@ -944,12 +1014,14 @@ struct RuleEngine {
             let lower = repRange.lowerRange
             let allInRange = progressionSets.allSatisfy { $0.reps >= lower && $0.reps <= upper + 1 }
             let closeToProgression = progressionSets.allSatisfy { $0.reps >= max(lower, upper - 1) }
-            return allInRange && closeToProgression
+            guard allInRange && closeToProgression else { return false }
+            return !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: max(lower, upper - 1))
         case .target:
             let target = repRange.targetReps
             let onTrack = progressionSets.allSatisfy { $0.reps >= target - 1 }
             let closeToProgression = progressionSets.allSatisfy { $0.reps >= target }
-            return onTrack && closeToProgression
+            guard onTrack && closeToProgression else { return false }
+            return !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: target)
         case .notSet:
             return false
         }
@@ -966,16 +1038,103 @@ struct RuleEngine {
         }
     }
 
-    private static func repFloor(_ context: ExerciseSuggestionContext) -> Int? {
-        let policy = context.prescription.repRange ?? RepRangePolicy()
-        switch policy.activeMode {
+    private static func repFloor(for repRange: RepRangeSnapshot) -> Int? {
+        switch repRange.mode {
         case .range:
-            return policy.lowerRange
+            return repRange.lower
         case .target:
-            return policy.targetReps
+            return repRange.target
         case .notSet:
             return nil
         }
+    }
+
+    private static func recoveryEvidence(
+        in performance: ExercisePerformance,
+        context: ExerciseSuggestionContext,
+        mode: RecoveryEvidenceMode
+    ) -> [UUID: RecoveryEvidence] {
+        let sets = performance.sortedSets
+        guard let repRange = historicalOrCurrentRepRange(for: performance, context: context),
+              let floor = repFloor(for: repRange) else {
+            return [:]
+        }
+
+        var evidenceByTargetID: [UUID: RecoveryEvidence] = [:]
+
+        for idx in 1..<sets.count {
+            let currentSet = sets[idx]
+            guard currentSet.complete, currentSet.type == .working else { continue }
+
+            let prevSet = sets[idx - 1]
+            let effectiveRest = performance.effectiveRestSeconds(after: prevSet)
+            guard effectiveRest > 0 else { continue }
+
+            guard let restOwnerTarget = historicalOrCurrentTargetSet(for: prevSet, context: context),
+                  let targetSetID = restOwnerTarget.targetSetID else {
+                continue
+            }
+
+            let targetRest = restOwnerTarget.targetRest
+            let restDelta = targetRest - effectiveRest
+
+            switch mode {
+            case .underRested:
+                guard restDelta >= 15 else { continue }
+            case .prescribedRecoveryLimited:
+                guard abs(restDelta) <= 15 else { continue }
+            }
+
+            let previousRegular = sets[..<idx].last { $0.type == .working && $0.complete }
+            let repDrop = previousRegular.map { $0.reps - currentSet.reps } ?? 0
+            let belowFloor = currentSet.reps < floor
+            let atFloor = currentSet.reps == floor
+            let clearlyFatigueLimited = belowFloor || (atFloor && repDrop >= 4)
+            guard clearlyFatigueLimited else { continue }
+
+            evidenceByTargetID[targetSetID] = RecoveryEvidence(
+                restOwnerSet: prevSet,
+                laggingSet: currentSet,
+                targetRest: targetRest,
+                actualRest: effectiveRest,
+                repDrop: repDrop,
+                floor: floor,
+                belowFloor: belowFloor,
+                atFloor: atFloor
+            )
+        }
+
+        return evidenceByTargetID
+    }
+
+    private static func recentRecoveryEvidence(
+        context: ExerciseSuggestionContext,
+        performances: [ExercisePerformance],
+        mode: RecoveryEvidenceMode,
+        minimumOccurrences: Int? = nil
+    ) -> Set<UUID> {
+        let evidenceMaps = performances.map { recoveryEvidence(in: $0, context: context, mode: mode) }
+        guard !evidenceMaps.isEmpty else { return [] }
+
+        if let minimumOccurrences {
+            let counts = evidenceMaps.reduce(into: [UUID: Int]()) { partialResult, evidence in
+                for targetID in evidence.keys {
+                    partialResult[targetID, default: 0] += 1
+                }
+            }
+
+            return Set(counts.compactMap { targetID, count in
+                count >= minimumOccurrences ? targetID : nil
+            })
+        }
+
+        guard evidenceMaps.allSatisfy({ !$0.isEmpty }) else { return [] }
+
+        var overlappingTargetIDs = Set(evidenceMaps[0].keys)
+        for evidence in evidenceMaps.dropFirst() {
+            overlappingTargetIDs.formIntersection(evidence.keys)
+        }
+        return overlappingTargetIDs
     }
 
     private static func recentPerformances(_ context: ExerciseSuggestionContext) -> [ExercisePerformance] {
@@ -1036,7 +1195,7 @@ struct RuleEngine {
         guard let desiredRange = normalizedRange(evidence: evidence) else { return nil }
 
         let reason = "You've trained this exercise consistently for recent sessions without a rep range set. Add a range that matches how you already perform it."
-        return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+        return makeRepRangeEvent(context: context, ruleID: .suggestInitialRange, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
     }
 
     private static func suggestTargetToRange(_ context: ExerciseSuggestionContext) -> SuggestionEventDraft? {
@@ -1049,7 +1208,7 @@ struct RuleEngine {
         guard desiredRange.upper >= repRange.targetReps + 1 else { return nil }
 
         let reason = "You perform this exercise across a rep band rather than one exact target. Switching to a range should better match how you train it."
-        return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+        return makeRepRangeEvent(context: context, ruleID: .suggestTargetToRange, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
     }
 
     private enum RangeShiftDirection {
@@ -1072,7 +1231,7 @@ struct RuleEngine {
             guard desiredRange.lower > repRange.lowerRange || desiredRange.upper > repRange.upperRange else { return nil }
 
             let reason = "You're consistently performing above your current rep band. Shift the range up so the prescription better matches your training."
-            return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+            return makeRepRangeEvent(context: context, ruleID: .suggestShiftedRangeUp, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
 
         case .down:
             guard representativeMax <= repRange.lowerRange + 1 else { return nil }
@@ -1080,7 +1239,7 @@ struct RuleEngine {
             guard desiredRange.lower < repRange.lowerRange || desiredRange.upper < repRange.upperRange else { return nil }
 
             let reason = "You're consistently performing below your current rep band. Shift the range down so the prescription better matches your training."
-            return makeRepRangeEvent(context: context, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
+            return makeRepRangeEvent(context: context, ruleID: .suggestShiftedRangeDown, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
         }
     }
 
@@ -1125,6 +1284,24 @@ struct RuleEngine {
         return fallback
     }
 
+    private static func isolatedLightSetLeadsIntoWorkingCluster(set: SetPerformance, in regularSets: [SetPerformance], maxWeight: Double) -> Bool {
+        let orderedWorkingSets = regularSets.sorted { $0.index < $1.index }
+        let laterWorkingSets = orderedWorkingSets.filter { $0.index > set.index }
+        guard laterWorkingSets.count >= 2 else { return false }
+
+        let heavyThreshold = maxWeight * 0.9
+        let heavyLaterSets = laterWorkingSets.filter { $0.weight >= heavyThreshold }
+        guard heavyLaterSets.count >= 2 else { return false }
+
+        let allLaterSetsAreClustered = laterWorkingSets.allSatisfy { $0.weight >= heavyThreshold }
+        guard allLaterSetsAreClustered else { return false }
+
+        let firstLaterWeight = laterWorkingSets.first?.weight ?? 0
+        let clusterAverage = laterWorkingSets.map(\.weight).reduce(0, +) / Double(laterWorkingSets.count)
+
+        return firstLaterWeight >= set.weight * 1.2 && clusterAverage >= maxWeight * 0.92
+    }
+
     private static func matchingSetPerformance(in performance: ExercisePerformance, for setPrescription: SetPrescription, context: ExerciseSuggestionContext, requireComplete: Bool = true) -> SetPerformance? {
         let candidateSets = requireComplete ? performance.sortedSets.filter(\.complete) : performance.sortedSets
 
@@ -1137,22 +1314,37 @@ struct RuleEngine {
 
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
         let primaryMuscle = context.prescription.musclesTargeted.first ?? context.performance.musclesTargeted.first ?? .chest
-        return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType)
+        return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType, catalogID: context.prescription.catalogID)
     }
 
     private static func makeChangeDraft(changeType: ChangeType, previousValue: Double, newValue: Double) -> PrescriptionChangeDraft {
         PrescriptionChangeDraft(changeType: changeType, previousValue: previousValue, newValue: newValue)
     }
 
-    private static func makeSetEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, setPrescription: SetPrescription, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
-        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, changeReasoning: reasoning, changes: changes)
+    private static func makeSetEvent(
+        context: ExerciseSuggestionContext,
+        ruleID: SuggestionRuleID,
+        category: SuggestionCategory,
+        setPrescription: SetPrescription,
+        evidenceStrength: SuggestionEvidenceStrength = .pattern,
+        changes: [PrescriptionChangeDraft],
+        reasoning: String?
+    ) -> SuggestionEventDraft {
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, ruleID: ruleID, evidenceStrength: evidenceStrength, changeReasoning: reasoning, changes: changes)
     }
 
-    private static func makeExerciseEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, changes: [PrescriptionChangeDraft], reasoning: String?) -> SuggestionEventDraft {
-        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, changeReasoning: reasoning, changes: changes)
+    private static func makeExerciseEvent(
+        context: ExerciseSuggestionContext,
+        ruleID: SuggestionRuleID,
+        category: SuggestionCategory,
+        evidenceStrength: SuggestionEvidenceStrength = .pattern,
+        changes: [PrescriptionChangeDraft],
+        reasoning: String?
+    ) -> SuggestionEventDraft {
+        SuggestionEventDraft(category: category, targetExercisePrescription: context.prescription, ruleID: ruleID, evidenceStrength: evidenceStrength, changeReasoning: reasoning, changes: changes)
     }
 
-    private static func makeRepRangeEvent(context: ExerciseSuggestionContext, category: SuggestionCategory, desiredMode: RepRangeMode, desiredLower: Int, desiredUpper: Int, desiredTarget: Int, reasoning: String?) -> SuggestionEventDraft? {
+    private static func makeRepRangeEvent(context: ExerciseSuggestionContext, ruleID: SuggestionRuleID, category: SuggestionCategory, desiredMode: RepRangeMode, desiredLower: Int, desiredUpper: Int, desiredTarget: Int, reasoning: String?) -> SuggestionEventDraft? {
         guard let repRange = context.prescription.repRange else { return nil }
 
         var changes: [PrescriptionChangeDraft] = []
@@ -1174,7 +1366,7 @@ struct RuleEngine {
         }
 
         guard !changes.isEmpty else { return nil }
-        return makeExerciseEvent(context: context, category: category, changes: changes, reasoning: reasoning)
+        return makeExerciseEvent(context: context, ruleID: ruleID, category: category, changes: changes, reasoning: reasoning)
     }
 
     private static func combineReasoning(_ reasons: String?...) -> String? {

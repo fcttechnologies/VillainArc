@@ -41,7 +41,7 @@ struct SuggestionDeduplicator {
         var selected: [SuggestionEventDraft] = []
         for candidate in sorted {
             let conflicts = selected.contains { existing in
-                !isCompatible(existing.category, candidate.category, isSetScoped: true)
+                !canCoexistInSamePass(existing, candidate)
             }
 
             if !conflicts {
@@ -52,11 +52,54 @@ struct SuggestionDeduplicator {
         return selected
     }
 
+    private static func canCoexistInSamePass(_ lhs: SuggestionEventDraft, _ rhs: SuggestionEventDraft) -> Bool {
+        if isCompatible(lhs.category, rhs.category, isSetScoped: true) {
+            return true
+        }
+
+        return allowsWorkingSetReclassificationPair(lhs, rhs)
+    }
+
+    private static func allowsWorkingSetReclassificationPair(_ lhs: SuggestionEventDraft, _ rhs: SuggestionEventDraft) -> Bool {
+        if isWorkingSetReclassification(lhs) {
+            return canPairWithWorkingSetReclassification(rhs)
+        }
+
+        if isWorkingSetReclassification(rhs) {
+            return canPairWithWorkingSetReclassification(lhs)
+        }
+
+        return false
+    }
+
+    private static func isWorkingSetReclassification(_ draft: SuggestionEventDraft) -> Bool {
+        guard draft.category == .structure, draft.changes.count == 1, let change = draft.changes.first, change.changeType == .changeSetType else {
+            return false
+        }
+
+        return Int(change.newValue.rounded()) == ExerciseSetType.working.rawValue
+    }
+
+    private static func canPairWithWorkingSetReclassification(_ draft: SuggestionEventDraft) -> Bool {
+        switch draft.category {
+        case .performance, .recovery:
+            return !draft.contains(.changeSetType)
+        default:
+            return false
+        }
+    }
+
     private static func isPreferred(_ lhs: SuggestionEventDraft, over rhs: SuggestionEventDraft) -> Bool {
         let lhsPriority = priority(for: lhs.category)
         let rhsPriority = priority(for: rhs.category)
         if lhsPriority != rhsPriority {
             return lhsPriority < rhsPriority
+        }
+
+        let lhsEvidencePriority = priority(for: lhs.evidenceStrength)
+        let rhsEvidencePriority = priority(for: rhs.evidenceStrength)
+        if lhsEvidencePriority != rhsEvidencePriority {
+            return lhsEvidencePriority > rhsEvidencePriority
         }
 
         let lhsChangePriority = priority(for: lhs)
@@ -75,10 +118,16 @@ struct SuggestionDeduplicator {
             return lhsMagnitude > rhsMagnitude
         }
 
-        let lhsReasoning = lhs.changeReasoning ?? ""
-        let rhsReasoning = rhs.changeReasoning ?? ""
-        if lhsReasoning != rhsReasoning {
-            return lhsReasoning < rhsReasoning
+        let lhsRuleID = lhs.ruleID?.rawValue ?? ""
+        let rhsRuleID = rhs.ruleID?.rawValue ?? ""
+        if lhsRuleID != rhsRuleID {
+            return lhsRuleID < rhsRuleID
+        }
+
+        let lhsSignature = stableChangeSignature(for: lhs)
+        let rhsSignature = stableChangeSignature(for: rhs)
+        if lhsSignature != rhsSignature {
+            return lhsSignature < rhsSignature
         }
 
         return lhs.catalogID < rhs.catalogID
@@ -111,6 +160,10 @@ struct SuggestionDeduplicator {
         }
     }
 
+    private static func priority(for evidenceStrength: SuggestionEvidenceStrength) -> Int {
+        evidenceStrength.rawValue
+    }
+
     private static func priority(for changeType: ChangeType) -> Int {
         switch changeType {
         case .decreaseWeight:
@@ -129,5 +182,16 @@ struct SuggestionDeduplicator {
         case .increaseRest, .decreaseRest:
             return 4
         }
+    }
+
+    private static func stableChangeSignature(for draft: SuggestionEventDraft) -> String {
+        let signature = draft.changes
+            .map { change in
+                "\(change.changeType.rawValue):\(change.previousValue):\(change.newValue)"
+            }
+            .sorted()
+            .joined(separator: "|")
+
+        return "\(draft.category.rawValue)|\(signature)"
     }
 }

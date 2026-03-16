@@ -16,14 +16,14 @@ enum SuggestionCategory: String, Codable {
         switch self {
         case .performance:
             if changeTypes.contains(.increaseWeight) || changeTypes.contains(.decreaseWeight) {
-                return "\(scopeText) Judge whether the athlete actually used the suggested load and whether the resulting reps landed in the intended difficulty zone. Treat simply moving in the right direction as weaker evidence than actually reaching the target."
+                return "\(scopeText) Judge whether the athlete actually used the suggested load and whether the resulting reps landed in the intended difficulty zone. Treat simply moving in the right direction as weaker evidence than actually reaching the target. For easing changes like load reductions, use Insufficient when the athlete followed the easier target but performance still did not improve enough."
             }
             if changeTypes.contains(.increaseReps) || changeTypes.contains(.decreaseReps) {
-                return "\(scopeText) Judge whether the athlete actually performed near the new rep target rather than staying at the old one, and whether the result looked appropriately challenging."
+                return "\(scopeText) Judge whether the athlete actually performed near the new rep target rather than staying at the old one, and whether the result looked appropriately challenging. For easier rep targets, use Insufficient when the athlete followed the reduction but it still did not solve the performance problem."
             }
             return "\(scopeText) Judge whether the athlete followed the new performance target and whether it landed in the right difficulty zone."
         case .recovery:
-            return "\(scopeText) Judge whether the athlete followed the new recovery target and whether downstream performance improved, stabilized, or at least stopped falling off. Matching the rest target alone is not enough if performance still clearly deteriorates."
+            return "\(scopeText) Judge whether the athlete followed the new recovery target and whether downstream performance on the following set improved, stabilized, or at least stopped falling off. Matching the rest target alone is not enough if the following set does not improve. Use Insufficient when the change was followed but did not meaningfully fix the problem."
         case .structure:
             if changeTypes.contains(.changeSetType), let targetSetType {
                 return "\(scopeText) Judge whether the athlete actually used the intended set structure. The suggested target structure is \(targetSetType.displayName). Prefer Ignored if the evidence is mixed rather than inferring a structural change from load alone."

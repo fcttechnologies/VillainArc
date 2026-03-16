@@ -186,6 +186,37 @@ final class ExercisePerformance {
 extension ExercisePerformance: RestTimeEditable {}
 
 extension ExercisePerformance {
+    @MainActor
+    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
+        guard let prescription, prescription.id == event.targetExercisePrescription?.id else { return }
+
+        if let targetSet = event.targetSetPrescription,
+           let setPerformance = sortedSets.first(where: { $0.prescription?.id == targetSet.id }) {
+            for change in event.sortedChanges {
+                setPerformance.applyAcceptedSuggestionChange(change, weightUnit: weightUnit)
+            }
+        }
+
+        syncRepRangeFromPrescription()
+        originalTargetSnapshot = ExerciseTargetSnapshot(prescription: prescription)
+    }
+
+    @MainActor
+    private func syncRepRangeFromPrescription() {
+        guard let prescriptionRepRange = prescription?.repRange else { return }
+
+        if repRange == nil {
+            repRange = RepRangePolicy()
+        }
+
+        repRange?.activeMode = prescriptionRepRange.activeMode
+        repRange?.lowerRange = prescriptionRepRange.lowerRange
+        repRange?.upperRange = prescriptionRepRange.upperRange
+        repRange?.targetReps = prescriptionRepRange.targetReps
+    }
+}
+
+extension ExercisePerformance {
     var latestCompletedSetAt: Date? {
         sortedSets.compactMap { set in
             guard set.complete else { return nil }

@@ -79,6 +79,114 @@ struct MultiSessionEvaluationTests {
         return session
     }
 
+    @MainActor
+    private func makeTargetModeEventForOutcomeResolver(
+        context: ModelContext,
+        requiredEvaluationCount: Int = 1,
+        decision: Decision = .accepted,
+        createdSecondsAgo: Double = 3600,
+        targetReps: Int = 8
+    ) -> (plan: WorkoutPlan, prescription: ExercisePrescription, setPrescription: SetPrescription, event: SuggestionEvent) {
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            workingSets: 1,
+            targetWeight: 100,
+            targetReps: targetReps,
+            repRangeMode: .target
+        )
+        prescription.repRange?.targetReps = targetReps
+        let setPrescription = prescription.sortedSets.first!
+
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
+        context.insert(change)
+
+        let event = SuggestionEvent(
+            category: .performance,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            triggerTargetSetID: setPrescription.id,
+            triggerPerformanceSnapshot: .empty,
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets,
+            requiredEvaluationCount: requiredEvaluationCount,
+            createdAt: Date().addingTimeInterval(-createdSecondsAgo),
+            changes: [change]
+        )
+        change.event = event
+        context.insert(event)
+        event.decision = decision
+        return (plan, prescription, setPrescription, event)
+    }
+
+    @MainActor
+    private func makeRecoveryEventForOutcomeResolver(
+        context: ModelContext,
+        decision: Decision = .accepted,
+        createdSecondsAgo: Double = 3600
+    ) -> (plan: WorkoutPlan, prescription: ExercisePrescription, event: SuggestionEvent) {
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            workingSets: 2,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let restOwnerSet = prescription.sortedSets[0]
+
+        let triggerSnapshot = ExercisePerformanceSnapshot(
+            date: .now,
+            notes: "",
+            repRange: RepRangeSnapshot(policy: prescription.repRange),
+            sets: [
+                SetPerformanceSnapshot(
+                    originalTargetSetID: prescription.sortedSets[0].id,
+                    index: 0,
+                    type: .working,
+                    weight: 100,
+                    reps: 8,
+                    restSeconds: 90,
+                    rpe: 0
+                ),
+                SetPerformanceSnapshot(
+                    originalTargetSetID: prescription.sortedSets[1].id,
+                    index: 1,
+                    type: .working,
+                    weight: 100,
+                    reps: 6,
+                    restSeconds: 90,
+                    rpe: 0
+                )
+            ]
+        )
+
+        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
+        context.insert(change)
+
+        let event = SuggestionEvent(
+            category: .recovery,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: restOwnerSet,
+            triggerTargetSetID: restOwnerSet.id,
+            triggerPerformanceSnapshot: triggerSnapshot,
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets,
+            requiredEvaluationCount: 1,
+            createdAt: Date().addingTimeInterval(-createdSecondsAgo),
+            changes: [change]
+        )
+        change.event = event
+        context.insert(event)
+        event.decision = decision
+        return (plan, prescription, event)
+    }
+
     // MARK: - Model: evaluationHistory
 
     @Test @MainActor
@@ -278,6 +386,21 @@ struct MultiSessionEvaluationTests {
         #expect(event.outcome == .good)
     }
 
+    @Test @MainActor
+    func safetyPriority_insufficientBeatsGood_atThreshold() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
+
+        let prevEntry = EvaluationHistoryEntry(sourceSessionID: UUID(), snapshot: .empty, partialOutcome: .insufficient, confidence: 0.65, reason: "[Rules] simulated insufficient session")
+        event.evaluationHistory = [prevEntry]
+
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 102.5, actualReps: 8)
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
+
+        #expect(event.outcome == .insufficient)
+    }
+
     // MARK: - Cross-invocation deduplication (same session called twice)
 
     @Test @MainActor
@@ -401,6 +524,29 @@ struct MultiSessionEvaluationTests {
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         #expect(event.evaluationHistory.isEmpty)
+    }
+
+    @Test @MainActor
+    func recoveryEvidenceGate_requiresLinkedCompletedDownstreamWorkingSet() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, event) = makeRecoveryEventForOutcomeResolver(context: context)
+
+        let session = TestDataFactory.makeSession(context: context)
+        session.workoutPlan = plan
+        let performance = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 120, type: .working),
+                (weight: 100, reps: 8, rest: 90, type: .working)
+            ]
+        )
+
+        #expect(OutcomeResolver.hasSufficientCurrentEvidence(for: event, in: performance))
+
+        performance.sortedSets[1].prescription = nil
+        #expect(OutcomeResolver.hasSufficientCurrentEvidence(for: event, in: performance) == false)
     }
 
     @Test @MainActor
@@ -605,6 +751,47 @@ struct MultiSessionEvaluationTests {
         #expect(reason.hasPrefix("[Rules]") || reason.hasPrefix("[AI]") || reason.hasPrefix("[AI override]"))
     }
 
+    @Test @MainActor
+    func outcomeResolver_skipsAIForHighConfidenceRules() {
+        let rule = OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Rules are clear")
+
+        #expect(OutcomeResolver.shouldRunAI(for: rule) == false)
+    }
+
+    @Test @MainActor
+    func outcomeResolver_runsAIForAmbiguousRules() {
+        let rule = OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Ambiguous rule path")
+
+        #expect(OutcomeResolver.shouldRunAI(for: rule))
+    }
+
+    @Test @MainActor
+    func outcomeResolver_prefersHighConfidenceAIOverMidConfidenceRule() {
+        let rule = OutcomeSignal(outcome: .good, confidence: 0.8, reason: "Rule said good")
+        let ai = AIOutcomeInferenceOutput(outcome: .tooEasy, confidence: 0.9, reason: "AI saw clear overshoot")
+
+        #expect(OutcomeResolver.shouldPreferAIOverride(rule: rule, ai: ai))
+    }
+
+    @Test @MainActor
+    func outcomeResolver_keepsRuleWhenAIIsNotDecisivelyStronger() {
+        let rule = OutcomeSignal(outcome: .good, confidence: 0.8, reason: "Rule said good")
+        let ai = AIOutcomeInferenceOutput(outcome: .tooEasy, confidence: 0.82, reason: "AI slightly disagreed")
+
+        #expect(OutcomeResolver.shouldPreferAIOverride(rule: rule, ai: ai) == false)
+    }
+
+    @Test @MainActor
+    func mergeOutcome_usesAIConfidenceWhenAIOverrideWins() throws {
+        let rule = OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Ambiguous rule path")
+        let ai = AIOutcomeInferenceOutput(outcome: .tooEasy, confidence: 0.92, reason: "AI saw clear overshoot")
+
+        let resolved = try #require(OutcomeResolver.mergeOutcome(rule: rule, ai: ai))
+        #expect(resolved.outcome == .tooEasy)
+        #expect(resolved.confidence == 0.92)
+        #expect(resolved.reason.hasPrefix("[AI override]"))
+    }
+
     // MARK: - RequiredEvaluationCount = 1 finalizes after single session
 
     @Test @MainActor
@@ -619,6 +806,19 @@ struct MultiSessionEvaluationTests {
         #expect(event.outcome != .pending)
         #expect(event.evaluatedAt != nil)
         #expect(event.evaluationHistory.count == 1)
+    }
+
+    @Test @MainActor
+    func targetMode_targetMinusOneSession_resolvesAsGood_notTooAggressive() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeTargetModeEventForOutcomeResolver(context: context, requiredEvaluationCount: 1, targetReps: 8)
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 102.5, actualReps: 7)
+
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
+
+        #expect(event.outcome == .good)
+        #expect(event.outcomeReason?.contains("[Rules]") == true)
     }
 
     // MARK: - Multiple events same workout

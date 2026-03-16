@@ -122,6 +122,17 @@ struct UnfinishedSetSummary {
 }
 
 extension WorkoutSession {
+    @MainActor
+    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
+        guard statusValue == .pending else { return }
+        guard let targetExerciseID = event.targetExercisePrescription?.id,
+              let performance = sortedExercises.first(where: { $0.prescription?.id == targetExerciseID }) else {
+            return
+        }
+
+        performance.applyAcceptedSuggestionEvent(event, weightUnit: weightUnit)
+    }
+
     func ensurePreWorkoutFeelingDefault() {
         if preWorkoutContext?.feeling == .notSet {
             preWorkoutContext?.feeling = .okay

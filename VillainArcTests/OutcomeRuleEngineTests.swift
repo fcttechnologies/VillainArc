@@ -19,6 +19,10 @@ struct OutcomeRuleEngineTests {
         actualReps: Int = 8,
         actualRest: Int = 90,
         actualSetType: ExerciseSetType = .working,
+        triggerWeight: Double? = nil,
+        triggerReps: Int? = nil,
+        triggerRest: Int? = nil,
+        triggerSetType: ExerciseSetType? = nil,
         targetWeight: Double = 100,
         repRangeMode: RepRangeMode = .range,
         lowerRange: Int = 6,
@@ -36,6 +40,27 @@ struct OutcomeRuleEngineTests {
             upperRange: upperRange
         )
         let setPrescription = prescription.sortedSets.first!
+        let triggerSnapshot: ExercisePerformanceSnapshot
+        if let triggerReps {
+            triggerSnapshot = ExercisePerformanceSnapshot(
+                date: .now,
+                notes: "",
+                repRange: RepRangeSnapshot(policy: prescription.repRange),
+                sets: [
+                    SetPerformanceSnapshot(
+                        originalTargetSetID: setPrescription.id,
+                        index: setPrescription.index,
+                        type: triggerSetType ?? actualSetType,
+                        weight: triggerWeight ?? targetWeight,
+                        reps: triggerReps,
+                        restSeconds: triggerRest ?? actualRest,
+                        rpe: 0
+                    )
+                ]
+            )
+        } else {
+            triggerSnapshot = .empty
+        }
         let session = TestDataFactory.makeSession(context: context)
         let perf = TestDataFactory.makePerformance(
             context: context,
@@ -50,7 +75,7 @@ struct OutcomeRuleEngineTests {
             targetExercisePrescription: prescription,
             targetSetPrescription: setPrescription,
             triggerTargetSetID: setPrescription.id,
-            triggerPerformanceSnapshot: .empty,
+            triggerPerformanceSnapshot: triggerSnapshot,
             triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
             trainingStyle: .straightSets
         )
@@ -99,6 +124,90 @@ struct OutcomeRuleEngineTests {
         )
         context.insert(event)
         return (event, perf)
+    }
+
+    @MainActor
+    private func makeRestChangeContext(
+        context: ModelContext,
+        oldRest: Int = 90,
+        actualRestOwner: Int,
+        actualDownstreamWeight: Double = 100,
+        actualDownstreamReps: Int,
+        triggerDownstreamWeight: Double = 100,
+        triggerDownstreamReps: Int,
+        repRangeMode: RepRangeMode = .range,
+        lowerRange: Int = 6,
+        upperRange: Int = 10,
+        targetReps: Int = 8
+    ) -> (event: SuggestionEvent, perf: ExercisePerformance, change: PrescriptionChange) {
+        let (_, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            workingSets: 2,
+            targetWeight: 100,
+            targetReps: targetReps,
+            targetRest: oldRest,
+            repRangeMode: repRangeMode,
+            lowerRange: lowerRange,
+            upperRange: upperRange
+        )
+        if repRangeMode == .target {
+            prescription.repRange?.targetReps = targetReps
+        }
+
+        let session = TestDataFactory.makeSession(context: context)
+        let perf = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: targetReps, rest: actualRestOwner, type: .working),
+                (weight: actualDownstreamWeight, reps: actualDownstreamReps, rest: oldRest, type: .working)
+            ]
+        )
+
+        let triggerSnapshot = ExercisePerformanceSnapshot(
+            date: .now,
+            notes: "",
+            repRange: RepRangeSnapshot(policy: prescription.repRange),
+            sets: [
+                SetPerformanceSnapshot(
+                    originalTargetSetID: prescription.sortedSets[0].id,
+                    index: 0,
+                    type: .working,
+                    weight: 100,
+                    reps: targetReps,
+                    restSeconds: oldRest,
+                    rpe: 0
+                ),
+                SetPerformanceSnapshot(
+                    originalTargetSetID: prescription.sortedSets[1].id,
+                    index: 1,
+                    type: .working,
+                    weight: triggerDownstreamWeight,
+                    reps: triggerDownstreamReps,
+                    restSeconds: oldRest,
+                    rpe: 0
+                )
+            ]
+        )
+
+        let event = SuggestionEvent(
+            category: .recovery,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: prescription.sortedSets[0],
+            triggerTargetSetID: prescription.sortedSets[0].id,
+            triggerPerformanceSnapshot: triggerSnapshot,
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets
+        )
+        context.insert(event)
+
+        let change = PrescriptionChange(changeType: .increaseRest, previousValue: Double(oldRest), newValue: 120)
+        context.insert(change)
+
+        return (event, perf, change)
     }
 
     // MARK: - Weight Change: Ignored
@@ -158,6 +267,46 @@ struct OutcomeRuleEngineTests {
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
         #expect(signal?.outcome == .good)
+    }
+
+    @Test @MainActor
+    func weightChange_partialFollowThrough_inRange_returnsGoodWithLowerConfidence() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 106.25,
+            actualReps: 8,
+            targetWeight: 100,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 110)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good)
+        #expect(signal?.confidence == 0.65)
+    }
+
+    @Test @MainActor
+    func weightChange_partialFollowThrough_belowFloor_returnsTooAggressiveWithLowerConfidence() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 106.25,
+            actualReps: 4,
+            targetWeight: 100,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 110)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooAggressive)
+        #expect(signal?.confidence == 0.65)
     }
 
     // MARK: - Weight Change: Too Aggressive
@@ -234,6 +383,48 @@ struct OutcomeRuleEngineTests {
         #expect(signal?.outcome == .good)
     }
 
+    @Test @MainActor
+    func decreaseWeightChange_insufficient_whenFollowedButStillBelowFloor() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 95,
+            actualReps: 4,
+            triggerWeight: 100,
+            triggerReps: 4,
+            targetWeight: 100,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .decreaseWeight, previousValue: 100, newValue: 95)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient)
+    }
+
+    @Test @MainActor
+    func decreaseWeightChange_insufficient_whenRepsDoNotImproveFromFloorTrigger() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 95,
+            actualReps: 6,
+            triggerWeight: 100,
+            triggerReps: 6,
+            targetWeight: 100,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .decreaseWeight, previousValue: 100, newValue: 95)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient)
+    }
+
     // MARK: - Weight Change: Not Set Scoped → nil
 
     @Test @MainActor
@@ -291,7 +482,7 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
-    func decreaseRepsChange_tooAggressive_whenFollowedButBelowRangeFloor() throws {
+    func decreaseRepsChange_insufficient_whenFollowedButBelowRangeFloor() throws {
         let context = try TestDataFactory.makeContext()
         // decrease from 8 to 4; reps=4, floor=6 → below floor → tooAggressive
         let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 4, lowerRange: 6, upperRange: 10)
@@ -300,7 +491,38 @@ struct OutcomeRuleEngineTests {
 
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
-        #expect(signal?.outcome == .tooAggressive)
+        #expect(signal?.outcome == .insufficient)
+    }
+
+    @Test @MainActor
+    func decreaseRepsChange_partialFollowThrough_inRange_returnsGoodWithLowerConfidence() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 10, lowerRange: 6, upperRange: 10)
+        let change = PrescriptionChange(changeType: .decreaseReps, previousValue: 12, newValue: 8)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good)
+        #expect(signal?.confidence == 0.65)
+    }
+
+    @Test @MainActor
+    func decreaseRepsChange_insufficient_whenRepsDoNotImproveFromBoundaryTrigger() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualReps: 6,
+            triggerReps: 6,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .decreaseReps, previousValue: 8, newValue: 6)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient)
     }
 
     @Test @MainActor
@@ -321,10 +543,15 @@ struct OutcomeRuleEngineTests {
     @Test @MainActor
     func restChange_ignored_whenActualRestStaysAtOldTarget() throws {
         let context = try TestDataFactory.makeContext()
-        // actual=90, old=90, new=120: within 15s of old → ignored
-        let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 8, actualRest: 90, lowerRange: 6, upperRange: 10)
-        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
-        context.insert(change)
+        let (event, perf, change) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 90,
+            actualDownstreamReps: 8,
+            triggerDownstreamReps: 6,
+            lowerRange: 6,
+            upperRange: 10
+        )
 
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
@@ -332,11 +559,17 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
-    func restChange_good_whenFollowedAndRepsInRange() throws {
+    func restChange_good_whenFollowedAndFollowingSetImprovesIntoRange() throws {
         let context = try TestDataFactory.makeContext()
-        let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 8, actualRest: 120, lowerRange: 6, upperRange: 10)
-        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
-        context.insert(change)
+        let (event, perf, change) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 120,
+            actualDownstreamReps: 8,
+            triggerDownstreamReps: 6,
+            lowerRange: 6,
+            upperRange: 10
+        )
 
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
@@ -344,25 +577,77 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
-    func restChange_tooAggressive_whenFollowedButRepsBelowFloor() throws {
+    func restChange_partialFollowThrough_withoutImprovement_returnsInsufficientWithLowerConfidence() throws {
         let context = try TestDataFactory.makeContext()
-        // rest increased but user still failed to hit reps
-        let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 4, actualRest: 120, lowerRange: 6, upperRange: 10)
-        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
+        let (event, perf, _) = makeRestChangeContext(
+            context: context,
+            oldRest: 60,
+            actualRestOwner: 91,
+            actualDownstreamReps: 8,
+            triggerDownstreamReps: 8,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 60, newValue: 120)
         context.insert(change)
 
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
-        #expect(signal?.outcome == .tooAggressive)
+        #expect(signal?.outcome == .insufficient)
+        #expect(signal?.confidence == 0.65)
     }
 
     @Test @MainActor
-    func restChange_tooEasy_whenFollowedAndRepsAboveCeilingPlusBuffer() throws {
+    func restIncrease_largeOvershoot_returnsInsufficient() throws {
         let context = try TestDataFactory.makeContext()
-        // rest increased, user easily exceeds range
-        let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 14, actualRest: 120, lowerRange: 6, upperRange: 10)
-        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
+        let (event, perf, _) = makeRestChangeContext(
+            context: context,
+            oldRest: 60,
+            actualRestOwner: 150,
+            actualDownstreamReps: 10,
+            triggerDownstreamReps: 6,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 60, newValue: 120)
         context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient)
+        #expect(signal?.confidence == 0.8)
+    }
+
+    @Test @MainActor
+    func restChange_insufficient_whenFollowedButFollowingSetStillBelowFloor() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, change) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 120,
+            actualDownstreamReps: 4,
+            triggerDownstreamReps: 4,
+            lowerRange: 6,
+            upperRange: 10
+        )
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient)
+    }
+
+    @Test @MainActor
+    func restChange_tooEasy_whenFollowedAndFollowingSetImprovesPastCeiling() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, change) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 120,
+            actualDownstreamReps: 14,
+            triggerDownstreamReps: 10,
+            lowerRange: 6,
+            upperRange: 10
+        )
 
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
@@ -370,10 +655,95 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
+    func restDecrease_largeOvershoot_returnsTooEasy() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 30,
+            actualDownstreamReps: 8,
+            triggerDownstreamReps: 8,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .decreaseRest, previousValue: 90, newValue: 60)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooEasy)
+        #expect(signal?.confidence == 0.8)
+    }
+
+    @Test @MainActor
     func restChange_ignored_whenActualMovesAwayFromNewRestTarget() throws {
         let context = try TestDataFactory.makeContext()
-        // actual=60, old=90, new=120: moved away from both (farther from new than old)
-        let (event, perf, _) = makeSetScopedContext(context: context, actualReps: 8, actualRest: 60, lowerRange: 6, upperRange: 10)
+        let (event, perf, change) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 60,
+            actualDownstreamReps: 8,
+            triggerDownstreamReps: 6,
+            lowerRange: 6,
+            upperRange: 10
+        )
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .ignored)
+    }
+
+    @Test @MainActor
+    func restChange_usesEffectiveRestInterval_notRawStoredRest() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            workingSets: 3,
+            targetWeight: 100,
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        prescription.sortedSets[1].type = .dropSet
+
+        let session = TestDataFactory.makeSession(context: context)
+        let perf = TestDataFactory.makePerformance(
+            context: context,
+            session: session,
+            prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 120, type: .working),
+                (weight: 80, reps: 8, rest: 60, type: .dropSet),
+                (weight: 100, reps: 8, rest: 90, type: .working)
+            ]
+        )
+
+        let triggerSnapshot = ExercisePerformanceSnapshot(
+            date: .now,
+            notes: "",
+            repRange: RepRangeSnapshot(policy: prescription.repRange),
+            sets: [
+                SetPerformanceSnapshot(originalTargetSetID: prescription.sortedSets[0].id, index: 0, type: .working, weight: 100, reps: 8, restSeconds: 90, rpe: 0),
+                SetPerformanceSnapshot(originalTargetSetID: prescription.sortedSets[1].id, index: 1, type: .dropSet, weight: 80, reps: 8, restSeconds: 60, rpe: 0),
+                SetPerformanceSnapshot(originalTargetSetID: prescription.sortedSets[2].id, index: 2, type: .working, weight: 100, reps: 8, restSeconds: 90, rpe: 0)
+            ]
+        )
+
+        let event = SuggestionEvent(
+            category: .recovery,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: prescription.sortedSets[0],
+            triggerTargetSetID: prescription.sortedSets[0].id,
+            triggerPerformanceSnapshot: triggerSnapshot,
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets
+        )
+        context.insert(event)
+
         let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
         context.insert(change)
 
@@ -435,6 +805,39 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
+    func repRangeUpperChange_ignoresCloseUnlinkedWorkingSet() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf) = makeRepRangeContext(context: context, actualRepsPerSet: [8, 9, 10], lowerRange: 6, upperRange: 10)
+        let manualSet = SetPerformance(exercise: perf, setType: .working, weight: 100, reps: 11, restSeconds: 90, index: 3, complete: true)
+        context.insert(manualSet)
+        perf.sets?.append(manualSet)
+
+        let change = PrescriptionChange(changeType: .increaseRepRangeUpper, previousValue: 8, newValue: 10)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good)
+    }
+
+    @Test @MainActor
+    func repRangeUpperChange_downgradesWhenComparableUnlinkedSetMissesHard() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf) = makeRepRangeContext(context: context, actualRepsPerSet: [8, 9, 10], lowerRange: 6, upperRange: 10)
+        let manualSet = SetPerformance(exercise: perf, setType: .working, weight: 100, reps: 3, restSeconds: 90, index: 3, complete: true)
+        context.insert(manualSet)
+        perf.sets?.append(manualSet)
+
+        let change = PrescriptionChange(changeType: .increaseRepRangeUpper, previousValue: 8, newValue: 10)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .ignored)
+        #expect(signal?.confidence == 0.65)
+    }
+
+    @Test @MainActor
     func repRangeLowerChange_tooAggressive_whenManySetsLandBelowNewFloor() throws {
         let context = try TestDataFactory.makeContext()
         // Raise lower from 6→10 (upper=14). sets=[8,8,8,8]: all < new floor 10.
@@ -464,16 +867,28 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
-    func repRangeLowerChange_ignored_whenSetsNotInRangeAndNotNearBoundary() throws {
+    func repRangeLowerChange_tooAggressive_whenSetsFarBelowHarderFloor() throws {
         let context = try TestDataFactory.makeContext()
-        // Raise lower from 6→10; upper=14; sets=[4,4,4]: ratio=0, abs(4-10)=6>2, abs(4-14)=10>2 → ignored
+        // Raise lower from 6→10; upper=14; sets=[4,4,4] are clearly below the harder floor.
         let (event, perf) = makeRepRangeContext(context: context, actualRepsPerSet: [4, 4, 4], lowerRange: 6, upperRange: 14)
         let change = PrescriptionChange(changeType: .increaseRepRangeLower, previousValue: 6, newValue: 10)
         context.insert(change)
 
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
-        #expect(signal?.outcome == .ignored)
+        #expect(signal?.outcome == .tooAggressive)
+    }
+
+    @Test @MainActor
+    func repRangeLowerChange_insufficient_whenEasierFloorStillNotEnough() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf) = makeRepRangeContext(context: context, actualRepsPerSet: [4, 4, 4], lowerRange: 8, upperRange: 12)
+        let change = PrescriptionChange(changeType: .decreaseRepRangeLower, previousValue: 8, newValue: 6)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient)
     }
 
     @Test @MainActor
@@ -677,5 +1092,387 @@ struct OutcomeRuleEngineTests {
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
         #expect(signal?.outcome == .tooAggressive)
+    }
+
+    // MARK: - Issue 1-A: Frozen Rep Range (not live prescription)
+    // These tests verify that outcome evaluation uses the rep range captured in
+    // triggerTargetSnapshot at suggestion-creation time, NOT the current live
+    // prescription range. A range accepted between suggestion creation and outcome
+    // resolution must not retroactively change the outcome.
+
+    /// Weight change: frozen range 8-12, live range mutated to 14-18 before evaluation.
+    /// Reps=10 is good against [8-12] but tooAggressive against [14-18].
+    /// Expect: good (frozen range wins).
+    @Test @MainActor
+    func weightChange_usesSnapshotRepRange_notLiveRange() throws {
+        let context = try TestDataFactory.makeContext()
+        // Create prescription with range 8-12 and capture the snapshot.
+        let (_, prescription) = TestDataFactory.makePrescription(
+            context: context, workingSets: 1, targetWeight: 100,
+            targetReps: 8, repRangeMode: .range, lowerRange: 8, upperRange: 12
+        )
+        let setPrescription = prescription.sortedSets.first!
+        let session = TestDataFactory.makeSession(context: context)
+        let perf = TestDataFactory.makePerformance(
+            context: context, session: session, prescription: prescription,
+            sets: [(weight: 102.5, reps: 10, rest: 90, type: .working)]
+        )
+        // Event snapshot is frozen at 8-12.
+        let event = SuggestionEvent(
+            category: .performance,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            triggerTargetSetID: setPrescription.id,
+            triggerPerformanceSnapshot: .empty,
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets
+        )
+        context.insert(event)
+
+        // Now mutate the live prescription range to 14-18 (simulating a separate accepted suggestion).
+        prescription.repRange?.lowerRange = 14
+        prescription.repRange?.upperRange = 18
+
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
+        context.insert(change)
+
+        // Reps=10 against frozen [8-12] → good. Against live [14-18] → tooAggressive.
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Should evaluate against frozen range 8-12, not live 14-18")
+    }
+
+    /// Reps change: frozen range 8-12, live range mutated to 14-18 before evaluation.
+    /// User follows suggestion (reps=10) — good against frozen, tooAggressive against live.
+    @Test @MainActor
+    func repsChange_usesSnapshotRepRange_notLiveRange() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(
+            context: context, workingSets: 1, targetWeight: 100,
+            targetReps: 8, repRangeMode: .range, lowerRange: 8, upperRange: 12
+        )
+        let setPrescription = prescription.sortedSets.first!
+        let session = TestDataFactory.makeSession(context: context)
+        let perf = TestDataFactory.makePerformance(
+            context: context, session: session, prescription: prescription,
+            sets: [(weight: 100, reps: 10, rest: 90, type: .working)]
+        )
+        let event = SuggestionEvent(
+            category: .performance,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            triggerTargetSetID: setPrescription.id,
+            triggerPerformanceSnapshot: .empty,
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets
+        )
+        context.insert(event)
+
+        // Mutate live range to 14-18 after snapshot is captured.
+        prescription.repRange?.lowerRange = 14
+        prescription.repRange?.upperRange = 18
+
+        // Suggest increasing reps from 8 to 10; user follows.
+        let change = PrescriptionChange(changeType: .increaseReps, previousValue: 8, newValue: 10)
+        context.insert(change)
+
+        // Reps=10 against frozen [8-12] → good. Against live [14-18] → tooAggressive.
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Should evaluate against frozen range 8-12, not live 14-18")
+    }
+
+    /// Rest change: frozen range 8-12, live range mutated to 14-18 before evaluation.
+    /// User follows the rest increase and the following set improves to 10 reps — good against
+    /// frozen 8-12, tooAggressive against live 14-18.
+    @Test @MainActor
+    func restChange_usesSnapshotRepRange_notLiveRange() throws {
+        let context = try TestDataFactory.makeContext()
+        let (_, prescription) = TestDataFactory.makePrescription(
+            context: context, workingSets: 2, targetWeight: 100,
+            targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12
+        )
+        let setPrescription = prescription.sortedSets.first!
+        let session = TestDataFactory.makeSession(context: context)
+        let perf = TestDataFactory.makePerformance(
+            context: context, session: session, prescription: prescription,
+            sets: [
+                (weight: 100, reps: 8, rest: 120, type: .working),
+                (weight: 100, reps: 10, rest: 90, type: .working)
+            ]
+        )
+        let event = SuggestionEvent(
+            category: .recovery,
+            catalogID: prescription.catalogID,
+            sessionFrom: nil,
+            targetExercisePrescription: prescription,
+            targetSetPrescription: setPrescription,
+            triggerTargetSetID: setPrescription.id,
+            triggerPerformanceSnapshot: ExercisePerformanceSnapshot(
+                date: .now,
+                notes: "",
+                repRange: RepRangeSnapshot(policy: prescription.repRange),
+                sets: [
+                    SetPerformanceSnapshot(
+                        originalTargetSetID: prescription.sortedSets[0].id,
+                        index: 0,
+                        type: .working,
+                        weight: 100,
+                        reps: 8,
+                        restSeconds: 90,
+                        rpe: 0
+                    ),
+                    SetPerformanceSnapshot(
+                        originalTargetSetID: prescription.sortedSets[1].id,
+                        index: 1,
+                        type: .working,
+                        weight: 100,
+                        reps: 6,
+                        restSeconds: 90,
+                        rpe: 0
+                    )
+                ]
+            ),
+            triggerTargetSnapshot: ExerciseTargetSnapshot(prescription: prescription),
+            trainingStyle: .straightSets
+        )
+        context.insert(event)
+
+        // Mutate live range to 14-18 after snapshot is captured.
+        prescription.repRange?.lowerRange = 14
+        prescription.repRange?.upperRange = 18
+
+        // Suggest increasing rest from 90s to 120s; user follows (actual rest=120).
+        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
+        context.insert(change)
+
+        // Reps=10 against frozen [8-12] → good. Against live [14-18] → tooAggressive.
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Should evaluate reps against frozen range 8-12, not live 14-18")
+    }
+
+    // MARK: - Issue 1-C: Directional Overshoot
+    // These tests verify that a large overshoot in either direction does not get credited as
+    // normal adherence. Large upward overshoots mean the suggestion was too conservative;
+    // large downward overshoots mean the decrease was still too aggressive.
+
+    /// Weight increase 80→82.5; athlete actually loaded 87.5 (= new + 2×tol = cap boundary).
+    /// Old code: proximity check |87.5-82.5|=5 < |87.5-80|=7.5 → "followed" → tooEasy only if reps bad.
+    /// New code: early tooEasy exit fires before followedDirectionalTarget (87.5 >= 82.5+5) → tooEasy.
+    @Test @MainActor
+    func weightIncrease_largeOvershoot_atCapBoundary_returnsTooEasy() throws {
+        let context = try TestDataFactory.makeContext()
+        // barbell_bench_press → chest + barbell → increment = 2.5kg. cap = new + 5 = 87.5.
+        // actual=87.5 exactly at cap → NOT followed → tooEasy (suggestion too conservative).
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 87.5,
+            actualReps: 8,
+            targetWeight: 80,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 80, newValue: 82.5)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooEasy, "Athlete loaded 5kg above suggested new target — suggestion was too conservative")
+    }
+
+    /// Weight increase 80→82.5; athlete loaded 84 (= new + 1.5, within tolerance of new).
+    /// Modest overshoot is within ±tolerance of the new target → still "followed".
+    /// reps=8 in range [6-10] → good (normal path, not affected by overshoot cap).
+    @Test @MainActor
+    func weightIncrease_withinToleranceOvershoot_countsAsFollowed_returnsGood() throws {
+        let context = try TestDataFactory.makeContext()
+        // actual=84, new=82.5: |84-82.5|=1.5 <= tol=2.5 → within tolerance → followed → reps=8 in-range → good
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 84,
+            actualReps: 8,
+            targetWeight: 80,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 80, newValue: 82.5)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Modest overshoot within tolerance should still count as followed")
+    }
+
+    /// Reps increase 8→10; athlete actually did 12 reps (= new + 2 = cap boundary).
+    /// Old code: proximity |12-10|=2 < |12-8|=4 → "followed" → classified only by evaluateRepsInRange.
+    /// New code: early tooEasy exit fires before followedDirectionalTarget (12 >= 10+2) → tooEasy.
+    @Test @MainActor
+    func repsIncrease_largeOvershoot_atCapBoundary_returnsTooEasy() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualReps: 12,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .increaseReps, previousValue: 8, newValue: 10)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooEasy, "Athlete did 2 reps above suggested new target — suggestion was too conservative")
+    }
+
+    /// Weight decrease 100→97.5; athlete actually loaded 92.5 (= new - 2×tol = cap boundary).
+    /// Old code: any value beyond the new target in the suggested downward direction counted as followed,
+    /// so in-range reps could still score as good. New code: large downward overshoot means the load reduction was insufficient.
+    @Test @MainActor
+    func weightDecrease_largeOvershoot_atCapBoundary_returnsInsufficient() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 92.5,
+            actualReps: 8,
+            targetWeight: 100,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        let change = PrescriptionChange(changeType: .decreaseWeight, previousValue: 100, newValue: 97.5)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient, "Athlete loaded far below the suggested decreased weight — the decrease was not enough")
+    }
+
+    /// Reps decrease 10→8; athlete actually did 6 reps (= new - 2 = cap boundary).
+    /// Old code: this still counted as followed and could score as good when 6 was in-range.
+    /// New code: large downward overshoot means the rep reduction was insufficient.
+    @Test @MainActor
+    func repsDecrease_largeOvershoot_atCapBoundary_returnsInsufficient() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualReps: 6,
+            lowerRange: 6,
+            upperRange: 12
+        )
+        let change = PrescriptionChange(changeType: .decreaseReps, previousValue: 10, newValue: 8)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .insufficient, "Athlete performed far below the suggested decreased rep target — the decrease was not enough")
+    }
+
+    @Test @MainActor
+    func weightChange_targetMode_oneBelowTarget_isStillGood() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 102.5,
+            actualReps: 7,
+            targetWeight: 100,
+            repRangeMode: .target,
+            targetReps: 8
+        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Target mode should treat target-1 reps as acceptable outcome evidence")
+    }
+
+    @Test @MainActor
+    func repsChange_targetMode_oneBelowTarget_isStillGood() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualReps: 7,
+            repRangeMode: .target,
+            targetReps: 8
+        )
+        let change = PrescriptionChange(changeType: .increaseReps, previousValue: 6, newValue: 8)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Target mode reps changes should not mark target-1 execution as too aggressive")
+    }
+
+    @Test @MainActor
+    func restChange_targetMode_oneBelowTarget_isStillGood() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeRestChangeContext(
+            context: context,
+            oldRest: 90,
+            actualRestOwner: 120,
+            actualDownstreamReps: 7,
+            triggerDownstreamReps: 5,
+            repRangeMode: .target,
+            targetReps: 8
+        )
+        let change = PrescriptionChange(changeType: .increaseRest, previousValue: 90, newValue: 120)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good, "Target mode rest changes should stay aligned with target-1 outcome softening")
+    }
+
+    @Test @MainActor
+    func weightChange_targetMode_twoBelowTarget_remainsTooAggressive() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, _) = makeSetScopedContext(
+            context: context,
+            actualWeight: 102.5,
+            actualReps: 6,
+            targetWeight: 100,
+            repRangeMode: .target,
+            targetReps: 8
+        )
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 102.5)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooAggressive, "Target mode should still treat target-2 reps as too aggressive")
+    }
+
+    /// Rep range lower-bound change: frozen upper=12, live upper mutated to 20 before evaluation.
+    /// Sets at 14 reps — tooEasy against frozen ceiling 12 (14 > 12+buffer), good against live ceiling 20.
+    @Test @MainActor
+    func repRangeLowerChange_usesFrozenCeiling_notLiveCeiling() throws {
+        let context = try TestDataFactory.makeContext()
+        // Prescription: range 8-12. Will suggest raising floor to 10.
+        let (event, perf) = makeRepRangeContext(
+            context: context,
+            actualRepsPerSet: [14, 14, 14],
+            lowerRange: 8,
+            upperRange: 12
+        )
+
+        // Mutate live upper to 20 after snapshot capture.
+        // The event's prescription still has the same repRange object, so we mutate via perf.
+        perf.prescription?.repRange?.upperRange = 20
+
+        // Change: raise floor from 8 → 10. effectiveNewRepRange should use frozen ceiling=12, not live 20.
+        let change = PrescriptionChange(changeType: .increaseRepRangeLower, previousValue: 8, newValue: 10)
+        context.insert(change)
+
+        // With frozen ceiling=12, span=2, buffer=1: 14 > 12+1=13 → tooEasy.
+        // With live ceiling=20, span=10, buffer=3: 14 ≤ 20+3=23 → good.
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooEasy, "Should use frozen ceiling 12, not live ceiling 20")
     }
 }

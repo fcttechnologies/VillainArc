@@ -12,6 +12,7 @@ enum AIOutcome: String {
     case good = "Good"
     case tooAggressive = "Too Aggressive"
     case tooEasy = "Too Easy"
+    case insufficient = "Insufficient"
     case ignored = "Ignored"
 
     var outcome: Outcome {
@@ -19,6 +20,7 @@ enum AIOutcome: String {
         case .good: return .good
         case .tooAggressive: return .tooAggressive
         case .tooEasy: return .tooEasy
+        case .insufficient: return .insufficient
         case .ignored: return .ignored
         }
     }
@@ -28,6 +30,7 @@ enum AIOutcome: String {
         case .good: self = .good
         case .tooAggressive: self = .tooAggressive
         case .tooEasy: self = .tooEasy
+        case .insufficient: self = .insufficient
         case .ignored: self = .ignored
         case .pending: return nil
         }

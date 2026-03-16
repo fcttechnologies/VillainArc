@@ -49,15 +49,17 @@ struct OutcomeResolver {
         }
 
         // Step 4: Build AI inputs per group and run AI in parallel.
-        var aiGroupInputs: [(group: OutcomeGroup, input: AIOutcomeGroupInput, rejected: Bool)] = []
+        var aiGroupInputs: [(eventID: UUID, input: AIOutcomeGroupInput, rejected: Bool)] = []
 
         for group in groups {
-            guard let aiInput = buildAIGroupInput(group: group, ruleResults: ruleResults) else { continue }
-            aiGroupInputs.append((group, aiInput, isRejectedGroup(group)))
+            let groupRuleSignal = aggregateRuleSignal(changes: group.changes, ruleResults: ruleResults)
+            guard shouldRunAI(for: groupRuleSignal) else { continue }
+            guard let aiInput = buildAIGroupInput(group: group, groupRuleSignal: groupRuleSignal) else { continue }
+            aiGroupInputs.append((group.event.id, aiInput, isRejectedGroup(group)))
         }
 
-        let aiResults = await withTaskGroup(of: (Int, AIOutcomeInferenceOutput?).self) { taskGroup in
-            for (index, pair) in aiGroupInputs.enumerated() {
+        let aiResults = await withTaskGroup(of: (UUID, AIOutcomeInferenceOutput?).self) { taskGroup in
+            for pair in aiGroupInputs {
                 taskGroup.addTask {
                     let result: AIOutcomeInferenceOutput?
                     if pair.rejected {
@@ -65,13 +67,13 @@ struct OutcomeResolver {
                     } else {
                         result = await AIOutcomeInferrer.inferApplied(input: pair.input)
                     }
-                    return (index, result)
+                    return (pair.eventID, result)
                 }
             }
-            var results: [Int: AIOutcomeInferenceOutput] = [:]
-            for await (index, output) in taskGroup {
+            var results: [UUID: AIOutcomeInferenceOutput] = [:]
+            for await (eventID, output) in taskGroup {
                 if let output {
-                    results[index] = output
+                    results[eventID] = output
                 }
             }
             return results
@@ -80,14 +82,8 @@ struct OutcomeResolver {
         // Step 5: Merge phase — apply outcome entries to each event.
         var processedEventIDs = Set<UUID>()
 
-        for (index, pair) in aiGroupInputs.enumerated() {
-            let aiOutput = aiResults[index]
-            applyOutcomeIfPossible(event: pair.group.event, changes: pair.group.changes, exercisePerf: pair.group.exercisePerf, ruleResults: ruleResults, aiOutput: aiOutput, sessionID: workout.id, processedIDs: &processedEventIDs)
-        }
-
-        // Rule-only fallback for any events not already processed.
         for group in groups {
-            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: nil, sessionID: workout.id, processedIDs: &processedEventIDs)
+            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: aiResults[group.event.id], sessionID: workout.id, processedIDs: &processedEventIDs)
         }
 
         // Step 6: Persist
@@ -136,7 +132,7 @@ struct OutcomeResolver {
 
     // MARK: - Build AI Group Input
 
-    private static func buildAIGroupInput(group: OutcomeGroup, ruleResults: [UUID: OutcomeSignal?]) -> AIOutcomeGroupInput? {
+    private static func buildAIGroupInput(group: OutcomeGroup, groupRuleSignal: OutcomeSignal?) -> AIOutcomeGroupInput? {
         guard canEvaluateWithCurrentPerformance(group: group) else { return nil }
 
         // Convert changes to AI-friendly format.
@@ -154,19 +150,33 @@ struct OutcomeResolver {
         let actualSnapshot = AIExercisePerformanceSnapshot(performance: group.exercisePerf)
 
         // Aggregate rule outcome for the group — use the most common or most severe.
-        let groupRuleSignal = aggregateRuleSignal(changes: group.changes, ruleResults: ruleResults)
-
         let style = resolvedTrainingStyle(for: group)
 
         return AIOutcomeGroupInput(category: group.event.category, categoryGuidance: group.event.category.guidance(isSetScoped: group.event.isSetScoped, targetSetType: group.event.targetSetPrescription?.type, changeTypes: group.changes.map(\.changeType)), changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
     }
 
-    private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
-        guard group.event.isSetScoped else { return true }
-        guard let setPrescriptionID = group.setPrescription?.id else { return false }
-        return group.exercisePerf.sortedSets.contains { set in
-            set.complete && set.prescription?.id == setPrescriptionID
+    static func hasSufficientCurrentEvidence(for event: SuggestionEvent, in exercisePerf: ExercisePerformance) -> Bool {
+        guard event.isSetScoped else { return true }
+        guard let setPrescriptionID = event.targetSetPrescription?.id else { return false }
+
+        let completedSets = exercisePerf.sortedSets.filter(\.complete)
+        guard let targetedSet = completedSets.first(where: { $0.prescription?.id == setPrescriptionID }) else {
+            return false
         }
+
+        let changeTypes = Set(event.sortedChanges.map(\.changeType))
+        let isRecoveryEvent = changeTypes.contains(.increaseRest) || changeTypes.contains(.decreaseRest)
+        guard isRecoveryEvent else { return true }
+
+        return completedSets.contains { set in
+            set.index > targetedSet.index &&
+            set.type == .working &&
+            set.prescription != nil
+        }
+    }
+
+    private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
+        hasSufficientCurrentEvidence(for: group.event, in: group.exercisePerf)
     }
 
     private static func resolvedTrainingStyle(for group: OutcomeGroup) -> TrainingStyle {
@@ -178,19 +188,56 @@ struct OutcomeResolver {
         AIExercisePrescriptionSnapshot(exercise: AIExerciseIdentitySnapshot(prescription: group.prescription), targetSnapshot: group.event.triggerTargetSnapshot)
     }
 
+    /// Returns true when the change represents the core progression intent of a group.
+    /// Weight changes anchor multi-change bundles; secondary changes (rep resets, rest
+    /// adjustments) are companions that refine, not drive, the progression decision.
+    private static func isPrimaryChange(_ change: PrescriptionChange) -> Bool {
+        change.changeType == .increaseWeight || change.changeType == .decreaseWeight
+    }
+
     /// Picks the most representative rule signal for a group.
+    /// When the group contains a primary (weight) change, that change's signal anchors the
+    /// result — secondary signals (rep resets, rest adjustments) cannot promote the outcome
+    /// above what the primary reports. A tooAggressive secondary can still escalate upward
+    /// for safety: companion reps below the floor reveal real overload even when the
+    /// weight-change evaluator has already classified the primary outcome as good.
     private static func aggregateRuleSignal(changes: [PrescriptionChange], ruleResults: [UUID: OutcomeSignal?]) -> OutcomeSignal? {
         let signals = changes.compactMap { ruleResults[$0.id] ?? nil }
         guard !signals.isEmpty else { return nil }
 
-        // Priority: tooAggressive > good > tooEasy > ignored (for safety).
-        let priority: [Outcome] = [.tooAggressive, .good, .tooEasy, .ignored]
+        let priority: [Outcome] = [.tooAggressive, .insufficient, .good, .tooEasy, .ignored]
+
+        let primarySignals = changes.compactMap { isPrimaryChange($0) ? ruleResults[$0.id] ?? nil : nil }
+
+        // No primary change in this group — fall back to severity-priority across all signals.
+        guard !primarySignals.isEmpty else {
+            for outcome in priority {
+                if let signal = signals.first(where: { $0.outcome == outcome }) { return signal }
+            }
+            return signals.first
+        }
+
+        // Anchor on the most-severe primary signal.
+        var anchorSignal: OutcomeSignal?
         for outcome in priority {
-            if let signal = signals.first(where: { $0.outcome == outcome }) {
-                return signal
+            if let signal = primarySignals.first(where: { $0.outcome == outcome }) {
+                anchorSignal = signal
+                break
             }
         }
-        return signals.first
+        guard let anchor = anchorSignal else { return primarySignals.first }
+
+        // Allow a tooAggressive secondary to escalate for safety — a companion reps signal
+        // below the floor reveals real overload even when the primary anchor is good.
+        // Secondary signals can never promote the result upward past the primary anchor.
+        if anchor.outcome != .tooAggressive {
+            let secondarySignals = changes.compactMap { !isPrimaryChange($0) ? ruleResults[$0.id] ?? nil : nil }
+            if let aggressiveSecondary = secondarySignals.first(where: { $0.outcome == .tooAggressive }) {
+                return aggressiveSecondary
+            }
+        }
+
+        return anchor
     }
 
     private static func isRejectedGroup(_ group: OutcomeGroup) -> Bool {
@@ -226,28 +273,44 @@ struct OutcomeResolver {
 
     // MARK: - Merge
 
-    private struct ResolvedOutcome {
+    struct ResolvedOutcome {
         let outcome: Outcome
+        let confidence: Double
         let reason: String
     }
 
-    private static func mergeOutcome(rule: OutcomeSignal?, ai: AIOutcomeInferenceOutput?) -> ResolvedOutcome? {
+    static func shouldRunAI(for rule: OutcomeSignal?) -> Bool {
+        guard let rule else { return true }
+        return rule.confidence < 0.85
+    }
+
+    static func shouldPreferAIOverride(rule: OutcomeSignal, ai: AIOutcomeInferenceOutput) -> Bool {
+        guard ai.outcome.outcome != rule.outcome else { return false }
+
+        if rule.confidence < 0.7 {
+            return ai.confidence >= 0.75
+        }
+
+        return ai.confidence >= max(0.85, rule.confidence + 0.05)
+    }
+
+    static func mergeOutcome(rule: OutcomeSignal?, ai: AIOutcomeInferenceOutput?) -> ResolvedOutcome? {
         if rule == nil {
             guard let ai else { return nil }
-            return ResolvedOutcome(outcome: ai.outcome.outcome, reason: "[AI] \(ai.reason)")
+            return ResolvedOutcome(outcome: ai.outcome.outcome, confidence: ai.confidence, reason: "[AI] \(ai.reason)")
         }
 
         let ruleOutcome = rule!
 
         guard let ai else {
-            return ResolvedOutcome(outcome: ruleOutcome.outcome, reason: "[Rules] \(ruleOutcome.reason)")
+            return ResolvedOutcome(outcome: ruleOutcome.outcome, confidence: ruleOutcome.confidence, reason: "[Rules] \(ruleOutcome.reason)")
         }
 
-        if ai.outcome.outcome != ruleOutcome.outcome && ruleOutcome.confidence < 0.7 && ai.confidence >= 0.75 {
-            return ResolvedOutcome(outcome: ai.outcome.outcome, reason: "[AI override] \(ai.reason)")
+        if shouldPreferAIOverride(rule: ruleOutcome, ai: ai) {
+            return ResolvedOutcome(outcome: ai.outcome.outcome, confidence: ai.confidence, reason: "[AI override] \(ai.reason)")
         }
 
-        return ResolvedOutcome(outcome: ruleOutcome.outcome, reason: "[Rules] \(ruleOutcome.reason)")
+        return ResolvedOutcome(outcome: ruleOutcome.outcome, confidence: ruleOutcome.confidence, reason: "[Rules] \(ruleOutcome.reason)")
     }
 
     private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, processedIDs: inout Set<UUID>) {
@@ -260,7 +323,7 @@ struct OutcomeResolver {
         let groupRuleSignal = aggregateRuleSignal(changes: changes, ruleResults: ruleResults)
         guard let resolved = mergeOutcome(rule: groupRuleSignal, ai: aiOutput) else { return }
 
-        let entry = EvaluationHistoryEntry(sourceSessionID: sessionID, snapshot: ExercisePerformanceSnapshot(performance: exercisePerf), partialOutcome: resolved.outcome, confidence: groupRuleSignal?.confidence ?? aiOutput?.confidence ?? 0.5, reason: resolved.reason)
+        let entry = EvaluationHistoryEntry(sourceSessionID: sessionID, snapshot: ExercisePerformanceSnapshot(performance: exercisePerf), partialOutcome: resolved.outcome, confidence: resolved.confidence, reason: resolved.reason)
         event.evaluationHistory.append(entry)
 
         // Only tooAggressive always resolves immediately — one session showing the change is
@@ -270,7 +333,7 @@ struct OutcomeResolver {
         switch resolved.outcome {
         case .tooAggressive:
             isDecisive = true
-        case .tooEasy, .ignored, .good:
+        case .tooEasy, .ignored, .good, .insufficient:
             isDecisive = false
         default:
             isDecisive = false
@@ -278,7 +341,7 @@ struct OutcomeResolver {
         guard isDecisive || event.evaluationHistory.count >= event.requiredEvaluationCount else { return }
 
         // Safety-weighted priority across all accumulated entries.
-        let priority: [Outcome] = [.tooAggressive, .good, .tooEasy, .ignored]
+        let priority: [Outcome] = [.tooAggressive, .insufficient, .good, .tooEasy, .ignored]
         guard let winning = priority.first(where: { o in event.evaluationHistory.contains { $0.partialOutcome == o } }), let winningEntry = event.evaluationHistory.first(where: { $0.partialOutcome == winning }) else { return }
 
         event.outcome = winning

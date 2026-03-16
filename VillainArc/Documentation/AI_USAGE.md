@@ -33,6 +33,10 @@ The test I apply: if I couldn't explain a piece of code in a code review or debu
 - **What AI did**: Helped document the rule structure and walked through edge cases in outcome evaluation (rejected-but-followed suggestions, same-session evaluation guard, snapshot-based prescription reconstruction).
 - **What I decided**: The closed-loop architecture (generation → review → outcome → learning signal), the event-first grouped suggestion model, the set-level plus exercise-level rule split, and the AI/deterministic merge strategy are product decisions I designed. AI helped formalize the documentation once the design was stable.
 
+### Progression Research
+- **What AI did**: Researched evidence-backed training progression principles, training-style detection heuristics, and possible improvements to suggestion generation and outcome evaluation. It gathered coaching heuristics and literature-backed patterns so I could compare them against VillainArc's existing system.
+- **What I decided**: How that evidence should apply to this app, which ideas already match the current engine, and which improvements are worth considering next. AI was used to gather and organize evidence, not to make the behavioral or product decisions.
+
 ### App Intents + Siri Integration
 - **What AI did**: API reference for App Intents lifecycle, `@AppShortcutsProvider`, entity resolution, and Live Activity intent patterns — areas where the Apple docs are sparse.
 - **What I decided**: Which intents to expose, how to organize them, when to donate, and the interaction model between Siri and the active workout session.
