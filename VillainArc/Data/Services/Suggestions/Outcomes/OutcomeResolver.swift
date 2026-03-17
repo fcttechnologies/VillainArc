@@ -9,6 +9,12 @@ struct OutcomeSignal {
     let reason: String
 }
 
+struct AIOutcomeContextFields: Equatable {
+    let postWorkoutEffort: Int?
+    let preWorkoutFeeling: AIMoodLevel?
+    let tookPreWorkout: Bool?
+}
+
 // MARK: - Internal Grouping
 
 private struct OutcomeGroup {
@@ -18,6 +24,17 @@ private struct OutcomeGroup {
     let setPrescription: SetPrescription?
 
     var changes: [PrescriptionChange] { event.sortedChanges }
+}
+
+private struct OutcomeScoreTotals {
+    let netScore: Double
+    let bucketTotals: [Outcome: Double]
+}
+
+private enum FinalizationDecision {
+    case pending
+    case escalateToThree
+    case finalize(outcome: Outcome, reason: String)
 }
 
 // MARK: - Resolver
@@ -154,8 +171,16 @@ struct OutcomeResolver {
 
         // Aggregate rule outcome for the group — use the most common or most severe.
         let style = resolvedTrainingStyle(for: group)
+        let contextFields = aiContextFields(for: group.exercisePerf.workoutSession)
 
-        return AIOutcomeGroupInput(category: group.event.category, categoryGuidance: group.event.category.guidance(isSetScoped: group.event.isSetScoped, targetSetType: group.event.targetSetPrescription?.type, changeTypes: group.changes.map(\.changeType)), changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
+        return AIOutcomeGroupInput(category: group.event.category, categoryGuidance: group.event.category.guidance(isSetScoped: group.event.isSetScoped, targetSetType: group.event.targetSetPrescription?.type, changeTypes: group.changes.map(\.changeType)), changes: aiChanges, prescription: prescriptionSnapshot, triggerPerformance: triggerSnapshot, actualPerformance: actualSnapshot, trainingStyle: style != .unknown ? style : nil, postWorkoutEffort: contextFields.postWorkoutEffort, preWorkoutFeeling: contextFields.preWorkoutFeeling, tookPreWorkout: contextFields.tookPreWorkout, ruleOutcome: groupRuleSignal.flatMap { AIOutcome(from: $0.outcome) }, ruleConfidence: groupRuleSignal?.confidence, ruleReason: groupRuleSignal?.reason)
+    }
+
+    static func aiContextFields(for workout: WorkoutSession?) -> AIOutcomeContextFields {
+        let effort = workout.flatMap { (1...10).contains($0.postEffort) ? $0.postEffort : nil }
+        let feeling = workout?.preWorkoutContext.map(\.feeling).flatMap(AIMoodLevel.init(from:))
+        let tookPreWorkout = workout?.preWorkoutContext?.tookPreWorkout == true ? true : nil
+        return AIOutcomeContextFields(postWorkoutEffort: effort, preWorkoutFeeling: feeling, tookPreWorkout: tookPreWorkout)
     }
 
     static func hasSufficientCurrentEvidence(for event: SuggestionEvent, in exercisePerf: ExercisePerformance) -> Bool {
@@ -317,6 +342,45 @@ struct OutcomeResolver {
         return ResolvedOutcome(outcome: ruleOutcome.outcome, confidence: ruleOutcome.confidence, reason: "[Rules] \(ruleOutcome.reason)")
     }
 
+    static func adjustedConfidence(_ baseConfidence: Double, for outcome: Outcome, workout: WorkoutSession?) -> Double {
+        guard outcome != .ignored else { return min(1.0, max(0.0, baseConfidence)) }
+
+        var adjusted = baseConfidence
+        let isNegative = isNegativeOutcome(outcome)
+        let isPositive = isPositiveOutcome(outcome)
+
+        if let workout, (1...10).contains(workout.postEffort) {
+            switch workout.postEffort {
+            case 9...10:
+                if isNegative { adjusted *= 1.2 }
+                if isPositive { adjusted *= 0.9 }
+            case 1...4:
+                if isNegative { adjusted *= 0.85 }
+                if isPositive { adjusted *= 1.1 }
+            default:
+                break
+            }
+        }
+
+        if let feeling = workout?.preWorkoutContext?.feeling {
+            switch feeling {
+            case .sick, .tired:
+                if isNegative { adjusted *= 0.85 }
+            case .good, .great:
+                if isNegative { adjusted *= 1.05 }
+            case .okay, .notSet:
+                break
+            }
+        }
+
+        if workout?.preWorkoutContext?.tookPreWorkout == true {
+            if isNegative { adjusted *= 1.05 }
+            if isPositive { adjusted *= 0.95 }
+        }
+
+        return min(1.0, max(0.0, adjusted))
+    }
+
     private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, processedIDs: inout Set<UUID>) {
         guard event.outcome == .pending, event.evaluatedAt == nil else { return }
         // Within-invocation dedup: prevents both the AI pass and the fallback pass from appending in the same call.
@@ -327,20 +391,132 @@ struct OutcomeResolver {
 
         let groupRuleSignal = aggregateRuleSignal(changes: changes, ruleResults: ruleResults)
         guard let resolved = mergeOutcome(rule: groupRuleSignal, ai: aiOutput) else { return }
-
-        let evaluation = SuggestionEvaluation(event: event, performance: exercisePerf, sourceWorkoutSessionID: sessionID, partialOutcome: resolved.outcome, confidence: resolved.confidence, reason: resolved.reason)
+        let evaluationConfidence = adjustedConfidence(resolved.confidence, for: resolved.outcome, workout: exercisePerf.workoutSession)
+        let evaluation = SuggestionEvaluation(event: event, performance: exercisePerf, sourceWorkoutSessionID: sessionID, partialOutcome: resolved.outcome, confidence: evaluationConfidence, reason: resolved.reason)
         exercisePerf.modelContext?.insert(evaluation)
 
         let allEvaluations = existingEvaluations + [evaluation]
         guard allEvaluations.count >= event.requiredEvaluationCount else { return }
 
-        // Safety-weighted priority across all accumulated evaluations.
-        let priority: [Outcome] = [.tooAggressive, .insufficient, .good, .tooEasy, .ignored]
-        guard let winning = priority.first(where: { o in allEvaluations.contains { $0.partialOutcome == o } }), let winningEval = allEvaluations.first(where: { $0.partialOutcome == winning }) else { return }
+        switch finalizationDecision(for: allEvaluations, requiredEvaluationCount: event.requiredEvaluationCount) {
+        case .pending:
+            return
+        case .escalateToThree:
+            event.outcome = .pending
+            event.outcomeReason = nil
+            event.evaluatedAt = nil
+            event.requiredEvaluationCount = max(event.requiredEvaluationCount, 3)
+        case .finalize(let outcome, let reason):
+            event.outcome = outcome
+            event.outcomeReason = reason
+            event.evaluatedAt = Date()
+        }
+    }
 
-        event.outcome = winning
-        event.outcomeReason = winningEval.reason
-        event.evaluatedAt = Date()
+    private static func finalizationDecision(for evaluations: [SuggestionEvaluation], requiredEvaluationCount: Int) -> FinalizationDecision {
+        let totals = scoreTotals(for: evaluations)
+        let outcomes = Set(evaluations.map(\.partialOutcome))
+        let hasDirectionalEvidence = outcomes.contains(where: isNegativeOutcome) || outcomes.contains(where: isPositiveOutcome)
+
+        if !hasDirectionalEvidence,
+           evaluations.count >= requiredEvaluationCount,
+           let reason = aggregateReason(for: .ignored, evaluations: evaluations) {
+            return .finalize(outcome: .ignored, reason: reason)
+        }
+
+        if requiredEvaluationCount == 2,
+           evaluations.count == 2,
+           outcomes.contains(where: isNegativeOutcome),
+           outcomes.contains(where: isPositiveOutcome) {
+            if outcomes == Set([.tooAggressive, .tooEasy]) {
+                return .escalateToThree
+            }
+            if abs(totals.netScore) < 0.75 {
+                return .escalateToThree
+            }
+        }
+
+        if totals.netScore <= -0.75,
+           let outcome = dominantNegativeOutcome(from: totals.bucketTotals),
+           let reason = aggregateReason(for: outcome, evaluations: evaluations) {
+            return .finalize(outcome: outcome, reason: reason)
+        }
+
+        if totals.netScore >= 0.75,
+           let outcome = dominantPositiveOutcome(from: totals.bucketTotals),
+           let reason = aggregateReason(for: outcome, evaluations: evaluations) {
+            return .finalize(outcome: outcome, reason: reason)
+        }
+
+        if evaluations.count >= 3,
+           let reason = aggregateReason(for: .ignored, evaluations: evaluations) {
+            return .finalize(outcome: .ignored, reason: reason)
+        }
+
+        return .pending
+    }
+
+    private static func scoreTotals(for evaluations: [SuggestionEvaluation]) -> OutcomeScoreTotals {
+        var netScore = 0.0
+        var bucketTotals: [Outcome: Double] = [:]
+
+        for evaluation in evaluations {
+            let bucketValue = abs(scoreValue(for: evaluation.partialOutcome)) * evaluation.confidence
+            bucketTotals[evaluation.partialOutcome, default: 0] += bucketValue
+            netScore += scoreValue(for: evaluation.partialOutcome) * evaluation.confidence
+        }
+
+        return OutcomeScoreTotals(netScore: netScore, bucketTotals: bucketTotals)
+    }
+
+    private static func dominantNegativeOutcome(from bucketTotals: [Outcome: Double]) -> Outcome? {
+        let tooAggressiveScore = bucketTotals[.tooAggressive, default: 0]
+        let insufficientScore = bucketTotals[.insufficient, default: 0]
+        guard tooAggressiveScore > 0 || insufficientScore > 0 else { return nil }
+        return tooAggressiveScore >= insufficientScore ? .tooAggressive : .insufficient
+    }
+
+    private static func dominantPositiveOutcome(from bucketTotals: [Outcome: Double]) -> Outcome? {
+        let goodScore = bucketTotals[.good, default: 0]
+        let tooEasyScore = bucketTotals[.tooEasy, default: 0]
+        guard goodScore > 0 || tooEasyScore > 0 else { return nil }
+        return goodScore >= tooEasyScore ? .good : .tooEasy
+    }
+
+    private static func aggregateReason(for outcome: Outcome, evaluations: [SuggestionEvaluation]) -> String? {
+        let relevantEvaluations: [SuggestionEvaluation]
+
+        if outcome == .ignored {
+            relevantEvaluations = evaluations
+        } else {
+            relevantEvaluations = evaluations.filter { $0.partialOutcome == outcome }
+        }
+
+        guard let winningEvaluation = relevantEvaluations.max(by: { $0.confidence < $1.confidence }) else { return nil }
+        return "[Aggregate] \(winningEvaluation.reason)"
+    }
+
+    private static func scoreValue(for outcome: Outcome) -> Double {
+        switch outcome {
+        case .tooAggressive:
+            return -2
+        case .insufficient:
+            return -1
+        case .ignored, .pending:
+            return 0
+        case .tooEasy:
+            return 1
+        case .good:
+            return 2
+        }
+    }
+
+    private static func isNegativeOutcome(_ outcome: Outcome) -> Bool {
+        outcome == .tooAggressive || outcome == .insufficient
+    }
+
+    private static func isPositiveOutcome(_ outcome: Outcome) -> Bool {
+        outcome == .good || outcome == .tooEasy
     }
 
     private static func buildAIPerformanceSnapshot(from snapshot: ExercisePerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot, prescription: ExercisePrescription, date: Date) -> AIExercisePerformanceSnapshot {

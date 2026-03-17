@@ -51,6 +51,11 @@ struct AIOutcomeInferrer {
         Guidelines:
         - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - For set-level changes, judge the targeted slot first.
+        - Use postWorkoutEffort, preWorkoutFeeling, and tookPreWorkout as supporting context hints, not ground truth.
+        - High postWorkoutEffort strengthens negative evidence when the athlete still struggled.
+        - Sick or tired pre-workout context weakens negative evidence from one bad session.
+        - If they took pre-workout and still struggled, that slightly strengthens negative evidence.
+        - Context should not override strong direct performance evidence by itself.
         - For easing changes like lower weight or lower rep targets, prefer Insufficient over Good when the athlete followed the easier target but performance still did not meaningfully improve.
         - For exercise-level rep-range changes, judge the working-set distribution against the new range or target.
         - For warmup calibration, judge adherence and whether the set still behaves like a warmup relative to the main working or top sets.
@@ -80,6 +85,11 @@ struct AIOutcomeInferrer {
         Guidelines:
         - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - Compare actualPerformance to the suggested targets, with triggerPerformance as baseline.
+        - Use postWorkoutEffort, preWorkoutFeeling, and tookPreWorkout as supporting context hints, not ground truth.
+        - High postWorkoutEffort strengthens negative evidence when the athlete still struggled.
+        - Sick or tired pre-workout context weakens negative evidence from one bad session.
+        - If they took pre-workout and still struggled, that slightly strengthens negative evidence.
+        - Context should not override strong direct performance evidence by itself.
         - For easing changes like lower weight or lower rep targets, prefer Insufficient when they effectively followed the easier target but the underlying performance problem still did not improve.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds can count as following.
         - For warmup calibration, judge whether they effectively used the suggested warmup load while the set still behaved like a warmup.

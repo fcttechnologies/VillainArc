@@ -67,6 +67,12 @@ struct AIOutcomeGroupInput {
     let actualPerformance: AIExercisePerformanceSnapshot
     @Guide(description: "Training style.")
     let trainingStyle: TrainingStyle?
+    @Guide(description: "Post-workout effort from 1 to 10 when recorded.")
+    let postWorkoutEffort: Int?
+    @Guide(description: "Pre-workout feeling when explicitly recorded.")
+    let preWorkoutFeeling: AIMoodLevel?
+    @Guide(description: "True only when the athlete explicitly recorded taking pre-workout.")
+    let tookPreWorkout: Bool?
     @Guide(description: "Rule hint.")
     let ruleOutcome: AIOutcome?
     @Guide(description: "Rule confidence.")

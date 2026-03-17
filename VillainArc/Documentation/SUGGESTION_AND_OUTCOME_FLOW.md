@@ -262,6 +262,13 @@ Examples:
 
 AI is still gated by structure. If the current workout does not have enough evidence for that event shape, the event stays pending instead of asking AI to guess across the gap.
 
+When AI does run, it now receives the current workout's captured context too:
+- `postEffort` when it was recorded before summary
+- pre-workout feeling when it was explicitly set
+- `tookPreWorkout` only when it was explicitly recorded as true
+
+Those values are hints, not overriding evidence.
+
 ### Multi-Session Evidence
 
 Outcomes are not finalized after one later workout unless the event's required evaluation count is `1`.
@@ -274,13 +281,39 @@ The resolver uses two dedup guards:
 
 ### Finalization Rule
 
-Once `event.evaluations.count >= event.requiredEvaluationCount`, the event finalizes through a safety-weighted priority:
+Once `event.evaluations.count >= event.requiredEvaluationCount`, the resolver no longer finalizes through a fixed priority list.
 
-```text
-tooAggressive > insufficient > good > tooEasy > ignored
-```
+Instead it:
+- stores each `SuggestionEvaluation` with a context-adjusted confidence
+- converts outcomes into weighted scores
+- sums those scores across sessions
+- escalates some mixed 2-session events to require a 3rd evaluation instead of forcing a winner
 
-That means a single `tooAggressive` evaluation can win over multiple `good` ones. The system intentionally biases toward safety.
+Current score map:
+- `tooAggressive = -2`
+- `insufficient = -1`
+- `ignored = 0`
+- `tooEasy = +1`
+- `good = +2`
+
+Each evaluation's contribution is `score * adjustedConfidence`.
+
+Context currently adjusts confidence, not the outcome label:
+- high `postEffort` strengthens negative evidence and slightly dampens positive evidence
+- low `postEffort` dampens negative evidence and slightly boosts positive evidence
+- sick or tired pre-workout feeling weakens negative evidence
+- good or great pre-workout feeling slightly strengthens negative evidence
+- taking pre-workout slightly strengthens negative evidence and slightly dampens positive evidence
+
+Conflict handling:
+- exact `tooAggressive + tooEasy` across the first two evaluations always escalates to `requiredEvaluationCount = 3`
+- other mixed positive/negative 2-session pairs escalate when the weighted net score is too close to neutral
+
+Finalization:
+- if an event reaches its required count with only neutral evidence, it resolves to `ignored`
+- strong negative net -> finalize to `tooAggressive` or `insufficient`
+- strong positive net -> finalize to `good` or `tooEasy`
+- after 3 evaluations, if the weighted net is still near neutral -> finalize to `ignored`
 
 ## Manual Plan Editing and Suggestions
 

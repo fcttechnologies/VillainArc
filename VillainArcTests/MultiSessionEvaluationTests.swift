@@ -74,10 +74,16 @@ struct MultiSessionEvaluationTests {
         plan: WorkoutPlan,
         prescription: ExercisePrescription,
         actualWeight: Double = 102.5,
-        actualReps: Int = 8
+        actualReps: Int = 8,
+        postEffort: Int = 0,
+        preWorkoutFeeling: MoodLevel = .notSet,
+        tookPreWorkout: Bool = false
     ) -> WorkoutSession {
         let session = TestDataFactory.makeSession(context: context)
         session.workoutPlan = plan
+        session.postEffort = postEffort
+        session.preWorkoutContext?.feeling = preWorkoutFeeling
+        session.preWorkoutContext?.tookPreWorkout = tookPreWorkout
         _ = TestDataFactory.makePerformance(
             context: context,
             session: session,
@@ -261,10 +267,10 @@ struct MultiSessionEvaluationTests {
     @Test @MainActor
     func singleIgnoredSession_doesNotFinalize_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
-        // actualWeight=100 (stayed at old), change was increaseWeight 100→102.5 → ignored
+        // actualWeight=97.5 stayed meaningfully away from the new target, so the change is ignored.
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
-            actualWeight: 100, actualReps: 8)
+            actualWeight: 97.5, actualReps: 8)
 
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
@@ -351,71 +357,111 @@ struct MultiSessionEvaluationTests {
         #expect(event.evaluatedAt != nil)
     }
 
-    // MARK: - Safety-weighted priority at threshold
+    // MARK: - Weighted aggregation at threshold
 
     @Test @MainActor
-    func safetyPriority_tooAggressiveBeatsGood_atThreshold() async throws {
+    func weightedAggregation_goodBeatsWeakTooAggressive_atThreshold() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Pre-inject session 1 as "good".
-        injectPriorEvaluation(context: context, event: event, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated first session")
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooAggressive, confidence: 0.5, reason: "[Rules] simulated weak overload session")
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 102.5, actualReps: 8)
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        // Session 2 → tooAggressive (reps=4 below floor).
-        // Safety priority across evaluations=[good, tooAggressive]: tooAggressive > good → wins.
+        #expect(event.outcome == .good)
+        #expect(event.outcomeReason?.hasPrefix("[Aggregate]") == true)
+    }
+
+    @Test @MainActor
+    func weightedAggregation_ignoredCarriesNoWeight_atThreshold() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
+
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .ignored, confidence: 0.9, reason: "[Rules] simulated first session")
+
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 102.5, actualReps: 8)
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
+
+        #expect(event.outcome == .good)
+    }
+
+    @Test @MainActor
+    func weightedAggregation_goodBeatsTooEasyWithinPositiveBucket_atThreshold() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
+
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated first session")
+
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 102.5, actualReps: 8)
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
+
+        #expect(event.outcome == .good)
+    }
+
+    @Test @MainActor
+    func weightedAggregation_strongTooAggressiveBeatsWeakGood_atThreshold() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
+
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .good, confidence: 0.3, reason: "[Rules] simulated weak positive session")
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
             actualWeight: 102.5, actualReps: 4)
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         #expect(event.outcome == .tooAggressive)
+        #expect(event.outcomeReason?.hasPrefix("[Aggregate]") == true)
     }
 
     @Test @MainActor
-    func safetyPriority_goodBeatsIgnored_atThreshold() async throws {
+    func mixedPositiveAndNegativeEvidence_lowNetScoreEscalatesToThree() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
-        // Pre-inject session 1 as "ignored".
-        injectPriorEvaluation(context: context, event: event, partialOutcome: .ignored, confidence: 0.9, reason: "[Rules] simulated first session")
-
-        // Session 2: weight=102.5 (followed suggestion), reps=8 in range → good.
-        // At threshold: history=[ignored, good]. Priority: good > ignored.
-        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
-            actualWeight: 102.5, actualReps: 8)
-        await OutcomeResolver.resolveOutcomes(for: session, context: context)
-
-        #expect(event.outcome == .good)
-    }
-
-    @Test @MainActor
-    func safetyPriority_goodBeatsTooEasy_atThreshold() async throws {
-        let context = try TestDataFactory.makeContext()
-        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
-
-        // Pre-inject session 1 as "tooEasy".
-        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated first session")
-
-        // Session 2: reps=8 in range → good.
-        // At threshold: history=[tooEasy, good]. Priority: good > tooEasy.
-        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
-            actualWeight: 102.5, actualReps: 8)
-        await OutcomeResolver.resolveOutcomes(for: session, context: context)
-
-        #expect(event.outcome == .good)
-    }
-
-    @Test @MainActor
-    func safetyPriority_insufficientBeatsGood_atThreshold() async throws {
-        let context = try TestDataFactory.makeContext()
-        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
-
-        injectPriorEvaluation(context: context, event: event, partialOutcome: .insufficient, confidence: 0.65, reason: "[Rules] simulated insufficient session")
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooAggressive, confidence: 0.7, reason: "[Rules] simulated hard miss")
 
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
             actualWeight: 102.5, actualReps: 8)
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
-        #expect(event.outcome == .insufficient)
+        #expect(event.outcome == .pending)
+        #expect(event.evaluatedAt == nil)
+        #expect(event.requiredEvaluationCount == 3)
+    }
+
+    @Test @MainActor
+    func exactTooAggressiveAndTooEasyPair_alwaysEscalatesToThree() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
+
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooEasy, confidence: 0.85, reason: "[Rules] simulated overshoot")
+
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 102.5, actualReps: 4)
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
+
+        #expect(event.outcome == .pending)
+        #expect(event.evaluatedAt == nil)
+        #expect(event.requiredEvaluationCount == 3)
+    }
+
+    @Test @MainActor
+    func threeSessions_withMixedLowNetScore_finalizesIgnored() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 3, lowerRange: 6, upperRange: 10)
+
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .good, confidence: 0.9, reason: "[Rules] simulated strong positive session")
+        injectPriorEvaluation(context: context, event: event, partialOutcome: .tooAggressive, confidence: 0.7, reason: "[Rules] simulated hard miss")
+
+        let session = makeCompletedSession(context: context, plan: plan, prescription: prescription,
+            actualWeight: 97.5, actualReps: 8)
+        await OutcomeResolver.resolveOutcomes(for: session, context: context)
+
+        #expect(event.outcome == .ignored)
+        #expect(event.evaluatedAt != nil)
+        #expect((event.evaluations ?? []).count == 3)
     }
 
     // MARK: - Cross-invocation deduplication (same session called twice)
@@ -814,6 +860,62 @@ struct MultiSessionEvaluationTests {
         #expect(resolved.outcome == .tooEasy)
         #expect(resolved.confidence == 0.92)
         #expect(resolved.reason.hasPrefix("[AI override]"))
+    }
+
+    @Test @MainActor
+    func adjustedConfidence_highPostEffortBoostsNegativeOutcomes() {
+        let workout = WorkoutSession()
+        workout.postEffort = 9
+
+        let adjusted = OutcomeResolver.adjustedConfidence(0.85, for: .tooAggressive, workout: workout)
+        #expect(abs(adjusted - 1.0) < 0.0001)
+    }
+
+    @Test @MainActor
+    func adjustedConfidence_sickOrTiredWeakensNegativeOutcomes() {
+        let workout = WorkoutSession()
+        workout.preWorkoutContext?.feeling = .tired
+
+        let adjusted = OutcomeResolver.adjustedConfidence(0.85, for: .tooAggressive, workout: workout)
+        #expect(abs(adjusted - 0.7225) < 0.0001)
+    }
+
+    @Test @MainActor
+    func adjustedConfidence_preWorkoutSlightlyBoostsNegativeAndDampensPositive() {
+        let workout = WorkoutSession()
+        workout.preWorkoutContext?.tookPreWorkout = true
+
+        let negativeAdjusted = OutcomeResolver.adjustedConfidence(0.8, for: .tooAggressive, workout: workout)
+        let positiveAdjusted = OutcomeResolver.adjustedConfidence(0.8, for: .good, workout: workout)
+
+        #expect(abs(negativeAdjusted - 0.84) < 0.0001)
+        #expect(abs(positiveAdjusted - 0.76) < 0.0001)
+    }
+
+    @Test @MainActor
+    func aiContextFields_includeOnlyMeaningfulValues() {
+        let workout = WorkoutSession()
+        workout.postEffort = 8
+        workout.preWorkoutContext?.feeling = .good
+        workout.preWorkoutContext?.tookPreWorkout = true
+
+        let fields = OutcomeResolver.aiContextFields(for: workout)
+        #expect(fields.postWorkoutEffort == 8)
+        #expect(fields.preWorkoutFeeling == .good)
+        #expect(fields.tookPreWorkout == true)
+    }
+
+    @Test @MainActor
+    func aiContextFields_omitUnsetValues() {
+        let workout = WorkoutSession()
+        workout.postEffort = 0
+        workout.preWorkoutContext?.feeling = .notSet
+        workout.preWorkoutContext?.tookPreWorkout = false
+
+        let fields = OutcomeResolver.aiContextFields(for: workout)
+        #expect(fields.postWorkoutEffort == nil)
+        #expect(fields.preWorkoutFeeling == nil)
+        #expect(fields.tookPreWorkout == nil)
     }
 
     // MARK: - RequiredEvaluationCount = 1 finalizes after single session

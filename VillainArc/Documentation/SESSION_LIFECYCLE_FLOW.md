@@ -137,7 +137,7 @@ The main runtime collaborators are:
 Important runtime behavior:
 - `activeExercise` tracks which exercise is in focus
 - set completion updates `complete` and `completedAt`
-- `WorkoutView` opens pre-workout context automatically if `feeling == .notSet`
+- `WorkoutView` only auto-presents pre-workout context when the workout setting for that prompt is enabled
 - rest timer state is shared and persisted through `RestTimerState`
 - live activity state mirrors the active incomplete session
 
