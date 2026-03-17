@@ -5,15 +5,14 @@ struct RestTimerView: View {
     @Environment(\.dismiss) private var dismiss
     private let restTimer = RestTimerState.shared
     @Environment(\.modelContext) private var context
-    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
     @State private var selectedSeconds = RestTimeDefaults.restSeconds
     @Bindable var workout: WorkoutSession
+    let appSettingsSnapshot: AppSettingsSnapshot
     @ScaledMetric(relativeTo: .largeTitle) private var timerFontSize: CGFloat = 80
 
-    private var autoStartRestTimerEnabled: Bool {
-        appSettings.first?.autoStartRestTimer ?? true
-    }
+    private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
+    private var autoStartRestTimerEnabled: Bool { appSettingsSnapshot.autoStartRestTimer }
     
     var body: some View {
         NavigationStack {
@@ -285,8 +284,6 @@ struct RestTimerView: View {
         }
     }
 
-    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
-
     private func formattedWeight(_ weight: Double) -> String {
         weight.formatted(.number.precision(.fractionLength(0...2)))
     }
@@ -325,6 +322,9 @@ struct RestTimerView: View {
 }
 
 #Preview {
-    RestTimerView(workout: sampleIncompleteSession())
+    RestTimerView(
+        workout: sampleIncompleteSession(),
+        appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
+    )
         .sampleDataContainer()
 }

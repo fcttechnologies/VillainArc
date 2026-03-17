@@ -3,8 +3,8 @@ import SwiftData
 
 struct ExerciseView: View {
     @Environment(\.modelContext) private var context
-    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var exercise: ExercisePerformance
+    let appSettingsSnapshot: AppSettingsSnapshot
     let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
 
@@ -17,14 +17,15 @@ struct ExerciseView: View {
     @State private var restTimeUpdateSeconds = 0
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
 
-    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
 
     private var autoStartRestTimerEnabled: Bool {
-        appSettings.first?.autoStartRestTimer ?? true
+        appSettingsSnapshot.autoStartRestTimer
     }
 
-    init(exercise: ExercisePerformance, onDeleteExercise: (() -> Void)? = nil) {
+    init(exercise: ExercisePerformance, appSettingsSnapshot: AppSettingsSnapshot, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
+        self.appSettingsSnapshot = appSettingsSnapshot
         self.onDeleteExercise = onDeleteExercise
     }
 
@@ -141,7 +142,7 @@ struct ExerciseView: View {
 
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
+                            ExerciseSetRowView(set: set, exercise: exercise, appSettingsSnapshot: appSettingsSnapshot, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
@@ -250,6 +251,9 @@ struct ExerciseView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!)
+    ExerciseView(
+        exercise: sampleIncompleteSession().sortedExercises.first!,
+        appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
+    )
         .sampleDataContainerIncomplete()
 }

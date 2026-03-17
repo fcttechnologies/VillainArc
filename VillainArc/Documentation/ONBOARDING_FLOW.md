@@ -94,14 +94,14 @@ It simply skips the CloudKit wait.
 Once the bootstrap marker exists, onboarding uses `handleReturningLaunch()`.
 
 That path:
-- optionally starts a background catalog sync if the bundled catalog version changed
 - immediately ensures `AppSettings`
 - immediately ensures `UserProfile`
-- routes into missing profile setup steps or `.ready`
+- routes into missing profile setup steps
+- if the profile is already complete, runs any needed catalog sync on the main actor before transitioning to `.ready`
 
-If the background catalog sync changes anything, Spotlight is reindexed after the sync completes.
+If the returning-launch catalog sync changes anything, Spotlight is reindexed after the sync completes.
 
-This keeps returning launches fast while still allowing bundled exercise metadata to evolve.
+This keeps the returning-launch path on the main actor and guarantees the bundled exercise metadata is reconciled before the app becomes ready.
 
 ## What Catalog Sync Actually Does
 

@@ -3,48 +3,24 @@ import SwiftData
 import UserNotifications
 
 enum RestTimerNotifications {
-    private static let notificationID = "restTimerComplete"
+    @MainActor
+    private static let coordinator = RestTimerNotificationCoordinator()
+    fileprivate static let notificationID = "restTimerComplete"
 
     static func schedule(endDate: Date, durationSeconds: Int) async {
-        let context = ModelContext(SharedModelContainer.container)
-        let notificationsEnabled = (try? context.fetch(AppSettings.single).first)?.restTimerNotificationsEnabled ?? true
-        guard notificationsEnabled else {
-            await cancel()
-            return
-        }
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        let isAuthorized = await requestAuthorizationIfNeeded(center: center, settings: settings)
-        guard isAuthorized else { return }
-
-        cancel(center: center)
-
-        let content = UNMutableNotificationContent()
-        content.title = "Rest complete"
-        content.body = "Time to lift again."
-        content.sound = .default
-
-        let interval = max(1, endDate.timeIntervalSinceNow)
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        let request = UNNotificationRequest(identifier: notificationID, content: content, trigger: trigger)
-
-        do {
-            try await center.add(request)
-        } catch {
-            return
-        }
+        await coordinator.schedule(endDate: endDate, durationSeconds: durationSeconds)
     }
 
     static func cancel() async {
-        cancel(center: UNUserNotificationCenter.current())
+        await coordinator.cancel()
     }
 
-    private static func cancel(center: UNUserNotificationCenter) {
+    fileprivate static func cancel(center: UNUserNotificationCenter) {
         center.removePendingNotificationRequests(withIdentifiers: [notificationID])
         center.removeDeliveredNotifications(withIdentifiers: [notificationID])
     }
 
-    private static func requestAuthorizationIfNeeded(
+    fileprivate static func requestAuthorizationIfNeeded(
         center: UNUserNotificationCenter,
         settings: UNNotificationSettings
     ) async -> Bool {
@@ -62,5 +38,61 @@ enum RestTimerNotifications {
         @unknown default:
             return false
         }
+    }
+}
+
+@MainActor
+private final class RestTimerNotificationCoordinator {
+    private var generation = 0
+
+    func schedule(endDate: Date, durationSeconds: Int) async {
+        generation += 1
+        let currentGeneration = generation
+
+        let context = ModelContext(SharedModelContainer.container)
+        let notificationsEnabled = (try? context.fetch(AppSettings.single).first)?.restTimerNotificationsEnabled ?? true
+        let center = UNUserNotificationCenter.current()
+
+        guard notificationsEnabled else {
+            RestTimerNotifications.cancel(center: center)
+            return
+        }
+
+        let settings = await center.notificationSettings()
+        guard currentGeneration == generation else { return }
+
+        let isAuthorized = await RestTimerNotifications.requestAuthorizationIfNeeded(center: center, settings: settings)
+        guard currentGeneration == generation, isAuthorized else { return }
+
+        RestTimerNotifications.cancel(center: center)
+        guard currentGeneration == generation else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Rest complete"
+        content.body = "Time to lift again."
+        content.sound = .default
+
+        let interval = max(1, endDate.timeIntervalSinceNow)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: RestTimerNotifications.notificationID,
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await center.add(request)
+            guard currentGeneration == generation else {
+                RestTimerNotifications.cancel(center: center)
+                return
+            }
+        } catch {
+            return
+        }
+    }
+
+    func cancel() async {
+        generation += 1
+        RestTimerNotifications.cancel(center: UNUserNotificationCenter.current())
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-@MainActor class DataManager {
+final class DataManager {
     static let exerciseCatalogVersionKey = "exerciseCatalogVersion"
 
     // MARK: - Onboarding Methods (First Launch)
@@ -96,7 +96,6 @@ import SwiftData
 
         return didChange
     }
-
 }
 
 @MainActor

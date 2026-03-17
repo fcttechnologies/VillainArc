@@ -49,11 +49,10 @@ The wait-before-seed rule prevents duplicate catalog exercises when existing dat
 ### Returning Launch
 
 Once the app has already completed at least one catalog sync, onboarding takes the fast path:
-- optionally start a background catalog sync if the bundled catalog version changed
 - immediately ensure `AppSettings` and `UserProfile` exist
-- route into missing profile steps or ready
+- route into missing profile steps, or if the profile is already complete run any needed catalog sync and then mark the app ready
 
-Returning launches prioritize getting the user back into the app quickly. Catalog updates can finish in the background.
+Returning launches still prioritize getting the user back into the app quickly, but they now keep the catalog sync on the main actor and finish it before the app transitions to `.ready`.
 
 ### SetupGuard
 

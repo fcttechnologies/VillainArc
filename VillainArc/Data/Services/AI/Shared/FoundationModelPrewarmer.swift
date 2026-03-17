@@ -2,9 +2,7 @@ import FoundationModels
 
 enum FoundationModelPrewarmer {
     static func warmup() {
-        Task(priority: .utility) {
-            prewarm()
-        }
+        prewarm()
     }
 
     private static func prewarm() {

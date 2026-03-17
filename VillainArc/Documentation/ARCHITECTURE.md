@@ -47,7 +47,7 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 ### `Data/Services/OnboardingManager.swift`
 - First-run and returning-launch state machine.
 - First bootstrap path: connectivity -> iCloud status -> CloudKit availability -> wait for import -> seed catalog -> reindex Spotlight -> ensure singleton records -> route into profile onboarding or ready.
-- Returning-launch path: optionally kick off background catalog sync, then immediately ensure singleton records and route into profile onboarding or ready.
+- Returning-launch path: immediately ensure singleton records, and if the profile is already complete run any needed catalog sync before transitioning to `.ready`.
 - Read with: `Views/Onboarding/OnboardingView.swift`, `Data/Services/CloudKitImportMonitor.swift`, `Data/Services/DataManager.swift`.
 
 ### `Views/Onboarding/OnboardingView.swift`

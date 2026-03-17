@@ -25,10 +25,10 @@ struct WorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
-    private var settings: AppSettings? { appSettings.first }
-    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
-    private var shouldPromptForPreWorkoutContext: Bool { settings?.promptForPreWorkoutContext ?? true }
-    private var shouldPromptForPostWorkoutEffort: Bool { settings?.promptForPostWorkoutEffort ?? true }
+    private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
+    private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
+    private var shouldPromptForPreWorkoutContext: Bool { appSettingsSnapshot.promptForPreWorkoutContext }
+    private var shouldPromptForPostWorkoutEffort: Bool { appSettingsSnapshot.promptForPostWorkoutEffort }
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
@@ -99,7 +99,7 @@ struct WorkoutView: View {
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showRestTimerSheet) {
-                RestTimerView(workout: workout)
+                RestTimerView(workout: workout, appSettingsSnapshot: appSettingsSnapshot)
                     .presentationDetents([.medium, .large])
                     .presentationBackground(Color(.systemBackground))
             }
@@ -205,7 +205,7 @@ struct WorkoutView: View {
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisesEmptyState)
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise) {
+                            ExerciseView(exercise: exercise, appSettingsSnapshot: appSettingsSnapshot) {
                                 deleteExercise(exercise)
                             }
                             .containerRelativeFrame(.horizontal)

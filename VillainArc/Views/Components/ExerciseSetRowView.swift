@@ -29,7 +29,7 @@ struct ExerciseSetRowView: View {
     @Bindable var set: SetPerformance
     @Bindable var exercise: ExercisePerformance
     @Environment(\.modelContext) private var context
-    @Query(AppSettings.single) private var appSettings: [AppSettings]
+    let appSettingsSnapshot: AppSettingsSnapshot
     private let restTimer = RestTimerState.shared
     @State private var showOverrideTimerAlert = false
     @FocusState private var focusedField: Field?
@@ -38,14 +38,14 @@ struct ExerciseSetRowView: View {
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
 
-    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
 
     private var autoStartRestTimerEnabled: Bool {
-        appSettings.first?.autoStartRestTimer ?? true
+        appSettingsSnapshot.autoStartRestTimer
     }
 
     private var autoCompleteSetAfterRPEEnabled: Bool {
-        appSettings.first?.autoCompleteSetAfterRPE ?? false
+        appSettingsSnapshot.autoCompleteSetAfterRPE
     }
 
     var body: some View {
@@ -299,6 +299,9 @@ struct ExerciseSetRowView: View {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!)
+    ExerciseView(
+        exercise: sampleIncompleteSession().sortedExercises.first!,
+        appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
+    )
         .sampleDataContainerIncomplete()
 }

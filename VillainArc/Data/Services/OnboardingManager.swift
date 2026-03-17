@@ -27,8 +27,9 @@ enum OnboardingState: Equatable {
 }
 
 @Observable
-@MainActor
 class OnboardingManager {
+    private static let networkRetryPollInterval: Duration = .milliseconds(500)
+
     var state: OnboardingState = .launching
     var profile: UserProfile?
     private var context: ModelContext { SharedModelContainer.container.mainContext }
@@ -190,11 +191,7 @@ class OnboardingManager {
         }
 
         state = .finishing
-        do {
-            try await Task.sleep(for: .seconds(1.5))
-        } catch {
-            // Cancelled — proceed immediately
-        }
+        await syncCatalogIfNeededBeforeReady()
         transitionToReady()
     }
 
@@ -206,23 +203,18 @@ class OnboardingManager {
     }
 
     private func handleReturningLaunch() async {
-        if DataManager.catalogNeedsSync() {
-            Task { @MainActor in
-                do {
-                    let didChange = try await DataManager.seedExercisesIfNeeded()
-                    if didChange {
-                        SpotlightIndexer.reindexAll(context: context)
-                    }
-                } catch {
-                    print("Background exercise sync failed: \(error)")
-                }
-            }
-        }
-
         do {
             _ = try SystemState.ensureAppSettings(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
-            routeFromProfile(profile)
+            if let missingStep = profile.firstMissingStep {
+                self.profile = profile
+                state = .profile(missingStep)
+                return
+            }
+
+            self.profile = profile
+            await syncCatalogIfNeededBeforeReady()
+            transitionToReady()
         } catch {
             state = .error("Failed to load your profile: \(error.localizedDescription)")
         }
@@ -233,6 +225,19 @@ class OnboardingManager {
         networkRetryTask = nil
         networkMonitor.stop()
         state = .ready
+    }
+
+    private func syncCatalogIfNeededBeforeReady() async {
+        guard DataManager.catalogNeedsSync() else { return }
+
+        do {
+            let didChange = try await DataManager.seedExercisesIfNeeded()
+            if didChange {
+                SpotlightIndexer.reindexAll(context: context)
+            }
+        } catch {
+            print("Returning-launch exercise sync failed: \(error)")
+        }
     }
 
     private func routeFromProfile(_ profile: UserProfile) {
@@ -261,18 +266,20 @@ class OnboardingManager {
         networkRetryTask?.cancel()
         networkRetryTask = Task { [weak self] in
             guard let self else { return }
-            while case .noWiFi = self.state, !Task.isCancelled {
-                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    withObservationTracking {
-                        _ = self.networkMonitor.isConnected
-                    } onChange: {
-                        continuation.resume()
-                    }
+            while case .noWiFi = self.state {
+                if Task.isCancelled {
+                    return
                 }
-                guard !Task.isCancelled, case .noWiFi = self.state else { break }
+
                 if self.networkMonitor.isConnected {
                     await self.startOnboarding()
-                    break
+                    return
+                }
+
+                do {
+                    try await Task.sleep(for: Self.networkRetryPollInterval)
+                } catch {
+                    return
                 }
             }
         }

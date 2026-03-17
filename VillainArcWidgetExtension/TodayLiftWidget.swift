@@ -110,20 +110,17 @@ struct TodayLiftProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TodayLiftEntry) -> Void) {
-        Task { @MainActor in completion(loadEntry()) }
+        completion(loadEntry())
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayLiftEntry>) -> Void) {
-        Task { @MainActor in
-            let entry = loadEntry()
-            let refreshDate = Calendar.current.date(byAdding: .minute, value: 15, to: .now) ?? .now.addingTimeInterval(900)
-            completion(Timeline(entries: [entry], policy: .after(refreshDate)))
-        }
+        let entry = loadEntry()
+        let refreshDate = Calendar.current.date(byAdding: .minute, value: 15, to: .now) ?? .now.addingTimeInterval(900)
+        completion(Timeline(entries: [entry], policy: .after(refreshDate)))
     }
 
-    @MainActor
     private func loadEntry() -> TodayLiftEntry {
-        let context = SharedModelContainer.container.mainContext
+        let context = ModelContext(SharedModelContainer.container)
 
         if let workout = try? context.fetch(WorkoutSession.incomplete).first, workout.statusValue == .active {
             return TodayLiftEntry(date: .now, state: .activeWorkout, planTitle: workout.title.isEmpty ? nil : workout.title, dayTitle: nil, splitTitle: nil, exerciseCount: workout.sortedExercises.count, setCount: workout.sortedExercises.reduce(into: 0) { $0 += $1.sortedSets.count }, exercisePreview: workout.sortedExercises.prefix(3).map(\.name))
@@ -134,7 +131,6 @@ struct TodayLiftProvider: TimelineProvider {
             return TodayLiftEntry(date: .now, state: anySplit ? .noActiveSplit : .noSplits, planTitle: nil, dayTitle: nil, splitTitle: nil, exerciseCount: 0, setCount: 0, exercisePreview: [])
         }
 
-        split.refreshRotationIfNeeded(context: context)
         let todaysDay = split.todaysSplitDay
         let dayTitle = todaysDay?.name.nilIfEmpty
         let splitTitle = split.title.nilIfEmpty

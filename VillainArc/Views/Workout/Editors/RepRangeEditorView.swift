@@ -279,6 +279,9 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
 }
 
 #Preview {
-    ExerciseView(exercise: sampleIncompleteSession().sortedExercises.first!)
+    ExerciseView(
+        exercise: sampleIncompleteSession().sortedExercises.first!,
+        appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
+    )
         .sampleDataContainerIncomplete()
 }

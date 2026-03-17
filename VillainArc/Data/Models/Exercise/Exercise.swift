@@ -137,13 +137,6 @@ extension Exercise {
         FetchDescriptor(sortBy: Exercise.recentsSort)
     }
 
-    static var recentlyAdded: FetchDescriptor<Exercise> {
-        let predicate = #Predicate<Exercise> { $0.lastAddedAt != nil }
-        var descriptor = FetchDescriptor(predicate: predicate, sortBy: Exercise.recentsSort)
-        descriptor.fetchLimit = 1
-        return descriptor
-    }
-
     static func withCatalogID(_ catalogID: String) -> FetchDescriptor<Exercise> {
         let predicate = #Predicate<Exercise> { $0.catalogID == catalogID }
         var descriptor = FetchDescriptor(predicate: predicate)

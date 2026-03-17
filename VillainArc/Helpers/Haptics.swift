@@ -35,6 +35,7 @@ enum Haptics {
     }
 }
 
+@MainActor
 private final class ImpactGeneratorCache {
     private var generators: [Int: UIImpactFeedbackGenerator] = [:]
     

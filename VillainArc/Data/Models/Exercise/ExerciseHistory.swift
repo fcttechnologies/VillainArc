@@ -103,7 +103,7 @@ final class ExerciseHistory {
         bestWeight = 0
         bestVolume = 0
         bestReps = 0
-        progressionPoints?.removeAll()
+        deleteProgressionPoints()
     }
     
     private func calculatePRs(from sessions: [ExerciseHistorySessionSummary]) {
@@ -138,13 +138,21 @@ final class ExerciseHistory {
     }
     
     private func storeProgressionData(from sessions: [ExerciseHistorySessionSummary]) {
-        // Clear existing progression points
-        progressionPoints?.removeAll()
+        // Remove old rows from the store, then clear the in-memory relationship.
+        deleteProgressionPoints()
 
         for session in sessions {
             let point = ProgressionPoint(date: session.date, weight: session.bestWeight ?? 0, totalReps: session.totalCompletedReps, volume: session.totalVolume, estimated1RM: session.bestEstimated1RM ?? 0)
             progressionPoints?.append(point)
         }
+    }
+
+    private func deleteProgressionPoints() {
+        guard let progressionPoints else { return }
+        for point in progressionPoints {
+            modelContext?.delete(point)
+        }
+        self.progressionPoints?.removeAll()
     }
 
     @MainActor
