@@ -21,6 +21,7 @@ final class AppRouter {
     var showWorkoutSettingsFromIntent = false
     var showRestTimerFromIntent = false
     var showPreWorkoutContextFromIntent = false
+    var showFinishWorkoutFromIntent = false
     
     enum Destination: Hashable {
         case workoutSessionsList

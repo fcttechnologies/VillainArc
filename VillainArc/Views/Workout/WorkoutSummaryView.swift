@@ -30,7 +30,6 @@ struct WorkoutSummaryView: View {
     @Environment(\.modelContext) private var context
     @Query private var sessionSuggestionEvents: [SuggestionEvent]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
@@ -161,7 +160,9 @@ struct WorkoutSummaryView: View {
                     .accessibilityValue(AccessibilityText.workoutSummaryNotesValue(hasNotes: !workout.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, notes: workout.notes))
                     .accessibilityHint(AccessibilityText.workoutSummaryNotesHint)
 
-                    effortSection
+                    if (1...10).contains(workout.postEffort) {
+                        effortSection
+                    }
 
                     planSaveSection
 
@@ -250,14 +251,18 @@ struct WorkoutSummaryView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Effort")
                 .font(.headline)
-            Text(workoutEffortDescription(workout.postEffort))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fontWeight(.semibold)
-            HStack(spacing: 8) {
-                ForEach(1...10, id: \.self) { value in
-                    effortCard(for: value)
-                }
+            HStack(spacing: 12) {
+                Text("\(workout.postEffort)/10")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .glassEffect(.regular, in: Capsule())
+
+                Text(workoutEffortDescription(workout.postEffort))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fontWeight(.semibold)
             }
         }
     }
@@ -322,29 +327,6 @@ struct WorkoutSummaryView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPRSection)
         .accessibilityLabel(AccessibilityText.workoutSummaryPRSectionLabel)
         .accessibilityValue(AccessibilityText.workoutSummaryPRSectionValue(count: prCount))
-    }
-
-    private func effortCard(for value: Int) -> some View {
-        let isSelected = workout.postEffort == value
-
-        return Button {
-            Haptics.selection()
-            workout.postEffort = value
-            saveContext(context: context)
-        } label: {
-            Text("\(value)")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 10))
-                .opacity(isSelected ? 1.0 : 0.6)
-                .scaleEffect(isSelected ? 1.15 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .animation(reduceMotion ? .none : .bouncy, value: isSelected)
-        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryEffortCard(value))
-        .accessibilityLabel(AccessibilityText.workoutSummaryEffortLabel(value: value))
-        .accessibilityValue(AccessibilityText.workoutSummaryEffortValue(value: value, isSelected: isSelected))
     }
 
     private func prRow(_ entry: PRItem) -> some View {

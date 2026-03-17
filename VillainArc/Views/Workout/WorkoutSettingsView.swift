@@ -43,6 +43,19 @@ struct WorkoutSettingsView: View {
             }
 
             Section {
+                Toggle("Prompt For Pre Workout Context", isOn: $settings.promptForPreWorkoutContext)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPreWorkoutPromptToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsPreWorkoutPromptHint)
+                Toggle("Prompt For Post Workout Effort", isOn: $settings.promptForPostWorkoutEffort)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPostWorkoutEffortToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsPostWorkoutEffortHint)
+            } header: {
+                Text("Workout Context")
+            } footer: {
+                Text("When turned off, those prompts stay manual. You can still open pre workout context from the workout title menu.")
+            }
+
+            Section {
                 Toggle("Send Notifications", isOn: $settings.restTimerNotificationsEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsNotificationsToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsNotificationsHint)
@@ -73,6 +86,12 @@ struct WorkoutSettingsView: View {
             saveContext(context: context)
         }
         .onChange(of: settings.autoCompleteSetAfterRPE) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.promptForPreWorkoutContext) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.promptForPostWorkoutEffort) {
             saveContext(context: context)
         }
         .onChange(of: settings.liveActivitiesEnabled) {

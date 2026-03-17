@@ -88,7 +88,7 @@ struct WorkoutFinishTests {
     }
     
     @Test @MainActor
-    func finish_defaultsPreWorkoutFeelingToOkayWhenNotSet() throws {
+    func finish_keepsPreWorkoutFeelingUnsetWhenNotProvided() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         
@@ -98,9 +98,9 @@ struct WorkoutFinishTests {
         session.preWorkoutContext?.feeling = .notSet
         
         let result = session.finish(action: .finish, context: context)
-        
+
         #expect(result == .finished)
-        #expect(session.preWorkoutContext?.feeling == .okay)
+        #expect(session.preWorkoutContext?.feeling == .notSet)
     }
     
     // MARK: - .markLoggedComplete action
@@ -267,6 +267,32 @@ struct WorkoutFinishTests {
         let result = session.finish(action: .deleteEmpty, context: context)
         
         #expect(result == .workoutDeleted)
+    }
+
+    @Test @MainActor
+    func predictedFinishResult_forDeleteUnfinished_matchesDeletionCase() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+
+        let session = makeSession(context: context, exerciseConfigs: [
+            (weight: 145, reps: 8, complete: false),
+            (weight: 0, reps: 0, complete: false),
+        ])
+
+        #expect(session.predictedFinishResult(action: .deleteUnfinished) == .workoutDeleted)
+    }
+
+    @Test @MainActor
+    func predictedFinishResult_forFinishWithCompletedSets_staysFinished() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+
+        let session = makeSession(context: context, exerciseConfigs: [
+            (weight: 135, reps: 10, complete: true),
+            (weight: 145, reps: 8, complete: true),
+        ])
+
+        #expect(session.predictedFinishResult(action: .finish) == .finished)
     }
     
     // MARK: - State after finish

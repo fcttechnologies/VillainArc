@@ -161,12 +161,17 @@ Depending on the situation, the user can:
 - delete only empty sets
 - finish directly when nothing is unfinished
 
+If the chosen cleanup path will still leave a real workout to save, `WorkoutView` can ask for post-workout effort before it mutates the session into summary. That prompt is controlled by `AppSettings.promptForPostWorkoutEffort`. When it is off, the workout finishes without capturing effort first. The all-complete path then keeps the regular finish confirmation instead of replacing it with the effort sheet.
+
+Pre-workout context prompting is also settings-controlled through `AppSettings.promptForPreWorkoutContext`. VillainArc no longer forces the sheet open for every workout, and a missing feeling stays `.notSet` rather than being rewritten to `.okay`.
+
+The same ownership rule now applies to `FinishWorkoutIntent`. If post-workout effort prompting is enabled, the intent does not finish the workout directly. It reopens the active workout and lets `WorkoutView` run the normal finish flow so the user still sees any unfinished-set cleanup choice and the effort prompt in the same order as the in-app path. The intent only performs direct finish cleanup itself when the effort prompt is turned off.
+
 `WorkoutSession.finish(...)` then:
 - applies the chosen cleanup
 - prunes empty exercises
 - deletes the whole workout if every exercise is pruned
 - syncs exercise dates to the latest completed set where possible
-- defaults pre-workout feeling if it was never set
 - sets `status = .summary`
 - sets `endedAt`
 - clears `activeExercise`
@@ -179,7 +184,8 @@ Summary work is split across two moments.
 
 ### Stage 1: Leaving Active Logging
 
-After `WorkoutSession.finish(...)` succeeds, `WorkoutView.finishWorkout(...)`:
+After the user either confirms or skips the effort prompt, `WorkoutView.finishWorkout(...)`:
+- runs `WorkoutSession.finish(...)`
 - converts active set weights back to canonical kg
 - saves the session
 - queues Spotlight indexing for the workout
@@ -192,7 +198,7 @@ At that point the session is already in `.summary`, but it is not finalized as a
 
 `WorkoutSummaryView` is the final orchestration point. It handles:
 - summary stats and notes
-- post-workout effort
+- read-only display of the already-captured post-workout effort
 - PR detection
 - older suggestion outcome resolution
 - new suggestion generation

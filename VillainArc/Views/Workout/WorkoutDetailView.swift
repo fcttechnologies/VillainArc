@@ -16,11 +16,18 @@ struct WorkoutDetailView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
+    private var hasPreWorkoutFeeling: Bool {
+        guard let feeling = preWorkoutContext?.feeling else { return false }
+        return feeling != .notSet
+    }
+    private var hasPreWorkoutDrink: Bool { preWorkoutContext?.tookPreWorkout == true }
 
     private var preWorkoutNotesText: String? {
         let trimmed = preWorkoutContext?.notes.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    private var hasPreWorkoutNotes: Bool { preWorkoutNotesText != nil }
 
     private var postWorkoutEffortText: String? {
         guard (1...10).contains(workout.postEffort) else { return nil }
@@ -130,7 +137,7 @@ struct WorkoutDetailView: View {
                 }
             }
             ToolbarItemGroup(placement: .bottomBar) {
-                if let preWorkoutContext {
+                if hasPreWorkoutFeeling, let preWorkoutContext {
                     Button {
                         showPreWorkoutContextSheet = true
                     } label: {
@@ -143,7 +150,7 @@ struct WorkoutDetailView: View {
                     .accessibilityValue(preWorkoutAccessibilityValue)
                     .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
                 }
-                if preWorkoutContext?.tookPreWorkout == true {
+                if hasPreWorkoutDrink {
                     Button {
                         showPreWorkoutContextSheet = true
                     } label: {
@@ -152,6 +159,18 @@ struct WorkoutDetailView: View {
                             .accessibilityHidden(true)
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton)
+                    .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
+                    .accessibilityValue(preWorkoutAccessibilityValue)
+                    .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
+                }
+                if hasPreWorkoutNotes {
+                    Button {
+                        showPreWorkoutContextSheet = true
+                    } label: {
+                        Image(systemName: "note.text")
+                            .accessibilityHidden(true)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutNotesButton)
                     .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
                     .accessibilityValue(preWorkoutAccessibilityValue)
                     .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
@@ -171,10 +190,12 @@ struct WorkoutDetailView: View {
         .sheet(isPresented: $showPreWorkoutContextSheet) {
             NavigationStack {
                 List {
-                    if let preWorkoutContext {
+                    if hasPreWorkoutFeeling, let preWorkoutContext {
                         LabeledContent("Felt", value: preWorkoutContext.feeling.displayName)
                     }
-                    LabeledContent("Took pre workout", value: preWorkoutContext?.tookPreWorkout == true ? "Yes" : "No")
+                    if hasPreWorkoutDrink {
+                        LabeledContent("Took pre workout", value: "Yes")
+                    }
                     if let preWorkoutNotesText {
                         Section("Notes") {
                             Text(preWorkoutNotesText)
@@ -267,9 +288,19 @@ struct WorkoutDetailView: View {
     }
 
     private var preWorkoutAccessibilityValue: String {
-        let feeling = preWorkoutContext?.feeling.displayName ?? "Not set"
-        let tookPreWorkout = preWorkoutContext?.tookPreWorkout == true ? "Pre workout taken" : "No pre workout"
-        return "\(feeling). \(tookPreWorkout)."
+        var parts: [String] = []
+
+        if hasPreWorkoutFeeling, let feeling = preWorkoutContext?.feeling.displayName {
+            parts.append(feeling)
+        }
+        if hasPreWorkoutDrink {
+            parts.append("Pre workout taken")
+        }
+        if hasPreWorkoutNotes {
+            parts.append("Notes added")
+        }
+
+        return parts.joined(separator: ". ")
     }
 
     @ViewBuilder

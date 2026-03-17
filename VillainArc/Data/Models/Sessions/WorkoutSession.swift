@@ -123,6 +123,30 @@ struct UnfinishedSetSummary {
 }
 
 extension WorkoutSession {
+    func predictedFinishResult(action: WorkoutFinishAction) -> WorkoutFinishResult {
+        switch action {
+        case .finish, .markLoggedComplete:
+            return predictedResultRemovingSets { set in
+                !set.complete && set.reps == 0 && set.weight == 0
+            }
+        case .deleteUnfinished:
+            return predictedResultRemovingSets { !$0.complete }
+        case .deleteEmpty:
+            return predictedResultRemovingSets { !$0.complete && $0.reps == 0 && $0.weight == 0 }
+        }
+    }
+
+    private func predictedResultRemovingSets(_ shouldRemove: (SetPerformance) -> Bool) -> WorkoutFinishResult {
+        let survivingExerciseCount = sortedExercises.reduce(into: 0) { count, exercise in
+            let remainingSetCount = exercise.sortedSets.filter { !shouldRemove($0) }.count
+            if remainingSetCount > 0 {
+                count += 1
+            }
+        }
+
+        return survivingExerciseCount > 0 ? .finished : .workoutDeleted
+    }
+
     @MainActor
     func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
         guard statusValue == .pending else { return }
@@ -132,12 +156,6 @@ extension WorkoutSession {
         }
 
         performance.applyAcceptedSuggestionEvent(event, weightUnit: weightUnit)
-    }
-
-    func ensurePreWorkoutFeelingDefault() {
-        if preWorkoutContext?.feeling == .notSet {
-            preWorkoutContext?.feeling = .okay
-        }
     }
 
     @MainActor var unfinishedSetSummary: UnfinishedSetSummary {
@@ -289,7 +307,6 @@ extension WorkoutSession {
             exercise.syncDateToLatestCompletedSet(sessionFinishedAt: finishedAt)
         }
 
-        ensurePreWorkoutFeelingDefault()
         status = SessionStatus.summary.rawValue
         endedAt = finishedAt
         activeExercise = nil

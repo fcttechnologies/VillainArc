@@ -13,9 +13,21 @@ struct FinishWorkoutIntent: AppIntent {
         guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else {
             throw FinishWorkoutError.noWorkoutSession
         }
+
+        guard workoutSession.statusValue == .active else {
+            throw FinishWorkoutError.noActiveWorkout
+        }
         
         guard !(workoutSession.exercises?.isEmpty ?? false) else {
             throw FinishWorkoutError.noExercises
+        }
+
+        let shouldPromptForPostWorkoutEffort = (try? context.fetch(AppSettings.single).first)?.promptForPostWorkoutEffort ?? true
+
+        if shouldPromptForPostWorkoutEffort {
+            AppRouter.shared.activeWorkoutSession = workoutSession
+            AppRouter.shared.showFinishWorkoutFromIntent = true
+            return .result(opensIntent: OpenAppIntent())
         }
 
         let summary = workoutSession.unfinishedSetSummary
@@ -114,6 +126,7 @@ private func emptyOnlyDialog(emptyCount: Int) -> LocalizedStringResource {
 enum FinishWorkoutError: Error, CustomLocalizedStringResourceConvertible {
     case noWorkoutSession
     case noExercises
+    case noActiveWorkout
     case workoutDeleted
     case cancelled
 
@@ -121,6 +134,8 @@ enum FinishWorkoutError: Error, CustomLocalizedStringResourceConvertible {
         switch self {
         case .noWorkoutSession:
             return "No workout session found."
+        case .noActiveWorkout:
+            return "No active workout found."
         case .noExercises:
             return "Cannot finish a workout with no exercises."
         case .workoutDeleted:

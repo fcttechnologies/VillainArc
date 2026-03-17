@@ -146,6 +146,7 @@ Finish is a two-stage process.
 
 Stage 1 happens in `WorkoutView`:
 - resolve unfinished sets
+- if `promptForPostWorkoutEffort` is on and the workout will survive, capture post-workout effort before moving on
 - prune empty exercises
 - delete the workout entirely if nothing meaningful remains
 - set the session to `.summary`
@@ -165,6 +166,10 @@ Stage 2 happens in `WorkoutSummaryView`:
 - save and dismiss
 
 The first stage gets the session out of active logging cleanly. The second stage turns it into a stable completed record.
+
+Pre-workout context is now treated as true optional context rather than a required field. If the user never records a feeling, it stays `.notSet`, the detail UI hides the feeling badge, and history/detail surfaces only show explicit pre-workout data that the user actually entered.
+
+`FinishWorkoutIntent` mirrors that ownership boundary. When post-workout effort prompting is enabled, the intent routes back into the active workout UI instead of finishing the session directly. That keeps unfinished-set cleanup choice and effort capture centralized in `WorkoutView` rather than duplicating finish behavior in the intent layer.
 
 ### Save As Workout Plan
 

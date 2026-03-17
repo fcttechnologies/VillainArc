@@ -406,6 +406,15 @@ enum AccessibilityIdentifiers {
     static let workoutFinishDeleteEmptySetsButton = "workoutFinishDeleteEmptySetsButton"
     static let workoutFinishGoBackButton = "workoutFinishGoBackButton"
     static let workoutFinishConfirmButton = "workoutFinishConfirmButton"
+    static let workoutFinishEffortSheet = "workoutFinishEffortSheet"
+    static let workoutFinishEffortSkipButton = "workoutFinishEffortSkipButton"
+    static let workoutFinishEffortConfirmButton = "workoutFinishEffortConfirmButton"
+    static let workoutFinishEffortCloseButton = "workoutFinishEffortCloseButton"
+    static let workoutFinishEffortSelectionSummary = "workoutFinishEffortSelectionSummary"
+
+    static func workoutFinishEffortCard(_ value: Int) -> String {
+        "workoutFinishEffortCard-\(value)"
+    }
 
     // MARK: - WorkoutSummaryView
     static let workoutSummaryTitleButton = "workoutSummaryTitleButton"
@@ -440,6 +449,7 @@ enum AccessibilityIdentifiers {
     static let workoutDetailConfirmDeleteButton = "workoutDetailConfirmDeleteButton"
     static let workoutDetailPreWorkoutContextButton = "workoutDetailPreWorkoutContextButton"
     static let workoutDetailPreWorkoutDrinkButton = "workoutDetailPreWorkoutDrinkButton"
+    static let workoutDetailPreWorkoutNotesButton = "workoutDetailPreWorkoutNotesButton"
     static let workoutDetailEffortDisplay = "workoutDetailEffortDisplay"
     static let muscleFilterAdvancedToggle = "muscleFilterAdvancedToggle"
     static let muscleFilterClearButton = "muscleFilterClearButton"
@@ -480,6 +490,8 @@ enum AccessibilityIdentifiers {
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerToggle = "workoutSettingsAutoStartTimerToggle"
     static let workoutSettingsAutoCompleteAfterRPEToggle = "workoutSettingsAutoCompleteAfterRPEToggle"
+    static let workoutSettingsPreWorkoutPromptToggle = "workoutSettingsPreWorkoutPromptToggle"
+    static let workoutSettingsPostWorkoutEffortToggle = "workoutSettingsPostWorkoutEffortToggle"
     static let workoutSettingsNotificationsToggle = "workoutSettingsNotificationsToggle"
     static let workoutSettingsLiveActivitiesToggle = "workoutSettingsLiveActivitiesToggle"
     static let workoutSettingsRestartLiveActivityButton = "workoutSettingsRestartLiveActivityButton"
@@ -805,6 +817,10 @@ enum AccessibilityText {
     static let workoutFinishHint = localized("Finishes and saves the workout.")
     static let workoutDeleteHint = localized("Deletes this workout.")
     static let workoutExerciseListRowHint = localized("Shows the exercise in the workout.")
+    static let workoutFinishEffortSkipHint = localized("Skips recording effort and continues to summary.")
+    static let workoutFinishEffortConfirmHint = localized("Saves the selected effort and continues to summary.")
+    static let workoutFinishEffortCloseHint = localized("Closes the effort prompt and returns to the workout.")
+    static let workoutFinishEffortCardHint = localized("Selects this workout effort score.")
 
     // MARK: - WorkoutSummaryView
     static let workoutSummaryTitleHint = localized("Edits the workout title.")
@@ -934,6 +950,8 @@ enum AccessibilityText {
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerHint = localized("Automatically starts rest timer when a set is marked complete.")
     static let workoutSettingsAutoCompleteAfterRPEHint = localized("Automatically marks a set complete after selecting an RPE rating.")
+    static let workoutSettingsPreWorkoutPromptHint = localized("Prompts for pre workout context when you open a new workout.")
+    static let workoutSettingsPostWorkoutEffortHint = localized("Prompts for post workout effort before summary when the workout is being saved.")
     static let workoutSettingsNotificationsHint = localized("Sends a local notification when rest timer finishes.")
     static let workoutSettingsLiveActivitiesHint = localized("Shows a live activity on the Lock Screen during your workout.")
     static let workoutSettingsRestartLiveActivityHint = localized("Restarts the workout live activity if you dismissed it.")

@@ -5,6 +5,8 @@ import SwiftData
 final class AppSettings {
     var autoStartRestTimer: Bool = true
     var autoCompleteSetAfterRPE: Bool = false
+    var promptForPreWorkoutContext: Bool = true
+    var promptForPostWorkoutEffort: Bool = true
     var liveActivitiesEnabled: Bool = true
     var restTimerNotificationsEnabled: Bool = true
     var weightUnit: WeightUnit = WeightUnit.systemDefault

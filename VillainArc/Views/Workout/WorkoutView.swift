@@ -16,13 +16,19 @@ struct WorkoutView: View {
     @State private var showWorkoutSettingsSheet = false
     @State private var showDeleteConfirmation = false
     @State private var showSaveConfirmation = false
+    @State private var showEffortPrompt = false
+    @State private var pendingFinishAction: WorkoutFinishAction?
+    @State private var pendingEffortSelection = 0
     @State private var autoAdvanceTargetIndex: Int?
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
+    private var settings: AppSettings? { appSettings.first }
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var shouldPromptForPreWorkoutContext: Bool { settings?.promptForPreWorkoutContext ?? true }
+    private var shouldPromptForPostWorkoutEffort: Bool { settings?.promptForPostWorkoutEffort ?? true }
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
@@ -111,7 +117,6 @@ struct WorkoutView: View {
                 PreWorkoutContextView(preWorkoutContext: workout.preWorkoutContext ?? PreWorkoutContext())
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
-                        workout.ensurePreWorkoutFeelingDefault()
                         saveContext(context: context)
                     }
             }
@@ -132,6 +137,23 @@ struct WorkoutView: View {
             .sheet(isPresented: $showWorkoutSettingsSheet) {
                 WorkoutSettingsView(workout: workout)
             }
+            .sheet(isPresented: $showEffortPrompt) {
+                WorkoutEffortPromptView(
+                    selectedEffort: $pendingEffortSelection,
+                    onClose: {
+                        showEffortPrompt = false
+                        pendingFinishAction = nil
+                        pendingEffortSelection = 0
+                    },
+                    onSkip: {
+                        commitEffortAndFinish(nil)
+                    },
+                    onConfirm: {
+                        commitEffortAndFinish(pendingEffortSelection)
+                    }
+                )
+                .interactiveDismissDisabled()
+            }
             .onChange(of: workout.activeExercise?.id) {
                 scheduleSave(context: context)
             }
@@ -151,6 +173,9 @@ struct WorkoutView: View {
             .onChange(of: router.showWorkoutSettingsFromIntent) { _, _ in
                 presentIntentDrivenSheetsIfNeeded()
             }
+            .onChange(of: router.showFinishWorkoutFromIntent) { _, _ in
+                presentIntentDrivenSheetsIfNeeded()
+            }
             .userActivity("com.villainarc.workoutSession.active", element: workout) { session, activity in
                 activity.title = session.title
                 activity.isEligibleForSearch = false
@@ -159,7 +184,7 @@ struct WorkoutView: View {
                 activity.appEntityIdentifier = .init(for: entity)
             }
             .task {
-                if workout.preWorkoutContext?.feeling == .notSet {
+                if shouldPromptForPreWorkoutContext, workout.preWorkoutContext?.feeling == .notSet {
                     showPreWorkoutSheet = true
                 }
             }
@@ -299,8 +324,8 @@ struct WorkoutView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutEditExercisesButton)
                     .accessibilityHint(AccessibilityText.workoutEditExercisesHint)
-                    Button("Finish Workout", systemImage: "checkmark", role: .confirm) {
-                        showSaveConfirmation = true
+                    Button("Finish Workout", systemImage: "checkmark") {
+                        handleFinishTapped()
                     }
                     .tint(.green)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishButton)
@@ -331,32 +356,32 @@ struct WorkoutView: View {
             switch summary.caseType {
             case .emptyAndLogged:
                 Button("Mark logged sets as complete") {
-                    finishWorkout(action: .markLoggedComplete)
+                    queueBeginFinishFlow(action: .markLoggedComplete)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishMarkSetsCompleteButton)
                 Button("Delete all unfinished sets", role: .destructive) {
-                    finishWorkout(action: .deleteUnfinished)
+                    queueBeginFinishFlow(action: .deleteUnfinished)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteIncompleteSetsButton)
             case .loggedOnly:
                 Button("Mark as complete") {
-                    finishWorkout(action: .markLoggedComplete)
+                    queueBeginFinishFlow(action: .markLoggedComplete)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishMarkSetsCompleteButton)
                 Button("Delete these sets", role: .destructive) {
-                    finishWorkout(action: .deleteUnfinished)
+                    queueBeginFinishFlow(action: .deleteUnfinished)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteIncompleteSetsButton)
             case .emptyOnly:
                 Button("Delete empty sets", role: .destructive) {
-                    finishWorkout(action: .deleteEmpty)
+                    queueBeginFinishFlow(action: .deleteEmpty)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteEmptySetsButton)
                 Button("Go back", role: .cancel) {}
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishGoBackButton)
             case .none:
-                Button("Finish", role: .confirm) {
-                    finishWorkout(action: .finish)
+                Button("Finish") {
+                    queueBeginFinishFlow(action: .finish)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishConfirmButton)
             }
@@ -375,6 +400,45 @@ struct WorkoutView: View {
         }
     }
     
+    private func queueBeginFinishFlow(action: WorkoutFinishAction) {
+        showSaveConfirmation = false
+        beginFinishFlow(action: action)
+    }
+
+    private func handleFinishTapped() {
+        if unfinishedSetSummary.caseType == .none, shouldPromptForPostWorkoutEffort {
+            beginFinishFlow(action: .finish)
+        } else {
+            showSaveConfirmation = true
+        }
+    }
+
+    private func beginFinishFlow(action: WorkoutFinishAction) {
+        if workout.predictedFinishResult(action: action) == .workoutDeleted {
+            finishWorkout(action: action)
+            return
+        }
+
+        if !shouldPromptForPostWorkoutEffort {
+            finishWorkout(action: action)
+            return
+        }
+
+        pendingFinishAction = action
+        pendingEffortSelection = 0
+        showEffortPrompt = true
+    }
+
+    private func commitEffortAndFinish(_ effort: Int?) {
+        guard let action = pendingFinishAction else { return }
+
+        workout.postEffort = effort ?? 0
+        pendingFinishAction = nil
+        showEffortPrompt = false
+        pendingEffortSelection = 0
+        finishWorkout(action: action)
+    }
+
     private func finishWorkout(action: WorkoutFinishAction) {
         let result = workout.finish(action: action, context: context)
 
@@ -500,6 +564,10 @@ struct WorkoutView: View {
         if router.showPreWorkoutContextFromIntent {
             router.showPreWorkoutContextFromIntent = false
             showPreWorkoutSheet = true
+        }
+        if router.showFinishWorkoutFromIntent {
+            router.showFinishWorkoutFromIntent = false
+            handleFinishTapped()
         }
     }
 }

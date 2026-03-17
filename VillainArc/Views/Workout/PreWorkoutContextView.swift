@@ -34,8 +34,8 @@ struct PreWorkoutContextView: View {
                 }
             )
             .onDisappear {
-                saveContext(context: modelContext)
                 preWorkoutContext.notes = preWorkoutContext.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                saveContext(context: modelContext)
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodSheet)
             .toolbar {
