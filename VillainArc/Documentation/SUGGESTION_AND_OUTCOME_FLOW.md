@@ -179,6 +179,10 @@ Historical matching is UUID-based rather than set-index based:
 
 That lets generation keep matching the right logical target even after live plan set order changes.
 
+Load-change generation is also equipment-aware:
+- plain bodyweight prescriptions do not emit weight increase/decrease suggestions
+- they can still participate in rep and rep-range style guidance
+
 ### Training Style
 
 Training style is resolved through:

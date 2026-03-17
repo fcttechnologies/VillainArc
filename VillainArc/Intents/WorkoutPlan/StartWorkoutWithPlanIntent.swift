@@ -22,10 +22,7 @@ struct StartWorkoutWithPlanIntent: AppIntent {
             throw StartWorkoutError.workoutIsActive
         }
         let workoutPlanID = workoutPlan.id
-        let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-        guard let storedPlan = try context.fetch(descriptor).first else {
+        guard let storedPlan = try context.fetch(WorkoutPlan.byIDForSessionStart(workoutPlanID)).first else {
             throw StartWorkoutWithPlanError.workoutPlanNotFound
         }
         guard storedPlan.completed else {

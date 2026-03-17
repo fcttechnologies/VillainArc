@@ -161,6 +161,11 @@ final class WorkoutSplit {
 }
 
 extension WorkoutSplit {
+    static func matchingTitle(_ string: String) -> FetchDescriptor<WorkoutSplit> {
+        let predicate = #Predicate<WorkoutSplit> { $0.title.localizedStandardContains(string) }
+        return FetchDescriptor(predicate: predicate)
+    }
+
     static var active: FetchDescriptor<WorkoutSplit> {
         var descriptor = FetchDescriptor(predicate: #Predicate<WorkoutSplit> { $0.isActive })
         descriptor.relationshipKeyPathsForPrefetching = [\.days]

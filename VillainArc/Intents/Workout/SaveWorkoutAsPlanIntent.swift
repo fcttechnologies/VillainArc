@@ -17,11 +17,7 @@ struct SaveWorkoutAsPlanIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
 
         let workoutID = workout.id
-        let predicate = #Predicate<WorkoutSession> { $0.id == workoutID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-
-        guard let storedWorkout = try context.fetch(descriptor).first else {
+        guard let storedWorkout = try context.fetch(WorkoutSession.byIDForSaveAsPlan(workoutID)).first else {
             throw SaveWorkoutAsPlanError.workoutNotFound
         }
         // First validation: don't create duplicates when the workout is already linked.

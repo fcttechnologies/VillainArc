@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class SuggestionEvent {
-    #Index<SuggestionEvent>([\.catalogID], [\.createdAt])
+    #Index<SuggestionEvent>([\.createdAt])
 
     var id: UUID = UUID()
     var source: SuggestionSource = SuggestionSource.rules

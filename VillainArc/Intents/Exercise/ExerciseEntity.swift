@@ -59,7 +59,10 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
             return Array(recentExercises.prefix(30)).map(ExerciseEntity.init)
         }
 
-        let fallbackExercises = (try? context.fetch(Exercise.all)) ?? []
+        let remainingCount = max(0, 30 - recentExercises.count)
+        let fallbackExercises = remainingCount == 0
+            ? []
+            : ((try? context.fetch(Exercise.backfillExcludingCatalogIDs(recentCatalogIDs, limit: remainingCount))) ?? [])
         let seenCatalogIDs = Set(recentExercises.map(\.catalogID))
         let backfillExercises = fallbackExercises.filter { !seenCatalogIDs.contains($0.catalogID) }
         return Array((recentExercises + backfillExercises).prefix(30)).map(ExerciseEntity.init)

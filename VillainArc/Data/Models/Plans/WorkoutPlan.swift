@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class WorkoutPlan {
-    #Index<WorkoutPlan>([\.completed], [\.isEditing], [\.lastUsed])
+    #Index<WorkoutPlan>([\.id], [\.completed], [\.isEditing], [\.lastUsed], [\.completed, \.isEditing, \.lastUsed])
 
     var id: UUID = UUID()
     var title: String = "New Workout Plan"
@@ -148,6 +148,25 @@ extension WorkoutPlan {
             SortDescriptor(\WorkoutPlan.lastUsed, order: .reverse),
             SortDescriptor(\WorkoutPlan.title)
         ]
+    }
+
+    static func byID(_ id: UUID) -> FetchDescriptor<WorkoutPlan> {
+        let predicate = #Predicate<WorkoutPlan> { $0.id == id }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
+    static func byIDForSessionStart(_ id: UUID) -> FetchDescriptor<WorkoutPlan> {
+        var descriptor = byID(id)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        return descriptor
+    }
+
+    static func byIDForDeletion(_ id: UUID) -> FetchDescriptor<WorkoutPlan> {
+        var descriptor = byID(id)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises, \.splitDays]
+        return descriptor
     }
     
     static var all: FetchDescriptor<WorkoutPlan> {

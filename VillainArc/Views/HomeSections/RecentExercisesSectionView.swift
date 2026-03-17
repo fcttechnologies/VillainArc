@@ -4,9 +4,11 @@ import SwiftData
 struct RecentExercisesSectionView: View {
     @Environment(\.modelContext) private var context
     @Query(ExerciseHistory.recentCompleted(limit: 3)) private var histories: [ExerciseHistory]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var exercises: [Exercise] = []
 
     private let appRouter = AppRouter.shared
+    private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
 
     private var historyOrdering: ExerciseHistoryOrdering {
         ExerciseHistoryOrdering(histories: histories)
@@ -33,7 +35,7 @@ struct RecentExercisesSectionView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(recentExercises) { exercise in
-                        ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise))
+                        ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise), appSettingsSnapshot: appSettingsSnapshot)
                             .accessibilityIdentifier(AccessibilityIdentifiers.recentExerciseRow(exercise))
                     }
                 }

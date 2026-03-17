@@ -154,10 +154,12 @@ struct ExerciseDetailView: View {
         return items
     }
 
+    private var progressionPoints: [ProgressionPoint] {
+        history?.chronologicalProgressionPoints ?? []
+    }
+
     private var estimatedOneRepMaxPoints: [ExerciseMetricPoint] {
-        guard let history else { return [] }
-        return history.sortedProgressionPoints
-            .reversed()
+        progressionPoints
             .compactMap { point in
                 guard point.estimated1RM > 0 else { return nil }
                 return ExerciseMetricPoint(date: point.date, value: weightUnit.fromKg(point.estimated1RM))
@@ -165,9 +167,7 @@ struct ExerciseDetailView: View {
     }
 
     private var topWeightPoints: [ExerciseMetricPoint] {
-        guard let history else { return [] }
-        return history.sortedProgressionPoints
-            .reversed()
+        progressionPoints
             .compactMap { point in
                 guard point.weight > 0 else { return nil }
                 return ExerciseMetricPoint(date: point.date, value: weightUnit.fromKg(point.weight))
@@ -175,9 +175,7 @@ struct ExerciseDetailView: View {
     }
 
     private var volumePoints: [ExerciseMetricPoint] {
-        guard let history else { return [] }
-        return history.sortedProgressionPoints
-            .reversed()
+        progressionPoints
             .compactMap { point in
                 guard point.volume > 0 else { return nil }
                 return ExerciseMetricPoint(date: point.date, value: weightUnit.fromKg(point.volume))
@@ -185,9 +183,7 @@ struct ExerciseDetailView: View {
     }
 
     private var repsPoints: [ExerciseMetricPoint] {
-        guard let history else { return [] }
-        return history.sortedProgressionPoints
-            .reversed()
+        progressionPoints
             .compactMap { point in
                 guard point.totalReps > 0 else { return nil }
                 return ExerciseMetricPoint(date: point.date, value: Double(point.totalReps))

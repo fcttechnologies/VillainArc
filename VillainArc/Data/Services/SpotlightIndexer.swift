@@ -23,7 +23,10 @@ enum SpotlightIndexer {
     }
 
     static func index(exercise: Exercise) {
-        let history = exerciseHistory(for: exercise.catalogID)
+        index(exercise: exercise, history: exerciseHistory(for: exercise.catalogID))
+    }
+
+    static func index(exercise: Exercise, history: ExerciseHistory?) {
         CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: exercise, history: history)], completionHandler: nil)
     }
 

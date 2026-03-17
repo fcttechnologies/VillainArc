@@ -171,6 +171,8 @@ It reads:
 - `Exercise.withCatalogID(...)`
 - `ExerciseHistory.forCatalogID(...)`
 
+That history fetch also prefetches `progressionPoints`, so the detail screen can build chart series from the cached progression data without querying raw performances.
+
 It uses `ExerciseHistory` for:
 - total sessions
 - total sets and reps
@@ -181,7 +183,7 @@ It uses `ExerciseHistory` for:
 - best volume
 - progression chart points
 
-It does not query raw performances for its main stat cards or charts.
+It does not query raw performances for its main stat cards or charts. The chart view reads `ExerciseHistory.chronologicalProgressionPoints` directly and derives each metric series from that single cached array.
 
 ### Exercise History View
 
@@ -189,6 +191,8 @@ It does not query raw performances for its main stat cards or charts.
 
 It queries:
 - `ExercisePerformance.matching(catalogID: ...)`
+
+That performance fetch prefetches both `sets` and `repRange`, which matches what the history list headers and rows render.
 
 It shows literal performed set data:
 - set type

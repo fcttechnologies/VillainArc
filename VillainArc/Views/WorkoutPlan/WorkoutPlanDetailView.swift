@@ -6,7 +6,7 @@ import CoreSpotlight
 struct WorkoutPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @Query private var splits: [WorkoutSplit]
+    @Query(WorkoutSplit.active) private var activeSplits: [WorkoutSplit]
     @Bindable var plan: WorkoutPlan
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     private let router = AppRouter.shared
@@ -27,7 +27,7 @@ struct WorkoutPlanDetailView: View {
     }
 
     private var isTodaysActiveSplitPlan: Bool {
-        guard let activeSplit = splits.first(where: { $0.isActive }),
+        guard let activeSplit = activeSplits.first,
               let todaysPlan = activeSplit.todaysSplitDay?.workoutPlan else {
             return false
         }

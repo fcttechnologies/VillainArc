@@ -5,8 +5,11 @@ struct ExercisesListView: View {
     @Environment(\.modelContext) private var context
     @Query private var exercises: [Exercise]
     @Query(ExerciseHistory.recentCompleted()) private var histories: [ExerciseHistory]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var searchText = ""
     @State private var favoritesOnly = false
+
+    private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
 
     private var hasFavorites: Bool {
         exercises.contains(where: \.favorite)
@@ -27,7 +30,7 @@ struct ExercisesListView: View {
     var body: some View {
         List {
             ForEach(filteredExercises) { exercise in
-                ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise))
+                ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise), appSettingsSnapshot: appSettingsSnapshot)
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     favoriteAction(for: exercise)
                 }

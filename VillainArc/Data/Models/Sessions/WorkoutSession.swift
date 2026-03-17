@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class WorkoutSession {
-    #Index<WorkoutSession>([\.status], [\.startedAt])
+    #Index<WorkoutSession>([\.id], [\.status], [\.startedAt], [\.isHidden], [\.status, \.isHidden, \.startedAt])
 
     var id: UUID = UUID()
     var title: String = "New Workout"
@@ -123,6 +123,19 @@ struct UnfinishedSetSummary {
 }
 
 extension WorkoutSession {
+    static func byID(_ id: UUID) -> FetchDescriptor<WorkoutSession> {
+        let predicate = #Predicate<WorkoutSession> { $0.id == id }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
+    static func byIDForSaveAsPlan(_ id: UUID) -> FetchDescriptor<WorkoutSession> {
+        var descriptor = byID(id)
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        return descriptor
+    }
+
     func predictedFinishResult(action: WorkoutFinishAction) -> WorkoutFinishResult {
         switch action {
         case .finish, .markLoggedComplete:

@@ -129,6 +129,7 @@ struct RuleEngine {
 
     private static func immediateProgressionRange(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Range mode progression: if primary sets reach the top of the range now, progress immediately.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let profile = progressionProfile(for: context)
@@ -172,6 +173,7 @@ struct RuleEngine {
 
     private static func immediateProgressionTarget(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Target mode progression: if primary sets exceed the target now, progress immediately.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return [] }
         let profile = progressionProfile(for: context)
@@ -201,6 +203,7 @@ struct RuleEngine {
     }
 
     private static func confirmedProgressionRange(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let profile = progressionProfile(for: context)
@@ -258,6 +261,7 @@ struct RuleEngine {
     }
 
     private static func confirmedProgressionTarget(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .target else { return [] }
         let profile = progressionProfile(for: context)
@@ -364,6 +368,7 @@ struct RuleEngine {
 
     private static func largeOvershootProgression(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Large overshoot: one emphatically strong session is enough for a larger jump.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode != .notSet else { return [] }
         let profile = progressionProfile(for: context)
@@ -417,6 +422,7 @@ struct RuleEngine {
 
     private static func belowRangeWeightDecrease(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Range mode safety: below lower bound in 2 of last 3 -> reduce weight.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let repRange = context.prescription.repRange ?? RepRangePolicy()
         guard repRange.activeMode == .range else { return [] }
         let profile = progressionProfile(for: context)
@@ -489,6 +495,7 @@ struct RuleEngine {
 
     private static func matchActualWeight(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Cleanup: user consistently uses a different weight -> update prescription weight.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let recent = recentPerformances(context)
         let profile = progressionProfile(for: context)
         guard recent.count >= profile.matchActualWeightSessionsRequired else { return [] }
@@ -544,6 +551,7 @@ struct RuleEngine {
 
     private static func reducedWeightToHitReps(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         // Cleanup: user regularly lowers weight to hit reps -> reduce prescribed load.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let recent = recentPerformances(context)
         let profile = progressionProfile(for: context)
         guard recent.count >= profile.reducedWeightSessionsRequired else { return [] }
@@ -718,6 +726,7 @@ struct RuleEngine {
     }
 
     private static func calibrateWarmupWeights(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
@@ -775,6 +784,7 @@ struct RuleEngine {
 
     private static func progressionWeightChangeIndices(_ context: ExerciseSuggestionContext) -> Set<Int> {
         // Returns the set indices that would receive a progression-based weight change.
+        guard supportsLoadChangeSuggestions(for: context) else { return [] }
         let recent = recentPerformances(context)
         guard recent.count >= 2 else { return [] }
 
@@ -1346,6 +1356,13 @@ struct RuleEngine {
     private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
         let primaryMuscle = context.prescription.musclesTargeted.first ?? context.performance.musclesTargeted.first ?? .chest
         return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType, catalogID: context.prescription.catalogID)
+    }
+
+    private static func supportsLoadChangeSuggestions(for context: ExerciseSuggestionContext) -> Bool {
+        // Plain bodyweight movements should progress through reps/range first.
+        // Without explicit equipment metadata, load jumps here create unrealistic
+        // recommendations like odd pound increases for exercises such as ab wheel rollouts.
+        context.prescription.equipmentType != .bodyweight
     }
 
     private static func progressionProfile(for context: ExerciseSuggestionContext) -> ProgressionProfile {

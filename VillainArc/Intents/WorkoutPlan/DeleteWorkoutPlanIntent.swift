@@ -17,11 +17,7 @@ struct DeleteWorkoutPlanIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
 
         let workoutPlanID = workoutPlan.id
-        let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-
-        guard let storedPlan = try context.fetch(descriptor).first else {
+        guard let storedPlan = try context.fetch(WorkoutPlan.byIDForDeletion(workoutPlanID)).first else {
             throw DeleteWorkoutPlanIntentError.workoutPlanNotFound
         }
         guard storedPlan.completed else {

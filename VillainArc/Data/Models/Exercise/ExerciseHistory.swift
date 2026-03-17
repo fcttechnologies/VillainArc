@@ -43,8 +43,8 @@ final class ExerciseHistory {
     @Relationship(deleteRule: .cascade, inverse: \ProgressionPoint.exerciseHistory)
     var progressionPoints: [ProgressionPoint]? = [ProgressionPoint]()
     
-    var sortedProgressionPoints: [ProgressionPoint] {
-        (progressionPoints ?? []).sorted { $0.date > $1.date }
+    var chronologicalProgressionPoints: [ProgressionPoint] {
+        (progressionPoints ?? []).sorted { $0.date < $1.date }
     }
     
     init(catalogID: String) {
@@ -183,6 +183,7 @@ final class ExerciseHistory {
     static func forCatalogID(_ catalogID: String) -> FetchDescriptor<ExerciseHistory> {
         let predicate = #Predicate<ExerciseHistory> { $0.catalogID == catalogID }
         var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.relationshipKeyPathsForPrefetching = [\.progressionPoints]
         descriptor.fetchLimit = 1
         return descriptor
     }

@@ -140,7 +140,7 @@ struct ExerciseHistoryUpdater {
             history.recalculate(using: performances)
 
             if let exercise = exercisesByCatalogID[catalogID] {
-                SpotlightIndexer.index(exercise: exercise)
+                SpotlightIndexer.index(exercise: exercise, history: history)
             }
 
             print("✅ ExerciseHistoryUpdater: Updated history for \(catalogID) - \(history.totalSessions) sessions")

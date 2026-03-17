@@ -18,10 +18,7 @@ struct OpenWorkoutPlanIntent: AppIntent {
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
         let workoutPlanID = workoutPlan.id
-        let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-        guard let storedPlan = try context.fetch(descriptor).first else {
+        guard let storedPlan = try context.fetch(WorkoutPlan.byID(workoutPlanID)).first else {
             throw OpenWorkoutPlanError.workoutPlanNotFound
         }
         guard storedPlan.completed else {

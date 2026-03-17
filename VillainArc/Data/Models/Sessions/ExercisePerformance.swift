@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class ExercisePerformance {
-    #Index<ExercisePerformance>([\.catalogID], [\.date])
+    #Index<ExercisePerformance>([\.catalogID], [\.date], [\.catalogID, \.date])
 
     var id: UUID = UUID()
     var index: Int = 0
@@ -310,7 +310,7 @@ extension ExercisePerformance {
                 item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
               }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
-        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.repRange]
         return descriptor
     }
 
@@ -320,7 +320,7 @@ extension ExercisePerformance {
             catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
         }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
-        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.workoutSession]
         return descriptor
     }
 
@@ -329,7 +329,7 @@ extension ExercisePerformance {
             item.workoutSession?.id == sessionID && catalogIDs.contains(item.catalogID)
         }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
-        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.workoutSession]
         return descriptor
     }
 

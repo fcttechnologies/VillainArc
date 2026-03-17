@@ -118,13 +118,22 @@ struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
     func entities(matching string: String) async throws -> [WorkoutSplitEntity] {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
         let context = SharedModelContainer.container.mainContext
-        let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
-        let orderedSplits = sortedWorkoutSplits(splits)
         guard !trimmed.isEmpty else {
+            let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+            let orderedSplits = sortedWorkoutSplits(splits)
             return orderedSplits.map(WorkoutSplitEntity.init)
         }
 
-        return orderedSplits
+        let titleMatches = (try? context.fetch(WorkoutSplit.matchingTitle(trimmed))) ?? []
+        let orderedTitleMatches = sortedWorkoutSplits(titleMatches)
+        if !orderedTitleMatches.isEmpty {
+            return orderedTitleMatches.map(WorkoutSplitEntity.init)
+        }
+
+        let fallbackSplits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+        let orderedFallbackSplits = sortedWorkoutSplits(fallbackSplits)
+
+        return orderedFallbackSplits
             .map(WorkoutSplitEntity.init)
             .filter { entity in
                 entity.title.localizedStandardContains(trimmed)

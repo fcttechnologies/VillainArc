@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class Exercise {
-    #Index<Exercise>([\.catalogID], [\.lastAddedAt])
+    #Index<Exercise>([\.catalogID], [\.lastAddedAt], [\.favorite])
 
     var catalogID: String = ""
     var name: String = ""
@@ -147,5 +147,13 @@ extension Exercise {
     static func withCatalogIDs(_ catalogIDs: [String]) -> FetchDescriptor<Exercise> {
         let predicate = #Predicate<Exercise> { catalogIDs.contains($0.catalogID) }
         return FetchDescriptor(predicate: predicate)
+    }
+
+    static func backfillExcludingCatalogIDs(_ catalogIDs: [String], limit: Int) -> FetchDescriptor<Exercise> {
+        let excludedCatalogIDs = Set(catalogIDs)
+        let predicate = #Predicate<Exercise> { !excludedCatalogIDs.contains($0.catalogID) }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: recentsSort)
+        descriptor.fetchLimit = limit
+        return descriptor
     }
 }

@@ -1,14 +1,12 @@
 import Foundation
 import SwiftUI
-import SwiftData
 
 struct ExerciseSummaryRow: View {
     let exercise: Exercise
     let history: ExerciseHistory?
+    let appSettingsSnapshot: AppSettingsSnapshot
     private let appRouter = AppRouter.shared
-    @Query(AppSettings.single) private var appSettings: [AppSettings]
-
-    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
     
     var body: some View {
         Button {

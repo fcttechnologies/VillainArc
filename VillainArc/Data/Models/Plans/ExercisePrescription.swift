@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 final class ExercisePrescription {
+    #Index<ExercisePrescription>([\.catalogID])
+    
     var id: UUID = UUID()
     var index: Int = 0
     var catalogID: String = ""

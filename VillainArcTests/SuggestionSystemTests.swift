@@ -462,6 +462,61 @@ struct SuggestionSystemTests {
     }
 
     @Test @MainActor
+    func confirmedProgressionRange_bodyweightDoesNotSuggestLoadIncrease() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "ab_wheel_rollout",
+            workingSets: 2,
+            targetWeight: WeightUnit.lbs.toKg(20),
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 8,
+            upperRange: 10
+        )
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        let previousPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [
+                (weight: WeightUnit.lbs.toKg(20), reps: 10, rest: 90, type: .working),
+                (weight: WeightUnit.lbs.toKg(20), reps: 10, rest: 90, type: .working)
+            ]
+        )
+
+        let currentSession = TestDataFactory.makeSession(context: context)
+        let currentPerformance = TestDataFactory.makePerformance(
+            context: context,
+            session: currentSession,
+            prescription: prescription,
+            sets: [
+                (weight: WeightUnit.lbs.toKg(20), reps: 10, rest: 90, type: .working),
+                (weight: WeightUnit.lbs.toKg(20), reps: 10, rest: 90, type: .working)
+            ]
+        )
+
+        let suggestionContext = ExerciseSuggestionContext(
+            session: currentSession,
+            performance: currentPerformance,
+            prescription: prescription,
+            history: [previousPerformance],
+            plan: plan,
+            resolvedTrainingStyle: .straightSets,
+            weightUnit: .lbs
+        )
+
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let weightIncrease = flattenedChanges(from: suggestions).first { $0.change.changeType == .increaseWeight }
+
+        #expect(weightIncrease == nil,
+            "Bodyweight movements should not suggest load increases just because a nonzero weight was stored.")
+    }
+
+    @Test @MainActor
     func immediateProgressionRange_heavyCompoundWaitsForConfirmation_whileStableMachineCanProgressNow() throws {
         let context = try TestDataFactory.makeContext()
 

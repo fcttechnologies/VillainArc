@@ -11,12 +11,12 @@ import SwiftData
 /// **Usage:**
 /// - Automatically created/updated by ExerciseHistory.recalculate()
 /// - Cascade deleted when parent ExerciseHistory is deleted
-/// - Sorted by date via ExerciseHistory.sortedProgressionPoints
+/// - Sorted by date via ExerciseHistory.chronologicalProgressionPoints
 ///
 /// **Example:**
 /// ```swift
 /// let history = ExerciseHistory(catalogID: "bench-press")
-/// for point in history.sortedProgressionPoints {
+/// for point in history.chronologicalProgressionPoints {
 ///     print("\(point.date): \(point.weight) lbs, \(point.totalReps) reps, \(point.volume) total volume, \(point.estimated1RM) est. 1RM")
 /// }
 /// ```
