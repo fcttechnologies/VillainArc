@@ -179,7 +179,7 @@ struct WorkoutPlanView: View {
             } else {
                 LazyVStack(spacing: 60) {
                     ForEach(plan.sortedExercises) { exercise in
-                        WorkoutPlanExerciseView(exercise: exercise, onDelete: { deleteExercise(exercise) })
+                        WorkoutPlanExerciseView(exercise: exercise, originalExercise: originalPlan?.sortedExercises.first(where: { $0.id == exercise.id }), onDelete: { deleteExercise(exercise) })
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseView(exercise))
                     }
                 }
@@ -302,6 +302,7 @@ struct WorkoutPlanView: View {
 private struct WorkoutPlanExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePrescription
+    let originalExercise: ExercisePrescription?
     let onDelete: (() -> Void)?
 
     @State private var showRepRangeEditor = false
@@ -445,7 +446,7 @@ private struct WorkoutPlanExerciseView: View {
 
     private func addSet() {
         Haptics.selection()
-        exercise.addSet()
+        exercise.addSet(restoringFrom: originalExercise)
         saveContext(context: context)
     }
 }

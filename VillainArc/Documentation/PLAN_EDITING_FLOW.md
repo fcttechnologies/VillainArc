@@ -1,209 +1,241 @@
 # Plan Editing Flow
 
-This document explains how workout plan editing works in VillainArc. The flow is mostly centered in `Data/Models/Plans/WorkoutPlan+Editing.swift`, with `AppRouter` starting edit mode and `WorkoutPlanView` handling save/cancel UI.
+This document explains how workout plan authoring and editing work in VillainArc. The key rule is that existing plans are never edited in place. The edit path is centered in `WorkoutPlan+Editing.swift`, with `AppRouter` creating the right draft and `WorkoutPlanView` handling save/cancel UI.
 
 ## Main Files
 
-- `Data/Models/Plans/WorkoutPlan+Editing.swift`
 - `Data/Models/Plans/WorkoutPlan.swift`
+- `Data/Models/Plans/WorkoutPlan+Editing.swift`
 - `Data/Services/AppRouter.swift`
 - `Views/WorkoutPlan/WorkoutPlanView.swift`
 - `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-- `Root/VillainArcApp.swift`
+- `Data/Services/SpotlightIndexer.swift`
 
-## Core Rule
+## The Core Rule
 
-Existing plans are never edited in place.
+VillainArc uses two different authoring modes:
 
-VillainArc uses a copy-merge flow:
-- create a temporary editing copy
-- let the user mutate that copy freely
-- on save, merge the copy back into the original plan
-- on cancel, delete the copy
+- brand-new plan creation
+- copy-merge editing of an existing completed plan
 
-That keeps the original plan stable until the user finishes, and it gives the app one place to reconcile stale pending suggestion state before anything is committed.
+For existing plans, the app always:
+- creates a temporary persisted editing copy
+- lets the user mutate that copy freely
+- merges the copy back into the original on save
+- deletes the copy on cancel
 
-## Where Editing Starts
+That keeps the original plan stable until the user commits, and it gives the app one place to clean up stale unresolved suggestion state.
 
-There are two main plan-authoring paths:
+## Where Authoring Starts
 
-- `AppRouter.createWorkoutPlan()`
-  - creates a brand-new incomplete plan
-  - sets `activeWorkoutPlanOriginal = nil`
-  - presents `WorkoutPlanView`
-  - this is not a copy flow because there is no original plan to protect yet
+### Blank Plan Creation
 
-- `AppRouter.editWorkoutPlan(_:)`
-  - only works for completed non-editing plans and only when there is no other active flow
-  - calls `plan.createEditingCopy(context:)`
-  - converts the copy's target weights from canonical kg into the current `AppSettings.weightUnit`
-  - stores the original in `activeWorkoutPlanOriginal`
-  - presents the copy in `WorkoutPlanView`
+`AppRouter.createWorkoutPlan()`:
+- checks for conflicting active flows
+- creates a brand-new incomplete `WorkoutPlan`
+- sets `activeWorkoutPlanOriginal = nil`
+- presents `WorkoutPlanView`
 
-`WorkoutPlanDetailView` is the normal UI entrypoint for editing an existing plan.
+This is a real draft, not temporary view state. If the app is interrupted, it can resume later through `WorkoutPlan.resumableIncomplete`.
 
-If the user is creating a brand-new plan instead of editing an existing one, `WorkoutPlanView` eventually marks that plan `completed = true`, clears completed-session prescription links if needed, saves it, and indexes it for Spotlight. That path is simpler because there is no original plan to merge back into.
+### Plan Creation From a Workout
+
+`AppRouter.createWorkoutPlan(from:)`:
+- checks for conflicting active flows
+- creates `WorkoutPlan(from: workout)`
+- converts the new editable draft from canonical kg into the current user unit
+- links `workout.workoutPlan` to that draft
+- sets `activeWorkoutPlanOriginal = nil`
+- presents `WorkoutPlanView`
+
+This is the editable "save as workout plan" path used from completed workout detail.
+
+### Editing an Existing Completed Plan
+
+`AppRouter.editWorkoutPlan(_:)`:
+- only allows completed, non-editing plans
+- checks for conflicting active flows
+- calls `plan.createEditingCopy(context:)`
+- converts the copy from canonical kg into the current user unit
+- stores the original in `activeWorkoutPlanOriginal`
+- presents the copy in `WorkoutPlanView`
+
+`WorkoutPlanDetailView` is the normal UI entry point for this flow.
 
 ## The Editing Copy
 
-`createEditingCopy(context:)`:
-- creates a new `WorkoutPlan`
-- copies top-level plan fields like title, notes, favorite, and origin
-- sets `completed = false`
+`WorkoutPlan.createEditingCopy(context:)`:
+- creates a new incomplete `WorkoutPlan`
 - sets `isEditing = true`
-- deep-copies the plan’s exercises and sets into the new plan
-- keeps the same model IDs for matched copied exercises and sets so merge logic can align original and copy later
+- copies top-level fields such as title, notes, and favorite state
+- deep-copies exercises and sets into the new plan
+- preserves exercise and set IDs so merge logic can align original and copy later
 
-The copy is a real persisted SwiftData model, not just temporary view state.
-
-That matters for two reasons:
-- `WorkoutPlanView` can bind directly to the copy while editing
-- if the app is killed mid-edit, the copy can still be cleaned up safely on next launch without ever mutating the original plan
+The copy is persisted SwiftData, not ephemeral local state. That matters because:
+- the editor can bind directly to real models
+- the app can safely discard abandoned editing copies on next launch
+- the original plan stays untouched until save
 
 ## What the User Edits
 
-`WorkoutPlanView` edits the copy directly.
+`WorkoutPlanView` edits the draft copy directly.
 
 At a high level the user can:
 - change title and notes
 - add, remove, and reorder exercises
-- change exercise-level rep range settings
-- change set-level type, weight, reps, rest, and RPE
+- replace an exercise with a different catalog exercise
+- edit rep-range settings
 - add and remove sets
+- edit set type, target weight, target reps, target rest, and target RPE
 
-While the copy is on screen, weight fields use the current user unit. The save path converts those edited weights back to kg before the copy is merged into the original plan.
+While the draft is on screen, weight fields use the current user unit. Save converts them back to canonical kg before merge or final commit.
 
-Nothing in this phase touches the original plan.
+When editing an existing plan, adding a set now first tries to restore the next unused tail set identity from the original plan before falling back to creating a brand-new set. That preserves the original set ID for common accidental delete-and-readd cases.
 
-## Saving an Existing Plan Edit
+## Saving a New Plan
 
-When the user taps Done while editing an existing plan, `WorkoutPlanView` does:
+For brand-new drafts, `WorkoutPlanView`:
+- converts target weights back to kg
+- marks the plan completed if needed
+- clears active performance references from already completed linked sessions
+- saves
+- Spotlight-indexes the plan
+- reindexes any linked splits
 
-1. `plan.convertTargetWeightsToKg(from: weightUnit)` if the current user unit is lbs
-2. `originalPlan.applyEditingCopy(plan, context: context)`
-3. `context.delete(plan)` for the temporary copy
-4. `saveContext(context: context)`
-5. `SpotlightIndexer.index(workoutPlan: originalPlan)`
+There is no merge step because there is no protected original plan behind the draft.
 
-So the real merge work lives inside `applyEditingCopy`.
+## Saving an Edit to an Existing Plan
+
+For an existing completed plan, `WorkoutPlanView`:
+
+1. converts the editing copy back to canonical kg
+2. calls `originalPlan.applyEditingCopy(plan, context: context)`
+3. deletes the temporary editing copy
+4. saves
+5. Spotlight-indexes the original plan
+6. reindexes splits linked to that plan
+
+The real editing logic lives inside `applyEditingCopy`.
 
 ## What `applyEditingCopy` Does
 
-`applyEditingCopy(_ copy: WorkoutPlan, context: ModelContext)` does three practical things:
+`WorkoutPlan.applyEditingCopy(_ copy: WorkoutPlan, context: ModelContext)` does three things:
 
 1. reconcile unresolved suggestion state that the manual edit invalidates
 2. copy values from the editing copy back into the original plan
 3. delete removed exercises and sets, then reindex ordering
 
-### 1. Reconcile Pending Suggestion State First
+### 1. Reconcile Unresolved Suggestion State
 
 This happens before values are copied back.
 
-`reconcilePendingChanges(comparedTo:context:)` compares the original plan against the editing copy and removes unresolved suggestion state when the user has manually overridden the same area.
+The original plan is compared against the editing copy. If the user manually changed a field that an unresolved suggestion was still targeting, the unresolved event is deleted.
 
-It checks:
-- exercise rep range mode
-- exercise rep range lower bound
-- exercise rep range upper bound
-- exercise rep range target
+That reconciliation covers:
+- exercise rep-range mode
+- exercise rep-range lower bound
+- exercise rep-range upper bound
+- exercise rep-range target
 - set type
 - set target weight
 - set target reps
 - set target rest
-
-If the user changed one of those fields manually, the matching unresolved suggestion changes for that exercise or set are deleted.
-
-If the unresolved change belongs to a `SuggestionEvent`, the event is deleted once rather than leaving half of it behind.
+- replacing an exercise with a different catalog exercise
 
 Important detail:
-- this cleanup only removes unresolved suggestion work where `event.outcome == .pending`
-- resolved suggestion history is preserved
+- cleanup is keyed off `event.outcome == .pending`
+- decision state does not protect the event
 
-### 2. Copy Values Back Into the Original
+So an accepted or rejected event can still be deleted if its outcome is unresolved and the user manually edits away the target it depended on.
+
+### 2. Copy Values Back Into the Original Plan
 
 After reconciliation, the original plan is updated from the copy.
 
-At the plan level it copies:
+At the plan level:
 - title
 - notes
-- origin
 
-At the exercise level it:
-- updates existing exercises matched by ID
-- reparents new exercises from the copy into the original plan
-- copies catalog metadata, notes, muscles, equipment, index, and rep range values
+At the exercise level:
+- existing exercises are matched by ID and updated
+- new exercises are reparented into the original plan
+- copied metadata and rep-range values are written back
 
-At the set level it:
-- updates existing sets matched by ID
-- reparents new sets from the copy into the original exercise
-- copies index, type, target weight, target reps, target rest, and target RPE
+At the set level:
+- existing sets are matched by ID and updated
+- new sets are reparented into the original exercise
+- target values and ordering are written back
 
-### 3. Delete Removed Exercises and Sets
+### 3. Delete Removed Children
 
-If an exercise or set exists in the original but not in the editing copy anymore, it is treated as deleted.
+If an exercise or set exists in the original plan but not in the editing copy, it is treated as deleted.
 
-Before deletion:
-- `deletePendingOutcomeChanges(for: exercise, context: context)` or
-- `deletePendingOutcomeChanges(for: set, context: context)`
-
-removes unresolved suggestion state still attached to that target.
-
-Then the model itself is deleted.
-
-Finally the plan reindexes exercises, and each edited exercise reindexes its sets.
+Before deletion, unresolved suggestion events attached to that target are cleaned up. Then the model is deleted and the remaining exercises/sets are reindexed.
 
 ## Replacing an Exercise
 
 Replacing an exercise is a special case because the original prescription identity is being reused for a different catalog exercise.
 
-When `applyExerciseValues(from:to:context:)` sees a changed `catalogID`, it first calls:
-- `originalExercise.clearLinkedPerformanceReferences()`
+When `applyEditingCopy` sees a changed `catalogID`, it clears linked historical performance references on the original prescription before writing the new metadata back.
 
-That clears historical performance references that should no longer point at a prescription whose identity has effectively changed.
-
-This keeps old completed performances valid as history without pretending they still belong to the new exercise identity.
-
-## Canceling
-
-If the user cancels while editing an existing plan, `WorkoutPlanView` deletes the editing copy and dismisses.
-
-The original plan remains untouched.
-
-If the user is creating a brand-new incomplete plan instead of editing an existing one, cancel behavior is different:
-- the unfinished plan itself is what gets discarded if the user cancels, because there is no protected original behind it
+That keeps completed session history valid without pretending older performances still belong to the new exercise identity.
 
 ## Deleting a Plan
 
-`deleteWithSuggestionCleanup(context:)` is the plan-level delete helper.
-
-It:
-- removes unresolved suggestion changes/events still reachable from the plan
+`deleteWithSuggestionCleanup(context:)` is the plan-level delete helper. It:
+- removes unresolved suggestion events still attached to the plan
 - deletes the plan itself
 
-Like the rest of the cleanup helpers, it only removes unresolved suggestion state. Resolved history is preserved.
+Plan deletion also reindexes any linked workout splits so their Spotlight representation stays accurate.
+
+## Deleting the Last Exercise
+
+VillainArc does not allow an existing/completed plan flow to silently persist as an empty plan.
+
+If deleting the last exercise would leave no exercises:
+- brand-new incomplete drafts can simply be discarded
+- completed plans or edit-existing flows escalate into full plan deletion confirmation
+
+When deleting an existing plan while editing, the app deletes both:
+- the original completed plan
+- the temporary editing copy
+
+## Canceling
+
+Cancel behavior depends on which authoring mode is active.
+
+### Cancel While Editing an Existing Plan
+
+- delete the editing copy
+- save
+- dismiss
+- original plan remains untouched
+
+### Cancel While Creating a New Plan
+
+- if the draft is empty, delete it immediately
+- if the draft has content, confirm before discarding it
+
+There is no protected original plan in this path, so discarding the draft means discarding the work.
 
 ## Startup and Resume Behavior
 
-Editing copies are intentionally excluded from normal resume behavior.
+Only real new-plan drafts are resumable.
 
-Relevant `WorkoutPlan` fetches:
-- `resumableIncomplete` returns incomplete plans where `isEditing == false`
-- `editingCopies` returns plans where `isEditing == true`
+- `WorkoutPlan.resumableIncomplete` returns incomplete plans where `isEditing == false`
+- `WorkoutPlan.editingCopies` returns persisted edit copies where `isEditing == true`
 
 That means:
-- unfinished brand-new plan creation can resume on launch
-- editing copies do not resume as active flows
+- unfinished new-plan creation can resume on launch
+- edit copies are never resumed as active authoring flows
 
-Instead, `RootView.cleanupEditingWorkoutPlanCopies()` deletes all persisted editing copies on startup before normal routing continues.
-
-So if the app is force-quit during plan editing:
-- the original completed plan is still intact
-- the editing copy is thrown away on next launch
+`RootView.cleanupEditingWorkoutPlanCopies()` deletes abandoned edit copies before normal launch resume runs.
 
 ## Relationship to Suggestions
 
-Plan editing does not accept or reject suggestions.
+Plan editing does not accept, reject, or defer suggestions. That belongs to:
+- summary review
+- deferred pre-workout review
+- the plan-level suggestions sheet
 
-That logic belongs to summary review and deferred review. Manual editing just establishes a new source of truth for the plan.
-
-If an unresolved suggestion targeted the same field the user just changed manually, plan editing removes that unresolved suggestion state instead of trying to keep it alive.
+Manual editing simply establishes a new plan source of truth. If unresolved suggestion state no longer matches that source of truth, the stale event is deleted.

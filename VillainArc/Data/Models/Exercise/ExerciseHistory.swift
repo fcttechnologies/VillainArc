@@ -39,7 +39,7 @@ final class ExerciseHistory {
     var bestVolume: Double = 0
     var bestReps: Int = 0
     
-    // Progression points (last 10 sessions for charting)
+    // Progression points for charting across all completed sessions
     @Relationship(deleteRule: .cascade, inverse: \ProgressionPoint.exerciseHistory)
     var progressionPoints: [ProgressionPoint]? = [ProgressionPoint]()
     
@@ -82,7 +82,7 @@ final class ExerciseHistory {
         // Calculate PRs
         calculatePRs(from: sessionSummaries)
 
-        // Store progression data for charting (last 10 sessions)
+        // Store progression data for charting across all completed sessions
         storeProgressionData(from: sessionSummaries)
     }
 
@@ -140,10 +140,8 @@ final class ExerciseHistory {
     private func storeProgressionData(from sessions: [ExerciseHistorySessionSummary]) {
         // Clear existing progression points
         progressionPoints?.removeAll()
-        
-        let last10 = Array(sessions.prefix(10))
-        
-        for session in last10 {
+
+        for session in sessions {
             let point = ProgressionPoint(date: session.date, weight: session.bestWeight ?? 0, totalReps: session.totalCompletedReps, volume: session.totalVolume, estimated1RM: session.bestEstimated1RM ?? 0)
             progressionPoints?.append(point)
         }

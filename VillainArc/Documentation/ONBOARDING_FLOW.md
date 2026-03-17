@@ -1,283 +1,212 @@
 # Onboarding Flow
 
-This document explains VillainArc's startup and onboarding bootstrap path: how first launch differs from a normal launch, why the app waits for CloudKit import before seeding the exercise catalog, how singleton models are created, how catalog updates are applied over time, and why many intents use `SetupGuard`.
+This document explains VillainArc's startup and readiness path: how bootstrap works, why the app waits for CloudKit import before seeding the exercise catalog, how profile setup fits into launch, and why many intents use `SetupGuard`.
 
 ## Main Files
 
-- `Views/ContentView.swift`
+- `Root/VillainArcApp.swift`
+- `Root/RootView.swift`
 - `Views/Onboarding/OnboardingView.swift`
 - `Data/Services/OnboardingManager.swift`
+- `Data/Services/CloudKitImportMonitor.swift`
 - `Data/Services/DataManager.swift`
 - `Data/Services/SystemState.swift`
 - `Data/Services/SetupGuard.swift`
 - `Data/SharedModelContainer.swift`
-- `Root/VillainArcApp.swift`
-- `Data/Models/Exercise/Exercise.swift`
-- `Data/Models/Exercise/ExerciseCatalog.swift`
-- `Data/Models/UserProfile.swift`
-- `Data/Models/AppSettings.swift`
+- `Helpers/CloudKitStatusChecker.swift`
+- `Helpers/NetworkMonitor.swift`
 
 ## Startup Entry
 
-The startup path is split across `VillainArcApp`, `RootView`, and `ContentView`.
+The startup path is split across `VillainArcApp`, `RootView`, and `OnboardingManager`.
 
-`VillainArcApp`:
-- creates the shared SwiftData container from the app-group store
-- starts `CloudKitImportMonitor` before the onboarding flow begins
-- attaches CloudKit-backed persistence through `SharedModelContainer`
+### `VillainArcApp`
 
-`RootView`:
-- creates `OnboardingManager`
-- deletes abandoned editing workout-plan copies from the main context
-- refreshes app shortcut parameters
-- calls `await onboardingManager.startOnboarding()` in `.task`
+- starts `CloudKitImportMonitor.shared` in `init()`
+- installs `SharedModelContainer.container`
+- forwards Spotlight and Siri activities into `AppRouter.shared`
+
+### `RootView`
+
+- owns `OnboardingManager`
+- deletes abandoned plan editing copies before anything resumes
+- refreshes shortcut parameters
+- starts onboarding in `.task`
 - waits for onboarding to reach `.ready`
 - only then calls `AppRouter.checkForUnfinishedData()`
-- presents `OnboardingView` whenever the onboarding state says a sheet should be shown
+- presents `OnboardingView` as a blocking sheet whenever onboarding is not ready
 
-That last part matters: resume logic for unfinished workouts or unfinished new-plan creation only runs after onboarding/bootstrap is complete.
+That ordering is deliberate. Resume logic for unfinished workouts or incomplete plan creation only runs after bootstrap and profile setup are valid.
 
-## Shared Storage and Bootstrap Marker
+## The Bootstrap Marker
 
-VillainArc stores two important things in the app group:
-- the shared SwiftData store (`VillainArc.store`)
-- shared defaults, including the exercise catalog bootstrap marker
+VillainArc stores the shared SwiftData store and shared defaults in the app group. The onboarding/bootstrap marker is:
 
-The bootstrap marker is:
 - `DataManager.exerciseCatalogVersionKey`
 
-Its stored value is the last catalog version the app synced. If there is no stored value yet, `DataManager.hasCompletedInitialBootstrap()` returns `false`, and the app treats the launch as first-time bootstrap.
+If this key does not exist, the app treats the launch as first-time bootstrap. If it exists, the app treats the launch as a returning launch and can skip the full CloudKit wait.
 
-## First Launch
+## First Bootstrap
 
-On first launch, `OnboardingManager.startOnboarding()` takes the full bootstrap path because the catalog version has not been stored yet.
+`OnboardingManager.startOnboarding()` takes the full bootstrap path when the catalog version marker does not exist.
 
 The order is:
-1. check connectivity
-2. check iCloud account status
+
+1. check network connectivity
+2. check iCloud sign-in status
 3. check CloudKit availability
-4. wait for CloudKit import completion
+4. wait for `CloudKitImportMonitor` to confirm import completion
 5. seed or sync the exercise catalog
-6. ensure singleton models exist
-7. route into profile onboarding or mark the app ready
+6. reindex Spotlight
+7. ensure `AppSettings` exists
+8. ensure `UserProfile` exists
+9. route into profile onboarding or `.ready`
 
-### Why the App Waits Before Seeding
+## Why the App Waits Before Seeding
 
-This is the key first-launch rule.
-
-`OnboardingManager` waits for CloudKit import completion before calling `DataManager.seedExercisesForOnboarding()`.
-
-The import observer starts at app launch through `CloudKitImportMonitor`, so onboarding is not relying on `OnboardingManager` being created first in order to see the completion event.
-
-The reason is to avoid duplicate catalog exercise objects.
+This is the most important first-launch rule.
 
 If the user already has VillainArc data in CloudKit, the import may bring down:
-- previously synced catalog `Exercise` rows
+- catalog `Exercise` rows from an older install
 - `UserProfile`
 - `AppSettings`
-- historical workouts, plans, suggestions, and related models
+- workout sessions, plans, suggestions, splits, and related records
 
-If the app seeded the catalog before that import finished, it could create local catalog exercises first and then import old copies of those same catalog exercises afterward.
+If the app seeded the bundled exercise catalog before that import completed, it could create local catalog exercises and then import older copies of the same catalog exercises afterward.
 
-Instead, the app waits until the import finishes, then runs catalog sync against the imported store.
+Instead, the app waits for import completion first, then runs `DataManager.seedExercisesForOnboarding()`, which reconciles the imported store against the bundled catalog by `catalogID`.
 
-### First Launch Without iCloud
+## Continue Without iCloud
 
-If iCloud is disabled, the user can choose to continue without iCloud.
+If iCloud is disabled, onboarding can route into `.noiCloud`. The user may choose to continue without iCloud.
 
-That path skips the CloudKit wait and still:
-- seeds the catalog locally
+That path still:
+- seeds the bundled exercise catalog locally
+- reindexes Spotlight
 - ensures `AppSettings`
 - ensures `UserProfile`
-- routes into profile onboarding or ready
+- routes into profile setup or `.ready`
 
-## What Seeding Actually Does
+It simply skips the CloudKit wait.
 
-`DataManager.seedExercisesForOnboarding()` just calls the shared sync path.
+## Returning Launch
 
-The actual behavior lives in `syncExercisesAndPersist()` and `syncExercises(context:)`.
+Once the bootstrap marker exists, onboarding uses `handleReturningLaunch()`.
 
-For each item in `ExerciseCatalog.all`, the app:
+That path:
+- optionally starts a background catalog sync if the bundled catalog version changed
+- immediately ensures `AppSettings`
+- immediately ensures `UserProfile`
+- routes into missing profile setup steps or `.ready`
+
+If the background catalog sync changes anything, Spotlight is reindexed after the sync completes.
+
+This keeps returning launches fast while still allowing bundled exercise metadata to evolve.
+
+## What Catalog Sync Actually Does
+
+`DataManager` does not rebuild the whole database. It reconciles the current store against `ExerciseCatalog.all`.
+
+For each built-in catalog item it:
 - fetches existing non-custom catalog exercises
-- matches them by `catalogID`
+- matches by `catalogID`
 - updates existing rows if metadata changed
-- inserts missing catalog rows
+- inserts missing rows
 
-If exercise metadata changed, the app also propagates those updates into stored snapshots:
+If catalog metadata changes, it also propagates those updates into stored snapshots:
 - `ExercisePrescription`
 - `ExercisePerformance`
 
-That propagation keeps existing plans and workout history aligned with the current catalog metadata for name, muscles, and equipment type.
-
 At the end of sync:
 - the context is saved if anything changed
-- the current `ExerciseCatalog.catalogVersion` is written into shared defaults
+- the current `ExerciseCatalog.catalogVersion` is written to shared defaults
 
 So the bootstrap marker means both:
 - the app has completed at least one catalog sync
-- future launches can compare stored version against the current bundled catalog version
+- future launches can compare that stored version to the bundled version
 
-## Singleton Models
+## Singleton Records
 
-After catalog sync, onboarding ensures the singleton-style models exist:
+After catalog sync, onboarding ensures the singleton-style app records exist:
 - `SystemState.ensureAppSettings(context:)`
 - `SystemState.ensureUserProfile(context:)`
 
-Those helpers:
-- fetch the first existing `AppSettings` or `UserProfile`
-- create and save one if none exists
+Those helpers either fetch the existing record or create and save one if it does not exist yet.
 
-This is why the app can safely assume those records should exist once onboarding is done, even on a brand-new install.
+## Profile Onboarding
 
-## Profile Onboarding vs Ready
+After the exercise catalog and singleton records exist, onboarding routes from the profile state.
 
-After the catalog and singleton models are ready, `OnboardingManager.routeFromProfile(_:)` decides the next state.
-
-If the profile is missing required fields, the app routes into the appropriate onboarding step:
+If required fields are missing, the user is taken through:
 - name
 - birthday
 - height
 
 If nothing is missing, onboarding transitions directly to `.ready`.
 
-So there are really two phases:
+So VillainArc has two startup phases:
 - system bootstrap
 - user profile completion
 
-`SetupGuard` later treats both as part of being "ready."
+`SetupGuard` treats both as part of being ready.
 
-## What Happens If the User Deletes and Reinstalls the App
+## Failure, Retry, and Slow-Network States
 
-For a reinstall, the important detail is that the local app-group store and defaults are gone, but the user's CloudKit private database may still contain their old VillainArc data.
-
-That means on reinstall:
-- the stored catalog version is gone
-- `hasCompletedInitialBootstrap()` returns `false`
-- onboarding takes the first-launch path again
-- the app waits for CloudKit import before seeding
-
-After import finishes, catalog sync runs against whatever came down from CloudKit.
-
-That handles two cases at once:
-- old synced catalog exercises are reused instead of duplicated
-- any catalog changes shipped since the user last had the app are applied now
-
-So reinstall is not just "seed from scratch." It is "import first, then reconcile the imported store with the current bundled catalog."
-
-## Regular Launch After Bootstrap
-
-Once a catalog version has been stored, `OnboardingManager.startOnboarding()` takes the returning-user path through `handleReturningLaunch()`.
-
-That path is intentionally faster:
-- it does not block on CloudKit import
-- it immediately ensures `AppSettings` and `UserProfile`
-- it routes into missing profile steps or `.ready`
-
-Then, if the bundled exercise catalog version has changed, it starts a background task:
-- `DataManager.seedExercisesIfNeeded()`
-
-If that sync changes anything, the app reindexes Spotlight.
-
-So returning launches prioritize getting the user into the app quickly, while catalog updates happen opportunistically in the background.
-
-## How Catalog Updates Are Applied Later
-
-`DataManager.catalogNeedsSync()` compares:
-- stored catalog version in shared defaults
-- current `ExerciseCatalog.catalogVersion`
-
-If the versions differ, the sync path runs again.
-
-The update behavior is:
-- new bundled catalog exercises are inserted
-- existing catalog exercises with the same `catalogID` are updated in place
-- changed metadata is pushed into `ExercisePrescription` and `ExercisePerformance`
-- custom exercises are ignored by this sync path because it only fetches non-custom catalog exercises
-
-This means catalog updates are additive and metadata-correcting, not destructive.
-
-The app is not rebuilding the whole database. It is reconciling live data with the latest bundled catalog by `catalogID`.
-
-## Spotlight During Bootstrap
-
-On first bootstrap and on explicit onboarding paths, the app reindexes all Spotlight data after seeding:
-- `SpotlightIndexer.reindexAll(context: context)`
-
-On returning launch, Spotlight is only fully reindexed if the background catalog sync actually changed anything.
-
-That keeps search surfaces aligned with the latest exercise metadata without making every launch expensive.
-
-## Why `SetupGuard` Exists
-
-Many App Intents can be triggered before the foreground app has gone through the current launch's onboarding/bootstrap path.
-
-That creates a real risk:
-- the catalog bootstrap marker might not exist yet
-- `AppSettings` might not exist yet
-- `UserProfile` might not exist yet
-- the profile might still be incomplete
-- there might already be an active workout or active plan flow
-
-`SetupGuard` is the defensive boundary for those entrypoints.
-
-### `requireReady`
-
-`SetupGuard.requireReady(context:)` checks:
-- the initial catalog bootstrap marker exists
-- `AppSettings` exists
-- `UserProfile` exists
-- the profile has no missing onboarding step
-
-If any of those fail, the intent throws `SetupGuardError.onboardingNotComplete`.
-
-The user-facing meaning is:
-- launch the app and finish setup first
-
-### `requireNoActiveFlow`
-
-`SetupGuard.requireNoActiveFlow(context:)` checks for:
-- incomplete workout plans
-- incomplete workout sessions
-
-If one exists, it throws the same active-flow errors the app uses elsewhere.
-
-### `requireReadyAndNoActiveFlow`
-
-This is just the composition of both checks.
-
-It is used by intents that open or navigate to a feature and should not interrupt another active flow.
-
-Examples:
-- open a workout
-- open a workout plan
-- open exercise history
-- show workout history
-
-### Why Some Intents Only Use `requireReady`
-
-Some "start" intents use `requireReady` first and then perform more specific flow checks themselves instead of using the combined helper.
-
-Examples:
-- `StartWorkoutIntent`
-- `CreateWorkoutPlanIntent`
-- `StartTodaysWorkoutIntent`
-
-They do that so they can return more precise domain-specific errors after readiness is confirmed, like:
-- workout already active
-- workout plan already active
-- no active split
-- today is a rest day
-
-So `SetupGuard` is not trying to replace all validation. It handles the shared bootstrap/readiness boundary, and individual intents still add feature-specific checks afterward.
-
-## Failure and Retry States
-
-`OnboardingManager` can also route into blocking states before the app is ready:
-- no Wi-Fi
+`OnboardingManager` can enter these blocking states before the app is ready:
+- no network
 - no iCloud
 - iCloud account issue
 - CloudKit unavailable
+- syncing
 - syncing slow network
 - generic bootstrap error
 
-Those states live in `OnboardingView` and are part of why onboarding is represented as a state machine instead of a single one-shot task.
+A few details matter here:
+- slow-network UI appears if CloudKit import still has not completed after 15 seconds
+- import wait fails hard after 60 seconds
+- the no-network state starts network monitoring so onboarding can retry when connectivity returns
+- `OnboardingView` also retries when the app becomes active again for `.noiCloud`, `.cloudKitAccountIssue`, and `.cloudKitUnavailable`
+
+## Reinstall Behavior
+
+On reinstall, the local app-group store and defaults are gone, but the user's CloudKit data may still exist.
+
+That means:
+- the catalog version marker is gone
+- onboarding takes the first-bootstrap path again
+- the app waits for CloudKit import before seeding
+
+This is correct. Reinstall is handled as "import first, then reconcile with the current bundled catalog," not "blindly seed from scratch."
+
+## Why `SetupGuard` Exists
+
+App Intents can run before the foreground app has completed the current launch's onboarding flow. That creates real risks:
+- the bootstrap marker might not exist yet
+- `AppSettings` might not exist yet
+- `UserProfile` might not exist yet
+- profile onboarding might still be incomplete
+- there might already be an unfinished workout or plan
+
+`SetupGuard` is the shared defensive boundary for those cases.
+
+### `requireReady`
+
+Checks:
+- initial bootstrap marker exists
+- `AppSettings` exists
+- `UserProfile` exists
+- `UserProfile.firstMissingStep == nil`
+
+If any of those fail, the intent throws `SetupGuardError.onboardingNotComplete`.
+
+### `requireNoActiveFlow`
+
+Checks for persisted incomplete work:
+- `WorkoutPlan.incomplete`
+- `WorkoutSession.incomplete`
+
+It does not inspect in-memory presentation state. It is purely a persistence-side guard.
+
+### `requireReadyAndNoActiveFlow`
+
+Composes both checks and is used by intents that should only run when setup is complete and no other active workflow is already in progress.

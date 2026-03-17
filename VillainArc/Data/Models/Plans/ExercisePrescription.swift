@@ -66,7 +66,13 @@ final class ExercisePrescription {
         sets = original.sortedSets.map { SetPrescription(copying: $0, exercise: self) }
     }
 
-    func addSet() {
+    func addSet(restoringFrom originalExercise: ExercisePrescription? = nil) {
+        if let restoredSet = nextRestorableTailSet(from: originalExercise) {
+            sets?.append(SetPrescription(copying: restoredSet, exercise: self))
+            reindexSets()
+            return
+        }
+
         if let previous = sortedSets.last {
             sets?.append(SetPrescription(exercisePrescription: self, targetWeight: previous.targetWeight, targetReps: previous.targetReps, targetRest: previous.targetRest, targetRPE: previous.targetRPE))
         } else {
@@ -105,6 +111,22 @@ final class ExercisePrescription {
     func reindexSets() {
         for (index, set) in sortedSets.enumerated() {
             set.index = index
+        }
+    }
+
+    private func nextRestorableTailSet(from originalExercise: ExercisePrescription?) -> SetPrescription? {
+        guard let originalExercise else { return nil }
+
+        let originalSets = originalExercise.sortedSets
+        guard !originalSets.isEmpty else { return nil }
+
+        let originalSetIDs = Set(originalSets.map(\.id))
+        let usedOriginalSetIDs = Set(sortedSets.map(\.id)).intersection(originalSetIDs)
+        let originalSetByID = Dictionary(uniqueKeysWithValues: originalSets.map { ($0.id, $0) })
+        let maxLinkedOriginalIndex = sortedSets.compactMap { originalSetByID[$0.id]?.index }.max() ?? -1
+
+        return originalSets.first { set in
+            !usedOriginalSetIDs.contains(set.id) && set.index > maxLinkedOriginalIndex
         }
     }
 

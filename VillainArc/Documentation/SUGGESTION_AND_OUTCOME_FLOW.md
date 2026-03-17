@@ -1,88 +1,77 @@
 # Suggestion and Outcome Flow
 
-This document explains how VillainArc handles plan suggestions and their later outcomes: what happens when a plan-based workout reaches summary, how older suggestions are evaluated, how new suggestions are created, how accept/reject/defer works, how deferred suggestions block the next plan workout, and how manual plan edits clean up stale suggestion state.
+This document explains how VillainArc handles plan suggestions and later outcomes: how suggestion events are created, where users review them, how deferred suggestions block the next plan workout, how later workouts evaluate prior changes, and how manual plan edits clean up stale unresolved events.
 
 ## Main Files
 
 - `Views/Workout/WorkoutSummaryView.swift`
 - `Views/Suggestions/DeferredSuggestionsView.swift`
 - `Views/Suggestions/SuggestionReviewView.swift`
+- `Views/Suggestions/WorkoutPlanSuggestionsSheet.swift`
+- `Data/Models/Suggestions/SuggestionEvent.swift`
+- `Data/Models/Suggestions/PrescriptionChange.swift`
+- `Data/Models/Suggestions/SuggestionEvaluation.swift`
+- `Data/Models/Suggestions/SuggestionGrouping.swift`
+- `Data/Models/Suggestions/SuggestionSnapshots.swift`
 - `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
 - `Data/Services/Suggestions/Generation/RuleEngine.swift`
 - `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
-- `Data/Models/Suggestions/SuggestionEvent.swift`
-- `Data/Models/Suggestions/SuggestionEvaluation.swift`
-- `Data/Models/Suggestions/PrescriptionChange.swift`
-- `Data/Models/Suggestions/SuggestionGrouping.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
 
 ## Core Model
 
-The suggestion system is built around three persisted model layers:
+The suggestion system is built around three persisted layers:
 
-- `SuggestionEvent`: the grouped review/evaluation unit
-- `SuggestionEvaluation`: one persisted outcome-evaluation pass for one later workout
-- `PrescriptionChange`: the scalar change rows inside that event
+- `SuggestionEvent`: one grouped review/evaluation unit
+- `PrescriptionChange`: one scalar before/after mutation inside that event
+- `SuggestionEvaluation`: one later-workout outcome evaluation for that event
 
-### SuggestionEvent
+### `SuggestionEvent`
 
 `SuggestionEvent` stores:
-- the source session (`sessionFrom`)
-- the target exercise identity (`catalogID`)
-- grouped decision state
-- grouped outcome state
-- the triggering performance relationship (`triggerPerformance`)
-- persisted evaluation rows (`evaluations`)
-- required evaluation count threshold
+- the source session through `sessionFrom`
+- the live target exercise and optional live target set
+- decision state
+- outcome state
+- the triggering performance through `triggerPerformance`
+- the copied triggering set identity through `triggerTargetSetID`
+- persisted evaluation rows
+- required evaluation count
 - training style
-- reasoning text
+- confidence score and reasoning text
 - child `PrescriptionChange` rows
 
-This is the main object shown in review UI and the main object whose decision/outcome state changes over time.
-
-The important detail is why those fields exist:
-- `triggerPerformance` points at the immutable triggering `ExercisePerformance`
-- `triggerTargetSnapshot` is now computed from `triggerPerformance.originalTargetSnapshot`, so the event still has frozen trigger-time prescription context without duplicating the snapshot onto the event
-- `evaluations` accumulates one `SuggestionEvaluation` per evaluated workout session
-- `latestEvaluation` is a computed shortcut to the newest persisted evaluation row
-- `requiredEvaluationCount` is the number of sessions that must be evaluated before the outcome is finalized; set at generation time based on change type and category
-- `trainingStyle` preserves how the generator interpreted the exercise so later outcome evaluation can use the same lens, including whether the session behaved like straight sets, a feeder ramp into a heavy cluster, a reverse pyramid, a top-set/backoff structure, rest-pause or cluster-style work, drop-set-dominant work, or an ambiguous pattern
-- `suggestionConfidence` stores the persisted strength of the suggestion itself, derived from the draft's evidence strength and surfaced in review UI as a simple tier label
-- `changeReasoning` and `outcomeReason` give both the review UI and future debugging a human-readable explanation
-- `targetExercisePrescription` and optional `targetSetPrescription` keep the live plan target on the event itself
-- `triggerTargetSetID` preserves which original target set the event referred to, even if live links later disappear
-- `category` identifies the event family (`performance`, `recovery`, `structure`, `repRangeConfiguration`, and future buckets) so deduplication and unresolved-overlap blocking can reason at the event level
-
-One important modeling rule now is:
+One important modeling rule:
 - live prescription relationships are the source of truth for current plan behavior
-- copied UUIDs inside snapshots/events are the source of truth for historical matching
-- indices are kept only for order, labels, and human-readable context
+- copied target-set IDs and snapshots are the source of truth for historical matching
+- set indices are mostly for ordering and labeling
 
-### PrescriptionChange
+`SuggestionEvent` does not duplicate the trigger-time target snapshot on itself anymore. It reaches that frozen context through `triggerPerformance.originalTargetSnapshot`.
 
-Each `PrescriptionChange` stores one concrete mutation, such as:
+### `PrescriptionChange`
+
+Each `PrescriptionChange` stores one exact mutation, such as:
 - weight increase/decrease
 - reps increase/decrease
 - rest increase/decrease
 - set type change
 - rep range changes
 
-So an event can represent one grouped recommendation while still carrying one or more exact plan deltas.
+Weight values here are canonical kg.
 
-That keeps grouped suggestions coherent at the event level while preserving simple scalar before/after deltas that are easy to render, apply, and evaluate. Weight values inside `PrescriptionChange` and `SetPrescription.targetWeight` are canonical kg. Active `SetPerformance.weight` values are temporarily converted into the user's preferred unit while the workout or editable plan copy is live, then normalized back to kg before summary-driven suggestion and outcome work runs.
+### `SuggestionEvaluation`
 
-### SuggestionEvaluation
+Each `SuggestionEvaluation` stores one later workout's evaluation of the event:
+- the source workout session ID
+- the evaluated `ExercisePerformance`
+- the partial outcome for that workout
+- confidence
+- reason
+- evaluation timestamp
 
-`SuggestionEvaluation` is a persisted model row linked to both the suggestion event and the evaluated `ExercisePerformance`. Each row represents one workout session's evaluation of the suggestion:
-
-- `sourceWorkoutSessionID`: the `WorkoutSession.id` that produced this row — used for cross-invocation dedup
-- `performance`: the evaluated `ExercisePerformance`
-- `partialOutcome`: the outcome determined for this session
-- `confidence`: rule-engine or AI confidence (0–1)
-- `reason`: prefixed explanation string (`[Rules]`, `[AI]`, or `[AI override]`)
-- `evaluatedAt`: when this evaluation row was written
+That lets VillainArc accumulate evidence across more than one later session.
 
 ## The Two State Machines
 
@@ -93,519 +82,226 @@ Suggestions have two separate lifecycles.
 - `pending`: new and not reviewed
 - `accepted`: user chose to apply it
 - `rejected`: user chose not to apply it
-- `deferred`: user postponed it for later
+- `deferred`: user postponed it
 
 ### Outcome State
 
 - `pending`: not evaluated yet
-- `good`: the suggestion looks like it worked
-- `tooAggressive`: the change appears too hard
-- `tooEasy`: the change appears too easy
-- `insufficient`: the change was followed, but it did not meaningfully fix the targeted problem
-- `ignored`: the user did not really follow the suggestion
+- `good`
+- `tooAggressive`
+- `tooEasy`
+- `insufficient`
+- `ignored`
 
-The important distinction is:
-- decision is about what the user chose
-- outcome is about how that choice played out later
+Decision is about what the user chose. Outcome is about how that choice played out later.
 
-## Where the Flow Starts
+## Where Suggestions Start
 
-The main suggestion lifecycle starts in `Views/Workout/WorkoutSummaryView.swift`.
+The main lifecycle starts in `WorkoutSummaryView`.
 
-When a plan-based workout reaches summary, `generateSuggestionsIfNeeded()` runs.
+For plan-backed sessions, `generateSuggestionsIfNeeded()` does:
 
-Its order is:
 1. `OutcomeResolver.resolveOutcomes(for: workout, context: context)`
 2. `SuggestionGenerator.generateSuggestions(for: workout, context: context)`
 
-So the app first looks backward at older suggestions, then forward to create new ones.
+So the app always looks backward at older unresolved events before it looks forward and creates new ones.
 
-This only runs when `workout.workoutPlan != nil`.
+## Review Surfaces
 
-## Outcome Resolution
+VillainArc has three suggestion surfaces.
 
-Outcome resolution happens in:
-- `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
-- `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
+### 1. Summary Review
 
-The resolver gathers eligible older events by looking at the plan prescriptions linked to the current workout and finding events that are:
-- still `outcome == .pending`
-- older than the current workout
-- already decided as `accepted` or `rejected`
+`WorkoutSummaryView` renders the current session's newly generated events through `SuggestionReviewView`.
 
-Then it matches those events against the current workout’s performed exercises and sets.
+Available actions:
+- accept
+- reject
+- defer
 
-### What Actually Counts as Eligible
+Action behavior:
+- accept = set `decision = .accepted`, apply all `PrescriptionChange`s to the live plan, save
+- reject = set `decision = .rejected`, leave the plan unchanged
+- defer = set `decision = .deferred`, leave the plan unchanged
 
-Outcome resolution does not scan every historical suggestion in the database.
+When summary closes, any still-`pending` current-session events are automatically converted to `deferred`.
 
-It starts from the current workout’s live prescription links:
-- current `ExercisePerformance.prescription`
-- current `SetPerformance.prescription`
-- each prescription’s attached `SuggestionEvent`s
+### 2. Deferred Pre-Workout Review
 
-That means only suggestions still attached to the active plan structure are considered.
+If a plan still has `pending` or `deferred` events, `AppRouter.startWorkoutSession(from:)` starts the session in `.pending`.
 
-At the set level, the resolver is stricter:
-- the event must still point at a live `targetSetPrescription`
-- the current workout must contain a completed performed set still linked to that exact target set
+`DeferredSuggestionsView` blocks entry to active logging until those events are resolved.
 
-If that evidence is missing, the resolver skips the event for now and leaves `outcome == .pending`.
+Available actions:
+- accept one
+- reject one
+- accept all
+- skip all
 
-### Deleted Sets, Deleted Exercises, and Skipped Evidence
+Important detail:
+- accepting a suggestion mutates the plan and also hydrates the already-created pending session copy through `hydratePendingSessionCopy(...)`
+- rejecting or skipping only changes decision state
 
-This is the practical behavior:
-- if a set-level suggestion targets a set that the user simply did not complete this session, there is no evaluation evidence yet, so the outcome stays pending
-- if the user deletes a set or replaces an exercise during the session so the performed work is no longer linked to that original target, the resolver cannot confidently evaluate that suggestion in this workout
-- if the target still exists in the plan, the event can remain pending and be evaluated in a later workout when a completed performed set is again linked to that same live target
-- if the user manually edits the plan and removes or invalidates that unresolved target before evaluation, `WorkoutPlan+Editing` deletes the unresolved suggestion event instead of keeping stale outcome work around
+The workout only transitions to `.active` once there are no pending or deferred events left.
 
-So there are really two paths for unresolved suggestions:
-- wait for a future workout if the target still exists
-- get deleted during plan editing if the target itself was manually changed away
+### 3. Plan-Level Suggestions Sheet
 
-### Multi-Session Confirmation
+`WorkoutPlanDetailView` can open `WorkoutPlanSuggestionsSheet`, which has two tabs:
 
-Outcomes are not finalized after a single workout. Instead, the resolver accumulates evidence across multiple sessions before committing.
+- `To Review`
+  - backed by `pendingSuggestionEvents(...)`
+  - shows plan suggestions whose decision is still `pending` or `deferred`
+- `Awaiting Outcome`
+  - backed by `pendingOutcomeSuggestionEvents(...)`
+  - shows accepted or rejected suggestions whose `outcome == .pending`
 
-Each time the resolver evaluates an eligible event for a given workout, it creates one `SuggestionEvaluation` linked to that event. That row stores:
-- `sourceWorkoutSessionID`: the `WorkoutSession.id` that produced this evaluation
-- `performance`: the evaluated `ExercisePerformance`
-- `partialOutcome`: the outcome determined for this session (good, tooAggressive, tooEasy, insufficient, ignored)
-- `confidence`: how confident the rule or AI was
-- `reason`: a human-readable explanation prefixed with `[Rules]`, `[AI]`, or `[AI override]`
+This surface does not generate anything new. It is an inspection and management surface for suggestion state already attached to the plan.
 
-The outcome only finalizes when:
-- `event.evaluations.count >= event.requiredEvaluationCount` (enough sessions accumulated)
-
-All outcome types now honor the full threshold, including `tooAggressive`, so a single noisy workout does not short-circuit multi-session confirmation.
-
-### Safety-Weighted Priority at Finalization
-
-When the threshold is reached, the winner is not simply the most recent entry or a majority vote.
-
-The resolver applies a safety-weighted priority across all accumulated history entries:
-
-```
-tooAggressive > insufficient > good > tooEasy > ignored
-```
-
-The first outcome in that priority order that appears in any entry wins. The `outcomeReason` is taken from that winning entry.
-
-This means a single `tooAggressive` in the history always wins, even if the other entries were `good`. And `good` beats `tooEasy` to avoid treating a plateau as progress.
-
-### Deduplication Guards
-
-The resolver has two dedup layers to prevent double-counting:
-
-**Within-invocation dedup**: Each resolver call tracks a `processedEventIDs: Set<UUID>`. AI results are keyed by event and merged into the single apply pass, and `processedEventIDs` still ensures an eligible event can only append one entry per `resolveOutcomes` call.
-
-**Cross-invocation dedup**: Before inserting a new evaluation row, the resolver checks `event.evaluations` for any existing row whose `sourceWorkoutSessionID` matches the current workout's ID. If one exists, the insert is skipped. This prevents calling `resolveOutcomes` twice for the same workout from inflating the history.
-
-### Deterministic First, AI Second
-
-`OutcomeRuleEngine` runs first for each change.
-
-`AIOutcomeInferrer` is only a fallback for lower-confidence cases. The resolver now gates AI calls so high-confidence deterministic results skip model inference entirely.
-
-AI still does not run unless the current workout has enough evidence to judge that event shape at all. In particular:
-- set-scoped events still require a completed performed set linked to the live target set
-- recovery events also require the downstream completed working set that the rest change is supposed to help
-- if that structural evidence is missing, the event stays pending instead of asking AI to infer across the gap
-
-The resolver uses this shape:
-- if there is no rule signal, AI may decide the partial outcome
-- if rule confidence is below `0.85`, AI runs as a second opinion
-- if rule confidence is high (`>= 0.85`), rules win without invoking AI
-
-When AI is available, it can override only when:
-- the AI outcome disagrees with the rule result
-- AI confidence is meaningfully stronger than the rule signal
-- lower-confidence rule paths use a looser override threshold than mid-confidence ones
-
-The merged outcome is stored as `partialOutcome` on the new `SuggestionEvaluation`. Once the threshold is reached, the safety-weighted priority selects the final `event.outcome`, `event.outcomeReason`, and `event.evaluatedAt`.
-
-This is why outcomes are not tied only to accepted changes. Rejected suggestions can still get evaluated later if the user effectively trained in line with them anyway.
-
-### How Change Types Are Judged
-
-The deterministic rules are change-type specific:
-- weight changes usually check whether the user actually moved toward or reached the new load, then classify the result by reps relative to the frozen trigger-time rep policy
-- rep changes check whether the user actually performed near the new rep target rather than the old one
-- for easing performance changes like lower weight or lower rep targets, low-confidence `good` is reserved for partial-but-promising attempts; `insufficient` means the athlete meaningfully followed the easier target but it still did not improve the problem enough
-- rest changes check whether the user actually followed the interval using the set's `effectiveRestSeconds`, then judge the following working set against the trigger workout. Modest same-direction overshoots still count as weaker evidence, but large overshoots no longer score as a clean test of the suggested interval
-- rep-range changes judge the full working-set distribution against the post-change range or target
-- set-type changes are basically binary: did the performed set type match the new target type
-
-There is one important category-specific exception:
-- `warmupCalibration` weight changes are judged by whether the adjusted set still behaved like a warmup relative to the working/top-set anchor, not by the normal working-set progression lens
-
-For recovery suggestions, the set-level target owns the rest interval, but the effect is judged on the next completed working set. In practice that means a rest increase on set `N` is evaluated by checking whether the athlete actually used that interval and whether set `N+1` improved or at least recovered from the original failure mode. If the interval was followed but the downstream set still did not improve enough, the resolver records `insufficient` rather than over-crediting the suggestion as `good`. If the athlete only succeeds by resting materially longer than the suggested new interval, that also resolves as `insufficient` rather than a clean `good`, because the suggestion direction was right but the amount was still not enough.
-
-This is why event-level set targeting matters so much. For weight, reps, rest, and set-type changes, the resolver only evaluates a set-scoped event when it can match a completed performed set through the live `targetSetPrescription`. Historical fields and copied snapshot IDs are still valuable for generation, frozen snapshots, AI context, and fallback labeling, but they are not used as authority for current set-level outcome resolution.
-
-## New Suggestion Generation
+## Generation
 
 New suggestions are created in:
-- `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
-- `Data/Services/Suggestions/Generation/RuleEngine.swift`
-- `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
-
-### Generation Flow
-
-For each exercise in the current plan-based session, the generator:
-- finds the linked prescription
-- gathers completed sets
-- fetches completed history for that exercise
-- resolves training style
-- builds an `ExerciseSuggestionContext`
-- asks `RuleEngine` for candidate `SuggestionEventDraft`s
-
-After collecting drafts from all exercises, it:
-- suppresses drafts that are blocked by unresolved incompatible events already attached to the same live target scope
-- resolves remaining conflicts with `SuggestionDeduplicator`
-- converts surviving drafts into persisted `SuggestionEvent`s with child `PrescriptionChange`s
+- `SuggestionGenerator`
+- `RuleEngine`
+- `SuggestionDeduplicator`
 
 ### What Generation Looks At
 
-Generation is not based on the current workout alone.
-
-For each plan-backed exercise, the generator combines:
-- the current session’s completed performed sets
-- the current live prescription and rep-range policy
+For each plan-backed exercise in the current session, generation combines:
+- the current session's completed sets
+- the current live prescription
 - recent completed performances for the same `catalogID`
-- historical target snapshots from those earlier performances when available
-- the resolved training style for picking the right progression sets
+- frozen target snapshots from older performances when available
+- resolved training style
 
-When the rule engine compares older workouts to the current prescription, it does not assume today’s target values were always true in the past.
+Historical matching is UUID-based rather than set-index based:
+- each historical `SetPerformance` stores `originalTargetSetID`
+- each frozen snapshot carries copied target-set IDs
 
-For older performances it uses:
-- `ExercisePerformance.originalTargetSnapshot`
-- `SetPerformance.originalTargetSetID`
-
-That lets it ask questions like:
-- what rep range was this exercise using in that earlier session?
-- which original target set did this performed set correspond to back then?
-- did the user actually attempt the prescribed weight at that time?
-
-The important improvement here is that historical matching is no longer keyed by set index. Instead:
-- each `SetTargetSnapshot` carries the original target set UUID
-- each historical `SetPerformance` carries `originalTargetSetID`
-- the rule engine matches historical performed sets back to the correct original target set by UUID
-
-This matters because indices can change after structural edits, but the copied UUID still points at the same logical target set.
+That lets generation keep matching the right logical target even after live plan set order changes.
 
 ### Training Style
 
 Training style is resolved through:
 - `MetricsCalculator.detectTrainingStyle(...)` first
-- `AITrainingStyleClassifier` only when deterministic style detection returns `.unknown`
+- `AITrainingStyleClassifier` only when deterministic detection returns `.unknown`
 
-So AI is a fallback, not the primary path.
+That style is then reused for:
+- choosing the right progression evidence window
+- storing how the event was interpreted
+- later outcome evaluation
 
-The resolved style now uses both load order and explicit set types:
+### Draft Conflict Handling
 
-- explicit `warmup` sets strongly suggest that true progression evidence begins after the ramp
-- explicit `dropSet` sets strongly suggest fatigue-oriented continuation work
-- working-set structure can resolve into straight sets, ascending, ascending pyramid, descending pyramid, feeder ramp, reverse pyramid, top set plus backoffs, rest-pause or cluster-style work, drop-set clusters, or unknown
+Before drafts become persisted events, the generator does two conflict passes.
 
-The practical goal is not perfect labeling. It is choosing the right progression evidence window and avoiding obvious cases where warmups, feeders, or fatigue clusters distort normal progression logic.
+#### 1. Blocked by Older Unresolved Events
 
-Training style is only one half of the progression lens. After the engine selects the relevant progression sets, it now also applies an exercise-context progression profile derived from things like `equipmentType`, `catalogID`, and lift class. That profile adjusts how aggressive the engine should be about immediate progression, confirmed progression, overshoot jumps, regression, and load-drift cleanup. The heavy-compound branch is intentionally limited to reviewed built-in catalog exercises right now, so uncategorized or future custom barbell movements still fall back to the default profile until they are explicitly reviewed.
+If an unresolved older event is already attached to the same target scope and the categories are incompatible, the new draft is suppressed for now.
 
-### Main Rule Buckets
+That keeps the app from piling overlapping unresolved suggestions onto the same target.
 
-`RuleEngine` is organized into a few buckets:
-- progression rules for immediate or confirmed load increases
-- cleanup/safety rules for lowering load or matching the prescription to what the user is already doing
-- plateau/rest rules when performance is stalling and recovery looks limiting
-- set-type hygiene rules when warmup/working/drop-set structure no longer matches actual use
-- exercise-level rep-range rules when the current mode or range no longer fits recent performance
+#### 2. Dedup Within the Current Generation Pass
 
-In practice it looks at signals like:
-- whether progression sets hit or overshot the top of a range or target
-- whether the same reps and weight have repeated across recent sessions
-- whether the user fell below the floor while still attempting the prescribed load
-- whether the user has been consistently using meaningfully different weights than prescribed
-- whether short rest appears to be hurting downstream sets
-- whether estimated 1RM has plateaued across recent sessions
-- whether recent set types consistently differ from the prescription
-- whether recent rep evidence suggests a target should become a range, or a range should shift up or down
+`SuggestionDeduplicator` resolves conflicts among newly generated drafts.
 
-Most of those rules use the current session plus the last 1-3 completed performances for the same exercise.
+Important behavior:
+- exercise-scoped drafts still keep one winner
+- set-scoped drafts can keep more than one event only when categories are compatible
+- default allowed coexistence is still `performance` + `recovery` on the same set
+- one narrow extra coexistence rule allows `changeSetType -> .working` alongside one same-set `performance` or `recovery` draft
 
-One important detail is that "progression sets" are style-aware rather than always meaning "all working sets":
+Its ordering prefers:
+- category priority
+- evidence strength
+- change priority
+- richer grouped changes
+- larger magnitude
 
-- feeder ramps bias toward the trailing heavy cluster
-- top-set/backoff and reverse-pyramid structures bias toward the heaviest sets
-- true rest-pause clusters bias toward the first hard mini-set rather than the full fatigue chain, but ordinary short-rest straight sets are intentionally left out of that bucket
-- drop-set clusters are prevented from driving normal load progression
-- explicit warmups are excluded from normal progression evidence
+### Persisted Event Creation
 
-Once those progression sets are chosen, exercise context changes how the rules react to them:
+Once drafts survive blocking and deduplication, `SuggestionGenerator` turns them into `SuggestionEvent`s with:
+- the source session
+- the triggering performance
+- the live target exercise and optional target set
+- copied target-set identity
+- the resolved training style
+- grouped reasoning
+- child `PrescriptionChange` rows
+- persisted confidence score
+- `requiredEvaluationCount`
 
-- heavier compounds require cleaner confirmation before load increases
-- stable machine or controlled accessory work can still progress on softer repeated evidence
-- large-jump dumbbell work prefers rep progression before load jumps
-- heavier or less stable contexts require stronger repeated misses before regression or plan-drift cleanup
-- the conservative below-range regression profiles wait for the full evidence window, while softer profiles still allow shorter repeated-miss confirmation
+## Outcome Resolution
 
-### Current Session Plus Previous Performed Work
+Outcome resolution happens in:
+- `OutcomeResolver`
+- `OutcomeRuleEngine`
 
-Inside `ExerciseSuggestionContext`, the current workout is treated as the newest performance and historical performances are appended after it.
+### Which Events Are Eligible
 
-That means generation can do things like:
-- progress immediately when this session alone strongly justifies it
-- require two recent sessions before confirming a load increase
-- require three sessions before cleaning up weight drift or proposing an initial rep range
+The resolver does not scan every suggestion in the database.
 
-So the previous performed work is not only background context. It is part of the direct evidence window many generation rules use.
+It starts from the current workout's live prescription links and only considers events that are:
+- still attached to the current plan structure
+- `outcome == .pending`
+- older than the current workout
+- already decided as `accepted` or `rejected`
 
-### Building the Persisted Event
-
-Once drafts survive deduplication, `SuggestionGenerator` turns them into real `SuggestionEvent`s.
-
-At that point it stores:
-- the triggering workout session via `sessionFrom`
-- the triggering `ExercisePerformance` via `triggerPerformance`
-- the live target exercise and optional target set on the event itself
-- the original target set UUID for set-scoped events
-- the suggestion `category`
-- the resolved training style used when interpreting the exercise
-- the grouped reasoning text
-- one or more `PrescriptionChange` rows with the exact before/after scalar values
-- `requiredEvaluationCount`: how many sessions must be evaluated before the outcome finalizes
-
-The required count is assigned at generation time based on category and change type:
-- `warmupCalibration`, `structure`, `volume` → always 1 (structural/safety signals need no confirmation)
-- `increaseWeight`, `increaseReps`, `increaseRest`, and any rep-range change → 2 (progressions need multi-session confirmation)
-- `decreaseWeight`, `decreaseReps`, `decreaseRest`, `changeSetType` → 1 (safety/cleanup changes resolve immediately)
-
-That stored context is what later makes review, deferral, outcome resolution, and history debugging possible. The event no longer duplicates trigger snapshots itself; instead it reaches the frozen trigger-time target state through `triggerPerformance.originalTargetSnapshot`.
-
-### Why Structural Set Changes Are Now Safe
-
-The current model is intentionally split into two coordinate systems:
-
-- live plan space
-  - current `ExercisePrescription`
-  - current `SetPrescription`
-  - current set ordering by `index`
-- frozen historical space
-  - `ExerciseTargetSnapshot`
-  - `ExercisePerformanceSnapshot`
-  - copied target-set UUIDs inside snapshots and events
-
-That split is what makes future structural set edits workable.
-
-If the app later adds or removes warmup/working sets and reindexes the live plan:
-- current generation and current outcome resolution still use live prescription relationships
-- historical rule evaluation still uses copied target-set UUIDs inside the frozen snapshots
-- AI can still talk about set numbers because snapshot order is preserved separately from identity
-
-So changing live set order later does not erase which original set a historical performance or set-scoped event was referring to.
-
-### Deduplication
-
-`SuggestionDeduplicator` groups candidate drafts by target scope and then selects the compatible set of winners for that scope.
-
-Current behavior:
-- exercise-scoped drafts still keep only one winner
-- set-scoped drafts may keep more than one event only when the categories are compatible
-- the default allowed multi-event set combination is still `performance` + `recovery`
-- one additional narrow coexistence rule now exists: `changeSetType -> .working` may survive alongside one same-set `performance` or `recovery` draft in the same generation pass
-- `volume`, `warmupCalibration`, `repRangeConfiguration`, and most `structure` drafts still suppress other categories on the same set in the same pass
-
-Its ordering preferences are:
-- higher-priority categories first
-- higher-priority change types first
-- then drafts with more complete grouped changes
-- then larger total magnitude
-
-In practice this helps the app avoid showing conflicting suggestions for the same exercise or set target while still allowing a small number of sensible combinations, such as a load progression plus a recovery tweak.
-
-### Unresolved Overlap Blocking
-
-Before new drafts are deduplicated and persisted, `SuggestionGenerator` also checks the active plan for unresolved existing events on the same target scope.
-
-If an unresolved event is already attached to the same exercise/set and its category is incompatible with the new draft, the new draft is suppressed for now.
-
-That means:
-- an unresolved set-level `performance` event blocks new set-level `performance` drafts for that same target
-- an unresolved set-level `structure` event blocks everything else on that target
-- exercise-level rep-range configuration suggestions do not pile up while an earlier one is still unresolved
-
-This keeps the generator from repeatedly proposing overlapping changes before the older suggestion has been reviewed or evaluated.
-
-## How Suggestions Are Reviewed in Summary
-
-`WorkoutSummaryView` renders current-session suggestion events through:
-- `groupSuggestions(...)`
-- `SuggestionReviewView`
-
-Each grouped row in `SuggestionReviewView` is a `SuggestionGroup`, which is a light wrapper around one `SuggestionEvent`.
-
-At summary time, the user can:
-- accept
-- reject
-- defer
-
-The shared mutation helpers are in `SuggestionReviewView.swift`.
-
-### Accept
-
-`acceptGroup(...)` does two things:
-- sets `event.decision = .accepted`
-- applies each `PrescriptionChange` to the live plan immediately through `applyChange(...)`
-
-That means accepted suggestions change the actual `WorkoutPlan` right away.
-
-### Reject
-
-`rejectGroup(...)`:
-- sets `event.decision = .rejected`
-- does not mutate the plan
-
-### Defer
-
-`deferGroup(...)`:
-- sets `event.decision = .deferred`
-- does not mutate the plan yet
-
-### Leaving Summary With Pending Suggestions
-
-When summary is finalized, `WorkoutSummaryView.finishSummary()` calls `deferRemainingSuggestions()`.
-
-That converts any still-`pending` current-session suggestion events to `deferred`.
-
-So the app never leaves summary with current-session suggestions still in `pending`. They become deferred review for the next plan-based session.
-
-## How Deferred Suggestions Block the Next Plan Workout
-
-Before a plan-based session starts logging, `AppRouter.startWorkoutSession(from:)` checks:
-
-- `pendingSuggestionEvents(for: plan, in: context)`
-
-If any `pending` or `deferred` events exist for that plan, the new session starts in `.pending` instead of `.active`.
-
-`WorkoutSessionContainer` then shows `DeferredSuggestionsView` first.
-
-### What Counts as Pending Before Workout Start
-
-`pendingSuggestionEvents(...)` walks the plan’s exercise and set event relationships and returns unique `SuggestionEvent`s whose decision is:
-- `pending`
-- `deferred`
-
-So the pre-workout gate is event-driven, not based on raw child changes by themselves.
-
-## DeferredSuggestionsView
-
-`Views/Suggestions/DeferredSuggestionsView.swift` is the pre-workout gate for unresolved plan suggestions.
-
-It loads the plan’s pending/deferred events, groups them, and makes the user resolve them before the workout can really begin.
-
-Available actions:
-- accept one group
-- reject one group
-- accept all
-- skip all
-
-### Accept in Deferred Review
-
-Accepting from `DeferredSuggestionsView` still uses `acceptGroup(...)`, so it:
-- marks the event accepted
-- mutates the live plan immediately
-- hydrates the already-created pending session copy to match the accepted target
-- refreshes that exercise's frozen target snapshot from the updated plan prescription so the session is attempting the accepted target state, not the stale pre-review one
-
-### Reject in Deferred Review
-
-Rejecting marks the event rejected and leaves the plan unchanged.
-
-### Accept All
-
-Applies every pending/deferred event to the plan, marks them accepted, then moves the session to `.active`.
-
-### Skip
-
-Marks every pending/deferred event as rejected, then moves the session to `.active`.
-
-### Transition to the Workout
-
-The session only proceeds to `.active` when no unresolved pending/deferred events remain.
-
-So deferred suggestions are not just a visual reminder. They are a real gate in the plan-based session lifecycle.
-
-## How Suggestions Are Represented in the UI
-
-The main UI helpers are in `Data/Models/Suggestions/SuggestionGrouping.swift`.
-
-`groupSuggestions(...)`:
-- groups `SuggestionEvent`s by target exercise
-- sorts them by set/index order when possible
-- builds `ExerciseSuggestionSection`s for the review UI
-
-Each visible row is labeled using either:
-- the live target set index
-- the frozen target set index
-- or “Rep Range” for exercise-level events
-
-This is why the UI can still show a meaningful target label even when some live references are weaker or have already shifted.
-
-The labeling rule is:
-- prefer the live `targetSetPrescription.index`
-- fall back to the frozen trigger snapshot index only when the live link is gone
-
-## Manual Plan Editing and Pending Suggestions
-
-Manual plan edits can make unresolved suggestion events stale.
-
-That cleanup lives in `Data/Models/Plans/WorkoutPlan+Editing.swift`.
-
-When a user edits a plan copy and applies it back to the original plan, the editing logic compares the edited copy against the original and deletes unresolved changes/events when the manual edit has already invalidated them.
+If the current workout cannot still provide the required structural evidence, the event stays pending.
 
 Examples:
-- changing a set’s target weight deletes matching unresolved weight changes for that set
-- changing reps deletes matching unresolved reps changes
-- changing rest deletes matching unresolved rest changes
-- changing set type deletes matching unresolved set-type changes
-- changing rep range values deletes matching unresolved rep-range changes
-- changing an exercise to a different catalog exercise deletes pending outcome changes for the old prescription entirely
+- set-scoped outcome evaluation requires a completed performed set still linked to the live target set
+- recovery events also require the downstream completed working set that the rest change was supposed to help
+
+### Deterministic First, AI Second
+
+`OutcomeRuleEngine` always runs first.
+
+`AIOutcomeInferrer` is only used when:
+- the rule signal is missing, or
+- rule confidence is not high enough
+
+AI is still gated by structure. If the current workout does not have enough evidence for that event shape, the event stays pending instead of asking AI to guess across the gap.
+
+### Multi-Session Evidence
+
+Outcomes are not finalized after one later workout unless the event's required evaluation count is `1`.
+
+Each eligible later workout can append one `SuggestionEvaluation`.
+
+The resolver uses two dedup guards:
+- within one resolve call, each event is processed once
+- across multiple calls, it will not append a second evaluation for the same source workout session ID
+
+### Finalization Rule
+
+Once `event.evaluations.count >= event.requiredEvaluationCount`, the event finalizes through a safety-weighted priority:
+
+```text
+tooAggressive > insufficient > good > tooEasy > ignored
+```
+
+That means a single `tooAggressive` evaluation can win over multiple `good` ones. The system intentionally biases toward safety.
+
+## Manual Plan Editing and Suggestions
+
+Manual plan edits can invalidate unresolved suggestion work. That cleanup lives in `WorkoutPlan+Editing.swift`.
+
+When a user edits a plan copy and applies it back to the original plan, VillainArc compares the original and copy and deletes unresolved events when the manual edit already changed the same target.
 
 Important detail:
-- this cleanup only deletes unresolved work where `event.outcome == .pending`
+- cleanup is keyed off `event.outcome == .pending`
+- decision state does not matter
 
-So manual editing is treated as the new source of truth for still-unresolved suggestion state.
+So accepted or rejected events can still be deleted if their outcomes are unresolved and the manual edit invalidates the target they needed.
 
 ## Freeform Workouts Saved as Plans
 
-A freeform workout normally has no suggestion flow because `workout.workoutPlan == nil`.
+A freeform workout normally has no suggestion lifecycle because `workout.workoutPlan == nil`.
 
-That changes if the user taps “Save as Workout Plan” in summary.
+That changes if the user taps "Save as Workout Plan" in summary. That path:
+- creates a completed plan from the finished workout
+- links the workout to that plan
+- backfills frozen target snapshots from the performed workout
+- reruns the suggestion pipeline against the now plan-backed session
 
-That path:
-- creates a new `WorkoutPlan(from: workout, completed: true)`
-- links the session to that new plan
-- backfills frozen target snapshots from the performed exercises
-- immediately reruns the suggestion pipeline against that new plan-backed session
-
-So a freeform workout can enter the suggestion system from summary if it is converted into a plan there.
-
-## Next Feature: Structural Set Changes
-
-The next planned extension is structural set changes, such as:
-- add/remove working sets
-- add/remove warmup sets
-
-Why the current model supports this well:
-- live set relationships already drive current generation, application, and set-level outcome resolution
-- historical matching is now UUID-based instead of index-based
-- snapshots still preserve human-readable set order for UI and AI
-
-What still needs to be added for that feature:
-- new structural `ChangeType`s for warmup/working set count changes
-- deterministic plan mutation helpers to insert/remove those sets
-- exercise-level outcome rules for structural changes
-- matching manual-edit cleanup for unresolved structural suggestions
-
-The important takeaway is that the hard part, historical identity through reindexing, is now handled by copied target-set UUIDs instead of fragile set indices.
+So a freeform workout can enter the suggestion system from summary.

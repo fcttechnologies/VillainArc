@@ -328,6 +328,82 @@ struct VillainArcTests {
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(allChanges.count == initialChanges.count)
     }
+
+    @Test @MainActor
+    // Deleting a tail set in an edit copy and re-adding it should restore the original set identity.
+    func readdingDeletedTailSetRestoresOriginalSetIdentity() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let tailSetChangeID = data.changes.first {
+            $0.event?.targetSetPrescription?.id == data.benchSet2.id
+        }?.id
+        #expect(tailSetChangeID != nil)
+
+        let editCopy = data.plan.createEditingCopy(context: context)
+        guard let copyBench = (editCopy.exercises ?? []).first(where: { $0.id == data.bench.id }),
+              let copySet2 = (copyBench.sets ?? []).first(where: { $0.id == data.benchSet2.id }) else {
+            Issue.record("Expected bench edit copy and matching tail set.")
+            return
+        }
+
+        copyBench.deleteSet(copySet2)
+        context.delete(copySet2)
+        copyBench.addSet(restoringFrom: data.bench)
+
+        let restoredTailSet = copyBench.sortedSets.last
+        #expect(restoredTailSet?.id == data.benchSet2.id)
+
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
+
+        #expect(data.bench.sortedSets.count == 2)
+        #expect(data.bench.sortedSets[1].id == data.benchSet2.id)
+
+        let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        #expect(remainingChanges.contains { $0.id == tailSetChangeID })
+    }
+
+    @Test @MainActor
+    // Restoring a deleted tail set and then editing its weight should still delete only matching unresolved set changes.
+    func editingRestoredTailSetDeletesMatchingUnresolvedChange() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let data = makePlanWithRuleSuggestions(in: context)
+
+        let tailSetChangeID = data.changes.first {
+            $0.event?.targetSetPrescription?.id == data.benchSet2.id &&
+            $0.changeType == .increaseWeight
+        }?.id
+        #expect(tailSetChangeID != nil)
+
+        let editCopy = data.plan.createEditingCopy(context: context)
+        guard let copyBench = (editCopy.exercises ?? []).first(where: { $0.id == data.bench.id }),
+              let copySet2 = (copyBench.sets ?? []).first(where: { $0.id == data.benchSet2.id }) else {
+            Issue.record("Expected bench edit copy and matching tail set.")
+            return
+        }
+
+        copyBench.deleteSet(copySet2)
+        context.delete(copySet2)
+        copyBench.addSet(restoringFrom: data.bench)
+
+        guard let restoredTailSet = copyBench.sortedSets.last else {
+            Issue.record("Expected restored tail set.")
+            return
+        }
+
+        #expect(restoredTailSet.id == data.benchSet2.id)
+        restoredTailSet.targetWeight = 170
+
+        finishEditing(editCopy, originalPlan: data.plan, context: context)
+
+        #expect(data.bench.sortedSets[1].id == data.benchSet2.id)
+        #expect(data.bench.sortedSets[1].targetWeight == 170)
+
+        let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
+        #expect(remainingChanges.contains { $0.id == tailSetChangeID } == false)
+    }
     
     @Test @MainActor
     // Deleting a plan removes unresolved changes but preserves resolved history.

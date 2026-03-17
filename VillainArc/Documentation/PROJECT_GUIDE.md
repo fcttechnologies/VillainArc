@@ -1,403 +1,342 @@
 # VillainArc Project Guide
 
-This file is the high-level walkthrough for the app. It explains how a user moves through VillainArc, which screens and services are involved, and where to look first when working on a feature. For file-by-file structure, read `Documentation/ARCHITECTURE.md`. For tricky subsystems, use the dedicated deep-dive docs linked throughout this guide.
+This file is the high-level walkthrough for the app. It explains how the main product areas fit together without going file-by-file. For the structure map, read `Documentation/ARCHITECTURE.md`. For deeper subsystem behavior, use the individual flow docs in this folder.
 
 ## What VillainArc Is
 
-VillainArc is a SwiftUI + SwiftData workout app for planning workouts, logging sessions, tracking exercise progress, and improving plans with suggestion feedback. The app also integrates with iOS system features like App Intents, Shortcuts, Spotlight, widgets, and Live Activities.
+VillainArc is a SwiftUI + SwiftData workout app for:
+- setting up a profile and local/cloud-backed data store
+- creating workout plans and split schedules
+- logging live workout sessions
+- reviewing plan suggestions after workouts
+- tracking exercise progress through cached analytics
+- exposing core flows through Spotlight, Shortcuts, widgets, and Live Activities
 
-The main app areas are:
-- onboarding and setup
+The main product areas are:
+- onboarding and readiness
 - home dashboard
 - workout sessions
 - workout plans
-- exercise detail and history
 - workout splits
-- suggestion review and outcome evaluation
+- suggestions and outcomes
+- exercise analytics and history
 
-The most important top-level files are:
-- `Root/VillainArcApp.swift`
-- `Views/ContentView.swift`
-- `Data/Services/AppRouter.swift`
-- `Data/SharedModelContainer.swift`
+## Launch and Readiness
 
-## App Launch and Onboarding
+The startup path is:
 
-The app starts in `Root/VillainArcApp.swift`, which creates `RootView`, injects `SharedModelContainer.container`, and forwards Siri/Spotlight activities into `AppRouter.shared`.
+1. `Root/VillainArcApp.swift` starts the shared CloudKit import monitor and installs the shared model container.
+2. `Root/RootView.swift` runs launch cleanup, refreshes shortcut parameters, and starts `OnboardingManager`.
+3. `OnboardingManager` decides whether this is a first bootstrap or a returning launch.
+4. `RootView` only asks `AppRouter` to resume unfinished flows after onboarding reaches `.ready`.
 
-`Root/RootView.swift` owns startup bootstrap. It creates `OnboardingManager` once per app launch, cleans up abandoned editing copies, refreshes shortcut parameters, and calls `OnboardingManager.startOnboarding()`.
+That ordering matters. VillainArc never resumes an unfinished workout or draft plan before bootstrap and profile setup are in a valid state.
 
-`Views/ContentView.swift` is the foreground app shell. It owns:
-- the `NavigationStack`
-- the home screen sections
-- the full-screen workout flow (`WorkoutSessionContainer`)
-- the full-screen plan flow (`WorkoutPlanView`)
+### First Bootstrap
 
-The onboarding state machine lives in `Data/Services/OnboardingManager.swift` and is responsible for:
-- checking connectivity through `Helpers/NetworkMonitor.swift`
-- checking iCloud and CloudKit through `Helpers/CloudKitStatusChecker.swift`
-- seeding exercises through `Data/Services/DataManager.swift`
-- rebuilding Spotlight on fresh setup through `Data/Services/SpotlightIndexer.swift`
-- ensuring `UserProfile` and `AppSettings` exist through `Data/Services/SystemState.swift`
+On the first launch, onboarding takes the full path:
+- check network connectivity
+- check iCloud sign-in state
+- check CloudKit availability
+- wait for `CloudKitImportMonitor` to confirm import completion
+- seed or sync the bundled exercise catalog through `DataManager`
+- reindex Spotlight
+- ensure `AppSettings` and `UserProfile` exist
+- either route into profile setup or mark the app ready
 
-The onboarding UI lives in `Views/Onboarding/OnboardingView.swift`. It first shows bootstrap/progress/error states, then runs the profile flow for name, birthday, and height. Once onboarding reaches `.ready`, `RootView` asks `AppRouter.checkForUnfinishedData()` whether it should reopen an incomplete workout session or resumable incomplete plan.
+The wait-before-seed rule prevents duplicate catalog exercises when existing data is still importing from CloudKit.
 
-## Home Screen
+### Returning Launch
 
-The home screen is a scroll view inside `ContentView` made of four main sections plus the bottom-bar "+" menu.
+Once the app has already completed at least one catalog sync, onboarding takes the fast path:
+- optionally start a background catalog sync if the bundled catalog version changed
+- immediately ensure `AppSettings` and `UserProfile` exist
+- route into missing profile steps or ready
 
-### Splits Section
+Returning launches prioritize getting the user back into the app quickly. Catalog updates can finish in the background.
 
-`Views/HomeSections/WorkoutSplitSectionView.swift` shows the active split state. It is the app's "what should I do today?" card. It refreshes split rotation when needed and can route to:
-- the split editor in `Views/WorkoutSplit/WorkoutSplitView.swift`
-- today's plan in `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-- split creation when no split exists
+### SetupGuard
 
-Its data comes from `Data/Models/WorkoutSplit/WorkoutSplit.swift`.
+Many App Intents can run before the foreground app has gone through the current launch's onboarding path. `SetupGuard` is the shared persistence/readiness boundary for those entrypoints. It verifies:
+- the initial catalog bootstrap marker exists
+- `AppSettings` exists
+- `UserProfile` exists and is complete
+- no persisted incomplete workout or plan exists when the intent requires a clean slate
 
-### Recent Workout Section
+Feature-specific checks still happen after `SetupGuard`.
 
-`Views/HomeSections/RecentWorkoutSectionView.swift` shows the latest completed workout and links to workout history. It uses `Views/Components/WorkoutRowView.swift` and routes to:
-- `Views/History/WorkoutsListView.swift`
-- `Views/Workout/WorkoutDetailView.swift`
+## Home Screen and Navigation
 
-### Recent Workout Plan Section
+`Views/ContentView.swift` is the foreground shell. It owns:
+- the home `NavigationStack`
+- the four home sections
+- the bottom-bar plus menu
+- the full-screen workout flow
+- the full-screen plan flow
 
-`Views/HomeSections/RecentWorkoutPlanSectionView.swift` shows the latest completed plan and links to:
-- `Views/WorkoutPlan/WorkoutPlansListView.swift`
-- `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
+The home sections are:
+- `WorkoutSplitSectionView`: today's split state and today's plan entry
+- `RecentWorkoutSectionView`: latest completed workout and workout-history entry
+- `RecentWorkoutPlanSectionView`: latest completed plan and all-plans entry
+- `RecentExercisesSectionView`: recently completed exercises based on `ExerciseHistory`
 
-It uses `Views/Components/WorkoutPlanRowView.swift`.
+The plus menu exposes two main creation entry points:
+- start an empty workout
+- create a new workout plan
 
-### Recent Exercises Section
+### The Single Active Flow Rule
 
-`Views/HomeSections/RecentExercisesSectionView.swift` shows the most recently completed exercises, using `ExerciseHistory` ordering rather than picker recency. It links to:
-- `Views/Exercise/ExercisesListView.swift`
-- `Views/Exercise/ExerciseDetailView.swift`
+`AppRouter` enforces one active flow at a time. Starting a workout or plan is blocked when any of these exist:
+- an already presented workout session
+- an already presented plan flow
+- a persisted incomplete `WorkoutSession`
+- a persisted incomplete `WorkoutPlan`
 
-It uses `Views/Components/ExerciseSummaryRow.swift`.
+That rule keeps UI actions, Spotlight launches, Siri handoffs, and Shortcuts behavior consistent.
 
-### Home Menu Actions
+## Workout Sessions
 
-The "+" menu in `ContentView` exposes two main entrypoints:
-- `router.startWorkoutSession()` for an empty workout
-- `router.createWorkoutPlan()` for a new plan
+There are three normal session entry paths:
+- empty workout from the home plus menu or `StartWorkoutIntent`
+- plan-based workout from a plan detail screen or intent
+- today's workout from the active split
 
-## Navigation and Active Flows
-
-`Data/Services/AppRouter.swift` is the navigation coordinator. It owns:
-- stack navigation through `path`
-- the active full-screen workout session through `activeWorkoutSession`
-- the active full-screen plan through `activeWorkoutPlan`
-- the original plan backing an edit-copy flow through `activeWorkoutPlanOriginal`
-- intent-driven sheet flags for split builder, rest timer, workout settings, and pre-workout context
-
-The important rule is that VillainArc only allows one active flow at a time. Router entrypoints such as `startWorkoutSession()`, `startWorkoutSession(from:)`, `createWorkoutPlan()`, and `editWorkoutPlan(_:)` all go through the same guard logic so UI actions, Spotlight launches, and App Intents behave consistently.
-
-## Starting a Workout Session
-
-There are two main session entry paths.
+All of them go through `AppRouter`.
 
 ### Empty Workout
 
-An empty workout usually starts from the home "+" menu or `StartWorkoutIntent`. That goes through `AppRouter.startWorkoutSession()`, creates a new `WorkoutSession`, saves it, and presents the full-screen workout flow.
+`AppRouter.startWorkoutSession()` creates a blank `WorkoutSession`, saves it, and presents it full screen.
 
 ### Plan-Based Workout
 
-A plan-based workout starts from:
-- `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-- `Intents/WorkoutPlan/StartWorkoutWithPlanIntent.swift`
-- `Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift`
+`AppRouter.startWorkoutSession(from:)` creates `WorkoutSession(from: plan)`, converts the live session copy from canonical kg into the current user unit, and checks whether the source plan still has pending or deferred suggestion events.
 
-All of those go through `AppRouter.startWorkoutSession(from:)`, which creates `WorkoutSession(from: plan)`, converts its set weights from canonical kg into the current `AppSettings.weightUnit` when needed, and then presents the session. If the plan has pending or deferred suggestion events, the new workout starts in `.pending` state so the user sees `DeferredSuggestionsView` before regular logging begins.
+If unresolved events exist, the session starts in `.pending` instead of `.active`.
 
-The status-driven container for workouts is `Views/Workout/WorkoutSessionContainer.swift`:
-- `.pending` -> `Views/Suggestions/DeferredSuggestionsView.swift`
-- `.active` -> `Views/Workout/WorkoutView.swift`
-- `.summary` and `.done` -> `Views/Workout/WorkoutSummaryView.swift`
+### Session States
 
-## Working Out
+`WorkoutSessionContainer` routes the session by state:
+- `.pending` -> `DeferredSuggestionsView`
+- `.active` -> `WorkoutView`
+- `.summary` and `.done` -> `WorkoutSummaryView`
 
-The active workout UI lives in `Views/Workout/WorkoutView.swift`. This screen owns:
-- the exercise pages/list
-- add exercise flow
-- finish and cancel actions
-- rest timer sheet
-- workout settings sheet
-- pre-workout context sheet
-- intent-driven sheet presentation
+Because `WorkoutSession.incomplete` means `status != .done`, launch resume can reopen any unfinished session state, including `.pending` or `.summary`.
 
-Each exercise page is `Views/Workout/ExerciseView.swift`. That screen handles:
-- the exercise's sets
-- notes
-- rep-range editor
-- rest editor
-- exercise replacement
-- exercise history sheet
+### Working Out
 
-Each set row is `Views/Components/ExerciseSetRowView.swift`. That is where reps, weight, completion state, set type, quick actions, and timer auto-start logic meet.
+`WorkoutView` is the active logging surface. It owns:
+- the horizontal exercise pager
+- add exercise
+- finish and cancel
+- pre-workout context
+- rest timer
+- workout settings
+- title and notes editing
+- intent/live-activity sheet presentation
 
-The rest timer is handled by:
-- `Views/Workout/RestTimerView.swift`
-- `Data/Services/RestTimerState.swift`
-- `Helpers/RestTimerNotifications.swift`
-- `Data/LiveActivity/WorkoutActivityManager.swift`
+`ExerciseView` and `ExerciseSetRowView` handle most set-level logging behavior.
 
-Pre-workout context lives in:
-- `Data/Models/Sessions/PreWorkoutContext.swift`
-- `Views/Workout/PreWorkoutContextView.swift`
+`RestTimerState` and `WorkoutActivityManager` are shared runtime services:
+- the timer persists active state in shared defaults
+- live activity mirrors the current active exercise, set, and timer state
 
-Workout-scoped settings live in:
-- `Views/Workout/WorkoutSettingsView.swift`
-- `Data/Models/AppSettings.swift`
+### Finishing a Workout
 
-## Finishing a Workout and Reaching Summary
+Finish is a two-stage process.
 
-Finishing a workout starts in `WorkoutView`, but the core cleanup logic lives in `Data/Models/Sessions/WorkoutSession.swift` in `finish(...)`.
+Stage 1 happens in `WorkoutView`:
+- resolve unfinished sets
+- prune empty exercises
+- delete the workout entirely if nothing meaningful remains
+- set the session to `.summary`
+- convert live set weights back to canonical kg
+- save the session
+- queue Spotlight indexing for the workout
+- stop the rest timer and live activity
 
-That finish path does not blindly jump to summary. First it resolves incomplete data:
-- unfinished sets can be completed or removed
-- empty exercises are pruned
-- if the workout ends up with no exercises left, the workout itself can be deleted instead of reaching summary
+Stage 2 happens in `WorkoutSummaryView`:
+- optionally save the workout as a plan
+- resolve older suggestion outcomes if the session is plan-backed
+- generate new suggestions if the session is plan-backed
+- defer any still-pending suggestions when the user finishes summary
+- clear active-only prescription links for historical use
+- rebuild `ExerciseHistory`
+- mark the workout `.done`
+- save and dismiss
 
-Once the workout is ready, `WorkoutSessionContainer` routes into `Views/Workout/WorkoutSummaryView.swift`.
+The first stage gets the session out of active logging cleanly. The second stage turns it into a stable completed record.
 
-`WorkoutSummaryView` is one of the app's most important orchestration files. It is where these systems meet:
-- post-workout stats and UI
-- suggestion outcome resolution
-- generation of new suggestions
-- suggestion review
-- save-as-plan flow
-- exercise history rebuild
+### Save As Workout Plan
 
-The related read-only completed-workout screens are:
-- `Views/History/WorkoutsListView.swift`
-- `Views/Workout/WorkoutDetailView.swift`
+There are two different save-as-plan paths:
 
-Those screens also matter because hiding a completed workout from history must update derived exercise history and Spotlight state.
+- From `WorkoutSummaryView`, a freeform completed workout can be turned directly into a completed `WorkoutPlan`. That path also backfills target snapshots and then reruns suggestion generation because the session is now plan-backed.
+- From `WorkoutDetailView`, a completed workout routes through `AppRouter.createWorkoutPlan(from:)`, which creates an editable incomplete plan draft and opens the plan editor.
 
-## Exercise History Updating
+### Deleting Workout History
 
-VillainArc does not recalculate exercise analytics live inside every exercise screen. Instead, completed sessions feed a derived cache.
+Completed workouts are soft-hidden, not physically removed from the store:
+- `WorkoutsListView` marks selected workouts `isHidden = true`
+- `WorkoutDetailView` does the same for a single workout
 
-That cache is `Data/Models/Exercise/ExerciseHistory.swift`. It stores:
-- session count
-- recency
-- PR-style aggregates
-- progression points for charts
+After that, `ExerciseHistoryUpdater` rebuilds the affected exercise histories and Spotlight entries.
 
-The rebuild logic is `Data/Services/ExerciseHistoryUpdater.swift`. It runs after:
-- workout completion from `WorkoutSummaryView`
-- workout hiding from `WorkoutsListView`
-- workout hiding from `WorkoutDetailView`
+## Workout Plans
 
-It batch-fetches performances, rebuilds each affected history from scratch, and also updates exercise Spotlight eligibility through `SpotlightIndexer`.
+Plans are the reusable blueprint layer of the app.
 
-If something looks wrong in exercise recency, charts, or exercise Spotlight results, this is the first subsystem to inspect.
+Main surfaces:
+- `WorkoutPlanView`: create/edit flow
+- `WorkoutPlanDetailView`: read-only plan detail
+- `WorkoutPlansListView`: all plans
+- `WorkoutPlanPickerView`: select or clear a plan for a split day
+- `WorkoutPlanSuggestionsSheet`: plan-level suggestion review and "awaiting outcome" view
 
-## Suggestions: Review, Deferral, Outcome Resolution, and New Suggestions
-
-The suggestion system is only relevant for plan-based training. It is the feedback loop that compares what happened in the workout against the plan and adjusts future prescriptions.
-
-The key files are:
-- `Views/Suggestions/DeferredSuggestionsView.swift`
-- `Views/Suggestions/SuggestionReviewView.swift`
-- `Views/Workout/WorkoutSummaryView.swift`
-- `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
-- `Data/Services/Suggestions/Generation/RuleEngine.swift`
-- `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
-- `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
-
-### Pre-Workout Review
-
-If a plan has pending or deferred suggestions, the next plan-based workout opens in `DeferredSuggestionsView` first.
-
-From there:
-- accepting a suggestion applies the change to the live plan immediately
-- rejecting a suggestion keeps the plan as-is and marks that event rejected
-- "Accept All" applies every pending/deferred event, then starts the workout
-- "Skip" marks pending/deferred events rejected, then starts the workout
-
-The screen only moves to `.active` workout logging after there are no undecided events left.
-
-### Post-Workout Summary Review
-
-When `WorkoutSummaryView` appears for a completed plan-based workout, it first runs older outcome evaluation, then generates new suggestions for the future.
-
-The post-workout order is:
-1. `OutcomeResolver.resolveOutcomes(...)`
-2. `SuggestionGenerator.generateSuggestions(...)`
-3. render generated groups through `SuggestionReviewView`
-
-At this stage:
-- accept = mark accepted and mutate the plan immediately through `applyChange(...)`
-- reject = mark rejected and leave the plan unchanged
-- defer = leave the suggestion unresolved for the next plan-based workout
-
-When the summary is dismissed, any remaining pending suggestions are auto-converted to `deferred`.
-
-### Outcome Resolution
-
-Outcome resolution evaluates how earlier suggestions actually played out after subsequent workouts. That happens in:
-- `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
-- `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
-
-Outcomes are not resolved after a single workout. Each time `resolveOutcomes` runs it creates one `SuggestionEvaluation` linked to the eligible event and the current evaluated `ExercisePerformance`. The outcome only finalizes when `event.evaluations.count >= event.requiredEvaluationCount`. When the threshold is reached, a safety-weighted priority (`tooAggressive > insufficient > good > tooEasy > ignored`) picks the winner across all accumulated evaluations. For recovery changes, the targeted set owns the rest interval, but the resolver judges whether that interval helped the following working set, and it only evaluates when that downstream linked evidence still exists.
-
-The deterministic `OutcomeRuleEngine` path runs first. `AIOutcomeInferrer` is only a fallback for lower-confidence cases that still have enough current structural evidence to judge the event.
-
-### New Suggestion Generation
-
-New suggestion generation happens in:
-- `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
-- `Data/Services/Suggestions/Generation/RuleEngine.swift`
-- `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
-
-The generator uses:
-- `MetricsCalculator` for deterministic training-style and progression logic
-- `AITrainingStyleClassifier` only when style detection is ambiguous
-- frozen suggestion context from `ExercisePerformance.originalTargetSnapshot`
-- frozen set matching from `SetPerformance.originalTargetSetID` (UUID-based, survives plan reindexing)
-- event-level category metadata to separate performance, recovery, structure, and rep-range configuration suggestions
-
-Training-style resolution now uses both load structure and explicit set typing. Warmup ramps are treated as strong evidence that real progression evidence starts later, while explicit drop sets help identify fatigue-oriented continuation work that should not drive normal load progression. Rest-pause detection is also intentionally narrow so ordinary short-rest straight sets do not lose normal progression evidence. That lets feeder ramps, reverse pyramids, top-set/backoff structures, true rest-pause or cluster-style work, and drop-set-dominant sessions map to more useful progression evidence windows than the older broad style buckets did.
-
-Progression decisions are also now context-aware beyond plate math. The suggestion engine uses small deterministic progression profiles derived from exercise context such as `equipmentType`, `catalogID`, and lift class, so stable machine work, large-jump dumbbell work, and bodyweight or assisted movements no longer all share the same burden of proof for progression, regression, or cleanup suggestions. Heavy-compound handling is intentionally scoped to reviewed built-in catalog exercises for now rather than every possible barbell movement, and the more conservative below-range regression behavior is applied only to those conservative profiles rather than globally.
-
-The persisted `SuggestionEvent` now owns the live target exercise/set links for review, cleanup, and outcome resolution. Child `PrescriptionChange` rows stay scalar-only and describe the exact before/after deltas inside that one event.
-
-Suggestion events also now persist a simple suggestion confidence score derived from draft evidence strength. In review flows, that is surfaced as a lightweight `Strong`, `Moderate`, or `Exploratory` label on pending/actionable cards so users can quickly distinguish direct evidence from heuristic suggestions.
-
-`SuggestionDeduplicator` no longer blindly keeps only one winner for every set target. It now uses event categories and compatibility rules, so the app can keep a small number of non-conflicting suggestions for the same set when appropriate while still suppressing incompatible combinations.
-
-Before new drafts are persisted, the generator also checks for unresolved existing events on the same target scope. If an older unresolved event is still attached to that exercise/set and its category conflicts with the new draft, the new draft is suppressed until the older one is resolved.
-
-## Workout Plans and Plan Editing
-
-Plans are the blueprint layer of the app. The main files are:
-- `Data/Models/Plans/WorkoutPlan.swift`
-- `Data/Models/Plans/ExercisePrescription.swift`
-- `Data/Models/Plans/SetPrescription.swift`
-- `Views/WorkoutPlan/WorkoutPlanView.swift`
-- `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-- `Views/WorkoutPlan/WorkoutPlansListView.swift`
-- `Views/WorkoutPlan/WorkoutPlanPickerView.swift`
-
-### Creating a Plan
+### Creating Plans
 
 Plans can be created from:
-- the home "+" menu through `AppRouter.createWorkoutPlan()`
-- `WorkoutPlanPickerView`
-- a completed workout via "Save as Workout Plan" from `WorkoutSummaryView` or `WorkoutDetailView`
+- the home plus menu
+- the split day plan picker
+- a completed workout
 
-The flows split in two ways:
-- home creation, picker-based creation, and "Save as Workout Plan" from `WorkoutDetailView` present `WorkoutPlanView`
-- `WorkoutSummaryView` can also create a completed plan directly with `WorkoutPlan(from: workout, completed: true)` without opening the editor
+Blank plan creation starts as an incomplete draft. A workout-derived plan draft can also start as incomplete and immediately open in the editor.
 
-### Editing a Plan
+### Editing Existing Plans
 
-Plan editing uses the copy-merge pattern. The original plan is not edited directly.
+Editing uses a copy-merge workflow:
 
-The flow is:
-1. `WorkoutPlanDetailView` calls `AppRouter.editWorkoutPlan(_:)`
-2. `WorkoutPlan.createEditingCopy(context:)` creates a temporary editing copy
-3. `AppRouter.editWorkoutPlan(_:)` converts the copy's target weights from canonical kg into the current user unit
-4. `WorkoutPlanView` edits the copy in that user unit
-5. `WorkoutPlanView` converts target weights back to kg before save, then `WorkoutPlan.applyEditingCopy(...)` or cancel logic resolves the flow
+1. `AppRouter.editWorkoutPlan(_:)` creates a persisted editing copy from the original plan.
+2. The copy is converted from canonical kg into the user's current weight unit.
+3. `WorkoutPlanView` edits the copy directly.
+4. On save, the copy is converted back to kg and `WorkoutPlan.applyEditingCopy(...)` merges it into the original plan.
+5. On cancel, the editing copy is deleted and the original remains unchanged.
 
-This matters because manual edits can invalidate unresolved suggestions. `WorkoutPlan+Editing.swift` reconciles the edited copy against the original and deletes stale pending-outcome changes when needed.
+This protects the original plan and gives the app one place to reconcile unresolved suggestion state that the manual edit invalidates.
 
-## Exercise Detail and History Flow
+While editing an existing plan, re-adding a deleted tail set first tries to restore the next unused tail set identity from the original plan instead of always creating a brand-new set. That preserves set identity for common accidental delete-and-readd cases while still letting field-specific suggestion cleanup run if the restored values are changed.
 
-The exercise area has three main user-facing screens:
-- `Views/Exercise/ExercisesListView.swift`
-- `Views/Exercise/ExerciseDetailView.swift`
-- `Views/Exercise/ExerciseHistoryView.swift`
+### Plan Suggestions Sheet
 
-### Exercise List
+`WorkoutPlanDetailView` can open `WorkoutPlanSuggestionsSheet`, which has two tabs:
+- `To Review`: pending or deferred suggestions attached to the plan
+- `Awaiting Outcome`: accepted or rejected suggestions whose outcomes are still unresolved
 
-`ExercisesListView` is the searchable catalog/detail launcher. Its ordering is based on completed workout history, not add-to-workout recency. It relies on:
-- `Data/Models/Exercise/Exercise.swift`
-- `Data/Models/Exercise/ExerciseHistory.swift`
-- `Helpers/ExerciseSearch.swift`
-- `Helpers/TextNormalization.swift`
-
-### Exercise Detail
-
-`ExerciseDetailView` is the analytics screen for one exercise. It reads cached `ExerciseHistory` data for:
-- recent performance context
-- stat tiles
-- chart data
-- progression trend context
-
-It can open:
-- `ExerciseHistoryView` for raw completed-performance history
-
-If something looks wrong in exercise detail, inspect both the UI and the underlying `ExerciseHistoryUpdater` path.
+That screen does not generate new suggestions by itself. It is a management surface for plan state that already exists.
 
 ## Workout Splits
 
-Workout splits are the scheduling layer that decide what "today" means.
+Splits are the scheduling layer that answers "what should I do today?"
 
-The main files are:
-- `Data/Models/WorkoutSplit/WorkoutSplit.swift`
-- `Data/Models/WorkoutSplit/WorkoutSplitDay.swift`
-- `Views/WorkoutSplit/WorkoutSplitView.swift`
-- `Views/WorkoutSplit/WorkoutSplitListView.swift`
-- `Views/WorkoutSplit/WorkoutSplitDayView.swift`
-- `Views/WorkoutSplit/SplitBuilderView.swift`
-
-The user-facing split flow is:
+The flow is:
 - create a split in `SplitBuilderView`
-- manage it in `WorkoutSplitView`
-- edit each day in `WorkoutSplitDayView`
+- manage it in `WorkoutSplitView` / `WorkoutSplitListView`
+- edit individual days in `WorkoutSplitDayView`
 - assign plans through `WorkoutPlanPickerView`
-- surface today's plan through `WorkoutSplitSectionView`
+- surface today's split status and plan through `WorkoutSplitSectionView`
 
 `WorkoutSplit` owns the schedule logic itself:
-- weekly mode
-- rotation mode
-- current day resolution
-- `todaysSplitDay`
-- `todaysWorkoutPlan`
-- `refreshRotationIfNeeded(...)`
+- weekly mode with a recoverable missed-day offset
+- rotation mode with current-position tracking and automatic day refresh
+- today's day resolution
+- today's workout-plan resolution
 
-This same split state is used by:
+The same split state feeds:
 - the home split card
 - `StartTodaysWorkoutIntent`
+- `OpenTodaysPlanIntent`
+- `TrainingSummaryIntent`
+- Spotlight
 - widget surfaces
 
-So if split behavior changes, the home screen, intents, and widgets are all coupled to that model.
+## Suggestions and Outcomes
 
-## Intents, Spotlight, Widgets, and Other Cross-Cutting Systems
+The suggestion system is only relevant for plan-backed training. It is the feedback loop between:
+- what the plan asked for
+- what happened in the workout
+- how future prescriptions should change
 
-These are not separate product areas, but they touch many core flows.
+### Review Flow
 
-### App Intents and Shortcuts
+There are two review moments.
 
-The intent surface lives under `Intents/`. The most important glue files are:
-- `Intents/IntentDonations.swift`
-- `Intents/VillainArcShortcuts.swift`
-- `Data/Services/SetupGuard.swift`
+Before a plan-based workout:
+- if the plan still has pending or deferred suggestion events, the new session starts in `.pending`
+- `DeferredSuggestionsView` blocks the workout until those events are accepted or rejected
+- accepting a change mutates the live plan immediately and hydrates the already-created pending session copy so the workout starts from the accepted target state
 
-Intent entrypoints generally reuse existing app logic rather than inventing separate code paths. They typically validate state with `SetupGuard`, then route through `AppRouter` or shared services/models.
+After a plan-based workout:
+- `WorkoutSummaryView` resolves older outcomes first
+- then generates new suggestion events
+- then shows the current session's generated suggestions for accept / reject / defer
+
+When summary closes, any still-pending current-session suggestions are converted to `deferred`.
+
+### Outcome Resolution
+
+Outcomes are not finalized after one later workout. `OutcomeResolver` persists one `SuggestionEvaluation` per eligible later session, then finalizes the event once enough evaluations have accumulated.
+
+The key rules are:
+- only unresolved events attached to the current plan structure are considered
+- deterministic rules run first
+- AI is a fallback for lower-confidence cases
+- final outcome selection is safety-weighted, not just most recent
+
+### Manual Plan Editing and Suggestions
+
+Plan editing is treated as a new source of truth. If a manual edit invalidates a still-unresolved suggestion target, `WorkoutPlan+Editing` deletes that unresolved event instead of keeping stale work around.
+
+For the full suggestion subsystem, read `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`.
+
+## Exercise Analytics and History
+
+VillainArc separates raw performed work from cached exercise analytics.
+
+- Raw performed work lives in `ExercisePerformance` and `SetPerformance`.
+- Cached analytics live in `ExerciseHistory`.
+
+`ExerciseHistoryUpdater` rebuilds that cache:
+- when a workout is finalized in summary
+- when completed workouts are hidden from history
+
+### User-Facing Exercise Surfaces
+
+- `RecentExercisesSectionView`: top recent exercises on the home screen
+- `ExercisesListView`: searchable full exercise browser
+- `ExerciseDetailView`: cached analytics, stat cards, and charts
+- `ExerciseHistoryView`: raw completed-performance drill-down
+
+This split is intentional:
+- `ExerciseDetailView` is fast because it reads the cache
+- `ExerciseHistoryView` is literal because it reads completed performances directly
+
+If exercise ordering or analytics look wrong, `ExerciseHistoryUpdater` and `ExerciseHistory` are usually the first places to inspect.
+
+## Spotlight, Shortcuts, Widgets, and Live Activities
+
+These are not separate product areas, but they touch almost every main flow.
 
 ### Spotlight
 
-Spotlight indexing is handled by `Data/Services/SpotlightIndexer.swift`. It indexes:
+`SpotlightIndexer` indexes:
 - completed workouts
 - completed plans
-- eligible exercises
+- exercises that have completed history
+- workout splits
 
-The app re-enters from Spotlight through `AppRouter.handleSpotlight(...)`.
+The app re-enters from Spotlight through `AppRouter.handleSpotlight(_:)`.
 
-### Live Activity and Rest Timer
+### App Intents and Shortcuts
 
-Live Activity behavior is shared across:
-- `Data/Services/RestTimerState.swift`
-- `Data/LiveActivity/WorkoutActivityManager.swift`
-- `Data/LiveActivity/WorkoutActivityAttributes.swift`
-- `VillainArcWidgetExtension/*`
-- `Intents/LiveActivity/*`
+Intent entrypoints live under `Intents/`. They generally reuse app logic through `SetupGuard`, `AppRouter`, and the same models/services used by the UI. `IntentDonations.swift` is the shared donation layer.
 
-This is why timer, active set state, and current workout status have cross-feature impact.
+### Widgets and Live Activities
+
+`WorkoutActivityManager` and the widget extension expose the active session and timer state outside the app. Live-activity controls still route through the same app state instead of creating a separate session model.
+
+### Rest Timer Surfaces
+
+The rest timer is not only an in-app sheet. Timer intents also drive snippet/control surfaces, so timer behavior spans:
+- `RestTimerState`
+- rest timer intents
+- `RestTimerSnippetView`
+- live activity controls
