@@ -41,11 +41,11 @@ struct AISetPerformanceSnapshot {
     let originalTargetSetIndex: Int?
     @Guide(description: "Set type.")
     let setType: AIExerciseSetType
-    @Guide(description: "Weight in kg.")
+    @Guide(description: "Weight kg.")
     let weight: Double
     @Guide(description: "Reps.")
     let reps: Int
-    @Guide(description: "Rest seconds.")
+    @Guide(description: "Rest sec.")
     let restSeconds: Int
 
     init(set: SetPerformance, targetSnapshot: ExerciseTargetSnapshot?) {

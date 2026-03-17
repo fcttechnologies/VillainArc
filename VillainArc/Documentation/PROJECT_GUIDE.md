@@ -284,6 +284,7 @@ The key rules are:
 - only unresolved events attached to the current plan structure are considered
 - deterministic rules run first
 - AI is a fallback for lower-confidence cases, but now receives pre/post workout context too
+- training-style AI only replaces `.unknown` when its confidence is greater than `0.5`, and it only looks back up to 3 recent performances
 - final outcome selection is weighted across accumulated evaluations, not a fixed safety-priority list and not a recency winner-take-all rule
 - some mixed 2-session results escalate the event to require a 3rd evaluation instead of finalizing immediately
 

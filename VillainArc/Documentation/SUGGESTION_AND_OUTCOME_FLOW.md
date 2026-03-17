@@ -185,6 +185,11 @@ Training style is resolved through:
 - `MetricsCalculator.detectTrainingStyle(...)` first
 - `AITrainingStyleClassifier` only when deterministic detection returns `.unknown`
 
+The AI fallback is confidence-gated:
+- it returns a style plus confidence
+- the app only accepts the AI style when confidence is greater than `0.5`
+- the history tool used by the classifier is capped at 3 recent performances
+
 That style is then reused for:
 - choosing the right progression evidence window
 - storing how the event was interpreted

@@ -5,7 +5,7 @@ import FoundationModels
 struct AIExerciseIdentitySnapshot {
     @Guide(description: "Catalog id.")
     let catalogID: String
-    @Guide(description: "Name.")
+    @Guide(description: "Exercise name.")
     let exerciseName: String
     @Guide(description: "Target muscles.")
     let musclesTargeted: [Muscle]

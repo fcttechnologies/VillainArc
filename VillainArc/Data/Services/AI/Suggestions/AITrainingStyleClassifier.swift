@@ -15,7 +15,7 @@ struct AITrainingStyleClassifier {
         do {
             let session = LanguageModelSession(tools: tools, instructions: instructions)
             let prompt = Prompt {
-                "Classify the training style for this exercise based on the performance data."
+                "Classify the training style for this workout."
                 ""
                 input
             }
@@ -28,33 +28,29 @@ struct AITrainingStyleClassifier {
 
     private static var instructions: String {
         """
-        Classify the exercise into one TrainingStyle value.
-        Use the current session first.
-        Explicit warmup sets are strong evidence that the real training style starts after them.
-        Explicit drop sets are strong evidence of a fatigue cluster and usually should not drive normal progression.
-        If working-set evidence is clear, ignore warmup and drop sets when deciding the base style.
+        Return one TrainingStyle and a confidence from 0 to 1.
+        Use the current workout first. Use getRecentExercisePerformances only if it is ambiguous.
+        Focus on working-set structure. Warmups are lead-ins. Drop sets usually do not define the base style.
+        Be conservative. Return Unknown when evidence is weak or closely mixed.
 
-        Definitions:
-        - Straight Sets: working sets stay at similar weight, about within 10%.
-        - Ascending Pyramid: weight rises, then falls, with the heaviest set in the middle.
-        - Descending Pyramid: the heaviest set is first, then weight drops.
-        - Ascending: weight rises monotonically and the heaviest set is last.
-        - Feeder Ramp: lighter lead-in working sets climb into a flat top cluster of 2-3 heavy sets at the end.
-        - Reverse Pyramid: the first working set is the heaviest, then later working sets form a lighter cluster rather than a long smooth descent.
-        - Top Set Then Backoffs: 1-3 heavy top sets plus clearly lighter backoff sets, about 20% lighter.
-        - Rest Pause / Cluster: same or near-same load repeated with very short rest and falling reps across mini-sets.
-        - Drop Set Cluster: mostly explicit drop sets, usually with descending load and fatigue-driven continuation work.
-        - Unknown: fewer than 3 useful sets or mixed evidence.
-
-        Use getRecentExercisePerformances only if the current session is ambiguous.
-        Prefer the narrowest clear style that matches the working-set structure.
-        Be conservative and return Unknown when the evidence is weak or when two styles conflict closely.
+        Style cues:
+        - Straight Sets: working loads stay close.
+        - Ascending Pyramid: load rises, then falls.
+        - Descending Pyramid: heaviest set is first, then load falls.
+        - Ascending: load rises and the heaviest set is last.
+        - Feeder Ramp: lighter lead-in working sets build into a flat heavy cluster.
+        - Reverse Pyramid: first working set is heaviest, then a lighter cluster follows.
+        - Top Set Then Backoffs: 1-3 heavy top sets followed by clearly lighter backoffs.
+        - Rest Pause / Cluster: same or near-same load with very short rest and falling reps.
+        - Drop Set Cluster: mostly explicit drop sets with descending load.
+        - Unknown: too few useful sets or mixed evidence.
         """
     }
 
-    private static func validate(_ output: AIInferenceOutput) -> AIInferenceOutput? {
-        // If training style is nil, there's nothing useful.
+    static func validate(_ output: AIInferenceOutput) -> AIInferenceOutput? {
         guard output.trainingStyleClassification != nil else { return nil }
-        return output
+        let clampedConfidence = min(1.0, max(0.0, output.confidence))
+        guard clampedConfidence == output.confidence else { return nil }
+        return AIInferenceOutput(trainingStyleClassification: output.trainingStyleClassification, confidence: clampedConfidence)
     }
 }

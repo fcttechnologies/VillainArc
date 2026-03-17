@@ -4,12 +4,12 @@ import FoundationModels
 struct AIOutcomeInferrer {
     /// Evaluates outcome for groups that were accepted/applied in the plan.
     static func inferApplied(input: AIOutcomeGroupInput) async -> AIOutcomeInferenceOutput? {
-        await infer(input: input,instructions: appliedInstructions, promptHeader: "Evaluate the outcome of these accepted or applied prescription changes based on the user's actual performance.")
+        await infer(input: input, instructions: appliedInstructions, promptHeader: "Evaluate this accepted or applied change group using the current workout.")
     }
 
     /// Evaluates outcome for groups that were rejected/not applied in the plan.
     static func inferRejected(input: AIOutcomeGroupInput) async -> AIOutcomeInferenceOutput? {
-        await infer(input: input, instructions: rejectedInstructions, promptHeader: "These prescription changes were suggested but not applied. Determine whether the user followed them anyway.")
+        await infer(input: input, instructions: rejectedInstructions, promptHeader: "Evaluate this rejected change group and decide whether the athlete followed it anyway.")
     }
 
     /// Backward-compatible convenience entry point.
@@ -37,9 +37,10 @@ struct AIOutcomeInferrer {
 
     private static var appliedInstructions: String {
         """
-        Evaluate one accepted or applied suggestion group and return one AIOutcome.
-        Compare actualPerformance to the suggested targets, using triggerPerformance as the baseline.
-        Use triggerTargetSetIndex or originalTargetSetIndex over raw set order when possible.
+        Return one AIOutcome, one confidence from 0 to 1, and one short evidence sentence.
+        Compare actualPerformance to the suggested targets, with triggerPerformance as the baseline.
+        Use categoryGuidance as the main task-specific lens.
+        Use triggerTargetSetIndex or originalTargetSetIndex instead of raw set order when possible.
 
         Outcome meanings:
         - Good: the athlete attempted the new targets and landed in a reasonable zone.
@@ -49,31 +50,27 @@ struct AIOutcomeInferrer {
         - Ignored: the athlete stayed close to the old targets or evidence of attempting the change is weak.
 
         Guidelines:
-        - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - For set-level changes, judge the targeted slot first.
         - Use postWorkoutEffort, preWorkoutFeeling, and tookPreWorkout as supporting context hints, not ground truth.
-        - High postWorkoutEffort strengthens negative evidence when the athlete still struggled.
+        - High postWorkoutEffort strengthens negative evidence.
         - Sick or tired pre-workout context weakens negative evidence from one bad session.
-        - If they took pre-workout and still struggled, that slightly strengthens negative evidence.
+        - Took pre-workout and still struggled slightly strengthens negative evidence.
         - Context should not override strong direct performance evidence by itself.
-        - For easing changes like lower weight or lower rep targets, prefer Insufficient over Good when the athlete followed the easier target but performance still did not meaningfully improve.
-        - For exercise-level rep-range changes, judge the working-set distribution against the new range or target.
-        - For warmup calibration, judge adherence and whether the set still behaves like a warmup relative to the main working or top sets.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds usually count as attempted.
-        - For rest changes, matching the suggested rest alone is not enough; judge the following set, not just the rest-owning set. Prefer Insufficient when rest was followed but the following set did not meaningfully improve.
         - Use trainingStyle to focus on the sets that matter most.
         - In Top Set Then Backoffs, weigh the heavy top sets more than the lighter backoff sets.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
         - If evidence is ambiguous, prefer Ignored or the rule hint.
-        - Keep reason brief. Use high confidence only when evidence is clear.
+        - Keep the reason to one short sentence and use high confidence only when evidence is clear.
         """
     }
 
     private static var rejectedInstructions: String {
         """
-        Evaluate one rejected suggestion group and return one AIOutcome.
+        Return one AIOutcome, one confidence from 0 to 1, and one short evidence sentence.
         Decide whether the athlete effectively followed the suggested targets anyway, or whether the missed change was validated by performance.
-        Use triggerTargetSetIndex or originalTargetSetIndex over raw set order when possible.
+        Use categoryGuidance as the main task-specific lens.
+        Use triggerTargetSetIndex or originalTargetSetIndex instead of raw set order when possible.
 
         Outcome meanings:
         - Good: they substantially matched the suggested targets anyway, or performance clearly validates a safety-oriented suggestion they skipped.
@@ -83,27 +80,30 @@ struct AIOutcomeInferrer {
         - Too Easy: they effectively followed the suggested targets and clearly exceeded them.
 
         Guidelines:
-        - Use category and categoryGuidance to choose the right evaluation lens before looking at individual changes.
         - Compare actualPerformance to the suggested targets, with triggerPerformance as baseline.
         - Use postWorkoutEffort, preWorkoutFeeling, and tookPreWorkout as supporting context hints, not ground truth.
-        - High postWorkoutEffort strengthens negative evidence when the athlete still struggled.
+        - High postWorkoutEffort strengthens negative evidence.
         - Sick or tired pre-workout context weakens negative evidence from one bad session.
-        - If they took pre-workout and still struggled, that slightly strengthens negative evidence.
+        - Took pre-workout and still struggled slightly strengthens negative evidence.
         - Context should not override strong direct performance evidence by itself.
-        - For easing changes like lower weight or lower rep targets, prefer Insufficient when they effectively followed the easier target but the underlying performance problem still did not improve.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds can count as following.
-        - For warmup calibration, judge whether they effectively used the suggested warmup load while the set still behaved like a warmup.
-        - For rest changes, matching rest alone is not enough; judge the following set and use Insufficient when the rest change was followed but did not produce enough benefit.
         - Use trainingStyle to focus on the sets that matter most.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
         - If evidence is ambiguous, prefer Ignored with lower confidence.
-        - Keep reason brief.
+        - Keep the reason to one short sentence.
         """
     }
 
-    private static func validate(_ output: AIOutcomeInferenceOutput) -> AIOutcomeInferenceOutput? {
-        let clampedConfidence = min(1.0, max(0.0, output.confidence))
-        guard !output.reason.isEmpty else { return nil }
-        return AIOutcomeInferenceOutput(outcome: output.outcome, confidence: clampedConfidence, reason: output.reason)
+    static func validate(_ output: AIOutcomeInferenceOutput) -> AIOutcomeInferenceOutput? {
+        guard (0.0 ... 1.0).contains(output.confidence) else { return nil }
+
+        let trimmedReason = output.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedReason.isEmpty,
+              trimmedReason.count <= 160,
+              !trimmedReason.contains("\n") else {
+            return nil
+        }
+
+        return AIOutcomeInferenceOutput(outcome: output.outcome, confidence: output.confidence, reason: trimmedReason)
     }
 }

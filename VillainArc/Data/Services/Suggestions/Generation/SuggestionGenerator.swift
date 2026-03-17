@@ -58,6 +58,7 @@ struct SuggestionGenerator {
             let aiResult = aiResults[exercisePerf.id]
             
             if resolvedTrainingStyle == .unknown,
+               shouldUseAITrainingStyle(aiResult),
                let aiStyle = aiResult?.trainingStyleClassification {
                 resolvedTrainingStyle = aiStyle
             }
@@ -77,6 +78,14 @@ struct SuggestionGenerator {
     
     private struct AIRequest: Sendable {
         let snapshot: AIExercisePerformanceSnapshot
+    }
+
+    static func shouldUseAITrainingStyle(_ output: AIInferenceOutput?) -> Bool {
+        guard let output,
+              output.trainingStyleClassification != nil else {
+            return false
+        }
+        return output.confidence > 0.5
     }
 
     private static func requiredEvaluationCount(for changes: [PrescriptionChangeDraft], category: SuggestionCategory) -> Int {

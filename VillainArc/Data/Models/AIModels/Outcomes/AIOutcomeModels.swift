@@ -43,39 +43,39 @@ struct AIOutcomeChange {
     let changeType: ChangeType
     @Guide(description: "Exercise or set.")
     let scope: AIChangeScope
-    @Guide(description: "Original target slot from the trigger snapshot.")
+    @Guide(description: "Trigger target slot.")
     let triggerTargetSetIndex: Int?
-    @Guide(description: "Old scalar or label.")
+    @Guide(description: "Old value.")
     let previousValue: String?
-    @Guide(description: "Suggested scalar or label.")
+    @Guide(description: "New value.")
     let newValue: String?
 }
 
 @Generable
 struct AIOutcomeGroupInput {
-    @Guide(description: "Suggestion category.")
+    @Guide(description: "Category.")
     let category: SuggestionCategory
-    @Guide(description: "How to judge this category.")
+    @Guide(description: "Category-specific lens.")
     let categoryGuidance: String?
-    @Guide(description: "Suggested changes.")
+    @Guide(description: "Changes.")
     let changes: [AIOutcomeChange]
-    @Guide(description: "Original prescription.")
+    @Guide(description: "Original targets.")
     let prescription: AIExercisePrescriptionSnapshot
     @Guide(description: "Trigger workout.")
     let triggerPerformance: AIExercisePerformanceSnapshot
-    @Guide(description: "Evaluation workout.")
+    @Guide(description: "Current workout.")
     let actualPerformance: AIExercisePerformanceSnapshot
-    @Guide(description: "Training style.")
+    @Guide(description: "Resolved training style.")
     let trainingStyle: TrainingStyle?
-    @Guide(description: "Post-workout effort from 1 to 10 when recorded.")
+    @Guide(description: "Post-workout effort 1 to 10.")
     let postWorkoutEffort: Int?
-    @Guide(description: "Pre-workout feeling when explicitly recorded.")
+    @Guide(description: "Recorded pre-workout feeling.")
     let preWorkoutFeeling: AIMoodLevel?
-    @Guide(description: "True only when the athlete explicitly recorded taking pre-workout.")
+    @Guide(description: "True only if pre-workout was recorded.")
     let tookPreWorkout: Bool?
     @Guide(description: "Rule hint.")
     let ruleOutcome: AIOutcome?
-    @Guide(description: "Rule confidence.")
+    @Guide(description: "Rule confidence 0 to 1.")
     let ruleConfidence: Double?
     @Guide(description: "Rule reason.")
     let ruleReason: String?
@@ -85,8 +85,8 @@ struct AIOutcomeGroupInput {
 struct AIOutcomeInferenceOutput {
     @Guide(description: "Outcome.")
     let outcome: AIOutcome
-    @Guide(description: "Confidence 0 to 1.")
+    @Guide(description: "Confidence 0 to 1.", .range(0.0 ... 1.0))
     let confidence: Double
-    @Guide(description: "Short reason.")
+    @Guide(description: "One short evidence sentence.")
     let reason: String
 }
