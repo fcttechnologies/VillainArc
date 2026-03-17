@@ -12,6 +12,8 @@ struct OnboardingView: View {
             switch manager.state {
             case .profile:
                 profileFlow
+            case .healthPermissions:
+                healthPermissionsView
             case .finishing:
                 finishingView
             default:
@@ -88,6 +90,47 @@ struct OnboardingView: View {
 
     private var finishingView: some View {
         OnboardingProgressStateView(title: "Wrapping Things Up", message: "Saving your profile and finishing setup...")
+    }
+
+    private var healthPermissionsView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "heart.text.square.fill")
+                .font(.system(size: onboardingIconSize))
+                .foregroundStyle(.red)
+                .accessibilityHidden(true)
+
+            Text("Connect Apple Health")
+                .font(.title2.bold())
+
+            Text("VillainArc can export your completed workouts to Apple Health now, and this also prepares the app for future health features.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 12) {
+                Button {
+                    Task { await manager.connectAppleHealth() }
+                } label: {
+                    Text("Connect Apple Health")
+                        .padding(.vertical, 8)
+                        .fontWeight(.semibold)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glassProminent)
+                .accessibilityHint("Requests Apple Health read and write access for workouts.")
+
+                Button {
+                    manager.skipAppleHealth()
+                } label: {
+                    Text("Not Now")
+                        .padding(.vertical, 8)
+                        .fontWeight(.semibold)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glass)
+                .accessibilityHint("Skips Apple Health for now and continues into the app.")
+            }
+        }
+        .padding()
     }
 
     @ViewBuilder
@@ -267,7 +310,7 @@ struct OnboardingView: View {
                 .accessibilityHint(AccessibilityText.onboardingRetryHint)
             }
 
-        case .profile, .finishing, .ready:
+        case .profile, .healthPermissions, .finishing, .ready:
             EmptyView()
         }
     }

@@ -12,6 +12,9 @@ This document explains VillainArc's startup and readiness path: how bootstrap wo
 - `Data/Services/DataManager.swift`
 - `Data/Services/SystemState.swift`
 - `Data/Services/SetupGuard.swift`
+- `Data/Services/HealthKit/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/HealthOnboardingPreferences.swift`
+- `Data/Services/HealthKit/HealthExportCoordinator.swift`
 - `Data/SharedModelContainer.swift`
 - `Helpers/CloudKitStatusChecker.swift`
 - `Helpers/NetworkMonitor.swift`
@@ -34,6 +37,7 @@ The startup path is split across `VillainArcApp`, `RootView`, and `OnboardingMan
 - starts onboarding in `.task`
 - waits for onboarding to reach `.ready`
 - only then calls `AppRouter.checkForUnfinishedData()`
+- after `.ready`, also asks `HealthExportCoordinator` to reconcile completed workouts that still have no Apple Health export link
 - presents `OnboardingView` as a blocking sheet whenever onboarding is not ready
 
 That ordering is deliberate. Resume logic for unfinished workouts or incomplete plan creation only runs after bootstrap and profile setup are valid.
@@ -60,7 +64,8 @@ The order is:
 6. reindex Spotlight
 7. ensure `AppSettings` exists
 8. ensure `UserProfile` exists
-9. route into profile onboarding or `.ready`
+9. route into profile onboarding
+10. after profile completion, either offer the optional Apple Health step or transition to `.ready`
 
 ## Why the App Waits Before Seeding
 
@@ -102,6 +107,28 @@ That path:
 If the returning-launch catalog sync changes anything, Spotlight is reindexed after the sync completes.
 
 This keeps the returning-launch path on the main actor and guarantees the bundled exercise metadata is reconciled before the app becomes ready.
+
+## Optional Apple Health Step
+
+Apple Health is not part of bootstrap readiness. VillainArc only offers it after:
+- the exercise catalog exists
+- singleton records exist
+- profile onboarding is complete
+
+That step is optional:
+- `connectAppleHealth()` requests workout read/write permission
+- `skipAppleHealth()` marks the prompt complete locally and continues to `.ready`
+
+If the user connects Apple Health during onboarding, VillainArc immediately asks `HealthExportCoordinator` to reconcile already-completed workouts that still have no export link.
+
+## Why the Prompt Is Device-Local
+
+The app remembers whether it already showed the optional Apple Health step through `HealthOnboardingPreferences`, which stores a flag in shared defaults.
+
+That flag is not treated as HealthKit truth:
+- HealthKit authorization still comes from `HKHealthStore`
+- users can change Health permissions outside the app
+- reinstall or a second device may still need a fresh HealthKit permission request even if profile and app data restore from CloudKit
 
 ## What Catalog Sync Actually Does
 

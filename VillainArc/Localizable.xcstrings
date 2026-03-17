@@ -334,6 +334,12 @@
     "Alternate between upper and lower body" : {
 
     },
+    "Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions." : {
+
+    },
+    "Apple Health" : {
+
+    },
     "Applies all pending suggestions and starts the workout." : {
 
     },
@@ -516,6 +522,9 @@
 
     },
     "Confirm" : {
+
+    },
+    "Connect Apple Health" : {
 
     },
     "Continue" : {
@@ -1025,6 +1034,9 @@
     "Makes this split inactive." : {
 
     },
+    "Manage Apple Health Access" : {
+
+    },
     "Manage Workout Splits" : {
 
     },
@@ -1226,6 +1238,9 @@
     "No, train any day" : {
 
     },
+    "Not Now" : {
+
+    },
     "Not selected" : {
 
     },
@@ -1293,6 +1308,9 @@
 
     },
     "Open Rest Timer" : {
+
+    },
+    "Open Settings Apps" : {
 
     },
     "Open Today's Plan" : {
@@ -1547,6 +1565,9 @@
 
     },
     "Reps" : {
+
+    },
+    "Requests Apple Health read and write access for workouts." : {
 
     },
     "Reset Offset" : {
@@ -1949,6 +1970,9 @@
     "Skip Day" : {
 
     },
+    "Skips Apple Health for now and continues into the app." : {
+
+    },
     "Skips recording effort and continues to summary." : {
 
     },
@@ -2040,6 +2064,9 @@
 
     },
     "Starts today's workout from your active split." : {
+
+    },
+    "Status" : {
 
     },
     "Still Syncing..." : {
@@ -2279,7 +2306,13 @@
     "View Last Workout Plan" : {
 
     },
+    "VillainArc can export your completed workouts to Apple Health now, and this also prepares the app for future health features." : {
+
+    },
     "VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {
+
+    },
+    "VillainArc exports completed workouts to Apple Health whenever Health access is allowed." : {
 
     },
     "VillainArc needs WiFi for first time setup to sync your workout data." : {

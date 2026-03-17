@@ -6,6 +6,7 @@ This file is the high-level walkthrough for the app. It explains how the main pr
 
 VillainArc is a SwiftUI + SwiftData workout app for:
 - setting up a profile and local/cloud-backed data store
+- optionally connecting Apple Health for workout export
 - creating workout plans and split schedules
 - logging live workout sessions
 - reviewing plan suggestions after workouts
@@ -26,7 +27,7 @@ The main product areas are:
 The startup path is:
 
 1. `Root/VillainArcApp.swift` starts the shared CloudKit import monitor and installs the shared model container.
-2. `Root/RootView.swift` runs launch cleanup, refreshes shortcut parameters, and starts `OnboardingManager`.
+2. `Root/RootView.swift` runs launch cleanup, refreshes shortcut parameters, starts `OnboardingManager`, and reconciles pending Apple Health exports after onboarding reaches `.ready`.
 3. `OnboardingManager` decides whether this is a first bootstrap or a returning launch.
 4. `RootView` only asks `AppRouter` to resume unfinished flows after onboarding reaches `.ready`.
 
@@ -50,9 +51,17 @@ The wait-before-seed rule prevents duplicate catalog exercises when existing dat
 
 Once the app has already completed at least one catalog sync, onboarding takes the fast path:
 - immediately ensure `AppSettings` and `UserProfile` exist
-- route into missing profile steps, or if the profile is already complete run any needed catalog sync and then mark the app ready
+- route into missing profile steps, or if the profile is already complete run any needed catalog sync and then either offer the optional Apple Health step or mark the app ready
 
 Returning launches still prioritize getting the user back into the app quickly, but they now keep the catalog sync on the main actor and finish it before the app transitions to `.ready`.
+
+### Optional Apple Health Step
+
+After core bootstrap and profile setup are complete, onboarding can optionally offer Apple Health connection:
+- request workout read/write permission
+- skip without blocking app access
+
+Apple Health is treated as an integration, not a readiness dependency. If the user connects it, VillainArc immediately reconciles any already-completed workouts that still have no Apple Health export record.
 
 ### SetupGuard
 
@@ -163,6 +172,7 @@ Stage 2 happens in `WorkoutSummaryView`:
 - rebuild `ExerciseHistory`
 - mark the workout `.done`
 - save and dismiss
+- attempt Apple Health export if authorization exists and the session does not already have a linked `HealthWorkout`
 
 The first stage gets the session out of active logging cleanly. The second stage turns it into a stable completed record.
 
@@ -184,6 +194,28 @@ Completed workouts are soft-hidden, not physically removed from the store:
 - `WorkoutDetailView` does the same for a single workout
 
 After that, `ExerciseHistoryUpdater` rebuilds the affected exercise histories and Spotlight entries.
+
+## Apple Health Export
+
+VillainArc currently uses Apple Health as an export target for completed workouts.
+
+The export layer is intentionally small:
+- `WorkoutSession` remains the source-of-truth workout record
+- `HealthWorkout` stores the linked HealthKit workout UUID and optional session relationship
+- `HealthExportCoordinator` exports completed sessions and reconciles older completed sessions that still have no link
+
+The current export writes:
+- workout type as traditional strength training
+- start and end time
+- duration implied by those dates
+- indoor-workout metadata
+- a simple workout-title metadata field for display in Health details
+
+VillainArc does not yet export:
+- active or total calories
+- heart-rate samples or averages
+- workout events such as pause and resume
+- imported Health workouts into app history
 
 ## Workout Plans
 

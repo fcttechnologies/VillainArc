@@ -27,6 +27,7 @@ This document explains how workout sessions move through the app: where they sta
 - `activeExercise` for UI and live-activity state
 - `postEffort`
 - suggestion events created from that session
+- optional linked `HealthWorkout` export record
 
 Plan-based sessions are created with `WorkoutSession(from: plan)`. Empty workouts use the default initializer.
 
@@ -232,9 +233,31 @@ The real completion point is `WorkoutSummaryView.finishSummary()`. It:
 - rebuilds exercise histories through `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(...)`
 - sets `workout.status = .done`
 - saves
+- triggers `HealthExportCoordinator.exportIfEligible(sessionID:)`
 - dismisses the full-screen workout flow
 
 That is the point where the workout becomes a stable completed record used by history-driven surfaces.
+
+## Apple Health Export
+
+VillainArc's current Apple Health integration is a post-completion export path, not a live workout session.
+
+The export rules are:
+- only completed `.done` sessions are eligible
+- hidden workouts are skipped
+- sessions with an existing linked `HealthWorkout` are skipped
+- export depends on HealthKit workout authorization already being granted
+
+`HealthExportCoordinator` currently writes a workout with:
+- activity type `traditionalStrengthTraining`
+- the session start and end date
+- duration implied by those dates
+- indoor-workout metadata
+- a simple workout-title metadata field
+
+When HealthKit saves successfully, the coordinator persists a linked `HealthWorkout` record so later reconcile passes do not re-export the same session.
+
+VillainArc also runs reconcile passes after onboarding reaches `.ready` so older completed sessions can be exported later if the user connects Apple Health after the workout originally finished.
 
 ## Save As Workout Plan
 

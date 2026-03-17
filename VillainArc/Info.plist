@@ -6,6 +6,10 @@
 	<string>Villain Arc</string>
 	<key>CFBundleDisplayName</key>
 	<string>Villain Arc</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Villain Arc reads your workout data so it can show Health workouts and related metrics inside the app.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Villain Arc saves your completed workouts to Apple Health so your training history stays connected.</string>
 	<key>INAlternativeAppNames</key>
 	<array>
 		<dict>

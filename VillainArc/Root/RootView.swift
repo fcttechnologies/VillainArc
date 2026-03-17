@@ -22,6 +22,9 @@ struct RootView: View {
             .onChange(of: onboardingManager.state) { _, newState in
                 guard newState == .ready else { return }
                 AppRouter.shared.checkForUnfinishedData()
+                Task {
+                    await HealthExportCoordinator.shared.reconcileCompletedSessions()
+                }
             }
             .sheet(isPresented: onboardingBinding) {
                 OnboardingView(manager: onboardingManager)

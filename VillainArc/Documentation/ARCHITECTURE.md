@@ -20,7 +20,7 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### `Root/RootView.swift`
 - Startup coordinator.
-- Owns `OnboardingManager`, cleans up abandoned plan editing copies, refreshes shortcut parameters, starts onboarding, and only resumes unfinished flows after onboarding reaches `.ready`.
+- Owns `OnboardingManager`, cleans up abandoned plan editing copies, refreshes shortcut parameters, starts onboarding, reconciles pending Apple Health exports after onboarding reaches `.ready`, and only then resumes unfinished flows.
 - Presents `Views/Onboarding/OnboardingView.swift` as the blocking setup sheet.
 - Read with: `Data/Services/OnboardingManager.swift`, `Views/ContentView.swift`.
 
@@ -46,13 +46,13 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### `Data/Services/OnboardingManager.swift`
 - First-run and returning-launch state machine.
-- First bootstrap path: connectivity -> iCloud status -> CloudKit availability -> wait for import -> seed catalog -> reindex Spotlight -> ensure singleton records -> route into profile onboarding or ready.
-- Returning-launch path: immediately ensure singleton records, and if the profile is already complete run any needed catalog sync before transitioning to `.ready`.
+- First bootstrap path: connectivity -> iCloud status -> CloudKit availability -> wait for import -> seed catalog -> reindex Spotlight -> ensure singleton records -> route into profile onboarding -> optionally offer Apple Health connection -> ready.
+- Returning-launch path: immediately ensure singleton records, and if the profile is already complete run any needed catalog sync before either offering Apple Health connection or transitioning to `.ready`.
 - Read with: `Views/Onboarding/OnboardingView.swift`, `Data/Services/CloudKitImportMonitor.swift`, `Data/Services/DataManager.swift`.
 
 ### `Views/Onboarding/OnboardingView.swift`
 - Bootstrap and profile setup UI.
-- Renders blocking states such as no network, no iCloud, CloudKit issues, syncing, and generic bootstrap errors, then drives the profile steps for name, birthday, and height.
+- Renders blocking states such as no network, no iCloud, CloudKit issues, syncing, and generic bootstrap errors, then drives the profile steps for name, birthday, and height plus the optional Apple Health permission step.
 - Read with: `Data/Models/UserProfile.swift`, `Data/Services/OnboardingManager.swift`.
 
 ### `Data/Services/CloudKitImportMonitor.swift`
@@ -78,9 +78,14 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### `Data/Models/Sessions/WorkoutSession.swift`
 - Root workout aggregate.
-- Owns session metadata, lifecycle state, linked plan, pre-workout context, active exercise, performed exercises, and generated suggestion events.
+- Owns session metadata, lifecycle state, linked plan, pre-workout context, active exercise, performed exercises, generated suggestion events, and an optional linked `HealthWorkout`.
 - Handles finish-time cleanup, pruning, and conversion from a plan into a live session copy.
 - Read with: `Views/Workout/WorkoutSessionContainer.swift`, `Views/Workout/WorkoutView.swift`, `Views/Workout/WorkoutSummaryView.swift`.
+
+### `Data/Models/Health/HealthWorkout.swift`
+- Minimal persisted Apple Health link record.
+- Stores the HealthKit workout UUID and optional owning `WorkoutSession`.
+- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Models/Sessions/WorkoutSession.swift`.
 
 ### `Data/Models/Sessions/ExercisePerformance.swift`
 - Per-exercise performed record inside a workout session.
@@ -183,7 +188,7 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 - `Views/Components/ExerciseSetRowView.swift`
   - Set-level editing, completion, quick actions, timer kickoff, and live-activity updates.
 - `Views/Workout/WorkoutSummaryView.swift`
-  - Post-workout orchestration point for summary UI, PR detection, outcome resolution, new suggestion generation, suggestion review, save-as-plan, and history rebuild.
+  - Post-workout orchestration point for summary UI, PR detection, outcome resolution, new suggestion generation, suggestion review, save-as-plan, history rebuild, and Apple Health export trigger.
 - Read with: `Documentation/SESSION_LIFECYCLE_FLOW.md`.
 
 ### Workout Plans
@@ -242,6 +247,15 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
   - Active/inactive split management.
 
 ## Integrations
+
+### Apple Health
+- `Data/Services/HealthKit/HealthAuthorizationManager.swift`
+  - HealthKit availability, authorization-state, and permission-request boundary for workout export.
+- `Data/Services/HealthKit/HealthExportCoordinator.swift`
+  - Exports completed sessions to Apple Health, links returned workout UUIDs into `HealthWorkout`, and reconciles older completed sessions that still have no export record.
+- `Data/Services/HealthKit/HealthOnboardingPreferences.swift`
+  - Device-local memory for whether the optional onboarding prompt has already been shown.
+- Read with: `Views/Onboarding/OnboardingView.swift`, `Views/Workout/WorkoutSettingsView.swift`, `Views/Workout/WorkoutSummaryView.swift`.
 
 ### Spotlight and App Entities
 - `Data/Services/SpotlightIndexer.swift`

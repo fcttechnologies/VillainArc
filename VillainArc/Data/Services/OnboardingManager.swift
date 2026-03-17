@@ -13,6 +13,7 @@ enum OnboardingState: Equatable {
     case seeding
     case profile(UserProfileOnboardingStep)
     case finishing
+    case healthPermissions
     case ready
     case error(String)
 
@@ -192,7 +193,7 @@ class OnboardingManager {
 
         state = .finishing
         await syncCatalogIfNeededBeforeReady()
-        transitionToReady()
+        await transitionAfterSetup()
     }
 
     func profileStepPath() -> [UserProfileOnboardingStep] {
@@ -214,7 +215,7 @@ class OnboardingManager {
 
             self.profile = profile
             await syncCatalogIfNeededBeforeReady()
-            transitionToReady()
+            await transitionAfterSetup()
         } catch {
             state = .error("Failed to load your profile: \(error.localizedDescription)")
         }
@@ -245,7 +246,9 @@ class OnboardingManager {
         if let missingStep = profile.firstMissingStep {
             state = .profile(missingStep)
         } else {
-            transitionToReady()
+            Task {
+                await transitionAfterSetup()
+            }
         }
     }
 
@@ -283,5 +286,32 @@ class OnboardingManager {
                 }
             }
         }
+    }
+
+    private func shouldOfferHealthPermissions() -> Bool {
+        let authorizationState = HealthAuthorizationManager.shared.currentAuthorizationState
+        return !HealthOnboardingPreferences.hasCompletedPrompt
+            && authorizationState != .authorized
+            && authorizationState != .unavailable
+    }
+
+    private func transitionAfterSetup() async {
+        if shouldOfferHealthPermissions() {
+            state = .healthPermissions
+        } else {
+            transitionToReady()
+        }
+    }
+
+    func connectAppleHealth() async {
+        HealthOnboardingPreferences.markCompleted()
+        _ = await HealthAuthorizationManager.shared.requestAuthorization()
+        transitionToReady()
+        await HealthExportCoordinator.shared.reconcileCompletedSessions()
+    }
+
+    func skipAppleHealth() {
+        HealthOnboardingPreferences.markCompleted()
+        transitionToReady()
     }
 }
