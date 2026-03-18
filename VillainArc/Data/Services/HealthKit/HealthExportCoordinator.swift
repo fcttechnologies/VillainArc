@@ -41,10 +41,22 @@ final class HealthExportCoordinator {
         guard session.healthWorkout == nil else { return }
 
         let context = SharedModelContainer.container.mainContext
+        if let existingWorkout = try? await HealthLiveWorkoutSessionCoordinator.shared.findSavedWorkout(for: session.id) {
+            do {
+                try HealthWorkoutLinker.upsertHealthWorkout(for: existingWorkout, linkedTo: session, context: context, lastSyncedAt: .now)
+                saveContext(context: context)
+                print("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id)")
+            } catch {
+                print("Failed to link existing Apple Health workout for \(session.id): \(error)")
+            }
+            return
+        }
+
         let endDate = max(session.startedAt, session.endedAt ?? session.startedAt)
         let workoutEffortSample = makeWorkoutEffortSample(for: session, endDate: endDate)
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = .traditionalStrengthTraining
+        configuration.locationType = .indoor
         let workoutBuilder = HKWorkoutBuilder(healthStore: authorizationManager.healthStore, configuration: configuration, device: nil)
 
         do {
@@ -65,8 +77,7 @@ final class HealthExportCoordinator {
                 }
             }
 
-            let healthWorkout = HealthWorkout(workout: workout, workoutSession: session)
-            context.insert(healthWorkout)
+            try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: session, context: context, lastSyncedAt: endDate)
             saveContext(context: context)
             print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
         } catch {

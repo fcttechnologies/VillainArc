@@ -154,6 +154,8 @@
 				Data/Services/AI/Shared/FoundationModelPrewarmer.swift,
 				Data/Services/AppRouter.swift,
 				Data/Services/DataManager.swift,
+				Data/Services/HealthKit/HealthAuthorizationManager.swift,
+				Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift,
 				Data/Services/RestTimerState.swift,
 				Data/Services/SetupGuard.swift,
 				Data/Services/SpotlightIndexer.swift,

@@ -251,6 +251,9 @@
     "Action" : {
 
     },
+    "Active energy %@" : {
+
+    },
     "Active energy chart" : {
 
     },
@@ -951,6 +954,9 @@
     "Heart Rate" : {
 
     },
+    "Heart rate %@" : {
+
+    },
     "Heart rate chart" : {
 
     },
@@ -1042,6 +1048,9 @@
 
     },
     "Live Activity" : {
+
+    },
+    "Live workout metrics" : {
 
     },
     "Loading Apple Health details..." : {
@@ -1231,6 +1240,9 @@
 
     },
     "No incomplete sets found." : {
+
+    },
+    "No live workout metrics available." : {
 
     },
     "No notes added." : {

@@ -27,7 +27,7 @@ The main product areas are:
 The startup path is:
 
 1. `Root/VillainArcApp.swift` starts the shared CloudKit import monitor and installs the shared model container.
-2. `Root/RootView.swift` runs launch cleanup, refreshes shortcut parameters, starts `OnboardingManager`, and after onboarding reaches `.ready` runs the Apple Health post-ready pass: reconcile missing exports first, then sync Health workouts.
+2. `Root/RootView.swift` runs launch cleanup, refreshes shortcut parameters, starts `OnboardingManager`, and after onboarding reaches `.ready` runs the Apple Health post-ready pass: sync Health workouts first, then reconcile completed sessions that still have no Health link.
 3. `OnboardingManager` decides whether this is a first bootstrap or a returning launch.
 4. `RootView` only asks `AppRouter` to resume unfinished flows after onboarding reaches `.ready`.
 
@@ -62,8 +62,8 @@ After core bootstrap and profile setup are complete, onboarding can optionally o
 - skip without blocking app access
 
 Apple Health is treated as an integration, not a readiness dependency. Once the app reaches `.ready`, VillainArc runs its Health post-ready pass:
-- reconcile any already-completed workouts that still have no Apple Health export record
 - sync Apple Health workouts into the local `HealthWorkout` mirror
+- reconcile any already-completed workouts that still have no Apple Health link
 
 ### SetupGuard
 
@@ -162,6 +162,7 @@ Stage 1 happens in `WorkoutView`:
 - set the session to `.summary`
 - convert live set weights back to canonical kg
 - save the session
+- end the live Apple Health workout session if one is running and persist the linked `HealthWorkout` when available
 - stop the rest timer and live activity
 
 Stage 2 happens in `WorkoutSummaryView`:
@@ -174,7 +175,6 @@ Stage 2 happens in `WorkoutSummaryView`:
 - mark the workout `.done`
 - queue Spotlight indexing for the finalized workout
 - save and dismiss
-- attempt Apple Health export if authorization exists and the session does not already have a linked `HealthWorkout`
 
 The first stage gets the session out of active logging cleanly. The second stage turns it into a stable completed record.
 
@@ -201,7 +201,7 @@ In both modes, the workout is removed from Spotlight first, then `ExerciseHistor
 ## Apple Health Integration
 
 VillainArc now uses Apple Health for more than export:
-- export of completed `WorkoutSession`s
+- live workout collection during active logging
 - local mirroring of Health workouts into `HealthWorkout`
 - merged workout history that can show app workouts and Apple Health workouts together
 - richer Health workout detail loaded on demand from HealthKit
@@ -212,8 +212,9 @@ The split is:
 
 The current Health integration includes:
 - versioned permission prompting through `HealthPreferences`
-- post-ready export reconciliation
+- a live HealthKit workout session during the local `.active` phase
 - anchored workout sync through `HealthWorkoutSyncCoordinator`
+- relinking by Health metadata plus fallback export reconciliation
 - a Health detail loader that fetches the live `HKWorkout` by UUID and conditionally renders richer sections
 
 For the full design, read `Documentation/HEALTHKIT_INTEGRATION.md`.

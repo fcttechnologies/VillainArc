@@ -161,6 +161,7 @@ final class AppRouter {
         guard let workoutSession = activeWorkoutSession else { return }
         RestTimerState.shared.stop()
         workoutSession.activeExercise = nil
+        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
         context.delete(workoutSession)
         activeWorkoutSession = nil
         WorkoutActivityManager.end()

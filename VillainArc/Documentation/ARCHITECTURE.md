@@ -20,7 +20,7 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### `Root/RootView.swift`
 - Startup coordinator.
-- Owns `OnboardingManager`, cleans up abandoned plan editing copies, refreshes shortcut parameters, starts onboarding, reconciles pending Apple Health exports after onboarding reaches `.ready`, and only then resumes unfinished flows.
+- Owns `OnboardingManager`, cleans up abandoned plan editing copies, refreshes shortcut parameters, starts onboarding, syncs Health workouts plus reconciles older missing Health links after onboarding reaches `.ready`, and only then resumes unfinished flows.
 - Presents `Views/Onboarding/OnboardingView.swift` as the blocking setup sheet.
 - Read with: `Data/Services/OnboardingManager.swift`, `Views/ContentView.swift`.
 
@@ -84,7 +84,7 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### `Data/Models/Health/HealthWorkout.swift`
 - Persisted Apple Health workout mirror.
-- Stores the HealthKit workout UUID, optional owning `WorkoutSession`, cached workout summary fields, HealthKit availability state, and last sync timestamp.
+- Stores the HealthKit workout UUID, optional owning `WorkoutSession`, cached workout summary fields including separate active/resting energy values, HealthKit availability state, and last sync timestamp.
 - Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`, `Views/History/WorkoutsListView.swift`.
 
 ### `Data/Models/Sessions/ExercisePerformance.swift`
@@ -188,7 +188,7 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 - `Views/Components/ExerciseSetRowView.swift`
   - Set-level editing, completion, quick actions, timer kickoff, and live-activity updates.
 - `Views/Workout/WorkoutSummaryView.swift`
-  - Post-workout orchestration point for summary UI, PR detection, outcome resolution, new suggestion generation, suggestion review, save-as-plan, history rebuild, and Apple Health export trigger.
+  - Post-workout orchestration point for summary UI, PR detection, outcome resolution, new suggestion generation, suggestion review, save-as-plan, history rebuild, and final `.done` persistence after active logging already ended.
 - Read with: `Documentation/SESSION_LIFECYCLE_FLOW.md`.
 
 ### Workout Plans
@@ -250,11 +250,13 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### Apple Health
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
-  - HealthKit availability, authorization-state, and permission-request boundary for export plus richer Health workout detail reads.
+  - HealthKit availability, full write-authorization status, per-type write capability checks, and permission-request boundary for live workout collection plus richer Health workout detail reads.
+- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
+  - Starts live HealthKit workout collection when a local workout becomes active, finishes or discards the HealthKit workout when active logging ends, and links the saved `HKWorkout` into `HealthWorkout`.
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
-  - Exports completed sessions to Apple Health, links returned workout UUIDs into `HealthWorkout`, and reconciles older completed sessions that still have no export record.
+  - Reconciliation-only Health repair path that first tries to relink already-saved Health workouts by metadata and only falls back to the older export path when no matching Health workout exists.
 - `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
-  - Anchored Apple Health workout sync that upserts `HealthWorkout` records and marks removed workouts unavailable.
+  - Anchored Apple Health workout sync that upserts `HealthWorkout` records, links mirrored workouts back to local `WorkoutSession`s by metadata, and marks removed workouts unavailable.
 - `Data/Services/HealthKit/HealthPreferences.swift`
   - Device-local Health defaults storage for permission-prompt versioning and workout sync anchor persistence.
 - `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`

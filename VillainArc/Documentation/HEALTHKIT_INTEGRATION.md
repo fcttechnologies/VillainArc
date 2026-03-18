@@ -1,10 +1,11 @@
 # HealthKit Integration
 
-This document explains the HealthKit side of the app: how VillainArc requests Apple Health access over time, how workout export and workout sync work together, how Health workouts appear in history, how the detail screen loads richer metrics, and what happens when workouts disappear from Apple Health.
+This document explains the HealthKit side of the app: how VillainArc requests Apple Health access over time, how live workout collection, fallback export, and workout sync work together, how Health workouts appear in history, how the detail screen loads richer metrics, and what happens when workouts disappear from Apple Health.
 
 ## Main Files
 
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
 - `Data/Services/HealthKit/HealthPreferences.swift`
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
 - `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
@@ -49,7 +50,8 @@ It is still the record the app learns from and builds suggestions from.
 - start and end time
 - duration
 - activity type
-- total energy burned
+- active energy burned
+- resting energy burned
 - total distance
 - source name
 - whether the workout still exists in HealthKit
@@ -96,6 +98,9 @@ Settings remains the manual override path. Even if onboarding already handled th
 
 VillainArc writes:
 - workouts
+- workout effort scores
+- active energy burned
+- resting energy burned
 
 VillainArc reads:
 - workouts
@@ -114,30 +119,52 @@ The important design rule is:
 - `HealthWorkout` stays small
 - broader Health reads exist to enrich the detail screen, not to keep expanding the persisted model
 
-## Export Flow
+The important runtime rule is:
+- live workout collection only requires workout write authorization
+- workout effort and energy writes are treated as optional capabilities
+- sync and detail reads can still work even when some optional write types are denied
 
-Apple Health export happens after a workout is truly completed.
+## Live Workout Flow
+
+VillainArc now starts Apple Health collection while a local workout is actively being logged.
 
 The main sequence is:
-1. the user finishes summary for a `WorkoutSession`
-2. the session is finalized as a completed app workout
-3. VillainArc attempts Apple Health export if authorization exists and no linked `HealthWorkout` already exists
-4. if HealthKit saves successfully, the app inserts a linked `HealthWorkout`
+1. a `WorkoutSession` enters `.active`
+2. if workout write authorization exists, `HealthLiveWorkoutSessionCoordinator` starts an `HKWorkoutSession` and `HKLiveWorkoutBuilder`
+3. the builder saves metadata including the local `WorkoutSession.id`
+4. if HealthKit provides live samples, the builder can collect heart rate and energy-related workout data during the session
+5. when the local workout leaves active logging and moves to `.summary`, the coordinator stops the HealthKit session, ends collection, and finishes the workout
+6. if HealthKit returns the saved `HKWorkout`, the app inserts or updates a linked `HealthWorkout` immediately
 
-So export is:
-- post-completion
-- idempotent through the linked `HealthWorkout`
-- separate from live workout logging
+So the primary HealthKit path is:
+- live during the `.active` workout phase
+- finalized when active logging ends, not when summary is dismissed
+- linked through HealthKit metadata plus the saved workout UUID
+- when possible, a resumed active workout reattaches to an already-running HealthKit session before creating a new one
+
+## Fallback Export Flow
+
+VillainArc still keeps the older export path as a repair mechanism.
+
+That fallback is used only when:
+- a completed app workout still has no linked `HealthWorkout`
+- no matching Apple Health workout can be found by the stored `WorkoutSession.id` metadata
+
+So fallback export is now:
+- reconciliation-only
+- a repair path for older workouts or authorization changes
+- no longer triggered directly from `WorkoutSummaryView.finishSummary()`
 
 ## Reconciliation Flow
 
-Export can fail at the moment a workout finishes, or the user may connect Apple Health later.
+Live saving can fail at the end of active logging, local persistence can fail after HealthKit already saved the workout, or the user may connect Apple Health later.
 
 To cover that, VillainArc has a reconciliation pass for completed sessions that still have no Health link.
 
 That pass:
-- fetches completed sessions that still need export
-- retries Apple Health export for each eligible session
+- first looks for an already-saved Apple Health workout whose metadata contains the local `WorkoutSession.id`
+- relinks that Health workout back to the local session when found
+- falls back to the older export path only when no matching HealthKit workout exists
 
 This is what lets the app repair older completed workouts after Health access changes.
 
@@ -148,12 +175,12 @@ VillainArc also mirrors Apple Health workouts into local `HealthWorkout` rows.
 ### When Sync Runs
 
 Once onboarding reaches `.ready`, the app runs a Health post-ready pass:
-1. reconcile missing exports from completed app workouts
-2. sync Apple Health workouts into the local mirror
+1. sync Apple Health workouts into the local mirror
+2. reconcile completed app workouts that still have no Health link
 
 That order matters.
 
-The app retries missing exports first so a just-repaired VillainArc workout can already exist in Health before the sync pass starts importing and updating Health workouts.
+The app syncs first so already-saved Apple Health workouts can be relinked before fallback export tries to recreate anything.
 
 ### How Sync Works
 
@@ -168,6 +195,7 @@ That gives the app this behavior:
 The sync pass then:
 - upserts returned `HKWorkout`s into `HealthWorkout`
 - looks up rows by HealthKit workout UUID
+- links rows back to `WorkoutSession` when the workout metadata contains the saved local session id
 - updates existing rows when found
 - inserts new rows when missing
 

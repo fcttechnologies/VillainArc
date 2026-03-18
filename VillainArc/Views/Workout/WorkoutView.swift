@@ -5,6 +5,7 @@ import AppIntents
 struct WorkoutView: View {
     @Bindable var workout: WorkoutSession
     private let restTimer = RestTimerState.shared
+    @State private var healthLiveWorkoutCoordinator = HealthLiveWorkoutSessionCoordinator.shared
     @State private var router = AppRouter.shared
     
     @State private var showExerciseEditSheet = false
@@ -32,6 +33,20 @@ struct WorkoutView: View {
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
+    }
+
+    private var latestHeartRateText: String? {
+        guard let latestHeartRate = healthLiveWorkoutCoordinator.latestHeartRate else { return nil }
+        return "\(Int(latestHeartRate.rounded())) bpm"
+    }
+
+    private var activeEnergyToolbarText: String? {
+        guard let activeEnergyBurned = healthLiveWorkoutCoordinator.activeEnergyBurned else { return nil }
+        return "\(Int(activeEnergyBurned.rounded())) cal"
+    }
+
+    private var showsLiveHealthMetrics: Bool {
+        latestHeartRateText != nil || activeEnergyToolbarText != nil
     }
     
     var body: some View {
@@ -68,6 +83,11 @@ struct WorkoutView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     workoutOptionsToolbarLabel
+                }
+                if showsLiveHealthMetrics {
+                    ToolbarItem(placement: .bottomBar) {
+                        liveHealthMetricsToolbarLabel
+                    }
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
@@ -190,6 +210,9 @@ struct WorkoutView: View {
             }
             .onAppear {
                 WorkoutActivityManager.start(workout: workout)
+                Task {
+                    await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
+                }
                 presentIntentDrivenSheetsIfNeeded()
             }
         }
@@ -399,6 +422,28 @@ struct WorkoutView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private var liveHealthMetricsToolbarLabel: some View {
+        HStack(spacing: 12) {
+            if let latestHeartRateText {
+                Text(latestHeartRateText)
+                    .foregroundStyle(.red)
+            }
+
+            if let activeEnergyToolbarText {
+                Text(activeEnergyToolbarText)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .font(.subheadline.weight(.semibold))
+        .monospacedDigit()
+        .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveMetricsToolbar)
+        .accessibilityLabel(AccessibilityText.workoutLiveMetricsToolbarLabel)
+        .accessibilityValue(AccessibilityText.workoutLiveMetricsToolbarValue(heartRateText: latestHeartRateText, activeEnergyText: activeEnergyToolbarText))
+    }
     
     private func queueBeginFinishFlow(action: WorkoutFinishAction) {
         showSaveConfirmation = false
@@ -448,16 +493,19 @@ struct WorkoutView: View {
             saveContext(context: context)
             endWorkoutSession(shouldDismiss: false)
             Task {
+                await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workout, context: context)
                 await IntentDonations.donateFinishWorkout()
                 await IntentDonations.donateLastWorkoutSummary()
             }
         case .workoutDeleted:
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
             saveContext(context: context)
             endWorkoutSession(shouldDismiss: true)
         }
     }
     
     private func deleteWorkout() {
+        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
         context.delete(workout)
         Task { await IntentDonations.donateCancelWorkout() }
         endWorkoutSession(shouldDismiss: true)

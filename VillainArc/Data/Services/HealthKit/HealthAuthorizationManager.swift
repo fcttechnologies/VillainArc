@@ -63,6 +63,8 @@ final class HealthAuthorizationManager {
 
     private let workoutType = HKObjectType.workoutType()
     private let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
+    private let activeEnergyType = HKQuantityType(.activeEnergyBurned)
+    private let restingEnergyType = HKQuantityType(.basalEnergyBurned)
 
     private init() {}
 
@@ -73,16 +75,17 @@ final class HealthAuthorizationManager {
     var currentAuthorizationState: HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
 
-        switch healthStore.authorizationStatus(for: workoutType) {
-        case .notDetermined:
-            return .notDetermined
-        case .sharingAuthorized:
+        let statuses = healthShareTypes.map { healthStore.authorizationStatus(for: $0) }
+
+        if statuses.allSatisfy({ $0 == .sharingAuthorized }) {
             return .authorized
-        case .sharingDenied:
-            return .denied
-        @unknown default:
+        }
+
+        if statuses.contains(.sharingDenied) {
             return .denied
         }
+
+        return .notDetermined
     }
 
     var canWriteWorkouts: Bool {
@@ -93,6 +96,21 @@ final class HealthAuthorizationManager {
     var canWriteWorkoutEffortScore: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: workoutEffortScoreType) == .sharingAuthorized
+    }
+
+    var canWriteActiveEnergyBurned: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: activeEnergyType) == .sharingAuthorized
+    }
+
+    var canWriteRestingEnergyBurned: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: restingEnergyType) == .sharingAuthorized
+    }
+
+    var hasRequestedWorkoutAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: workoutType) != .notDetermined
     }
 
     func authorizationAction() async -> HealthAuthorizationAction {
@@ -130,14 +148,17 @@ final class HealthAuthorizationManager {
     func metadata(for session: WorkoutSession) -> [String: Any] {
         [
             "Workout Title": session.title,
-            HKMetadataKeyIndoorWorkout: true
+            HKMetadataKeyIndoorWorkout: true,
+            HealthWorkoutMetadataKeys.workoutSessionID: session.id.uuidString
         ]
     }
 
     private var healthShareTypes: Set<HKSampleType> {
         [
             workoutType,
-            workoutEffortScoreType
+            workoutEffortScoreType,
+            activeEnergyType,
+            restingEnergyType
         ]
     }
 

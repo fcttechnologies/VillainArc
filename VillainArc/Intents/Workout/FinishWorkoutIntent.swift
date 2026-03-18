@@ -86,12 +86,14 @@ struct FinishWorkoutIntent: AppIntent {
         case .finished:
             RestTimerState.shared.stop()
             saveContext(context: context)
+            await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)
             WorkoutActivityManager.end()
             if shouldPrewarmSuggestions {
                 FoundationModelPrewarmer.warmup()
             }
         case .workoutDeleted:
             RestTimerState.shared.stop()
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
             saveContext(context: context)
             AppRouter.shared.activeWorkoutSession = nil
             WorkoutActivityManager.end()

@@ -212,7 +212,9 @@ struct WorkoutSettingsView: View {
         switch healthAuthorizationAction {
         case .requestAccess:
             _ = await HealthAuthorizationManager.shared.requestAuthorization()
+            await HealthWorkoutSyncCoordinator.shared.syncWorkouts()
             await HealthExportCoordinator.shared.reconcileCompletedSessions()
+            await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
         case .openSettings, .manageInSettings:
             showHealthAccessInstructions = true
         case .unavailable:

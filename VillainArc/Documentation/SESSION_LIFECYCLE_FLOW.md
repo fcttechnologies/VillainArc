@@ -14,6 +14,7 @@ This document explains how workout sessions move through the app: where they sta
 - `Views/Suggestions/DeferredSuggestionsView.swift`
 - `Views/Suggestions/SuggestionReviewView.swift`
 - `Data/LiveActivity/WorkoutActivityManager.swift`
+- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
 - `Data/Services/RestTimerState.swift`
 
 ## Session Model
@@ -27,7 +28,7 @@ This document explains how workout sessions move through the app: where they sta
 - `activeExercise` for UI and live-activity state
 - `postEffort`
 - suggestion events created from that session
-- optional linked `HealthWorkout` export record
+- optional linked `HealthWorkout` record
 
 Plan-based sessions are created with `WorkoutSession(from: plan)`. Empty workouts use the default initializer.
 
@@ -189,6 +190,7 @@ After the user either confirms or skips the effort prompt, `WorkoutView.finishWo
 - runs `WorkoutSession.finish(...)`
 - converts active set weights back to canonical kg
 - saves the session
+- ends the live Apple Health workout session if one is running and finishes its `HealthWorkout` link
 - stops the rest timer
 - ends the live activity
 
@@ -233,31 +235,35 @@ The real completion point is `WorkoutSummaryView.finishSummary()`. It:
 - sets `workout.status = .done`
 - saves
 - Spotlight-indexes the finalized workout
-- triggers `HealthExportCoordinator.exportIfEligible(session:)`
 - dismisses the full-screen workout flow
 
 That is the point where the workout becomes a stable completed record used by history-driven surfaces.
 
 ## Apple Health Export
 
-VillainArc's current Apple Health integration is a post-completion export path, not a live workout session.
+VillainArc now uses a live Apple Health workout session during the local `.active` workout phase whenever Health access is available.
 
-The export rules are:
-- only completed `.done` sessions are eligible
-- hidden workouts are skipped
-- sessions with an existing linked `HealthWorkout` are skipped
-- export depends on HealthKit workout authorization already being granted
+The live-session rules are:
+- the HealthKit session starts when the workout enters `.active`
+- if the app resumes an already-active workout, the coordinator first tries to recover the existing HealthKit session before starting a new one
+- pending suggestion review does not start Apple Health collection
+- the HealthKit session ends when local logging ends and the workout moves to `.summary`
+- canceling the workout discards the in-flight HealthKit workout
+- the finished HealthKit workout is linked into a local `HealthWorkout` immediately when available
 
-`HealthExportCoordinator` currently writes a workout with:
+The HealthKit workout currently uses:
 - activity type `traditionalStrengthTraining`
 - the session start and end date
-- duration implied by those dates
+- duration implied by the HealthKit session
 - indoor-workout metadata
 - a simple workout-title metadata field
+- a custom metadata key carrying the local `WorkoutSession.id`
 
-When HealthKit saves successfully, the coordinator persists a linked `HealthWorkout` record so later reconcile passes do not re-export the same session.
+When HealthKit saves successfully, the app persists a linked `HealthWorkout` record immediately.
 
-VillainArc also runs reconcile passes after onboarding reaches `.ready` so older completed sessions can be exported later if the user connects Apple Health after the workout originally finished.
+VillainArc still runs reconcile passes after onboarding reaches `.ready` and after Health access is granted from settings. Reconcile now does two things:
+- relinks already-saved Health workouts back to local sessions using the metadata `WorkoutSession.id`
+- falls back to the old post-completion export only if a completed session still has no matching HealthKit workout
 
 ## Save As Workout Plan
 
@@ -279,6 +285,7 @@ Canceling removes the incomplete session entirely.
 
 Common cleanup:
 - stop the rest timer
+- discard any in-flight Apple Health workout session
 - end the live activity
 - delete the `WorkoutSession`
 - dismiss the full-screen flow

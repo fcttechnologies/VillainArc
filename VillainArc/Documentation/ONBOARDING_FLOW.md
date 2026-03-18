@@ -13,6 +13,7 @@ This document explains VillainArc's startup and readiness path: how bootstrap wo
 - `Data/Services/SystemState.swift`
 - `Data/Services/SetupGuard.swift`
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
 - `Data/Services/HealthKit/HealthPreferences.swift`
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
 - `Data/SharedModelContainer.swift`
@@ -37,7 +38,7 @@ The startup path is split across `VillainArcApp`, `RootView`, and `OnboardingMan
 - starts onboarding in `.task`
 - waits for onboarding to reach `.ready`
 - only then calls `AppRouter.checkForUnfinishedData()`
-- after `.ready`, also asks `HealthExportCoordinator` to reconcile completed workouts that still have no Apple Health export link
+- after `.ready`, first syncs Apple Health workouts into the local mirror, then asks `HealthExportCoordinator` to reconcile completed workouts that still have no Apple Health link
 - presents `OnboardingView` as a blocking sheet whenever onboarding is not ready
 
 That ordering is deliberate. Resume logic for unfinished workouts or incomplete plan creation only runs after bootstrap and profile setup are valid.
@@ -120,8 +121,8 @@ That step is optional:
 - `skipAppleHealth()` marks the prompt complete locally and continues to `.ready`
 
 Once onboarding reaches `.ready`, `RootView` runs the Health post-ready pass:
-- `HealthExportCoordinator.reconcileCompletedSessions()`
 - `HealthWorkoutSyncCoordinator.syncWorkouts()`
+- `HealthExportCoordinator.reconcileCompletedSessions()`
 
 ## Why the Prompt Is Device-Local
 

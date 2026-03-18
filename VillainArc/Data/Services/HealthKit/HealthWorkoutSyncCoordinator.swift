@@ -12,7 +12,7 @@ final class HealthWorkoutSyncCoordinator {
     private init() {}
 
     func syncWorkouts() async {
-        guard authorizationManager.currentAuthorizationState.isAuthorized else { return }
+        guard authorizationManager.hasRequestedWorkoutAuthorization else { return }
         guard !isSyncing else { return }
 
         isSyncing = true
@@ -65,11 +65,8 @@ final class HealthWorkoutSyncCoordinator {
     }
 
     private func upsertHealthWorkout(for workout: HKWorkout, syncedAt: Date, context: ModelContext) throws {
-        if let existing = try fetchHealthWorkout(id: workout.uuid, context: context) {
-            existing.update(from: workout, lastSyncedAt: syncedAt)
-        } else {
-            context.insert(HealthWorkout(workout: workout, lastSyncedAt: syncedAt))
-        }
+        let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: workout, context: context)
+        _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context, lastSyncedAt: syncedAt)
     }
 
     private func handleDeletedHealthWorkout(id: UUID, syncedAt: Date, retainRemovedHealthWorkouts: Bool, context: ModelContext) throws {
@@ -85,6 +82,11 @@ final class HealthWorkoutSyncCoordinator {
 
     private func fetchHealthWorkout(id: UUID, context: ModelContext) throws -> HealthWorkout? {
         try context.fetch(HealthWorkout.byHealthWorkoutUUID(id)).first
+    }
+
+    private func fetchLinkedWorkoutSession(for workout: HKWorkout, context: ModelContext) throws -> WorkoutSession? {
+        guard let workoutSessionID = HealthWorkoutMetadataKeys.workoutSessionID(from: workout) else { return nil }
+        return try context.fetch(WorkoutSession.byID(workoutSessionID)).first
     }
 
     private func currentKeepRemovedHealthWorkoutsSetting(context: ModelContext) -> Bool {
