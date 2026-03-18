@@ -232,6 +232,13 @@ extension WorkoutSession {
         }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
     }
+
+    static var hiddenSessions: FetchDescriptor<WorkoutSession> {
+        let predicate = #Predicate<WorkoutSession> { $0.isHidden == true }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        return descriptor
+    }
     
     static var incomplete: FetchDescriptor<WorkoutSession> {
         let done = SessionStatus.done.rawValue

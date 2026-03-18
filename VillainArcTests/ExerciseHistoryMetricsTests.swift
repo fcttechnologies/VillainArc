@@ -44,11 +44,11 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.bestVolume == 0)
         #expect(history.bestReps == 24)
         #expect(history.lastCompletedAt == secondCompletedAt)
-        #expect(history.sortedProgressionPoints.count == 1)
-        #expect(history.sortedProgressionPoints.first?.date == secondCompletedAt)
-        #expect(history.sortedProgressionPoints.first?.totalReps == 42)
-        #expect(history.sortedProgressionPoints.first?.weight == 0)
-        #expect(history.sortedProgressionPoints.first?.volume == 0)
+        #expect(history.chronologicalProgressionPoints.count == 1)
+        #expect(history.chronologicalProgressionPoints.first?.date == secondCompletedAt)
+        #expect(history.chronologicalProgressionPoints.first?.totalReps == 42)
+        #expect(history.chronologicalProgressionPoints.first?.weight == 0)
+        #expect(history.chronologicalProgressionPoints.first?.volume == 0)
     }
     
     @Test @MainActor
@@ -103,9 +103,9 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.bestVolume == expectedVolume)
         #expect(history.bestReps == 8)
         #expect(history.lastCompletedAt != nil)
-        #expect(history.sortedProgressionPoints.count == 1)
-        #expect(history.sortedProgressionPoints.first?.totalReps == 13)
-        #expect(history.sortedProgressionPoints.first?.weight == 185)
-        #expect(history.sortedProgressionPoints.first?.volume == expectedVolume)
+        #expect(history.chronologicalProgressionPoints.count == 1)
+        #expect(history.chronologicalProgressionPoints.first?.totalReps == 13)
+        #expect(history.chronologicalProgressionPoints.first?.weight == 185)
+        #expect(history.chronologicalProgressionPoints.first?.volume == expectedVolume)
     }
 }

@@ -106,19 +106,7 @@ struct WorkoutsListView: View {
         let workoutsToDelete = offsets.compactMap { items[$0].session }
         guard !workoutsToDelete.isEmpty else { return }
 
-        // Collect affected catalogIDs before hiding
-        var affectedCatalogIDs = Set<String>()
-        for workout in workoutsToDelete {
-            affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
-        }
-
-        SpotlightIndexer.deleteWorkoutSessions(ids: workoutsToDelete.map(\.id))
-        for workout in workoutsToDelete {
-            workout.isHidden = true
-        }
-        saveContext(context: context)
-
-        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context)
+        WorkoutDeletionCoordinator.deleteCompletedWorkouts(workoutsToDelete, context: context, settings: appSettings.first)
 
         if workoutsToDelete.count == 1, let workout = workoutsToDelete.first {
             Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
@@ -133,19 +121,7 @@ struct WorkoutsListView: View {
         Haptics.selection()
         guard !deletableWorkouts.isEmpty else { return }
 
-        // Collect all affected catalogIDs before hiding
-        var affectedCatalogIDs = Set<String>()
-        for workout in deletableWorkouts {
-            affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
-        }
-
-        SpotlightIndexer.deleteWorkoutSessions(ids: deletableWorkouts.map(\.id))
-        for workout in deletableWorkouts {
-            workout.isHidden = true
-        }
-        saveContext(context: context)
-
-        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context)
+        WorkoutDeletionCoordinator.deleteCompletedWorkouts(deletableWorkouts, context: context, settings: appSettings.first)
 
         Task { await IntentDonations.donateDeleteAllWorkouts() }
 

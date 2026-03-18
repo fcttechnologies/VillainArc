@@ -79,6 +79,16 @@ struct WorkoutSettingsView: View {
             }
 
             Section {
+                Toggle("Retain Performance Snapshots for Suggestion Learning", isOn: $settings.retainPerformancesForLearning)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
+            } header: {
+                Text("Workout History")
+            } footer: {
+                Text("When this is on, deleting a completed workout hides it while keeping its performance snapshots for exercise history and suggestion learning. When it is off, deleting a completed workout permanently removes the session and the suggestion data tied to it.")
+            }
+
+            Section {
                 Toggle("Send Notifications", isOn: $settings.restTimerNotificationsEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsNotificationsToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsNotificationsHint)
@@ -136,6 +146,11 @@ struct WorkoutSettingsView: View {
         }
         .onChange(of: settings.promptForPostWorkoutEffort) {
             saveContext(context: context)
+        }
+        .onChange(of: settings.retainPerformancesForLearning) {
+            saveContext(context: context)
+            guard !settings.retainPerformancesForLearning else { return }
+            WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
         }
         .onChange(of: settings.keepRemovedHealthWorkouts) {
             saveContext(context: context)

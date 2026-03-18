@@ -61,6 +61,9 @@ final class HealthAuthorizationManager {
 
     let healthStore = HKHealthStore()
 
+    private let workoutType = HKObjectType.workoutType()
+    private let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
+
     private init() {}
 
     var isHealthDataAvailable: Bool {
@@ -70,7 +73,6 @@ final class HealthAuthorizationManager {
     var currentAuthorizationState: HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
 
-        let workoutType = HKObjectType.workoutType()
         switch healthStore.authorizationStatus(for: workoutType) {
         case .notDetermined:
             return .notDetermined
@@ -81,6 +83,16 @@ final class HealthAuthorizationManager {
         @unknown default:
             return .denied
         }
+    }
+
+    var canWriteWorkouts: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: workoutType) == .sharingAuthorized
+    }
+
+    var canWriteWorkoutEffortScore: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: workoutEffortScoreType) == .sharingAuthorized
     }
 
     func authorizationAction() async -> HealthAuthorizationAction {
@@ -123,7 +135,10 @@ final class HealthAuthorizationManager {
     }
 
     private var healthShareTypes: Set<HKSampleType> {
-        [HKObjectType.workoutType()]
+        [
+            workoutType,
+            workoutEffortScoreType
+        ]
     }
 
     private var healthReadTypes: Set<HKObjectType> {

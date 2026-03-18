@@ -162,7 +162,6 @@ Stage 1 happens in `WorkoutView`:
 - set the session to `.summary`
 - convert live set weights back to canonical kg
 - save the session
-- queue Spotlight indexing for the workout
 - stop the rest timer and live activity
 
 Stage 2 happens in `WorkoutSummaryView`:
@@ -173,6 +172,7 @@ Stage 2 happens in `WorkoutSummaryView`:
 - clear active-only prescription links for historical use
 - rebuild `ExerciseHistory`
 - mark the workout `.done`
+- queue Spotlight indexing for the finalized workout
 - save and dismiss
 - attempt Apple Health export if authorization exists and the session does not already have a linked `HealthWorkout`
 
@@ -191,11 +191,12 @@ There are two different save-as-plan paths:
 
 ### Deleting Workout History
 
-Completed workouts are soft-hidden, not physically removed from the store:
-- `WorkoutsListView` marks selected workouts `isHidden = true`
-- `WorkoutDetailView` does the same for a single workout
+Completed workout deletion is controlled by `AppSettings.retainPerformancesForLearning`:
+- when it is on, deleting a completed workout hides it with `isHidden = true`
+- when it is off, deleting a completed workout hard-deletes the session and the suggestion-learning records tied to it
+- turning the setting off also purges workouts that were previously hidden under the old retention mode
 
-After that, `ExerciseHistoryUpdater` rebuilds the affected exercise histories and Spotlight entries.
+In both modes, the workout is removed from Spotlight first, then `ExerciseHistoryUpdater` rebuilds the affected exercise histories and exercise Spotlight entries.
 
 ## Apple Health Integration
 

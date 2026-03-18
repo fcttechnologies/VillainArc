@@ -48,16 +48,23 @@ So the rule is:
 
 ### Deletion Path
 
-Completed workout history is soft-hidden, not fully deleted from the store.
+Completed workout deletion now depends on the workout-history retention setting.
 
-When a workout is hidden from:
+When a completed workout is deleted from:
 - `WorkoutsListView`
 - `WorkoutDetailView`
 
 the app:
-- marks the workout `isHidden = true`
+- always removes the workout from Spotlight
+- either marks the workout `isHidden = true` so its performance snapshots stay available for suggestion learning, or hard-deletes the `WorkoutSession`
+- when hard-deleting, also removes suggestion-learning records tied to that workout:
+  - suggestion events created from that session
+  - suggestion events anchored to performances in that session
+  - suggestion evaluations sourced from that session
 - collects the affected exercise `catalogID`s
 - rebuilds histories for those affected exercises through `updateHistoriesForDeletedCatalogIDs(...)`
+
+If the user later turns off `Retain Performance Snapshots for Suggestion Learning`, the app also finds already-hidden workouts and purges them through the same hard-delete path.
 
 ### Manual Repair Path
 

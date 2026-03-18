@@ -13,6 +13,8 @@ struct SummaryStatCard: View {
             Text(value)
                 .font(.title3)
                 .fontWeight(.semibold)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
         }
         .fontDesign(.rounded)
         .frame(maxWidth: .infinity, alignment: .leading)

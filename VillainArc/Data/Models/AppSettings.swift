@@ -7,6 +7,7 @@ final class AppSettings {
     var autoCompleteSetAfterRPE: Bool = false
     var promptForPreWorkoutContext: Bool = true
     var promptForPostWorkoutEffort: Bool = true
+    var retainPerformancesForLearning: Bool = true
     var keepRemovedHealthWorkouts: Bool = true
     var liveActivitiesEnabled: Bool = true
     var restTimerNotificationsEnabled: Bool = true
@@ -22,6 +23,7 @@ struct AppSettingsSnapshot {
     let autoCompleteSetAfterRPE: Bool
     let promptForPreWorkoutContext: Bool
     let promptForPostWorkoutEffort: Bool
+    let retainPerformancesForLearning: Bool
     let keepRemovedHealthWorkouts: Bool
     let liveActivitiesEnabled: Bool
     let restTimerNotificationsEnabled: Bool
@@ -34,6 +36,7 @@ struct AppSettingsSnapshot {
         autoCompleteSetAfterRPE = settings?.autoCompleteSetAfterRPE ?? false
         promptForPreWorkoutContext = settings?.promptForPreWorkoutContext ?? true
         promptForPostWorkoutEffort = settings?.promptForPostWorkoutEffort ?? true
+        retainPerformancesForLearning = settings?.retainPerformancesForLearning ?? true
         keepRemovedHealthWorkouts = settings?.keepRemovedHealthWorkouts ?? true
         liveActivitiesEnabled = settings?.liveActivitiesEnabled ?? true
         restTimerNotificationsEnabled = settings?.restTimerNotificationsEnabled ?? true

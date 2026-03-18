@@ -7,6 +7,9 @@
     " " : {
 
     },
+    " bpm" : {
+
+    },
     "-" : {
 
     },
@@ -55,6 +58,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@"
           }
         }
       }
@@ -392,9 +405,6 @@
 
     },
     "Automatically starts rest timer when a set is marked complete." : {
-
-    },
-    "Average Heart Rate" : {
 
     },
     "Awaiting Outcome" : {
@@ -935,9 +945,6 @@
     "Hamstrings" : {
 
     },
-    "Heart" : {
-
-    },
     "Heart Rate" : {
 
     },
@@ -1002,6 +1009,9 @@
 
     },
     "Keep weekends free?" : {
+
+    },
+    "Keeps deleted completed workouts hidden instead of permanently removing the performance snapshots used for suggestion learning." : {
 
     },
     "Kettlebell (Double)" : {
@@ -1439,6 +1449,16 @@
     "Other" : {
 
     },
+    "Pace %@, heart rate %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pace %1$@, heart rate %2$@"
+          }
+        }
+      }
+    },
     "Paste" : {
 
     },
@@ -1681,6 +1701,9 @@
     "Resumes the rest timer." : {
 
     },
+    "Retain Performance Snapshots for Suggestion Learning" : {
+
+    },
     "Retries the current setup step." : {
 
     },
@@ -1739,6 +1762,12 @@
     "Rotator Cuff" : {
 
     },
+    "Route" : {
+
+    },
+    "Route plotted with %lld points." : {
+
+    },
     "RPE" : {
 
     },
@@ -1785,6 +1814,9 @@
 
     },
     "Schedule Type" : {
+
+    },
+    "Segment" : {
 
     },
     "Select" : {
@@ -2040,6 +2072,9 @@
 
     },
     "Split Options" : {
+
+    },
+    "Splits" : {
 
     },
     "Start" : {
@@ -2417,6 +2452,9 @@
     "What's your name?" : {
 
     },
+    "When this is on, deleting a completed workout hides it while keeping its performance snapshots for exercise history and suggestion learning. When it is off, deleting a completed workout permanently removes the session and the suggestion data tied to it." : {
+
+    },
     "When turned off, those prompts stay manual. You can still open pre workout context from the workout title menu." : {
 
     },
@@ -2495,6 +2533,9 @@
     "Workout finish canceled." : {
 
     },
+    "Workout History" : {
+
+    },
     "Workout Notes" : {
 
     },
@@ -2520,6 +2561,9 @@
 
     },
     "Workout plans list options." : {
+
+    },
+    "Workout route map" : {
 
     },
     "Workout Settings" : {
@@ -2633,6 +2677,9 @@
 
     },
     "Your workout history will appear here." : {
+
+    },
+    "Zones" : {
 
     }
   },

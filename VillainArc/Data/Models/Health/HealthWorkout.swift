@@ -12,6 +12,7 @@ final class HealthWorkout {
     var endDate: Date = Date()
     var duration: TimeInterval = 0
     var activityTypeRawValue: UInt = HKWorkoutActivityType.other.rawValue
+    var isIndoorWorkout: Bool?
     var totalEnergyBurned: Double?
     var totalDistance: Double?
     var sourceName: String = ""
@@ -31,6 +32,7 @@ final class HealthWorkout {
         endDate = workout.endDate
         duration = workout.duration
         activityType = workout.workoutActivityType
+        isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
         totalEnergyBurned = workout
             .statistics(for: activeEnergyType)?
             .sumQuantity()?
@@ -47,6 +49,7 @@ final class HealthWorkout {
         endDate = workout.endDate
         duration = workout.duration
         activityType = workout.workoutActivityType
+        isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
         totalEnergyBurned = workout
             .statistics(for: activeEnergyType)?
             .sumQuantity()?
@@ -71,12 +74,16 @@ extension HealthWorkout {
     }
 
     var activityTypeDisplayName: String {
-        activityType.displayName
+        activityType.displayName(indoorWorkout: isIndoorWorkout)
     }
 }
 
 extension HKWorkoutActivityType {
     nonisolated var displayName: String {
+        displayName(indoorWorkout: nil)
+    }
+
+    nonisolated func displayName(indoorWorkout: Bool?) -> String {
         switch self {
         case .traditionalStrengthTraining:
             return "Traditional Strength Training"
@@ -85,11 +92,11 @@ extension HKWorkoutActivityType {
         case .highIntensityIntervalTraining:
             return "HIIT"
         case .running:
-            return "Running"
+            return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Run", outdoor: "Outdoor Run", fallback: "Running")
         case .walking:
-            return "Walking"
+            return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Walk", outdoor: "Outdoor Walk", fallback: "Walking")
         case .cycling:
-            return "Cycling"
+            return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Ride", outdoor: "Outdoor Ride", fallback: "Cycling")
         case .hiking:
             return "Hiking"
         case .mixedCardio:
@@ -112,6 +119,17 @@ extension HKWorkoutActivityType {
             return "Workout"
         default:
             return "Workout"
+        }
+    }
+
+    private nonisolated func locationQualifiedName(indoorWorkout: Bool?, indoor: String, outdoor: String, fallback: String) -> String {
+        switch indoorWorkout {
+        case true:
+            return indoor
+        case false:
+            return outdoor
+        case nil:
+            return fallback
         }
     }
 }

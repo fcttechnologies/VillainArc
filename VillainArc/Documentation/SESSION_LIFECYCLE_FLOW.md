@@ -189,7 +189,6 @@ After the user either confirms or skips the effort prompt, `WorkoutView.finishWo
 - runs `WorkoutSession.finish(...)`
 - converts active set weights back to canonical kg
 - saves the session
-- queues Spotlight indexing for the workout
 - stops the rest timer
 - ends the live activity
 
@@ -233,7 +232,8 @@ The real completion point is `WorkoutSummaryView.finishSummary()`. It:
 - rebuilds exercise histories through `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(...)`
 - sets `workout.status = .done`
 - saves
-- triggers `HealthExportCoordinator.exportIfEligible(sessionID:)`
+- Spotlight-indexes the finalized workout
+- triggers `HealthExportCoordinator.exportIfEligible(session:)`
 - dismisses the full-screen workout flow
 
 That is the point where the workout becomes a stable completed record used by history-driven surfaces.

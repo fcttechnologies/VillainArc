@@ -448,6 +448,7 @@ struct WorkoutSummaryView: View {
         ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
+        SpotlightIndexer.index(workoutSession: workout)
         Task {
             await HealthExportCoordinator.shared.exportIfEligible(session: workout)
         }

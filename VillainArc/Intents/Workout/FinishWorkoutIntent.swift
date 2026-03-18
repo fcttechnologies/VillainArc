@@ -86,7 +86,6 @@ struct FinishWorkoutIntent: AppIntent {
         case .finished:
             RestTimerState.shared.stop()
             saveContext(context: context)
-            SpotlightIndexer.index(workoutSession: workoutSession)
             WorkoutActivityManager.end()
             if shouldPrewarmSuggestions {
                 FoundationModelPrewarmer.warmup()

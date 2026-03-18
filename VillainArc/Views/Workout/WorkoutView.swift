@@ -446,7 +446,6 @@ struct WorkoutView: View {
         case .finished:
             workout.convertSetWeightsToKg(from: weightUnit)
             saveContext(context: context)
-            SpotlightIndexer.index(workoutSession: workout)
             endWorkoutSession(shouldDismiss: false)
             Task {
                 await IntentDonations.donateFinishWorkout()

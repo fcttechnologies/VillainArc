@@ -30,3 +30,10 @@ final class SuggestionEvaluation {
         self.evaluatedAt = Date()
     }
 }
+
+extension SuggestionEvaluation {
+    static func forSourceWorkoutSession(_ workoutSessionID: UUID) -> FetchDescriptor<SuggestionEvaluation> {
+        let predicate = #Predicate<SuggestionEvaluation> { $0.sourceWorkoutSessionID == workoutSessionID }
+        return FetchDescriptor(predicate: predicate)
+    }
+}

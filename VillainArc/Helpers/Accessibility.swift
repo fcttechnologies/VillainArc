@@ -492,6 +492,7 @@ enum AccessibilityIdentifiers {
     static let workoutSettingsAutoCompleteAfterRPEToggle = "workoutSettingsAutoCompleteAfterRPEToggle"
     static let workoutSettingsPreWorkoutPromptToggle = "workoutSettingsPreWorkoutPromptToggle"
     static let workoutSettingsPostWorkoutEffortToggle = "workoutSettingsPostWorkoutEffortToggle"
+    static let workoutSettingsRetainPerformanceSnapshotsToggle = "workoutSettingsRetainPerformanceSnapshotsToggle"
     static let workoutSettingsNotificationsToggle = "workoutSettingsNotificationsToggle"
     static let workoutSettingsLiveActivitiesToggle = "workoutSettingsLiveActivitiesToggle"
     static let workoutSettingsRestartLiveActivityButton = "workoutSettingsRestartLiveActivityButton"
@@ -952,6 +953,7 @@ enum AccessibilityText {
     static let workoutSettingsAutoCompleteAfterRPEHint = localized("Automatically marks a set complete after selecting an RPE rating.")
     static let workoutSettingsPreWorkoutPromptHint = localized("Prompts for pre workout context when you open a new workout.")
     static let workoutSettingsPostWorkoutEffortHint = localized("Prompts for post workout effort before summary when the workout is being saved.")
+    static let workoutSettingsRetainPerformanceSnapshotsHint = localized("Keeps deleted completed workouts hidden instead of permanently removing the performance snapshots used for suggestion learning.")
     static let workoutSettingsNotificationsHint = localized("Sends a local notification when rest timer finishes.")
     static let workoutSettingsLiveActivitiesHint = localized("Shows a live activity on the Lock Screen during your workout.")
     static let workoutSettingsRestartLiveActivityHint = localized("Restarts the workout live activity if you dismissed it.")

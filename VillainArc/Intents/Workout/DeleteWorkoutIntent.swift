@@ -37,15 +37,7 @@ struct DeleteWorkoutIntent: AppIntent {
             throw DeleteWorkoutIntentError.cancelled
         }
 
-        var affectedCatalogIDs = Set<String>()
-        affectedCatalogIDs.formUnion((storedWorkout.exercises ?? []).map { $0.catalogID })
-
-        SpotlightIndexer.deleteWorkoutSession(id: storedWorkout.id)
-        context.delete(storedWorkout)
-
-        ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context, save: false)
-
-        saveContext(context: context)
+        WorkoutDeletionCoordinator.deleteCompletedWorkouts([storedWorkout], context: context)
         return .result(dialog: "Workout deleted.")
     }
 }
