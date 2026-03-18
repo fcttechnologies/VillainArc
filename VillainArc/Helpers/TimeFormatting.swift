@@ -10,6 +10,14 @@ func secondsToTime(_ seconds: Int) -> String {
     return String(format: "%02d:%02d", minutes, remainingSeconds)
 }
 
+func secondsToTimeWithHours(_ seconds: Int) -> String {
+    let clampedSeconds = max(0, seconds)
+    let hours = clampedSeconds / 3_600
+    let remainingMinutes = (clampedSeconds % 3_600) / 60
+    let remainingSeconds = clampedSeconds % 60
+    return "\(hours):\(String(format: "%02d", remainingMinutes)):\(String(format: "%02d", remainingSeconds))"
+}
+
 func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false) -> String {
     let endDate = normalizedEndDate(start: start, end: end)
     let dateText = formattedDateRangeText(start: start, end: endDate)

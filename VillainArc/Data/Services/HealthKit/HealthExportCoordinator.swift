@@ -55,10 +55,10 @@ final class HealthExportCoordinator {
                 print("HealthKit finished export for \(session.id), but the workout sample was unavailable.")
                 return
             }
-
-            let healthWorkout = HealthWorkout(healthWorkoutUUID: workout.uuid, workoutSession: session)
+            let healthWorkout = HealthWorkout(workout: workout, workoutSession: session)
             context.insert(healthWorkout)
             saveContext(context: context)
+            print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
         } catch {
             print("Failed to export workout \(session.id) to HealthKit: \(error)")
         }
@@ -73,9 +73,12 @@ final class HealthExportCoordinator {
 
         let context = SharedModelContainer.container.mainContext
         let sessions = (try? context.fetch(WorkoutSession.completedSessionsNeedingHealthExport)) ?? []
+        print("Reconciling \(sessions.count) completed workouts for Apple Health export")
 
         for session in sessions {
             await exportIfEligible(session: session)
         }
+
+        print("Finished Apple Health export reconciliation")
     }
 }

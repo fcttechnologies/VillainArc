@@ -86,7 +86,6 @@ final class HealthAuthorizationManager {
     func authorizationAction() async -> HealthAuthorizationAction {
         let state = currentAuthorizationState
         guard state != .unavailable else { return .unavailable }
-        guard state != .authorized else { return .manageInSettings }
 
         do {
             let requestStatus = try await healthStore.statusForAuthorizationRequest(toShare: healthShareTypes, read: healthReadTypes)
@@ -94,9 +93,9 @@ final class HealthAuthorizationManager {
             case .shouldRequest:
                 return .requestAccess
             case .unnecessary, .unknown:
-                return .openSettings
+                return state == .authorized ? .manageInSettings : .openSettings
             @unknown default:
-                return .openSettings
+                return state == .authorized ? .manageInSettings : .openSettings
             }
         } catch {
             print("Failed to determine HealthKit authorization request status: \(error)")
@@ -128,6 +127,34 @@ final class HealthAuthorizationManager {
     }
 
     private var healthReadTypes: Set<HKObjectType> {
-        [HKObjectType.workoutType()]
+        [
+            HKObjectType.workoutType(),
+            HKSeriesType.workoutRoute(),
+            HKQuantityType(.heartRate),
+            HKQuantityType(.activeEnergyBurned),
+            HKQuantityType(.basalEnergyBurned),
+            HKQuantityType(.respiratoryRate),
+            HKQuantityType(.flightsClimbed),
+            HKQuantityType(.distanceWalkingRunning),
+            HKQuantityType(.distanceCycling),
+            HKQuantityType(.distanceSwimming),
+            HKQuantityType(.distanceWheelchair),
+            HKQuantityType(.distanceRowing),
+            HKQuantityType(.distancePaddleSports),
+            HKQuantityType(.distanceCrossCountrySkiing),
+            HKQuantityType(.distanceDownhillSnowSports),
+            HKQuantityType(.swimmingStrokeCount),
+            HKQuantityType(.runningSpeed),
+            HKQuantityType(.runningPower),
+            HKQuantityType(.runningStrideLength),
+            HKQuantityType(.runningGroundContactTime),
+            HKQuantityType(.runningVerticalOscillation),
+            HKQuantityType(.cyclingCadence),
+            HKQuantityType(.cyclingPower),
+            HKQuantityType(.cyclingSpeed),
+            HKQuantityType(.physicalEffort),
+            HKQuantityType(.workoutEffortScore),
+            HKQuantityType(.estimatedWorkoutEffortScore)
+        ]
     }
 }

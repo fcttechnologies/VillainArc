@@ -83,9 +83,9 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 - Read with: `Views/Workout/WorkoutSessionContainer.swift`, `Views/Workout/WorkoutView.swift`, `Views/Workout/WorkoutSummaryView.swift`.
 
 ### `Data/Models/Health/HealthWorkout.swift`
-- Minimal persisted Apple Health link record.
-- Stores the HealthKit workout UUID and optional owning `WorkoutSession`.
-- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Models/Sessions/WorkoutSession.swift`.
+- Persisted Apple Health workout mirror.
+- Stores the HealthKit workout UUID, optional owning `WorkoutSession`, cached workout summary fields, HealthKit availability state, and last sync timestamp.
+- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`, `Views/History/WorkoutsListView.swift`.
 
 ### `Data/Models/Sessions/ExercisePerformance.swift`
 - Per-exercise performed record inside a workout session.
@@ -250,12 +250,18 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### Apple Health
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
-  - HealthKit availability, authorization-state, and permission-request boundary for workout export.
+  - HealthKit availability, authorization-state, and permission-request boundary for export plus richer Health workout detail reads.
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
   - Exports completed sessions to Apple Health, links returned workout UUIDs into `HealthWorkout`, and reconciles older completed sessions that still have no export record.
-- `Data/Services/HealthKit/HealthOnboardingPreferences.swift`
-  - Device-local memory for whether the optional onboarding prompt has already been shown.
-- Read with: `Views/Onboarding/OnboardingView.swift`, `Views/Workout/WorkoutSettingsView.swift`, `Views/Workout/WorkoutSummaryView.swift`.
+- `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
+  - Anchored Apple Health workout sync that upserts `HealthWorkout` records and marks removed workouts unavailable.
+- `Data/Services/HealthKit/HealthPreferences.swift`
+  - Device-local Health defaults storage for permission-prompt versioning and workout sync anchor persistence.
+- `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`
+  - On-demand HealthKit detail loader for the Health workout detail screen.
+- `Views/History/WorkoutsListView.swift`, `Views/Components/WorkoutHistoryRowView.swift`, `Views/Workout/HealthWorkoutDetailView.swift`
+  - Health-aware history rows and Health workout detail UI.
+- Read with: `Documentation/HEALTHKIT_INTEGRATION.md`.
 
 ### Spotlight and App Entities
 - `Data/Services/SpotlightIndexer.swift`

@@ -70,6 +70,8 @@ struct ContentView: View {
                     WorkoutsListView()
                 case .workoutSessionDetail(let session):
                     WorkoutDetailView(workout: session)
+                case .healthWorkoutDetail(let workout):
+                    HealthWorkoutDetailView(workout: workout)
                 case .workoutPlansList:
                     WorkoutPlansListView()
                 case .workoutPlanDetail(let plan, let showsUseOnly):

@@ -24,6 +24,7 @@ struct RootView: View {
                 AppRouter.shared.checkForUnfinishedData()
                 Task {
                     await HealthExportCoordinator.shared.reconcileCompletedSessions()
+                    await HealthWorkoutSyncCoordinator.shared.syncWorkouts()
                 }
             }
             .sheet(isPresented: onboardingBinding) {

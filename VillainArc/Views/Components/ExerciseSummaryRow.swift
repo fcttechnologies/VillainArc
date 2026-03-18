@@ -53,15 +53,18 @@ struct ExerciseSummaryRow: View {
 
     @ViewBuilder
     private var metadataChips: some View {
-        infoChip(systemImage: "clock.arrow.circlepath", text: lastUsedText)
-        Spacer()
+        MetadataChipRow(items: metadataChipItems)
+    }
+
+    private var metadataChipItems: [MetadataChipItem] {
+        var items = [MetadataChipItem(systemImage: "clock.arrow.circlepath", text: lastUsedText)]
         if let sessionText {
-            infoChip(systemImage: "figure.strengthtraining.traditional", text: sessionText)
+            items.append(MetadataChipItem(systemImage: "figure.strengthtraining.traditional", text: sessionText))
         }
-        Spacer()
         if let recordText {
-            infoChip(systemImage: "trophy.fill", text: recordText)
+            items.append(MetadataChipItem(systemImage: "trophy.fill", text: recordText))
         }
+        return items
     }
     
     private var lastUsedText: String {
@@ -83,18 +86,5 @@ struct ExerciseSummaryRow: View {
             return "\(history.bestReps) reps"
         }
         return nil
-    }
-
-    private func infoChip(systemImage: String, text: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: systemImage)
-            Text(text)
-        }
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(.thinMaterial, in: Capsule())
     }
 }

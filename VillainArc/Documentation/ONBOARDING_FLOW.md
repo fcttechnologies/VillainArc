@@ -13,7 +13,7 @@ This document explains VillainArc's startup and readiness path: how bootstrap wo
 - `Data/Services/SystemState.swift`
 - `Data/Services/SetupGuard.swift`
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
-- `Data/Services/HealthKit/HealthOnboardingPreferences.swift`
+- `Data/Services/HealthKit/HealthPreferences.swift`
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
 - `Data/SharedModelContainer.swift`
 - `Helpers/CloudKitStatusChecker.swift`
@@ -116,14 +116,16 @@ Apple Health is not part of bootstrap readiness. VillainArc only offers it after
 - profile onboarding is complete
 
 That step is optional:
-- `connectAppleHealth()` requests workout read/write permission
+- `connectAppleHealth()` requests the app's current Apple Health permission set
 - `skipAppleHealth()` marks the prompt complete locally and continues to `.ready`
 
-If the user connects Apple Health during onboarding, VillainArc immediately asks `HealthExportCoordinator` to reconcile already-completed workouts that still have no export link.
+Once onboarding reaches `.ready`, `RootView` runs the Health post-ready pass:
+- `HealthExportCoordinator.reconcileCompletedSessions()`
+- `HealthWorkoutSyncCoordinator.syncWorkouts()`
 
 ## Why the Prompt Is Device-Local
 
-The app remembers whether it already showed the optional Apple Health step through `HealthOnboardingPreferences`, which stores a flag in shared defaults.
+The app remembers the last Apple Health permission prompt version through `HealthPermissionPreferences`, which lives in `HealthPreferences.swift` and stores that version in shared defaults.
 
 That flag is not treated as HealthKit truth:
 - HealthKit authorization still comes from `HKHealthStore`

@@ -132,6 +132,12 @@
     "%lld" : {
 
     },
+    "%lld bpm" : {
+
+    },
+    "%lld cal" : {
+
+    },
     "%lld cm" : {
 
     },
@@ -232,7 +238,13 @@
     "Action" : {
 
     },
+    "Active energy chart" : {
+
+    },
     "Active Split" : {
+
+    },
+    "Activities" : {
 
     },
     "Add ${exercise}" : {
@@ -382,6 +394,9 @@
     "Automatically starts rest timer when a set is marked complete." : {
 
     },
+    "Average Heart Rate" : {
+
+    },
     "Awaiting Outcome" : {
 
     },
@@ -413,6 +428,9 @@
 
     },
     "Cable (Single)" : {
+
+    },
+    "Calories" : {
 
     },
     "Calves" : {
@@ -788,6 +806,9 @@
     "Enable iCloud in Settings" : {
 
     },
+    "Energy" : {
+
+    },
     "Enjoy the day off." : {
 
     },
@@ -914,6 +935,15 @@
     "Hamstrings" : {
 
     },
+    "Heart" : {
+
+    },
+    "Heart Rate" : {
+
+    },
+    "Heart rate chart" : {
+
+    },
     "Height (cm)" : {
 
     },
@@ -965,6 +995,9 @@
     "Keep existing sets" : {
 
     },
+    "Keep Removed Apple Health Workouts" : {
+
+    },
     "Keep Sets" : {
 
     },
@@ -996,6 +1029,9 @@
 
     },
     "Live Activity" : {
+
+    },
+    "Loading Apple Health details..." : {
 
     },
     "Long Head (Biceps)" : {
@@ -1065,6 +1101,9 @@
 
     },
     "Metric" : {
+
+    },
+    "Metrics" : {
 
     },
     "Mid Chest" : {
@@ -1775,6 +1814,9 @@
     "Selected Date" : {
 
     },
+    "Selected Time" : {
+
+    },
     "Selects a workout plan for this day." : {
 
     },
@@ -2099,6 +2141,9 @@
     "Suggestions" : {
 
     },
+    "Summary" : {
+
+    },
     "Sunday" : {
 
     },
@@ -2168,7 +2213,13 @@
     "This workout is already linked to a workout plan." : {
 
     },
+    "This workout is no longer available in Apple Health. VillainArc is showing the last synced summary." : {
+
+    },
     "Thursday" : {
+
+    },
+    "Time" : {
 
     },
     "Timer duration" : {
@@ -2312,7 +2363,7 @@
     "VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {
 
     },
-    "VillainArc exports completed workouts to Apple Health whenever Health access is allowed." : {
+    "VillainArc exports completed workouts to Apple Health whenever Health access is allowed. When this is off, workouts removed from Apple Health are also removed from VillainArc's Health history." : {
 
     },
     "VillainArc needs WiFi for first time setup to sync your workout data." : {

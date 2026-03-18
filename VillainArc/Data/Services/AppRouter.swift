@@ -26,6 +26,7 @@ final class AppRouter {
     enum Destination: Hashable {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
+        case healthWorkoutDetail(HealthWorkout)
         case workoutPlansList
         case workoutPlanDetail(WorkoutPlan, Bool)
         case exercisesList

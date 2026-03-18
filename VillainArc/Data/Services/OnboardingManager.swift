@@ -288,15 +288,15 @@ class OnboardingManager {
         }
     }
 
-    private func shouldOfferHealthPermissions() -> Bool {
-        let authorizationState = HealthAuthorizationManager.shared.currentAuthorizationState
-        return !HealthOnboardingPreferences.hasCompletedPrompt
-            && authorizationState != .authorized
-            && authorizationState != .unavailable
+    private func shouldOfferHealthPermissions() async -> Bool {
+        guard HealthPermissionPreferences.shouldPromptForCurrentVersion else { return false }
+
+        let action = await HealthAuthorizationManager.shared.authorizationAction()
+        return action != .unavailable && action != .manageInSettings
     }
 
     private func transitionAfterSetup() async {
-        if shouldOfferHealthPermissions() {
+        if await shouldOfferHealthPermissions() {
             state = .healthPermissions
         } else {
             transitionToReady()
@@ -304,14 +304,13 @@ class OnboardingManager {
     }
 
     func connectAppleHealth() async {
-        HealthOnboardingPreferences.markCompleted()
+        HealthPermissionPreferences.markPromptHandledForCurrentVersion()
         _ = await HealthAuthorizationManager.shared.requestAuthorization()
         transitionToReady()
-        await HealthExportCoordinator.shared.reconcileCompletedSessions()
     }
 
     func skipAppleHealth() {
-        HealthOnboardingPreferences.markCompleted()
+        HealthPermissionPreferences.markPromptHandledForCurrentVersion()
         transitionToReady()
     }
 }

@@ -117,10 +117,12 @@ struct WorkoutSettingsView: View {
                     .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
                     .accessibilityHint(healthAccessHint)
                 }
+
+                Toggle("Keep Removed Apple Health Workouts", isOn: $settings.keepRemovedHealthWorkouts)
             } header: {
                 Text("Apple Health")
             } footer: {
-                Text("VillainArc exports completed workouts to Apple Health whenever Health access is allowed.")
+                Text("VillainArc exports completed workouts to Apple Health whenever Health access is allowed. When this is off, workouts removed from Apple Health are also removed from VillainArc's Health history.")
             }
         }
         .onChange(of: settings.autoStartRestTimer) {
@@ -134,6 +136,13 @@ struct WorkoutSettingsView: View {
         }
         .onChange(of: settings.promptForPostWorkoutEffort) {
             saveContext(context: context)
+        }
+        .onChange(of: settings.keepRemovedHealthWorkouts) {
+            saveContext(context: context)
+            guard !settings.keepRemovedHealthWorkouts else { return }
+            Task {
+                await HealthWorkoutSyncCoordinator.shared.applyRemovedWorkoutRetentionSetting()
+            }
         }
         .onChange(of: settings.liveActivitiesEnabled) {
             saveContext(context: context)

@@ -4,6 +4,8 @@ import SwiftData
 struct WorkoutsListView: View {
     @Environment(\.modelContext) private var context
     @Query(WorkoutSession.completedSession) private var workouts: [WorkoutSession]
+    @Query(HealthWorkout.history) private var healthWorkouts: [HealthWorkout]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
     
@@ -11,13 +13,34 @@ struct WorkoutsListView: View {
         Binding(get: { isEditing ? .active : .inactive }, set: { newValue in isEditing = newValue == .active })
     }
 
+    private var items: [WorkoutHistoryItem] {
+        let sessionItems = workouts.map { WorkoutHistoryItem(source: .session($0)) }
+        let healthItems = healthWorkouts.compactMap { workout -> WorkoutHistoryItem? in
+            if let linkedSession = workout.workoutSession, !linkedSession.isHidden {
+                return nil
+            }
+            return WorkoutHistoryItem(source: .health(workout))
+        }
+
+        return (sessionItems + healthItems).sorted { $0.sortDate > $1.sortDate }
+    }
+
+    private var deletableWorkouts: [WorkoutSession] {
+        workouts
+    }
+
+    private var appSettingsSnapshot: AppSettingsSnapshot {
+        AppSettingsSnapshot(settings: appSettings.first)
+    }
+    
     var body: some View {
         List {
-            ForEach(workouts) { workout in
-                WorkoutRowView(workout: workout)
+            ForEach(items) { item in
+                WorkoutHistoryRowView(item: item, appSettingsSnapshot: appSettingsSnapshot)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutRow(workout))
+                    .deleteDisabled(item.session == nil)
+                    .accessibilityIdentifier(item.session.map { AccessibilityIdentifiers.workoutRow($0) } ?? "healthWorkoutRow")
                     .accessibilityHint(AccessibilityText.workoutRowHint)
             }
             .onDelete(perform: deleteWorkouts)
@@ -50,7 +73,7 @@ struct WorkoutsListView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if !workouts.isEmpty {
+                if !deletableWorkouts.isEmpty {
                     if isEditing {
                         Button("Done Editing", systemImage: "checkmark") {
                             isEditing = false
@@ -70,7 +93,7 @@ struct WorkoutsListView: View {
             }
         }
         .overlay(alignment: .center) {
-            if workouts.isEmpty {
+            if items.isEmpty {
                 ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
             }
@@ -80,7 +103,8 @@ struct WorkoutsListView: View {
     private func deleteWorkouts(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
-        let workoutsToDelete = offsets.map { workouts[$0] }
+        let workoutsToDelete = offsets.compactMap { items[$0].session }
+        guard !workoutsToDelete.isEmpty else { return }
 
         // Collect affected catalogIDs before hiding
         var affectedCatalogIDs = Set<String>()
@@ -100,22 +124,23 @@ struct WorkoutsListView: View {
             Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
         }
 
-        if workouts.isEmpty {
+        if deletableWorkouts.isEmpty {
             isEditing = false
         }
     }
 
     private func deleteAllWorkouts() {
         Haptics.selection()
+        guard !deletableWorkouts.isEmpty else { return }
 
         // Collect all affected catalogIDs before hiding
         var affectedCatalogIDs = Set<String>()
-        for workout in workouts {
+        for workout in deletableWorkouts {
             affectedCatalogIDs.formUnion((workout.exercises ?? []).map { $0.catalogID })
         }
 
-        SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))
-        for workout in workouts {
+        SpotlightIndexer.deleteWorkoutSessions(ids: deletableWorkouts.map(\.id))
+        for workout in deletableWorkouts {
             workout.isHidden = true
         }
         saveContext(context: context)
