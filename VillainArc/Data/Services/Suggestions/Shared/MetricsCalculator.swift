@@ -563,7 +563,27 @@ struct MetricsCalculator {
         }
     }
 
-    // Default plate is 1.25 kg (smallest standard bumper/change plate).
+    static func roundSuggestedWeight(_ value: Double, equipmentType: EquipmentType, weightUnit: WeightUnit) -> Double {
+        let step = suggestedDisplayStep(for: equipmentType, weightUnit: weightUnit)
+        let displayValue = weightUnit.fromKg(value)
+        let roundedDisplayValue = roundToNearestPlate(displayValue, plate: step)
+        return weightUnit.toKg(roundedDisplayValue)
+    }
+
+    private static func suggestedDisplayStep(for equipmentType: EquipmentType, weightUnit: WeightUnit) -> Double {
+        switch weightUnit {
+        case .kg:
+            return 1.25
+        case .lbs:
+            switch equipmentType {
+            case .cableSingle, .cables, .rope:
+                return 2.5
+            case .barbell, .dumbbells, .dumbbellSingle, .ezBar, .kettlebell, .kettlebellSingle, .machine, .landmine, .machineAssisted, .plate, .smithMachine, .weightedBall, .bodyweight, .band, .other:
+                return 5.0
+            }
+        }
+    }
+
     static func roundToNearestPlate(_ value: Double, plate: Double = 1.25) -> Double {
         guard plate > 0 else { return value }
         return (value / plate).rounded() * plate

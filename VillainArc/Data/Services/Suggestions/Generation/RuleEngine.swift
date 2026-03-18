@@ -153,7 +153,7 @@ struct RuleEngine {
 
             // Increment is based on muscle group, weight size, and training style.
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
+            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
                 ? "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight to keep progressing."
@@ -194,7 +194,7 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
+            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
 
             events.append(makeSetEvent(context: context, ruleID: .immediateProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
@@ -242,7 +242,7 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
+            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
                 ? "\(evidenceDescription) Increase weight to keep progressing."
@@ -298,7 +298,7 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = MetricsCalculator.roundToNearestPlate(currentWeight + baseIncrement * multiplier)
+            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
 
             events.append(makeSetEvent(context: context, ruleID: .confirmedProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
@@ -406,7 +406,7 @@ struct RuleEngine {
             // heavier compounds use a more conservative multiplier than small stable moves.
             let baseIncrement = weightIncrement(for: currentWeight, context: context)
             let jumpWeight = currentWeight + (baseIncrement * profile.overshootIncrementMultiplier)
-            let newWeight = MetricsCalculator.roundToNearestPlate(jumpWeight)
+            let newWeight = roundSuggestedWeight(jumpWeight, context: context)
 
             var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
 
@@ -485,7 +485,7 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             let decrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = MetricsCalculator.roundToNearestPlate(max(0, currentWeight - decrement))
+            let newWeight = roundSuggestedWeight(max(0, currentWeight - decrement), context: context)
 
             events.append(makeSetEvent(context: context, ruleID: .belowRangeWeightDecrease, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
         }
@@ -537,7 +537,7 @@ struct RuleEngine {
             let spread = weights.max()! - weights.min()!
             guard spread <= increment else { continue }
 
-            let newWeight = MetricsCalculator.roundToNearestPlate(median(of: weights))
+            let newWeight = roundSuggestedWeight(median(of: weights), context: context)
             guard abs(newWeight - targetWeight) > 0.1 else { continue }
 
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
@@ -596,7 +596,7 @@ struct RuleEngine {
                   !reducedWeights.isEmpty else { continue }
 
             let average = reducedWeights.reduce(0, +) / Double(reducedWeights.count)
-            let newWeight = MetricsCalculator.roundToNearestPlate(average)
+            let newWeight = roundSuggestedWeight(average, context: context)
             guard newWeight < setPrescription.targetWeight else { continue }
 
             let reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
@@ -769,7 +769,7 @@ struct RuleEngine {
                 continue
             }
 
-            let suggestedWeight = MetricsCalculator.roundToNearestPlate(median(of: warmupWeights))
+            let suggestedWeight = roundSuggestedWeight(median(of: warmupWeights), context: context)
             guard suggestedWeight >= currentTargetWeight + increment * 0.8 else { continue }
 
             let currentAnchor = anchorWeights.first ?? 0
@@ -1382,6 +1382,10 @@ struct RuleEngine {
     private static func meaningfulReducedLoadThreshold(for targetWeight: Double, context: ExerciseSuggestionContext, profile: ProgressionProfile) -> Double {
         let increment = weightIncrement(for: targetWeight, context: context)
         return max(1.25, increment * profile.reducedLoadIncrementMultiplier)
+    }
+
+    private static func roundSuggestedWeight(_ value: Double, context: ExerciseSuggestionContext) -> Double {
+        MetricsCalculator.roundSuggestedWeight(value, equipmentType: context.prescription.equipmentType, weightUnit: context.weightUnit)
     }
 
     private static func makeChangeDraft(changeType: ChangeType, previousValue: Double, newValue: Double) -> PrescriptionChangeDraft {

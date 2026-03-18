@@ -148,6 +148,30 @@ struct SuggestionSystemTests {
     }
 
     @Test @MainActor
+    func roundSuggestedWeight_roundsMachineLoadsToFivePoundsInLbsMode() {
+        let rawSuggestion = WeightUnit.lbs.toKg(206.8)
+        let rounded = MetricsCalculator.roundSuggestedWeight(rawSuggestion, equipmentType: .machine, weightUnit: .lbs)
+
+        #expect(abs(WeightUnit.lbs.fromKg(rounded) - 205.0) < 0.001)
+    }
+
+    @Test @MainActor
+    func roundSuggestedWeight_roundsCableLoadsToTwoPointFivePoundsInLbsMode() {
+        let rawSuggestion = WeightUnit.lbs.toKg(46.8)
+        let rounded = MetricsCalculator.roundSuggestedWeight(rawSuggestion, equipmentType: .cableSingle, weightUnit: .lbs)
+
+        #expect(abs(WeightUnit.lbs.fromKg(rounded) - 47.5) < 0.001)
+    }
+
+    @Test @MainActor
+    func roundSuggestedWeight_roundsDumbbellLoadsToFivePoundsInLbsMode() {
+        let rawSuggestion = WeightUnit.lbs.toKg(49.6)
+        let rounded = MetricsCalculator.roundSuggestedWeight(rawSuggestion, equipmentType: .dumbbellSingle, weightUnit: .lbs)
+
+        #expect(abs(WeightUnit.lbs.fromKg(rounded) - 50.0) < 0.001)
+    }
+    
+    @Test @MainActor
     func detectTrainingStyle_ignoresExplicitWarmupRamp_beforeStraightTopSets() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
@@ -1176,6 +1200,10 @@ struct SuggestionSystemTests {
     @Test @MainActor
     func generateSuggestions_deduplicatesOvershootToSingleStrongerEvent() async throws {
         let context = try TestDataFactory.makeContext()
+        let settings = AppSettings()
+        settings.weightUnit = .kg
+        context.insert(settings)
+
         let (plan, _) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         
         let workout = WorkoutSession(from: plan)

@@ -71,6 +71,7 @@ enum ExerciseCatalog {
         .init(id: "cable_bar_pushdown", name: "Pushdown", musclesTargeted: [.triceps, .lateralHeadTriceps, .medialHeadTriceps], equipmentType: .cableSingle),
         .init(id: "cable_bar_reverse_grip_pushdown", name: "Reverse Grip Pushdown", musclesTargeted: [.triceps, .medialHeadTriceps], equipmentType: .cableSingle),
         .init(id: "cable_cross_pushdown", name: "Cross Pushdown", musclesTargeted: [.triceps, .lateralHeadTriceps], equipmentType: .cableSingle),
+        .init(id: "cable_overhead_tricep_extensions", name: "Overhead Tricep Extensions", musclesTargeted: [.triceps, .longHeadTriceps], equipmentType: .cableSingle),
         .init(id: "cable_overhead_tricep_press", name: "Overhead Tricep Press", musclesTargeted: [.triceps, .longHeadTriceps], equipmentType: .cableSingle),
         .init(id: "cable_rope_overhead_tricep_extensions", name: "Rope Overhead Tricep Extensions", musclesTargeted: [.triceps, .longHeadTriceps], equipmentType: .cableSingle),
         .init(id: "cable_rope_pushdown", name: "Rope Pushdown", musclesTargeted: [.triceps, .lateralHeadTriceps, .medialHeadTriceps], aliases: ["Pushdowns"], equipmentType: .cableSingle),
