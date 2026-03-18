@@ -251,12 +251,6 @@
     "Action" : {
 
     },
-    "Active energy %@" : {
-
-    },
-    "Active energy chart" : {
-
-    },
     "Active Split" : {
 
     },
@@ -441,9 +435,6 @@
 
     },
     "Cable (Single)" : {
-
-    },
-    "Calories" : {
 
     },
     "Calves" : {
@@ -822,9 +813,6 @@
     "Enable iCloud in Settings" : {
 
     },
-    "Energy" : {
-
-    },
     "Enjoy the day off." : {
 
     },
@@ -936,6 +924,9 @@
     "Generating suggestions..." : {
 
     },
+    "Get Ready" : {
+
+    },
     "Glutes" : {
 
     },
@@ -952,9 +943,6 @@
 
     },
     "Heart Rate" : {
-
-    },
-    "Heart rate %@" : {
 
     },
     "Heart rate chart" : {
@@ -1048,9 +1036,6 @@
 
     },
     "Live Activity" : {
-
-    },
-    "Live workout metrics" : {
 
     },
     "Loading Apple Health details..." : {
@@ -1240,9 +1225,6 @@
 
     },
     "No incomplete sets found." : {
-
-    },
-    "No live workout metrics available." : {
 
     },
     "No notes added." : {
@@ -1514,6 +1496,9 @@
 
     },
     "Pre-workout energy drink" : {
+
+    },
+    "Preparing Apple Health workout" : {
 
     },
     "Preparing your exercise catalog..." : {
@@ -2540,6 +2525,9 @@
 
     },
     "Workout deleted." : {
+
+    },
+    "Workout effort" : {
 
     },
     "Workout Effort" : {

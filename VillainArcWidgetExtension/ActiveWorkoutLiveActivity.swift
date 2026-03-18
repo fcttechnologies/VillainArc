@@ -19,18 +19,8 @@ struct WorkoutLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading) {
-                        Text(context.state.title)
-                            .font(.headline)
-                            .lineLimit(1)
-                        Text(context.attributes.startDate, style: .date)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                    }
+                    WorkoutLiveActivityHeaderView(attributes: context.attributes, state: context.state, style: .compact)
                     .padding(.leading, 6)
-                    .fontDesign(.rounded)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     if context.state.isTimerRunning,
@@ -132,16 +122,7 @@ struct WorkoutLiveActivityExpandedView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(state.title)
-                        .font(.title3)
-                        .lineLimit(1)
-                    Text(attributes.startDate, style: .date)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .fontDesign(.rounded)
-                .fontWeight(.semibold)
+                WorkoutLiveActivityHeaderView(attributes: attributes, state: state, style: .expanded)
                 Spacer()
                 if state.isTimerRunning, let endDate = state.timerEndDate {
                     Text(timerInterval: Date.now...endDate, countsDown: true)
@@ -209,6 +190,115 @@ struct WorkoutLiveActivityExpandedView: View {
             }
         }
         .padding()
+    }
+}
+
+private enum WorkoutLiveActivityHeaderStyle {
+    case compact
+    case expanded
+
+    var metricSpacing: CGFloat {
+        switch self {
+        case .compact: 10
+        case .expanded: 14
+        }
+    }
+
+    var metricRowSpacing: CGFloat {
+        switch self {
+        case .compact: 6
+        case .expanded: 8
+        }
+    }
+
+    var iconFont: Font {
+        switch self {
+        case .compact: .subheadline
+        case .expanded: .title3
+        }
+    }
+
+    var valueFont: Font {
+        switch self {
+        case .compact: .subheadline
+        case .expanded: .headline
+        }
+    }
+
+    var titleFont: Font {
+        switch self {
+        case .compact: .title3
+        case .expanded: .title2
+        }
+    }
+
+    var subtitleFont: Font {
+        switch self {
+        case .compact: .caption
+        case .expanded: .subheadline
+        }
+    }
+}
+
+private struct WorkoutLiveActivityHeaderView: View {
+    let attributes: WorkoutActivityAttributes
+    let state: WorkoutActivityAttributes.ContentState
+    let style: WorkoutLiveActivityHeaderStyle
+
+    private var liveHeartRateText: String? {
+        guard let liveHeartRateBPM = state.liveHeartRateBPM else { return nil }
+        return "\(Int(liveHeartRateBPM.rounded())) bpm"
+    }
+
+    private var liveActiveEnergyText: String? {
+        guard let liveActiveEnergyBurned = state.liveActiveEnergyBurned else { return nil }
+        return "\(Int(liveActiveEnergyBurned.rounded())) cal"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if state.hasLiveMetrics {
+                HStack(spacing: style.metricSpacing) {
+                    if let liveHeartRateText {
+                        WorkoutLiveActivityMetricRow(symbolName: "heart.fill", text: liveHeartRateText, tint: .red, style: style)
+                    }
+                    if let liveActiveEnergyText {
+                        WorkoutLiveActivityMetricRow(symbolName: "flame.fill", text: liveActiveEnergyText, tint: .orange, style: style)
+                    }
+                }
+            } else {
+                Text(state.title)
+                    .font(style.titleFont)
+                    .lineLimit(1)
+                Text(attributes.startDate, style: .date)
+                    .font(style.subtitleFont)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .fontDesign(.rounded)
+        .fontWeight(.semibold)
+    }
+}
+
+private struct WorkoutLiveActivityMetricRow: View {
+    let symbolName: String
+    let text: String
+    let tint: Color
+    let style: WorkoutLiveActivityHeaderStyle
+
+    var body: some View {
+        HStack(spacing: style.metricRowSpacing) {
+            Image(systemName: symbolName)
+                .font(style.iconFont)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+            Text(text)
+                .font(style.valueFont)
+                .lineLimit(1)
+                .monospacedDigit()
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 

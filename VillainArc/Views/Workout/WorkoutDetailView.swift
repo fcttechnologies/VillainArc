@@ -253,31 +253,7 @@ struct WorkoutDetailView: View {
     }
 
     private var effortRingLabel: some View {
-        let effortColor = effortRingColor
-
-        return ZStack {
-            Circle()
-                .stroke(.quaternary, lineWidth: 3)
-            Circle()
-                .trim(from: 0, to: CGFloat(workout.postEffort) / 10)
-                .stroke(effortColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Text("\(workout.postEffort)")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(effortColor)
-        }
-        .frame(width: 28, height: 28)
-    }
-
-    private var effortRingColor: Color {
-        switch workout.postEffort {
-        case 1...3: .green
-        case 4...6: .yellow
-        case 7...8: .orange
-        case 9...10: .red
-        default: .primary
-        }
+        WorkoutEffortRingView(score: Double(workout.postEffort), displayText: "\(workout.postEffort)")
     }
 
     private var preWorkoutAccessibilityValue: String {

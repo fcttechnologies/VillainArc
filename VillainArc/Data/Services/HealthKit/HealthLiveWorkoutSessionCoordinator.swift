@@ -218,18 +218,29 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
         let heartRateType = HKQuantityType(.heartRate)
         let activeEnergyType = HKQuantityType(.activeEnergyBurned)
         let restingEnergyType = HKQuantityType(.basalEnergyBurned)
+        let previousHeartRate = latestHeartRate
+        let previousActiveEnergyBurned = activeEnergyBurned
+        var didChangeDisplayedMetrics = false
 
         if collectedTypes.contains(heartRateType) {
             let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
-            latestHeartRate = workoutBuilder.statistics(for: heartRateType)?.mostRecentQuantity()?.doubleValue(for: heartRateUnit)
+            let latestCollectedHeartRate = workoutBuilder.statistics(for: heartRateType)?.mostRecentQuantity()?.doubleValue(for: heartRateUnit)
+            didChangeDisplayedMetrics = didChangeDisplayedMetrics || displayedMetricChanged(from: previousHeartRate, to: latestCollectedHeartRate)
+            latestHeartRate = latestCollectedHeartRate
         }
 
         if collectedTypes.contains(activeEnergyType) {
-            activeEnergyBurned = workoutBuilder.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            let collectedActiveEnergyBurned = workoutBuilder.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            didChangeDisplayedMetrics = didChangeDisplayedMetrics || displayedMetricChanged(from: previousActiveEnergyBurned, to: collectedActiveEnergyBurned)
+            activeEnergyBurned = collectedActiveEnergyBurned
         }
 
         if collectedTypes.contains(restingEnergyType) {
             restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+        }
+
+        if didChangeDisplayedMetrics, activeWorkoutSessionID != nil {
+            WorkoutActivityManager.update()
         }
     }
 
@@ -262,6 +273,15 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
         latestHeartRate = nil
         activeEnergyBurned = nil
         restingEnergyBurned = nil
+    }
+
+    private func displayedMetricChanged(from previousValue: Double?, to nextValue: Double?) -> Bool {
+        roundedDisplayMetric(previousValue) != roundedDisplayMetric(nextValue)
+    }
+
+    private func roundedDisplayMetric(_ value: Double?) -> Int? {
+        guard let value else { return nil }
+        return Int(value.rounded())
     }
 }
 

@@ -86,13 +86,6 @@ struct HealthWorkoutHeartRateSample: Hashable {
     }
 }
 
-struct HealthWorkoutEnergyPoint: Identifiable, Hashable {
-    let date: Date
-    let cumulativeCalories: Double
-    
-    var id: Date { date }
-}
-
 struct HealthWorkoutHeartRateSummary: Equatable {
     let averageBPM: Double?
     let minimumBPM: Double?
@@ -190,7 +183,6 @@ final class HealthWorkoutDetailLoader {
     var heartRateSummary = HealthWorkoutHeartRateSummary(averageBPM: nil, minimumBPM: nil, maximumBPM: nil)
     var heartRatePoints: [HealthWorkoutHeartRatePoint] = []
     var heartRateZones: [HealthWorkoutHeartRateZoneSummary] = []
-    var energyPoints: [HealthWorkoutEnergyPoint] = []
     var metrics: [HealthWorkoutDetailMetric] = []
     var activities: [HealthWorkoutActivitySummary] = []
     var effortSummary: HealthWorkoutEffortSummary?
@@ -249,13 +241,11 @@ final class HealthWorkoutDetailLoader {
             isUsingCachedSummaryOnly = false
             
             async let heartRateLoad = loadHeartRate(for: workout)
-            async let energyLoad = loadActiveEnergy(for: workout)
             async let distanceLoad = loadDistanceSamples(for: workout)
             async let effortLoad = loadEffort(for: workout)
             async let routeLoad = loadRoute(for: workout)
             
             let (loadedHeartRateSummary, loadedHeartRatePoints, loadedHeartRateSamples) = try await heartRateLoad
-            let loadedEnergyPoints = try await energyLoad
             let loadedDistanceSamples = try await distanceLoad
             let loadedEffortSummary = await effortLoad
             let loadedRoutePoints = try await routeLoad
@@ -265,7 +255,6 @@ final class HealthWorkoutDetailLoader {
             heartRateSamples = loadedHeartRateSamples
             metrics = loadMetrics(for: workout)
             activities = makeActivitySummaries(from: workout.workoutActivities)
-            energyPoints = loadedEnergyPoints
             distanceSamples = loadedDistanceSamples
             effortSummary = loadedEffortSummary
             routePoints = loadedRoutePoints
@@ -334,24 +323,6 @@ final class HealthWorkoutDetailLoader {
             }
         
         return (summary, downsampledHeartRatePoints(from: points, maxPoints: Self.chartMaxPoints), heartRateSamples)
-    }
-    
-    private func loadActiveEnergy(for workout: HKWorkout) async throws -> [HealthWorkoutEnergyPoint] {
-        let activeEnergyType = HKQuantityType(.activeEnergyBurned)
-        let workoutPredicate = HKQuery.predicateForObjects(from: workout)
-        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: activeEnergyType, predicate: workoutPredicate)], sortDescriptors: [SortDescriptor(\.startDate, order: .forward)], limit: HKObjectQueryNoLimit)
-        
-        let samples = try await descriptor.result(for: healthStore)
-        var cumulativeCalories = 0.0
-        
-        let points = samples.compactMap { sample -> HealthWorkoutEnergyPoint? in
-            let calories = sample.quantity.doubleValue(for: .kilocalorie())
-            guard calories > 0 else { return nil }
-            cumulativeCalories += calories
-            return HealthWorkoutEnergyPoint(date: sample.endDate, cumulativeCalories: cumulativeCalories)
-        }
-        
-        return downsampledEnergyPoints(from: points, maxPoints: Self.chartMaxPoints)
     }
     
     private func loadDistanceSamples(for workout: HKWorkout) async throws -> [HealthWorkoutDistanceSample] {
@@ -448,17 +419,6 @@ final class HealthWorkoutDetailLoader {
     }
     
     private func downsampledHeartRatePoints(from points: [HealthWorkoutHeartRatePoint], maxPoints: Int) -> [HealthWorkoutHeartRatePoint] {
-        guard points.count > maxPoints, maxPoints > 1 else { return points }
-        
-        let stride = Double(points.count - 1) / Double(maxPoints - 1)
-        return (0..<maxPoints).compactMap { index in
-            let pointIndex = Int((Double(index) * stride).rounded())
-            guard points.indices.contains(pointIndex) else { return nil }
-            return points[pointIndex]
-        }
-    }
-    
-    private func downsampledEnergyPoints(from points: [HealthWorkoutEnergyPoint], maxPoints: Int) -> [HealthWorkoutEnergyPoint] {
         guard points.count > maxPoints, maxPoints > 1 else { return points }
         
         let stride = Double(points.count - 1) / Double(maxPoints - 1)

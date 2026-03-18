@@ -390,7 +390,6 @@ enum AccessibilityIdentifiers {
 
     // MARK: - WorkoutView
     static let workoutRestTimerButton = "workoutRestTimerButton"
-    static let workoutLiveMetricsToolbar = "workoutLiveMetricsToolbar"
     static let workoutAddExerciseButton = "workoutAddExerciseButton"
     static let workoutExercisesEmptyState = "workoutExercisesEmptyState"
     static let workoutExercisePager = "workoutExercisePager"
@@ -452,6 +451,7 @@ enum AccessibilityIdentifiers {
     static let workoutDetailPreWorkoutDrinkButton = "workoutDetailPreWorkoutDrinkButton"
     static let workoutDetailPreWorkoutNotesButton = "workoutDetailPreWorkoutNotesButton"
     static let workoutDetailEffortDisplay = "workoutDetailEffortDisplay"
+    static let healthWorkoutDetailEffortDisplay = "healthWorkoutDetailEffortDisplay"
     static let muscleFilterAdvancedToggle = "muscleFilterAdvancedToggle"
     static let muscleFilterClearButton = "muscleFilterClearButton"
     static let muscleFilterCloseButton = "muscleFilterCloseButton"
@@ -616,6 +616,7 @@ enum AccessibilityText {
     static let workoutDetailPreWorkoutContextLabel = localized("Pre workout context")
     static let workoutDetailPreWorkoutContextHint = localized("Shows pre workout details.")
     static let workoutDetailEffortLabel = localized("Post workout effort")
+    static let healthWorkoutDetailEffortLabel = localized("Workout effort")
     static let workoutPreMoodHint = localized("Updates your pre-workout energy.")
     static let workoutDeleteEmptyLabel = localized("Delete Workout")
 
@@ -819,29 +820,10 @@ enum AccessibilityText {
     static let workoutFinishHint = localized("Finishes and saves the workout.")
     static let workoutDeleteHint = localized("Deletes this workout.")
     static let workoutExerciseListRowHint = localized("Shows the exercise in the workout.")
-    static let workoutLiveMetricsToolbarLabel = localized("Live workout metrics")
     static let workoutFinishEffortSkipHint = localized("Skips recording effort and continues to summary.")
     static let workoutFinishEffortConfirmHint = localized("Saves the selected effort and continues to summary.")
     static let workoutFinishEffortCloseHint = localized("Closes the effort prompt and returns to the workout.")
     static let workoutFinishEffortCardHint = localized("Selects this workout effort score.")
-
-    static func workoutLiveMetricsToolbarValue(heartRateText: String?, activeEnergyText: String?) -> String {
-        var parts: [String] = []
-
-        if let heartRateText {
-            parts.append(localized("Heart rate \(heartRateText)"))
-        }
-
-        if let activeEnergyText {
-            parts.append(localized("Active energy \(activeEnergyText)"))
-        }
-
-        if parts.isEmpty {
-            return localized("No live workout metrics available.")
-        }
-
-        return parts.joined(separator: ", ")
-    }
 
     // MARK: - WorkoutSummaryView
     static let workoutSummaryTitleHint = localized("Edits the workout title.")

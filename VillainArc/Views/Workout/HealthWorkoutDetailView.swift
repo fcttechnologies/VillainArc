@@ -85,6 +85,8 @@ struct HealthWorkoutDetailView: View {
         return parts.isEmpty ? "No heart rate data available." : parts.joined(separator: ", ")
     }
 
+    private var effortSummary: HealthWorkoutEffortSummary? { loader.effortSummary }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 32) {
@@ -112,10 +114,6 @@ struct HealthWorkoutDetailView: View {
                     heartRateZonesSection
                 }
 
-                if loader.energyPoints.count >= 2 {
-                    energySection
-                }
-
                 if showsSplitSection {
                     splitsSection
                 }
@@ -135,6 +133,18 @@ struct HealthWorkoutDetailView: View {
         .navigationTitle(loader.summary.activityTypeDisplayName)
         .navigationSubtitle(Text(formattedDateRange(start: loader.summary.startDate, end: loader.summary.endDate, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
+        .toolbar {
+            if let effortSummary {
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
+                    effortRingLabel(for: effortSummary)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutDetailEffortDisplay)
+                        .accessibilityLabel(AccessibilityText.healthWorkoutDetailEffortLabel)
+                        .accessibilityValue(effortAccessibilityValue(for: effortSummary))
+                }
+            }
+        }
         .task(id: workout.healthWorkoutUUID) {
             await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
         }
@@ -156,10 +166,6 @@ struct HealthWorkoutDetailView: View {
 
                 if loader.summary.totalDistance != nil {
                     SummaryStatCard(title: "Distance", value: distanceText)
-                }
-
-                if let effortSummary = loader.effortSummary {
-                    SummaryStatCard(title: "Effort Score", value: formattedEffortValue(effortSummary))
                 }
 
                 SummaryStatCard(title: "Active Energy", value: activeEnergyText)
@@ -232,18 +238,6 @@ struct HealthWorkoutDetailView: View {
         }
     }
 
-    private var energySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Energy")
-                .font(.headline)
-
-            HealthWorkoutEnergyChartCard(points: loader.energyPoints)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Active energy chart")
-                .accessibilityValue(energyChartAccessibilitySummary)
-        }
-    }
-    
     private var metricsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Metrics")
@@ -314,14 +308,6 @@ struct HealthWorkoutDetailView: View {
         }
     }
 
-    private var energyChartAccessibilitySummary: String {
-        guard let latest = loader.energyPoints.last?.cumulativeCalories else {
-            return "No active energy data available."
-        }
-
-        return "Cumulative active energy burned ending at \(Int(latest.rounded())) calories."
-    }
-
     private func formattedDuration(_ duration: TimeInterval) -> String {
         secondsToTimeWithHours(Int(duration.rounded()))
     }
@@ -355,14 +341,34 @@ struct HealthWorkoutDetailView: View {
         return "\(Int(averageHeartRate.rounded()))"
     }
 
-    private func formattedEffortValue(_ summary: HealthWorkoutEffortSummary) -> String {
+    private func effortRingLabel(for summary: HealthWorkoutEffortSummary) -> some View {
+        switch summary.source {
+        case .actualScore, .estimatedScore:
+            WorkoutEffortRingView(score: summary.value, displayText: formattedEffortBadgeText(summary))
+        case .physicalEffort:
+            WorkoutEffortRingView(displayText: formattedEffortBadgeText(summary))
+        }
+    }
+
+    private func formattedEffortBadgeText(_ summary: HealthWorkoutEffortSummary) -> String {
         switch summary.source {
         case .actualScore:
             return summary.value.formatted(.number.precision(.fractionLength(0...1)))
         case .estimatedScore:
             return summary.value.formatted(.number.precision(.fractionLength(0...1)))
         case .physicalEffort:
-            return "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) METs"
+            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
+        }
+    }
+
+    private func effortAccessibilityValue(for summary: HealthWorkoutEffortSummary) -> String {
+        switch summary.source {
+        case .actualScore:
+            return "\(formattedEffortBadgeText(summary)) out of 10"
+        case .estimatedScore:
+            return "Estimated \(formattedEffortBadgeText(summary)) out of 10"
+        case .physicalEffort:
+            return "\(formattedEffortBadgeText(summary)) METs"
         }
     }
 
@@ -691,79 +697,6 @@ private enum HealthWorkoutHeartRatePalette {
             return 4
         default:
             return 5
-        }
-    }
-}
-
-private struct HealthWorkoutEnergyChartCard: View {
-    let points: [HealthWorkoutEnergyPoint]
-
-    @State private var selectedDate: Date?
-
-    private var displayedPoint: HealthWorkoutEnergyPoint? {
-        guard let selectedDate else { return nil }
-        return nearestPoint(to: selectedDate)
-    }
-
-    var body: some View {
-        Chart(points) { point in
-            AreaMark(x: .value("Time", point.date), y: .value("Calories", point.cumulativeCalories))
-                .foregroundStyle(LinearGradient(colors: [.orange.opacity(0.28), .orange.opacity(0.06)], startPoint: .top, endPoint: .bottom))
-
-            LineMark(x: .value("Time", point.date), y: .value("Calories", point.cumulativeCalories))
-                .foregroundStyle(.orange)
-                .lineStyle(.init(lineWidth: 3, lineCap: .round, lineJoin: .round))
-
-            if point.id == displayedPoint?.id {
-                PointMark(x: .value("Time", point.date), y: .value("Calories", point.cumulativeCalories))
-                    .foregroundStyle(.orange)
-                    .symbolSize(80)
-
-                RuleMark(x: .value("Selected Time", point.date))
-                    .foregroundStyle(.orange)
-                    .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
-                    .annotation(position: .top, spacing: 8, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(point.date.formatted(date: .omitted, time: .shortened))
-                                .foregroundStyle(.white.opacity(0.9))
-                            Text("\(Int(point.cumulativeCalories.rounded())) cal")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                        }
-                        .bold()
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.orange.gradient, in: .rect(cornerRadius: 12))
-                    }
-            }
-        }
-        .chartXSelection(value: $selectedDate)
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel(format: .dateTime.hour().minute())
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .frame(height: 220)
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
-        .onChange(of: points) { _, newPoints in
-            guard let selectedDate else { return }
-            self.selectedDate = nearestPoint(in: newPoints, to: selectedDate)?.date
-        }
-    }
-
-    private func nearestPoint(to date: Date) -> HealthWorkoutEnergyPoint? {
-        nearestPoint(in: points, to: date)
-    }
-
-    private func nearestPoint(in points: [HealthWorkoutEnergyPoint], to date: Date) -> HealthWorkoutEnergyPoint? {
-        points.min { left, right in
-            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
         }
     }
 }

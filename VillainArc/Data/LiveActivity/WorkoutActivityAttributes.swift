@@ -17,6 +17,8 @@ struct WorkoutActivityAttributes: ActivityAttributes {
         var timerPausedRemaining: Int?
         var timerStartedSeconds: Int?
         var hasExercises: Bool
+        var liveHeartRateBPM: Double?
+        var liveActiveEnergyBurned: Double?
 
         var isTimerRunning: Bool {
             guard let end = timerEndDate else { return false }
@@ -34,6 +36,10 @@ struct WorkoutActivityAttributes: ActivityAttributes {
 
         var hasActiveSet: Bool {
             exerciseName != nil
+        }
+
+        var hasLiveMetrics: Bool {
+            liveHeartRateBPM != nil || liveActiveEnergyBurned != nil
         }
     }
 }
