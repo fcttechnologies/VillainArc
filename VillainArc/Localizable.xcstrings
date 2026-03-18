@@ -552,7 +552,10 @@
     "Confirm" : {
 
     },
-    "Connect Apple Health" : {
+    "Connect to Apple Health" : {
+
+    },
+    "Connect to Health" : {
 
     },
     "Continue" : {
@@ -2392,7 +2395,7 @@
     "View Last Workout Plan" : {
 
     },
-    "VillainArc can export your completed workouts to Apple Health now, and this also prepares the app for future health features." : {
+    "Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer." : {
 
     },
     "VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {

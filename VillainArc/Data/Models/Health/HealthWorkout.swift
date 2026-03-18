@@ -6,6 +6,9 @@ import SwiftData
 final class HealthWorkout {
     #Index<HealthWorkout>([\.healthWorkoutUUID])
 
+    private static let activeEnergyType = HKQuantityType(.activeEnergyBurned)
+    private static let restingEnergyType = HKQuantityType(.basalEnergyBurned)
+
     var healthWorkoutUUID: UUID = UUID()
     var workoutSession: WorkoutSession?
     var startDate: Date = Date()
@@ -13,7 +16,8 @@ final class HealthWorkout {
     var duration: TimeInterval = 0
     var activityTypeRawValue: UInt = HKWorkoutActivityType.other.rawValue
     var isIndoorWorkout: Bool?
-    var totalEnergyBurned: Double?
+    var activeEnergyBurned: Double?
+    var restingEnergyBurned: Double?
     var totalDistance: Double?
     var sourceName: String = ""
     var isAvailableInHealthKit: Bool = true
@@ -24,8 +28,12 @@ final class HealthWorkout {
         set { activityTypeRawValue = newValue.rawValue }
     }
 
+    var totalEnergyBurned: Double? {
+        guard let activeEnergyBurned, let restingEnergyBurned else { return nil }
+        return activeEnergyBurned + restingEnergyBurned
+    }
+
     init(workout: HKWorkout, workoutSession: WorkoutSession? = nil, lastSyncedAt: Date = .now) {
-        let activeEnergyType = HKQuantityType(.activeEnergyBurned)
         healthWorkoutUUID = workout.uuid
         self.workoutSession = workoutSession
         startDate = workout.startDate
@@ -33,10 +41,8 @@ final class HealthWorkout {
         duration = workout.duration
         activityType = workout.workoutActivityType
         isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
-        totalEnergyBurned = workout
-            .statistics(for: activeEnergyType)?
-            .sumQuantity()?
-            .doubleValue(for: .kilocalorie())
+        activeEnergyBurned = Self.energyBurned(for: Self.activeEnergyType, in: workout)
+        restingEnergyBurned = Self.energyBurned(for: Self.restingEnergyType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         sourceName = workout.sourceRevision.source.name
         isAvailableInHealthKit = true
@@ -44,20 +50,24 @@ final class HealthWorkout {
     }
 
     func update(from workout: HKWorkout, lastSyncedAt: Date = .now) {
-        let activeEnergyType = HKQuantityType(.activeEnergyBurned)
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
         activityType = workout.workoutActivityType
         isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
-        totalEnergyBurned = workout
-            .statistics(for: activeEnergyType)?
-            .sumQuantity()?
-            .doubleValue(for: .kilocalorie())
+        activeEnergyBurned = Self.energyBurned(for: Self.activeEnergyType, in: workout)
+        restingEnergyBurned = Self.energyBurned(for: Self.restingEnergyType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         sourceName = workout.sourceRevision.source.name
         isAvailableInHealthKit = true
         self.lastSyncedAt = lastSyncedAt
+    }
+
+    private static func energyBurned(for type: HKQuantityType, in workout: HKWorkout) -> Double? {
+        workout
+            .statistics(for: type)?
+            .sumQuantity()?
+            .doubleValue(for: .kilocalorie())
     }
 }
 

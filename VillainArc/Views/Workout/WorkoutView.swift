@@ -121,7 +121,7 @@ struct WorkoutView: View {
                     }
             }
             .sheet(isPresented: $showTitleEditorSheet) {
-                TextEntryEditorView(title: "Title", promptText: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField)
+                TextEntryEditorView(title: "Title", promptText: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField, isTitle: true)
                     .presentationDetents([.fraction(0.2)])
                     .onChange(of: workout.title) {
                         scheduleSave(context: context)

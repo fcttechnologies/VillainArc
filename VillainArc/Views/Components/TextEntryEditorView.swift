@@ -4,14 +4,16 @@ struct TextEntryEditorView: View {
     let title: String
     let promptText: String
     let accessibilityIdentifier: String?
+    let isTitle: Bool
     @Binding var text: String
     @FocusState private var isFocused
 
-    init(title: String, promptText: String, text: Binding<String>, accessibilityIdentifier: String? = nil) {
+    init(title: String, promptText: String, text: Binding<String>, accessibilityIdentifier: String? = nil, isTitle: Bool = false) {
         self.title = title
         self.promptText = promptText
         self._text = text
         self.accessibilityIdentifier = accessibilityIdentifier
+        self.isTitle = isTitle
     }
 
     var body: some View {
@@ -21,6 +23,8 @@ struct TextEntryEditorView: View {
                 .fontWeight(.semibold)
                 .focused($isFocused)
                 .accessibilityIdentifier(accessibilityIdentifier ?? "textEntryEditorField")
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(isTitle ? .words : .sentences)
         }
         .onAppear {
             isFocused = true

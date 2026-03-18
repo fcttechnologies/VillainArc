@@ -41,8 +41,8 @@ struct HealthWorkoutDetailSummary: Equatable {
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
-        activeEnergyBurned = workout.totalEnergyBurned
-        restingEnergyBurned = nil
+        activeEnergyBurned = workout.activeEnergyBurned
+        restingEnergyBurned = workout.restingEnergyBurned
         totalDistance = workout.totalDistance
         sourceName = workout.sourceName
     }

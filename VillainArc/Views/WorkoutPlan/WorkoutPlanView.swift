@@ -130,7 +130,7 @@ struct WorkoutPlanView: View {
                     .interactiveDismissDisabled()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", promptText: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField)
+                TextEntryEditorView(title: "Notes", promptText: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, isTitle: true)
                     .presentationDetents([.fraction(0.4)])
                     .onChange(of: plan.notes) {
                         scheduleSave(context: context)

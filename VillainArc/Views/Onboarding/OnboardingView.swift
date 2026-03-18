@@ -94,23 +94,29 @@ struct OnboardingView: View {
 
     private var healthPermissionsView: some View {
         VStack(spacing: 20) {
+            Spacer()
+            
             Image(systemName: "heart.text.square.fill")
                 .font(.system(size: onboardingIconSize))
-                .foregroundStyle(.red)
                 .accessibilityHidden(true)
+                .symbolRenderingMode(.multicolor)
+                .foregroundStyle(.red)
 
-            Text("Connect Apple Health")
-                .font(.title2.bold())
+            Text("Connect to Health")
+                .font(.title)
+                .bold()
 
-            Text("VillainArc can export your completed workouts to Apple Health now, and this also prepares the app for future health features.")
+            Text("Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-
+            
+            Spacer()
+            
             VStack(spacing: 12) {
                 Button {
                     Task { await manager.connectAppleHealth() }
                 } label: {
-                    Text("Connect Apple Health")
+                    Text("Connect to Apple Health")
                         .padding(.vertical, 8)
                         .fontWeight(.semibold)
                 }
@@ -130,7 +136,7 @@ struct OnboardingView: View {
                 .accessibilityHint("Skips Apple Health for now and continues into the app.")
             }
         }
-        .padding()
+        .padding(.horizontal)
     }
 
     @ViewBuilder

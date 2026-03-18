@@ -31,6 +31,8 @@ struct WorkoutSplitDayView: View {
                 TextField("Split Day Name", text: $splitDay.name)
                     .font(.title)
                     .fontWeight(.semibold)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.words)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayNameField)
                     .accessibilityHint(AccessibilityText.workoutSplitDayNameHint)
                 Button {

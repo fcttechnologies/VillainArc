@@ -60,6 +60,7 @@ struct WorkoutSplitView: View {
         }
         .navigationTitle(navigationTitle)
         .toolbarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(isSwapMode)
         .toolbar { toolbarItems }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreationView)
         .confirmationDialog("Delete Split?", isPresented: $showDeleteSplitConfirmation) {
@@ -71,19 +72,14 @@ struct WorkoutSplitView: View {
         .sheet(isPresented: $showSplitTitleEditor) {
             if let split = currentSplit {
                 @Bindable var split = split
-                TextEntryEditorView(
-                    title: "Split Name",
-                    promptText: "Workout Split",
-                    text: $split.title,
-                    accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitTitleEditorField
-                )
-                .presentationDetents([.fraction(0.2)])
-                .onChange(of: split.title) { scheduleSave(context: context) }
-                .onDisappear {
-                    split.title = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                    saveContext(context: context)
-                    SpotlightIndexer.index(workoutSplit: split)
-                }
+                TextEntryEditorView(title: "Split Name", promptText: "Workout Split", text: $split.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitTitleEditorField, isTitle: true)
+                    .presentationDetents([.fraction(0.2)])
+                    .onChange(of: split.title) { scheduleSave(context: context) }
+                    .onDisappear {
+                        split.title = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                        saveContext(context: context)
+                        SpotlightIndexer.index(workoutSplit: split)
+                    }
             }
         }
         .sheet(isPresented: $showSplitBuilder) {

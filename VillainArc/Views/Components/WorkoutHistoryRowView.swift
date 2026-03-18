@@ -84,8 +84,8 @@ struct WorkoutHistoryRowView: View {
             items.append(.init(systemImage: "point.topleft.down.curvedto.point.bottomright.up", text: appSettingsSnapshot.distanceUnit.display(totalDistance)))
         }
 
-        if let totalEnergyBurned = workout.totalEnergyBurned {
-            items.append(.init(systemImage: "flame", text: "\(Int(totalEnergyBurned.rounded())) cal"))
+        if let activeEnergyBurned = workout.activeEnergyBurned {
+            items.append(.init(systemImage: "flame", text: "\(Int(activeEnergyBurned.rounded())) cal"))
         }
 
         return items
