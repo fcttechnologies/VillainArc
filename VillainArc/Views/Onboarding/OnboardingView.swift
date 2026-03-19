@@ -1,10 +1,17 @@
 import SwiftUI
 import SwiftData
 
+private enum OnboardingStep: Hashable {
+    case healthPermissions
+    case birthday
+    case height
+}
+
 struct OnboardingView: View {
     @Bindable var manager: OnboardingManager
     @Environment(\.scenePhase) private var scenePhase
-    @State private var path: [UserProfileOnboardingStep] = []
+    @State private var path: [OnboardingStep] = []
+    @State private var didSetInitialPath = false
     @ScaledMetric(relativeTo: .largeTitle) private var onboardingIconSize: CGFloat = 60
 
     var body: some View {
@@ -22,9 +29,13 @@ struct OnboardingView: View {
         }
         .onChange(of: manager.state, initial: true) { oldState, newState in
             if case .profile = newState {
-                syncProfilePathIfNeeded()
+                if !didSetInitialPath {
+                    didSetInitialPath = true
+                    setInitialProfilePath()
+                }
             } else if isProfileState(oldState) {
                 path = []
+                didSetInitialPath = false
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -36,7 +47,7 @@ struct OnboardingView: View {
 
     private var bootstrapView: some View {
         VStack(spacing: 40) {
-            
+
             Text("Setting up Villain Arc")
                 .font(.title2)
                 .fontWeight(.semibold)
@@ -45,7 +56,7 @@ struct OnboardingView: View {
             stateView(for: manager.state)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 20)
-            
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -53,10 +64,10 @@ struct OnboardingView: View {
     private var profileFlow: some View {
         NavigationStack(path: $path) {
             ProfileNameStepView(manager: manager, path: $path)
-                .navigationDestination(for: UserProfileOnboardingStep.self) { step in
+                .navigationDestination(for: OnboardingStep.self) { step in
                     switch step {
-                    case .name:
-                        ProfileNameStepView(manager: manager, path: $path)
+                    case .healthPermissions:
+                        OnboardingHealthPermissionStepView(manager: manager, path: $path)
                     case .birthday:
                         ProfileBirthdayStepView(manager: manager, path: $path)
                     case .height:
@@ -73,10 +84,16 @@ struct OnboardingView: View {
         return false
     }
 
-    private func syncProfilePathIfNeeded() {
-        let targetPath = manager.profileStepPath()
-        guard path != targetPath else { return }
-        path = targetPath
+    private func setInitialProfilePath() {
+        guard case .profile(let step) = manager.state else { return }
+        switch step {
+        case .name:
+            path = []
+        case .birthday:
+            path = manager.isNewUser ? [.healthPermissions] : [.birthday]
+        case .height:
+            path = manager.isNewUser ? [.healthPermissions] : [.birthday, .height]
+        }
     }
 
     private var shouldRetryWhenBecomingActive: Bool {
@@ -95,7 +112,7 @@ struct OnboardingView: View {
     private var healthPermissionsView: some View {
         VStack(spacing: 20) {
             Spacer()
-            
+
             Image(systemName: "heart.text.square.fill")
                 .font(.system(size: onboardingIconSize))
                 .accessibilityHidden(true)
@@ -109,32 +126,19 @@ struct OnboardingView: View {
             Text("Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-            
-            Spacer()
-            
-            VStack(spacing: 12) {
-                Button {
-                    Task { await manager.connectAppleHealth() }
-                } label: {
-                    Text("Connect to Apple Health")
-                        .padding(.vertical, 8)
-                        .fontWeight(.semibold)
-                }
-                .buttonSizing(.flexible)
-                .buttonStyle(.glassProminent)
-                .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
 
-                Button {
-                    manager.skipAppleHealth()
-                } label: {
-                    Text("Not Now")
-                        .padding(.vertical, 8)
-                        .fontWeight(.semibold)
-                }
-                .buttonSizing(.flexible)
-                .buttonStyle(.glass)
-                .accessibilityHint(AccessibilityText.onboardingSkipHealthHint)
+            Spacer()
+
+            Button {
+                Task { await manager.connectAppleHealth() }
+            } label: {
+                Text("Connect to Apple Health")
+                    .padding(.vertical, 8)
+                    .fontWeight(.semibold)
             }
+            .buttonSizing(.flexible)
+            .buttonStyle(.glassProminent)
+            .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
         }
         .padding(.horizontal)
     }
@@ -346,12 +350,87 @@ private struct OnboardingProgressStateView: View {
     }
 }
 
+private struct OnboardingHealthPermissionStepView: View {
+    @Bindable var manager: OnboardingManager
+    @Binding var path: [OnboardingStep]
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 60
+    @State private var hasAuthorized = false
+    @State private var isConnecting = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "heart.text.square.fill")
+                .font(.system(size: iconSize))
+                .accessibilityHidden(true)
+                .symbolRenderingMode(.multicolor)
+                .foregroundStyle(.red)
+
+            Text("Connect to Health")
+                .font(.title)
+                .bold()
+
+            Text("Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+
+            VStack(spacing: 12) {
+                if hasAuthorized {
+                    Button {
+                        path.append(.birthday)
+                    } label: {
+                        Text("Continue")
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                    }
+                    .buttonSizing(.flexible)
+                    .buttonStyle(.glassProminent)
+                } else {
+                    Button {
+                        isConnecting = true
+                        Task {
+                            await manager.connectAppleHealthDuringOnboarding()
+                            hasAuthorized = true
+                            isConnecting = false
+                            path.append(.birthday)
+                        }
+                    } label: {
+                        Text("Connect to Apple Health")
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                    }
+                    .buttonSizing(.flexible)
+                    .buttonStyle(.glassProminent)
+                    .disabled(isConnecting)
+                    .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
+
+                    Button {
+                        path.append(.birthday)
+                    } label: {
+                        Text("Not Now")
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                    }
+                    .buttonSizing(.flexible)
+                    .buttonStyle(.glass)
+                    .disabled(isConnecting)
+                    .accessibilityHint(AccessibilityText.onboardingSkipHealthHint)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .navigationTitle("Apple Health")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 private struct ProfileNameStepView: View {
     @Bindable var manager: OnboardingManager
-    @Binding var path: [UserProfileOnboardingStep]
+    @Binding var path: [OnboardingStep]
     @State private var name: String
 
-    init(manager: OnboardingManager, path: Binding<[UserProfileOnboardingStep]>) {
+    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
         self.manager = manager
         _path = path
         _name = State(initialValue: manager.profile?.name ?? "")
@@ -360,19 +439,23 @@ private struct ProfileNameStepView: View {
     var body: some View {
         VStack {
             Spacer()
-            
+
             TextField("Name", text: $name)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .font(.largeTitle)
                 .fontWeight(.semibold)
-            
+
             Spacer()
-            
+
             Button {
                 Task {
                     guard await manager.saveName(name) else { return }
-                    path = UserProfileOnboardingStep.navigationPath(to: .birthday)
+                    if manager.isNewUser {
+                        path.append(.healthPermissions)
+                    } else {
+                        path.append(.birthday)
+                    }
                 }
             } label: {
                 Text("Continue")
@@ -396,14 +479,14 @@ private struct ProfileNameStepView: View {
 
 private struct ProfileBirthdayStepView: View {
     @Bindable var manager: OnboardingManager
-    @Binding var path: [UserProfileOnboardingStep]
+    @Binding var path: [OnboardingStep]
     @State private var birthday: Date
 
-    init(manager: OnboardingManager, path: Binding<[UserProfileOnboardingStep]>) {
+    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
         self.manager = manager
         _path = path
         let defaultBirthday = Calendar.current.date(byAdding: .year, value: -25, to: .now) ?? .now
-        _birthday = State(initialValue: manager.profile?.birthday ?? defaultBirthday)
+        _birthday = State(initialValue: manager.prefetchedBirthday ?? manager.profile?.birthday ?? defaultBirthday)
     }
 
     var body: some View {
@@ -413,13 +496,13 @@ private struct ProfileBirthdayStepView: View {
             DatePicker("Birthday", selection: $birthday, in: ...Date.now, displayedComponents: .date)
                 .datePickerStyle(.wheel)
                 .labelsHidden()
-            
+
             Spacer()
-            
+
             Button {
                 Task {
                     guard await manager.saveBirthday(birthday) else { return }
-                    path = UserProfileOnboardingStep.navigationPath(to: .height)
+                    path.append(.height)
                 }
             } label: {
                 Text("Continue")
@@ -437,7 +520,7 @@ private struct ProfileBirthdayStepView: View {
 
 private struct ProfileHeightStepView: View {
     @Bindable var manager: OnboardingManager
-    @Binding var path: [UserProfileOnboardingStep]
+    @Binding var path: [OnboardingStep]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     @State private var cm: Double
@@ -448,10 +531,10 @@ private struct ProfileHeightStepView: View {
     private static let inchOptions = stride(from: 0.0, through: 11.5, by: 0.5).map { $0 }
     private static let cmOptions = Array(100...250).map { Double($0) }
 
-    init(manager: OnboardingManager, path: Binding<[UserProfileOnboardingStep]>) {
+    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
         self.manager = manager
         _path = path
-        let storedCm = manager.profile?.heightCm ?? 177.0
+        let storedCm = manager.prefetchedHeightCm ?? manager.profile?.heightCm ?? 177.0
         _cm = State(initialValue: storedCm)
         let totalInches = storedCm / 2.54
         let f = max(3, min(8, Int(totalInches / 12)))

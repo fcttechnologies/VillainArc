@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import HealthKit
 
 enum OnboardingState: Equatable {
     case launching
@@ -33,6 +34,9 @@ class OnboardingManager {
 
     var state: OnboardingState = .launching
     var profile: UserProfile?
+    private(set) var isNewUser = false
+    private(set) var prefetchedBirthday: Date?
+    private(set) var prefetchedHeightCm: Double?
     private var context: ModelContext { SharedModelContainer.container.mainContext }
     private let networkMonitor = NetworkMonitor()
     private var networkRetryTask: Task<Void, Never>?
@@ -135,6 +139,7 @@ class OnboardingManager {
             _ = try SystemState.ensureAppSettings(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             guard attemptID == onboardingAttemptID else { return }
+            isNewUser = true
             routeFromProfile(profile)
         } catch {
             state = .error("Failed to set up your profile: \(error.localizedDescription)")
@@ -154,9 +159,9 @@ class OnboardingManager {
         do {
             // Seed exercises locally only
             _ = try await DataManager.seedExercisesForOnboarding()
-            SpotlightIndexer.reindexAll(context: context)
             _ = try SystemState.ensureAppSettings(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
+            isNewUser = true
             routeFromProfile(profile)
         } catch {
             state = .error("Failed to finish setup: \(error.localizedDescription)")
@@ -196,19 +201,52 @@ class OnboardingManager {
         await transitionAfterSetup()
     }
 
-    func profileStepPath() -> [UserProfileOnboardingStep] {
-        guard case .profile(let step) = state else {
-            return []
+    func connectAppleHealthDuringOnboarding() async {
+        _ = await HealthAuthorizationManager.shared.requestAuthorization()
+        await prefillProfileFromHealthKit()
+    }
+
+    private func prefillProfileFromHealthKit() async {
+        let healthStore = HealthAuthorizationManager.shared.healthStore
+
+        if profile?.birthday == nil {
+            if let components = try? healthStore.dateOfBirthComponents(),
+               let date = Calendar.current.date(from: components) {
+                prefetchedBirthday = date
+            }
         }
-        return UserProfileOnboardingStep.navigationPath(to: step)
+
+        if profile?.heightCm == nil {
+            let heightType = HKQuantityType(.height)
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+            let sample: HKQuantitySample? = await withCheckedContinuation { continuation in
+                let query = HKSampleQuery(
+                    sampleType: heightType,
+                    predicate: nil,
+                    limit: 1,
+                    sortDescriptors: [sortDescriptor]
+                ) { _, samples, _ in
+                    continuation.resume(returning: samples?.first as? HKQuantitySample)
+                }
+                healthStore.execute(query)
+            }
+            if let sample {
+                prefetchedHeightCm = sample.quantity.doubleValue(for: .meterUnit(with: .centi))
+            }
+        }
     }
 
     private func handleReturningLaunch() async {
+        isNewUser = false
         do {
             _ = try SystemState.ensureAppSettings(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             if let missingStep = profile.firstMissingStep {
                 self.profile = profile
+                let action = await HealthAuthorizationManager.shared.authorizationAction()
+                if action == .requestAccess {
+                    isNewUser = true
+                }
                 state = .profile(missingStep)
                 return
             }
@@ -259,9 +297,6 @@ class OnboardingManager {
             state = .error("Failed to save your profile: \(error.localizedDescription)")
             return false
         }
-
-        guard let profile else { return false }
-        routeFromProfile(profile)
         return true
     }
 
@@ -289,10 +324,8 @@ class OnboardingManager {
     }
 
     private func shouldOfferHealthPermissions() async -> Bool {
-        guard HealthPermissionPreferences.shouldPromptForCurrentVersion else { return false }
-
         let action = await HealthAuthorizationManager.shared.authorizationAction()
-        return action != .unavailable && action != .manageInSettings
+        return action == .requestAccess
     }
 
     private func transitionAfterSetup() async {
@@ -304,13 +337,8 @@ class OnboardingManager {
     }
 
     func connectAppleHealth() async {
-        HealthPermissionPreferences.markPromptHandledForCurrentVersion()
         _ = await HealthAuthorizationManager.shared.requestAuthorization()
         transitionToReady()
     }
 
-    func skipAppleHealth() {
-        HealthPermissionPreferences.markPromptHandledForCurrentVersion()
-        transitionToReady()
-    }
 }
