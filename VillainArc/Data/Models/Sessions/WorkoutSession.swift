@@ -124,6 +124,23 @@ struct UnfinishedSetSummary {
 }
 
 extension WorkoutSession {
+    var totalDuration: TimeInterval {
+        guard let endedAt, endedAt > startedAt else { return 0 }
+        return endedAt.timeIntervalSince(startedAt)
+    }
+
+    var totalExercises: Int {
+        sortedExercises.count
+    }
+
+    var totalSets: Int {
+        sortedExercises.reduce(0) { $0 + $1.sortedSets.count }
+    }
+
+    var totalVolume: Double {
+        sortedExercises.reduce(0) { $0 + $1.totalVolume }
+    }
+
     static func byID(_ id: UUID) -> FetchDescriptor<WorkoutSession> {
         let predicate = #Predicate<WorkoutSession> { $0.id == id }
         var descriptor = FetchDescriptor(predicate: predicate)
@@ -223,6 +240,14 @@ extension WorkoutSession {
     
     static var completedSession: FetchDescriptor<WorkoutSession> {
         completedSessions()
+    }
+
+    static func completedSessions(forWorkoutPlanID id: UUID) -> FetchDescriptor<WorkoutSession> {
+        let done = SessionStatus.done.rawValue
+        let predicate = #Predicate<WorkoutSession> { $0.status == done && $0.isHidden == false && $0.workoutPlan?.id == id }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.healthWorkout, \.exercises]
+        return descriptor
     }
 
     static var completedSessionsNeedingHealthExport: FetchDescriptor<WorkoutSession> {

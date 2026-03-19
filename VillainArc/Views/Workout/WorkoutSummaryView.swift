@@ -41,26 +41,8 @@ struct WorkoutSummaryView: View {
     @State private var didSaveWorkoutAsPlan = false
     @State private var showPRSection = false
 
-    private var totalExercises: Int {
-        workout.exercises?.count ?? 0
-    }
-
-    private var totalSets: Int {
-        var count: Int = 0
-        for exercise in workout.exercises ?? [] {
-            for _ in exercise.sets ?? [] {
-                count += 1
-            }
-        }
-        return count
-    }
-
-    private var totalVolume: Double {
-        workout.exercises?.reduce(0) { $0 + $1.totalVolume } ?? 0
-    }
-
     private var formattedTotalVolume: String {
-        formattedWeightText(totalVolume, unit: weightUnit, fractionDigits: 0...1)
+        formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...1)
     }
 
     private var durationText: String {
@@ -123,8 +105,8 @@ struct WorkoutSummaryView: View {
                     }
 
                     HStack(spacing: 12) {
-                        SummaryStatCard(title: "Exercises", value: "\(totalExercises)")
-                        SummaryStatCard(title: "Sets", value: "\(totalSets)")
+                        SummaryStatCard(title: "Exercises", value: "\(workout.totalExercises)")
+                        SummaryStatCard(title: "Sets", value: "\(workout.totalSets)")
                         SummaryStatCard(title: "Duration", value: durationText)
                     }
 

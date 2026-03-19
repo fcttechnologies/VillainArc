@@ -33,71 +33,30 @@ struct WorkoutDetailView: View {
         guard (1...10).contains(workout.postEffort) else { return nil }
         return "\(workout.postEffort)/10 • \(workoutEffortDescription(workout.postEffort))"
     }
+
+    private var preWorkoutToolbarIdentifier: String? {
+        if hasPreWorkoutFeeling {
+            return AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton
+        }
+        if hasPreWorkoutDrink {
+            return AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton
+        }
+        if hasPreWorkoutNotes {
+            return AccessibilityIdentifiers.workoutDetailPreWorkoutNotesButton
+        }
+        return nil
+    }
     
     var body: some View {
-        List {
-            if !workout.notes.isEmpty {
-                Section("Workout Notes") {
-                    Text(workout.notes)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailNotesText)
-                }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 28) {
+                if workout.healthWorkout != nil { WorkoutLinkedHealthDetailSection(workout: workout, weightUnit: weightUnit) }
+
+                WorkoutSessionDetailContent(workout: workout, weightUnit: weightUnit)
             }
-            ForEach(workout.sortedExercises) { exercise in
-                Section {
-                    Grid(verticalSpacing: 8) {
-                        GridRow {
-                            Text("Set")
-                            Spacer()
-                            Text("Reps")
-                            Spacer()
-                            Text("Weight")
-                            Spacer()
-                            Text("Rest")
-                        }
-                        .font(.title3)
-                        .bold()
-                        .accessibilityHidden(true)
-                        
-                        ForEach(exercise.sortedSets) { set in
-                            GridRow {
-                                setIndicator(for: set)
-                                    .gridColumnAlignment(.leading)
-                                Spacer()
-                                Text(set.reps > 0 ? "\(set.reps)" : "-")
-                                    .gridColumnAlignment(set.reps > 0 ? .leading : .center)
-                                Spacer()
-                                Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
-                                    .gridColumnAlignment(set.weight > 0 ? .leading : .center)
-                                Spacer()
-                                Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
-                                    .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
-                            }
-                            .font(.title3)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSet(exercise, set: set))
-                            .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
-                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
-                        }
-                    }
-                } header: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(exercise.name)
-                            .lineLimit(1)
-                        if let repRange = exercise.repRange, repRange.activeMode != .notSet {
-                            Text(repRange.displayText)
-                                .font(.subheadline)
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseHeader(exercise))
-                } footer: {
-                    if !exercise.notes.isEmpty {
-                        Text("Notes: \(exercise.notes)")
-                            .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseNotes(exercise))
-                    }
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
-            }
+            .fontDesign(.rounded)
+            .padding(.horizontal)
+            .padding(.vertical, 20)
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailList)
         .navigationTitle(workout.title)
@@ -137,40 +96,13 @@ struct WorkoutDetailView: View {
                 }
             }
             ToolbarItemGroup(placement: .bottomBar) {
-                if hasPreWorkoutFeeling, let preWorkoutContext {
+                if let preWorkoutToolbarIdentifier {
                     Button {
                         showPreWorkoutContextSheet = true
                     } label: {
-                        Text(preWorkoutContext.feeling.emoji)
-                            .font(.title)
-                            .frame(width: 28, height: 28)
+                        preWorkoutToolbarIcon
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton)
-                    .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
-                    .accessibilityValue(preWorkoutAccessibilityValue)
-                    .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
-                }
-                if hasPreWorkoutDrink {
-                    Button {
-                        showPreWorkoutContextSheet = true
-                    } label: {
-                        Image(systemName: "bolt.fill")
-                            .foregroundStyle(.yellow)
-                            .accessibilityHidden(true)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton)
-                    .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
-                    .accessibilityValue(preWorkoutAccessibilityValue)
-                    .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
-                }
-                if hasPreWorkoutNotes {
-                    Button {
-                        showPreWorkoutContextSheet = true
-                    } label: {
-                        Image(systemName: "note.text")
-                            .accessibilityHidden(true)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutNotesButton)
+                    .accessibilityIdentifier(preWorkoutToolbarIdentifier)
                     .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
                     .accessibilityValue(preWorkoutAccessibilityValue)
                     .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
@@ -273,7 +205,231 @@ struct WorkoutDetailView: View {
     }
 
     @ViewBuilder
-    private func setIndicator(for set: SetPerformance) -> some View {
+    private var preWorkoutToolbarIcon: some View {
+        if hasPreWorkoutFeeling, let preWorkoutContext {
+            Text(preWorkoutContext.feeling.emoji)
+                .font(.title)
+                .frame(width: 28, height: 28)
+        } else if hasPreWorkoutDrink {
+            Image(systemName: "bolt.fill")
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+        } else if hasPreWorkoutNotes {
+            Image(systemName: "note.text")
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+private struct WorkoutLinkedHealthDetailSection: View {
+    let workout: WorkoutSession
+    let weightUnit: WeightUnit
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @Query(UserProfile.single) private var userProfiles: [UserProfile]
+    @State private var loader: HealthWorkoutDetailLoader
+
+    init(workout: WorkoutSession, weightUnit: WeightUnit) {
+        self.workout = workout
+        self.weightUnit = weightUnit
+        _loader = State(initialValue: HealthWorkoutDetailLoader(workout: workout.healthWorkout!))
+    }
+
+    private var distanceUnit: DistanceUnit {
+        appSettings.first?.distanceUnit ?? .systemDefault
+    }
+
+    private var estimatedMaxHeartRate: Double? {
+        guard let birthday = userProfiles.first?.birthday else { return nil }
+        let years = Calendar.current.dateComponents([.year], from: birthday, to: loader.summary.startDate).year ?? 0
+        let age = max(1, years)
+        return max(120, Double(220 - age))
+    }
+
+    private var workoutSummaryItems: [SummaryStatItem] {
+        var items = [SummaryStatItem(title: "Exercises", value: "\(workout.totalExercises)"), SummaryStatItem(title: "Sets", value: "\(workout.totalSets)")]
+        if workout.totalVolume > 0 { items.append(SummaryStatItem(title: "Volume", value: formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...1))) }
+        return items
+    }
+
+    var body: some View {
+        HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, showsSourceCard: false, extraSummaryItems: workoutSummaryItems)
+        .task(id: workout.healthWorkout?.healthWorkoutUUID) {
+            await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
+        }
+    }
+}
+
+private struct WorkoutSessionDetailContent: View {
+    let workout: WorkoutSession
+    let weightUnit: WeightUnit
+
+    private var summaryColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 130), spacing: 12, alignment: .top)]
+    }
+
+    private var durationText: String {
+        let endDate = workout.endedAt ?? .now
+        let totalSeconds = max(0, Int(endDate.timeIntervalSince(workout.startedAt).rounded()))
+        return secondsToTimeWithHours(totalSeconds)
+    }
+
+    private var summaryItems: [(title: String, value: String)] {
+        var items: [(String, String)] = [
+            ("Exercises", "\(workout.totalExercises)"),
+            ("Sets", "\(workout.totalSets)")
+        ]
+
+        if workout.totalVolume > 0 {
+            items.append(("Volume", formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...1)))
+        }
+
+        if workout.healthWorkout == nil {
+            items.append(("Duration", durationText))
+        }
+
+        return items
+    }
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 20) {
+            if workout.healthWorkout == nil { workoutSection }
+
+            if !workout.notes.isEmpty {
+                notesSection
+            }
+
+            exercisesSection
+        }
+    }
+
+    private var workoutSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(workout.healthWorkout == nil ? "Summary" : "Workout")
+                .font(.headline)
+
+            LazyVGrid(columns: summaryColumns, spacing: 12) {
+                ForEach(summaryItems, id: \.title) { item in
+                    SummaryStatCard(title: item.title, value: item.value)
+                }
+            }
+        }
+    }
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Workout Notes")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(workout.notes)
+                    .multilineTextAlignment(.leading)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailNotesText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var exercisesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Exercises")
+                .font(.headline)
+
+            ForEach(workout.sortedExercises) { exercise in
+                WorkoutDetailExerciseCard(exercise: exercise, weightUnit: weightUnit)
+            }
+        }
+    }
+}
+
+struct SummaryStatItem: Identifiable {
+    let title: String
+    let value: String
+
+    var id: String { "\(title)-\(value)" }
+}
+
+private struct WorkoutDetailExerciseCard: View {
+    let exercise: ExercisePerformance
+    let weightUnit: WeightUnit
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(exercise.name)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+
+                if let repRange = exercise.repRange {
+                    Text(repRange.displayText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseHeader(exercise))
+
+            if !exercise.notes.isEmpty {
+                Text(exercise.notes)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseNotes(exercise))
+            }
+
+            Divider()
+
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow {
+                    Text("Set")
+                    Spacer()
+                    Text("Reps")
+                    Spacer()
+                    Text("Weight")
+                    Spacer()
+                    Text("Rest")
+                }
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+                ForEach(exercise.sortedSets) { set in
+                    GridRow {
+                        WorkoutDetailSetIndicator(set: set)
+                            .gridColumnAlignment(.leading)
+                        Spacer()
+
+                        Text(set.reps > 0 ? "\(set.reps)" : "-")
+                            .gridColumnAlignment(set.reps > 0 ? .leading : .center)
+                        Spacer()
+
+                        Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
+                            .gridColumnAlignment(set.weight > 0 ? .leading : .center)
+                        Spacer()
+
+                        Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
+                            .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
+                    }
+                    .font(.body)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSet(exercise, set: set))
+                    .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
+                    .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
+                }
+            }
+        }
+        .padding(16)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
+    }
+}
+
+private struct WorkoutDetailSetIndicator: View {
+    let set: SetPerformance
+
+    var body: some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .overlay(alignment: .topTrailing) {

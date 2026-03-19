@@ -946,9 +946,32 @@ enum AccessibilityText {
     static let repRangeSuggestionHint = localized("Applies this rep range.")
 
     // MARK: - OnboardingView
+    static let onboardingConnectHealthHint = localized("Requests Apple Health read and write access for workouts.")
+    static let onboardingSkipHealthHint = localized("Skips Apple Health for now and continues into the app.")
     static let onboardingRetryHint = localized("Retries the current setup step.")
     static let onboardingContinueWithoutiCloudHint = localized("Continues setup without iCloud sync.")
     static let onboardingEnableICloudHint = localized("Opens iOS Settings to enable iCloud.")
+
+    // MARK: - HealthWorkoutDetailView
+    static let healthWorkoutRouteMapLabel = localized("Workout route map")
+    static let healthWorkoutHeartRateChartLabel = localized("Heart rate chart")
+
+    static func healthWorkoutRouteMapValue(pointCount: Int) -> String {
+        localized("Route plotted with \(pointCount) points.")
+    }
+
+    static func healthWorkoutHeartRateChartValue(summary: String) -> String {
+        summary
+    }
+
+    static func healthWorkoutZoneValue(durationText: String, percentageText: String, rangeText: String) -> String {
+        localized("\(durationText), \(percentageText), \(rangeText)")
+    }
+
+    static func healthWorkoutSplitValue(paceText: String, heartRateText: String) -> String {
+        let heartRateValue = heartRateText == "-" ? localized("unavailable") : localized("\(heartRateText) beats per minute")
+        return localized("Pace \(paceText), heart rate \(heartRateValue)")
+    }
 
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerHint = localized("Automatically starts rest timer when a set is marked complete.")

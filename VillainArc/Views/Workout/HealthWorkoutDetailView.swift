@@ -20,14 +20,6 @@ struct HealthWorkoutDetailView: View {
         appSettings.first?.distanceUnit ?? .systemDefault
     }
 
-    private var summaryGridColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)]
-    }
-
-    private var metricGridColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 130), spacing: 12, alignment: .top)]
-    }
-
     private var estimatedMaxHeartRate: Double? {
         guard let birthday = userProfiles.first?.birthday else { return nil }
         let years = Calendar.current.dateComponents([.year], from: birthday, to: loader.summary.startDate).year ?? 0
@@ -35,98 +27,11 @@ struct HealthWorkoutDetailView: View {
         return max(120, Double(220 - age))
     }
 
-    private var durationText: String {
-        let activeDurationText = formattedDuration(loader.summary.activeDuration)
-        guard loader.summary.pausedDuration >= 1 else { return activeDurationText }
-        let totalDurationText = formattedDuration(loader.summary.totalDuration)
-        return "\(activeDurationText) active\n\(totalDurationText) total"
-    }
-
-    private var activeEnergyText: String {
-        guard let activeEnergyBurned = loader.summary.activeEnergyBurned else { return "-" }
-        return "\(Int(activeEnergyBurned.rounded())) cal"
-    }
-
-    private var totalEnergyText: String? {
-        guard let totalCalories = loader.summary.totalCalories else { return nil }
-        return "\(Int(totalCalories.rounded())) cal"
-    }
-    
-    private var distanceText: String {
-        guard let totalDistance = loader.summary.totalDistance else { return "-" }
-        return distanceUnit.display(totalDistance)
-    }
-
-    private var paceText: String? {
-        guard loader.summary.activityType.supportsPacePresentation,
-              let totalDistance = loader.summary.totalDistance else {
-            return nil
-        }
-
-        return formattedPace(duration: loader.summary.activeDuration, distanceMeters: totalDistance, distanceUnit: distanceUnit)
-    }
-
-    private var showsSplitSection: Bool {
-        loader.summary.activityType.supportsPacePresentation && !loader.splits.isEmpty
-    }
-
-    private var routeCoordinates: [CLLocationCoordinate2D] {
-        loader.routePoints.map(\.coordinate)
-    }
-
-    private var chartAccessibilitySummary: String {
-        let parts = [
-            loader.heartRateSummary.averageBPM.map { "Average \(Int($0.rounded())) bpm" },
-            loader.heartRateSummary.minimumBPM.map { "Low \(Int($0.rounded())) bpm" },
-            loader.heartRateSummary.maximumBPM.map { "High \(Int($0.rounded())) bpm" }
-        ]
-            .compactMap(\.self)
-        
-        return parts.isEmpty ? "No heart rate data available." : parts.joined(separator: ", ")
-    }
-
     private var effortSummary: HealthWorkoutEffortSummary? { loader.effortSummary }
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 32) {
-                if loader.isLoading {
-                    HStack(spacing: 10) {
-                        ProgressView()
-                        Text("Loading Apple Health details...")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                
-                summarySection
-
-                if routeCoordinates.count >= 2 {
-                    routeSection
-                }
-                
-                if loader.heartRateSummary.hasContent {
-                    heartRateSection
-                }
-
-                if !loader.heartRateZones.isEmpty {
-                    heartRateZonesSection
-                }
-
-                if showsSplitSection {
-                    splitsSection
-                }
-                
-                if !loader.metrics.isEmpty {
-                    metricsSection
-                }
-                
-                if loader.activities.count > 1 {
-                    activitiesSection
-                }
-                
-            }
+            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, showsSourceCard: true, extraSummaryItems: [])
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
@@ -150,28 +55,166 @@ struct HealthWorkoutDetailView: View {
         }
     }
 
+    private func effortRingLabel(for summary: HealthWorkoutEffortSummary) -> some View {
+        switch summary.source {
+        case .actualScore, .estimatedScore:
+            WorkoutEffortRingView(score: summary.value, displayText: formattedEffortBadgeText(summary))
+        case .physicalEffort:
+            WorkoutEffortRingView(displayText: formattedEffortBadgeText(summary))
+        }
+    }
+
+    private func formattedEffortBadgeText(_ summary: HealthWorkoutEffortSummary) -> String {
+        switch summary.source {
+        case .actualScore:
+            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
+        case .estimatedScore:
+            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
+        case .physicalEffort:
+            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
+        }
+    }
+
+    private func effortAccessibilityValue(for summary: HealthWorkoutEffortSummary) -> String {
+        switch summary.source {
+        case .actualScore:
+            return "\(formattedEffortBadgeText(summary)) out of 10"
+        case .estimatedScore:
+            return "Estimated \(formattedEffortBadgeText(summary)) out of 10"
+        case .physicalEffort:
+            return "\(formattedEffortBadgeText(summary)) METs"
+        }
+    }
+
+}
+
+struct HealthWorkoutDetailContent: View {
+    let loader: HealthWorkoutDetailLoader
+    let distanceUnit: DistanceUnit
+    let estimatedMaxHeartRate: Double?
+    let showsSourceCard: Bool
+    let extraSummaryItems: [SummaryStatItem]
+
+    private var summaryGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)]
+    }
+
+    private var metricGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 130), spacing: 12, alignment: .top)]
+    }
+
+    private var durationText: String {
+        let activeDurationText = formattedDuration(loader.summary.activeDuration)
+        guard loader.summary.pausedDuration >= 1 else { return activeDurationText }
+        let totalDurationText = formattedDuration(loader.summary.totalDuration)
+        return "\(activeDurationText) active\n\(totalDurationText) total"
+    }
+
+    private var activeEnergyText: String {
+        guard let activeEnergyBurned = loader.summary.activeEnergyBurned else { return "-" }
+        return "\(Int(activeEnergyBurned.rounded())) cal"
+    }
+
+    private var totalEnergyText: String? {
+        guard let totalCalories = loader.summary.totalCalories else { return nil }
+        return "\(Int(totalCalories.rounded())) cal"
+    }
+
+    private var distanceText: String {
+        guard let totalDistance = loader.summary.totalDistance else { return "-" }
+        return distanceUnit.display(totalDistance)
+    }
+
+    private var paceText: String? {
+        guard loader.summary.activityType.supportsPacePresentation,
+              let totalDistance = loader.summary.totalDistance else {
+            return nil
+        }
+
+        return formattedPace(duration: loader.summary.activeDuration, distanceMeters: totalDistance, distanceUnit: distanceUnit)
+    }
+
+    private var summaryItems: [SummaryStatItem] {
+        var items = [SummaryStatItem(title: "Duration", value: durationText)]
+        if let paceText { items.append(SummaryStatItem(title: "Pace", value: paceText)) }
+        if loader.summary.totalDistance != nil { items.append(SummaryStatItem(title: "Distance", value: distanceText)) }
+        items.append(SummaryStatItem(title: "Active Energy", value: activeEnergyText))
+        if let totalEnergyText { items.append(SummaryStatItem(title: "Total Energy", value: totalEnergyText)) }
+        items.append(contentsOf: extraSummaryItems)
+        return items
+    }
+
+    private var showsSplitSection: Bool {
+        loader.summary.activityType.supportsPacePresentation && !loader.splits.isEmpty
+    }
+
+    private var routeCoordinates: [CLLocationCoordinate2D] {
+        loader.routePoints.map(\.coordinate)
+    }
+
+    private var chartAccessibilitySummary: String {
+        let parts = [
+            loader.heartRateSummary.averageBPM.map { "Average \(Int($0.rounded())) bpm" },
+            loader.heartRateSummary.minimumBPM.map { "Low \(Int($0.rounded())) bpm" },
+            loader.heartRateSummary.maximumBPM.map { "High \(Int($0.rounded())) bpm" }
+        ]
+            .compactMap(\.self)
+
+        return parts.isEmpty ? "No heart rate data available." : parts.joined(separator: ", ")
+    }
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 32) {
+            if loader.isLoading {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Loading Apple Health details...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            summarySection
+
+            if routeCoordinates.count >= 2 {
+                routeSection
+            }
+
+            if loader.heartRateSummary.hasContent {
+                heartRateSection
+            }
+
+            if !loader.heartRateZones.isEmpty {
+                heartRateZonesSection
+            }
+
+            if showsSplitSection {
+                splitsSection
+            }
+
+            if !loader.metrics.isEmpty {
+                metricsSection
+            }
+
+            if loader.activities.count > 1 {
+                activitiesSection
+            }
+        }
+    }
+
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Summary")
                 .font(.headline)
 
-            SummaryStatCard(title: "Source", value: loader.summary.sourceName)
+            if showsSourceCard {
+                SummaryStatCard(title: "Source", value: loader.summary.sourceName)
+            }
 
             LazyVGrid(columns: summaryGridColumns, spacing: 12) {
-                SummaryStatCard(title: "Duration", value: durationText)
-
-                if let paceText {
-                    SummaryStatCard(title: "Pace", value: paceText)
-                }
-
-                if loader.summary.totalDistance != nil {
-                    SummaryStatCard(title: "Distance", value: distanceText)
-                }
-
-                SummaryStatCard(title: "Active Energy", value: activeEnergyText)
-
-                if let totalEnergyText {
-                    SummaryStatCard(title: "Total Energy", value: totalEnergyText)
+                ForEach(summaryItems) { item in
+                    SummaryStatCard(title: item.title, value: item.value)
                 }
             }
 
@@ -194,35 +237,21 @@ struct HealthWorkoutDetailView: View {
 
             HealthWorkoutRouteMapCard(coordinates: routeCoordinates)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Workout route map")
-                .accessibilityValue("Route plotted with \(routeCoordinates.count) points.")
+                .accessibilityLabel(AccessibilityText.healthWorkoutRouteMapLabel)
+                .accessibilityValue(AccessibilityText.healthWorkoutRouteMapValue(pointCount: routeCoordinates.count))
         }
     }
-    
+
     private var heartRateSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Heart Rate")
                 .font(.headline)
 
-            HStack(alignment: .top, spacing: 12) {
-                if let average = loader.heartRateSummary.averageBPM {
-                    SummaryStatCard(title: "Average", value: "\(Int(average.rounded())) bpm")
-                }
-
-                if let minimum = loader.heartRateSummary.minimumBPM {
-                    SummaryStatCard(title: "Low", value: "\(Int(minimum.rounded())) bpm")
-                }
-
-                if let maximum = loader.heartRateSummary.maximumBPM {
-                    SummaryStatCard(title: "High", value: "\(Int(maximum.rounded())) bpm")
-                }
-            }
-
             if loader.heartRatePoints.count >= 2 {
-                HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, estimatedMaxHeartRate: estimatedMaxHeartRate)
+                HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Heart rate chart")
-                    .accessibilityValue(chartAccessibilitySummary)
+                    .accessibilityLabel(AccessibilityText.healthWorkoutHeartRateChartLabel)
+                    .accessibilityValue(AccessibilityText.healthWorkoutHeartRateChartValue(summary: chartAccessibilitySummary))
             }
         }
     }
@@ -341,37 +370,6 @@ struct HealthWorkoutDetailView: View {
         return "\(Int(averageHeartRate.rounded()))"
     }
 
-    private func effortRingLabel(for summary: HealthWorkoutEffortSummary) -> some View {
-        switch summary.source {
-        case .actualScore, .estimatedScore:
-            WorkoutEffortRingView(score: summary.value, displayText: formattedEffortBadgeText(summary))
-        case .physicalEffort:
-            WorkoutEffortRingView(displayText: formattedEffortBadgeText(summary))
-        }
-    }
-
-    private func formattedEffortBadgeText(_ summary: HealthWorkoutEffortSummary) -> String {
-        switch summary.source {
-        case .actualScore:
-            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
-        case .estimatedScore:
-            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
-        case .physicalEffort:
-            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
-        }
-    }
-
-    private func effortAccessibilityValue(for summary: HealthWorkoutEffortSummary) -> String {
-        switch summary.source {
-        case .actualScore:
-            return "\(formattedEffortBadgeText(summary)) out of 10"
-        case .estimatedScore:
-            return "Estimated \(formattedEffortBadgeText(summary)) out of 10"
-        case .physicalEffort:
-            return "\(formattedEffortBadgeText(summary)) METs"
-        }
-    }
-
     private func heartRateZoneRangeText(for zone: HealthWorkoutHeartRateZoneSummary) -> String {
         switch (zone.lowerBoundBPM, zone.upperBoundBPM) {
         case let (nil, upper?):
@@ -460,7 +458,7 @@ private struct HealthWorkoutZoneRow: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(zoneTitle)
-        .accessibilityValue("\(durationText), \(percentageText), \(rangeText)")
+        .accessibilityValue(AccessibilityText.healthWorkoutZoneValue(durationText: durationText, percentageText: percentageText, rangeText: rangeText))
     }
 }
 
@@ -489,7 +487,7 @@ private struct HealthWorkoutSplitRow: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(splitLabel)
-        .accessibilityValue("Pace \(paceText), heart rate \(heartRateText == "-" ? "unavailable" : "\(heartRateText) beats per minute")")
+        .accessibilityValue(AccessibilityText.healthWorkoutSplitValue(paceText: paceText, heartRateText: heartRateText))
     }
 
     @ViewBuilder
@@ -517,7 +515,7 @@ private struct HealthWorkoutRouteMapCard: View {
 
     private var region: MKCoordinateRegion {
         guard let first = coordinates.first else {
-            return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.3349, longitude: -122.0090), span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02))
+            return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.3349, longitude: -122.0090), span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
         }
 
         let latitudes = coordinates.map(\.latitude)
@@ -568,6 +566,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
     }
 
     let points: [HealthWorkoutHeartRatePoint]
+    let summary: HealthWorkoutHeartRateSummary
     let estimatedMaxHeartRate: Double?
     
     @State private var selectedDate: Date?
@@ -592,6 +591,17 @@ private struct HealthWorkoutHeartRateChartCard: View {
         return nearestPoint(to: selectedDate)
     }
 
+    private var primaryTitle: String {
+        guard let displayedPoint else { return "Average" }
+        return displayedPoint.date.formatted(date: .omitted, time: .shortened)
+    }
+
+    private var primaryValue: String {
+        if let displayedPoint { return "\(Int(displayedPoint.bpm.rounded())) bpm" }
+        guard let averageBPM = summary.averageBPM else { return "-" }
+        return "\(Int(averageBPM.rounded())) bpm"
+    }
+
     private var segments: [Segment] {
         guard points.count >= 2 else { return [] }
         return zip(points.indices, zip(points, points.dropFirst())).map { index, pair in
@@ -600,59 +610,80 @@ private struct HealthWorkoutHeartRateChartCard: View {
     }
     
     var body: some View {
-        Chart {
-            ForEach(segments) { segment in
-                LineMark(x: .value("Time", segment.start.date), y: .value("Heart Rate", segment.start.bpm), series: .value("Segment", segment.id))
-                .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
-                .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(primaryTitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(primaryValue)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(displayedPoint.map { HealthWorkoutHeartRatePalette.color(for: $0.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate) } ?? .primary)
+                }
 
-                LineMark(x: .value("Time", segment.end.date), y: .value("Heart Rate", segment.end.bpm), series: .value("Segment", segment.id))
-                .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
-                .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                Spacer(minLength: 12)
+
+                HStack(spacing: 16) {
+                    heartRateMetric(title: "High", value: summary.maximumBPM)
+                    heartRateMetric(title: "Low", value: summary.minimumBPM)
+                }
             }
 
-            if let displayedPoint {
-                PointMark(x: .value("Time", displayedPoint.date), y: .value("Heart Rate", displayedPoint.bpm))
-                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
-                    .symbolSize(80)
-                
-                RuleMark(x: .value("Selected Time", displayedPoint.date))
-                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
-                    .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
-                    .annotation(position: .top, spacing: 8, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(displayedPoint.date.formatted(date: .omitted, time: .shortened))
-                                .foregroundStyle(.white.opacity(0.9))
-                            Text("\(Int(displayedPoint.bpm.rounded())) bpm")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                        }
-                        .bold()
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate).gradient, in: .rect(cornerRadius: 12))
-                    }
+            Chart {
+                ForEach(segments) { segment in
+                    LineMark(x: .value("Time", segment.start.date), y: .value("Heart Rate", segment.start.bpm), series: .value("Segment", segment.id))
+                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                    .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+                    LineMark(x: .value("Time", segment.end.date), y: .value("Heart Rate", segment.end.bpm), series: .value("Segment", segment.id))
+                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                    .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                }
+
+                if let displayedPoint {
+                    PointMark(x: .value("Time", displayedPoint.date), y: .value("Heart Rate", displayedPoint.bpm))
+                        .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                        .symbolSize(80)
+
+                    RuleMark(x: .value("Selected Time", displayedPoint.date))
+                        .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                        .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                }
             }
-        }
-        .chartXSelection(value: $selectedDate)
-        .chartYScale(domain: yAxisDomain)
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel(format: .dateTime.hour().minute())
+            .chartXSelection(value: $selectedDate)
+            .chartYScale(domain: yAxisDomain)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: .dateTime.hour().minute())
+                }
             }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+            .frame(height: 220)
         }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .frame(height: 220)
         .padding(14)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
         .onChange(of: points) { _, newPoints in
             guard let selectedDate else { return }
             self.selectedDate = nearestPoint(in: newPoints, to: selectedDate)?.date
         }
+    }
+
+    @ViewBuilder
+    private func heartRateMetric(title: String, value: Double?) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text(value.map { "\(Int($0.rounded())) bpm" } ?? "-")
+                .font(.headline)
+                .fontWeight(.semibold)
+        }
+        .frame(minWidth: 64, alignment: .trailing)
     }
     
     private func nearestPoint(to date: Date) -> HealthWorkoutHeartRatePoint? {

@@ -7,6 +7,7 @@ struct WorkoutPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Query(WorkoutSplit.active) private var activeSplits: [WorkoutSplit]
+    @Query private var completedSessions: [WorkoutSession]
     @Bindable var plan: WorkoutPlan
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     private let router = AppRouter.shared
@@ -24,13 +25,11 @@ struct WorkoutPlanDetailView: View {
         self.plan = plan
         self.showsUseOnly = showsUseOnly
         self.onSelect = onSelect
+        _completedSessions = Query(WorkoutSession.completedSessions(forWorkoutPlanID: plan.id))
     }
 
     private var isTodaysActiveSplitPlan: Bool {
-        guard let activeSplit = activeSplits.first,
-              let todaysPlan = activeSplit.todaysSplitDay?.workoutPlan else {
-            return false
-        }
+        guard let activeSplit = activeSplits.first, let todaysPlan = activeSplit.todaysSplitDay?.workoutPlan else { return false }
         return todaysPlan.id == plan.id
     }
 
@@ -46,87 +45,47 @@ struct WorkoutPlanDetailView: View {
         !toReviewSuggestionSections.isEmpty || !awaitingOutcomeSuggestionSections.isEmpty
     }
 
+    private var averageDurationText: String? {
+        let durations = completedSessions.map(\.totalDuration).filter { $0 > 0 }
+        guard !durations.isEmpty else { return nil }
+        return secondsToTimeWithHours(Int((durations.reduce(0, +) / Double(durations.count)).rounded()))
+    }
+
+    private var averageActiveEnergyText: String? {
+        let activeEnergies = completedSessions.compactMap { $0.healthWorkout?.activeEnergyBurned }
+        guard !activeEnergies.isEmpty else { return nil }
+        return "\(Int((activeEnergies.reduce(0, +) / Double(activeEnergies.count)).rounded())) cal"
+    }
+
+    private var averageTotalEnergyText: String? {
+        let totalEnergies = completedSessions.compactMap { $0.healthWorkout?.totalEnergyBurned }
+        guard !totalEnergies.isEmpty else { return nil }
+        return "\(Int((totalEnergies.reduce(0, +) / Double(totalEnergies.count)).rounded())) cal"
+    }
+
+    private var summaryItems: [SummaryStatItem] {
+        var items = [SummaryStatItem(title: "Exercises", value: "\(plan.totalExercises)"), SummaryStatItem(title: "Sets", value: "\(plan.totalSets)")]
+        if plan.totalVolume > 0 { items.append(SummaryStatItem(title: "Total Volume", value: formattedWeightText(plan.totalVolume, unit: weightUnit, fractionDigits: 0...1))) }
+        if let averageDurationText { items.append(SummaryStatItem(title: "Avg Duration", value: averageDurationText)) }
+        if let averageActiveEnergyText { items.append(SummaryStatItem(title: "Avg Active Energy", value: averageActiveEnergyText)) }
+        if let averageTotalEnergyText { items.append(SummaryStatItem(title: "Avg Total Energy", value: averageTotalEnergyText)) }
+        return items
+    }
+
     var body: some View {
-        List {
-            if !plan.notes.isEmpty {
-                Section("Plan Notes") {
-                    Text(plan.notes)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailNotesText)
-                }
-            }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 20) {
+                summarySection
 
-            ForEach(plan.sortedExercises) { exercise in
-                Section {
-                    Grid(verticalSpacing: 8) {
-                        GridRow {
-                            Text("Set")
-                            Spacer()
-                            Text("Reps")
-                            Spacer()
-                            Text("Weight")
-                            Spacer()
-                            Text("Rest")
-                        }
-                        .font(.title3)
-                        .bold()
-                        .accessibilityHidden(true)
-
-                        ForEach(exercise.sortedSets) { set in
-                            GridRow {
-                                setIndicator(for: set)
-                                    .gridColumnAlignment(.leading)
-                                Spacer()
-                                Text(set.targetReps > 0 ? "\(set.targetReps)" : "-")
-                                    .gridColumnAlignment(set.targetReps > 0 ? .leading : .center)
-                                Spacer()
-                                Text(set.targetWeight > 0 ? formattedWeightText(set.targetWeight, unit: weightUnit) : "-")
-                                    .gridColumnAlignment(set.targetWeight > 0 ? .leading : .center)
-                                Spacer()
-                                Text(set.targetRest > 0 ? secondsToTime(set.targetRest) : "-")
-                                    .gridColumnAlignment(set.targetRest > 0 ? .leading : .center)
-                            }
-                            .font(.title3)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: set))
-                            .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
-                            .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
-                        }
-                    }
-                } header: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(exercise.name)
-                                .lineLimit(1)
-                            if let repRange = exercise.repRange, repRange.activeMode != .notSet {
-                                Text(repRange.displayText)
-                                    .font(.subheadline)
-                            }
-                        }
-                        Spacer()
-                        if let pendingCount = pendingSuggestionCount(for: exercise), onSelect == nil {
-                            Button {
-                                openSuggestionsSheet(tab: .toReview, focusedExerciseID: exercise.id)
-                            } label: {
-                                Text("\(pendingCount)")
-                                    .bold()
-                                    .padding(1)
-                            }
-                            .buttonBorderShape(.circle)
-                            .buttonStyle(.glass)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSuggestionCount(exercise))
-                            .accessibilityLabel(AccessibilityText.workoutPlanDetailSuggestionCountLabel(count: pendingCount))
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
-                } footer: {
-                    if !exercise.notes.isEmpty {
-                        Text("Notes: \(exercise.notes)")
-                            .multilineTextAlignment(.leading)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseNotes(exercise))
-                    }
+                if !plan.notes.isEmpty {
+                    notesSection
                 }
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExercise(exercise))
+
+                exercisesSection
             }
+            .fontDesign(.rounded)
+            .padding(.horizontal)
+            .padding(.vertical, 20)
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
         .navigationTitle(plan.title)
@@ -139,10 +98,7 @@ struct WorkoutPlanDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if hasSuggestionsSheetContent && onSelect == nil {
                     Button {
-                        openSuggestionsSheet(
-                            tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview,
-                            focusedExerciseID: nil
-                        )
+                        openSuggestionsSheet(tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview, focusedExerciseID: nil)
                     } label: {
                         Image(systemName: "sparkles")
                             .accessibilityHidden(true)
@@ -201,7 +157,6 @@ struct WorkoutPlanDetailView: View {
                 .accessibilityHint(AccessibilityText.workoutPlanDetailFavoriteHint)
             }
             ToolbarSpacer(.flexible, placement: .bottomBar)
-            
             ToolbarItem(placement: .bottomBar) {
                 if onSelect == nil {
                     Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
@@ -232,6 +187,46 @@ struct WorkoutPlanDetailView: View {
         }
     }
 
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Summary")
+                .font(.headline)
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
+                ForEach(summaryItems) { item in
+                    SummaryStatCard(title: item.title, value: item.value)
+                }
+            }
+        }
+    }
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Plan Notes")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(plan.notes)
+                    .multilineTextAlignment(.leading)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailNotesText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var exercisesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Exercises")
+                .font(.headline)
+
+            ForEach(plan.sortedExercises) { exercise in
+                WorkoutPlanDetailExerciseCard(exercise: exercise, weightUnit: weightUnit, pendingCount: pendingSuggestionCount(for: exercise), showsPendingCount: onSelect == nil, onOpenSuggestions: { openSuggestionsSheet(tab: .toReview, focusedExerciseID: exercise.id) })
+            }
+        }
+    }
+
     private func deleteWorkoutPlan() {
         Haptics.selection()
         let deletedPlan = plan
@@ -244,18 +239,6 @@ struct WorkoutPlanDetailView: View {
         dismiss()
     }
 
-    @ViewBuilder
-    private func setIndicator(for set: SetPrescription) -> some View {
-        Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
-            .foregroundStyle(set.type.tintColor)
-            .overlay(alignment: .topTrailing) {
-                if let visibleTargetRPE = set.visibleTargetRPE {
-                    RPEBadge(value: visibleTargetRPE, style: .target)
-                        .offset(x: 7, y: -7)
-                }
-            }
-    }
-
     private func pendingSuggestionCount(for exercise: ExercisePrescription) -> Int? {
         let count = toReviewSuggestionSections.first(where: { $0.exercisePrescription.id == exercise.id })?.groups.count ?? 0
         return count > 0 ? count : nil
@@ -265,6 +248,110 @@ struct WorkoutPlanDetailView: View {
         suggestionsInitialTab = tab
         focusedSuggestionExerciseID = focusedExerciseID
         showSuggestionsSheet = true
+    }
+}
+
+private struct WorkoutPlanDetailExerciseCard: View {
+    let exercise: ExercisePrescription
+    let weightUnit: WeightUnit
+    let pendingCount: Int?
+    let showsPendingCount: Bool
+    let onOpenSuggestions: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(exercise.name)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+                    if let repRange = exercise.repRange, repRange.activeMode != .notSet {
+                        Text(repRange.displayText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                if showsPendingCount, let pendingCount {
+                    Button(action: onOpenSuggestions) {
+                        Text("\(pendingCount)")
+                            .bold()
+                            .padding(1)
+                    }
+                    .buttonBorderShape(.circle)
+                    .buttonStyle(.glass)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSuggestionCount(exercise))
+                    .accessibilityLabel(AccessibilityText.workoutPlanDetailSuggestionCountLabel(count: pendingCount))
+                }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
+
+            if !exercise.notes.isEmpty {
+                Text(exercise.notes)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseNotes(exercise))
+            }
+
+            Divider()
+
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow {
+                    Text("Set")
+                    Spacer()
+                    Text("Reps")
+                    Spacer()
+                    Text("Weight")
+                    Spacer()
+                    Text("Rest")
+                }
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+                ForEach(exercise.sortedSets) { set in
+                    GridRow {
+                        WorkoutPlanDetailSetIndicator(set: set)
+                            .gridColumnAlignment(.leading)
+                        Spacer()
+                        Text(set.targetReps > 0 ? "\(set.targetReps)" : "-")
+                            .gridColumnAlignment(set.targetReps > 0 ? .leading : .center)
+                        Spacer()
+                        Text(set.targetWeight > 0 ? formattedWeightText(set.targetWeight, unit: weightUnit) : "-")
+                            .gridColumnAlignment(set.targetWeight > 0 ? .leading : .center)
+                        Spacer()
+                        Text(set.targetRest > 0 ? secondsToTime(set.targetRest) : "-")
+                            .gridColumnAlignment(set.targetRest > 0 ? .leading : .center)
+                    }
+                    .font(.body)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: set))
+                    .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
+                    .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
+                }
+            }
+        }
+        .padding(16)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExercise(exercise))
+    }
+}
+
+private struct WorkoutPlanDetailSetIndicator: View {
+    let set: SetPrescription
+
+    var body: some View {
+        Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
+            .foregroundStyle(set.type.tintColor)
+            .overlay(alignment: .topTrailing) {
+                if let visibleTargetRPE = set.visibleTargetRPE {
+                    RPEBadge(value: visibleTargetRPE, style: .target)
+                        .offset(x: 7, y: -7)
+                }
+            }
     }
 }
 

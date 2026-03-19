@@ -20,6 +20,10 @@ final class SetPrescription {
         guard type != .warmup, targetRPE > 0 else { return nil }
         return targetRPE
     }
+
+    var volume: Double {
+        targetWeight * Double(targetReps)
+    }
     
     // Adding set in workout plan creation
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0) {

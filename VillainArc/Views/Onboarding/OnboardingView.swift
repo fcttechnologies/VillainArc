@@ -122,7 +122,7 @@ struct OnboardingView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
-                .accessibilityHint("Requests Apple Health read and write access for workouts.")
+                .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
 
                 Button {
                     manager.skipAppleHealth()
@@ -133,7 +133,7 @@ struct OnboardingView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glass)
-                .accessibilityHint("Skips Apple Health for now and continues into the app.")
+                .accessibilityHint(AccessibilityText.onboardingSkipHealthHint)
             }
         }
         .padding(.horizontal)

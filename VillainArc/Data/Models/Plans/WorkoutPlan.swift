@@ -22,6 +22,18 @@ final class WorkoutPlan {
         (exercises ?? []).sorted { $0.index < $1.index }
     }
 
+    var totalExercises: Int {
+        sortedExercises.count
+    }
+
+    var totalSets: Int {
+        sortedExercises.reduce(0) { $0 + $1.sortedSets.count }
+    }
+
+    var totalVolume: Double {
+        sortedExercises.reduce(0) { $0 + $1.totalVolume }
+    }
+
     func convertTargetWeightsToKg(from unit: WeightUnit) {
         guard unit == .lbs else { return }
         for exercise in exercises ?? [] {

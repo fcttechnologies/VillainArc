@@ -26,6 +26,9 @@
         }
       }
     },
+    "%@ beats per minute" : {
+
+    },
     "%@ is a rest day." : {
 
     },
@@ -1296,9 +1299,6 @@
     "Notes (optional)" : {
 
     },
-    "Notes: %@" : {
-
-    },
     "Obliques" : {
 
     },
@@ -2330,6 +2330,9 @@
 
     },
     "Unable to connect to iCloud right now. Please check your internet connection and try again." : {
+
+    },
+    "unavailable" : {
 
     },
     "Undo" : {

@@ -27,6 +27,10 @@ final class ExercisePrescription {
         (sets ?? []).sorted { $0.index < $1.index }
     }
 
+    var totalVolume: Double {
+        sortedSets.reduce(0) { $0 + $1.volume }
+    }
+
     // Adding exercise in workout plan creation
     init(exercise: Exercise, workoutPlan: WorkoutPlan) {
         index = workoutPlan.exercises?.count ?? 0

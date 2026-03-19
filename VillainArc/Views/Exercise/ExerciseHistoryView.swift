@@ -42,58 +42,15 @@ struct ExerciseHistoryView: View {
     }
 
     var body: some View {
-        List {
-            ForEach(performances) { performance in
-                Section {
-                    Grid(verticalSpacing: 8) {
-                        GridRow {
-                            Text("Set")
-                            Spacer()
-                            Text("Reps")
-                            Spacer()
-                            Text("Weight")
-                            Spacer()
-                            Text("Rest")
-                        }
-                        .font(.title3)
-                        .bold()
-                        .accessibilityHidden(true)
-
-                        ForEach(performance.sortedSets) { set in
-                            GridRow {
-                                setIndicator(for: set)
-                                    .gridColumnAlignment(.leading)
-                                Spacer()
-                                Text(set.reps > 0 ? "\(set.reps)" : "-")
-                                    .gridColumnAlignment(set.reps > 0 ? .leading : .center)
-                                Spacer()
-                                Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
-                                    .gridColumnAlignment(set.weight > 0 ? .leading : .center)
-                                Spacer()
-                                Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
-                                    .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
-                            }
-                            .font(.title3)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                } header: {
-                    HStack(alignment: .bottom) {
-                        Text(formattedDateRange(start: performance.date))
-                        Spacer()
-                        if let repRange = performance.repRange, repRange.activeMode != .notSet {
-                            Text(repRange.displayText)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
-                    }
-                } footer: {
-                    if !performance.notes.isEmpty {
-                        Text(performance.notes)
-                            .multilineTextAlignment(.leading)
-                    }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 14) {
+                ForEach(performances) { performance in
+                    ExerciseHistoryPerformanceCard(performance: performance, weightUnit: weightUnit)
                 }
             }
+            .fontDesign(.rounded)
+            .padding(.horizontal)
+            .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay {
@@ -108,9 +65,79 @@ struct ExerciseHistoryView: View {
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
     }
+}
 
-    @ViewBuilder
-    private func setIndicator(for set: SetPerformance) -> some View {
+private struct ExerciseHistoryPerformanceCard: View {
+    let performance: ExercisePerformance
+    let weightUnit: WeightUnit
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 12) {
+                    Text(formattedDateRange(start: performance.date))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let repRange = performance.repRange, repRange.activeMode != .notSet {
+                        Text(repRange.displayText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .fontWeight(.semibold)
+
+                if !performance.notes.isEmpty {
+                    Text(performance.notes)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+
+            Divider()
+
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow {
+                    Text("Set")
+                    Spacer()
+                    Text("Reps")
+                    Spacer()
+                    Text("Weight")
+                    Spacer()
+                    Text("Rest")
+                }
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+                ForEach(performance.sortedSets) { set in
+                    GridRow {
+                        ExerciseHistorySetIndicator(set: set)
+                            .gridColumnAlignment(.leading)
+                        Spacer()
+                        Text(set.reps > 0 ? "\(set.reps)" : "-")
+                            .gridColumnAlignment(set.reps > 0 ? .leading : .center)
+                        Spacer()
+                        Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
+                            .gridColumnAlignment(set.weight > 0 ? .leading : .center)
+                        Spacer()
+                        Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
+                            .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
+                    }
+                    .font(.body)
+                }
+            }
+        }
+        .padding(16)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+private struct ExerciseHistorySetIndicator: View {
+    let set: SetPerformance
+
+    var body: some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .overlay(alignment: .topTrailing) {
