@@ -9,6 +9,7 @@ This document explains the HealthKit side of the app: how VillainArc requests Ap
 - `Data/Services/HealthKit/HealthPreferences.swift`
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
 - `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
+- `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
 - `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`
 - `Data/Models/Health/HealthWorkout.swift`
 - `Data/Models/Sessions/WorkoutSession.swift`
@@ -64,35 +65,25 @@ It is intentionally a summary/cache layer. It does not store heart-rate chart po
 Health permission is optional and never blocks app readiness.
 
 VillainArc can offer Apple Health access:
-- during onboarding after bootstrap and profile setup are complete
+- during onboarding after bootstrap and name step
+- after changes to write/read types
 - later from settings
 
-### Smart Permission Prompting
+### When the Prompt Appears
 
-VillainArc does not use a simple "already asked once" flag anymore.
+VillainArc uses `authorizationAction()` directly to decide whether to offer Health access.
 
-Instead, it stores a permission prompt version in shared defaults.
+`authorizationAction()` calls `healthStore.statusForAuthorizationRequest(toShare:read:)`:
+- `.shouldRequest` → returns `.requestAccess` → offer the Health step
+- `.unnecessary` or `.unknown` → step is skipped
 
-That means:
-- if the app has never shown the current Health permission version, onboarding can offer the Health step
-- once the user handles that step, the current version is recorded
-- if the app later changes the Health read or write scope and bumps the version, onboarding can offer the Health step again
+This means:
+- if the user has previously tapped "Connect" (even if they then denied in the HealthKit dialog), `requestAuthorization` was called and HealthKit marks those types as handled → no re-prompt for the same set
+- if new read or write types are added to the app, HealthKit returns `.shouldRequest` for the new types → the prompt surfaces again automatically
 
-This lets the Health prompt evolve with the app.
+The standalone sheet (for returning users) shows only "Connect to Apple Health" — there is no "Not Now" option. This ensures `requestAuthorization` is always called, which prevents the sheet from re-appearing on the next launch for the same type set.
 
-So the rule is:
-- same Health scope: do not re-offer just because the app relaunched
-- expanded Health scope: offer again once for the new version
-
-### Why That Matters
-
-HealthKit itself may show the Apple Health sheet again when an app requests new data types it did not request before.
-
-VillainArc's prompt-version system is the app-side companion to that behavior:
-- it avoids re-showing the same onboarding step forever
-- but it still lets the app surface the Health step again when the permission set grows
-
-Settings remains the manual override path. Even if onboarding already handled the current version, settings can still ask HealthKit for the current permission set.
+Settings remains the manual override path regardless of what onboarding has handled.
 
 ## What the App Requests
 
@@ -105,6 +96,9 @@ VillainArc writes:
 VillainArc reads:
 - workouts
 - workout routes
+- date of birth (for onboarding prefill)
+- height (for onboarding prefill)
+- body mass
 - heart rate
 - active energy burned
 - respiratory rate
@@ -144,16 +138,13 @@ So the primary HealthKit path is:
 
 ## Fallback Export Flow
 
-VillainArc still keeps the older export path as a repair mechanism.
-
 That fallback is used only when:
-- a completed app workout still has no linked `HealthWorkout`
+- a completed app workout has `hasBeenExportedToHealth` set to false
 - no matching Apple Health workout can be found by the stored `WorkoutSession.id` metadata
 
 So fallback export is now:
 - reconciliation-only
 - a repair path for older workouts or authorization changes
-- no longer triggered directly from `WorkoutSummaryView.finishSummary()`
 
 ## Reconciliation Flow
 
