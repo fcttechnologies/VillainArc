@@ -27,9 +27,6 @@ The startup path is split across `VillainArcApp`, `RootView`, and `OnboardingMan
 
 ### `VillainArcApp`
 
-- starts `CloudKitImportMonitor.shared` in `init()`
-- starts `HealthStoreUpdateCoordinator.shared` in `init()` — registers the HealthKit workout observer query
-- calls `HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()` in `init()` to enable background delivery if authorization already exists
 - installs `SharedModelContainer.container` via `.modelContainer`
 - forwards Spotlight and Siri activities into `AppRouter.shared`
 
@@ -61,7 +58,7 @@ The order is:
 1. check network connectivity
 2. check iCloud sign-in status
 3. check CloudKit availability
-4. wait for `CloudKitImportMonitor` to confirm import completion
+4. start `CloudKitImportMonitor` on demand and wait for it to confirm import completion
 5. seed the exercise catalog via `DataManager.seedExercisesForOnboarding()`
 6. reindex Spotlight
 7. ensure `AppSettings` exists
@@ -161,6 +158,7 @@ The standalone sheet shows only "Connect to Apple Health". There is no skip opti
 ### Post-Ready Health Pass
 
 When state reaches `.ready`, `RootView` calls:
+- `HealthStoreUpdateCoordinator.shared.start()` — registers the HealthKit workout and body-mass observer queries
 - `HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()` — enables background delivery if authorization exists
 - `HealthStoreUpdateCoordinator.shared.syncNow()` — syncs HealthKit workouts into the local mirror and reconciles completed app sessions that have no Health link
 

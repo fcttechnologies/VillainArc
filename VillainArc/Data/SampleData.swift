@@ -13,6 +13,7 @@ class PreviewDataContainer {
         let schema = Schema([
             WorkoutSession.self,
             HealthWorkout.self,
+            WeightEntry.self,
             PreWorkoutContext.self,
             ExercisePerformance.self,
             SetPerformance.self,
@@ -38,6 +39,7 @@ class PreviewDataContainer {
 
             context.insert(AppSettings())
             syncExercises()
+            loadWeightEntries()
             loadCompletedPlan()
             loadCompletedSession()
             loadSampleSplits()
@@ -57,6 +59,27 @@ class PreviewDataContainer {
     private func syncExercises() {
         for catalogItem in ExerciseCatalog.all {
             context.insert(Exercise(from: catalogItem))
+        }
+    }
+
+    private func loadWeightEntries() {
+        let weights: [(Int, Int, Int, Double)] = [
+            (2026, 1, 4, 82.8),
+            (2026, 1, 7, 82.4),
+            (2026, 1, 10, 82.2),
+            (2026, 1, 13, 82.5),
+            (2026, 1, 16, 81.9),
+            (2026, 1, 20, 81.7),
+            (2026, 1, 24, 81.8),
+            (2026, 1, 28, 81.4),
+            (2026, 2, 1, 81.2),
+            (2026, 2, 5, 81.5),
+            (2026, 2, 9, 80.9),
+            (2026, 2, 12, 80.7)
+        ]
+
+        for (year, month, day, weight) in weights {
+            context.insert(WeightEntry(recordedAt: date(year, month, day, 7, 30), weight: weight))
         }
     }
 

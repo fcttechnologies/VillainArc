@@ -22,6 +22,7 @@ final class AppRouter {
     var showRestTimerFromIntent = false
     var showPreWorkoutContextFromIntent = false
     var showFinishWorkoutFromIntent = false
+    var tabSelection: Tabs = .home
     
     enum Destination: Hashable {
         case workoutSessionsList
@@ -35,8 +36,9 @@ final class AppRouter {
         case workoutSplit(autoPresentBuilder: Bool)
         case workoutSplitDetail(WorkoutSplit)
     }
-    
-    var path = NavigationPath()
+
+    var homeTabPath = NavigationPath()
+    var healthTabPath = NavigationPath()
     
     private init() {}
     
@@ -65,11 +67,14 @@ final class AppRouter {
     }
     
     func navigate(to destination: Destination) {
-        path.append(destination)
+        tabSelection = .home
+        homeTabPath.append(destination)
     }
     
     func popToRoot() {
-        path = NavigationPath()
+        tabSelection = .home
+        homeTabPath = NavigationPath()
+        healthTabPath = NavigationPath()
     }
 
     func startWorkoutSession() {

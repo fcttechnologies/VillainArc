@@ -3,18 +3,24 @@ import HealthKit
 import Observation
 import SwiftData
 
-enum HealthWorkoutMetadataKeys {
+enum HealthMetadataKeys {
     static let workoutSessionID = "com.villainarc.workoutsession.id"
+    static let weightEntryID = "com.villainarc.weightentry.id"
 
     static func workoutSessionID(from workout: HKWorkout) -> UUID? {
         guard let rawValue = workout.metadata?[workoutSessionID] as? String else { return nil }
+        return UUID(uuidString: rawValue)
+    }
+
+    static func weightEntryID(from sample: HKSample) -> UUID? {
+        guard let rawValue = sample.metadata?[weightEntryID] as? String else { return nil }
         return UUID(uuidString: rawValue)
     }
 }
 
 enum HealthWorkoutLinker {
     static func workoutPredicate(for sessionID: UUID) -> NSPredicate {
-        HKQuery.predicateForObjects(withMetadataKey: HealthWorkoutMetadataKeys.workoutSessionID, operatorType: .equalTo, value: sessionID.uuidString)
+        HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.workoutSessionID, operatorType: .equalTo, value: sessionID.uuidString)
     }
 
     @MainActor
@@ -180,7 +186,7 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
         guard let recoveredSession = try? await authorizationManager.healthStore.recoverActiveWorkoutSession() else { return false }
 
         let recoveredBuilder = recoveredSession.associatedWorkoutBuilder()
-        let recoveredSessionID = recoveredBuilder.metadata[HealthWorkoutMetadataKeys.workoutSessionID] as? String
+        let recoveredSessionID = recoveredBuilder.metadata[HealthMetadataKeys.workoutSessionID] as? String
 
         if let recoveredSessionID, recoveredSessionID != workout.id.uuidString {
             lastErrorMessage = "Recovered Apple Health workout did not match the active workout."

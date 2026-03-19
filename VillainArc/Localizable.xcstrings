@@ -759,6 +759,9 @@
     "Discard Selections" : {
 
     },
+    "Distance" : {
+
+    },
     "Done" : {
 
     },
@@ -948,6 +951,9 @@
     "Heart rate chart" : {
 
     },
+    "Height" : {
+
+    },
     "Height (cm)" : {
 
     },
@@ -1030,6 +1036,12 @@
 
     },
     "Latest" : {
+
+    },
+    "Latest Date" : {
+
+    },
+    "Latest Weight" : {
 
     },
     "Lats" : {
@@ -1255,6 +1267,9 @@
 
     },
     "No target set" : {
+
+    },
+    "No Weight Entries Yet" : {
 
     },
     "No weight target" : {
@@ -2239,6 +2254,9 @@
     "That workout plan is no longer available." : {
 
     },
+    "These units control how weight, height, and distance are displayed throughout the app." : {
+
+    },
     "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing." : {
 
     },
@@ -2347,6 +2365,9 @@
     "Unfavorite" : {
 
     },
+    "Units" : {
+
+    },
     "Unknown Muscle" : {
 
     },
@@ -2429,6 +2450,9 @@
 
     },
     "Weight" : {
+
+    },
+    "Weight summaries will show up here once you add or sync body weight entries." : {
 
     },
     "Weighted Ball" : {

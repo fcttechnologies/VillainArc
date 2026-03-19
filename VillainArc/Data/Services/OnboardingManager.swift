@@ -51,6 +51,10 @@ class OnboardingManager {
             return
         }
 
+        // Start monitoring immediately on first bootstrap so we don't miss an
+        // import-complete event before the flow reaches the explicit wait.
+        CloudKitImportMonitor.shared.start()
+
         state = .checking
 
         // Step 1: Check network

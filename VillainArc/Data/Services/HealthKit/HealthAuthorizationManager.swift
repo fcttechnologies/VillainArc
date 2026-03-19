@@ -65,6 +65,7 @@ final class HealthAuthorizationManager {
     private let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
     private let activeEnergyType = HKQuantityType(.activeEnergyBurned)
     private let restingEnergyType = HKQuantityType(.basalEnergyBurned)
+    private let bodyMassType = HKQuantityType(.bodyMass)
 
     private init() {}
 
@@ -108,9 +109,19 @@ final class HealthAuthorizationManager {
         return healthStore.authorizationStatus(for: restingEnergyType) == .sharingAuthorized
     }
 
+    var canWriteBodyMass: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: bodyMassType) == .sharingAuthorized
+    }
+
     var hasRequestedWorkoutAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: workoutType) != .notDetermined
+    }
+
+    var hasRequestedBodyMassAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: bodyMassType) != .notDetermined
     }
 
     func authorizationAction() async -> HealthAuthorizationAction {
@@ -149,7 +160,13 @@ final class HealthAuthorizationManager {
         [
             "Workout Title": session.title,
             HKMetadataKeyIndoorWorkout: true,
-            HealthWorkoutMetadataKeys.workoutSessionID: session.id.uuidString
+            HealthMetadataKeys.workoutSessionID: session.id.uuidString
+        ]
+    }
+
+    func metadata(for weightEntry: WeightEntry) -> [String: Any] {
+        [
+            HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString
         ]
     }
 
@@ -158,7 +175,8 @@ final class HealthAuthorizationManager {
             workoutType,
             workoutEffortScoreType,
             activeEnergyType,
-            restingEnergyType
+            restingEnergyType,
+            bodyMassType
         ]
     }
 

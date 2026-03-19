@@ -82,6 +82,33 @@ struct AppSettingsView: View {
             } footer: {
                 Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
             }
+            
+            Section {
+                Picker("Weight", selection: $settings.weightUnit) {
+                    ForEach(WeightUnit.allCases, id: \.self) { unit in
+                        Text(unit.rawValue)
+                            .tag(unit)
+                    }
+                }
+
+                Picker("Height", selection: $settings.heightUnit) {
+                    ForEach(HeightUnit.allCases, id: \.self) { unit in
+                        Text(unit == .imperial ? "ft/in" : unit.rawValue)
+                            .tag(unit)
+                    }
+                }
+
+                Picker("Distance", selection: $settings.distanceUnit) {
+                    ForEach(DistanceUnit.allCases, id: \.self) { unit in
+                        Text(unit.rawValue)
+                            .tag(unit)
+                    }
+                }
+            } header: {
+                Text("Units")
+            } footer: {
+                Text("These units control how weight, height, and distance are displayed throughout the app.")
+            }
         }
         .onChange(of: settings.retainPerformancesForLearning) {
             saveContext(context: context)
@@ -92,8 +119,17 @@ struct AppSettingsView: View {
             saveContext(context: context)
             guard !settings.keepRemovedHealthData else { return }
             Task {
-                await HealthWorkoutSyncCoordinator.shared.applyRemovedWorkoutRetentionSetting()
+                await HealthSyncCoordinator.shared.applyRemovedHealthDataRetentionSetting()
             }
+        }
+        .onChange(of: settings.weightUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.heightUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.distanceUnit) {
+            saveContext(context: context)
         }
     }
 

@@ -7,8 +7,10 @@ final class HealthStoreUpdateCoordinator {
 
     private let authorizationManager = HealthAuthorizationManager.shared
     private let observedWorkoutType = HKObjectType.workoutType()
+    private let observedWeightType = HKQuantityType(.bodyMass)
 
     private var workoutObserverQuery: HKObserverQuery?
+    private var weightObserverQuery: HKObserverQuery?
     private var isRefreshingBackgroundDelivery = false
     private var inFlightSyncTask: Task<Void, Never>?
 
@@ -16,8 +18,12 @@ final class HealthStoreUpdateCoordinator {
 
     func start() {
         guard authorizationManager.isHealthDataAvailable else { return }
-        guard workoutObserverQuery == nil else { return }
+        startWorkoutObserverIfNeeded()
+        startWeightObserverIfNeeded()
+    }
 
+    private func startWorkoutObserverIfNeeded() {
+        guard workoutObserverQuery == nil else { return }
         let query = HKObserverQuery(sampleType: observedWorkoutType, predicate: nil) { [weak self] _, completionHandler, error in
             guard error == nil else {
                 print("Health workout observer received an error: \(error!.localizedDescription)")
@@ -36,26 +42,57 @@ final class HealthStoreUpdateCoordinator {
         authorizationManager.healthStore.execute(query)
     }
 
+    private func startWeightObserverIfNeeded() {
+        guard weightObserverQuery == nil else { return }
+
+        let query = HKObserverQuery(sampleType: observedWeightType, predicate: nil) { [weak self] _, completionHandler, error in
+            guard error == nil else {
+                print("Health weight observer received an error: \(error!.localizedDescription)")
+                completionHandler()
+                return
+            }
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            Task { @MainActor in
+                defer { completionHandler() }
+                await self?.syncNow(reason: "HealthKit body mass observer")
+            }
+        }
+
+        weightObserverQuery = query
+        authorizationManager.healthStore.execute(query)
+    }
+
     func refreshBackgroundDeliveryRegistration() async {
         start()
 
-        guard authorizationManager.hasRequestedWorkoutAuthorization else { return }
         guard !isRefreshingBackgroundDelivery else { return }
 
         isRefreshingBackgroundDelivery = true
         defer { isRefreshingBackgroundDelivery = false }
 
-        do {
-            try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
-            print("Enabled HealthKit background delivery for workouts.")
-        } catch {
-            print("Failed to enable HealthKit background delivery for workouts: \(error)")
+        if authorizationManager.hasRequestedWorkoutAuthorization {
+            do {
+                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
+                print("Enabled HealthKit background delivery for workouts.")
+            } catch {
+                print("Failed to enable HealthKit background delivery for workouts: \(error)")
+            }
+        }
+
+        if authorizationManager.hasRequestedBodyMassAuthorization {
+            do {
+                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWeightType, frequency: .immediate)
+                print("Enabled HealthKit background delivery for body mass.")
+            } catch {
+                print("Failed to enable HealthKit background delivery for body mass: \(error)")
+            }
         }
     }
 
     func syncNow() async {
         await syncNow(reason: "manual refresh")
-        await HealthExportCoordinator.shared.reconcileCompletedSessions()
+        await HealthExportCoordinator.shared.reconcilePendingExports()
     }
 
     private func syncNow(reason: String) async {
@@ -65,9 +102,9 @@ final class HealthStoreUpdateCoordinator {
         }
 
         let task = Task { @MainActor in
-            print("Starting HealthKit workout sync (\(reason)).")
-            await HealthWorkoutSyncCoordinator.shared.syncWorkouts()
-            print("Finished HealthKit workout sync (\(reason)).")
+            print("Starting HealthKit sync (\(reason)).")
+            await HealthSyncCoordinator.shared.syncAll()
+            print("Finished HealthKit sync (\(reason)).")
         }
 
         inFlightSyncTask = task

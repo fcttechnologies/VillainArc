@@ -13,7 +13,7 @@ This file is the structure map for the app. Use it to find the main coordinators
 
 ### `Root/VillainArcApp.swift`
 - App entry point.
-- Starts `CloudKitImportMonitor.shared`, installs `SharedModelContainer.container`, and forwards Spotlight plus Siri handoffs into `AppRouter.shared`.
+- Installs `SharedModelContainer.container` and forwards Spotlight plus Siri handoffs into `AppRouter.shared`.
 - Read with: `Root/RootView.swift`, `Data/SharedModelContainer.swift`, `Data/Services/AppRouter.swift`.
 
 Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it currently has no handler logic.
@@ -57,8 +57,8 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 
 ### `Data/Services/CloudKitImportMonitor.swift`
 - Tracks SwiftData CloudKit import completion.
-- Lets onboarding wait for existing cloud data before seeding the bundled exercise catalog.
-- Read with: `Root/VillainArcApp.swift`, `Data/Services/OnboardingManager.swift`.
+- Starts on demand during first-bootstrap onboarding and lets that flow wait for existing cloud data before seeding the bundled exercise catalog.
+- Read with: `Data/Services/OnboardingManager.swift`.
 
 ### `Data/Services/DataManager.swift`
 - Exercise catalog sync and persistence helpers.

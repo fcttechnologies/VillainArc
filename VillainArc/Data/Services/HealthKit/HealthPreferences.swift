@@ -3,27 +3,37 @@ import HealthKit
 
 enum HealthSyncPreferences {
     private static let workoutAnchorKey = "health_workout_anchor"
+    private static let weightEntryAnchorKey = "health_weight_entry_anchor"
 
     private static var defaults: UserDefaults {
         SharedModelContainer.sharedDefaults
     }
 
     static var workoutAnchor: HKQueryAnchor? {
-        get {
-            guard let data = defaults.data(forKey: workoutAnchorKey) else { return nil }
-            return try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
-        }
-        set {
-            guard let newValue else {
-                defaults.removeObject(forKey: workoutAnchorKey)
-                return
-            }
+        get { anchor(forKey: workoutAnchorKey) }
+        set { setAnchor(newValue, forKey: workoutAnchorKey) }
+    }
 
-            guard let data = try? NSKeyedArchiver.archivedData(withRootObject: newValue, requiringSecureCoding: true) else {
-                return
-            }
+    static var weightEntryAnchor: HKQueryAnchor? {
+        get { anchor(forKey: weightEntryAnchorKey) }
+        set { setAnchor(newValue, forKey: weightEntryAnchorKey) }
+    }
 
-            defaults.set(data, forKey: workoutAnchorKey)
+    private static func anchor(forKey key: String) -> HKQueryAnchor? {
+        guard let data = defaults.data(forKey: key) else { return nil }
+        return try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
+    }
+
+    private static func setAnchor(_ anchor: HKQueryAnchor?, forKey key: String) {
+        guard let anchor else {
+            defaults.removeObject(forKey: key)
+            return
         }
+
+        guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else {
+            return
+        }
+
+        defaults.set(data, forKey: key)
     }
 }
