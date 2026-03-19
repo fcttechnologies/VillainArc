@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var router = AppRouter.shared
+    @State private var showAppSettings = false
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -29,7 +30,20 @@ struct ContentView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentExercisesSection)
             }
-            .navBar(title: "Home", includePadding: false)
+            .navBar(title: "Home", includePadding: false) {
+                Button {
+                    showAppSettings = true
+                } label: {
+                    Label("Settings", systemImage: "gear")
+                        .font(.title2)
+                        .labelStyle(.iconOnly)
+                }
+                .buttonBorderShape(.circle)
+                .buttonStyle(.glass)
+                .accessibilityLabel(AccessibilityText.homeSettingsLabel)
+                .accessibilityIdentifier(AccessibilityIdentifiers.homeSettingsButton)
+                .accessibilityHint(AccessibilityText.homeSettingsHint)
+            }
             .scrollIndicators(.hidden)
             .toolbar {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -58,6 +72,9 @@ struct ContentView: View {
             }
             .fullScreenCover(item: $router.activeWorkoutSession) {
                 WorkoutSessionContainer(workout: $0)
+            }
+            .sheet(isPresented: $showAppSettings) {
+                AppSettingsView()
             }
             .fullScreenCover(item: $router.activeWorkoutPlan, onDismiss: {
                 router.activeWorkoutPlanOriginal = nil

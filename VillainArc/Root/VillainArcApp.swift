@@ -6,6 +6,11 @@ import SwiftData
 struct VillainArcApp: App {
     init() {
         CloudKitImportMonitor.shared.start()
+        HealthStoreUpdateCoordinator.shared.start()
+
+        Task {
+            await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
+        }
     }
     
     var body: some Scene {

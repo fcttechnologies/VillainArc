@@ -23,8 +23,8 @@ struct RootView: View {
                 guard newState == .ready else { return }
                 AppRouter.shared.checkForUnfinishedData()
                 Task {
-                    await HealthWorkoutSyncCoordinator.shared.syncWorkouts()
-                    await HealthExportCoordinator.shared.reconcileCompletedSessions()
+                    await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
+                    await HealthStoreUpdateCoordinator.shared.syncNow()
                 }
             }
             .sheet(isPresented: onboardingBinding) {

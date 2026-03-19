@@ -3,15 +3,9 @@ import SwiftData
 
 struct WorkoutSettingsView: View {
     @Environment(\.modelContext) private var context
-    @Environment(\.scenePhase) private var scenePhase
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var workout: WorkoutSession
     private let restTimer = RestTimerState.shared
-    @State private var healthAuthorizationState: HealthAuthorizationState = .notDetermined
-    @State private var healthAuthorizationAction: HealthAuthorizationAction = .requestAccess
-    @State private var isRefreshingHealthStatus = false
-    @State private var isHandlingHealthAction = false
-    @State private var showHealthAccessInstructions = false
 
     var body: some View {
         Group {
@@ -28,23 +22,6 @@ struct WorkoutSettingsView: View {
         .listSectionSpacing(20)
         .navBar(title: "Workout Settings") {
             CloseButton()
-        }
-        .task {
-            await refreshHealthAuthorizationState()
-        }
-        .onChange(of: scenePhase, initial: false) { _, newPhase in
-            guard newPhase == .active else { return }
-            Task {
-                await refreshHealthAuthorizationState()
-            }
-        }
-        .alert("Manage Apple Health Access", isPresented: $showHealthAccessInstructions) {
-            Button("Open Settings Apps") {
-                openHealthSettingsList()
-            }
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions.")
         }
     }
 
@@ -79,16 +56,6 @@ struct WorkoutSettingsView: View {
             }
 
             Section {
-                Toggle("Retain Performance Snapshots for Suggestion Learning", isOn: $settings.retainPerformancesForLearning)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
-                    .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
-            } header: {
-                Text("Workout History")
-            } footer: {
-                Text("When this is on, deleting a completed workout hides it while keeping its performance snapshots for exercise history and suggestion learning. When it is off, deleting a completed workout permanently removes the session and the suggestion data tied to it.")
-            }
-
-            Section {
                 Toggle("Send Notifications", isOn: $settings.restTimerNotificationsEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsNotificationsToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsNotificationsHint)
@@ -114,26 +81,6 @@ struct WorkoutSettingsView: View {
             } footer: {
                 Text("Turn off live activities completely or restart the current one if it was dismissed accidentally.")
             }
-
-            Section {
-                LabeledContent("Status", value: healthAuthorizationState.statusText)
-
-                if healthAuthorizationAction != .unavailable {
-                    Button(healthAuthorizationAction.buttonTitle, systemImage: healthAuthorizationAction.systemImage) {
-                        Task {
-                            await handleHealthAuthorizationAction()
-                        }
-                    }
-                    .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
-                    .accessibilityHint(healthAccessHint)
-                }
-
-                Toggle("Keep Removed Apple Health Workouts", isOn: $settings.keepRemovedHealthWorkouts)
-            } header: {
-                Text("Apple Health")
-            } footer: {
-                Text("VillainArc exports completed workouts to Apple Health whenever Health access is allowed. When this is off, workouts removed from Apple Health are also removed from VillainArc's Health history.")
-            }
         }
         .onChange(of: settings.autoStartRestTimer) {
             saveContext(context: context)
@@ -146,18 +93,6 @@ struct WorkoutSettingsView: View {
         }
         .onChange(of: settings.promptForPostWorkoutEffort) {
             saveContext(context: context)
-        }
-        .onChange(of: settings.retainPerformancesForLearning) {
-            saveContext(context: context)
-            guard !settings.retainPerformancesForLearning else { return }
-            WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
-        }
-        .onChange(of: settings.keepRemovedHealthWorkouts) {
-            saveContext(context: context)
-            guard !settings.keepRemovedHealthWorkouts else { return }
-            Task {
-                await HealthWorkoutSyncCoordinator.shared.applyRemovedWorkoutRetentionSetting()
-            }
         }
         .onChange(of: settings.liveActivitiesEnabled) {
             saveContext(context: context)
@@ -179,54 +114,6 @@ struct WorkoutSettingsView: View {
                 }
             }
         }
-    }
-
-    private var healthAccessHint: String {
-        switch healthAuthorizationAction {
-        case .requestAccess:
-            return "Requests Apple Health read and write access."
-        case .openSettings:
-            return "Opens Settings so you can change Apple Health permissions."
-        case .manageInSettings:
-            return "Opens Settings so you can review Apple Health access."
-        case .unavailable:
-            return ""
-        }
-    }
-
-    @MainActor
-    private func refreshHealthAuthorizationState() async {
-        isRefreshingHealthStatus = true
-        let manager = HealthAuthorizationManager.shared
-        healthAuthorizationState = manager.currentAuthorizationState
-        healthAuthorizationAction = await manager.authorizationAction()
-        isRefreshingHealthStatus = false
-    }
-
-    @MainActor
-    private func handleHealthAuthorizationAction() async {
-        guard !isHandlingHealthAction else { return }
-        isHandlingHealthAction = true
-        defer { isHandlingHealthAction = false }
-
-        switch healthAuthorizationAction {
-        case .requestAccess:
-            _ = await HealthAuthorizationManager.shared.requestAuthorization()
-            await HealthWorkoutSyncCoordinator.shared.syncWorkouts()
-            await HealthExportCoordinator.shared.reconcileCompletedSessions()
-            await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
-        case .openSettings, .manageInSettings:
-            showHealthAccessInstructions = true
-        case .unavailable:
-            break
-        }
-
-        await refreshHealthAuthorizationState()
-    }
-
-    private func openHealthSettingsList() {
-        guard let url = URL(string: "App-prefs:root=HEALTH") else { return }
-        UIApplication.shared.open(url)
     }
 }
 

@@ -20,6 +20,10 @@ enum HealthWorkoutLinker {
     @MainActor
     @discardableResult
     static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext, lastSyncedAt: Date = .now) throws -> HealthWorkout {
+        if let workoutSession {
+            workoutSession.hasBeenExportedToHealth = true
+        }
+
         if let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(workout.uuid)).first {
             existing.update(from: workout, lastSyncedAt: lastSyncedAt)
             if let workoutSession {

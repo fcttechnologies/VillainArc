@@ -90,7 +90,7 @@ final class HealthWorkoutSyncCoordinator {
     }
 
     private func currentKeepRemovedHealthWorkoutsSetting(context: ModelContext) -> Bool {
-        (try? context.fetch(AppSettings.single).first?.keepRemovedHealthWorkouts) ?? true
+        (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true
     }
 
     private var unavailableHealthWorkoutsDescriptor: FetchDescriptor<HealthWorkout> {

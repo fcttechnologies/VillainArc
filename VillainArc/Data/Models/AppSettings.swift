@@ -8,7 +8,7 @@ final class AppSettings {
     var promptForPreWorkoutContext: Bool = true
     var promptForPostWorkoutEffort: Bool = true
     var retainPerformancesForLearning: Bool = true
-    var keepRemovedHealthWorkouts: Bool = true
+    var keepRemovedHealthData: Bool = true
     var liveActivitiesEnabled: Bool = true
     var restTimerNotificationsEnabled: Bool = true
     var weightUnit: WeightUnit = WeightUnit.systemDefault
@@ -24,7 +24,7 @@ struct AppSettingsSnapshot {
     let promptForPreWorkoutContext: Bool
     let promptForPostWorkoutEffort: Bool
     let retainPerformancesForLearning: Bool
-    let keepRemovedHealthWorkouts: Bool
+    let keepRemovedHealthData: Bool
     let liveActivitiesEnabled: Bool
     let restTimerNotificationsEnabled: Bool
     let weightUnit: WeightUnit
@@ -37,7 +37,7 @@ struct AppSettingsSnapshot {
         promptForPreWorkoutContext = settings?.promptForPreWorkoutContext ?? true
         promptForPostWorkoutEffort = settings?.promptForPostWorkoutEffort ?? true
         retainPerformancesForLearning = settings?.retainPerformancesForLearning ?? true
-        keepRemovedHealthWorkouts = settings?.keepRemovedHealthWorkouts ?? true
+        keepRemovedHealthData = settings?.keepRemovedHealthData ?? true
         liveActivitiesEnabled = settings?.liveActivitiesEnabled ?? true
         restTimerNotificationsEnabled = settings?.restTimerNotificationsEnabled ?? true
         weightUnit = settings?.weightUnit ?? .systemDefault

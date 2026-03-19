@@ -28,6 +28,7 @@ final class WorkoutSession {
     var activeExercise: ExercisePerformance?
     @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.sessionFrom)
     var createdSuggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
+    var hasBeenExportedToHealth: Bool = false
     var healthWorkout: HealthWorkout?
     
     var sortedExercises: [ExercisePerformance] {
@@ -253,7 +254,7 @@ extension WorkoutSession {
     static var completedSessionsNeedingHealthExport: FetchDescriptor<WorkoutSession> {
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<WorkoutSession> {
-            $0.status == done && $0.isHidden == false && $0.healthWorkout == nil
+            $0.status == done && $0.isHidden == false && $0.hasBeenExportedToHealth == false
         }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
     }

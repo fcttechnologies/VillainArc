@@ -38,7 +38,7 @@ final class HealthExportCoordinator {
     private func exportLoadedSession(_ session: WorkoutSession) async {
         guard session.statusValue == .done else { return }
         guard !session.isHidden else { return }
-        guard session.healthWorkout == nil else { return }
+        guard !session.hasBeenExportedToHealth else { return }
 
         let context = SharedModelContainer.container.mainContext
         if let existingWorkout = try? await HealthLiveWorkoutSessionCoordinator.shared.findSavedWorkout(for: session.id) {

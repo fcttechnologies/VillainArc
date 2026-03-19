@@ -999,7 +999,7 @@
     "Keep existing sets" : {
 
     },
-    "Keep Removed Apple Health Workouts" : {
+    "Keep Removed Data" : {
 
     },
     "Keep Sets" : {
@@ -1695,7 +1695,7 @@
     "Resumes the rest timer." : {
 
     },
-    "Retain Performance Snapshots for Suggestion Learning" : {
+    "Retain for Improved Accuracy" : {
 
     },
     "Retries the current setup step." : {
@@ -1894,6 +1894,9 @@
     "Setting up Villain Arc" : {
 
     },
+    "Settings" : {
+
+    },
     "Setup Error" : {
 
     },
@@ -1934,6 +1937,9 @@
 
     },
     "Shows all your workout plans." : {
+
+    },
+    "Shows app settings." : {
 
     },
     "Shows completed performance history for a specific exercise." : {
@@ -2395,9 +2401,6 @@
     "VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {
 
     },
-    "VillainArc exports completed workouts to Apple Health whenever Health access is allowed. When this is off, workouts removed from Apple Health are also removed from VillainArc's Health history." : {
-
-    },
     "VillainArc needs WiFi for first time setup to sync your workout data." : {
 
     },
@@ -2449,7 +2452,10 @@
     "What's your name?" : {
 
     },
-    "When this is on, deleting a completed workout hides it while keeping its performance snapshots for exercise history and suggestion learning. When it is off, deleting a completed workout permanently removes the session and the suggestion data tied to it." : {
+    "When this is off, data removed from Apple Health is also removed from Villain Arc." : {
+
+    },
+    "When this is on, deleting a workout keeps its performances so suggestions have more data to work with. When it is off, it permanently removes the session and the suggestion data tied to it." : {
 
     },
     "When turned off, those prompts stay manual. You can still open pre workout context from the workout title menu." : {

@@ -5,6 +5,7 @@ enum AccessibilityIdentifiers {
     static let homeWorkoutSplitSection = "homeWorkoutSplitSection"
     static let homeRecentWorkoutSection = "homeRecentWorkoutSection"
     static let homeRecentWorkoutPlanSection = "homeRecentWorkoutPlanSection"
+    static let homeSettingsButton = "homeSettingsButton"
     static let homeOptionsMenu = "homeOptionsMenu"
     static let homeStartWorkoutButton = "homeStartWorkoutButton"
     static let homeCreatePlanButton = "homeCreatePlanButton"
@@ -565,6 +566,8 @@ enum AccessibilityText {
     static let homeRecentWorkoutHint = localized("Shows your most recent workout.")
     static let homeRecentWorkoutPlanLabel = localized("Recent workout plan")
     static let homeRecentWorkoutPlanHint = localized("Shows your most recent workout plan.")
+    static let homeSettingsLabel = localized("Settings")
+    static let homeSettingsHint = localized("Shows app settings.")
     static let homeOptionsMenuLabel = localized("Options")
     static let homeOptionsMenuHint = localized("Shows workout and workout plan options.")
     static let homeStartWorkoutLabel = localized("Start empty workout")
