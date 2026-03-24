@@ -954,6 +954,12 @@ enum AccessibilityText {
     static let onboardingRetryHint = localized("Retries the current setup step.")
     static let onboardingContinueWithoutiCloudHint = localized("Continues setup without iCloud sync.")
     static let onboardingEnableICloudHint = localized("Opens iOS Settings to enable iCloud.")
+    static let onboardingGenderOptionHint = localized("Selects this gender option.")
+    static let onboardingGenderContinueHint = localized("Saves your selected gender and continues to the next profile step.")
+
+    static func onboardingGenderOptionValue(isSelected: Bool) -> String {
+        isSelected ? localized("Selected") : localized("Not selected")
+    }
 
     // MARK: - HealthWorkoutDetailView
     static let healthWorkoutRouteMapLabel = localized("Workout route map")

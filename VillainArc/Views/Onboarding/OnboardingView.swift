@@ -4,7 +4,27 @@ import SwiftData
 private enum OnboardingStep: Hashable {
     case healthPermissions
     case birthday
+    case gender
     case height
+}
+
+private extension OnboardingStep {
+    init?(profileStep: UserProfileOnboardingStep) {
+        switch profileStep {
+        case .name:
+            return nil
+        case .birthday:
+            self = .birthday
+        case .gender:
+            self = .gender
+        case .height:
+            self = .height
+        }
+    }
+}
+
+private func profileNavigationPath(to step: UserProfileOnboardingStep) -> [OnboardingStep] {
+    UserProfileOnboardingStep.navigationPath(to: step).compactMap(OnboardingStep.init(profileStep:))
 }
 
 struct OnboardingView: View {
@@ -70,6 +90,8 @@ struct OnboardingView: View {
                         OnboardingHealthPermissionStepView(manager: manager, path: $path)
                     case .birthday:
                         ProfileBirthdayStepView(manager: manager, path: $path)
+                    case .gender:
+                        ProfileGenderStepView(manager: manager, path: $path)
                     case .height:
                         ProfileHeightStepView(manager: manager, path: $path)
                     }
@@ -86,13 +108,12 @@ struct OnboardingView: View {
 
     private func setInitialProfilePath() {
         guard case .profile(let step) = manager.state else { return }
-        switch step {
-        case .name:
+        if step == .name {
             path = []
-        case .birthday:
-            path = manager.isNewUser ? [.healthPermissions] : [.birthday]
-        case .height:
-            path = manager.isNewUser ? [.healthPermissions] : [.birthday, .height]
+        } else if manager.isNewUser {
+            path = [.healthPermissions]
+        } else {
+            path = profileNavigationPath(to: step)
         }
     }
 
@@ -378,7 +399,7 @@ private struct OnboardingHealthPermissionStepView: View {
             VStack(spacing: 12) {
                 if hasAuthorized {
                     Button {
-                        path.append(.birthday)
+                        pushNextProfileStep()
                     } label: {
                         Text("Continue")
                             .padding(.vertical, 8)
@@ -393,7 +414,7 @@ private struct OnboardingHealthPermissionStepView: View {
                             await manager.connectAppleHealthDuringOnboarding()
                             hasAuthorized = true
                             isConnecting = false
-                            path.append(.birthday)
+                            pushNextProfileStep()
                         }
                     } label: {
                         Text("Connect to Apple Health")
@@ -406,7 +427,7 @@ private struct OnboardingHealthPermissionStepView: View {
                     .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
 
                     Button {
-                        path.append(.birthday)
+                        pushNextProfileStep()
                     } label: {
                         Text("Not Now")
                             .padding(.vertical, 8)
@@ -422,6 +443,11 @@ private struct OnboardingHealthPermissionStepView: View {
         .padding(.horizontal)
         .navigationTitle("Apple Health")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func pushNextProfileStep() {
+        guard let nextStep = manager.profile?.firstMissingStep else { return }
+        path = [.healthPermissions] + profileNavigationPath(to: nextStep)
     }
 }
 
@@ -453,8 +479,8 @@ private struct ProfileNameStepView: View {
                     guard await manager.saveName(name) else { return }
                     if manager.isNewUser {
                         path.append(.healthPermissions)
-                    } else {
-                        path.append(.birthday)
+                    } else if let nextStep = manager.profile?.firstMissingStep {
+                        path = profileNavigationPath(to: nextStep)
                     }
                 }
             } label: {
@@ -502,7 +528,9 @@ private struct ProfileBirthdayStepView: View {
             Button {
                 Task {
                     guard await manager.saveBirthday(birthday) else { return }
-                    path.append(.height)
+                    if let nextStep = manager.profile?.firstMissingStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                        path.append(onboardingStep)
+                    }
                 }
             } label: {
                 Text("Continue")
@@ -514,6 +542,85 @@ private struct ProfileBirthdayStepView: View {
         }
         .padding()
         .navigationTitle("When's your birthday?")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ProfileGenderStepView: View {
+    @Bindable var manager: OnboardingManager
+    @Binding var path: [OnboardingStep]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var gender: UserGender
+
+    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
+        self.manager = manager
+        _path = path
+        _gender = State(initialValue: manager.prefetchedGender ?? manager.profile?.gender ?? .notSet)
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            VStack(spacing: 12) {
+                ForEach(UserGender.selectableCases, id: \.self) { option in
+                    if gender == option {
+                        Button {
+                            gender = option
+                        } label: {
+                            HStack {
+                                Text(option.displayName)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                        }
+                        .buttonSizing(.flexible)
+                        .buttonStyle(.glassProminent)
+                        .accessibilityHint(AccessibilityText.onboardingGenderOptionHint)
+                        .accessibilityValue(AccessibilityText.onboardingGenderOptionValue(isSelected: true))
+                        .accessibilityAddTraits(.isSelected)
+                    } else {
+                        Button {
+                            gender = option
+                        } label: {
+                            HStack {
+                                Text(option.displayName)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.vertical, 8)
+                            .fontWeight(.semibold)
+                        }
+                        .buttonSizing(.flexible)
+                        .buttonStyle(.glass)
+                        .accessibilityHint(AccessibilityText.onboardingGenderOptionHint)
+                        .accessibilityValue(AccessibilityText.onboardingGenderOptionValue(isSelected: false))
+                    }
+                }
+            }
+
+            Spacer()
+
+            Button {
+                Task {
+                    guard await manager.saveGender(gender) else { return }
+                    if let nextStep = manager.profile?.firstMissingStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                        path.append(onboardingStep)
+                    }
+                }
+            } label: {
+                Text("Continue")
+                    .padding(.vertical, 8)
+                    .fontWeight(.semibold)
+            }
+            .buttonSizing(.flexible)
+            .buttonStyle(.glassProminent)
+            .disabled(gender == .notSet)
+            .accessibilityHint(AccessibilityText.onboardingGenderContinueHint)
+        }
+        .padding()
+        .animation(reduceMotion ? nil : .bouncy, value: gender)
+        .navigationTitle("What's your gender?")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -579,9 +686,7 @@ private struct ProfileHeightStepView: View {
             Spacer()
 
             Button {
-                let saveCm = heightUnit == .imperial
-                    ? HeightUnit.imperial.toCm(feet: feet, inches: inches)
-                    : cm
+                let saveCm = heightUnit == .imperial ? HeightUnit.imperial.toCm(feet: feet, inches: inches) : cm
                 Task { await manager.saveHeight(cm: saveCm) }
             } label: {
                 Text("Finish")

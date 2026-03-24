@@ -45,6 +45,12 @@ On the first launch, onboarding takes the full path:
 - ensure `AppSettings` and `UserProfile` exist
 - either route into profile setup or mark the app ready
 
+The required profile fields are:
+- name
+- birthday
+- gender
+- height
+
 The wait-before-seed rule prevents duplicate catalog exercises when existing data is still importing from CloudKit.
 
 ### Returning Launch
@@ -59,6 +65,7 @@ Returning launches still prioritize getting the user back into the app quickly, 
 
 After core bootstrap and profile setup are complete, onboarding can optionally offer Apple Health connection:
 - request the current Apple Health permission set used by the app
+- prefill birthday, gender, and height when Apple Health already has them
 - skip without blocking app access
 
 Apple Health is treated as an integration, not a readiness dependency. Once the app reaches `.ready`, VillainArc runs its Health post-ready pass:

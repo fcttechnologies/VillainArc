@@ -185,6 +185,7 @@ final class HealthAuthorizationManager {
             HKObjectType.workoutType(),
             HKSeriesType.workoutRoute(),
             HKCharacteristicType(.dateOfBirth),
+            HKCharacteristicType(.biologicalSex),
             HKQuantityType(.heartRate),
             HKQuantityType(.activeEnergyBurned),
             HKQuantityType(.basalEnergyBurned),

@@ -65,7 +65,7 @@ The order is:
 8. ensure `UserProfile` exists
 9. set `isNewUser = true`, then route into profile onboarding
 
-After profile steps complete, `saveHeight` sets state to `.finishing`, runs `syncCatalogIfNeededBeforeReady()`, then calls `transitionAfterSetup()` which either offers the Health permissions sheet or transitions to `.ready`.
+After the final required profile step is saved, onboarding sets state to `.finishing`, runs `syncCatalogIfNeededBeforeReady()`, then calls `transitionAfterSetup()` which either offers the Health permissions sheet or transitions to `.ready`.
 
 ## Why the App Waits Before Seeding
 
@@ -109,9 +109,9 @@ After the exercise catalog and singleton records exist, onboarding routes from t
 
 ### Navigation Model
 
-The profile flow uses a `NavigationStack` with a private `OnboardingStep` enum (`healthPermissions`, `birthday`, `height`). The root of the stack is always `ProfileNameStepView`. Step views push onto `path` directly — the manager state is used only for the initial path setup when first entering the profile flow, not to drive subsequent navigation.
+The profile flow uses a `NavigationStack` with a private `OnboardingStep` enum (`healthPermissions`, `birthday`, `gender`, `height`). The root of the stack is always `ProfileNameStepView`. Step views push onto `path` directly — the manager state is used only for the initial path setup when first entering the profile flow, not to drive subsequent navigation.
 
-`OnboardingManager` exposes `isNewUser`, `prefetchedBirthday`, and `prefetchedHeightCm` for views to read.
+`OnboardingManager` exposes `isNewUser`, `prefetchedBirthday`, `prefetchedGender`, and `prefetchedHeightCm` for views to read.
 
 `OnboardingView` sets the initial path once via `setInitialProfilePath()` when state first enters `.profile(...)`. After that, `didSetInitialPath` prevents the path from being reset by further state changes within the profile flow.
 
@@ -119,9 +119,9 @@ The profile flow uses a `NavigationStack` with a private `OnboardingStep` enum (
 
 For new users (`isNewUser == true`), the full sequence is:
 
-**name → health permissions → birthday → height**
+**name → health permissions → birthday → gender → height**
 
-The name step saves and pushes `.healthPermissions`. The health permissions step connects or skips, then pushes `.birthday`. Birthday saves and pushes `.height`. Height saving triggers `saveHeight`, which transitions to `.finishing` and then `.ready`.
+The name step saves and pushes `.healthPermissions`. The health permissions step connects or skips, then pushes the first still-missing required profile field. Birthday saves and pushes gender or height as needed. Gender saves and pushes height when it is still missing. Once the last required profile field is saved, onboarding transitions to `.finishing` and then `.ready`.
 
 ### Returning User With Incomplete Profile
 
@@ -129,11 +129,11 @@ If a returning user's profile has missing fields, `handleReturningLaunch` checks
 - if `.requestAccess` → `isNewUser = true` → initial path starts at `.healthPermissions`
 - otherwise → `isNewUser = false` → initial path starts at the first missing field directly
 
-This covers force-quit during original onboarding (health was never requested) vs a user who connected health but quit before finishing birthday or height.
+This covers force-quit during original onboarding (health was never requested) vs a user who connected health but quit before finishing birthday, gender, or height.
 
 ### Profile Completion
 
-`saveName` and `saveBirthday` just save to the context and return — views drive navigation. Only `saveHeight` triggers the finishing transition. If the profile is already complete when onboarding first routes from it, `transitionAfterSetup()` runs immediately without showing any profile steps.
+`saveName` just saves to the context and returns — views drive navigation. Saving birthday, gender, or height persists the change and, if that completed the profile, transitions onboarding to `.finishing`. If the profile is already complete when onboarding first routes from it, `transitionAfterSetup()` runs immediately without showing any profile steps.
 
 ## Apple Health Step
 
@@ -141,9 +141,9 @@ This covers force-quit during original onboarding (health was never requested) v
 
 The health step is embedded in the `NavigationStack` profile flow immediately after name. `OnboardingHealthPermissionStepView` shows two buttons:
 
-- **Connect to Apple Health** — calls `connectAppleHealthDuringOnboarding()`, which requests authorization then reads date of birth and most recent height sample from HealthKit and stores them in `prefetchedBirthday` and `prefetchedHeightCm`. After the async work completes, the view pushes `.birthday`.
+- **Connect to Apple Health** — calls `connectAppleHealthDuringOnboarding()`, which requests authorization then reads date of birth, biological sex, and the most recent height sample from HealthKit. Those values are staged in `prefetchedBirthday`, `prefetchedGender`, and `prefetchedHeightCm` for the onboarding steps to confirm before saving.
 
-Prefetched values are held in manager state and are not written to `UserProfile` until the user taps Continue on each step. If the user force-quits before confirming birthday, the profile remains incomplete and the health step reappears on the next launch.
+Prefetched values are held in manager state and are not written to `UserProfile` until the user taps Continue on each step. If the user force-quits before confirming the staged profile fields, the profile remains incomplete and the health step reappears on the next launch.
 
 If the user navigates back to the health step after already connecting, `hasAuthorized` is true and the view shows a "Continue" button instead, skipping the authorization request.
 

@@ -1,9 +1,34 @@
 import Foundation
 import SwiftData
 
+enum UserGender: String, Codable, CaseIterable, Hashable {
+    case male
+    case female
+    case other
+    case notSet
+
+    static var selectableCases: [UserGender] {
+        [.male, .female, .other]
+    }
+
+    var displayName: String {
+        switch self {
+        case .male:
+            return "Male"
+        case .female:
+            return "Female"
+        case .other:
+            return "Other"
+        case .notSet:
+            return "Not Set"
+        }
+    }
+}
+
 enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
     case name
     case birthday
+    case gender
     case height
 
     static func navigationPath(to step: UserProfileOnboardingStep) -> [UserProfileOnboardingStep] {
@@ -15,6 +40,7 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
 final class UserProfile {
     var name: String = ""
     var birthday: Date?
+    var gender: UserGender = UserGender.notSet
     var dateJoined: Date = Date()
     var heightCm: Double?
 
@@ -34,6 +60,9 @@ final class UserProfile {
         }
         if birthday == nil {
             return .birthday
+        }
+        if gender == .notSet {
+            return .gender
         }
         if heightCm == nil {
             return .height

@@ -36,6 +36,7 @@ class OnboardingManager {
     var profile: UserProfile?
     private(set) var isNewUser = false
     private(set) var prefetchedBirthday: Date?
+    private(set) var prefetchedGender: UserGender?
     private(set) var prefetchedHeightCm: Double?
     private var context: ModelContext { SharedModelContainer.container.mainContext }
     private let networkMonitor = NetworkMonitor()
@@ -181,28 +182,26 @@ class OnboardingManager {
     func saveBirthday(_ birthday: Date) async -> Bool {
         guard let profile else { return false }
         profile.birthday = birthday
-        return await persistProfileAndAdvance()
+        return await persistProfileAndMaybeFinish(
+            saveFailureMessage: "Failed to save your birthday"
+        )
+    }
+
+    func saveGender(_ gender: UserGender) async -> Bool {
+        guard let profile else { return false }
+        profile.gender = gender
+        return await persistProfileAndMaybeFinish(
+            saveFailureMessage: "Failed to save your gender"
+        )
     }
 
     func saveHeight(cm: Double) async {
         guard let profile else { return }
         profile.heightCm = cm
 
-        do {
-            try context.save()
-        } catch {
-            state = .error("Failed to save your height: \(error.localizedDescription)")
-            return
-        }
-
-        if let nextStep = profile.firstMissingStep {
-            state = .profile(nextStep)
-            return
-        }
-
-        state = .finishing
-        await syncCatalogIfNeededBeforeReady()
-        await transitionAfterSetup()
+        _ = await persistProfileAndMaybeFinish(
+            saveFailureMessage: "Failed to save your height"
+        )
     }
 
     func connectAppleHealthDuringOnboarding() async {
@@ -217,6 +216,15 @@ class OnboardingManager {
             if let components = try? healthStore.dateOfBirthComponents(),
                let date = Calendar.current.date(from: components) {
                 prefetchedBirthday = date
+            }
+        }
+
+        if profile?.gender == .notSet {
+            if let biologicalSex = try? healthStore.biologicalSex().biologicalSex {
+                let mappedGender = UserGender(healthKitBiologicalSex: biologicalSex)
+                if mappedGender != .notSet {
+                    prefetchedGender = mappedGender
+                }
             }
         }
 
@@ -304,6 +312,24 @@ class OnboardingManager {
         return true
     }
 
+    private func persistProfileAndMaybeFinish(saveFailureMessage: String) async -> Bool {
+        do {
+            try context.save()
+        } catch {
+            state = .error("\(saveFailureMessage): \(error.localizedDescription)")
+            return false
+        }
+
+        guard profile?.firstMissingStep == nil else {
+            return true
+        }
+
+        state = .finishing
+        await syncCatalogIfNeededBeforeReady()
+        await transitionAfterSetup()
+        return true
+    }
+
     private func startNetworkMonitoring() {
         networkRetryTask?.cancel()
         networkRetryTask = Task { [weak self] in
@@ -345,4 +371,21 @@ class OnboardingManager {
         transitionToReady()
     }
 
+}
+
+private extension UserGender {
+    init(healthKitBiologicalSex: HKBiologicalSex) {
+        switch healthKitBiologicalSex {
+        case .male:
+            self = .male
+        case .female:
+            self = .female
+        case .other:
+            self = .other
+        case .notSet:
+            self = .notSet
+        @unknown default:
+            self = .notSet
+        }
+    }
 }

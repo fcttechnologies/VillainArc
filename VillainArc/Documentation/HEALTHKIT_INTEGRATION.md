@@ -97,6 +97,7 @@ VillainArc reads:
 - workouts
 - workout routes
 - date of birth (for onboarding prefill)
+- biological sex (mapped into the app's gender field during onboarding prefill)
 - height (for onboarding prefill)
 - body mass
 - heart rate
