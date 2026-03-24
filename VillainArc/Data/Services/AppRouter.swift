@@ -28,6 +28,7 @@ final class AppRouter {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
         case healthWorkoutDetail(HealthWorkout)
+        case weightHistory(WeightUnit)
         case workoutPlansList
         case workoutPlanDetail(WorkoutPlan, Bool)
         case exercisesList
@@ -67,8 +68,14 @@ final class AppRouter {
     }
     
     func navigate(to destination: Destination) {
-        tabSelection = .home
-        homeTabPath.append(destination)
+        switch destination {
+        case .weightHistory(_):
+            tabSelection = .health
+            healthTabPath.append(destination)
+        default:
+            tabSelection = .home
+            homeTabPath.append(destination)
+        }
     }
     
     func popToRoot() {

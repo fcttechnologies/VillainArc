@@ -36,6 +36,12 @@ extension WeightEntry {
         return descriptor
     }
 
+    static var summary: FetchDescriptor<WeightEntry> {
+        var descriptor = history
+        descriptor.fetchLimit = 14
+        return descriptor
+    }
+
     static func byHealthSampleUUID(_ id: UUID) -> FetchDescriptor<WeightEntry> {
         let predicate = #Predicate<WeightEntry> { $0.healthSampleUUID == id }
         var descriptor = FetchDescriptor(predicate: predicate)

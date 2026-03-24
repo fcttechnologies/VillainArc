@@ -218,10 +218,11 @@ The split is:
 - `HealthWorkout` is the local mirror/cache of Apple Health workout summaries
 
 The current Health integration includes:
-- versioned permission prompting through `HealthPreferences`
+- HealthKit-request-status-driven permission prompting through `HealthAuthorizationManager`
 - a live HealthKit workout session during the local `.active` phase
-- anchored workout sync through `HealthWorkoutSyncCoordinator`
-- relinking by Health metadata plus fallback export reconciliation
+- anchored workout and body-mass sync through `HealthSyncCoordinator`
+- relinking by Health metadata plus fallback export reconciliation for workouts and weight entries
+- an initial Health tab backed by `WeightEntry` and Apple Health body-mass data
 - a Health detail loader that fetches the live `HKWorkout` by UUID and conditionally renders richer sections
 
 For the full design, read `Documentation/HEALTHKIT_INTEGRATION.md`.

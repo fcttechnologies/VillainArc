@@ -1269,6 +1269,9 @@
     "No target set" : {
 
     },
+    "No Weight Entries" : {
+
+    },
     "No Weight Entries Yet" : {
 
     },
@@ -1396,6 +1399,9 @@
 
     },
     "Opens a specific workout." : {
+
+    },
+    "Opens detailed weight history." : {
 
     },
     "Opens iOS Settings to enable iCloud." : {
@@ -1856,6 +1862,9 @@
 
     },
     "Selected Time" : {
+
+    },
+    "Selected Weight" : {
 
     },
     "Selects a workout plan for this day." : {
@@ -2452,7 +2461,7 @@
     "Weight" : {
 
     },
-    "Weight summaries will show up here once you add or sync body weight entries." : {
+    "Weight history will appear here once you add or sync body weight entries." : {
 
     },
     "Weighted Ball" : {

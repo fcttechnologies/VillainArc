@@ -14,7 +14,7 @@ This document explains VillainArc's startup and readiness path: how bootstrap wo
 - `Data/Services/SetupGuard.swift`
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
 - `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
-- `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
+- `Data/Services/HealthKit/HealthSyncCoordinator.swift`
 - `Data/Services/HealthKit/HealthPreferences.swift`
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
 - `Data/SharedModelContainer.swift`
@@ -36,7 +36,7 @@ The startup path is split across `VillainArcApp`, `RootView`, and `OnboardingMan
 - deletes abandoned plan editing copies before anything resumes
 - refreshes shortcut parameters
 - starts onboarding in `.task`
-- when state reaches `.ready`, calls `AppRouter.checkForUnfinishedData()`, then kicks off `HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()` and `HealthStoreUpdateCoordinator.shared.syncNow()`
+- when state reaches `.ready`, calls `AppRouter.checkForUnfinishedData()`, starts the Health observer pipeline, then kicks off `HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()` and `HealthStoreUpdateCoordinator.shared.syncNow()`
 - presents `OnboardingView` as a non-dismissable sheet at half-height whenever `state.shouldPresentSheet` is true
 
 That ordering is deliberate. Resume logic for unfinished workouts or incomplete plan creation only runs after bootstrap and profile setup are valid.
@@ -160,7 +160,7 @@ The standalone sheet shows only "Connect to Apple Health". There is no skip opti
 When state reaches `.ready`, `RootView` calls:
 - `HealthStoreUpdateCoordinator.shared.start()` — registers the HealthKit workout and body-mass observer queries
 - `HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()` — enables background delivery if authorization exists
-- `HealthStoreUpdateCoordinator.shared.syncNow()` — syncs HealthKit workouts into the local mirror and reconciles completed app sessions that have no Health link
+- `HealthStoreUpdateCoordinator.shared.syncNow()` — syncs HealthKit workouts and body-mass samples into local storage, then reconciles completed app sessions and `WeightEntry` rows that still need Health links
 
 ## What Catalog Sync Actually Does
 

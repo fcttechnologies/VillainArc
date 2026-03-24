@@ -85,7 +85,13 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 ### `Data/Models/Health/HealthWorkout.swift`
 - Persisted Apple Health workout mirror.
 - Stores the HealthKit workout UUID, optional owning `WorkoutSession`, cached workout summary fields including separate active/resting energy values, HealthKit availability state, and last sync timestamp.
-- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`, `Views/History/WorkoutsListView.swift`.
+- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthSyncCoordinator.swift`, `Views/History/WorkoutsListView.swift`.
+
+### `Data/Models/Health/WeightEntry.swift`
+- Local body-mass history record used by the Health tab.
+- Can represent a local-only entry, a Health-linked entry, or a Health-only imported sample.
+- Stores the recorded time, weight in kilograms, optional note, export/link state, HealthKit availability state, and last sync timestamp.
+- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthSyncCoordinator.swift`, `Views/Health/HealthTabView.swift`.
 
 ### `Data/Models/Sessions/ExercisePerformance.swift`
 - Per-exercise performed record inside a workout session.
@@ -254,15 +260,17 @@ Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it c
 - `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
   - Starts live HealthKit workout collection when a local workout becomes active, finishes or discards the HealthKit workout when active logging ends, and links the saved `HKWorkout` into `HealthWorkout`.
 - `Data/Services/HealthKit/HealthExportCoordinator.swift`
-  - Reconciliation-only Health repair path that first tries to relink already-saved Health workouts by metadata and only falls back to the older export path when no matching Health workout exists.
-- `Data/Services/HealthKit/HealthWorkoutSyncCoordinator.swift`
-  - Anchored Apple Health workout sync that upserts `HealthWorkout` records, links mirrored workouts back to local `WorkoutSession`s by metadata, and marks removed workouts unavailable.
+  - Reconciliation-aware export and repair path for both completed workouts and `WeightEntry` body-mass samples, relinking by metadata before falling back to new Health writes.
+- `Data/Services/HealthKit/HealthSyncCoordinator.swift`
+  - Anchored Apple Health sync for workouts and body mass that upserts `HealthWorkout` and `WeightEntry` records, links mirrored workouts back to local `WorkoutSession`s by metadata, and handles removed Health data.
 - `Data/Services/HealthKit/HealthPreferences.swift`
-  - Device-local Health defaults storage for permission-prompt versioning and workout sync anchor persistence.
+  - Device-local Health defaults storage for workout and body-mass sync anchor persistence.
+- `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
+  - Registers workout and body-mass observer queries, enables HealthKit background delivery, and serializes the sync-plus-reconciliation pipeline.
 - `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`
   - On-demand HealthKit detail loader for the Health workout detail screen.
-- `Views/History/WorkoutsListView.swift`, `Views/Components/WorkoutHistoryRowView.swift`, `Views/Workout/HealthWorkoutDetailView.swift`
-  - Health-aware history rows and Health workout detail UI.
+- `Views/History/WorkoutsListView.swift`, `Views/Components/WorkoutHistoryRowView.swift`, `Views/Workout/HealthWorkoutDetailView.swift`, `Views/Health/HealthTabView.swift`
+  - Health-aware history rows, workout detail UI, and the initial weight-driven Health tab.
 - Read with: `Documentation/HEALTHKIT_INTEGRATION.md`.
 
 ### Spotlight and App Entities
