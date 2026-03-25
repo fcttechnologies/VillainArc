@@ -14,6 +14,16 @@ enum AccessibilityIdentifiers {
     static let healthAddWeightEntryWeightField = "healthAddWeightEntryWeightField"
     static let healthAddWeightEntryDatePicker = "healthAddWeightEntryDatePicker"
     static let healthAddWeightEntryTimePicker = "healthAddWeightEntryTimePicker"
+    static let healthWeightGoalSummaryButton = "healthWeightGoalSummaryButton"
+    static let healthWeightGoalHistoryList = "healthWeightGoalHistoryList"
+    static let healthWeightGoalHistoryAddButton = "healthWeightGoalHistoryAddButton"
+    static let healthNewWeightGoalSaveButton = "healthNewWeightGoalSaveButton"
+    static let healthNewWeightGoalTypePicker = "healthNewWeightGoalTypePicker"
+    static let healthNewWeightGoalStartWeightField = "healthNewWeightGoalStartWeightField"
+    static let healthNewWeightGoalTargetWeightField = "healthNewWeightGoalTargetWeightField"
+    static let healthNewWeightGoalTargetRateField = "healthNewWeightGoalTargetRateField"
+    static let healthNewWeightGoalTargetDateToggle = "healthNewWeightGoalTargetDateToggle"
+    static let healthNewWeightGoalTargetDatePicker = "healthNewWeightGoalTargetDatePicker"
     static let healthWeightHistoryAllEntriesLink = "healthWeightHistoryAllEntriesLink"
     static let healthWeightEntriesList = "healthWeightEntriesList"
     static let healthWeightEntriesDeleteAllButton = "healthWeightEntriesDeleteAllButton"
@@ -24,6 +34,10 @@ enum AccessibilityIdentifiers {
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String {
         "healthWeightEntryRow-\(entry.id.uuidString)"
+    }
+
+    static func healthWeightGoalRow(_ goal: WeightGoal) -> String {
+        "healthWeightGoalRow-\(Int(goal.startedAt.timeIntervalSince1970))"
     }
 
     // MARK: - WorkoutSplitSectionView
@@ -251,8 +265,6 @@ enum AccessibilityIdentifiers {
     // MARK: - ExerciseDetailView
     static let exerciseDetailEmptyState = "exerciseDetailEmptyState"
     static let exerciseDetailScrollView = "exerciseDetailScrollView"
-    static let exerciseDetailRefreshHistoryButton = "exerciseDetailRefreshHistoryButton"
-    static let exerciseDetailOptionsMenu = "exerciseDetailOptionsMenu"
     static let exerciseDetailHistoryButton = "exerciseDetailHistoryButton"
 
     // MARK: - ExerciseHistoryView
@@ -593,10 +605,16 @@ enum AccessibilityText {
     static let homeStartWorkoutHint = localized("Starts a new workout session.")
     static let homeCreatePlanLabel = localized("Create workout plan")
     static let homeCreatePlanHint = localized("Creates a new workout plan.")
+    static let healthAddWeightEntryLabel = localized("Add weight entry")
     static let healthAddWeightEntryHint = localized("Creates a new weight entry.")
     static let healthAddWeightEntryConfirmHint = localized("Saves the new weight entry.")
+    static let healthWeightGoalSummaryHint = localized("Creates a weight goal or shows your goal history.")
+    static let healthWeightGoalHistoryAddLabel = localized("Add weight goal")
+    static let healthWeightGoalHistoryAddHint = localized("Creates a new weight goal.")
+    static let healthNewWeightGoalSaveHint = localized("Saves the new weight goal.")
     static let healthWeightHistoryAllEntriesHint = localized("Shows all saved weight entries.")
     static let healthWeightEntryRowHint = localized("Shows the saved date and weight entry details.")
+    static let healthWeightGoalRowHint = localized("Shows weight goal details.")
     static let healthWeightEntriesDeleteAllHint = localized("Deletes all app-created weight entries.")
     static let healthWeightEntriesEditHint = localized("Enters edit mode.")
     static let healthWeightEntriesDoneEditingHint = localized("Exits edit mode.")
@@ -937,9 +955,6 @@ enum AccessibilityText {
     static let exerciseSetRepsLabel = localized("Reps")
     static let exerciseSetWeightLabel = localized("Weight")
     static let exerciseSetMenuHint = localized("Opens set options.")
-
-    // MARK: - ExerciseDetailView
-    static let exerciseDetailOptionsMenuHint = localized("Exercise actions.")
 
     // MARK: - AddExerciseView
     static let addExerciseCloseLabel = localized("Close")

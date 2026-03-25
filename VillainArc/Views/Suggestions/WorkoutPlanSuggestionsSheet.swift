@@ -41,7 +41,10 @@ struct WorkoutPlanSuggestionsSheet: View {
     }
 
     private var awaitingOutcomeSections: [ExerciseSuggestionSection] {
-        groupSuggestions(pendingOutcomeSuggestionEvents(for: plan, in: context))
+        groupSuggestions(
+            pendingOutcomeSuggestionEvents(for: plan, in: context)
+                .filter { $0.decision == .accepted }
+        )
     }
 
     var body: some View {
@@ -83,7 +86,7 @@ struct WorkoutPlanSuggestionsSheet: View {
                                 actionableDecisions: [],
                                 emptyState: SuggestionEmptyState(
                                     title: "No Pending Outcomes",
-                                    message: "Accepted or rejected changes will appear here until a later workout evaluates them."
+                                    message: "Accepted changes will appear here until a later workout evaluates them."
                                 )
                             )
                         }

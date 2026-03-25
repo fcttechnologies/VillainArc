@@ -39,9 +39,10 @@ enum WorkoutActivityManager {
             return
         }
 
+        let activityID = activity.id
         let state = contentState(for: workout)
         Task {
-            await activity.update(.init(state: state, staleDate: nil))
+            await updateActivity(id: activityID, state: state)
         }
     }
 
@@ -68,9 +69,8 @@ enum WorkoutActivityManager {
         }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         Task { @MainActor in
-            for activity in Activity<WorkoutActivityAttributes>.activities {
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
+            let activityIDs = Activity<WorkoutActivityAttributes>.activities.map(\.id)
+            await endActivities(ids: activityIDs)
             requestActivity(for: workout)
         }
     }
@@ -80,10 +80,9 @@ enum WorkoutActivityManager {
     }
 
     private static func endAllActivities() {
-        for activity in Activity<WorkoutActivityAttributes>.activities {
-            Task {
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
+        let activityIDs = Activity<WorkoutActivityAttributes>.activities.map(\.id)
+        Task {
+            await endActivities(ids: activityIDs)
         }
     }
 
@@ -109,5 +108,17 @@ enum WorkoutActivityManager {
         let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
 
         return .init(title: workout.title, exerciseName: activeInfo?.exercise.name, setNumber: activeInfo.map { $0.set.index + 1 }, totalSets: activeInfo?.exercise.sortedSets.count, weight: activeInfo?.set.weight, weightUnit: weightUnit.rawValue, reps: activeInfo?.set.reps, targetRPE: activeInfo?.set.prescription?.visibleTargetRPE, timerEndDate: restTimer.isRunning ? restTimer.endDate : nil, timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil, timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil, hasExercises: !workout.exercises!.isEmpty, liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate, liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned)
+    }
+
+    nonisolated private static func updateActivity(id: String, state: WorkoutActivityAttributes.ContentState) async {
+        guard let activity = Activity<WorkoutActivityAttributes>.activities.first(where: { $0.id == id }) else { return }
+        await activity.update(.init(state: state, staleDate: nil))
+    }
+
+    nonisolated private static func endActivities(ids: [String]) async {
+        for id in ids {
+            guard let activity = Activity<WorkoutActivityAttributes>.activities.first(where: { $0.id == id }) else { continue }
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
     }
 }

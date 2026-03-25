@@ -320,7 +320,7 @@ private struct WorkoutPlanExerciseView: View {
                     Text("Set")
                     Text("Reps")
                         .gridColumnAlignment(.leading)
-                    Text("Weight")
+                    Text(exercise.equipmentType.loadDisplayName)
                         .gridColumnAlignment(.leading)
                 }
                 .font(.title3)
@@ -464,6 +464,7 @@ private struct WorkoutPlanSetRowView: View {
     @FocusState private var focusedField: Field?
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var loadFieldLabel: String { exercise.equipmentType.loadDisplayName }
 
     var body: some View {
         Group {
@@ -523,11 +524,11 @@ private struct WorkoutPlanSetRowView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetRepsField(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
 
-            TextField("Weight", value: $set.targetWeight, format: .number)
+            TextField(loadFieldLabel, value: $set.targetWeight, format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSetWeightField(exercise, set: set))
-                .accessibilityLabel(AccessibilityText.exerciseSetWeightLabel)
+                .accessibilityLabel(loadFieldLabel)
         }
         .onChange(of: focusedField) { _, field in
             guard field != nil else { return }
@@ -550,6 +551,8 @@ private struct WorkoutPlanSetRowView: View {
 
     private func updateTargetRPE(to value: Int) {
         guard set.targetRPE != value else { return }
+        dismissKeyboard()
+        focusedField = nil
         Haptics.selection()
         set.targetRPE = value
         saveContext(context: context)

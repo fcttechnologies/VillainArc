@@ -1,10 +1,10 @@
 import ActivityKit
 import Foundation
 
-struct WorkoutActivityAttributes: ActivityAttributes {
+nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
     var startDate: Date
 
-    struct ContentState: Codable, Hashable {
+    struct ContentState: Codable, Hashable, Sendable {
         var title: String
         var exerciseName: String?
         var setNumber: Int?

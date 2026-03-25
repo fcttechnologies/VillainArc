@@ -421,12 +421,16 @@ struct MetricsCalculator {
         switch equipmentType {
         case .dumbbellSingle, .kettlebellSingle:
             return currentWeight < 7 ? 1.25 : 2.5
-        case .dumbbells, .kettlebell:
+        case .dumbbells:
+            return currentWeight < 7 ? 1.25 : 2.5
+        case .kettlebell:
             let perHand = max(0, currentWeight / 2)
             return perHand < 7 ? 2.5 : 5.0
         case .cableSingle:
             return currentWeight < 14 ? 1.25 : 2.5
-        case .cables, .rope:
+        case .cables:
+            return currentWeight < 14 ? 1.25 : 2.5
+        case .rope:
             return currentWeight < 27 ? 2.5 : 5.0
         case .machine, .smithMachine, .machineAssisted:
             return currentWeight < 45 ? 2.5 : 5.0

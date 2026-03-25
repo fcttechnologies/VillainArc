@@ -174,7 +174,7 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
             if state.liveHeartRateBPM != nil || state.liveActiveEnergyBurned != nil {
                 HStack {
                     if let liveHeartRateBPM = state.liveHeartRateBPM {
-                        WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", text: "\(Int(liveHeartRateBPM.rounded())) bpm", tint: .red)
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", text: "\(Int(liveHeartRateBPM.rounded()))", tint: .red)
                         Spacer()
                     }
 
@@ -186,7 +186,7 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
                     if state.isTimerRunning, let endDate = state.timerEndDate {
                         HStack(spacing: 4) {
                             Image(systemName: "timer")
-                                .font(.title)
+                                .font(.title2)
                                 .accessibilityHidden(true)
                             Text(timerInterval: Date.now...endDate, countsDown: true)
                                 .font(.title)
@@ -272,7 +272,7 @@ private struct WorkoutLiveActivityExpandedMetricView: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: symbolName)
-                .font(.title)
+                .font(.title2)
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
             Text(text)

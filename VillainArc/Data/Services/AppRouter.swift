@@ -29,6 +29,8 @@ final class AppRouter {
         case workoutSessionDetail(WorkoutSession)
         case healthWorkoutDetail(HealthWorkout)
         case weightHistory(WeightUnit)
+        case allWeightEntriesList(WeightUnit)
+        case weightGoalHistory(WeightUnit)
         case workoutPlansList
         case workoutPlanDetail(WorkoutPlan, Bool)
         case exercisesList
@@ -69,7 +71,7 @@ final class AppRouter {
     
     func navigate(to destination: Destination) {
         switch destination {
-        case .weightHistory(_):
+        case .weightHistory(_), .allWeightEntriesList(_), .weightGoalHistory(_):
             tabSelection = .health
             healthTabPath.append(destination)
         default:

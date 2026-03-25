@@ -131,7 +131,7 @@ struct ExerciseView: View {
                         Text("Set")
                         Text("Reps")
                             .gridColumnAlignment(.leading)
-                        Text("Weight")
+                        Text(exercise.equipmentType.loadDisplayName)
                             .gridColumnAlignment(.leading)
                         Text(shouldUseTargetReference ? "Target" : "Previous")
                         Text(" ")

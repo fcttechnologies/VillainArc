@@ -65,6 +65,21 @@ extension EquipmentType {
         }
     }
 
+    var loadDisplayName: String {
+        switch self {
+        case .machineAssisted:
+            return String(localized: "Assistance")
+        case .dumbbells, .cables:
+            return String(localized: "Weight / side")
+        default:
+            return String(localized: "Weight")
+        }
+    }
+
+    var usesAssistanceWeightSemantics: Bool {
+        self == .machineAssisted
+    }
+
     nonisolated var systemAlternateNamePrefixes: [String] {
         switch self {
         case .barbell:

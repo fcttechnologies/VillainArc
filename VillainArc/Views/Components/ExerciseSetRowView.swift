@@ -48,6 +48,10 @@ struct ExerciseSetRowView: View {
         appSettingsSnapshot.autoCompleteSetAfterRPE
     }
 
+    private var loadFieldLabel: String {
+        exercise.equipmentType.loadDisplayName
+    }
+
     var body: some View {
         Group {
             Menu {
@@ -108,13 +112,13 @@ struct ExerciseSetRowView: View {
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
-            TextField("Weight", value: $set.weight, format: .number)
+            TextField(loadFieldLabel, value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
-                .accessibilityLabel(AccessibilityText.exerciseSetWeightLabel)
+                .accessibilityLabel(loadFieldLabel)
 
             Text(referenceData?.displayText(unit: weightUnit) ?? "-")
                 .lineLimit(1)
@@ -216,6 +220,8 @@ struct ExerciseSetRowView: View {
 
     private func updateRPE(to value: Int) {
         guard set.rpe != value else { return }
+        dismissKeyboard()
+        focusedField = nil
         Haptics.selection()
         set.rpe = value
         if autoCompleteSetAfterRPEEnabled, !set.complete, value > 0 {

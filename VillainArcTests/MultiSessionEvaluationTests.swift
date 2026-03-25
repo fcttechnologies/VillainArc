@@ -742,6 +742,93 @@ struct MultiSessionEvaluationTests {
     }
 
     @Test @MainActor
+    func generatedAssistedDecreaseWeightEvent_hasRequiredCount2() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "assisted_pull_ups",
+            workingSets: 1,
+            targetWeight: WeightUnit.lbs.toKg(90),
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .target
+        )
+        prescription.repRange?.targetReps = 8
+
+        let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        previousSession.statusValue = .done
+        _ = TestDataFactory.makePerformance(
+            context: context,
+            session: previousSession,
+            prescription: prescription,
+            sets: [(weight: WeightUnit.lbs.toKg(90), reps: 8, rest: 90, type: .working)]
+        )
+
+        let currentSession = WorkoutSession(from: plan)
+        context.insert(currentSession)
+        guard let perf = currentSession.sortedExercises.first else { return }
+        for set in perf.sortedSets {
+            set.weight = WeightUnit.lbs.toKg(90)
+            set.reps = 8
+            set.restSeconds = 90
+            set.complete = true
+        }
+
+        let generated = await SuggestionGenerator.generateSuggestions(for: currentSession, context: context)
+        let assistedProgressionEvents = generated.filter { event in
+            event.sortedChanges.contains { $0.changeType == .decreaseWeight }
+        }
+
+        #expect(assistedProgressionEvents.isEmpty == false)
+        #expect(assistedProgressionEvents.allSatisfy { $0.requiredEvaluationCount == 2 })
+    }
+
+    @Test @MainActor
+    func generatedAssistedIncreaseWeightEvent_hasRequiredCount1() async throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(
+            context: context,
+            catalogID: "assisted_pull_ups",
+            workingSets: 1,
+            targetWeight: WeightUnit.lbs.toKg(90),
+            targetReps: 8,
+            targetRest: 90,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 8
+        )
+
+        for daysAgo in [9, 6, 3] {
+            let session = TestDataFactory.makeSession(context: context, daysAgo: daysAgo)
+            session.statusValue = .done
+            _ = TestDataFactory.makePerformance(
+                context: context,
+                session: session,
+                prescription: prescription,
+                sets: [(weight: WeightUnit.lbs.toKg(90), reps: 4, rest: 90, type: .working)]
+            )
+        }
+
+        let currentSession = WorkoutSession(from: plan)
+        context.insert(currentSession)
+        guard let perf = currentSession.sortedExercises.first else { return }
+        for set in perf.sortedSets {
+            set.weight = WeightUnit.lbs.toKg(90)
+            set.reps = 4
+            set.restSeconds = 90
+            set.complete = true
+        }
+
+        let generated = await SuggestionGenerator.generateSuggestions(for: currentSession, context: context)
+        let assistedSupportEvents = generated.filter { event in
+            event.sortedChanges.contains { $0.changeType == .increaseWeight }
+        }
+
+        #expect(assistedSupportEvents.isEmpty == false)
+        #expect(assistedSupportEvents.allSatisfy { $0.requiredEvaluationCount == 1 })
+    }
+
+    @Test @MainActor
     func generatedWarmupCalibrationEvent_hasRequiredCount1() async throws {
         let context = try TestDataFactory.makeContext()
         // Warmup calibration category always requires only 1 session regardless of change type

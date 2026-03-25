@@ -1,365 +1,343 @@
 # VillainArc Architecture
 
-This file is the structure map for the app. Use it to find the main coordinators, domain models, and cross-cutting services. For the user-facing walkthrough, read `Documentation/PROJECT_GUIDE.md`. For subsystem details, use the individual flow docs in this folder.
+This file is the structure map for the app. Use it to understand the major layers, which files own which responsibilities, and how data and flows connect. For a product-level walkthrough, read `Documentation/PROJECT_GUIDE.md`. For deeper behavior, use the flow docs in this folder.
 
 ## Read Order
 
 1. App shell and startup
-2. Workout and plan models
-3. Suggestions, history, and splits
-4. Integrations and tests
+2. Persistence and bootstrap
+3. Core domain models
+4. Runtime services and feature surfaces
+5. Integrations
 
 ## App Shell and Startup
 
 ### `Root/VillainArcApp.swift`
-- App entry point.
-- Installs `SharedModelContainer.container` and forwards Spotlight plus Siri handoffs into `AppRouter.shared`.
-- Read with: `Root/RootView.swift`, `Data/SharedModelContainer.swift`, `Data/Services/AppRouter.swift`.
 
-Note: the `com.villainarc.siri.endWorkout` activity is registered here, but it currently has no handler logic.
+- App entry point.
+- Installs `SharedModelContainer.container`.
+- Forwards Spotlight and Siri handoffs into `AppRouter.shared`.
+- Does not own onboarding or navigation state beyond booting `RootView`.
 
 ### `Root/RootView.swift`
-- Startup coordinator.
-- Owns `OnboardingManager`, cleans up abandoned plan editing copies, refreshes shortcut parameters, starts onboarding, syncs Health workouts plus reconciles older missing Health links after onboarding reaches `.ready`, and only then resumes unfinished flows.
+
+- Launch coordinator for the foreground app.
+- Starts `OnboardingManager`, deletes abandoned plan-editing copies, refreshes shortcut parameters, and only resumes persisted unfinished work after onboarding reaches `.ready`.
+- Starts the Health observer pipeline plus the first post-ready sync pass when onboarding finishes.
 - Presents `Views/Onboarding/OnboardingView.swift` as the blocking setup sheet.
-- Read with: `Data/Services/OnboardingManager.swift`, `Views/ContentView.swift`.
 
 ### `Views/ContentView.swift`
-- Foreground shell after startup is ready.
-- Owns the home `NavigationStack`, home sections, stack destinations, and the two full-screen active flows:
+
+- Top-level foreground shell after launch is ready.
+- Hosts the root `TabView` and the two full-screen active flows:
   - `activeWorkoutSession` -> `Views/Workout/WorkoutSessionContainer.swift`
   - `activeWorkoutPlan` -> `Views/WorkoutPlan/WorkoutPlanView.swift`
-- Read with: `Data/Services/AppRouter.swift`.
+- Does not own the per-tab `NavigationStack`s.
+
+### `Views/HomeTabView.swift`
+
+- Home tab navigation shell.
+- Owns the home `NavigationStack`, home destinations, settings sheet, and the bottom-bar plus menu for starting workouts and creating plans.
+- Routes detailed navigation through `AppRouter.homeTabPath`.
+
+### `Views/Health/HealthTabView.swift`
+
+- Health tab navigation shell.
+- Owns the Health `NavigationStack`, the add-weight-entry sheet, and health-specific destinations such as weight history, all weight entries, and weight goals.
+- Routes detailed navigation through `AppRouter.healthTabPath`.
 
 ### `Data/Services/AppRouter.swift`
+
 - Global navigation and active-flow coordinator.
-- Owns stack navigation, active workout presentation, active plan presentation, the original-plan pointer for edit-copy flows, and intent/live-activity flags consumed by feature views.
-- Guards new flow creation against both presented flows and persisted incomplete flows.
-- Read with: `Views/ContentView.swift`, `Views/Workout/WorkoutView.swift`, `Views/WorkoutSplit/WorkoutSplitView.swift`, intent entrypoints under `Intents/`.
+- Owns:
+  - home and health navigation paths
+  - current tab selection
+  - the single active workout flow
+  - the single active plan flow
+  - the original-plan pointer for edit-copy flows
+  - intent/live-activity flags that feature views listen to
+- Enforces the app-wide single-active-flow rule by checking both presented state and persisted incomplete flows.
+
+## Persistence and Bootstrap
 
 ### `Data/SharedModelContainer.swift`
-- Shared SwiftData schema and app-group backed `ModelContainer`.
-- Defines the app's full schema and points persistence at the shared store plus private CloudKit database.
-- Read with: every `@Model` change, widget/intents work, and onboarding/bootstrap code.
 
-## Bootstrap and Readiness
+- Shared SwiftData schema and app-group backed `ModelContainer`.
+- Stores app data in the app-group container and enables private CloudKit sync.
+- Defines the full schema used by the main app, intents, widgets, and Live Activity surfaces.
 
 ### `Data/Services/OnboardingManager.swift`
-- First-run and returning-launch state machine.
-- First bootstrap path: connectivity -> iCloud status -> CloudKit availability -> wait for import -> seed catalog -> reindex Spotlight -> ensure singleton records -> route into profile onboarding -> optionally offer Apple Health connection -> ready.
-- Returning-launch path: immediately ensure singleton records, and if the profile is already complete run any needed catalog sync before either offering Apple Health connection or transitioning to `.ready`.
-- Read with: `Views/Onboarding/OnboardingView.swift`, `Data/Services/CloudKitImportMonitor.swift`, `Data/Services/DataManager.swift`.
 
-### `Views/Onboarding/OnboardingView.swift`
-- Bootstrap and profile setup UI.
-- Renders blocking states such as no network, no iCloud, CloudKit issues, syncing, and generic bootstrap errors, then drives the profile steps for name, birthday, and height plus the optional Apple Health permission step.
-- Read with: `Data/Models/UserProfile.swift`, `Data/Services/OnboardingManager.swift`.
+- First-run and returning-launch readiness state machine.
+- Handles:
+  - connectivity checks
+  - iCloud / CloudKit checks
+  - CloudKit import waiting on first bootstrap
+  - exercise catalog seeding and sync
+  - singleton record creation
+  - profile onboarding
+  - optional Apple Health prompt timing
 
 ### `Data/Services/CloudKitImportMonitor.swift`
-- Tracks SwiftData CloudKit import completion.
-- Starts on demand during first-bootstrap onboarding and lets that flow wait for existing cloud data before seeding the bundled exercise catalog.
-- Read with: `Data/Services/OnboardingManager.swift`.
+
+- Watches `NSPersistentCloudKitContainer` import events during first bootstrap.
+- Lets onboarding wait for import completion before seeding the bundled exercise catalog.
 
 ### `Data/Services/DataManager.swift`
-- Exercise catalog sync and persistence helpers.
-- Seeds or updates built-in exercises, propagates catalog metadata into stored prescriptions and performances, and provides shared `saveContext()` / `scheduleSave()`.
-- Read with: `Data/Models/Exercise/Exercise.swift`, `Data/Models/Exercise/ExerciseCatalog.swift`.
+
+- Exercise catalog sync service.
+- Seeds missing built-in exercises, updates changed catalog metadata, and propagates metadata changes into stored prescriptions and performances.
+- Also owns the bootstrap marker through `exerciseCatalogVersionKey`.
 
 ### `Data/Services/SystemState.swift`
-- Lazy singleton-record creation for `AppSettings` and `UserProfile`.
-- Read with: `Data/Models/AppSettings.swift`, `Data/Models/UserProfile.swift`.
+
+- Ensures `AppSettings` and `UserProfile` exist.
+- Used by onboarding and other startup-safe code paths.
 
 ### `Data/Services/SetupGuard.swift`
-- Shared readiness guard for App Intents.
-- Ensures bootstrap completed, singleton records exist, profile onboarding is complete, and optionally that no persisted incomplete workout or plan exists.
-- Read with: intent files under `Intents/`.
+
+- Readiness boundary for App Intents.
+- Verifies bootstrap completed, singleton records exist, the user profile is complete, and optionally that no incomplete workout or plan exists.
 
 ## Core Domain Models
 
 ### `Data/Models/Sessions/WorkoutSession.swift`
+
 - Root workout aggregate.
-- Owns session metadata, lifecycle state, linked plan, pre-workout context, active exercise, performed exercises, generated suggestion events, and an optional linked `HealthWorkout`.
-- Handles finish-time cleanup, pruning, and conversion from a plan into a live session copy.
-- Read with: `Views/Workout/WorkoutSessionContainer.swift`, `Views/Workout/WorkoutView.swift`, `Views/Workout/WorkoutSummaryView.swift`.
-
-### `Data/Models/Health/HealthWorkout.swift`
-- Persisted Apple Health workout mirror.
-- Stores the HealthKit workout UUID, optional owning `WorkoutSession`, cached workout summary fields including separate active/resting energy values, HealthKit availability state, and last sync timestamp.
-- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthSyncCoordinator.swift`, `Views/History/WorkoutsListView.swift`.
-
-### `Data/Models/Health/WeightEntry.swift`
-- Local body-mass history record used by the Health tab.
-- Can represent a local-only entry, a Health-linked entry, or a Health-only imported sample.
-- Stores the recorded time, weight in kilograms, optional note, export/link state, HealthKit availability state, and last sync timestamp.
-- Read with: `Data/Services/HealthKit/HealthExportCoordinator.swift`, `Data/Services/HealthKit/HealthSyncCoordinator.swift`, `Views/Health/HealthTabView.swift`.
+- Owns:
+  - workout metadata
+  - lifecycle state (`pending`, `active`, `summary`, `done`)
+  - optional source `WorkoutPlan`
+  - `PreWorkoutContext`
+  - performed exercises and sets
+  - active exercise focus
+  - post-workout effort
+  - created suggestion events
+  - optional linked `HealthWorkout`
+- Defines finish-time cleanup and the plan-to-live-session copy path.
 
 ### `Data/Models/Sessions/ExercisePerformance.swift`
-- Per-exercise performed record inside a workout session.
-- Carries copied exercise metadata, live prescription links, frozen target snapshots, and set rows.
-- Read with: `Data/Models/Sessions/SetPerformance.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
+
+- Per-exercise performed record inside a workout.
+- Carries copied exercise metadata, target snapshots, live prescription links while active, and completed set data used later by suggestions and history rebuilding.
 
 ### `Data/Models/Sessions/SetPerformance.swift`
+
 - Per-set performed data.
-- Stores completion state, actual reps/weight/rest/RPE, the live `SetPrescription` link while the session is active, and `originalTargetSetID` for historical matching after plan edits or reindexing.
-- Read with: `Views/Components/ExerciseSetRowView.swift`, `Data/Models/Plans/SetPrescription.swift`.
+- Stores completion state, actual reps/load/rest/RPE, the live `SetPrescription` link while active, and `originalTargetSetID` for later historical matching.
 
 ### `Data/Models/Sessions/PreWorkoutContext.swift`
-- Pre-workout feeling, supplement toggle, and notes attached to a session.
-- Read with: `Views/Workout/PreWorkoutContextView.swift`, `Views/Workout/WorkoutDetailView.swift`.
+
+- Optional pre-workout state attached to a workout.
+- Stores feeling, pre-workout supplement state, and notes.
 
 ### `Data/Models/Plans/WorkoutPlan.swift`
+
 - Root workout-plan aggregate.
-- Owns exercises, split assignments, completion/editing state, and the create-from-session path.
-- Read with: `Data/Models/Plans/WorkoutPlan+Editing.swift`, `Views/WorkoutPlan/WorkoutPlanView.swift`, `Views/WorkoutPlan/WorkoutPlanDetailView.swift`.
+- Owns exercises, split links, completion/editing state, and sessions created from the plan.
 
 ### `Data/Models/Plans/WorkoutPlan+Editing.swift`
+
 - Copy-merge editing workflow for existing plans.
-- Creates persisted editing copies, reconciles stale unresolved suggestion state, merges the edited copy back into the original, and removes invalidated children.
-- Read with: `Documentation/PLAN_EDITING_FLOW.md`, `Views/WorkoutPlan/WorkoutPlanView.swift`.
+- Creates persisted editing copies, reconciles unresolved suggestion state invalidated by manual edits, merges changes back into the original, and deletes removed children.
 
 ### `Data/Models/Plans/ExercisePrescription.swift`
+
 - Per-exercise plan prescription.
-- Carries copied exercise metadata, rep-range policy, active session link, and attached suggestion events.
-- Read with: `Data/Models/Plans/SetPrescription.swift`, `Data/Models/Sessions/ExercisePerformance.swift`.
+- Carries copied exercise metadata, rep-range policy, live active-session links, and suggestion events attached at the exercise scope.
 
 ### `Data/Models/Plans/SetPrescription.swift`
+
 - Per-set plan target.
-- Owns set type, target weight, target reps, target rest, target RPE, the active set-performance link while a session is live, and attached suggestion events.
-- Read with: `Data/Models/Sessions/SetPerformance.swift`.
+- Stores set type, target load/reps/rest/RPE, active set-performance link while a workout is live, and set-scoped suggestion events.
 
 ### `Data/Models/Suggestions/SuggestionEvent.swift`
-- Grouped persisted suggestion record.
-- Owns the triggering performance, live target exercise/set, decision state, outcome state, required evaluation count, confidence tier, reasoning text, and child `PrescriptionChange` rows.
-- Read with: `Data/Models/Suggestions/PrescriptionChange.swift`, `Data/Models/Suggestions/SuggestionEvaluation.swift`, `Data/Models/Suggestions/SuggestionSnapshots.swift`.
 
-### `Data/Models/Suggestions/PrescriptionChange.swift`
-- Scalar before/after mutation inside one suggestion event.
-- Read with: `Views/Suggestions/SuggestionReviewView.swift`, `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`.
+- Persisted suggestion unit.
+- Owns:
+  - source session
+  - live target exercise and optional target set
+  - trigger performance
+  - decision state
+  - outcome state
+  - required evaluation count
+  - training style
+  - confidence and reasoning
+  - optional frozen `weightStepUsed`
+  - child `PrescriptionChange` rows
 
 ### `Data/Models/Suggestions/SuggestionEvaluation.swift`
-- One persisted outcome-evaluation pass for one later workout.
-- Read with: `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`.
 
-### `Data/Models/Suggestions/SuggestionSnapshots.swift`
-- Frozen target and performance snapshots used by generation, outcome evaluation, and AI helpers.
-- Historical matching is UUID-based through copied target-set IDs, not live set indices.
-- Read with: `ExercisePerformance.swift`, `SetPerformance.swift`, suggestion services.
+- One later-workout evaluation pass for one suggestion event.
+- Used by multi-session outcome resolution.
 
 ### `Data/Models/Exercise/Exercise.swift`
+
 - Canonical exercise catalog row.
-- Owns search metadata, alternate names, favorites, picker recency, and custom-vs-catalog identity.
-- Read with: `Data/Models/Exercise/ExerciseCatalog.swift`, `Helpers/ExerciseSearch.swift`.
+- Owns search metadata, alternate names, favorites, picker recency, equipment defaults, and built-in versus custom identity.
 
 ### `Data/Models/Exercise/ExerciseHistory.swift`
-- Derived analytics cache per `catalogID`.
-- Stores workout-based recency, totals, PR-style aggregates, and progression points used by exercise analytics UI and Spotlight eligibility.
-- Read with: `Data/Services/ExerciseHistoryUpdater.swift`, `Views/Exercise/ExerciseDetailView.swift`.
 
-### `Data/Models/Exercise/ProgressionPoint.swift`
-- Chart point model for exercise analytics.
-- Read with: `ExerciseHistory.swift`, `Views/Exercise/ExerciseDetailView.swift`.
+- Cached analytics row keyed by `catalogID`.
+- Stores completed-workout recency, totals, PR-style aggregates, and progression points.
+- Powers recent exercise ordering, exercise detail stats, and exercise Spotlight eligibility.
 
 ### `Data/Models/WorkoutSplit/WorkoutSplit.swift`
-- Split schedule aggregate.
-- Owns weekly-offset and rotation state, active split behavior, today's split resolution, and today's plan resolution.
-- Read with: `Data/Models/WorkoutSplit/WorkoutSplitDay.swift`, `Views/WorkoutSplit/WorkoutSplitView.swift`.
+
+- Split scheduling aggregate.
+- Owns weekly or rotation scheduling state, active split behavior, and "today" resolution.
 
 ### `Data/Models/WorkoutSplit/WorkoutSplitDay.swift`
+
 - One day inside a split.
-- Stores name, order, rest-day state, target muscles, and optional assigned plan.
-- Read with: `Views/WorkoutSplit/WorkoutSplitDayView.swift`, `Views/HomeSections/WorkoutSplitSectionView.swift`.
+- Stores day order, rest-day state, target muscles, and optional assigned plan.
+
+### `Data/Models/Health/HealthWorkout.swift`
+
+- Local mirror/cache of an Apple Health workout summary.
+- Stores Health workout identity, linked `WorkoutSession` when available, cached summary values, source name, and Health availability state.
+
+### `Data/Models/Health/WeightEntry.swift`
+
+- Local body-mass record used by the Health tab.
+- Can represent:
+  - a local-only entry
+  - an app-created entry linked to Apple Health
+  - a Health-imported entry
+
+### `Data/Models/Health/WeightGoal.swift`
+
+- Local weight-goal record for the Health tab.
+- Stores goal type, start/end dates, target weight, optional target date, optional target pace, and end reason when replaced or finished.
 
 ### `Data/Models/AppSettings.swift`
+
 - Singleton app settings.
-- Holds weight unit, height unit, timer behavior, notification settings, live activity settings, and related display/runtime preferences.
-- Read with: `Helpers/WeightFormatting.swift`, `Data/Services/RestTimerState.swift`, `Data/LiveActivity/WorkoutActivityManager.swift`.
+- Holds unit preferences, timer behavior, workout prompts, retention settings, Apple Health removed-data retention, and Live Activity / notification settings.
 
 ### `Data/Models/UserProfile.swift`
-- Singleton user profile used by onboarding and readiness checks.
-- Read with: `Views/Onboarding/OnboardingView.swift`, `Data/Services/SystemState.swift`.
 
-### `Data/Models/RestTimeHistory.swift`
-- Recent rest-duration history used by the timer UI and timer intents.
-- Read with: `Views/Workout/RestTimerView.swift`, `Intents/RestTimer/*`.
+- Singleton profile used by onboarding, readiness checks, and some Apple Health prefill.
 
-## Major Feature Surfaces
+## Runtime Services
 
 ### Workout Runtime
+
 - `Views/Workout/WorkoutSessionContainer.swift`
-  - Routes `.pending`, `.active`, `.summary`, and `.done` states to the right surface.
+  - State router for `pending`, `active`, `summary`, and `done`.
 - `Views/Workout/WorkoutView.swift`
-  - Main logging surface, finish/cancel entry point, and sheet host for add exercise, timer, pre-workout context, and settings.
-- `Views/Workout/ExerciseView.swift`
-  - Per-exercise logging surface.
-- `Views/Components/ExerciseSetRowView.swift`
-  - Set-level editing, completion, quick actions, timer kickoff, and live-activity updates.
+  - Active logging surface and owner of finish/cancel flow, sheets, and runtime hooks.
 - `Views/Workout/WorkoutSummaryView.swift`
-  - Post-workout orchestration point for summary UI, PR detection, outcome resolution, new suggestion generation, suggestion review, save-as-plan, history rebuild, and final `.done` persistence after active logging already ended.
-- Read with: `Documentation/SESSION_LIFECYCLE_FLOW.md`.
+  - Summary/finalization orchestrator for PRs, suggestion generation, save-as-plan, history rebuild, and final completion.
+- `Data/Services/RestTimerState.swift`
+  - Shared rest timer state persisted in shared defaults.
+- `Data/LiveActivity/WorkoutActivityManager.swift`
+  - Live Activity projection of the active workout and timer state.
+- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
+  - Live Apple Health workout session manager during local active logging.
 
-### Workout Plans
-- `Views/WorkoutPlan/WorkoutPlanView.swift`
-  - Full-screen create/edit plan flow.
-- `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-  - Read-only plan detail, favorite/start/edit/delete actions, and entry into the suggestions sheet.
-- `Views/Suggestions/WorkoutPlanSuggestionsSheet.swift`
-  - Plan-level view of suggestions that still need review or are still awaiting outcome.
-- `Views/WorkoutPlan/WorkoutPlansListView.swift`
-  - All-plans list with deletion and favorite toggles.
-- `Views/WorkoutPlan/WorkoutPlanPickerView.swift`
-  - Picker used by split day assignment.
-- Read with: `Documentation/PLAN_EDITING_FLOW.md`.
+### Suggestions and Outcomes
 
-### Suggestions
-- `Views/Suggestions/DeferredSuggestionsView.swift`
-  - Pre-workout gate when the source plan still has pending or deferred events.
-- `Views/Suggestions/SuggestionReviewView.swift`
-  - Shared review UI and mutation helpers for accept/reject/defer.
 - `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
-  - Top-level generation entrypoint after a plan-backed workout reaches summary.
+  - Top-level suggestion generation entrypoint.
 - `Data/Services/Suggestions/Generation/RuleEngine.swift`
-  - Deterministic generation logic.
+  - Deterministic suggestion rules.
 - `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
-  - Conflict resolution across generated drafts.
+  - Deduplicates or suppresses conflicting drafts.
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
-  - Multi-session outcome evaluation and finalization.
+  - Resolves older pending outcomes against later workouts.
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
   - Deterministic outcome logic.
-- Read with: `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`.
+- `Views/Suggestions/DeferredSuggestionsView.swift`
+  - Pre-workout gate for pending/deferred plan suggestions.
+- `Views/Suggestions/SuggestionReviewView.swift`
+  - Shared accept/reject/defer UI and mutation helpers.
+- `Views/Suggestions/WorkoutPlanSuggestionsSheet.swift`
+  - Plan-level view into reviewable and awaiting-outcome suggestion state.
 
 ### Exercise Analytics
-- `Views/HomeSections/RecentExercisesSectionView.swift`
-  - Home card driven by completed-workout recency, not picker recency.
+
+- `Data/Services/ExerciseHistoryUpdater.swift`
+  - Rebuilds `ExerciseHistory` after completion or deletion flows.
 - `Views/Exercise/ExercisesListView.swift`
-  - Searchable exercise browser ordered by `ExerciseHistory`.
+  - Searchable exercise browser ordered by cached completed-workout recency.
 - `Views/Exercise/ExerciseDetailView.swift`
-  - Cached analytics and charts for one exercise.
+  - Cached analytics detail screen with chart metric switching.
 - `Views/Exercise/ExerciseHistoryView.swift`
   - Raw completed-performance drill-down.
-- `Data/Services/ExerciseHistoryUpdater.swift`
-  - Rebuilds or deletes `ExerciseHistory` rows after workout completion or when completed workouts are hidden.
-- Read with: `Documentation/EXERCISE_HISTORY_FLOW.md`.
+- `Views/HomeSections/RecentExercisesSectionView.swift`
+  - Home card backed by `ExerciseHistory`, not picker recency.
 
-### Splits
-- `Views/HomeSections/WorkoutSplitSectionView.swift`
-  - Home card for today's split status and plan entry.
+### Plans and Splits
+
+- `Views/WorkoutPlan/WorkoutPlanView.swift`
+  - Create/edit plan flow.
+- `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
+  - Read-only plan detail, favorite/start/edit/delete actions, and suggestion-sheet entry.
 - `Views/WorkoutSplit/WorkoutSplitView.swift`
-  - Main split management surface.
+  - Split management surface.
 - `Views/WorkoutSplit/WorkoutSplitDayView.swift`
   - Per-day editing and plan assignment.
-- `Views/WorkoutSplit/SplitBuilderView.swift`
-  - New split creation flow.
-- `Views/WorkoutSplit/WorkoutSplitListView.swift`
-  - Active/inactive split management.
+- `Views/HomeSections/WorkoutSplitSectionView.swift`
+  - Home card for today's split state and today's plan entry.
+
+### Health Surfaces
+
+- `Views/Health/HealthTabView.swift`
+  - Health tab root.
+- `Views/Health/WeightSectionCard.swift`
+  - Health tab summary card for weight.
+- `Views/Health/WeightHistoryView.swift`
+  - Detailed weight chart, range filters, and active goal summary.
+- `Views/Health/AllWeightEntriesListView.swift`
+  - Full list of stored weight entries.
+- `Views/Health/WeightGoalHistoryView.swift`
+  - History of active and ended weight goals.
+- `Views/Workout/HealthWorkoutDetailView.swift`
+  - On-demand Health workout detail.
 
 ## Integrations
 
 ### Apple Health
+
 - `Data/Services/HealthKit/HealthAuthorizationManager.swift`
-  - HealthKit availability, full write-authorization status, per-type write capability checks, and permission-request boundary for live workout collection plus richer Health workout detail reads.
-- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
-  - Starts live HealthKit workout collection when a local workout becomes active, finishes or discards the HealthKit workout when active logging ends, and links the saved `HKWorkout` into `HealthWorkout`.
-- `Data/Services/HealthKit/HealthExportCoordinator.swift`
-  - Reconciliation-aware export and repair path for both completed workouts and `WeightEntry` body-mass samples, relinking by metadata before falling back to new Health writes.
-- `Data/Services/HealthKit/HealthSyncCoordinator.swift`
-  - Anchored Apple Health sync for workouts and body mass that upserts `HealthWorkout` and `WeightEntry` records, links mirrored workouts back to local `WorkoutSession`s by metadata, and handles removed Health data.
-- `Data/Services/HealthKit/HealthPreferences.swift`
-  - Device-local Health defaults storage for workout and body-mass sync anchor persistence.
+  - Health availability, status, request boundary, and metadata helpers.
 - `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
-  - Registers workout and body-mass observer queries, enables HealthKit background delivery, and serializes the sync-plus-reconciliation pipeline.
+  - Observer registration, background delivery registration, and serialized Health sync entrypoint.
+- `Data/Services/HealthKit/HealthSyncCoordinator.swift`
+  - Anchored sync for workouts and body mass.
+- `Data/Services/HealthKit/HealthExportCoordinator.swift`
+  - Reconciliation-aware export/repair path for completed workouts and weight entries.
 - `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`
-  - On-demand HealthKit detail loader for the Health workout detail screen.
-- `Views/History/WorkoutsListView.swift`, `Views/Components/WorkoutHistoryRowView.swift`, `Views/Workout/HealthWorkoutDetailView.swift`, `Views/Health/HealthTabView.swift`
-  - Health-aware history rows, workout detail UI, and the initial weight-driven Health tab.
-- Read with: `Documentation/HEALTHKIT_INTEGRATION.md`.
+  - On-demand richer Health workout detail loading.
+- `Data/Services/HealthKit/HealthPreferences.swift`
+  - Shared-defaults storage for Health sync anchors.
 
-### Spotlight and App Entities
+### Spotlight and App Intents
+
 - `Data/Services/SpotlightIndexer.swift`
-  - Indexes workouts, plans, exercises, and splits.
-  - Exercise indexing is history-backed, not catalog-backed.
-- `Intents/Workout/WorkoutSessionEntity.swift`
-- `Intents/WorkoutPlan/WorkoutPlanEntity.swift`
-- `Intents/WorkoutSplit/WorkoutSplitEntity.swift`
-- `Intents/Exercise/ExerciseEntity.swift`
-- Read with: `AppRouter.handleSpotlight(_:)`.
-
-### App Intents and Shortcuts
-- `Intents/VillainArcShortcuts.swift`
-  - Declares the main shortcut surface.
-- `Intents/IntentDonations.swift`
-  - Central donation helpers used by UI flows.
+  - Indexes completed workouts, completed plans, history-backed exercises, and splits.
 - `Intents/Workout/*`, `Intents/WorkoutPlan/*`, `Intents/WorkoutSplit/*`, `Intents/Exercise/*`, `Intents/RestTimer/*`
-  - Reuse app logic through `SetupGuard`, `AppRouter`, and shared models/services.
+  - App Intent entrypoints that reuse `SetupGuard`, `AppRouter`, and the same models/services used by the UI.
+- `Intents/VillainArcShortcuts.swift`
+  - Top-level shortcut declarations.
+- `Intents/IntentDonations.swift`
+  - Donation helpers shared across flows.
 
-### Timer and Live Activity
-- `Data/Services/RestTimerState.swift`
-  - App-wide timer state machine with app-group persistence and notification hookup.
-- `Helpers/RestTimerNotifications.swift`
-  - Local notification scheduling for the rest timer.
-- `Data/LiveActivity/WorkoutActivityManager.swift`
-  - Workout live activity lifecycle and synchronization.
+### Widgets and Live Activities
+
 - `VillainArcWidgetExtension/*`
-  - Widget and live activity UI surfaces.
+  - Widget and Live Activity UI.
+- `Data/LiveActivity/WorkoutActivityAttributes.swift`
+  - Shared ActivityKit model.
+- `Data/LiveActivity/WorkoutActivityManager.swift`
+  - Activity lifecycle and state synchronization.
 
 ### AI Helpers
+
 - `Data/Services/AI/Suggestions/AITrainingStyleClassifier.swift`
-  - Fallback classifier when deterministic style detection is ambiguous.
+  - Fallback classifier when deterministic training-style detection is unknown.
 - `Data/Services/AI/Outcomes/AIOutcomeInferrer.swift`
   - Fallback evaluator for lower-confidence outcome cases.
 - `Data/Services/AI/Shared/FoundationModelPrewarmer.swift`
   - Prewarms on-device model usage near likely suggestion/outcome entry points.
-
-## Read By Task
-
-- Startup, onboarding, or resume bugs:
-  - `VillainArcApp.swift`, `RootView.swift`, `OnboardingManager.swift`, `AppRouter.swift`, `SetupGuard.swift`
-- Workout logging, finish, or summary bugs:
-  - `WorkoutSession.swift`, `WorkoutView.swift`, `WorkoutSummaryView.swift`, `WorkoutSessionContainer.swift`
-- Plan creation, editing, or deletion bugs:
-  - `WorkoutPlan.swift`, `WorkoutPlan+Editing.swift`, `WorkoutPlanView.swift`, `WorkoutPlanDetailView.swift`
-- Suggestion generation, review, or outcome bugs:
-  - `SuggestionEvent.swift`, `SuggestionGenerator.swift`, `OutcomeResolver.swift`, `SuggestionReviewView.swift`
-- Exercise ordering, charts, or history bugs:
-  - `ExerciseHistory.swift`, `ExerciseHistoryUpdater.swift`, `ExercisesListView.swift`, `ExerciseDetailView.swift`
-- Split-day or today's-plan bugs:
-  - `WorkoutSplit.swift`, `WorkoutSplitView.swift`, `WorkoutSplitSectionView.swift`
-- Spotlight or shortcut issues:
-  - `SpotlightIndexer.swift`, entity files, intent files, `IntentDonations.swift`
-
-## Tests
-
-### `VillainArcTests/WorkoutFinishTests.swift`
-- Finish-time pruning and incomplete-set resolution.
-
-### `VillainArcTests/VillainArcTests.swift`
-- Plan editing semantics and unresolved-suggestion cleanup.
-
-### `VillainArcTests/SuggestionSystemTests.swift`
-- Suggestion generation, training-style handling, and related persistence behavior.
-
-### `VillainArcTests/MultiSessionEvaluationTests.swift`
-- Multi-session outcome accumulation and finalization.
-
-### `VillainArcTests/OutcomeRuleEngineTests.swift`
-- Deterministic outcome logic by change type.
-
-### `VillainArcTests/OutcomeResolverGroupingTests.swift`
-- Group-level outcome aggregation behavior.
-
-### `VillainArcTests/UUIDTargetTrackingTests.swift`
-- UUID-based historical set matching through plan edits and reindexing.
-
-### `VillainArcTests/ExerciseHistoryMetricsTests.swift`
-- Derived exercise history totals, PR metrics, and progression points.
-
-### `VillainArcTests/ExerciseReplacementTests.swift`
-- Exercise replacement mechanics and cleanup of stale prescription links.
-
-### `VillainArcTests/DataManagerCatalogSyncTests.swift`
-- Catalog sync and metadata propagation into stored plan/session copies.
-
-### `VillainArcTests/WeightConversionTests.swift`
-- Canonical-kg storage and user-unit conversion paths.
-
-### `VillainArcTests/SpotlightSummaryTests.swift`
-- Spotlight summary text and indexing assumptions.

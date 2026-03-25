@@ -14,6 +14,7 @@ final class Exercise {
     var isCustom: Bool = false
     var searchTokens: [String] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
+    var preferredWeightChange: Double?
 
     var displayMuscle: String {
         musclesTargeted.first?.displayName ?? String(localized: "Unknown Muscle")

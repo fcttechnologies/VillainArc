@@ -92,7 +92,7 @@ struct OutcomeRuleEngine {
               let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
         if event.category == .warmupCalibration {
-            return evaluateWarmupWeightChange(change: change, setPerf: setPerf, exercisePerf: exercisePerf, trainingStyle: trainingStyle)
+            return evaluateWarmupWeightChange(change: change, setPerf: setPerf, exercisePerf: exercisePerf, trainingStyle: trainingStyle, weightStepUsed: event.weightStepUsed)
         }
 
         let newWeight = change.newValue
@@ -100,52 +100,56 @@ struct OutcomeRuleEngine {
 
         // Tolerance comes from equipment/muscle-aware increment sizing.
         let baseWeight = newWeight > 0 ? newWeight : oldWeight
-        let weightStep = weightTolerance(for: exercisePerf, baseWeight: baseWeight)
+        let weightStep = weightTolerance(for: exercisePerf, baseWeight: baseWeight, weightStepUsed: event.weightStepUsed)
         let actualWeight = setPerf.weight
+        let actualDifficultyWeight = difficultyRelativeWeight(actualWeight, equipmentType: exercisePerf.equipmentType)
+        let oldDifficultyWeight = difficultyRelativeWeight(oldWeight, equipmentType: exercisePerf.equipmentType)
+        let newDifficultyWeight = difficultyRelativeWeight(newWeight, equipmentType: exercisePerf.equipmentType)
+        let loadLabel = exercisePerf.equipmentType.usesAssistanceWeightSemantics ? "assistance" : "weight"
 
         // A large directional overshoot means the athlete had to move substantially past the
         // prescribed adjustment. Upward overshoot means the increase was too small; downward
         // overshoot means the decrease was still not enough.
-        if newWeight > oldWeight && actualWeight >= newWeight + weightStep * 2 {
-            return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Actual weight (\(actualWeight)) substantially exceeded the new target (\(newWeight)) — the suggested increase was too conservative.")
+        if newDifficultyWeight > oldDifficultyWeight && actualDifficultyWeight >= newDifficultyWeight + weightStep * 2 {
+            return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Actual \(loadLabel) (\(actualWeight)) substantially exceeded the new target (\(newWeight)) — the suggested harder change was too conservative.")
         }
-        if newWeight < oldWeight && actualWeight <= newWeight - weightStep * 2 {
-            return OutcomeSignal(outcome: .insufficient, confidence: 0.8, reason: "Actual weight (\(actualWeight)) fell well below the new target (\(newWeight)) — the suggested decrease was not enough.")
+        if newDifficultyWeight < oldDifficultyWeight && actualDifficultyWeight <= newDifficultyWeight - weightStep * 2 {
+            return OutcomeSignal(outcome: .insufficient, confidence: 0.8, reason: "Actual \(loadLabel) (\(actualWeight)) fell well below the new target (\(newWeight)) — the suggested easier change was not enough.")
         }
 
-        let followThrough = followThroughStrength(actual: actualWeight, old: oldWeight, new: newWeight, tolerance: weightStep)
+        let followThrough = followThroughStrength(actual: actualDifficultyWeight, old: oldDifficultyWeight, new: newDifficultyWeight, tolerance: weightStep)
 
         guard followThrough != .none else {
-            if abs(actualWeight - oldWeight) <= weightStep {
-                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual weight (\(actualWeight)) stayed near old target (\(oldWeight)), new target (\(newWeight)) not attempted.")
+            if abs(actualDifficultyWeight - oldDifficultyWeight) <= weightStep {
+                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual \(loadLabel) (\(actualWeight)) stayed near old target (\(oldWeight)), new target (\(newWeight)) not attempted.")
             }
-            return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual weight (\(actualWeight)) not close to new target (\(newWeight)).")
+            return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual \(loadLabel) (\(actualWeight)) not close to new target (\(newWeight)).")
         }
 
         let context = followThrough == .full
-            ? "weight change to \(newWeight)"
-            : "partial weight change toward \(newWeight)"
+            ? "\(loadLabel) change to \(newWeight)"
+            : "partial \(loadLabel) change toward \(newWeight)"
         let baseSignal = evaluateRepsInRange(actualReps: setPerf.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: context)
-        let adjustedSignal = adjustSignalForFollowThrough(baseSignal, strength: followThrough, actual: actualWeight, old: oldWeight, new: newWeight, metricName: "weight")
+        let adjustedSignal = adjustSignalForFollowThrough(baseSignal, strength: followThrough, actual: actualWeight, old: oldWeight, new: newWeight, metricName: loadLabel)
 
-        if difficultyDirection(for: change) == .easier {
+        if difficultyDirection(forWeightChangeFrom: oldWeight, to: newWeight, equipmentType: exercisePerf.equipmentType) == .easier {
             return evaluateSupportiveSetOutcome(
                 adjustedSignal: adjustedSignal,
                 triggerSet: triggerSetPerformance(for: event),
                 frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty,
                 actualReps: setPerf.reps,
-                context: "Load reduction"
+                context: exercisePerf.equipmentType.usesAssistanceWeightSemantics ? "Assistance increase" : "Load reduction"
             )
         }
 
         return adjustedSignal
     }
 
-    private static func evaluateWarmupWeightChange(change: PrescriptionChange, setPerf: SetPerformance, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
+    private static func evaluateWarmupWeightChange(change: PrescriptionChange, setPerf: SetPerformance, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?, weightStepUsed: Double?) -> OutcomeSignal? {
         let newWeight = change.newValue
         let oldWeight = change.previousValue
         let baseWeight = newWeight > 0 ? newWeight : oldWeight
-        let weightStep = weightTolerance(for: exercisePerf, baseWeight: baseWeight)
+        let weightStep = weightTolerance(for: exercisePerf, baseWeight: baseWeight, weightStepUsed: weightStepUsed)
         let actualWeight = setPerf.weight
 
         let followThrough = followThroughStrength(actual: actualWeight, old: oldWeight, new: newWeight, tolerance: weightStep)
@@ -258,7 +262,8 @@ struct OutcomeRuleEngine {
 
         let weightTolerance = OutcomeRuleEngine.weightTolerance(
             for: exercisePerf,
-            baseWeight: max(comparison.actualDownstreamSet.weight, comparison.triggerDownstreamSet.weight)
+            baseWeight: max(comparison.actualDownstreamSet.weight, comparison.triggerDownstreamSet.weight),
+            weightStepUsed: nil
         )
 
         let improvement = downstreamPerformanceImproved(
@@ -403,6 +408,23 @@ struct OutcomeRuleEngine {
         case .changeSetType, .changeRepRangeMode:
             return .neutral
         }
+    }
+
+    private static func difficultyDirection(forWeightChangeFrom oldWeight: Double, to newWeight: Double, equipmentType: EquipmentType) -> DifficultyDirection {
+        let oldDifficultyWeight = difficultyRelativeWeight(oldWeight, equipmentType: equipmentType)
+        let newDifficultyWeight = difficultyRelativeWeight(newWeight, equipmentType: equipmentType)
+
+        if newDifficultyWeight > oldDifficultyWeight {
+            return .harder
+        }
+        if newDifficultyWeight < oldDifficultyWeight {
+            return .easier
+        }
+        return .neutral
+    }
+
+    private static func difficultyRelativeWeight(_ weight: Double, equipmentType: EquipmentType) -> Double {
+        equipmentType.usesAssistanceWeightSemantics ? -weight : weight
     }
 
     private static func minimumSuccessfulReps(for frozenRepRange: RepRangeSnapshot) -> Int? {
@@ -643,7 +665,10 @@ struct OutcomeRuleEngine {
         return 3
     }
 
-    private static func weightTolerance(for exercisePerf: ExercisePerformance, baseWeight: Double) -> Double {
+    private static func weightTolerance(for exercisePerf: ExercisePerformance, baseWeight: Double, weightStepUsed: Double?) -> Double {
+        if let weightStepUsed, weightStepUsed > 0 {
+            return weightStepUsed
+        }
         let primaryMuscle = exercisePerf.musclesTargeted.first ?? .chest
         let equipment = exercisePerf.equipmentType
         // Keep tolerance aligned with progression increment granularity.

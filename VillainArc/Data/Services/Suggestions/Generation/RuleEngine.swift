@@ -8,6 +8,27 @@ struct ExerciseSuggestionContext {
     let plan: WorkoutPlan
     let resolvedTrainingStyle: TrainingStyle
     let weightUnit: WeightUnit
+    let preferredWeightChange: Double?
+
+    init(
+        session: WorkoutSession,
+        performance: ExercisePerformance,
+        prescription: ExercisePrescription,
+        history: [ExercisePerformance],
+        plan: WorkoutPlan,
+        resolvedTrainingStyle: TrainingStyle,
+        weightUnit: WeightUnit,
+        preferredWeightChange: Double? = nil
+    ) {
+        self.session = session
+        self.performance = performance
+        self.prescription = prescription
+        self.history = history
+        self.plan = plan
+        self.resolvedTrainingStyle = resolvedTrainingStyle
+        self.weightUnit = weightUnit
+        self.preferredWeightChange = preferredWeightChange
+    }
 }
 
 @MainActor
@@ -142,7 +163,7 @@ struct RuleEngine {
         guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: upper) else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let repsReason = "Reset reps to \(lower) to account for the added weight."
+        let repsReason = resetRepsReason(lower: lower, context: context)
 
         let multiplier = styleIncrementMultiplier(context)
 
@@ -152,14 +173,16 @@ struct RuleEngine {
             guard currentWeight > 0 else { continue }
 
             // Increment is based on muscle group, weight size, and training style.
-            let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
+            let baseIncrement = suggestedWeightStep(for: currentWeight, context: context)
+            guard let harderChange = harderLoadChange(from: currentWeight, amount: baseIncrement * multiplier, context: context) else {
+                continue
+            }
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
-                ? "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight to keep progressing."
-                : "You hit the top of your rep range (\(upper)) on your primary sets this session. Increase weight and keep reps at \(lower)."
+                ? "You hit the top of your rep range (\(upper)) on your primary sets this session. \(harderLoadAction(context)) to keep progressing."
+                : "You hit the top of your rep range (\(upper)) on your primary sets this session. \(harderLoadAction(context)) and keep reps at \(lower)."
 
-            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
+            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: harderChange.changeType, previousValue: currentWeight, newValue: harderChange.newWeight)]
 
             if shouldResetReps {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
@@ -185,7 +208,7 @@ struct RuleEngine {
         guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: target + 1) else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let reason = "You exceeded your rep target (\(target)) on your primary sets this session. Increase weight to keep progressing."
+        let reason = "You exceeded your rep target (\(target)) on your primary sets this session. \(harderLoadAction(context)) to keep progressing."
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
@@ -193,10 +216,12 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
+            let baseIncrement = suggestedWeightStep(for: currentWeight, context: context)
+            guard let harderChange = harderLoadChange(from: currentWeight, amount: baseIncrement * multiplier, context: context) else {
+                continue
+            }
 
-            events.append(makeSetEvent(context: context, ruleID: .immediateProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .immediateProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: harderChange.changeType, previousValue: currentWeight, newValue: harderChange.newWeight)], reasoning: reason))
         }
 
         return events
@@ -230,7 +255,7 @@ struct RuleEngine {
         guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: requiredReps) else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let repsReason = "Reset reps to \(lower) to account for the added weight."
+        let repsReason = resetRepsReason(lower: lower, context: context)
         let evidenceDescription = profile.confirmedRangeMargin == 0
             ? "You've hit the top of your rep range (\(upper)) for two sessions on your primary sets."
             : "You've been at or within one rep of the top of your rep range (\(upper)) for two sessions on your primary sets."
@@ -241,14 +266,16 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
+            let baseIncrement = suggestedWeightStep(for: currentWeight, context: context)
+            guard let harderChange = harderLoadChange(from: currentWeight, amount: baseIncrement * multiplier, context: context) else {
+                continue
+            }
             let shouldResetReps = setPrescription.targetReps != lower
             let weightReason = shouldResetReps
-                ? "\(evidenceDescription) Increase weight to keep progressing."
-                : "\(evidenceDescription) Increase weight and keep reps at \(lower)."
+                ? "\(evidenceDescription) \(harderLoadAction(context)) to keep progressing."
+                : "\(evidenceDescription) \(harderLoadAction(context)) and keep reps at \(lower)."
 
-            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
+            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: harderChange.changeType, previousValue: currentWeight, newValue: harderChange.newWeight)]
 
             if shouldResetReps {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
@@ -288,8 +315,8 @@ struct RuleEngine {
 
         var events: [SuggestionEventDraft] = []
         let reason = profile.confirmedTargetMargin == 0
-            ? "You've consistently hit your target (\(target)) on your primary sets. Increase weight to keep progressing."
-            : "You've consistently been at or within one rep of your target (\(target)) on your primary sets. Increase weight to keep progressing."
+            ? "You've consistently hit your target (\(target)) on your primary sets. \(harderLoadAction(context)) to keep progressing."
+            : "You've consistently been at or within one rep of your target (\(target)) on your primary sets. \(harderLoadAction(context)) to keep progressing."
         let multiplier = styleIncrementMultiplier(context)
 
         for set in progressionSets {
@@ -297,10 +324,12 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = roundSuggestedWeight(currentWeight + baseIncrement * multiplier, context: context)
+            let baseIncrement = suggestedWeightStep(for: currentWeight, context: context)
+            guard let harderChange = harderLoadChange(from: currentWeight, amount: baseIncrement * multiplier, context: context) else {
+                continue
+            }
 
-            events.append(makeSetEvent(context: context, ruleID: .confirmedProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .confirmedProgressionTarget, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: harderChange.changeType, previousValue: currentWeight, newValue: harderChange.newWeight)], reasoning: reason))
         }
 
         return events
@@ -394,8 +423,8 @@ struct RuleEngine {
         guard overshootMet else { return [] }
 
         var events: [SuggestionEventDraft] = []
-        let weightReason = "You significantly overshot the target on your primary sets this session. Increase weight to better match your current strength."
-        let repsReason = "Reset reps to \(lower) to account for the larger weight jump."
+        let weightReason = "You significantly overshot the target on your primary sets this session. \(harderLoadAction(context)) to better match your current strength."
+        let repsReason = resetRepsReason(lower: lower, context: context)
 
         for set in progressionSets {
             guard let setPrescription = targetSet(for: set) else { continue }
@@ -404,11 +433,12 @@ struct RuleEngine {
 
             // Overshoot jumps still respect exercise context. Large-jump implements and
             // heavier compounds use a more conservative multiplier than small stable moves.
-            let baseIncrement = weightIncrement(for: currentWeight, context: context)
-            let jumpWeight = currentWeight + (baseIncrement * profile.overshootIncrementMultiplier)
-            let newWeight = roundSuggestedWeight(jumpWeight, context: context)
+            let baseIncrement = suggestedWeightStep(for: currentWeight, context: context)
+            guard let harderChange = harderLoadChange(from: currentWeight, amount: baseIncrement * profile.overshootIncrementMultiplier, context: context) else {
+                continue
+            }
 
-            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: .increaseWeight, previousValue: currentWeight, newValue: newWeight)]
+            var draftChanges: [PrescriptionChangeDraft] = [makeChangeDraft(changeType: harderChange.changeType, previousValue: currentWeight, newValue: harderChange.newWeight)]
 
             if shouldResetReps, setPrescription.targetReps != lower {
                 draftChanges.append(makeChangeDraft(changeType: .decreaseReps, previousValue: Double(setPrescription.targetReps), newValue: Double(lower)))
@@ -474,9 +504,9 @@ struct RuleEngine {
         var events: [SuggestionEventDraft] = []
         let reason: String
         if requiresFullWindow {
-            reason = "You fell below the minimum rep target (\(lower)) in \(profile.belowRangeRequiredCount) of your last \(profile.belowRangeWindowSize) sessions while still attempting the prescribed load. Reduce weight slightly to stay in range."
+            reason = "You fell below the minimum rep target (\(lower)) in \(profile.belowRangeRequiredCount) of your last \(profile.belowRangeWindowSize) sessions while still attempting the prescribed load. \(easierLoadAction(context)) to stay in range."
         } else {
-            reason = "You repeatedly fell below the minimum rep target (\(lower)) in recent sessions while still attempting the prescribed load. Reduce weight slightly to stay in range."
+            reason = "You repeatedly fell below the minimum rep target (\(lower)) in recent sessions while still attempting the prescribed load. \(easierLoadAction(context)) to stay in range."
         }
 
         for set in progressionSets {
@@ -484,10 +514,12 @@ struct RuleEngine {
             let currentWeight = setPrescription.targetWeight
             guard currentWeight > 0 else { continue }
 
-            let decrement = weightIncrement(for: currentWeight, context: context)
-            let newWeight = roundSuggestedWeight(max(0, currentWeight - decrement), context: context)
+            let decrement = suggestedWeightStep(for: currentWeight, context: context)
+            guard let easierChange = easierLoadChange(from: currentWeight, amount: decrement, context: context) else {
+                continue
+            }
 
-            events.append(makeSetEvent(context: context, ruleID: .belowRangeWeightDecrease, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: currentWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .belowRangeWeightDecrease, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: easierChange.changeType, previousValue: currentWeight, newValue: easierChange.newWeight)], reasoning: reason))
         }
 
         return events
@@ -525,7 +557,7 @@ struct RuleEngine {
             guard weights.count == profile.matchActualWeightSessionsRequired else { continue }
 
             let targetWeight = setPrescription.targetWeight
-            let increment = weightIncrement(for: targetWeight, context: context)
+            let increment = defaultWeightIncrement(for: targetWeight, context: context)
             let deviationThreshold = max(1.25, increment * profile.meaningfulDeviationIncrementMultiplier)
             let deltas = weights.map { $0 - targetWeight }
             let allAbove = deltas.allSatisfy { $0 > deviationThreshold }
@@ -541,7 +573,7 @@ struct RuleEngine {
             guard abs(newWeight - targetWeight) > 0.1 else { continue }
 
             let changeType: ChangeType = newWeight > targetWeight ? .increaseWeight : .decreaseWeight
-            let reason = "You've used about \(context.weightUnit.display(newWeight)) for \(profile.matchActualWeightSessionsRequired) sessions. Update the prescription to match your working weight."
+            let reason = matchActualWeightReason(newWeight: newWeight, sessionsRequired: profile.matchActualWeightSessionsRequired, context: context)
 
             events.append(makeSetEvent(context: context, ruleID: .matchActualWeight, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: targetWeight, newValue: newWeight)], reasoning: reason))
         }
@@ -561,10 +593,10 @@ struct RuleEngine {
         var events: [SuggestionEventDraft] = []
 
         for setPrescription in context.prescription.sortedSets where setPrescription.type == .working {
-            var reducedWeights: [Double] = []
+            var supportiveWeights: [Double] = []
             var atOrBelowFloorCount = 0
             var belowFloorCount = 0
-            let reducedLoadThreshold = meaningfulReducedLoadThreshold(for: setPrescription.targetWeight, context: context, profile: profile)
+            let supportiveLoadThreshold = meaningfulReducedLoadThreshold(for: setPrescription.targetWeight, context: context, profile: profile)
 
             for performance in evidenceWindow {
                 guard let set = matchingSetPerformance(in: performance, for: setPrescription, context: context),
@@ -574,13 +606,17 @@ struct RuleEngine {
                     continue
                 }
 
-                let reducedLoad = set.weight <= (setTarget.targetWeight - reducedLoadThreshold)
+                let supportiveLoad = if context.prescription.equipmentType.usesAssistanceWeightSemantics {
+                    set.weight >= (setTarget.targetWeight + supportiveLoadThreshold)
+                } else {
+                    set.weight <= (setTarget.targetWeight - supportiveLoadThreshold)
+                }
                 let atOrBelowFloor = set.reps <= floor
                 let belowFloor = set.reps < floor
 
-                if reducedLoad && atOrBelowFloor {
+                if supportiveLoad && atOrBelowFloor {
                     atOrBelowFloorCount += 1
-                    reducedWeights.append(set.weight)
+                    supportiveWeights.append(set.weight)
                     if belowFloor {
                         belowFloorCount += 1
                     }
@@ -593,15 +629,23 @@ struct RuleEngine {
             // enough evidence that the prescription itself should be lowered.
             guard atOrBelowFloorCount >= profile.reducedWeightSessionsRequired,
                   belowFloorCount >= 1,
-                  !reducedWeights.isEmpty else { continue }
+                  !supportiveWeights.isEmpty else { continue }
 
-            let average = reducedWeights.reduce(0, +) / Double(reducedWeights.count)
+            let average = supportiveWeights.reduce(0, +) / Double(supportiveWeights.count)
             let newWeight = roundSuggestedWeight(average, context: context)
-            guard newWeight < setPrescription.targetWeight else { continue }
+            let changeType: ChangeType
+            let reason: String
+            if context.prescription.equipmentType.usesAssistanceWeightSemantics {
+                guard newWeight > setPrescription.targetWeight else { continue }
+                changeType = .increaseWeight
+                reason = "You've increased assistance to hit your reps in recent sessions. Update the prescription to match your current assistance setting."
+            } else {
+                guard newWeight < setPrescription.targetWeight else { continue }
+                changeType = .decreaseWeight
+                reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
+            }
 
-            let reason = "You've reduced the load to hit your reps in recent sessions. Update the prescription to match your current working weight."
-
-            events.append(makeSetEvent(context: context, ruleID: .reducedWeightToHitReps, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: .decreaseWeight, previousValue: setPrescription.targetWeight, newValue: newWeight)], reasoning: reason))
+            events.append(makeSetEvent(context: context, ruleID: .reducedWeightToHitReps, category: .performance, setPrescription: setPrescription, changes: [makeChangeDraft(changeType: changeType, previousValue: setPrescription.targetWeight, newValue: newWeight)], reasoning: reason))
         }
 
         return events
@@ -734,7 +778,7 @@ struct RuleEngine {
         var events: [SuggestionEventDraft] = []
 
         for setPrescription in context.prescription.sortedSets where setPrescription.type == .warmup {
-            let increment = weightIncrement(for: max(setPrescription.targetWeight, 1), context: context)
+            let increment = defaultWeightIncrement(for: max(setPrescription.targetWeight, 1), context: context)
             guard increment > 0 else { continue }
 
             var warmupWeights: [Double] = []
@@ -1353,16 +1397,28 @@ struct RuleEngine {
         return candidateSets.first(where: { $0.originalTargetSetID == setPrescription.id })
     }
 
-    private static func weightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
+    private static func defaultWeightIncrement(for weight: Double, context: ExerciseSuggestionContext) -> Double {
         let primaryMuscle = context.prescription.musclesTargeted.first ?? context.performance.musclesTargeted.first ?? .chest
         return MetricsCalculator.weightIncrement(for: weight, primaryMuscle: primaryMuscle, equipmentType: context.prescription.equipmentType, catalogID: context.prescription.catalogID)
     }
 
+    private static func suggestedWeightStep(for weight: Double, context: ExerciseSuggestionContext) -> Double {
+        if let preferredWeightChange = context.preferredWeightChange, preferredWeightChange > 0 {
+            return preferredWeightChange
+        }
+        return defaultWeightIncrement(for: weight, context: context)
+    }
+
     private static func supportsLoadChangeSuggestions(for context: ExerciseSuggestionContext) -> Bool {
-        // Plain bodyweight movements should progress through reps/range first.
-        // Without explicit equipment metadata, load jumps here create unrealistic
-        // recommendations like odd pound increases for exercises such as ab wheel rollouts.
-        context.prescription.equipmentType != .bodyweight
+        guard context.prescription.equipmentType == .bodyweight else { return true }
+
+        // Pure bodyweight movements should still progress through reps/range first.
+        // Once the athlete explicitly logs external load, allow normal load progression.
+        if context.prescription.sortedSets.contains(where: { $0.targetWeight > 0 }) {
+            return true
+        }
+
+        return primaryProgressionSets(from: context.performance, context: context).contains { $0.weight > 0 }
     }
 
     private static func progressionProfile(for context: ExerciseSuggestionContext) -> ProgressionProfile {
@@ -1375,17 +1431,86 @@ struct RuleEngine {
     }
 
     private static func attemptedWeightTolerance(for targetWeight: Double, context: ExerciseSuggestionContext, profile: ProgressionProfile) -> Double {
-        let increment = weightIncrement(for: targetWeight, context: context)
+        let increment = defaultWeightIncrement(for: targetWeight, context: context)
         return max(1.25, increment * profile.attemptedWeightToleranceIncrementMultiplier)
     }
 
     private static func meaningfulReducedLoadThreshold(for targetWeight: Double, context: ExerciseSuggestionContext, profile: ProgressionProfile) -> Double {
-        let increment = weightIncrement(for: targetWeight, context: context)
+        let increment = defaultWeightIncrement(for: targetWeight, context: context)
         return max(1.25, increment * profile.reducedLoadIncrementMultiplier)
     }
 
     private static func roundSuggestedWeight(_ value: Double, context: ExerciseSuggestionContext) -> Double {
-        MetricsCalculator.roundSuggestedWeight(value, equipmentType: context.prescription.equipmentType, weightUnit: context.weightUnit)
+        return MetricsCalculator.roundSuggestedWeight(value, equipmentType: context.prescription.equipmentType, weightUnit: context.weightUnit)
+    }
+
+    private static func harderLoadChange(from currentWeight: Double, amount: Double, context: ExerciseSuggestionContext) -> (changeType: ChangeType, newWeight: Double)? {
+        guard amount > 0 else { return nil }
+
+        let effectiveAmount = roundedPreferredWeightAmount(for: amount, context: context)
+        let newWeight = if context.prescription.equipmentType.usesAssistanceWeightSemantics {
+            adjustedWeight(from: currentWeight, delta: -effectiveAmount, context: context)
+        } else {
+            adjustedWeight(from: currentWeight, delta: effectiveAmount, context: context)
+        }
+
+        guard abs(newWeight - currentWeight) > 0.001 else { return nil }
+        let changeType: ChangeType = context.prescription.equipmentType.usesAssistanceWeightSemantics ? .decreaseWeight : .increaseWeight
+        return (changeType, newWeight)
+    }
+
+    private static func easierLoadChange(from currentWeight: Double, amount: Double, context: ExerciseSuggestionContext) -> (changeType: ChangeType, newWeight: Double)? {
+        guard amount > 0 else { return nil }
+
+        let effectiveAmount = roundedPreferredWeightAmount(for: amount, context: context)
+        let newWeight = if context.prescription.equipmentType.usesAssistanceWeightSemantics {
+            adjustedWeight(from: currentWeight, delta: effectiveAmount, context: context)
+        } else {
+            adjustedWeight(from: currentWeight, delta: -effectiveAmount, context: context)
+        }
+
+        guard abs(newWeight - currentWeight) > 0.001 else { return nil }
+        let changeType: ChangeType = context.prescription.equipmentType.usesAssistanceWeightSemantics ? .increaseWeight : .decreaseWeight
+        return (changeType, newWeight)
+    }
+
+    private static func harderLoadAction(_ context: ExerciseSuggestionContext) -> String {
+        context.prescription.equipmentType.usesAssistanceWeightSemantics ? "Decrease assistance" : "Increase weight"
+    }
+
+    private static func easierLoadAction(_ context: ExerciseSuggestionContext) -> String {
+        context.prescription.equipmentType.usesAssistanceWeightSemantics ? "Increase assistance slightly" : "Reduce weight slightly"
+    }
+
+    private static func resetRepsReason(lower: Int, context: ExerciseSuggestionContext) -> String {
+        context.prescription.equipmentType.usesAssistanceWeightSemantics
+            ? "Reset reps to \(lower) to account for the harder assistance setting."
+            : "Reset reps to \(lower) to account for the added weight."
+    }
+
+    private static func matchActualWeightReason(newWeight: Double, sessionsRequired: Int, context: ExerciseSuggestionContext) -> String {
+        if context.prescription.equipmentType.usesAssistanceWeightSemantics {
+            return "You've used about \(context.weightUnit.display(newWeight)) of assistance for \(sessionsRequired) sessions. Update the prescription to match your current assistance setting."
+        }
+        if context.prescription.equipmentType == .dumbbells || context.prescription.equipmentType == .cables {
+            return "You've used about \(context.weightUnit.display(newWeight)) per side for \(sessionsRequired) sessions. Update the prescription to match your working weight."
+        }
+        return "You've used about \(context.weightUnit.display(newWeight)) for \(sessionsRequired) sessions. Update the prescription to match your working weight."
+    }
+
+    private static func roundedPreferredWeightAmount(for amount: Double, context: ExerciseSuggestionContext) -> Double {
+        guard let preferredWeightChange = context.preferredWeightChange, preferredWeightChange > 0 else {
+            return amount
+        }
+        let multiple = max(1, Int(ceil(amount / preferredWeightChange)))
+        return preferredWeightChange * Double(multiple)
+    }
+
+    private static func adjustedWeight(from currentWeight: Double, delta: Double, context: ExerciseSuggestionContext) -> Double {
+        guard let preferredWeightChange = context.preferredWeightChange, preferredWeightChange > 0 else {
+            return roundSuggestedWeight(max(0, currentWeight + delta), context: context)
+        }
+        return max(0, currentWeight + delta)
     }
 
     private static func makeChangeDraft(changeType: ChangeType, previousValue: Double, newValue: Double) -> PrescriptionChangeDraft {

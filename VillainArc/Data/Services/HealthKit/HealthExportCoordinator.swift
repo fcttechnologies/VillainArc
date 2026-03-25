@@ -128,13 +128,7 @@ final class HealthExportCoordinator {
 
         let sampleDate = weightEntry.date
         let quantity = HKQuantity(unit: weightUnit, doubleValue: weightEntry.weight)
-        let sample = HKQuantitySample(
-            type: bodyMassType,
-            quantity: quantity,
-            start: sampleDate,
-            end: sampleDate,
-            metadata: authorizationManager.metadata(for: weightEntry)
-        )
+        let sample = HKQuantitySample(type: bodyMassType, quantity: quantity, start: sampleDate, end: sampleDate, metadata: authorizationManager.metadata(for: weightEntry))
 
         do {
             try await authorizationManager.healthStore.save(sample)

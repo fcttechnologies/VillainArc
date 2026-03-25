@@ -17,10 +17,12 @@ struct HealthTabView: View {
                 } label: {
                     Image(systemName: "plus")
                         .font(.title2)
-                        .padding(5)
+                        .fontWeight(.semibold)
+                        .padding(3)
                 }
                 .buttonBorderShape(.circle)
                 .buttonStyle(.glass)
+                .accessibilityLabel(AccessibilityText.healthAddWeightEntryLabel)
                 .accessibilityIdentifier(AccessibilityIdentifiers.healthAddWeightEntryButton)
                 .accessibilityHint(AccessibilityText.healthAddWeightEntryHint)
             }
@@ -34,6 +36,10 @@ struct HealthTabView: View {
                 switch destination {
                 case .weightHistory(let weightUnit):
                     WeightHistoryView(weightUnit: weightUnit)
+                case .allWeightEntriesList(let weightUnit):
+                    AllWeightEntriesListView(weightUnit: weightUnit)
+                case .weightGoalHistory(let weightUnit):
+                    WeightGoalHistoryView(weightUnit: weightUnit)
                 default:
                     EmptyView()
                 }

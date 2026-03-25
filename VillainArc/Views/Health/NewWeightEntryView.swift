@@ -84,12 +84,7 @@ struct NewWeightEntryView: View {
 
         let calendar = Calendar.autoupdatingCurrent
         let timeComponents = calendar.dateComponents([.hour, .minute], from: selectedTime)
-        let entryDate = calendar.date(
-            bySettingHour: timeComponents.hour ?? 0,
-            minute: timeComponents.minute ?? 0,
-            second: 0,
-            of: selectedDate
-        ) ?? selectedDate
+        let entryDate = calendar.date(bySettingHour: timeComponents.hour ?? 0, minute: timeComponents.minute ?? 0, second: 0, of: selectedDate) ?? selectedDate
 
         let entry = WeightEntry(date: entryDate, weight: weightUnit.toKg(parsedWeight))
 

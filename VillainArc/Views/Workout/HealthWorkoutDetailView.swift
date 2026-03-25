@@ -165,17 +165,12 @@ struct HealthWorkoutDetailContent: View {
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 32) {
-            if loader.isLoading {
-                HStack(spacing: 10) {
-                    ProgressView()
-                    Text("Loading Apple Health details...")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
             summarySection
+            
+            if loader.isLoading {
+                ProgressView("Loading Apple Health details...")
+                    .frame(maxWidth: .infinity)
+            }
 
             if routeCoordinates.count >= 2 {
                 routeSection

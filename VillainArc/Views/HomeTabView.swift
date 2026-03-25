@@ -79,8 +79,6 @@ struct HomeTabView: View {
                     WorkoutDetailView(workout: session)
                 case .healthWorkoutDetail(let workout):
                     HealthWorkoutDetailView(workout: workout)
-                case .weightHistory(_):
-                    EmptyView()
                 case .workoutPlansList:
                     WorkoutPlansListView()
                 case .workoutPlanDetail(let plan, let showsUseOnly):
@@ -95,6 +93,8 @@ struct HomeTabView: View {
                     WorkoutSplitView(autoPresentBuilder: autoPresentBuilder)
                 case .workoutSplitDetail(let split):
                     WorkoutSplitView(split: split)
+                default:
+                    EmptyView()
                 }
             }
         }

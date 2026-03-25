@@ -208,11 +208,12 @@ struct ChangeDescriptionRow: View {
     private var changeDescription: String {
         let previous = change.previousValue
         let new = change.newValue
+        let loadLabel = change.event?.targetExercisePrescription?.equipmentType.loadDisplayName ?? "Weight"
 
         switch change.changeType {
         // Set-level
         case .increaseWeight, .decreaseWeight:
-            return "Weight: \(weightUnit.display(previous)) → \(weightUnit.display(new))"
+            return "\(loadLabel): \(weightUnit.display(previous)) → \(weightUnit.display(new))"
         case .increaseReps, .decreaseReps:
             return "Reps: \(Int(previous)) → \(Int(new))"
         case .increaseRest, .decreaseRest:

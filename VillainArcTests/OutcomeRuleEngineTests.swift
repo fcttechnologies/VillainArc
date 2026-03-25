@@ -269,6 +269,25 @@ struct OutcomeRuleEngineTests {
     }
 
     @Test @MainActor
+    func weightChange_usesPersistedWeightStepUsedInsteadOfLiveExerciseConfig() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, setPrescription) = makeSetScopedContext(context: context, actualWeight: 106.25, actualReps: 8, targetWeight: 100, lowerRange: 6, upperRange: 10)
+        event.weightStepUsed = 10
+        setPrescription.exercise?.equipmentType = .machine
+        perf.equipmentType = .machine
+        event.targetExercisePrescription?.equipmentType = .machine
+        event.triggerPerformance?.equipmentType = .machine
+
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 110)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .good)
+        #expect(signal?.confidence == 0.9)
+    }
+
+    @Test @MainActor
     func weightChange_partialFollowThrough_belowFloor_returnsTooAggressiveWithLowerConfidence() throws {
         let context = try TestDataFactory.makeContext()
         let (event, perf, _) = makeSetScopedContext(
@@ -1344,6 +1363,31 @@ struct OutcomeRuleEngineTests {
         let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
 
         #expect(signal?.outcome == .insufficient, "Athlete loaded far below the suggested decreased weight — the decrease was not enough")
+    }
+
+    @Test @MainActor
+    func assistedWeightDecrease_largeOvershoot_atCapBoundary_returnsTooEasy() throws {
+        let context = try TestDataFactory.makeContext()
+        let (event, perf, setPrescription) = makeSetScopedContext(
+            context: context,
+            actualWeight: 80,
+            actualReps: 8,
+            targetWeight: 100,
+            repRangeMode: .range,
+            lowerRange: 6,
+            upperRange: 10
+        )
+        setPrescription.exercise?.equipmentType = .machineAssisted
+        perf.equipmentType = .machineAssisted
+        event.targetExercisePrescription?.equipmentType = .machineAssisted
+        event.triggerPerformance?.equipmentType = .machineAssisted
+
+        let change = PrescriptionChange(changeType: .decreaseWeight, previousValue: 100, newValue: 90)
+        context.insert(change)
+
+        let signal = OutcomeRuleEngine.evaluate(change: change, event: event, exercisePerf: perf, trainingStyle: .straightSets)
+
+        #expect(signal?.outcome == .tooEasy, "On assisted movements, going well below the suggested assistance means the harder change was too conservative.")
     }
 
     /// Reps decrease 10→8; athlete actually did 6 reps (= new - 2 = cap boundary).

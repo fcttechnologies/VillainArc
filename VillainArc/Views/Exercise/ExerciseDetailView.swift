@@ -5,8 +5,6 @@ import AppIntents
 import CoreSpotlight
 
 struct ExerciseDetailView: View {
-    @Environment(\.modelContext) private var context
-
     private enum ChartMetric: String, CaseIterable, Identifiable {
         case estimatedOneRepMax = "Est. 1RM"
         case topWeight = "Top Weight"
@@ -62,8 +60,6 @@ struct ExerciseDetailView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
-    @State private var refreshResultMessage = ""
-    @State private var showRefreshResultAlert = false
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -261,11 +257,6 @@ struct ExerciseDetailView: View {
         .navigationTitle(displayName)
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
-        .alert("History Refreshed", isPresented: $showRefreshResultAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(refreshResultMessage)
-        }
         .task(id: availableMetrics.map(\.rawValue).joined(separator: ",")) {
             if let firstMetric = availableMetrics.first, !availableMetrics.contains(selectedMetric) {
                 selectedMetric = firstMetric
@@ -284,16 +275,6 @@ struct ExerciseDetailView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu("Options", systemImage: "ellipsis") {
-                    Button("Refresh History", systemImage: "arrow.clockwise") {
-                        refreshHistory()
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailRefreshHistoryButton)
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailOptionsMenu)
-                .accessibilityHint(AccessibilityText.exerciseDetailOptionsMenuHint)
-            }
             ToolbarSpacer(.flexible, placement: .bottomBar)
             ToolbarItem(placement: .bottomBar) {
                 if totalSessions > 0 {
@@ -328,16 +309,6 @@ struct ExerciseDetailView: View {
         case .reps:
             return repsPoints
         }
-    }
-
-    private func refreshHistory() {
-        ExerciseHistoryUpdater.updateHistory(for: catalogID, context: context)
-        Haptics.selection()
-        let refreshedHistory = try? context.fetch(ExerciseHistory.forCatalogID(catalogID)).first
-        refreshResultMessage = refreshedHistory == nil
-            ? "History was rebuilt. If this exercise still has no completed sessions, it will stay empty."
-            : "History and progression points were rebuilt from completed workouts."
-        showRefreshResultAlert = true
     }
 }
 

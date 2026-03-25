@@ -145,6 +145,9 @@
         }
       }
     },
+    "%@/wk" : {
+
+    },
     "%1$@ - %2$@" : {
 
     },
@@ -257,6 +260,9 @@
     "Action" : {
 
     },
+    "Active" : {
+
+    },
     "Active Split" : {
 
     },
@@ -291,6 +297,12 @@
 
     },
     "Add to favorites" : {
+
+    },
+    "Add weight entry" : {
+
+    },
+    "Add weight goal" : {
 
     },
     "Added %@ to your template." : {
@@ -405,6 +417,9 @@
 
     },
     "Arnold Split" : {
+
+    },
+    "Assistance" : {
 
     },
     "Auto Complete After RPE" : {
@@ -624,6 +639,9 @@
     "Creates a new weight entry." : {
 
     },
+    "Creates a new weight goal." : {
+
+    },
     "Creates a new workout plan" : {
 
     },
@@ -634,6 +652,9 @@
 
     },
     "Creates a new workout split." : {
+
+    },
+    "Creates a weight goal or shows your goal history." : {
 
     },
     "Current" : {
@@ -840,6 +861,9 @@
     "Enable iCloud in Settings" : {
 
     },
+    "Ended %@" : {
+
+    },
     "Enjoy the day off." : {
 
     },
@@ -853,9 +877,6 @@
 
     },
     "Exercise" : {
-
-    },
-    "Exercise actions." : {
 
     },
     "Exercise marked as favorite." : {
@@ -957,6 +978,9 @@
     "Go back" : {
 
     },
+    "Goal Type" : {
+
+    },
     "Good" : {
 
     },
@@ -989,9 +1013,6 @@
 
     },
     "History" : {
-
-    },
-    "History Refreshed" : {
 
     },
     "Hourglass" : {
@@ -1213,6 +1234,9 @@
     "New Weight Entry" : {
 
     },
+    "New Weight Goal" : {
+
+    },
     "Next set" : {
 
     },
@@ -1220,6 +1244,9 @@
 
     },
     "No active exercise to replace." : {
+
+    },
+    "No active goal" : {
 
     },
     "No active rest timer to stop." : {
@@ -1310,6 +1337,9 @@
 
     },
     "No Weight Entries" : {
+
+    },
+    "No Weight Goals" : {
 
     },
     "No weight target" : {
@@ -1598,9 +1628,6 @@
     "Recents" : {
 
     },
-    "Refresh History" : {
-
-    },
     "Reject" : {
 
     },
@@ -1856,6 +1883,9 @@
     "Saves the new weight entry." : {
 
     },
+    "Saves the new weight goal." : {
+
+    },
     "Saves the selected effort and continues to summary." : {
 
     },
@@ -1938,6 +1968,9 @@
 
     },
     "Set %lld" : {
+
+    },
+    "Set A Target Date" : {
 
     },
     "Set Active" : {
@@ -2072,6 +2105,9 @@
     "Shows the saved date and weight entry details." : {
 
     },
+    "Shows weight goal details." : {
+
+    },
     "Shows workout and workout plan options." : {
 
     },
@@ -2195,6 +2231,12 @@
     "Start Workout with Plan" : {
 
     },
+    "Started %@" : {
+
+    },
+    "Starting" : {
+
+    },
     "Starting Up" : {
 
     },
@@ -2282,7 +2324,16 @@
     "Tap the %@ button to start your first workout." : {
 
     },
+    "Tap to create a weight goal." : {
+
+    },
     "Target" : {
+
+    },
+    "Target Date" : {
+
+    },
+    "Target Date %@" : {
 
     },
     "Target muscles" : {
@@ -2291,10 +2342,26 @@
     "Target Muscles" : {
 
     },
+    "Target Pace %@ %@/wk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Target Pace %1$@ %2$@/wk"
+          }
+        }
+      }
+    },
+    "Target Rate Per Week" : {
+
+    },
     "Target RPE" : {
 
     },
     "Target RPE: %lld" : {
+
+    },
+    "Target Weight" : {
 
     },
     "Target: %lld" : {
@@ -2523,6 +2590,15 @@
 
     },
     "Weight" : {
+
+    },
+    "Weight / side" : {
+
+    },
+    "Weight Goal" : {
+
+    },
+    "Weight Goals" : {
 
     },
     "Weighted Ball" : {
@@ -2771,6 +2847,9 @@
 
     },
     "Your created workout plans will appear here." : {
+
+    },
+    "Your saved and previous weight goals will appear here." : {
 
     },
     "Your saved weight entries will appear here." : {

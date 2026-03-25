@@ -34,6 +34,7 @@ final class SuggestionEvent {
     var trainingStyle: TrainingStyle = TrainingStyle.unknown
 
     var requiredEvaluationCount: Int = 1
+    var weightStepUsed: Double?
 
     @Relationship(deleteRule: .cascade, inverse: \SuggestionEvaluation.event)
     var evaluations: [SuggestionEvaluation]? = [SuggestionEvaluation]()
@@ -85,7 +86,7 @@ final class SuggestionEvent {
 
     init() {}
 
-    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformance: ExercisePerformance? = nil, ruleID: SuggestionRule? = nil, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = [], suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore) {
+    convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformance: ExercisePerformance? = nil, ruleID: SuggestionRule? = nil, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, weightStepUsed: Double? = nil, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = [], suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore) {
         self.init()
         self.source = source
         self.category = category
@@ -100,6 +101,7 @@ final class SuggestionEvent {
         self.ruleID = ruleID
         self.trainingStyle = trainingStyle
         self.requiredEvaluationCount = requiredEvaluationCount
+        self.weightStepUsed = weightStepUsed
         self.createdAt = createdAt
         self.evaluatedAt = evaluatedAt
         self.changeReasoning = changeReasoning

@@ -47,6 +47,9 @@ struct SuggestionGenerator {
         var resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle] = [:]
 
         let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
+        let catalogIDs = Array(Set(session.sortedExercises.map(\.catalogID)))
+        let exercises = (try? context.fetch(Exercise.withCatalogIDs(catalogIDs))) ?? []
+        let preferredWeightChangeByCatalogID = Dictionary(uniqueKeysWithValues: exercises.map { ($0.catalogID, $0.preferredWeightChange) })
 
         for exercisePerf in session.sortedExercises {
             guard let prescription = exercisePerf.prescription else { continue }
@@ -65,7 +68,16 @@ struct SuggestionGenerator {
 
             resolvedTrainingStyleByPrescriptionID[prescription.id] = resolvedTrainingStyle
 
-            let suggestionContext = ExerciseSuggestionContext(session: session, performance: exercisePerf, prescription: prescription, history: performanceHistory, plan: plan, resolvedTrainingStyle: resolvedTrainingStyle, weightUnit: weightUnit)
+            let suggestionContext = ExerciseSuggestionContext(
+                session: session,
+                performance: exercisePerf,
+                prescription: prescription,
+                history: performanceHistory,
+                plan: plan,
+                resolvedTrainingStyle: resolvedTrainingStyle,
+                weightUnit: weightUnit,
+                preferredWeightChange: preferredWeightChangeByCatalogID[exercisePerf.catalogID] ?? nil
+            )
 
             let candidateSuggestions = RuleEngine.evaluate(context: suggestionContext)
             allSuggestions.append(contentsOf: candidateSuggestions)
@@ -73,7 +85,7 @@ struct SuggestionGenerator {
 
         let unresolvedFiltered = filterDraftsBlockedByUnresolvedEvents(allSuggestions, plan: plan)
         let deduplicated = SuggestionDeduplicator.process(suggestions: unresolvedFiltered)
-        return buildSuggestionEvents(from: deduplicated, session: session, resolvedTrainingStyleByPrescriptionID: resolvedTrainingStyleByPrescriptionID)
+        return buildSuggestionEvents(from: deduplicated, session: session, resolvedTrainingStyleByPrescriptionID: resolvedTrainingStyleByPrescriptionID, preferredWeightChangeByCatalogID: preferredWeightChangeByCatalogID)
     }
     
     private struct AIRequest: Sendable {
@@ -88,7 +100,7 @@ struct SuggestionGenerator {
         return output.confidence > 0.5
     }
 
-    private static func requiredEvaluationCount(for changes: [PrescriptionChangeDraft], category: SuggestionCategory) -> Int {
+    private static func requiredEvaluationCount(for changes: [PrescriptionChangeDraft], category: SuggestionCategory, equipmentType: EquipmentType) -> Int {
         // Category-level overrides take precedence.
         switch category {
         case .warmupCalibration, .structure, .volume:
@@ -97,12 +109,16 @@ struct SuggestionGenerator {
             break
         }
         // Key by the strictest change type in the group.
-        return changes.map { requiredCount(for: $0.changeType) }.max() ?? 1
+        return changes.map { requiredCount(for: $0.changeType, equipmentType: equipmentType) }.max() ?? 1
     }
 
-    private static func requiredCount(for changeType: ChangeType) -> Int {
+    private static func requiredCount(for changeType: ChangeType, equipmentType: EquipmentType) -> Int {
         switch changeType {
-        case .increaseWeight, .increaseReps, .increaseRest:
+        case .increaseWeight:
+            return equipmentType.usesAssistanceWeightSemantics ? 1 : 2
+        case .decreaseWeight:
+            return equipmentType.usesAssistanceWeightSemantics ? 2 : 1
+        case .increaseReps, .increaseRest:
             return 2
         case .increaseRepRangeLower, .decreaseRepRangeLower,
              .increaseRepRangeUpper, .decreaseRepRangeUpper,
@@ -150,7 +166,7 @@ struct SuggestionGenerator {
         }
     }
 
-    private static func buildSuggestionEvents(from drafts: [SuggestionEventDraft], session: WorkoutSession, resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle]) -> [SuggestionEvent] {
+    private static func buildSuggestionEvents(from drafts: [SuggestionEventDraft], session: WorkoutSession, resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle], preferredWeightChangeByCatalogID: [String: Double?]) -> [SuggestionEvent] {
         let performanceByPrescriptionID = Dictionary(uniqueKeysWithValues: session.sortedExercises.compactMap { performance in
             performance.prescription.map { ($0.id, performance) }
         })
@@ -163,8 +179,8 @@ struct SuggestionGenerator {
                 PrescriptionChange(changeType: change.changeType, previousValue: change.previousValue, newValue: change.newValue)
             }
 
-            let requiredCount = requiredEvaluationCount(for: draft.changes, category: draft.category)
-            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformance: exercisePerformance, ruleID: draft.rule, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, changeReasoning: draft.changeReasoning, changes: changes, suggestionConfidence: suggestionConfidence(for: draft))
+            let requiredCount = requiredEvaluationCount(for: draft.changes, category: draft.category, equipmentType: exercisePrescription.equipmentType)
+            let event = SuggestionEvent(source: draft.source, category: draft.category, catalogID: exercisePrescription.catalogID, sessionFrom: session, targetExercisePrescription: draft.targetExercisePrescription, targetSetPrescription: draft.targetSetPrescription, triggerTargetSetID: draft.triggerTargetSetID, triggerPerformance: exercisePerformance, ruleID: draft.rule, trainingStyle: resolvedTrainingStyleByPrescriptionID[exercisePrescription.id] ?? .unknown, requiredEvaluationCount: requiredCount, weightStepUsed: weightStepUsed(for: draft, exercisePrescription: exercisePrescription, preferredWeightChange: preferredWeightChangeByCatalogID[exercisePrescription.catalogID] ?? nil), changeReasoning: draft.changeReasoning, changes: changes, suggestionConfidence: suggestionConfidence(for: draft))
             return event
         }
         .sorted { lhs, rhs in
@@ -183,6 +199,40 @@ struct SuggestionGenerator {
             return SuggestionConfidenceTier.moderate.defaultScore
         case .directTargetEvidence:
             return SuggestionConfidenceTier.strong.defaultScore
+        }
+    }
+
+    private static func weightStepUsed(for draft: SuggestionEventDraft, exercisePrescription: ExercisePrescription, preferredWeightChange: Double?) -> Double? {
+        guard draft.changes.contains(where: { $0.changeType == .increaseWeight || $0.changeType == .decreaseWeight }) else {
+            return nil
+        }
+
+        if usesPreferredWeightChange(for: draft.rule),
+           let preferredWeightChange,
+           preferredWeightChange > 0 {
+            return preferredWeightChange
+        }
+
+        guard let weightChange = draft.changes.first(where: { $0.changeType == .increaseWeight || $0.changeType == .decreaseWeight }) else {
+            return nil
+        }
+
+        let referenceWeight = weightChange.newValue > 0 ? weightChange.newValue : weightChange.previousValue
+        let primaryMuscle = exercisePrescription.musclesTargeted.first ?? .chest
+        return MetricsCalculator.weightIncrement(for: referenceWeight, primaryMuscle: primaryMuscle, equipmentType: exercisePrescription.equipmentType, catalogID: exercisePrescription.catalogID)
+    }
+
+    private static func usesPreferredWeightChange(for rule: SuggestionRule?) -> Bool {
+        switch rule {
+        case .immediateProgressionRange,
+             .immediateProgressionTarget,
+             .confirmedProgressionRange,
+             .confirmedProgressionTarget,
+             .largeOvershootProgression,
+             .belowRangeWeightDecrease:
+            return true
+        default:
+            return false
         }
     }
 }
