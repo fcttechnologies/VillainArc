@@ -84,6 +84,8 @@ struct FinishWorkoutIntent: AppIntent {
         
         switch result {
         case .finished:
+            let weightUnit = AppSettingsSnapshot(settings: (try? context.fetch(AppSettings.single))?.first).weightUnit
+            workoutSession.convertSetWeightsToKg(from: weightUnit)
             RestTimerState.shared.stop()
             saveContext(context: context)
             await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)

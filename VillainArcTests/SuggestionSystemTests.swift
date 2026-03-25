@@ -398,8 +398,11 @@ struct SuggestionSystemTests {
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(100), targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
 
-        let exercise = Exercise(from: ExerciseCatalog.byID["machine_chest_press"]!)
-        context.insert(exercise)
+        let exercise = try context.fetch(Exercise.withCatalogID("machine_chest_press")).first ?? {
+            let exercise = Exercise(from: ExerciseCatalog.byID["machine_chest_press"]!)
+            context.insert(exercise)
+            return exercise
+        }()
         exercise.preferredWeightChange = WeightUnit.lbs.toKg(15)
 
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)

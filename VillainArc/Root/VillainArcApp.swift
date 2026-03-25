@@ -22,7 +22,11 @@ struct VillainArcApp: App {
                         AppRouter.shared.handleSiriCancelWorkout(userActivity)
                     }
                 }
-                .onContinueUserActivity("com.villainarc.siri.endWorkout") { _ in }
+                .onContinueUserActivity("com.villainarc.siri.endWorkout") { userActivity in
+                    Task { @MainActor in
+                        AppRouter.shared.handleSiriEndWorkout(userActivity)
+                    }
+                }
         }
         .modelContainer(SharedModelContainer.container)
     }

@@ -21,6 +21,7 @@ final class AppRouter {
     var showWorkoutSettingsFromIntent = false
     var showRestTimerFromIntent = false
     var showPreWorkoutContextFromIntent = false
+    var showCancelWorkoutFromIntent = false
     var showFinishWorkoutFromIntent = false
     var tabSelection: Tabs = .home
     
@@ -67,6 +68,30 @@ final class AppRouter {
 
     private func hasActiveFlow() -> Bool {
         hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork()
+    }
+
+    private func isReadyForIntentActions() -> Bool {
+        do {
+            try SetupGuard.requireReady(context: context)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func incompleteWorkoutSession() -> WorkoutSession? {
+        try? context.fetch(WorkoutSession.incomplete).first
+    }
+
+    func cancelWorkoutSession(_ workoutSession: WorkoutSession) {
+        RestTimerState.shared.stop()
+        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
+        context.delete(workoutSession)
+        saveContext(context: context)
+        if activeWorkoutSession?.id == workoutSession.id {
+            activeWorkoutSession = nil
+        }
+        WorkoutActivityManager.end()
     }
     
     func navigate(to destination: Destination) {
@@ -167,18 +192,40 @@ final class AppRouter {
     }
 
     func handleSiriWorkout(_ userActivity: NSUserActivity) {
+        guard isReadyForIntentActions() else { return }
         guard !hasActiveFlow() else { return }
         startWorkoutSession()
     }
 
     func handleSiriCancelWorkout(_ userActivity: NSUserActivity) {
-        guard let workoutSession = activeWorkoutSession else { return }
-        RestTimerState.shared.stop()
-        workoutSession.activeExercise = nil
-        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
-        context.delete(workoutSession)
-        activeWorkoutSession = nil
-        WorkoutActivityManager.end()
+        guard isReadyForIntentActions() else { return }
+        guard let workoutSession = incompleteWorkoutSession() else { return }
+
+        switch workoutSession.statusValue {
+        case .pending:
+            cancelWorkoutSession(workoutSession)
+        case .active:
+            if workoutSession.exercises?.isEmpty ?? true {
+                cancelWorkoutSession(workoutSession)
+            } else {
+                activeWorkoutSession = workoutSession
+                showCancelWorkoutFromIntent = true
+            }
+        case .summary, .done:
+            activeWorkoutSession = workoutSession
+        }
+    }
+
+    func handleSiriEndWorkout(_ userActivity: NSUserActivity) {
+        guard isReadyForIntentActions() else { return }
+        guard let workoutSession = incompleteWorkoutSession() else { return }
+
+        activeWorkoutSession = workoutSession
+
+        guard workoutSession.statusValue == .active else { return }
+        guard !(workoutSession.exercises?.isEmpty ?? true) else { return }
+
+        showFinishWorkoutFromIntent = true
     }
 
     func handleSpotlight(_ userActivity: NSUserActivity) {

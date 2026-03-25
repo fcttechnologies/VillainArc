@@ -73,4 +73,46 @@ struct WeightConversionTests {
         #expect(copiedSet.reps == 8)
         #expect(copiedSet.restSeconds == 90)
     }
+
+    @Test @MainActor
+    func workoutFinishConvertsDisplayedLbsBackToCanonicalKgBeforeSave() throws {
+        let context = try TestDataFactory.makeContext()
+        let settings = AppSettings()
+        settings.weightUnit = .lbs
+        context.insert(settings)
+
+        let workout = WorkoutSession()
+        context.insert(workout)
+
+        let exercise = ExercisePerformance(
+            exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!),
+            workoutSession: workout
+        )
+        context.insert(exercise)
+        workout.exercises?.append(exercise)
+
+        guard let set = exercise.sortedSets.first else {
+            Issue.record("Expected the auto-created first set.")
+            return
+        }
+
+        set.weight = 225
+        set.reps = 8
+        set.complete = true
+        set.completedAt = Date()
+
+        let result = workout.finish(action: .finish, context: context)
+
+        #expect(result == .finished)
+        #expect(workout.statusValue == .summary)
+
+        let weightUnit = AppSettingsSnapshot(settings: (try? context.fetch(AppSettings.single))?.first).weightUnit
+        workout.convertSetWeightsToKg(from: weightUnit)
+        saveContext(context: context)
+
+        let savedWorkout = try context.fetch(WorkoutSession.incomplete).first
+        let savedSet = savedWorkout?.sortedExercises.first?.sortedSets.first
+
+        #expect(abs((savedSet?.weight ?? 0) - 102.0582) < 0.01)
+    }
 }

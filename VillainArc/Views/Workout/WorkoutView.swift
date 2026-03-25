@@ -196,6 +196,9 @@ struct WorkoutView: View {
             .onChange(of: router.showWorkoutSettingsFromIntent) { _, _ in
                 presentIntentDrivenSheetsIfNeeded()
             }
+            .onChange(of: router.showCancelWorkoutFromIntent) { _, _ in
+                presentIntentDrivenSheetsIfNeeded()
+            }
             .onChange(of: router.showFinishWorkoutFromIntent) { _, _ in
                 presentIntentDrivenSheetsIfNeeded()
             }
@@ -479,8 +482,8 @@ struct WorkoutView: View {
                 await IntentDonations.donateLastWorkoutSummary()
             }
         case .workoutDeleted:
-            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
             saveContext(context: context)
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
             endWorkoutSession(shouldDismiss: true)
         }
     }
@@ -592,6 +595,10 @@ struct WorkoutView: View {
         if router.showPreWorkoutContextFromIntent {
             router.showPreWorkoutContextFromIntent = false
             showPreWorkoutSheet = true
+        }
+        if router.showCancelWorkoutFromIntent {
+            router.showCancelWorkoutFromIntent = false
+            showDeleteConfirmation = true
         }
         if router.showFinishWorkoutFromIntent {
             router.showFinishWorkoutFromIntent = false

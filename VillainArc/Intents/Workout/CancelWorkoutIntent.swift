@@ -14,12 +14,7 @@ struct CancelWorkoutIntent: AppIntent {
             return .result(dialog: "No current workout session to cancel.")
         }
 
-        RestTimerState.shared.stop()
-        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
-        context.delete(workoutSession)
-        saveContext(context: context)
-        AppRouter.shared.activeWorkoutSession = nil
-        WorkoutActivityManager.end()
+        AppRouter.shared.cancelWorkoutSession(workoutSession)
 
         return .result(dialog: "Workout cancelled.")
     }
