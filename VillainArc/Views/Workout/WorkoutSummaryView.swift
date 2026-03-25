@@ -36,6 +36,7 @@ struct WorkoutSummaryView: View {
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var prEntries: [PRItem] = []
+    @State private var workoutHealthSummaryItems: [SummaryStatItem] = []
     @State private var isGeneratingSuggestions = false
     @State private var isSaving = false
     @State private var didSaveWorkoutAsPlan = false
@@ -117,6 +118,16 @@ struct WorkoutSummaryView: View {
                             SummaryStatCard(title: "Total Volume", value: formattedTotalVolume)
                             SummaryStatCard(title: "New PRs", value: "\(prCount)")
                         }
+                    }
+
+                    if !workoutHealthSummaryItems.isEmpty {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            ForEach(workoutHealthSummaryItems) { item in
+                                SummaryStatCard(title: item.title, value: item.value)
+                            }
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryHealthStatsSection)
+                        .accessibilityLabel(AccessibilityText.workoutSummaryHealthStatsLabel)
                     }
 
                     Button {
@@ -201,6 +212,9 @@ struct WorkoutSummaryView: View {
                     FoundationModelPrewarmer.warmup()
                 }
                 await generateSuggestionsIfNeeded()
+            }
+            .task(id: workout.healthWorkout?.healthWorkoutUUID) {
+                await loadWorkoutHealthSummaryItems()
             }
             .sheet(isPresented: $showNotesEditorSheet) {
                 TextEntryEditorView(title: "Notes", promptText: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
@@ -419,6 +433,27 @@ struct WorkoutSummaryView: View {
         case .totalVolume:
             return "Total Volume: \(formattedWeightText(value, unit: weightUnit, fractionDigits: 0...0))"
         }
+    }
+
+    @MainActor
+    private func loadWorkoutHealthSummaryItems() async {
+        guard let healthWorkout = workout.healthWorkout else {
+            workoutHealthSummaryItems = []
+            return
+        }
+
+        let healthStats = await HealthWorkoutSummaryStatsLoader.load(for: healthWorkout)
+        var items: [SummaryStatItem] = []
+
+        if let averageHeartRate = healthStats.averageHeartRate {
+            items.append(SummaryStatItem(title: "Avg Heart Rate", value: "\(Int(averageHeartRate.rounded())) bpm"))
+        }
+
+        if let totalEnergyBurned = healthStats.totalEnergyBurned {
+            items.append(SummaryStatItem(title: "Total Energy", value: "\(Int(totalEnergyBurned.rounded())) cal"))
+        }
+
+        workoutHealthSummaryItems = items
     }
 
     private func finishSummary() {

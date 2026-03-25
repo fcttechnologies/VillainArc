@@ -79,7 +79,7 @@ class PreviewDataContainer {
         ]
 
         for (year, month, day, weight) in weights {
-            context.insert(WeightEntry(recordedAt: date(year, month, day, 7, 30), weight: weight))
+            context.insert(WeightEntry(date: date(year, month, day, 7, 30), weight: weight))
         }
     }
 

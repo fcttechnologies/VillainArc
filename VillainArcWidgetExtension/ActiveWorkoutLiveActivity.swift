@@ -19,12 +19,11 @@ struct WorkoutLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    WorkoutLiveActivityHeaderView(attributes: context.attributes, state: context.state, style: .compact)
-                    .padding(.leading, 6)
+                    WorkoutLiveActivityIslandLeadingMetricView(state: context.state)
+                        .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if context.state.isTimerRunning,
-                       let endDate = context.state.timerEndDate {
+                    if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
                         Text(timerInterval: Date.now...endDate, countsDown: true)
                             .font(.title2)
                             .bold()
@@ -121,34 +120,7 @@ struct WorkoutLiveActivityExpandedView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                WorkoutLiveActivityHeaderView(attributes: attributes, state: state, style: .expanded)
-                Spacer()
-                if state.isTimerRunning, let endDate = state.timerEndDate {
-                    Text(timerInterval: Date.now...endDate, countsDown: true)
-                        .font(.title)
-                        .bold()
-                        .lineLimit(1)
-                        .frame(maxWidth: 65)
-                } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
-                    Button(intent: LiveActivityResumeRestTimerIntent()) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "pause.fill")
-                                .font(.title3)
-                            Text(formatSeconds(remaining))
-                                .font(.title)
-                                .bold()
-                        }
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .foregroundStyle(.yellow)
-                        .fontDesign(.rounded)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
-                    .accessibilityValue(formatSeconds(remaining))
-                }
-            }
+            WorkoutLiveActivityExpandedTopRow(attributes: attributes, state: state)
             
             Divider()
             
@@ -193,112 +165,159 @@ struct WorkoutLiveActivityExpandedView: View {
     }
 }
 
-private enum WorkoutLiveActivityHeaderStyle {
-    case compact
-    case expanded
-
-    var metricSpacing: CGFloat {
-        switch self {
-        case .compact: 10
-        case .expanded: 14
-        }
-    }
-
-    var metricRowSpacing: CGFloat {
-        switch self {
-        case .compact: 6
-        case .expanded: 8
-        }
-    }
-
-    var iconFont: Font {
-        switch self {
-        case .compact: .subheadline
-        case .expanded: .title3
-        }
-    }
-
-    var valueFont: Font {
-        switch self {
-        case .compact: .subheadline
-        case .expanded: .headline
-        }
-    }
-
-    var titleFont: Font {
-        switch self {
-        case .compact: .title3
-        case .expanded: .title2
-        }
-    }
-
-    var subtitleFont: Font {
-        switch self {
-        case .compact: .caption
-        case .expanded: .subheadline
-        }
-    }
-}
-
-private struct WorkoutLiveActivityHeaderView: View {
+private struct WorkoutLiveActivityExpandedTopRow: View {
     let attributes: WorkoutActivityAttributes
     let state: WorkoutActivityAttributes.ContentState
-    let style: WorkoutLiveActivityHeaderStyle
-
-    private var liveHeartRateText: String? {
-        guard let liveHeartRateBPM = state.liveHeartRateBPM else { return nil }
-        return "\(Int(liveHeartRateBPM.rounded())) bpm"
-    }
-
-    private var liveActiveEnergyText: String? {
-        guard let liveActiveEnergyBurned = state.liveActiveEnergyBurned else { return nil }
-        return "\(Int(liveActiveEnergyBurned.rounded())) cal"
-    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if state.hasLiveMetrics {
-                HStack(spacing: style.metricSpacing) {
-                    if let liveHeartRateText {
-                        WorkoutLiveActivityMetricRow(symbolName: "heart.fill", text: liveHeartRateText, tint: .red, style: style)
+        Group {
+            if state.liveHeartRateBPM != nil || state.liveActiveEnergyBurned != nil {
+                HStack {
+                    if let liveHeartRateBPM = state.liveHeartRateBPM {
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", text: "\(Int(liveHeartRateBPM.rounded())) bpm", tint: .red)
+                        Spacer()
                     }
-                    if let liveActiveEnergyText {
-                        WorkoutLiveActivityMetricRow(symbolName: "flame.fill", text: liveActiveEnergyText, tint: .orange, style: style)
+
+                    if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "flame.fill", text: "\(Int(liveActiveEnergyBurned.rounded())) cal", tint: .orange)
+                        Spacer()
+                    }
+
+                    if state.isTimerRunning, let endDate = state.timerEndDate {
+                        HStack(spacing: 4) {
+                            Image(systemName: "timer")
+                                .font(.title)
+                                .accessibilityHidden(true)
+                            Text(timerInterval: Date.now...endDate, countsDown: true)
+                                .font(.title)
+                                .bold()
+                                .lineLimit(1)
+                                .frame(maxWidth: 65)
+                        }
+                    } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
+                        Button(intent: LiveActivityResumeRestTimerIntent()) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pause.fill")
+                                    .font(.title)
+                                Text(formatSeconds(remaining))
+                                    .font(.title)
+                                    .bold()
+                                    .monospacedDigit()
+                            }
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .foregroundStyle(.yellow)
+                            .fontDesign(.rounded)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                        .accessibilityValue(formatSeconds(remaining))
+                    } else {
+                        Spacer()
                     }
                 }
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
             } else {
-                Text(state.title)
-                    .font(style.titleFont)
-                    .lineLimit(1)
-                Text(attributes.startDate, style: .date)
-                    .font(style.subtitleFont)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(state.title)
+                            .font(.title2)
+                            .lineLimit(1)
+                        Text(attributes.startDate, style: .date)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .fontDesign(.rounded)
+                    .fontWeight(.semibold)
+
+                    Spacer()
+
+                    if state.isTimerRunning, let endDate = state.timerEndDate {
+                        Text(timerInterval: Date.now...endDate, countsDown: true)
+                            .font(.title)
+                            .bold()
+                            .lineLimit(1)
+                            .frame(maxWidth: 65)
+                    } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
+                        Button(intent: LiveActivityResumeRestTimerIntent()) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pause.fill")
+                                    .font(.title3)
+                                Text(formatSeconds(remaining))
+                                    .font(.title)
+                                    .bold()
+                            }
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .foregroundStyle(.yellow)
+                            .fontDesign(.rounded)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                        .accessibilityValue(formatSeconds(remaining))
+                    }
+                }
             }
         }
-        .fontDesign(.rounded)
-        .fontWeight(.semibold)
     }
 }
 
-private struct WorkoutLiveActivityMetricRow: View {
+private struct WorkoutLiveActivityExpandedMetricView: View {
     let symbolName: String
     let text: String
     let tint: Color
-    let style: WorkoutLiveActivityHeaderStyle
 
     var body: some View {
-        HStack(spacing: style.metricRowSpacing) {
+        HStack(spacing: 4) {
             Image(systemName: symbolName)
-                .font(style.iconFont)
+                .font(.title)
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
             Text(text)
-                .font(style.valueFont)
+                .font(.title)
                 .lineLimit(1)
                 .monospacedDigit()
+                .contentTransition(.numericText())
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct WorkoutLiveActivityIslandLeadingMetricView: View {
+    let state: WorkoutActivityAttributes.ContentState
+
+    var body: some View {
+        Group {
+            if let liveHeartRateBPM = state.liveHeartRateBPM {
+                HStack(spacing: 4) {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.red)
+                        .accessibilityHidden(true)
+                    Text("\(Int(liveHeartRateBPM.rounded()))")
+                        .font(.title2)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                }
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+            } else if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(.orange)
+                        .accessibilityHidden(true)
+                    Text("\(Int(liveActiveEnergyBurned.rounded()))")
+                        .font(.title2)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                }
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+            } else {
+                EmptyView()
+            }
+        }
     }
 }
 

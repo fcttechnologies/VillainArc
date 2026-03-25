@@ -60,20 +60,17 @@ It is still the record the app learns from and builds suggestions from.
 - total distance
 - source name
 - whether the workout still exists in HealthKit
-- the last sync timestamp
 
 It is intentionally a summary/cache layer. It does not store heart-rate chart points, route points, or other richer workout detail samples.
 
 ### `WeightEntry`
 
 `WeightEntry` is the local body-mass record. It stores:
-- the recorded timestamp
+- the measurement date
 - weight in kilograms
-- an optional local note
 - whether the entry has been exported to Apple Health
 - the linked Apple Health sample UUID when available
 - whether the linked sample still exists in HealthKit
-- the last sync timestamp
 
 This model serves three cases:
 - a purely local entry that has not been exported yet
@@ -185,11 +182,11 @@ The workout reconciliation pass:
 `HealthExportCoordinator` also owns the body-mass export path for `WeightEntry`.
 
 The weight export sequence is:
-1. only consider entries where `hasBeenExportedToHealth == false`
+1. only consider entries where `hasBeenExportedToHealth == false` and `healthSampleUUID == nil`
 2. first query Apple Health for an existing body-mass sample whose metadata contains the local `WeightEntry.id`
 3. if found, relink the local row to that sample instead of creating a duplicate
 4. otherwise save a new `HKQuantitySample` for `.bodyMass`
-5. upsert the local `WeightEntry` with the linked sample UUID, availability state, and sync timestamp
+5. upsert the local `WeightEntry` with the linked sample UUID and availability state
 
 So weight export is also:
 - reconciliation-aware
@@ -252,6 +249,8 @@ The weight sync pass then:
 - upserts returned `.bodyMass` samples into `WeightEntry`
 - first tries to match by Health sample UUID
 - otherwise tries to match by `WeightEntry.id` stored in Health metadata
+- marks samples as app-owned only when the VillainArc weight-entry metadata key is present
+- keeps Health-imported samples non-exported while still linking them by Health UUID
 - updates existing rows when found
 - inserts new local `WeightEntry` rows for Health-only samples when no local row exists
 

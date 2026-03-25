@@ -69,7 +69,7 @@ final class HealthExportCoordinator {
         let context = SharedModelContainer.container.mainContext
         if let existingWorkout = try? await HealthLiveWorkoutSessionCoordinator.shared.findSavedWorkout(for: session.id) {
             do {
-                try HealthWorkoutLinker.upsertHealthWorkout(for: existingWorkout, linkedTo: session, context: context, lastSyncedAt: .now)
+                try HealthWorkoutLinker.upsertHealthWorkout(for: existingWorkout, linkedTo: session, context: context)
                 saveContext(context: context)
                 print("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id)")
             } catch {
@@ -103,7 +103,7 @@ final class HealthExportCoordinator {
                 }
             }
 
-            try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: session, context: context, lastSyncedAt: endDate)
+            try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: session, context: context)
             saveContext(context: context)
             print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
         } catch {
@@ -117,7 +117,7 @@ final class HealthExportCoordinator {
         let context = SharedModelContainer.container.mainContext
         if let existingSample = try? await findSavedWeightSample(for: weightEntry.id) {
             do {
-                try HealthWeightEntryLinker.upsertWeightEntry(for: existingSample, context: context, lastSyncedAt: .now)
+                try HealthWeightEntryLinker.upsertWeightEntry(for: existingSample, context: context)
                 saveContext(context: context)
                 print("Linked existing Apple Health body mass sample \(existingSample.uuid) to local weight entry \(weightEntry.id)")
             } catch {
@@ -126,7 +126,7 @@ final class HealthExportCoordinator {
             return
         }
 
-        let sampleDate = weightEntry.recordedAt
+        let sampleDate = weightEntry.date
         let quantity = HKQuantity(unit: weightUnit, doubleValue: weightEntry.weight)
         let sample = HKQuantitySample(
             type: bodyMassType,
@@ -138,7 +138,7 @@ final class HealthExportCoordinator {
 
         do {
             try await authorizationManager.healthStore.save(sample)
-            try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context, lastSyncedAt: sampleDate)
+            try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context)
             saveContext(context: context)
             print("Saved weight entry \(weightEntry.id) to Apple Health as \(sample.uuid)")
         } catch {

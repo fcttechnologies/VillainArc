@@ -143,15 +143,21 @@ struct WeightChartPoint: Identifiable, Equatable {
     let id: UUID
     let date: Date
     let weight: Double
+    let startDate: Date
+    let endDate: Date
+    let entryCount: Int
 
-    init(id: UUID, date: Date, weight: Double) {
+    init(id: UUID, date: Date, weight: Double, startDate: Date? = nil, endDate: Date? = nil, entryCount: Int = 1) {
         self.id = id
         self.date = date
         self.weight = weight
+        self.startDate = startDate ?? date
+        self.endDate = endDate ?? date
+        self.entryCount = entryCount
     }
 
     init(_ entry: WeightEntry) {
-        self.init(id: entry.id, date: entry.recordedAt, weight: entry.weight)
+        self.init(id: entry.id, date: entry.date, weight: entry.weight)
     }
 }
 

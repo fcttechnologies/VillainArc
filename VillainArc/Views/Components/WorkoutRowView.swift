@@ -16,7 +16,7 @@ struct WorkoutRowView: View {
                         Text(workout.title)
                             .font(.title3)
                             .lineLimit(1)
-                        Text(workout.startedAt, format: .dateTime.day().month(.abbreviated).year())
+                        Text(formattedRecentDay(workout.startedAt))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }

@@ -3,31 +3,27 @@ import SwiftData
 
 @Model
 final class WeightEntry {
-    #Index<WeightEntry>([\.recordedAt], [\.healthSampleUUID])
+    #Index<WeightEntry>([\.date], [\.healthSampleUUID])
 
     var id: UUID = UUID()
-    var recordedAt: Date = Date()
+    var date: Date = Date()
     var weight: Double = 0
-    var note: String = ""
     var hasBeenExportedToHealth: Bool = false
     var healthSampleUUID: UUID?
     var isAvailableInHealthKit: Bool = false
-    var lastSyncedAt: Date = Date()
 
-    init(recordedAt: Date = .now, weight: Double = 0, note: String = "", hasBeenExportedToHealth: Bool = false, healthSampleUUID: UUID? = nil, isAvailableInHealthKit: Bool = false, lastSyncedAt: Date = .now) {
-        self.recordedAt = recordedAt
+    init(date: Date = .now, weight: Double = 0, hasBeenExportedToHealth: Bool = false, healthSampleUUID: UUID? = nil, isAvailableInHealthKit: Bool = false) {
+        self.date = date
         self.weight = weight
-        self.note = note
         self.hasBeenExportedToHealth = hasBeenExportedToHealth
         self.healthSampleUUID = healthSampleUUID
         self.isAvailableInHealthKit = isAvailableInHealthKit
-        self.lastSyncedAt = lastSyncedAt
     }
 }
 
 extension WeightEntry {
     static var history: FetchDescriptor<WeightEntry> {
-        FetchDescriptor(sortBy: [SortDescriptor(\.recordedAt, order: .reverse)])
+        FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)])
     }
 
     static var latest: FetchDescriptor<WeightEntry> {
@@ -57,8 +53,8 @@ extension WeightEntry {
     }
 
     static var entriesNeedingHealthExport: FetchDescriptor<WeightEntry> {
-        let predicate = #Predicate<WeightEntry> { $0.hasBeenExportedToHealth == false }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.recordedAt, order: .reverse)])
+        let predicate = #Predicate<WeightEntry> { $0.hasBeenExportedToHealth == false && $0.healthSampleUUID == nil }
+        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.date, order: .reverse)])
     }
 
     static var unavailableEntries: FetchDescriptor<WeightEntry> {
@@ -68,5 +64,13 @@ extension WeightEntry {
 
     var isLinkedToHealth: Bool {
         healthSampleUUID != nil
+    }
+
+    var isImportedFromHealth: Bool {
+        healthSampleUUID != nil && !hasBeenExportedToHealth
+    }
+
+    var canDeleteInApp: Bool {
+        !isImportedFromHealth
     }
 }

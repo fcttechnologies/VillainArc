@@ -21,7 +21,6 @@ final class HealthWorkout {
     var totalDistance: Double?
     var sourceName: String = ""
     var isAvailableInHealthKit: Bool = true
-    var lastSyncedAt: Date = Date()
 
     var activityType: HKWorkoutActivityType {
         get { HKWorkoutActivityType(rawValue: activityTypeRawValue) ?? .other }
@@ -33,7 +32,7 @@ final class HealthWorkout {
         return activeEnergyBurned + restingEnergyBurned
     }
 
-    init(workout: HKWorkout, workoutSession: WorkoutSession? = nil, lastSyncedAt: Date = .now) {
+    init(workout: HKWorkout, workoutSession: WorkoutSession? = nil) {
         healthWorkoutUUID = workout.uuid
         self.workoutSession = workoutSession
         startDate = workout.startDate
@@ -46,10 +45,9 @@ final class HealthWorkout {
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         sourceName = workout.sourceRevision.source.name
         isAvailableInHealthKit = true
-        self.lastSyncedAt = lastSyncedAt
     }
 
-    func update(from workout: HKWorkout, lastSyncedAt: Date = .now) {
+    func update(from workout: HKWorkout) {
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
@@ -60,7 +58,6 @@ final class HealthWorkout {
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         sourceName = workout.sourceRevision.source.name
         isAvailableInHealthKit = true
-        self.lastSyncedAt = lastSyncedAt
     }
 
     private static func energyBurned(for type: HKQuantityType, in workout: HKWorkout) -> Double? {

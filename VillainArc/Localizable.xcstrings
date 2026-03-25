@@ -145,6 +145,9 @@
         }
       }
     },
+    "%1$@ - %2$@" : {
+
+    },
     "%lld" : {
 
     },
@@ -350,6 +353,9 @@
     "All Splits" : {
 
     },
+    "All Weight Entries" : {
+
+    },
     "Allow 0:00" : {
 
     },
@@ -365,6 +371,9 @@
     "Apple Health" : {
 
     },
+    "Apple Health stats" : {
+
+    },
     "Applies all pending suggestions and starts the workout." : {
 
     },
@@ -375,6 +384,9 @@
 
     },
     "Are you sure you want to cancel this workout plan?" : {
+
+    },
+    "Are you sure you want to delete all app created weight entries?" : {
 
     },
     "Are you sure you want to delete all previous workouts?" : {
@@ -609,6 +621,9 @@
     "Creates a completed workout plan from a completed workout." : {
 
     },
+    "Creates a new weight entry." : {
+
+    },
     "Creates a new workout plan" : {
 
     },
@@ -658,6 +673,9 @@
 
     },
     "Delete all unfinished sets" : {
+
+    },
+    "Delete All Weight Entries?" : {
 
     },
     "Delete All Workout Plans" : {
@@ -727,6 +745,9 @@
 
     },
     "Deletes a workout plan." : {
+
+    },
+    "Deletes all app-created weight entries." : {
 
     },
     "Deletes all completed workout plans." : {
@@ -948,6 +969,16 @@
     "Heart Rate" : {
 
     },
+    "Heart rate %@, active energy %@, total energy %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Heart rate %1$@, active energy %2$@, total energy %3$@"
+          }
+        }
+      }
+    },
     "Heart rate chart" : {
 
     },
@@ -1048,6 +1079,12 @@
 
     },
     "Live Activity" : {
+
+    },
+    "Live Health stats" : {
+
+    },
+    "Live Health Stats" : {
 
     },
     "Loading Apple Health details..." : {
@@ -1173,6 +1210,9 @@
     "New Exercise" : {
 
     },
+    "New Weight Entry" : {
+
+    },
     "Next set" : {
 
     },
@@ -1270,9 +1310,6 @@
 
     },
     "No Weight Entries" : {
-
-    },
-    "No Weight Entries Yet" : {
 
     },
     "No weight target" : {
@@ -1816,6 +1853,9 @@
     "Saves and closes the workout summary." : {
 
     },
+    "Saves the new weight entry." : {
+
+    },
     "Saves the selected effort and continues to summary." : {
 
     },
@@ -1823,6 +1863,9 @@
 
     },
     "Saves this workout as a workout plan." : {
+
+    },
+    "Saves your selected gender and continues to the next profile step." : {
 
     },
     "Saving your profile and finishing setup..." : {
@@ -1871,6 +1914,9 @@
 
     },
     "Selects the target muscles for this day." : {
+
+    },
+    "Selects this gender option." : {
 
     },
     "Selects this workout effort score." : {
@@ -1957,6 +2003,9 @@
     "Shows actions for the active split." : {
 
     },
+    "Shows all saved weight entries." : {
+
+    },
     "Shows all tracked exercises." : {
 
     },
@@ -2020,6 +2069,9 @@
     "Shows the rest timer." : {
 
     },
+    "Shows the saved date and weight entry details." : {
+
+    },
     "Shows workout and workout plan options." : {
 
     },
@@ -2036,6 +2088,9 @@
 
     },
     "Shows your active workout split." : {
+
+    },
+    "Shows your current Apple Health workout stats." : {
 
     },
     "Shows your most recent completed workout." : {
@@ -2368,6 +2423,9 @@
     "unavailable" : {
 
     },
+    "Unavailable" : {
+
+    },
     "Undo" : {
 
     },
@@ -2413,6 +2471,9 @@
     "Value" : {
 
     },
+    "View All Entries" : {
+
+    },
     "View Exercise History" : {
 
     },
@@ -2437,6 +2498,9 @@
     "Volume" : {
 
     },
+    "Waiting for Apple Health data." : {
+
+    },
     "Want to update rest timer to reflect the new set rest time?" : {
 
     },
@@ -2459,9 +2523,6 @@
 
     },
     "Weight" : {
-
-    },
-    "Weight history will appear here once you add or sync body weight entries." : {
 
     },
     "Weighted Ball" : {
@@ -2710,6 +2771,9 @@
 
     },
     "Your created workout plans will appear here." : {
+
+    },
+    "Your saved weight entries will appear here." : {
 
     },
     "Your split doesn't have any days set up yet." : {

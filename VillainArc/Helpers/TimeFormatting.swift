@@ -20,7 +20,7 @@ func secondsToTimeWithHours(_ seconds: Int) -> String {
 
 func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false) -> String {
     let endDate = normalizedEndDate(start: start, end: end)
-    let dateText = formattedDateRangeText(start: start, end: endDate)
+    let dateText = formattedRecentDateRangeText(start: start, end: endDate)
 
     guard includeTime else {
         return dateText
@@ -30,16 +30,76 @@ func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false
     return "\(dateText) • \(timeText)"
 }
 
-private func formattedDateRangeText(start: Date, end: Date?) -> String {
-    guard let end else {
+func formattedRecentDay(_ date: Date) -> String {
+    let calendar = Calendar.autoupdatingCurrent
+
+    if calendar.isDateInToday(date) || calendar.isDateInYesterday(date) {
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.calendar = calendar
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.doesRelativeDateFormatting = true
+        return formatter.string(from: date)
+    }
+
+    return formattedSingleDate(date)
+}
+
+func formattedRecentDayAndTime(_ date: Date) -> String {
+    "\(formattedRecentDay(date)) • \(date.formatted(date: .omitted, time: .shortened))"
+}
+
+func formattedAbsoluteDateRange(start: Date, end: Date? = nil) -> String {
+    guard let end = normalizedEndDate(start: start, end: end) else {
         return formattedSingleDate(start)
     }
 
-    if Calendar.current.isDate(start, inSameDayAs: end) {
+    let calendar = Calendar.autoupdatingCurrent
+
+    if calendar.isDate(start, inSameDayAs: end) {
         return formattedSingleDate(start)
+    }
+
+    let startYear = calendar.component(.year, from: start)
+    let endYear = calendar.component(.year, from: end)
+    let startMonth = calendar.component(.month, from: start)
+    let endMonth = calendar.component(.month, from: end)
+
+    if startYear == endYear, startMonth == endMonth {
+        let formatter = DateIntervalFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.calendar = calendar
+        formatter.timeStyle = .none
+        formatter.dateTemplate = "MMM d y"
+        return formatter.string(from: start, to: end)
     }
 
     let formatter = DateIntervalFormatter()
+    formatter.locale = .autoupdatingCurrent
+    formatter.calendar = calendar
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .none
+    return formatter.string(from: start, to: end)
+}
+
+private func formattedRecentDateRangeText(start: Date, end: Date?) -> String {
+    guard let end else {
+        return formattedRecentDay(start)
+    }
+
+    if Calendar.current.isDate(start, inSameDayAs: end) {
+        return formattedRecentDay(start)
+    }
+
+    let calendar = Calendar.autoupdatingCurrent
+    if calendar.isDateInYesterday(start), calendar.isDateInToday(end) {
+        return localizedDateRangeLabel(start: formattedRecentDay(start), end: formattedRecentDay(end))
+    }
+
+    let formatter = DateIntervalFormatter()
+    formatter.locale = .autoupdatingCurrent
+    formatter.calendar = calendar
     formatter.dateStyle = .medium
     formatter.timeStyle = .none
     return formatter.string(from: start, to: end)
@@ -54,9 +114,14 @@ private func formattedTimeRangeText(start: Date, end: Date?) -> String {
         return start.formatted(date: .omitted, time: .shortened)
     }
     let formatter = DateIntervalFormatter()
+    formatter.locale = .autoupdatingCurrent
     formatter.dateStyle = .none
     formatter.timeStyle = .short
     return formatter.string(from: start, to: end)
+}
+
+private func localizedDateRangeLabel(start: String, end: String) -> String {
+    String(format: String(localized: "%1$@ - %2$@"), locale: .autoupdatingCurrent, start, end)
 }
 
 private func normalizedEndDate(start: Date, end: Date?) -> Date? {

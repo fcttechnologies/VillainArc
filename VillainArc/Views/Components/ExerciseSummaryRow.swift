@@ -69,7 +69,7 @@ struct ExerciseSummaryRow: View {
     
     private var lastUsedText: String {
         guard let lastUsed = history?.lastCompletedAt else { return "Not logged yet" }
-        return lastUsed.formatted(.relative(presentation: .named, unitsStyle: .abbreviated))
+        return formattedRecentDay(lastUsed)
     }
     
     private var sessionText: String? {

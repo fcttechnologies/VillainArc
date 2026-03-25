@@ -10,6 +10,7 @@ struct WorkoutView: View {
     @State private var showExerciseEditSheet = false
     @State private var showAddExerciseSheet = false
     @State private var showRestTimerSheet = false
+    @State private var showLiveHealthSheet = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var showPreWorkoutSheet = false
@@ -29,6 +30,7 @@ struct WorkoutView: View {
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
     private var shouldPromptForPreWorkoutContext: Bool { appSettingsSnapshot.promptForPreWorkoutContext }
     private var shouldPromptForPostWorkoutEffort: Bool { appSettingsSnapshot.promptForPostWorkoutEffort }
+    private var showsLiveHealthButton: Bool { HealthAuthorizationManager.shared.canWriteWorkouts }
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
@@ -69,6 +71,20 @@ struct WorkoutView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     workoutOptionsToolbarLabel
                 }
+                if showsLiveHealthButton {
+                    ToolbarItem(placement: .bottomBar) {
+                        Button {
+                            showLiveHealthSheet = true
+                            Haptics.selection()
+                        } label: {
+                            Image(systemName: "heart.text.square")
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthButton)
+                        .accessibilityLabel(AccessibilityText.workoutLiveHealthLabel)
+                        .accessibilityValue(WorkoutLiveHealthStatsView.toolbarAccessibilityValue(for: workout.id))
+                        .accessibilityHint(AccessibilityText.workoutLiveHealthHint)
+                    }
+                }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
                     Button("Add Exercise", systemImage: "plus") {
@@ -102,6 +118,13 @@ struct WorkoutView: View {
                 RestTimerView(workout: workout, appSettingsSnapshot: appSettingsSnapshot)
                     .presentationDetents([.medium, .large])
                     .presentationBackground(Color(.systemBackground))
+            }
+            .sheet(isPresented: $showLiveHealthSheet) {
+                WorkoutLiveHealthStatsView()
+                    .presentationDetents([.height(240)])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(Color(.systemBackground))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthSheet)
             }
             .sheet(isPresented: $showNotesEditorSheet) {
                 TextEntryEditorView(title: "Notes", promptText: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
@@ -286,7 +309,7 @@ struct WorkoutView: View {
         }
         return "^[\(totalSets) set](inflect: true)"
     }
-    
+
     @ViewBuilder
     private var timerToolbarLabel: some View {
         if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {

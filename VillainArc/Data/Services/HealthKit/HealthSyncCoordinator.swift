@@ -12,27 +12,26 @@ enum HealthWeightEntryLinker {
 
     @MainActor
     @discardableResult
-    static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext, lastSyncedAt: Date = .now) throws -> WeightEntry {
+    static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry {
         let existing = try fetchExistingEntry(for: sample, context: context)
         let weight = sample.quantity.doubleValue(for: weightUnit)
+        let isAppOwnedEntry = HealthMetadataKeys.weightEntryID(from: sample) != nil
 
         if let existing {
-            existing.recordedAt = sample.endDate
+            existing.date = sample.endDate
             existing.weight = weight
-            existing.hasBeenExportedToHealth = true
+            existing.hasBeenExportedToHealth = isAppOwnedEntry
             existing.healthSampleUUID = sample.uuid
             existing.isAvailableInHealthKit = true
-            existing.lastSyncedAt = lastSyncedAt
             return existing
         }
 
         let entry = WeightEntry(
-            recordedAt: sample.endDate,
+            date: sample.endDate,
             weight: weight,
-            hasBeenExportedToHealth: true,
+            hasBeenExportedToHealth: isAppOwnedEntry,
             healthSampleUUID: sample.uuid,
-            isAvailableInHealthKit: true,
-            lastSyncedAt: lastSyncedAt
+            isAvailableInHealthKit: true
         )
         context.insert(entry)
         return entry
@@ -79,14 +78,13 @@ final class HealthSyncCoordinator {
 
         do {
             let result = try await descriptor.result(for: authorizationManager.healthStore)
-            let syncedAt = Date()
 
             for workout in result.addedSamples {
-                try upsertHealthWorkout(for: workout, syncedAt: syncedAt, context: context)
+                try upsertHealthWorkout(for: workout, context: context)
             }
 
             for deletedObject in result.deletedObjects {
-                try handleDeletedHealthWorkout(id: deletedObject.uuid, syncedAt: syncedAt, retainRemovedHealthData: retainRemovedHealthData, context: context)
+                try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context)
             }
 
             try context.save()
@@ -110,14 +108,13 @@ final class HealthSyncCoordinator {
 
         do {
             let result = try await descriptor.result(for: authorizationManager.healthStore)
-            let syncedAt = Date()
 
             for sample in result.addedSamples {
-                try upsertWeightEntry(for: sample, syncedAt: syncedAt, context: context)
+                try upsertWeightEntry(for: sample, context: context)
             }
 
             for deletedObject in result.deletedObjects {
-                try handleDeletedWeightEntry(id: deletedObject.uuid, syncedAt: syncedAt, retainRemovedHealthData: retainRemovedHealthData, context: context)
+                try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context)
             }
 
             try context.save()
@@ -155,32 +152,30 @@ final class HealthSyncCoordinator {
         }
     }
 
-    private func upsertHealthWorkout(for workout: HKWorkout, syncedAt: Date, context: ModelContext) throws {
+    private func upsertHealthWorkout(for workout: HKWorkout, context: ModelContext) throws {
         let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: workout, context: context)
-        _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context, lastSyncedAt: syncedAt)
+        _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
     }
 
-    private func upsertWeightEntry(for sample: HKQuantitySample, syncedAt: Date, context: ModelContext) throws {
-        _ = try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context, lastSyncedAt: syncedAt)
+    private func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws {
+        _ = try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context)
     }
 
-    private func handleDeletedHealthWorkout(id: UUID, syncedAt: Date, retainRemovedHealthData: Bool, context: ModelContext) throws {
+    private func handleDeletedHealthWorkout(id: UUID, retainRemovedHealthData: Bool, context: ModelContext) throws {
         guard let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(id)).first else { return }
 
         if retainRemovedHealthData {
             existing.isAvailableInHealthKit = false
-            existing.lastSyncedAt = syncedAt
         } else {
             context.delete(existing)
         }
     }
 
-    private func handleDeletedWeightEntry(id: UUID, syncedAt: Date, retainRemovedHealthData: Bool, context: ModelContext) throws {
+    private func handleDeletedWeightEntry(id: UUID, retainRemovedHealthData: Bool, context: ModelContext) throws {
         guard let existing = try context.fetch(WeightEntry.byHealthSampleUUID(id)).first else { return }
 
         if retainRemovedHealthData {
             existing.isAvailableInHealthKit = false
-            existing.lastSyncedAt = syncedAt
         } else {
             context.delete(existing)
         }

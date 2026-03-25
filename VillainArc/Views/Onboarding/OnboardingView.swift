@@ -471,6 +471,7 @@ private struct ProfileNameStepView: View {
                 .autocorrectionDisabled()
                 .font(.largeTitle)
                 .fontWeight(.semibold)
+                .textContentType(.name)
 
             Spacer()
 

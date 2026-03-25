@@ -9,6 +9,22 @@ enum AccessibilityIdentifiers {
     static let homeOptionsMenu = "homeOptionsMenu"
     static let homeStartWorkoutButton = "homeStartWorkoutButton"
     static let homeCreatePlanButton = "homeCreatePlanButton"
+    static let healthAddWeightEntryButton = "healthAddWeightEntryButton"
+    static let healthAddWeightEntryConfirmButton = "healthAddWeightEntryConfirmButton"
+    static let healthAddWeightEntryWeightField = "healthAddWeightEntryWeightField"
+    static let healthAddWeightEntryDatePicker = "healthAddWeightEntryDatePicker"
+    static let healthAddWeightEntryTimePicker = "healthAddWeightEntryTimePicker"
+    static let healthWeightHistoryAllEntriesLink = "healthWeightHistoryAllEntriesLink"
+    static let healthWeightEntriesList = "healthWeightEntriesList"
+    static let healthWeightEntriesDeleteAllButton = "healthWeightEntriesDeleteAllButton"
+    static let healthWeightEntriesDeleteAllConfirmButton = "healthWeightEntriesDeleteAllConfirmButton"
+    static let healthWeightEntriesEditButton = "healthWeightEntriesEditButton"
+    static let healthWeightEntriesDoneEditingButton = "healthWeightEntriesDoneEditingButton"
+    static let healthWeightEntriesEmptyState = "healthWeightEntriesEmptyState"
+
+    static func healthWeightEntryRow(_ entry: WeightEntry) -> String {
+        "healthWeightEntryRow-\(entry.id.uuidString)"
+    }
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitLink = "workoutSplitLink"
@@ -391,6 +407,8 @@ enum AccessibilityIdentifiers {
 
     // MARK: - WorkoutView
     static let workoutRestTimerButton = "workoutRestTimerButton"
+    static let workoutLiveHealthButton = "workoutLiveHealthButton"
+    static let workoutLiveHealthSheet = "workoutLiveHealthSheet"
     static let workoutAddExerciseButton = "workoutAddExerciseButton"
     static let workoutExercisesEmptyState = "workoutExercisesEmptyState"
     static let workoutExercisePager = "workoutExercisePager"
@@ -420,6 +438,7 @@ enum AccessibilityIdentifiers {
     // MARK: - WorkoutSummaryView
     static let workoutSummaryTitleButton = "workoutSummaryTitleButton"
     static let workoutSummaryNotesButton = "workoutSummaryNotesButton"
+    static let workoutSummaryHealthStatsSection = "workoutSummaryHealthStatsSection"
     static let workoutSummarySaveAsPlanButton = "workoutSummarySaveAsPlanButton"
     static let workoutSummaryDoneButton = "workoutSummaryDoneButton"
     static let workoutSummaryPRSection = "workoutSummaryPRSection"
@@ -574,6 +593,13 @@ enum AccessibilityText {
     static let homeStartWorkoutHint = localized("Starts a new workout session.")
     static let homeCreatePlanLabel = localized("Create workout plan")
     static let homeCreatePlanHint = localized("Creates a new workout plan.")
+    static let healthAddWeightEntryHint = localized("Creates a new weight entry.")
+    static let healthAddWeightEntryConfirmHint = localized("Saves the new weight entry.")
+    static let healthWeightHistoryAllEntriesHint = localized("Shows all saved weight entries.")
+    static let healthWeightEntryRowHint = localized("Shows the saved date and weight entry details.")
+    static let healthWeightEntriesDeleteAllHint = localized("Deletes all app-created weight entries.")
+    static let healthWeightEntriesEditHint = localized("Enters edit mode.")
+    static let healthWeightEntriesDoneEditingHint = localized("Exits edit mode.")
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitHeaderHint = localized("Shows your workout split settings.")
@@ -708,7 +734,7 @@ enum AccessibilityText {
     }
 
     static func workoutRowLabel(for workout: WorkoutSession) -> String {
-        let dateText = workout.startedAt.formatted(.dateTime.month(.abbreviated).day().year())
+        let dateText = formattedRecentDay(workout.startedAt)
         return localized("\(workout.title), \(dateText)")
     }
 
@@ -815,6 +841,10 @@ enum AccessibilityText {
 
     // MARK: - WorkoutView
     static let workoutRestTimerHint = localized("Shows the rest timer.")
+    static let workoutLiveHealthLabel = localized("Live Health stats")
+    static let workoutLiveHealthHint = localized("Shows your current Apple Health workout stats.")
+    static let workoutLiveHealthWaitingValue = localized("Waiting for Apple Health data.")
+    static let workoutLiveHealthUnavailableValue = localized("Unavailable")
     static let workoutAddExerciseHint = localized("Adds an exercise.")
     static let workoutDeleteEmptyHint = localized("Deletes this workout.")
     static let workoutOptionsMenuHint = localized("Workout actions.")
@@ -832,6 +862,7 @@ enum AccessibilityText {
     static let workoutSummaryTitleHint = localized("Edits the workout title.")
     static let workoutSummaryNotesHint = localized("Edits the workout notes.")
     static let workoutSummaryNotesLabel = localized("Notes")
+    static let workoutSummaryHealthStatsLabel = localized("Apple Health stats")
     static let workoutSummarySaveAsPlanHint = localized("Saves this workout as a reusable plan.")
     static let workoutSummaryDoneHint = localized("Saves and closes the workout summary.")
     static let workoutSummaryDoneLabel = localized("Done")
@@ -852,6 +883,10 @@ enum AccessibilityText {
 
     static func workoutSummaryPRSectionValue(count: Int) -> String {
         count == 1 ? localized("1 personal record") : localized("\(count) personal records")
+    }
+
+    static func workoutLiveHealthValue(heartRate: String, activeEnergy: String, totalEnergy: String) -> String {
+        localized("Heart rate \(heartRate), active energy \(activeEnergy), total energy \(totalEnergy)")
     }
 
     // MARK: - SuggestionGroupRow

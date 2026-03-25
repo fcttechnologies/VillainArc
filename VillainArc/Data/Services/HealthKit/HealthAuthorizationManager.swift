@@ -166,7 +166,8 @@ final class HealthAuthorizationManager {
 
     func metadata(for weightEntry: WeightEntry) -> [String: Any] {
         [
-            HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString
+            HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString,
+            HKMetadataKeyWasUserEntered: true
         ]
     }
 

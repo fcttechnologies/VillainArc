@@ -171,6 +171,53 @@ struct HealthWorkoutRoutePoint: Hashable {
     }
 }
 
+struct HealthWorkoutSummaryStats: Equatable {
+    let averageHeartRate: Double?
+    let totalEnergyBurned: Double?
+}
+
+enum HealthWorkoutSummaryStatsLoader {
+    private static let healthStore = HealthAuthorizationManager.shared.healthStore
+
+    static func load(for workout: HealthWorkout) async -> HealthWorkoutSummaryStats {
+        let cachedStats = HealthWorkoutSummaryStats(
+            averageHeartRate: nil,
+            totalEnergyBurned: workout.totalEnergyBurned
+        )
+
+        guard workout.isAvailableInHealthKit else { return cachedStats }
+
+        do {
+            let predicate = NSPredicate(format: "%K == %@", HKPredicateKeyPathUUID, workout.healthWorkoutUUID as NSUUID)
+            let descriptor = HKSampleQueryDescriptor(
+                predicates: [.workout(predicate)],
+                sortDescriptors: [],
+                limit: 1
+            )
+
+            guard let liveWorkout = try await descriptor.result(for: healthStore).first else {
+                return cachedStats
+            }
+
+            let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+            let averageHeartRate = liveWorkout
+                .statistics(for: HKQuantityType(.heartRate))?
+                .averageQuantity()?
+                .doubleValue(for: bpmUnit)
+
+            let totalEnergyBurned = HealthWorkoutDetailSummary(workout: liveWorkout).totalCalories ?? workout.totalEnergyBurned
+
+            return HealthWorkoutSummaryStats(
+                averageHeartRate: averageHeartRate,
+                totalEnergyBurned: totalEnergyBurned
+            )
+        } catch {
+            print("Failed to load summary Health stats for \(workout.healthWorkoutUUID): \(error)")
+            return cachedStats
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class HealthWorkoutDetailLoader {

@@ -25,20 +25,20 @@ enum HealthWorkoutLinker {
 
     @MainActor
     @discardableResult
-    static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext, lastSyncedAt: Date = .now) throws -> HealthWorkout {
+    static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
         if let workoutSession {
             workoutSession.hasBeenExportedToHealth = true
         }
 
         if let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(workout.uuid)).first {
-            existing.update(from: workout, lastSyncedAt: lastSyncedAt)
+            existing.update(from: workout)
             if let workoutSession {
                 existing.workoutSession = workoutSession
             }
             return existing
         }
 
-        let healthWorkout = HealthWorkout(workout: workout, workoutSession: workoutSession, lastSyncedAt: lastSyncedAt)
+        let healthWorkout = HealthWorkout(workout: workout, workoutSession: workoutSession)
         context.insert(healthWorkout)
         return healthWorkout
     }
@@ -107,7 +107,7 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
     func finishIfRunning(for workout: WorkoutSession, context: ModelContext) async {
         if workout.healthWorkout == nil, let savedWorkout = try? await findSavedWorkout(for: workout.id) {
             do {
-                try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context, lastSyncedAt: .now)
+                try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context)
                 saveContext(context: context)
             } catch {
                 print("Failed to relink saved Health workout for \(workout.id): \(error)")
@@ -146,7 +146,7 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
                     }
                 }
 
-                try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context, lastSyncedAt: endDate)
+                try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context)
                 saveContext(context: context)
             } else {
                 print("HealthKit finished live workout for \(workout.id), but the workout sample was unavailable.")
