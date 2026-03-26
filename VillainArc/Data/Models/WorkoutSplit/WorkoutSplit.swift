@@ -1,34 +1,27 @@
 import Foundation
 import SwiftData
 
-@Model
-final class WorkoutSplit {
+@Model final class WorkoutSplit {
     #Index<WorkoutSplit>([\.id], [\.isActive])
 
     var id: UUID = UUID()
     var title: String = ""
     var mode: SplitMode = SplitMode.weekly
     var isActive: Bool = false
-    
     // Weekly mode: offset when user misses a day
     var weeklySplitOffset: Int = 0
-    
     // Rotation mode: current position in the cycle
     var rotationCurrentIndex: Int = 0
     var rotationLastUpdatedDate: Date? = nil
-    
-    @Relationship(deleteRule: .cascade, inverse: \WorkoutSplitDay.split)
-    var days: [WorkoutSplitDay]? = [WorkoutSplitDay]()
-    
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutSplitDay.split) var days: [WorkoutSplitDay]? = [WorkoutSplitDay]()
+
     var sortedDays: [WorkoutSplitDay] {
         switch mode {
-        case .weekly:
-            return (days ?? []).sorted(by: { $0.weekday < $1.weekday })
-        case .rotation:
-            return (days ?? []).sorted(by: { $0.index < $1.index })
+        case .weekly: return (days ?? []).sorted(by: { $0.weekday < $1.weekday })
+        case .rotation: return (days ?? []).sorted(by: { $0.index < $1.index })
         }
     }
-    
+
     init(mode: SplitMode) {
         self.mode = mode
     }
@@ -48,9 +41,7 @@ final class WorkoutSplit {
         weeklySplitOffset = 0
     }
 
-    var normalizedWeeklyOffset: Int {
-        wrappedWeeklyOffset(weeklySplitOffset)
-    }
+    var normalizedWeeklyOffset: Int { wrappedWeeklyOffset(weeklySplitOffset) }
 
     private func wrappedWeeklyOffset(_ value: Int) -> Int {
         let mod = ((value % 7) + 7) % 7
@@ -67,9 +58,8 @@ final class WorkoutSplit {
         let normalized = ((rotationCurrentIndex + delta) % count + count) % count
         rotationCurrentIndex = normalized
     }
-    
-    @MainActor
-    func refreshRotationIfNeeded(today: Date = .now, context: ModelContext) {
+
+    @MainActor func refreshRotationIfNeeded(today: Date = .now, context: ModelContext) {
         guard mode == .rotation && !(days?.isEmpty ?? true) else { return }
         let cal = Calendar.current
         let last = rotationLastUpdatedDate ?? today
@@ -85,9 +75,7 @@ final class WorkoutSplit {
             rotationLastUpdatedDate = startToday
             didUpdate = true
         }
-        if didUpdate {
-            saveContext(context: context)
-        }
+        if didUpdate { saveContext(context: context) }
     }
 
     func deleteDay(_ day: WorkoutSplitDay) {
@@ -97,30 +85,18 @@ final class WorkoutSplit {
         days?.removeAll { $0 == day }
 
         let reordered = sortedDays
-        for (newIndex, splitDay) in reordered.enumerated() {
-            splitDay.index = newIndex
-        }
+        for (newIndex, splitDay) in reordered.enumerated() { splitDay.index = newIndex }
 
-        if rotationCurrentIndex > deletedIndex {
-            rotationCurrentIndex -= 1
-        }
+        if rotationCurrentIndex > deletedIndex { rotationCurrentIndex -= 1 }
 
-        if rotationCurrentIndex >= reordered.count {
-            rotationCurrentIndex = max(0, reordered.count - 1)
-        }
+        if rotationCurrentIndex >= reordered.count { rotationCurrentIndex = max(0, reordered.count - 1) }
     }
-    
-    var todaysDayIndex: Int? {
-        dayIndex(for: .now)
-    }
-    
-    var todaysSplitDay: WorkoutSplitDay? {
-        splitDay(for: .now)
-    }
-    
-    var todaysWorkoutPlan: WorkoutPlan? {
-        workoutPlan(for: .now)
-    }
+
+    var todaysDayIndex: Int? { dayIndex(for: .now) }
+
+    var todaysSplitDay: WorkoutSplitDay? { splitDay(for: .now) }
+
+    var todaysWorkoutPlan: WorkoutPlan? { workoutPlan(for: .now) }
 
     func dayIndex(for date: Date, calendar: Calendar = .current) -> Int? {
         switch mode {

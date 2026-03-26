@@ -18,8 +18,8 @@ struct ExerciseCatalogItem {
 
 enum ExerciseCatalog {
     nonisolated static let catalogVersion = "1.1"
-    nonisolated static let all: [ExerciseCatalogItem] = [
 
+    nonisolated static let all: [ExerciseCatalogItem] = [
         // BICEPS
         .init(id: "barbell_curls", name: "Curls", musclesTargeted: [.biceps, .longHeadBiceps, .shortHeadBiceps], aliases: ["Bicep Curls"], equipmentType: .barbell),
         .init(id: "barbell_drag_curls", name: "Drag Curls", musclesTargeted: [.biceps, .longHeadBiceps], equipmentType: .barbell),
@@ -374,5 +374,6 @@ enum ExerciseCatalog {
         .init(id: "hip_abduction_machine", name: "Hip Abduction", musclesTargeted: [.glutes, .abductors], equipmentType: .machine),
         .init(id: "machine_adductor", name: "Adductor", musclesTargeted: [.adductors], equipmentType: .machine),
     ]
+
     nonisolated static let byID: [String: ExerciseCatalogItem] = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
 }

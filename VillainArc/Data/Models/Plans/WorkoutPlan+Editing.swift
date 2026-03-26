@@ -1,8 +1,7 @@
 import SwiftData
 import SwiftUI
 
-@MainActor
-extension WorkoutPlan {
+@MainActor extension WorkoutPlan {
     func deleteWithSuggestionCleanup(context: ModelContext) {
         deletePendingOutcomeChanges(context: context)
         context.delete(self)
@@ -30,9 +29,7 @@ extension WorkoutPlan {
         }
 
         for originalExercise in exercises ?? [] {
-            guard let copyExercise = copyExercises[originalExercise.id] else {
-                continue
-            }
+            guard let copyExercise = copyExercises[originalExercise.id] else { continue }
             applyExerciseValues(from: copyExercise, to: originalExercise, context: context)
         }
 
@@ -43,18 +40,14 @@ extension WorkoutPlan {
             context.delete(exercise)
         }
 
-        for (index, exercise) in sortedExercises.enumerated() {
-            exercise.index = index
-        }
+        for (index, exercise) in sortedExercises.enumerated() { exercise.index = index }
     }
 
     private func reconcilePendingChanges(comparedTo copy: WorkoutPlan, context: ModelContext) {
         let copyExercises = Dictionary(uniqueKeysWithValues: copy.sortedExercises.map { ($0.id, $0) })
 
         for originalExercise in sortedExercises {
-            guard let copyExercise = copyExercises[originalExercise.id] else {
-                continue
-            }
+            guard let copyExercise = copyExercises[originalExercise.id] else { continue }
 
             if originalExercise.catalogID != copyExercise.catalogID {
                 deletePendingOutcomeChanges(for: originalExercise, context: context)
@@ -65,9 +58,7 @@ extension WorkoutPlan {
 
             let copySets = Dictionary(uniqueKeysWithValues: copyExercise.sortedSets.map { ($0.id, $0) })
             for originalSet in originalExercise.sortedSets {
-                guard let copySet = copySets[originalSet.id] else {
-                    continue
-                }
+                guard let copySet = copySets[originalSet.id] else { continue }
                 reconcileSetPendingChanges(original: originalSet, copy: copySet, context: context)
             }
         }
@@ -76,39 +67,21 @@ extension WorkoutPlan {
     private func reconcileExercisePendingChanges(original: ExercisePrescription, copy: ExercisePrescription, context: ModelContext) {
         guard let originalRepRange = original.repRange, let copyRepRange = copy.repRange else { return }
 
-        if originalRepRange.activeMode != copyRepRange.activeMode {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.changeRepRangeMode], context: context)
-        }
-        if originalRepRange.lowerRange != copyRepRange.lowerRange {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRepRangeLower, .decreaseRepRangeLower], context: context)
-        }
-        if originalRepRange.upperRange != copyRepRange.upperRange {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRepRangeUpper, .decreaseRepRangeUpper], context: context)
-        }
-        if originalRepRange.targetReps != copyRepRange.targetReps {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget], context: context)
-        }
+        if originalRepRange.activeMode != copyRepRange.activeMode { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.changeRepRangeMode], context: context) }
+        if originalRepRange.lowerRange != copyRepRange.lowerRange { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRepRangeLower, .decreaseRepRangeLower], context: context) }
+        if originalRepRange.upperRange != copyRepRange.upperRange { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRepRangeUpper, .decreaseRepRangeUpper], context: context) }
+        if originalRepRange.targetReps != copyRepRange.targetReps { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRepRangeTarget, .decreaseRepRangeTarget], context: context) }
     }
 
     private func reconcileSetPendingChanges(original: SetPrescription, copy: SetPrescription, context: ModelContext) {
-        if original.type != copy.type {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.changeSetType], context: context)
-        }
-        if abs(original.targetWeight - copy.targetWeight) > 0.01 {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseWeight, .decreaseWeight], context: context)
-        }
-        if original.targetReps != copy.targetReps {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseReps, .decreaseReps], context: context)
-        }
-        if original.targetRest != copy.targetRest {
-            deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRest, .decreaseRest], context: context)
-        }
+        if original.type != copy.type { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.changeSetType], context: context) }
+        if abs(original.targetWeight - copy.targetWeight) > 0.01 { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseWeight, .decreaseWeight], context: context) }
+        if original.targetReps != copy.targetReps { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseReps, .decreaseReps], context: context) }
+        if original.targetRest != copy.targetRest { deleteMatchingPendingOutcomeChanges(for: original, changeTypes: [.increaseRest, .decreaseRest], context: context) }
     }
 
     private func applyExerciseValues(from copyExercise: ExercisePrescription, to originalExercise: ExercisePrescription, context: ModelContext) {
-        if originalExercise.catalogID != copyExercise.catalogID {
-            originalExercise.clearLinkedPerformanceReferences()
-        }
+        if originalExercise.catalogID != copyExercise.catalogID { originalExercise.clearLinkedPerformanceReferences() }
         originalExercise.index = copyExercise.index
         originalExercise.catalogID = copyExercise.catalogID
         originalExercise.name = copyExercise.name
@@ -135,9 +108,7 @@ extension WorkoutPlan {
         }
 
         for originalSet in originalExercise.sets ?? [] {
-            guard let copySet = copySets[originalSet.id] else {
-                continue
-            }
+            guard let copySet = copySets[originalSet.id] else { continue }
             originalSet.index = copySet.index
             originalSet.type = copySet.type
             originalSet.targetWeight = copySet.targetWeight
@@ -158,7 +129,6 @@ extension WorkoutPlan {
 }
 
 // MARK: - Pending Change Reconciliation
-
 extension WorkoutPlan {
     func deletePendingOutcomeChanges(context: ModelContext) {
         let exerciseEvents = sortedExercises.flatMap { Array($0.suggestionEvents ?? []) }
@@ -172,29 +142,21 @@ extension WorkoutPlan {
         deleteUnresolvedEvents(exerciseEvents + setEvents, context: context)
     }
 
-    func deletePendingOutcomeChanges(for set: SetPrescription, context: ModelContext) {
-        deleteUnresolvedEvents(Array(set.suggestionEvents ?? []), context: context)
-    }
+    func deletePendingOutcomeChanges(for set: SetPrescription, context: ModelContext) { deleteUnresolvedEvents(Array(set.suggestionEvents ?? []), context: context) }
 
     func deleteMatchingPendingOutcomeChanges(for exercise: ExercisePrescription, changeTypes: [ChangeType], context: ModelContext) {
-        let matching = Array(exercise.suggestionEvents ?? []).filter { event in
-            event.sortedChanges.contains { changeTypes.contains($0.changeType) }
-        }
+        let matching = Array(exercise.suggestionEvents ?? []).filter { event in event.sortedChanges.contains { changeTypes.contains($0.changeType) } }
         deleteUnresolvedEvents(matching, context: context)
     }
 
     func deleteMatchingPendingOutcomeChanges(for set: SetPrescription, changeTypes: [ChangeType], context: ModelContext) {
-        let matching = Array(set.suggestionEvents ?? []).filter { event in
-            event.sortedChanges.contains { changeTypes.contains($0.changeType) }
-        }
+        let matching = Array(set.suggestionEvents ?? []).filter { event in event.sortedChanges.contains { changeTypes.contains($0.changeType) } }
         deleteUnresolvedEvents(matching, context: context)
     }
 
     private func deleteUnresolvedEvents(_ events: [SuggestionEvent], context: ModelContext) {
         var seenEventIDs = Set<UUID>()
-        for event in events where seenEventIDs.insert(event.id).inserted {
-            deleteUnresolvedEvent(event, context: context)
-        }
+        for event in events where seenEventIDs.insert(event.id).inserted { deleteUnresolvedEvent(event, context: context) }
     }
 
     private func deleteUnresolvedEvent(_ event: SuggestionEvent, context: ModelContext) {

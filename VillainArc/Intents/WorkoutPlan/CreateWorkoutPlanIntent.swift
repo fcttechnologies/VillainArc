@@ -6,16 +6,11 @@ struct CreateWorkoutPlanIntent: AppIntent {
     static let description = IntentDescription("Creates a new workout plan")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
-        if let _ = try? context.fetch(WorkoutSession.incomplete).first {
-            throw StartWorkoutPlanError.workoutIsActive
-        }
-        if let _ = try? context.fetch(WorkoutPlan.incomplete).first {
-            throw StartWorkoutPlanError.workoutPlanIsActive
-        }
+        if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutPlanError.workoutIsActive }
+        if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutPlanError.workoutPlanIsActive }
         AppRouter.shared.createWorkoutPlan()
         return .result(opensIntent: OpenAppIntent())
     }
@@ -24,13 +19,10 @@ struct CreateWorkoutPlanIntent: AppIntent {
 enum StartWorkoutPlanError: Error, CustomLocalizedStringResourceConvertible {
     case workoutPlanIsActive
     case workoutIsActive
-    
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .workoutPlanIsActive:
-            return "You are currently working on a workout plan. Finish that first."
-        case .workoutIsActive:
-            return "You are currently working out, finish that first."
+        case .workoutPlanIsActive: return "You are currently working on a workout plan. Finish that first."
+        case .workoutIsActive: return "You are currently working out, finish that first."
         }
     }
 }

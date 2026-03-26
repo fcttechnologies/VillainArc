@@ -1,9 +1,7 @@
 import FoundationModels
 
 enum FoundationModelPrewarmer {
-    static func warmup() {
-        prewarm()
-    }
+    static func warmup() { prewarm() }
 
     private static func prewarm() {
         let model = SystemLanguageModel.default

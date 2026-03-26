@@ -6,14 +6,11 @@ struct ViewLastWorkoutPlanIntent: AppIntent {
     static let description = IntentDescription("Shows your most recently used workout plan.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
-        guard let lastWorkoutPlan = try context.fetch(WorkoutPlan.recent).first else {
-            throw ViewLastWorkoutPlanError.noWorkoutPlansFound
-        }
+        guard let lastWorkoutPlan = try context.fetch(WorkoutPlan.recent).first else { throw ViewLastWorkoutPlanError.noWorkoutPlansFound }
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(lastWorkoutPlan, false))
@@ -26,8 +23,7 @@ enum ViewLastWorkoutPlanError: Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .noWorkoutPlansFound:
-            return "You don't have a completed workout plan yet."
+        case .noWorkoutPlansFound: return "You don't have a completed workout plan yet."
         }
     }
 }

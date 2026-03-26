@@ -32,13 +32,9 @@ enum AccessibilityIdentifiers {
     static let healthWeightEntriesDoneEditingButton = "healthWeightEntriesDoneEditingButton"
     static let healthWeightEntriesEmptyState = "healthWeightEntriesEmptyState"
 
-    static func healthWeightEntryRow(_ entry: WeightEntry) -> String {
-        "healthWeightEntryRow-\(entry.id.uuidString)"
-    }
+    static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }
 
-    static func healthWeightGoalRow(_ goal: WeightGoal) -> String {
-        "healthWeightGoalRow-\(Int(goal.startedAt.timeIntervalSince1970))"
-    }
+    static func healthWeightGoalRow(_ goal: WeightGoal) -> String { "healthWeightGoalRow-\(Int(goal.startedAt.timeIntervalSince1970))" }
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitLink = "workoutSplitLink"
@@ -47,9 +43,7 @@ enum AccessibilityIdentifiers {
     static let recentWorkoutSplitNoDayState = "recentWorkoutSplitNoDayState"
     static let recentWorkoutSplitNoActiveState = "recentWorkoutSplitNoActiveState"
 
-    static func recentWorkoutSplitPlanButton(_ plan: WorkoutPlan) -> String {
-        "recentWorkoutSplitPlanButton-\(plan.id)"
-    }
+    static func recentWorkoutSplitPlanButton(_ plan: WorkoutPlan) -> String { "recentWorkoutSplitPlanButton-\(plan.id)" }
 
     // MARK: - RecentWorkoutSectionView
     static let workoutHistoryLink = "workoutHistoryLink"
@@ -65,9 +59,7 @@ enum AccessibilityIdentifiers {
     static let homeExercisesLink = "homeExercisesLink"
     static let recentExercisesEmptyState = "recentExercisesEmptyState"
 
-    static func recentExerciseRow(_ exercise: Exercise) -> String {
-        "recentExerciseRow-\(exercise.catalogID)"
-    }
+    static func recentExerciseRow(_ exercise: Exercise) -> String { "recentExerciseRow-\(exercise.catalogID)" }
 
     // MARK: - WorkoutsListView
     static let workoutsList = "workoutsList"
@@ -88,171 +80,91 @@ enum AccessibilityIdentifiers {
     static let workoutPlansEmptyState = "workoutPlansEmptyState"
     static let workoutPlansNoFavoritesState = "workoutPlansNoFavoritesState"
 
-    static func workoutRow(_ workout: WorkoutSession) -> String {
-        "workoutsListRow-\(workout.id.uuidString)"
-    }
+    static func workoutRow(_ workout: WorkoutSession) -> String { "workoutsListRow-\(workout.id.uuidString)" }
 
-    static func workoutPlanRow(_ workoutPlan: WorkoutPlan) -> String {
-        "workoutPlanRow-\(workoutPlan.id)"
-    }
+    static func workoutPlanRow(_ workoutPlan: WorkoutPlan) -> String { "workoutPlanRow-\(workoutPlan.id)" }
 
-    static func workoutDetailExercise(_ exercise: ExercisePerformance) -> String {
-        "workoutDetailExercise-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutDetailExercise(_ exercise: ExercisePerformance) -> String { "workoutDetailExercise-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutDetailExerciseHeader(_ exercise: ExercisePerformance) -> String {
-        "workoutDetailExerciseHeader-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutDetailExerciseHeader(_ exercise: ExercisePerformance) -> String { "workoutDetailExerciseHeader-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutDetailExerciseNotes(_ exercise: ExercisePerformance) -> String {
-        "workoutDetailExerciseNotes-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutDetailExerciseNotes(_ exercise: ExercisePerformance) -> String { "workoutDetailExerciseNotes-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
     static let workoutDetailList = "workoutDetailList"
 
-    static func workoutDetailSet(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "workoutDetailSet-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func workoutDetailSet(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "workoutDetailSet-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func workoutExercisePage(_ exercise: ExercisePerformance) -> String {
-        "workoutExercisePage-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutExercisePage(_ exercise: ExercisePerformance) -> String { "workoutExercisePage-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutExerciseListRow(_ exercise: ExercisePerformance) -> String {
-        "workoutExerciseListRow-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutExerciseListRow(_ exercise: ExercisePerformance) -> String { "workoutExerciseListRow-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseListRow(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseListRow-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseListRow(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseListRow-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseRepRangeButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseRepRangeButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseRepRangeButton(_ exercise: ExercisePerformance) -> String { "exerciseRepRangeButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
     static let repRangeSuggestionsSection = "repRangeSuggestionsSection"
 
-    static func repRangeSuggestionButton(catalogID: String, index: Int) -> String {
-        "repRangeSuggestionButton-\(slug(catalogID))-\(index)"
-    }
+    static func repRangeSuggestionButton(catalogID: String, index: Int) -> String { "repRangeSuggestionButton-\(slug(catalogID))-\(index)" }
 
-    static func workoutPlanExerciseRepRangeButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseRepRangeButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseRepRangeButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseRepRangeButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseNotesButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseNotesButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseNotesButton(_ exercise: ExercisePerformance) -> String { "exerciseNotesButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseNotesButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseNotesButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseNotesButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseNotesButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseNotesField(_ exercise: ExercisePerformance) -> String {
-        "exerciseNotesField-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseNotesField(_ exercise: ExercisePerformance) -> String { "exerciseNotesField-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseNotesField(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseNotesField-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseNotesField(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseNotesField-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseRestTimesButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseRestTimesButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseRestTimesButton(_ exercise: ExercisePerformance) -> String { "exerciseRestTimesButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseRestTimesButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseRestTimesButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseRestTimesButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseRestTimesButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseAddSetButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseAddSetButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseAddSetButton(_ exercise: ExercisePerformance) -> String { "exerciseAddSetButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseReplaceButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseReplaceButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseReplaceButton(_ exercise: ExercisePerformance) -> String { "exerciseReplaceButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseDeleteButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseDeleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseDeleteButton(_ exercise: ExercisePerformance) -> String { "exerciseDeleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseAddSetButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseAddSetButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseAddSetButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseAddSetButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseReplaceButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseReplaceButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseReplaceButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseReplaceButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanExerciseDeleteButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseDeleteButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseDeleteButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseDeleteButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseSetMenu(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetMenu-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetMenu(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetMenu-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func workoutPlanSetMenu(_ exercise: ExercisePrescription, set: SetPrescription) -> String {
-        "workoutPlanSetMenu-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func workoutPlanSetMenu(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanSetMenu-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetRepsField(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetRepsField-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetRepsField(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetRepsField-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func workoutPlanSetRepsField(_ exercise: ExercisePrescription, set: SetPrescription) -> String {
-        "workoutPlanSetRepsField-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func workoutPlanSetRepsField(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanSetRepsField-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetWeightField(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetWeightField-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetWeightField(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetWeightField-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func workoutPlanSetWeightField(_ exercise: ExercisePrescription, set: SetPrescription) -> String {
-        "workoutPlanSetWeightField-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func workoutPlanSetWeightField(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanSetWeightField-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetPreviousValue(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetPreviousValue-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetPreviousValue(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetPreviousValue-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetCompleteButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetCompleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetCompleteButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetCompleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetDeleteButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetDeleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetDeleteButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetDeleteButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func workoutPlanSetDeleteButton(_ exercise: ExercisePrescription, set: SetPrescription) -> String {
-        "workoutPlanSetDeleteButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func workoutPlanSetDeleteButton(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanSetDeleteButton-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func workoutPlanDetailExercise(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanDetailExercise-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanDetailExercise(_ exercise: ExercisePrescription) -> String { "workoutPlanDetailExercise-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanDetailExerciseHeader(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanDetailExerciseHeader-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanDetailExerciseHeader(_ exercise: ExercisePrescription) -> String { "workoutPlanDetailExerciseHeader-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanDetailExerciseNotes(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanDetailExerciseNotes-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanDetailExerciseNotes(_ exercise: ExercisePrescription) -> String { "workoutPlanDetailExerciseNotes-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func workoutPlanDetailSuggestionCount(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanDetailSuggestionCount-\(exercise.id.uuidString)"
-    }
+    static func workoutPlanDetailSuggestionCount(_ exercise: ExercisePrescription) -> String { "workoutPlanDetailSuggestionCount-\(exercise.id.uuidString)" }
 
     static let workoutPlanDetailList = "workoutPlanDetailList"
 
-    static func workoutPlanExerciseHistoryButton(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseHistoryButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)" }
 
-    static func exerciseListRow(_ exercise: Exercise) -> String {
-        "exerciseListRow-\(exercise.catalogID)"
-    }
+    static func exerciseListRow(_ exercise: Exercise) -> String { "exerciseListRow-\(exercise.catalogID)" }
 
     // MARK: - ExercisesListView
     static let exercisesListEmptyState = "exercisesListEmptyState"
@@ -310,9 +222,7 @@ enum AccessibilityIdentifiers {
     static let workoutPlanEditingForm = "workoutPlanEditingForm"
     static let workoutPlanExerciseList = "workoutPlanExerciseList"
 
-    static func workoutPlanExerciseView(_ exercise: ExercisePrescription) -> String {
-        "workoutPlanExerciseView-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func workoutPlanExerciseView(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseView-\(exercise.catalogID)-\(exercise.index)" }
 
     // MARK: - WorkoutSplitView
     static let workoutSplitList = "workoutSplitList"
@@ -332,16 +242,12 @@ enum AccessibilityIdentifiers {
     static let workoutSplitSetInactiveButton = "workoutSplitSetInactiveButton"
     static let workoutSplitSetActiveButton = "workoutSplitSetActiveButton"
 
-    static func workoutSplitInactiveRow(_ split: WorkoutSplit) -> String {
-        "workoutSplitInactiveRow-\(split.title)"
-    }
+    static func workoutSplitInactiveRow(_ split: WorkoutSplit) -> String { "workoutSplitInactiveRow-\(split.title)" }
 
     // MARK: - WorkoutSplitCreationView
     static let workoutSplitCreationView = "workoutSplitCreationView"
 
-    static func workoutSplitRenameButton(_ split: WorkoutSplit) -> String {
-        "workoutSplitRenameButton-\(split.title)"
-    }
+    static func workoutSplitRenameButton(_ split: WorkoutSplit) -> String { "workoutSplitRenameButton-\(split.title)" }
 
     static let workoutSplitOptionsMenu = "workoutSplitOptionsMenu"
     static let workoutSplitRotateMenu = "workoutSplitRotateMenu"
@@ -357,21 +263,13 @@ enum AccessibilityIdentifiers {
 
     static let workoutSplitAddRotationDayCapsule = "addRotationDayCapsule"
 
-    static func workoutSplitWeekdayCapsule(_ day: WorkoutSplitDay) -> String {
-        "weekdayCapsule-\(day.weekday)"
-    }
+    static func workoutSplitWeekdayCapsule(_ day: WorkoutSplitDay) -> String { "weekdayCapsule-\(day.weekday)" }
 
-    static func workoutSplitRotationCapsule(_ day: WorkoutSplitDay) -> String {
-        "rotationCapsule-\(day.index)"
-    }
+    static func workoutSplitRotationCapsule(_ day: WorkoutSplitDay) -> String { "rotationCapsule-\(day.index)" }
 
-    static func workoutSplitRotationSetCurrentDayButton(_ day: WorkoutSplitDay) -> String {
-        "workoutSplitRotationSetCurrentDayButton-\(day.index)"
-    }
+    static func workoutSplitRotationSetCurrentDayButton(_ day: WorkoutSplitDay) -> String { "workoutSplitRotationSetCurrentDayButton-\(day.index)" }
 
-    static func workoutSplitDeleteDayButton(_ day: WorkoutSplitDay) -> String {
-        "workoutSplitDeleteDayButton-\(day.index)"
-    }
+    static func workoutSplitDeleteDayButton(_ day: WorkoutSplitDay) -> String { "workoutSplitDeleteDayButton-\(day.index)" }
 
     // MARK: - WorkoutSplitDayView
     static let workoutSplitDayRestToggle = "workoutSplitDayRestToggle"
@@ -393,29 +291,17 @@ enum AccessibilityIdentifiers {
     static let splitBuilderRestAfterCycle = "splitBuilderRestAfterCycle"
     static let splitBuilderRestInBetween = "splitBuilderRestInBetween"
 
-    static func splitBuilderType(_ type: SplitPresetType) -> String {
-        "splitBuilderType-\(type.rawValue)"
-    }
+    static func splitBuilderType(_ type: SplitPresetType) -> String { "splitBuilderType-\(type.rawValue)" }
 
-    static func splitBuilderDays(_ days: Int) -> String {
-        "splitBuilderDays-\(days)"
-    }
+    static func splitBuilderDays(_ days: Int) -> String { "splitBuilderDays-\(days)" }
 
-    static func workoutPlanDetailSet(_ exercise: ExercisePrescription, set: SetPrescription) -> String {
-        "workoutPlanDetailSet-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func workoutPlanDetailSet(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanDetailSet-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetUsePreviousButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetUsePreviousButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetUsePreviousButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetUsePreviousButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetReplaceTimerButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetReplaceTimerButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetReplaceTimerButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetReplaceTimerButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
-    static func exerciseSetCancelReplaceTimerButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String {
-        "exerciseSetCancelReplaceTimerButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)"
-    }
+    static func exerciseSetCancelReplaceTimerButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetCancelReplaceTimerButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
     // MARK: - WorkoutView
     static let workoutRestTimerButton = "workoutRestTimerButton"
@@ -443,9 +329,7 @@ enum AccessibilityIdentifiers {
     static let workoutFinishEffortCloseButton = "workoutFinishEffortCloseButton"
     static let workoutFinishEffortSelectionSummary = "workoutFinishEffortSelectionSummary"
 
-    static func workoutFinishEffortCard(_ value: Int) -> String {
-        "workoutFinishEffortCard-\(value)"
-    }
+    static func workoutFinishEffortCard(_ value: Int) -> String { "workoutFinishEffortCard-\(value)" }
 
     // MARK: - WorkoutSummaryView
     static let workoutSummaryTitleButton = "workoutSummaryTitleButton"
@@ -456,9 +340,7 @@ enum AccessibilityIdentifiers {
     static let workoutSummaryPRSection = "workoutSummaryPRSection"
     static let workoutSummaryPlanSavedRow = "workoutSummaryPlanSavedRow"
 
-    static func workoutSummaryEffortCard(_ value: Int) -> String {
-        "workoutSummaryEffortCard-\(value)"
-    }
+    static func workoutSummaryEffortCard(_ value: Int) -> String { "workoutSummaryEffortCard-\(value)" }
 
     static let workoutTitleEditorField = "workoutTitleEditorField"
     static let workoutNotesEditorField = "workoutNotesEditorField"
@@ -497,22 +379,16 @@ enum AccessibilityIdentifiers {
     static let repRangeUpperStepper = "repRangeUpperStepper"
     static let repRangeForm = "repRangeForm"
 
-    static func preWorkoutMoodOption(_ mood: MoodLevel) -> String {
-        "preWorkoutMoodOption-\(slug(mood.displayName))"
-    }
+    static func preWorkoutMoodOption(_ mood: MoodLevel) -> String { "preWorkoutMoodOption-\(slug(mood.displayName))" }
 
     static func restTimerRecentRow(_ history: RestTimeHistory) -> String {
         let timestamp = Int(history.lastUsed.timeIntervalSince1970)
         return "restTimerRecent-\(history.seconds)-\(timestamp)"
     }
 
-    static func restTimerRecentStartButton(_ history: RestTimeHistory) -> String {
-        "restTimerRecentStartButton-\(history.seconds)"
-    }
+    static func restTimerRecentStartButton(_ history: RestTimeHistory) -> String { "restTimerRecentStartButton-\(history.seconds)" }
 
-    static func exerciseHistoryButton(_ exercise: ExercisePerformance) -> String {
-        "exerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)"
-    }
+    static func exerciseHistoryButton(_ exercise: ExercisePerformance) -> String { "exerciseHistoryButton-\(exercise.catalogID)-\(exercise.index)" }
 
     static let filteredExerciseList = "filteredExerciseList"
     static let filteredExerciseEmptySelectedState = "filteredExerciseEmptySelectedState"
@@ -546,25 +422,15 @@ enum AccessibilityIdentifiers {
     static let restTimerNextSet = "restTimerNextSet"
     static let restTimerCompleteSetButton = "restTimerCompleteSetButton"
 
-    static func restTimeRowButton(_ title: String) -> String {
-        "restTimeRowButton-\(slug(title))"
-    }
+    static func restTimeRowButton(_ title: String) -> String { "restTimeRowButton-\(slug(title))" }
 
-    static func restTimeRowPicker(_ title: String) -> String {
-        "restTimeRowPicker-\(slug(title))"
-    }
+    static func restTimeRowPicker(_ title: String) -> String { "restTimeRowPicker-\(slug(title))" }
 
-    static func exerciseCatalogRow(_ exercise: Exercise) -> String {
-        "exerciseCatalogRow-\(exercise.catalogID)"
-    }
+    static func exerciseCatalogRow(_ exercise: Exercise) -> String { "exerciseCatalogRow-\(exercise.catalogID)" }
 
-    static func exerciseFavoriteToggle(_ exercise: Exercise) -> String {
-        "exerciseFavoriteToggle-\(exercise.catalogID)"
-    }
+    static func exerciseFavoriteToggle(_ exercise: Exercise) -> String { "exerciseFavoriteToggle-\(exercise.catalogID)" }
 
-    static func muscleFilterChip(_ muscle: Muscle) -> String {
-        "muscleFilterChip-\(slug(muscle.rawValue))"
-    }
+    static func muscleFilterChip(_ muscle: Muscle) -> String { "muscleFilterChip-\(slug(muscle.rawValue))" }
 
     private static func slug(_ text: String) -> String {
         let lowercase = text.lowercased()
@@ -586,9 +452,7 @@ enum AccessibilityIdentifiers {
 }
 
 enum AccessibilityText {
-    private static func localized(_ key: String.LocalizationValue) -> String {
-        String(localized: key)
-    }
+    private static func localized(_ key: String.LocalizationValue) -> String { String(localized: key) }
 
     // MARK: - ContentView
     static let homeWorkoutSplitLabel = localized("Workout split")
@@ -677,13 +541,9 @@ enum AccessibilityText {
     static let workoutPlanDetailFavoriteHint = localized("Toggles favorite.")
     static let workoutPlanDetailStartWorkoutHint = localized("Starts a workout from this plan.")
 
-    static func workoutPlanDetailSuggestionCountLabel(count: Int) -> String {
-        count == 1 ? localized("1 suggestion to review") : localized("\(count) suggestions to review")
-    }
+    static func workoutPlanDetailSuggestionCountLabel(count: Int) -> String { count == 1 ? localized("1 suggestion to review") : localized("\(count) suggestions to review") }
 
-    static func workoutPlanDetailFavoriteLabel(isFavorite: Bool) -> String {
-        isFavorite ? localized("Remove from favorites") : localized("Add to favorites")
-    }
+    static func workoutPlanDetailFavoriteLabel(isFavorite: Bool) -> String { isFavorite ? localized("Remove from favorites") : localized("Add to favorites") }
 
     // MARK: - WorkoutPlanPickerView
     static let workoutPlanPickerClearHint = localized("Removes the selected workout plan.")
@@ -732,13 +592,9 @@ enum AccessibilityText {
     static let workoutSplitRotateForwardHint = localized("Moves the split schedule forward one day.")
     static let workoutSplitDeleteHint = localized("Deletes this split.")
 
-    static func workoutSplitWeekdayCapsuleLabel(_ weekdayName: String) -> String {
-        localized("Select \(weekdayName)")
-    }
+    static func workoutSplitWeekdayCapsuleLabel(_ weekdayName: String) -> String { localized("Select \(weekdayName)") }
 
-    static func workoutSplitRotationCapsuleLabel(dayNumber: Int) -> String {
-        localized("Day \(dayNumber)")
-    }
+    static func workoutSplitRotationCapsuleLabel(dayNumber: Int) -> String { localized("Day \(dayNumber)") }
 
     // MARK: - WorkoutSplitDayView
     static let workoutSplitRestDayToggleHint = localized("Marks this day as a rest day.")
@@ -747,9 +603,7 @@ enum AccessibilityText {
     static let workoutSplitTargetMusclesLabel = localized("Target muscles")
     static let workoutSplitTargetMusclesHint = localized("Selects the target muscles for this day.")
 
-    static func workoutSplitPlanButtonLabel(hasPlan: Bool) -> String {
-        hasPlan ? localized("Change workout plan") : localized("Select workout plan")
-    }
+    static func workoutSplitPlanButtonLabel(hasPlan: Bool) -> String { hasPlan ? localized("Change workout plan") : localized("Select workout plan") }
 
     static func workoutRowLabel(for workout: WorkoutSession) -> String {
         let dateText = formattedRecentDay(workout.startedAt)
@@ -761,20 +615,14 @@ enum AccessibilityText {
         return count == 1 ? localized("1 exercise") : localized("\(count) exercises")
     }
 
-    static func exerciseSetLabel(for set: SetPerformance) -> String {
-        set.type == .working ? localized("Set \(set.index + 1)") : set.type.displayName
-    }
+    static func exerciseSetLabel(for set: SetPerformance) -> String { set.type == .working ? localized("Set \(set.index + 1)") : set.type.displayName }
 
-    static func exerciseSetLabel(for set: SetPrescription) -> String {
-        set.type == .working ? localized("Set \(set.index + 1)") : set.type.displayName
-    }
+    static func exerciseSetLabel(for set: SetPrescription) -> String { set.type == .working ? localized("Set \(set.index + 1)") : set.type.displayName }
 
     static func exerciseSetValue(for set: SetPerformance, unit: WeightUnit) -> String {
         let repsText = set.reps == 1 ? localized("1 rep") : localized("\(set.reps) reps")
         let weightText = unit.display(set.weight)
-        if let visibleRPE = set.visibleRPE {
-            return localized("\(repsText), \(weightText), RPE \(visibleRPE)")
-        }
+        if let visibleRPE = set.visibleRPE { return localized("\(repsText), \(weightText), RPE \(visibleRPE)") }
         return localized("\(repsText), \(weightText)")
     }
 
@@ -786,41 +634,27 @@ enum AccessibilityText {
 
         let repsText = hasReps ? (set.targetReps == 1 ? localized("1 rep") : localized("\(set.targetReps) reps")) : localized("No reps target")
         let weightText = hasWeight ? unit.display(set.targetWeight) : localized("No weight target")
-        if let visibleTargetRPE = set.visibleTargetRPE {
-            return localized("\(repsText), \(weightText), target RPE \(visibleTargetRPE)")
-        }
+        if let visibleTargetRPE = set.visibleTargetRPE { return localized("\(repsText), \(weightText), target RPE \(visibleTargetRPE)") }
         return localized("\(repsText), \(weightText)")
     }
 
-    static func exerciseSetMenuLabel(for set: SetPerformance) -> String {
-        localized("Set \(set.index + 1)")
-    }
+    static func exerciseSetMenuLabel(for set: SetPerformance) -> String { localized("Set \(set.index + 1)") }
 
     static func exerciseSetMenuValue(for set: SetPerformance) -> String {
-        if let visibleRPE = set.visibleRPE {
-            return localized("\(set.type.displayName), RPE \(visibleRPE)")
-        }
+        if let visibleRPE = set.visibleRPE { return localized("\(set.type.displayName), RPE \(visibleRPE)") }
         return set.type.displayName
     }
 
-    static func exerciseSetMenuLabel(for set: SetPrescription) -> String {
-        localized("Set \(set.index + 1)")
-    }
+    static func exerciseSetMenuLabel(for set: SetPrescription) -> String { localized("Set \(set.index + 1)") }
 
     static func exerciseSetMenuValue(for set: SetPrescription) -> String {
-        if let visibleTargetRPE = set.visibleTargetRPE {
-            return localized("\(set.type.displayName), target RPE \(visibleTargetRPE)")
-        }
+        if let visibleTargetRPE = set.visibleTargetRPE { return localized("\(set.type.displayName), target RPE \(visibleTargetRPE)") }
         return set.type.displayName
     }
 
-    static func exerciseSetCompletionLabel(isComplete: Bool) -> String {
-        isComplete ? localized("Mark incomplete") : localized("Mark complete")
-    }
+    static func exerciseSetCompletionLabel(isComplete: Bool) -> String { isComplete ? localized("Mark incomplete") : localized("Mark complete") }
 
-    static func exerciseSetCountText(_ count: Int) -> String {
-        count == 1 ? localized("1 set") : localized("\(count) sets")
-    }
+    static func exerciseSetCountText(_ count: Int) -> String { count == 1 ? localized("1 set") : localized("\(count) sets") }
 
     static func workoutExerciseListValue(for exercise: ExercisePerformance) -> String {
         let totalSets = exercise.sortedSets.count
@@ -846,13 +680,9 @@ enum AccessibilityText {
 
         parts.append(exercise.equipmentType.displayName)
 
-        if exercise.favorite {
-            parts.append(localized("Favorite"))
-        }
+        if exercise.favorite { parts.append(localized("Favorite")) }
 
-        if isSelected {
-            parts.append(localized("Selected"))
-        }
+        if isSelected { parts.append(localized("Selected")) }
 
         return parts.joined(separator: ", ")
     }
@@ -887,25 +717,15 @@ enum AccessibilityText {
     static let workoutSummaryPRSectionLabel = localized("Personal Records")
     static let workoutSummaryPlanSavedLabel = localized("Saved as Workout Plan")
 
-    static func workoutSummaryEffortLabel(value: Int) -> String {
-        localized("Effort \(value)")
-    }
+    static func workoutSummaryEffortLabel(value: Int) -> String { localized("Effort \(value)") }
 
-    static func workoutSummaryEffortValue(value: Int, isSelected: Bool) -> String {
-        isSelected ? localized("Selected") : localized("Not selected")
-    }
+    static func workoutSummaryEffortValue(value: Int, isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
 
-    static func workoutSummaryNotesValue(hasNotes: Bool, notes: String) -> String {
-        hasNotes ? notes : localized("No notes added.")
-    }
+    static func workoutSummaryNotesValue(hasNotes: Bool, notes: String) -> String { hasNotes ? notes : localized("No notes added.") }
 
-    static func workoutSummaryPRSectionValue(count: Int) -> String {
-        count == 1 ? localized("1 personal record") : localized("\(count) personal records")
-    }
+    static func workoutSummaryPRSectionValue(count: Int) -> String { count == 1 ? localized("1 personal record") : localized("\(count) personal records") }
 
-    static func workoutLiveHealthValue(heartRate: String, activeEnergy: String, totalEnergy: String) -> String {
-        localized("Heart rate \(heartRate), active energy \(activeEnergy), total energy \(totalEnergy)")
-    }
+    static func workoutLiveHealthValue(heartRate: String, activeEnergy: String, totalEnergy: String) -> String { localized("Heart rate \(heartRate), active energy \(activeEnergy), total energy \(totalEnergy)") }
 
     // MARK: - SuggestionGroupRow
     static let suggestionRejectHint = localized("Rejects this suggestion group.")
@@ -921,9 +741,7 @@ enum AccessibilityText {
     static let deferredSuggestionsAcceptAllHint = localized("Applies all pending suggestions and starts the workout.")
 
     // MARK: - SummaryStatCard
-    static func summaryStatCardLabel(title: String, value: String) -> String {
-        localized("\(title), \(value)")
-    }
+    static func summaryStatCardLabel(title: String, value: String) -> String { localized("\(title), \(value)") }
 
     // MARK: - ExerciseSummaryRow
     static let exerciseSummaryRowHint = localized("Shows exercise history and details.")
@@ -973,9 +791,7 @@ enum AccessibilityText {
     static let preWorkoutEnergyDrinkHint = localized("Toggles whether you took a pre-workout drink.")
     static let preWorkoutMoodHint = localized("Sets your pre-workout mood.")
 
-    static func yesNoValue(_ isTrue: Bool) -> String {
-        isTrue ? localized("Yes") : localized("No")
-    }
+    static func yesNoValue(_ isTrue: Bool) -> String { isTrue ? localized("Yes") : localized("No") }
 
     // MARK: - MuscleFilterSheetView
     static let muscleFilterAdvancedLabel = localized("Advanced muscles")
@@ -985,9 +801,7 @@ enum AccessibilityText {
     static let muscleFilterApplyLabel = localized("Apply Filters")
     static let muscleFilterChipHint = localized("Toggles this muscle filter.")
 
-    static func muscleFilterAdvancedValue(isExpanded: Bool) -> String {
-        isExpanded ? localized("Expanded") : localized("Collapsed")
-    }
+    static func muscleFilterAdvancedValue(isExpanded: Bool) -> String { isExpanded ? localized("Expanded") : localized("Collapsed") }
 
     // MARK: - RestTimeEditorView
     static let restTimeRowHint = localized("Shows duration picker.")
@@ -1007,25 +821,17 @@ enum AccessibilityText {
     static let onboardingGenderOptionHint = localized("Selects this gender option.")
     static let onboardingGenderContinueHint = localized("Saves your selected gender and continues to the next profile step.")
 
-    static func onboardingGenderOptionValue(isSelected: Bool) -> String {
-        isSelected ? localized("Selected") : localized("Not selected")
-    }
+    static func onboardingGenderOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
 
     // MARK: - HealthWorkoutDetailView
     static let healthWorkoutRouteMapLabel = localized("Workout route map")
     static let healthWorkoutHeartRateChartLabel = localized("Heart rate chart")
 
-    static func healthWorkoutRouteMapValue(pointCount: Int) -> String {
-        localized("Route plotted with \(pointCount) points.")
-    }
+    static func healthWorkoutRouteMapValue(pointCount: Int) -> String { localized("Route plotted with \(pointCount) points.") }
 
-    static func healthWorkoutHeartRateChartValue(summary: String) -> String {
-        summary
-    }
+    static func healthWorkoutHeartRateChartValue(summary: String) -> String { summary }
 
-    static func healthWorkoutZoneValue(durationText: String, percentageText: String, rangeText: String) -> String {
-        localized("\(durationText), \(percentageText), \(rangeText)")
-    }
+    static func healthWorkoutZoneValue(durationText: String, percentageText: String, rangeText: String) -> String { localized("\(durationText), \(percentageText), \(rangeText)") }
 
     static func healthWorkoutSplitValue(paceText: String, heartRateText: String) -> String {
         let heartRateValue = heartRateText == "-" ? localized("unavailable") : localized("\(heartRateText) beats per minute")
@@ -1057,12 +863,8 @@ enum AccessibilityText {
     static let restTimerAdjustHint = localized("Adjusts the rest timer.")
     static let restTimerCompleteAndRestartHint = localized("Marks the next set complete and restarts the timer.")
 
-    static func restTimerAdjustLabel(deltaSeconds: Int) -> String {
-        deltaSeconds < 0 ? localized("Decrease rest time by 15 seconds") : localized("Increase rest time by 15 seconds")
-    }
+    static func restTimerAdjustLabel(deltaSeconds: Int) -> String { deltaSeconds < 0 ? localized("Decrease rest time by 15 seconds") : localized("Increase rest time by 15 seconds") }
 
-    static func restTimerRecentStartLabel(seconds: Int, secondsToTime: (Int) -> String) -> String {
-        localized("Start a timer for \(secondsToTime(seconds))")
-    }
+    static func restTimerRecentStartLabel(seconds: Int, secondsToTime: (Int) -> String) -> String { localized("Start a timer for \(secondsToTime(seconds))") }
 
 }

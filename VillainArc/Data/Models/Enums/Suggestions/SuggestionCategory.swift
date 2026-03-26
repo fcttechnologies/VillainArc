@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-enum SuggestionCategory: String, Codable {
+@Generable enum SuggestionCategory: String, Codable {
     case performance
     case recovery
     case structure

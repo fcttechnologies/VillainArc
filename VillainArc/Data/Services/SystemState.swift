@@ -1,12 +1,9 @@
 import Foundation
 import SwiftData
 
-@MainActor
-enum SystemState {
+@MainActor enum SystemState {
     static func ensureUserProfile(context: ModelContext) throws -> UserProfile {
-        if let existing = try context.fetch(UserProfile.single).first {
-            return existing
-        }
+        if let existing = try context.fetch(UserProfile.single).first { return existing }
 
         let profile = UserProfile()
         context.insert(profile)
@@ -15,9 +12,7 @@ enum SystemState {
     }
 
     static func ensureAppSettings(context: ModelContext) throws -> AppSettings {
-        if let existing = try context.fetch(AppSettings.single).first {
-            return existing
-        }
+        if let existing = try context.fetch(AppSettings.single).first { return existing }
 
         let settings = AppSettings()
         context.insert(settings)

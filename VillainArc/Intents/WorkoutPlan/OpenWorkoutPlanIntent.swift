@@ -5,25 +5,17 @@ struct OpenWorkoutPlanIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Workout Plan"
     static let description = IntentDescription("Opens a specific workout plan.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
-    static var parameterSummary: some ParameterSummary {
-        Summary("Open \(\.$workoutPlan)")
-    }
+    static var parameterSummary: some ParameterSummary { Summary("Open \(\.$workoutPlan)") }
 
-    @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to open?"))
-    var workoutPlan: WorkoutPlanEntity
+    @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to open?")) var workoutPlan: WorkoutPlanEntity
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
         let workoutPlanID = workoutPlan.id
-        guard let storedPlan = try context.fetch(WorkoutPlan.byID(workoutPlanID)).first else {
-            throw OpenWorkoutPlanError.workoutPlanNotFound
-        }
-        guard storedPlan.completed else {
-            throw OpenWorkoutPlanError.workoutPlanIncomplete
-        }
+        guard let storedPlan = try context.fetch(WorkoutPlan.byID(workoutPlanID)).first else { throw OpenWorkoutPlanError.workoutPlanNotFound }
+        guard storedPlan.completed else { throw OpenWorkoutPlanError.workoutPlanIncomplete }
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(storedPlan, false))
@@ -37,10 +29,8 @@ enum OpenWorkoutPlanError: Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .workoutPlanNotFound:
-            return "That workout plan is no longer available."
-        case .workoutPlanIncomplete:
-            return "Finish creating the workout plan before opening it."
+        case .workoutPlanNotFound: return "That workout plan is no longer available."
+        case .workoutPlanIncomplete: return "Finish creating the workout plan before opening it."
         }
     }
 }

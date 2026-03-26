@@ -1,6 +1,6 @@
-import SwiftUI
-import SwiftData
 import HealthKit
+import SwiftData
+import SwiftUI
 
 enum OnboardingState: Equatable {
     case launching
@@ -20,16 +20,13 @@ enum OnboardingState: Equatable {
 
     var shouldPresentSheet: Bool {
         switch self {
-        case .launching, .ready:
-            return false
-        default:
-            return true
+        case .launching, .ready: return false
+        default: return true
         }
     }
 }
 
-@Observable
-class OnboardingManager {
+@Observable class OnboardingManager {
     private static let networkRetryPollInterval: Duration = .milliseconds(500)
 
     var state: OnboardingState = .launching
@@ -78,8 +75,7 @@ class OnboardingManager {
         guard attemptID == onboardingAttemptID else { return }
 
         switch cloudKitStatus {
-        case .available:
-            break
+        case .available: break
         case .accountIssue:
             state = .cloudKitAccountIssue
             return
@@ -96,9 +92,7 @@ class OnboardingManager {
         let slowNetworkTask = Task {
             try? await Task.sleep(for: .seconds(15))
             guard attemptID == self.onboardingAttemptID else { return }
-            if state == .syncing {
-                state = .syncingSlowNetwork
-            }
+            if state == .syncing { state = .syncingSlowNetwork }
         }
 
         let stalledSyncTask = Task {
@@ -106,9 +100,7 @@ class OnboardingManager {
             guard attemptID == self.onboardingAttemptID else { return }
             guard state == .syncing || state == .syncingSlowNetwork else { return }
 
-            state = .error(
-                "VillainArc couldn't confirm that your iCloud data finished syncing. Please try again."
-            )
+            state = .error("VillainArc couldn't confirm that your iCloud data finished syncing. Please try again.")
         }
 
         let importStatus = await CloudKitImportMonitor.shared.waitForImportCompletion()
@@ -117,8 +109,7 @@ class OnboardingManager {
         guard attemptID == onboardingAttemptID else { return }
 
         switch importStatus {
-        case .completed:
-            break
+        case .completed: break
         case .failed(let message):
             state = .error("Unable to finish syncing your iCloud data: \(message)")
             return
@@ -146,9 +137,7 @@ class OnboardingManager {
             guard attemptID == onboardingAttemptID else { return }
             isNewUser = true
             routeFromProfile(profile)
-        } catch {
-            state = .error("Failed to set up your profile: \(error.localizedDescription)")
-        }
+        } catch { state = .error("Failed to set up your profile: \(error.localizedDescription)") }
     }
 
     func retry() async {
@@ -168,9 +157,7 @@ class OnboardingManager {
             let profile = try SystemState.ensureUserProfile(context: context)
             isNewUser = true
             routeFromProfile(profile)
-        } catch {
-            state = .error("Failed to finish setup: \(error.localizedDescription)")
-        }
+        } catch { state = .error("Failed to finish setup: \(error.localizedDescription)") }
     }
 
     func saveName(_ name: String) async -> Bool {
@@ -182,26 +169,20 @@ class OnboardingManager {
     func saveBirthday(_ birthday: Date) async -> Bool {
         guard let profile else { return false }
         profile.birthday = birthday
-        return await persistProfileAndMaybeFinish(
-            saveFailureMessage: "Failed to save your birthday"
-        )
+        return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your birthday")
     }
 
     func saveGender(_ gender: UserGender) async -> Bool {
         guard let profile else { return false }
         profile.gender = gender
-        return await persistProfileAndMaybeFinish(
-            saveFailureMessage: "Failed to save your gender"
-        )
+        return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your gender")
     }
 
     func saveHeight(cm: Double) async {
         guard let profile else { return }
         profile.heightCm = cm
 
-        _ = await persistProfileAndMaybeFinish(
-            saveFailureMessage: "Failed to save your height"
-        )
+        _ = await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your height")
     }
 
     func connectAppleHealthDuringOnboarding() async {
@@ -212,19 +193,12 @@ class OnboardingManager {
     private func prefillProfileFromHealthKit() async {
         let healthStore = HealthAuthorizationManager.shared.healthStore
 
-        if profile?.birthday == nil {
-            if let components = try? healthStore.dateOfBirthComponents(),
-               let date = Calendar.current.date(from: components) {
-                prefetchedBirthday = date
-            }
-        }
+        if profile?.birthday == nil { if let components = try? healthStore.dateOfBirthComponents(), let date = Calendar.current.date(from: components) { prefetchedBirthday = date } }
 
         if profile?.gender == .notSet {
             if let biologicalSex = try? healthStore.biologicalSex().biologicalSex {
                 let mappedGender = UserGender(healthKitBiologicalSex: biologicalSex)
-                if mappedGender != .notSet {
-                    prefetchedGender = mappedGender
-                }
+                if mappedGender != .notSet { prefetchedGender = mappedGender }
             }
         }
 
@@ -232,19 +206,10 @@ class OnboardingManager {
             let heightType = HKQuantityType(.height)
             let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
             let sample: HKQuantitySample? = await withCheckedContinuation { continuation in
-                let query = HKSampleQuery(
-                    sampleType: heightType,
-                    predicate: nil,
-                    limit: 1,
-                    sortDescriptors: [sortDescriptor]
-                ) { _, samples, _ in
-                    continuation.resume(returning: samples?.first as? HKQuantitySample)
-                }
+                let query = HKSampleQuery(sampleType: heightType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, _ in continuation.resume(returning: samples?.first as? HKQuantitySample) }
                 healthStore.execute(query)
             }
-            if let sample {
-                prefetchedHeightCm = sample.quantity.doubleValue(for: .meterUnit(with: .centi))
-            }
+            if let sample { prefetchedHeightCm = sample.quantity.doubleValue(for: .meterUnit(with: .centi)) }
         }
     }
 
@@ -256,9 +221,7 @@ class OnboardingManager {
             if let missingStep = profile.firstMissingStep {
                 self.profile = profile
                 let action = await HealthAuthorizationManager.shared.authorizationAction()
-                if action == .requestAccess {
-                    isNewUser = true
-                }
+                if action == .requestAccess { isNewUser = true }
                 state = .profile(missingStep)
                 return
             }
@@ -266,9 +229,7 @@ class OnboardingManager {
             self.profile = profile
             await syncCatalogIfNeededBeforeReady()
             await transitionAfterSetup()
-        } catch {
-            state = .error("Failed to load your profile: \(error.localizedDescription)")
-        }
+        } catch { state = .error("Failed to load your profile: \(error.localizedDescription)") }
     }
 
     private func transitionToReady() {
@@ -283,12 +244,8 @@ class OnboardingManager {
 
         do {
             let didChange = try await DataManager.seedExercisesIfNeeded()
-            if didChange {
-                SpotlightIndexer.reindexAll(context: context)
-            }
-        } catch {
-            print("Returning-launch exercise sync failed: \(error)")
-        }
+            if didChange { SpotlightIndexer.reindexAll(context: context) }
+        } catch { print("Returning-launch exercise sync failed: \(error)") }
     }
 
     private func routeFromProfile(_ profile: UserProfile) {
@@ -296,16 +253,12 @@ class OnboardingManager {
         if let missingStep = profile.firstMissingStep {
             state = .profile(missingStep)
         } else {
-            Task {
-                await transitionAfterSetup()
-            }
+            Task { await transitionAfterSetup() }
         }
     }
 
     private func persistProfileAndAdvance() async -> Bool {
-        do {
-            try context.save()
-        } catch {
+        do { try context.save() } catch {
             state = .error("Failed to save your profile: \(error.localizedDescription)")
             return false
         }
@@ -313,16 +266,12 @@ class OnboardingManager {
     }
 
     private func persistProfileAndMaybeFinish(saveFailureMessage: String) async -> Bool {
-        do {
-            try context.save()
-        } catch {
+        do { try context.save() } catch {
             state = .error("\(saveFailureMessage): \(error.localizedDescription)")
             return false
         }
 
-        guard profile?.firstMissingStep == nil else {
-            return true
-        }
+        guard profile?.firstMissingStep == nil else { return true }
 
         state = .finishing
         await syncCatalogIfNeededBeforeReady()
@@ -335,9 +284,7 @@ class OnboardingManager {
         networkRetryTask = Task { [weak self] in
             guard let self else { return }
             while case .noWiFi = self.state {
-                if Task.isCancelled {
-                    return
-                }
+                if Task.isCancelled { return }
 
                 if self.networkMonitor.isConnected {
                     await self.startOnboarding()
@@ -373,19 +320,14 @@ class OnboardingManager {
 
 }
 
-private extension UserGender {
-    init(healthKitBiologicalSex: HKBiologicalSex) {
+extension UserGender {
+    fileprivate init(healthKitBiologicalSex: HKBiologicalSex) {
         switch healthKitBiologicalSex {
-        case .male:
-            self = .male
-        case .female:
-            self = .female
-        case .other:
-            self = .other
-        case .notSet:
-            self = .notSet
-        @unknown default:
-            self = .notSet
+        case .male: self = .male
+        case .female: self = .female
+        case .other: self = .other
+        case .notSet: self = .notSet
+        @unknown default: self = .notSet
         }
     }
 }

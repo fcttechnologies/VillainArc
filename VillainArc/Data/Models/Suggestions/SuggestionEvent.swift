@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class SuggestionEvent {
+@Model final class SuggestionEvent {
     #Index<SuggestionEvent>([\.createdAt])
 
     var id: UUID = UUID()
@@ -10,22 +9,15 @@ final class SuggestionEvent {
     var category: SuggestionCategory = SuggestionCategory.performance
     var catalogID: String = ""
 
-    @Relationship(deleteRule: .nullify)
-    var sessionFrom: WorkoutSession?
-
-    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.suggestionEvents)
-    var targetExercisePrescription: ExercisePrescription?
-
-    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.suggestionEvents)
-    var targetSetPrescription: SetPrescription?
+    @Relationship(deleteRule: .nullify) var sessionFrom: WorkoutSession?
+    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.suggestionEvents) var targetExercisePrescription: ExercisePrescription?
+    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.suggestionEvents) var targetSetPrescription: SetPrescription?
+    @Relationship(deleteRule: .nullify) var triggerPerformance: ExercisePerformance?
 
     var triggerTargetSetID: UUID?
 
     var decision: Decision = Decision.pending
     var outcome: Outcome = Outcome.pending
-
-    @Relationship(deleteRule: .nullify)
-    var triggerPerformance: ExercisePerformance?
 
     var ruleID: SuggestionRule?
     var decisionReason: DecisionReason?
@@ -36,8 +28,7 @@ final class SuggestionEvent {
     var requiredEvaluationCount: Int = 1
     var weightStepUsed: Double?
 
-    @Relationship(deleteRule: .cascade, inverse: \SuggestionEvaluation.event)
-    var evaluations: [SuggestionEvaluation]? = [SuggestionEvaluation]()
+    @Relationship(deleteRule: .cascade, inverse: \SuggestionEvaluation.event) var evaluations: [SuggestionEvaluation]? = [SuggestionEvaluation]()
 
     var suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore
 
@@ -47,41 +38,31 @@ final class SuggestionEvent {
     var changeReasoning: String?
     var outcomeReason: String?
 
-    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.event)
-    var changes: [PrescriptionChange]? = [PrescriptionChange]()
+    @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.event) var changes: [PrescriptionChange]? = [PrescriptionChange]()
 
-    var currentTargetSetIndex: Int? {
-        targetSetPrescription?.index
-    }
+    var currentTargetSetIndex: Int? { targetSetPrescription?.index }
 
-    var triggerTargetSnapshot: ExerciseTargetSnapshot? {
-        triggerPerformance?.originalTargetSnapshot
-    }
+    var triggerTargetSnapshot: ExerciseTargetSnapshot? { triggerPerformance?.originalTargetSnapshot }
 
     var triggerTargetSetIndex: Int? {
         guard let triggerTargetSetID, let snapshot = triggerTargetSnapshot else { return nil }
         return snapshot.sets.first(where: { $0.targetSetID == triggerTargetSetID })?.index
     }
 
-    var isSetScoped: Bool {
-        targetSetPrescription != nil || triggerTargetSetID != nil
-    }
+    var isSetScoped: Bool { targetSetPrescription != nil || triggerTargetSetID != nil }
 
-    var latestEvaluation: SuggestionEvaluation? {
-        (evaluations ?? []).sorted { $0.evaluatedAt < $1.evaluatedAt }.last
-    }
+    var latestEvaluation: SuggestionEvaluation? { (evaluations ?? []).sorted { $0.evaluatedAt < $1.evaluatedAt }.last }
 
     var suggestionConfidenceTier: SuggestionConfidenceTier { SuggestionConfidenceTier(score: suggestionConfidence) }
 
     var sortedChanges: [PrescriptionChange] {
-        (changes ?? []).sorted { lhs, rhs in
-            let lhsOrder = changeOrder(for: lhs.changeType)
-            let rhsOrder = changeOrder(for: rhs.changeType)
-            if lhsOrder != rhsOrder {
-                return lhsOrder < rhsOrder
+        (changes ?? [])
+            .sorted { lhs, rhs in
+                let lhsOrder = changeOrder(for: lhs.changeType)
+                let rhsOrder = changeOrder(for: rhs.changeType)
+                if lhsOrder != rhsOrder { return lhsOrder < rhsOrder }
+                return lhs.id.uuidString < rhs.id.uuidString
             }
-            return lhs.id.uuidString < rhs.id.uuidString
-        }
     }
 
     init() {}
@@ -108,26 +89,16 @@ final class SuggestionEvent {
         self.outcomeReason = outcomeReason
         self.suggestionConfidence = max(0, min(1, suggestionConfidence))
         self.changes = changes
-        for change in changes {
-            change.event = self
-        }
+        for change in changes { change.event = self }
     }
 }
 
 nonisolated private func changeOrder(for changeType: ChangeType) -> Int {
     switch changeType {
-    case .increaseWeight, .decreaseWeight:
-        return 1
-    case .increaseReps, .decreaseReps:
-        return 2
-    case .increaseRest, .decreaseRest:
-        return 3
-    case .changeSetType:
-        return 4
-    case .changeRepRangeMode,
-         .increaseRepRangeLower, .decreaseRepRangeLower,
-         .increaseRepRangeUpper, .decreaseRepRangeUpper,
-         .increaseRepRangeTarget, .decreaseRepRangeTarget:
-        return 10
+    case .increaseWeight, .decreaseWeight: return 1
+    case .increaseReps, .decreaseReps: return 2
+    case .increaseRest, .decreaseRest: return 3
+    case .changeSetType: return 4
+    case .changeRepRangeMode, .increaseRepRangeLower, .decreaseRepRangeLower, .increaseRepRangeUpper, .decreaseRepRangeUpper, .increaseRepRangeTarget, .decreaseRepRangeTarget: return 10
     }
 }

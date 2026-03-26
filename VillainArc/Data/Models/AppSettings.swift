@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class AppSettings {
+@Model final class AppSettings {
     var autoStartRestTimer: Bool = true
     var autoCompleteSetAfterRPE: Bool = false
     var promptForPreWorkoutContext: Bool = true
@@ -14,7 +13,7 @@ final class AppSettings {
     var weightUnit: WeightUnit = WeightUnit.systemDefault
     var heightUnit: HeightUnit = HeightUnit.systemDefault
     var distanceUnit: DistanceUnit = DistanceUnit.systemDefault
-    
+
     init() {}
 }
 

@@ -66,30 +66,23 @@ enum SplitPresetType: String, CaseIterable, Identifiable {
 
     var usesFixedRotationCycle: Bool {
         switch self {
-        case .fullBody, .upperLower, .pushPullLegs, .arnoldSplit:
-            return true
-        case .broSplit, .hourglass:
-            return false
+        case .fullBody, .upperLower, .pushPullLegs, .arnoldSplit: return true
+        case .broSplit, .hourglass: return false
         }
     }
 
     func availableDays(for mode: SplitMode) -> [Int] {
         switch (self, mode) {
-        case (.pushPullLegs, .weekly):
-            return [3, 6]
-        case (.arnoldSplit, .weekly):
-            return [3, 6]
-        default:
-            return availableDaysPerWeek
+        case (.pushPullLegs, .weekly): return [3, 6]
+        case (.arnoldSplit, .weekly): return [3, 6]
+        default: return availableDaysPerWeek
         }
     }
 
     var defaultRotationRestStyle: RotationRestStyle {
         switch self {
-        case .fullBody:
-            return .afterEachDay
-        case .upperLower, .pushPullLegs, .arnoldSplit, .broSplit, .hourglass:
-            return .afterCycle
+        case .fullBody: return .afterEachDay
+        case .upperLower, .pushPullLegs, .arnoldSplit, .broSplit, .hourglass: return .afterCycle
         }
     }
 }
@@ -105,8 +98,7 @@ enum RotationRestStyle: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-@Observable
-final class SplitBuilderConfig {
+@Observable final class SplitBuilderConfig {
     var type: SplitPresetType = .fullBody
     var mode: SplitMode = .rotation
     var daysPerWeek: Int = 3
@@ -150,18 +142,12 @@ struct RotationRestOption: Identifiable {
 enum SplitGenerator {
     static func generateDays(for config: SplitBuilderConfig) -> [DayTemplate] {
         switch config.type {
-        case .fullBody:
-            return generateFullBody(config: config)
-        case .upperLower:
-            return generateUpperLower(config: config)
-        case .pushPullLegs:
-            return generatePPL(config: config)
-        case .arnoldSplit:
-            return generateArnold(config: config)
-        case .broSplit:
-            return generateBroSplit(config: config)
-        case .hourglass:
-            return generateHourglass(config: config)
+        case .fullBody: return generateFullBody(config: config)
+        case .upperLower: return generateUpperLower(config: config)
+        case .pushPullLegs: return generatePPL(config: config)
+        case .arnoldSplit: return generateArnold(config: config)
+        case .broSplit: return generateBroSplit(config: config)
+        case .hourglass: return generateHourglass(config: config)
         }
     }
 
@@ -183,11 +169,7 @@ enum SplitGenerator {
             default: selectedWeekdays = mondayToFriday
             }
 
-            for (index, day) in trainingDays.enumerated() {
-                if index < selectedWeekdays.count {
-                    result[selectedWeekdays[index]] = day
-                }
-            }
+            for (index, day) in trainingDays.enumerated() { if index < selectedWeekdays.count { result[selectedWeekdays[index]] = day } }
         } else {
             let spacing: Int
             switch trainingCount {
@@ -219,8 +201,7 @@ enum SplitGenerator {
 
     private static func applyRotationRestStyle(_ trainingDays: [DayTemplate], style: RotationRestStyle) -> [DayTemplate] {
         switch style {
-        case .none:
-            return trainingDays
+        case .none: return trainingDays
         case .afterEachDay:
             var days: [DayTemplate] = []
             for day in trainingDays {
@@ -228,10 +209,8 @@ enum SplitGenerator {
                 days.append(restDay())
             }
             return days
-        case .afterCycle:
-            return trainingDays + [restDay()]
-        case .restForTwoDays:
-            return trainingDays + [restDay(), restDay()]
+        case .afterCycle: return trainingDays + [restDay()]
+        case .restForTwoDays: return trainingDays + [restDay(), restDay()]
         }
     }
 
@@ -239,29 +218,20 @@ enum SplitGenerator {
         let workout = DayTemplate(name: "Full Body", isRestDay: false, muscles: MuscleGroups.fullBody)
         if config.mode == .rotation {
             switch config.rotationRestStyle {
-            case .restForTwoDays:
-                return [workout, restDay(), restDay()]
-            case .none, .afterEachDay, .afterCycle:
-                return applyRotationRestStyle([workout], style: config.rotationRestStyle)
+            case .restForTwoDays: return [workout, restDay(), restDay()]
+            case .none, .afterEachDay, .afterCycle: return applyRotationRestStyle([workout], style: config.rotationRestStyle)
             }
         }
 
         var days: [DayTemplate] = []
-        for _ in 0..<config.daysPerWeek {
-            days.append(workout)
-        }
+        for _ in 0..<config.daysPerWeek { days.append(workout) }
         return days
     }
 
     private static func generateUpperLower(config: SplitBuilderConfig) -> [DayTemplate] {
-        let trainingDays = [
-            DayTemplate(name: "Upper", isRestDay: false, muscles: MuscleGroups.upperBody),
-            DayTemplate(name: "Lower", isRestDay: false, muscles: MuscleGroups.lowerBody)
-        ]
+        let trainingDays = [DayTemplate(name: "Upper", isRestDay: false, muscles: MuscleGroups.upperBody), DayTemplate(name: "Lower", isRestDay: false, muscles: MuscleGroups.lowerBody)]
 
-        if config.mode == .rotation {
-            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
-        }
+        if config.mode == .rotation { return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle) }
 
         var days: [DayTemplate] = []
         for i in 0..<config.daysPerWeek {
@@ -272,15 +242,9 @@ enum SplitGenerator {
     }
 
     private static func generatePPL(config: SplitBuilderConfig) -> [DayTemplate] {
-        let trainingDays = [
-            DayTemplate(name: "Push", isRestDay: false, muscles: MuscleGroups.push),
-            DayTemplate(name: "Pull", isRestDay: false, muscles: MuscleGroups.pull),
-            DayTemplate(name: "Legs", isRestDay: false, muscles: MuscleGroups.legs)
-        ]
+        let trainingDays = [DayTemplate(name: "Push", isRestDay: false, muscles: MuscleGroups.push), DayTemplate(name: "Pull", isRestDay: false, muscles: MuscleGroups.pull), DayTemplate(name: "Legs", isRestDay: false, muscles: MuscleGroups.legs)]
 
-        if config.mode == .rotation {
-            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
-        }
+        if config.mode == .rotation { return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle) }
 
         var days: [DayTemplate] = []
         for i in 0..<config.daysPerWeek {
@@ -292,14 +256,11 @@ enum SplitGenerator {
 
     private static func generateArnold(config: SplitBuilderConfig) -> [DayTemplate] {
         let trainingDays = [
-            DayTemplate(name: "Chest & Back", isRestDay: false, muscles: MuscleGroups.combine([MuscleGroups.chest, MuscleGroups.back])),
-            DayTemplate(name: "Shoulders & Arms", isRestDay: false, muscles: MuscleGroups.combine([MuscleGroups.shoulders, MuscleGroups.arms])),
-            DayTemplate(name: "Legs", isRestDay: false, muscles: MuscleGroups.legs)
+            DayTemplate(name: "Chest & Back", isRestDay: false, muscles: MuscleGroups.combine([MuscleGroups.chest, MuscleGroups.back])), DayTemplate(name: "Shoulders & Arms", isRestDay: false, muscles: MuscleGroups.combine([MuscleGroups.shoulders, MuscleGroups.arms])),
+            DayTemplate(name: "Legs", isRestDay: false, muscles: MuscleGroups.legs),
         ]
 
-        if config.mode == .rotation {
-            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
-        }
+        if config.mode == .rotation { return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle) }
 
         var days: [DayTemplate] = []
         for i in 0..<config.daysPerWeek {
@@ -313,17 +274,11 @@ enum SplitGenerator {
         var trainingDays: [DayTemplate] = []
         let labels = ["Chest", "Back", "Shoulders", "Legs", "Arms"]
 
-        for label in labels {
-            trainingDays.append(DayTemplate(name: label, isRestDay: false, muscles: broSplitMuscles(for: label)))
-        }
+        for label in labels { trainingDays.append(DayTemplate(name: label, isRestDay: false, muscles: broSplitMuscles(for: label))) }
 
-        if config.daysPerWeek == 6 {
-            trainingDays.append(DayTemplate(name: "Weak Point", isRestDay: false, muscles: []))
-        }
+        if config.daysPerWeek == 6 { trainingDays.append(DayTemplate(name: "Weak Point", isRestDay: false, muscles: [])) }
 
-        if config.mode == .rotation {
-            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
-        }
+        if config.mode == .rotation { return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle) }
 
         return trainingDays
     }
@@ -347,31 +302,22 @@ enum SplitGenerator {
             trainingDays.append(DayTemplate(name: "Quads Focus", isRestDay: false, muscles: MuscleGroups.quads))
             trainingDays.append(DayTemplate(name: "Shoulders & Back", isRestDay: false, muscles: MuscleGroups.combine([MuscleGroups.shoulders, MuscleGroups.back])))
             trainingDays.append(DayTemplate(name: "Glutes & Hams", isRestDay: false, muscles: MuscleGroups.combine([MuscleGroups.glutes, MuscleGroups.hamstrings])))
-        default:
-            return generateUpperLower(config: config)
+        default: return generateUpperLower(config: config)
         }
 
-        if config.mode == .rotation {
-            return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle)
-        }
+        if config.mode == .rotation { return applyRotationRestStyle(trainingDays, style: config.rotationRestStyle) }
 
         return trainingDays
     }
 
     private static func broSplitMuscles(for label: String) -> [Muscle] {
         switch label {
-        case "Chest":
-            return MuscleGroups.chest
-        case "Back":
-            return MuscleGroups.back
-        case "Shoulders":
-            return MuscleGroups.shoulders
-        case "Legs":
-            return MuscleGroups.legs
-        case "Arms":
-            return MuscleGroups.arms
-        default:
-            return []
+        case "Chest": return MuscleGroups.chest
+        case "Back": return MuscleGroups.back
+        case "Shoulders": return MuscleGroups.shoulders
+        case "Legs": return MuscleGroups.legs
+        case "Arms": return MuscleGroups.arms
+        default: return []
         }
     }
 }

@@ -6,14 +6,11 @@ struct ShowWorkoutHistoryIntent: AppIntent {
     static let description = IntentDescription("Opens your workout history.")
     static let supportedModes: IntentModes = .foreground
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
-        guard (try? context.fetch(WorkoutSession.recent).first) != nil else {
-            throw ShowWorkoutHistoryError.noWorkoutsFound
-        }
+        guard (try? context.fetch(WorkoutSession.recent).first) != nil else { throw ShowWorkoutHistoryError.noWorkoutsFound }
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionsList)
@@ -26,8 +23,7 @@ enum ShowWorkoutHistoryError: Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .noWorkoutsFound:
-            return "You haven't completed a workout."
+        case .noWorkoutsFound: return "You haven't completed a workout."
         }
     }
 }

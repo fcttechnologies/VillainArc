@@ -14,7 +14,6 @@ enum MuscleGroups {
     static let forearms: [Muscle] = [.forearms, .wrists]
     static let adductors: [Muscle] = [.adductors]
     static let abductors: [Muscle] = [.abductors]
-
     static let upperBody: [Muscle] = combine([chest, back, shoulders, biceps, triceps, forearms])
     static let lowerBody: [Muscle] = combine([glutes, quads, hamstrings, calves, adductors, abductors])
     static let fullBody: [Muscle] = combine([upperBody, lowerBody, abs])

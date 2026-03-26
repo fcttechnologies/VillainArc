@@ -6,16 +6,13 @@ struct OpenExercisesIntent: AppIntent {
     static let description = IntentDescription("Opens your exercises list.")
     static let supportedModes: IntentModes = .foreground
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
         var descriptor = Exercise.all
         descriptor.fetchLimit = 1
-        guard (try? context.fetch(descriptor).first) != nil else {
-            throw OpenExercisesError.noExercisesAvailable
-        }
+        guard (try? context.fetch(descriptor).first) != nil else { throw OpenExercisesError.noExercisesAvailable }
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exercisesList)
@@ -28,8 +25,7 @@ enum OpenExercisesError: Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .noExercisesAvailable:
-            return "No exercises are available yet."
+        case .noExercisesAvailable: return "No exercises are available yet."
         }
     }
 }

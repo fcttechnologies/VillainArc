@@ -1,11 +1,9 @@
 import Foundation
 import SwiftData
 
-@Model
-final class PrescriptionChange {
+@Model final class PrescriptionChange {
     var id: UUID = UUID()
-    @Relationship(deleteRule: .nullify)
-    var event: SuggestionEvent?
+    @Relationship(deleteRule: .nullify) var event: SuggestionEvent?
 
     var changeType: ChangeType = ChangeType.increaseWeight
     var previousValue: Double = 0

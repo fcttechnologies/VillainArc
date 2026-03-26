@@ -1,15 +1,12 @@
 import Foundation
 import SwiftData
 
-@Model
-final class SuggestionEvaluation {
+@Model final class SuggestionEvaluation {
     var id: UUID = UUID()
 
-    @Relationship(deleteRule: .nullify)
-    var event: SuggestionEvent?
+    @Relationship(deleteRule: .nullify) var event: SuggestionEvent?
 
-    @Relationship(deleteRule: .nullify)
-    var performance: ExercisePerformance?
+    @Relationship(deleteRule: .nullify) var performance: ExercisePerformance?
 
     var sourceWorkoutSessionID: UUID = UUID()
     var partialOutcome: Outcome = Outcome.pending
@@ -27,7 +24,6 @@ final class SuggestionEvaluation {
         self.partialOutcome = partialOutcome
         self.confidence = confidence
         self.reason = reason
-        self.evaluatedAt = Date()
     }
 }
 

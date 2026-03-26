@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class SetPrescription {
+@Model final class SetPrescription {
     var id: UUID = UUID()
     var index: Int = 0
     var type: ExerciseSetType = ExerciseSetType.working
@@ -11,20 +10,15 @@ final class SetPrescription {
     var targetRest: Int = 0
     var targetRPE: Int = 0
     var exercise: ExercisePrescription?
-    @Relationship(deleteRule: .nullify)
-    var activePerformance: SetPerformance?
-    @Relationship(deleteRule: .nullify)
-    var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
+    @Relationship(deleteRule: .nullify) var activePerformance: SetPerformance?
+    @Relationship(deleteRule: .nullify) var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
 
     var visibleTargetRPE: Int? {
         guard type != .warmup, targetRPE > 0 else { return nil }
         return targetRPE
     }
 
-    var volume: Double {
-        targetWeight * Double(targetReps)
-    }
-    
+    var volume: Double { targetWeight * Double(targetReps) }
     // Adding set in workout plan creation
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0) {
         index = exercisePrescription.sets?.count ?? 0
@@ -39,11 +33,9 @@ final class SetPrescription {
     convenience init(exercisePrescription: ExercisePrescription, setType: ExerciseSetType, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0, index: Int? = nil) {
         self.init(exercisePrescription: exercisePrescription, targetWeight: targetWeight, targetReps: targetReps, targetRest: targetRest, targetRPE: targetRPE)
         self.type = setType
-        if let index {
-            self.index = index
-        }
+        if let index { self.index = index }
     }
-    
+
     // Creation from session performance
     init(exercisePrescription: ExercisePrescription, setPerformance: SetPerformance) {
         index = setPerformance.index
@@ -56,7 +48,7 @@ final class SetPrescription {
         setPerformance.prescription = self
         setPerformance.originalTargetSetID = id
     }
-    
+
     // Creates a copy with the same ID for edit tracking
     init(copying original: SetPrescription, exercise: ExercisePrescription) {
         id = original.id  // Same ID enables matching for change detection
@@ -66,8 +58,7 @@ final class SetPrescription {
         targetReps = original.targetReps
         targetRest = original.targetRest
         targetRPE = original.targetRPE
-        self.exercise = exercise
-        // DO NOT copy changes - they remain on the original prescription
+        self.exercise = exercise  // DO NOT copy changes - they remain on the original prescription
     }
 }
 

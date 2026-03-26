@@ -5,14 +5,10 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Complete Set"
     static let isDiscoverable: Bool = false
 
-    @MainActor
-    func perform() async throws -> some IntentResult {
+    @MainActor func perform() async throws -> some IntentResult {
         let context = SharedModelContainer.container.mainContext
 
-        guard let workout = try? context.fetch(WorkoutSession.incomplete).first,
-              let (_, set) = workout.activeExerciseAndSet() else {
-            return .result()
-        }
+        guard let workout = try? context.fetch(WorkoutSession.incomplete).first, let (_, set) = workout.activeExerciseAndSet() else { return .result() }
 
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
         set.complete = true
@@ -29,9 +25,7 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
 
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
-        if shouldPrewarmSuggestions {
-            FoundationModelPrewarmer.warmup()
-        }
+        if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
 
         return .result()
     }

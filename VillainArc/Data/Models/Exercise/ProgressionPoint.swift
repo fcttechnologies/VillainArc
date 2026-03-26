@@ -12,22 +12,14 @@ import SwiftData
 /// - Automatically created/updated by ExerciseHistory.recalculate()
 /// - Cascade deleted when parent ExerciseHistory is deleted
 /// - Sorted by date via ExerciseHistory.chronologicalProgressionPoints
-///
-/// **Example:**
-/// ```swift
-/// let history = ExerciseHistory(catalogID: "bench-press")
-/// for point in history.chronologicalProgressionPoints {
-///     print("\(point.date): \(point.weight) lbs, \(point.totalReps) reps, \(point.volume) total volume, \(point.estimated1RM) est. 1RM")
-/// }
 /// ```
-@Model
-final class ProgressionPoint {
+@Model final class ProgressionPoint {
     var date: Date = Date()
     var weight: Double = 0  // Top set weight for this session
     var totalReps: Int = 0  // Total completed reps for this session
     var volume: Double = 0  // Total volume (weight × reps) for this session
     var estimated1RM: Double = 0  // Best estimated 1RM for this session
-    
+
     // Back-reference to parent history (cascade delete)
     var exerciseHistory: ExerciseHistory?
     

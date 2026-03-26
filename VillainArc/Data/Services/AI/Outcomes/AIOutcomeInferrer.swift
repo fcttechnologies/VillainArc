@@ -30,9 +30,7 @@ struct AIOutcomeInferrer {
             }
             let response = try await session.respond(to: prompt, generating: AIOutcomeInferenceOutput.self)
             return validate(response.content)
-        } catch {
-            return nil
-        }
+        } catch { return nil }
     }
 
     private static var appliedInstructions: String {
@@ -95,14 +93,10 @@ struct AIOutcomeInferrer {
     }
 
     static func validate(_ output: AIOutcomeInferenceOutput) -> AIOutcomeInferenceOutput? {
-        guard (0.0 ... 1.0).contains(output.confidence) else { return nil }
+        guard (0.0...1.0).contains(output.confidence) else { return nil }
 
         let trimmedReason = output.reason.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedReason.isEmpty,
-              trimmedReason.count <= 160,
-              !trimmedReason.contains("\n") else {
-            return nil
-        }
+        guard !trimmedReason.isEmpty, trimmedReason.count <= 160, !trimmedReason.contains("\n") else { return nil }
 
         return AIOutcomeInferenceOutput(outcome: output.outcome, confidence: output.confidence, reason: trimmedReason)
     }

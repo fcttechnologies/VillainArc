@@ -6,14 +6,11 @@ struct ResumeRestTimerIntent: AppIntent {
     static let description = IntentDescription("Resumes the paused rest timer.")
     static let supportedModes: IntentModes = .background
 
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
+    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
         let restTimer = RestTimerState.shared
 
         guard restTimer.isPaused, restTimer.pausedRemainingSeconds > 0 else {
-            if restTimer.isRunning {
-                throw RestTimerIntentError.alreadyRunning
-            }
+            if restTimer.isRunning { throw RestTimerIntentError.alreadyRunning }
             throw RestTimerIntentError.noPausedTimer
         }
 

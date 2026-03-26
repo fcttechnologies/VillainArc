@@ -5,9 +5,7 @@ enum HealthSyncPreferences {
     private static let workoutAnchorKey = "health_workout_anchor"
     private static let weightEntryAnchorKey = "health_weight_entry_anchor"
 
-    private static var defaults: UserDefaults {
-        SharedModelContainer.sharedDefaults
-    }
+    private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
 
     static var workoutAnchor: HKQueryAnchor? {
         get { anchor(forKey: workoutAnchorKey) }
@@ -30,9 +28,7 @@ enum HealthSyncPreferences {
             return
         }
 
-        guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else {
-            return
-        }
+        guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else { return }
 
         defaults.set(data, forKey: key)
     }

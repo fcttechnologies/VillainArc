@@ -26,19 +26,11 @@ struct OutcomeRuleEngine {
         let regularSets = relevantWorkingSets(in: exercisePerf, trainingStyle: trainingStyle)
 
         switch change.changeType {
-        case .increaseWeight, .decreaseWeight:
-            return evaluateWeightChange(change: change, event: event, exercisePerf: exercisePerf, trainingStyle: trainingStyle)
-        case .increaseReps, .decreaseReps:
-            return evaluateRepsChange(change: change, event: event, exercisePerf: exercisePerf)
-        case .increaseRest, .decreaseRest:
-            return evaluateSetRestChange(change: change, event: event, exercisePerf: exercisePerf)
-        case .increaseRepRangeLower, .decreaseRepRangeLower,
-             .increaseRepRangeUpper, .decreaseRepRangeUpper,
-             .increaseRepRangeTarget, .decreaseRepRangeTarget,
-             .changeRepRangeMode:
-            return evaluateRepRangeChange(change: change, event: event, regularSets: regularSets, exercisePerf: exercisePerf)
-        case .changeSetType:
-            return evaluateSetTypeChange(change: change, event: event, exercisePerf: exercisePerf)
+        case .increaseWeight, .decreaseWeight: return evaluateWeightChange(change: change, event: event, exercisePerf: exercisePerf, trainingStyle: trainingStyle)
+        case .increaseReps, .decreaseReps: return evaluateRepsChange(change: change, event: event, exercisePerf: exercisePerf)
+        case .increaseRest, .decreaseRest: return evaluateSetRestChange(change: change, event: event, exercisePerf: exercisePerf)
+        case .increaseRepRangeLower, .decreaseRepRangeLower, .increaseRepRangeUpper, .decreaseRepRangeUpper, .increaseRepRangeTarget, .decreaseRepRangeTarget, .changeRepRangeMode: return evaluateRepRangeChange(change: change, event: event, regularSets: regularSets, exercisePerf: exercisePerf)
+        case .changeSetType: return evaluateSetTypeChange(change: change, event: event, exercisePerf: exercisePerf)
         }
     }
 
@@ -48,18 +40,10 @@ struct OutcomeRuleEngine {
         return workingSets.isEmpty ? progressionSets : workingSets
     }
 
-    private static func hasStrongComparableContextRangeMiss(
-        in exercisePerf: ExercisePerformance,
-        primarySets: [SetPerformance],
-        floor: Int,
-        ceiling: Int,
-        buffer: Int
-    ) -> Bool {
+    private static func hasStrongComparableContextRangeMiss(in exercisePerf: ExercisePerformance, primarySets: [SetPerformance], floor: Int, ceiling: Int, buffer: Int) -> Bool {
         guard !primarySets.isEmpty else { return false }
 
-        let contextualSets = exercisePerf.sortedSets.filter { set in
-            set.complete && set.type == .working && !MetricsCalculator.isPlanAnchored(set)
-        }
+        let contextualSets = exercisePerf.sortedSets.filter { set in set.complete && set.type == .working && !MetricsCalculator.isPlanAnchored(set) }
         guard !contextualSets.isEmpty else { return false }
 
         let maxPrimaryWeight = primarySets.map(\.weight).max() ?? 0
@@ -77,10 +61,7 @@ struct OutcomeRuleEngine {
     private static func matchSetPerformance(for event: SuggestionEvent, in exercisePerf: ExercisePerformance) -> SetPerformance? {
         let completeSets = exercisePerf.sortedSets.filter { $0.complete }
 
-        if let setPrescriptionID = event.targetSetPrescription?.id,
-           let matched = completeSets.first(where: { $0.prescription?.id == setPrescriptionID }) {
-            return matched
-        }
+        if let setPrescriptionID = event.targetSetPrescription?.id, let matched = completeSets.first(where: { $0.prescription?.id == setPrescriptionID }) { return matched }
 
         return nil
     }
@@ -88,12 +69,9 @@ struct OutcomeRuleEngine {
     // MARK: - Weight Change
 
     private static func evaluateWeightChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> OutcomeSignal? {
-        guard event.isSetScoped,
-              let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
+        guard event.isSetScoped, let setPerf = matchSetPerformance(for: event, in: exercisePerf) else { return nil }
 
-        if event.category == .warmupCalibration {
-            return evaluateWarmupWeightChange(change: change, setPerf: setPerf, exercisePerf: exercisePerf, trainingStyle: trainingStyle, weightStepUsed: event.weightStepUsed)
-        }
+        if event.category == .warmupCalibration { return evaluateWarmupWeightChange(change: change, setPerf: setPerf, exercisePerf: exercisePerf, trainingStyle: trainingStyle, weightStepUsed: event.weightStepUsed) }
 
         let newWeight = change.newValue
         let oldWeight = change.previousValue
@@ -120,26 +98,17 @@ struct OutcomeRuleEngine {
         let followThrough = followThroughStrength(actual: actualDifficultyWeight, old: oldDifficultyWeight, new: newDifficultyWeight, tolerance: weightStep)
 
         guard followThrough != .none else {
-            if abs(actualDifficultyWeight - oldDifficultyWeight) <= weightStep {
-                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual \(loadLabel) (\(actualWeight)) stayed near old target (\(oldWeight)), new target (\(newWeight)) not attempted.")
-            }
+            if abs(actualDifficultyWeight - oldDifficultyWeight) <= weightStep { return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual \(loadLabel) (\(actualWeight)) stayed near old target (\(oldWeight)), new target (\(newWeight)) not attempted.") }
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual \(loadLabel) (\(actualWeight)) not close to new target (\(newWeight)).")
         }
 
-        let context = followThrough == .full
-            ? "\(loadLabel) change to \(newWeight)"
-            : "partial \(loadLabel) change toward \(newWeight)"
+        let context = followThrough == .full ? "\(loadLabel) change to \(newWeight)" : "partial \(loadLabel) change toward \(newWeight)"
         let baseSignal = evaluateRepsInRange(actualReps: setPerf.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: context)
         let adjustedSignal = adjustSignalForFollowThrough(baseSignal, strength: followThrough, actual: actualWeight, old: oldWeight, new: newWeight, metricName: loadLabel)
 
         if difficultyDirection(forWeightChangeFrom: oldWeight, to: newWeight, equipmentType: exercisePerf.equipmentType) == .easier {
             return evaluateSupportiveSetOutcome(
-                adjustedSignal: adjustedSignal,
-                triggerSet: triggerSetPerformance(for: event),
-                frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty,
-                actualReps: setPerf.reps,
-                context: exercisePerf.equipmentType.usesAssistanceWeightSemantics ? "Assistance increase" : "Load reduction"
-            )
+                adjustedSignal: adjustedSignal, triggerSet: triggerSetPerformance(for: event), frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, actualReps: setPerf.reps, context: exercisePerf.equipmentType.usesAssistanceWeightSemantics ? "Assistance increase" : "Load reduction")
         }
 
         return adjustedSignal
@@ -154,19 +123,13 @@ struct OutcomeRuleEngine {
 
         let followThrough = followThroughStrength(actual: actualWeight, old: oldWeight, new: newWeight, tolerance: weightStep)
         guard followThrough != .none else {
-            if abs(actualWeight - oldWeight) <= weightStep {
-                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Warmup load stayed near the old target (\(oldWeight)).")
-            }
+            if abs(actualWeight - oldWeight) <= weightStep { return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Warmup load stayed near the old target (\(oldWeight)).") }
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Warmup load (\(actualWeight)) did not move toward the new target (\(newWeight)).")
         }
 
-        guard setPerf.type == .warmup else {
-            return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "The adjusted set no longer behaved like a warmup.")
-        }
+        guard setPerf.type == .warmup else { return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "The adjusted set no longer behaved like a warmup.") }
 
-        if let anchorWeight = workingAnchorWeight(in: exercisePerf, trainingStyle: trainingStyle), anchorWeight > 0, actualWeight >= anchorWeight * 0.9 {
-            return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Warmup load (\(actualWeight)) was too close to the main working load (\(anchorWeight)).")
-        }
+        if let anchorWeight = workingAnchorWeight(in: exercisePerf, trainingStyle: trainingStyle), anchorWeight > 0, actualWeight >= anchorWeight * 0.9 { return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Warmup load (\(actualWeight)) was too close to the main working load (\(anchorWeight)).") }
 
         let signal = OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Warmup load moved toward the new target while still behaving like a warmup.")
         return adjustSignalForFollowThrough(signal, strength: followThrough, actual: actualWeight, old: oldWeight, new: newWeight, metricName: "warmup weight")
@@ -185,36 +148,20 @@ struct OutcomeRuleEngine {
         // A large directional overshoot means the athlete had to move substantially past the
         // prescribed adjustment. Upward overshoot means the increase was too small; downward
         // overshoot means the decrease was still not enough.
-        if newReps > oldReps && actualReps >= newReps + 2 {
-            return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Actual reps (\(actualReps)) substantially exceeded the new target (\(newReps)) — the suggested increase was too conservative.")
-        }
-        if newReps < oldReps && actualReps <= newReps - 2 {
-            return OutcomeSignal(outcome: .insufficient, confidence: 0.8, reason: "Actual reps (\(actualReps)) fell well below the new target (\(newReps)) — the suggested decrease was not enough.")
-        }
+        if newReps > oldReps && actualReps >= newReps + 2 { return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Actual reps (\(actualReps)) substantially exceeded the new target (\(newReps)) — the suggested increase was too conservative.") }
+        if newReps < oldReps && actualReps <= newReps - 2 { return OutcomeSignal(outcome: .insufficient, confidence: 0.8, reason: "Actual reps (\(actualReps)) fell well below the new target (\(newReps)) — the suggested decrease was not enough.") }
 
         let followThrough = followThroughStrength(actual: Double(actualReps), old: Double(oldReps), new: Double(newReps), tolerance: 1)
         guard followThrough != .none else {
-            if abs(actualReps - oldReps) <= 1 {
-                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual reps (\(actualReps)) stayed at old target (\(oldReps)).")
-            }
+            if abs(actualReps - oldReps) <= 1 { return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual reps (\(actualReps)) stayed at old target (\(oldReps)).") }
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual reps (\(actualReps)) not close to new target (\(newReps)).")
         }
 
-        let context = followThrough == .full
-            ? "reps change to \(newReps)"
-            : "partial reps change toward \(newReps)"
+        let context = followThrough == .full ? "reps change to \(newReps)" : "partial reps change toward \(newReps)"
         let baseSignal = evaluateRepsInRange(actualReps: actualReps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: context)
         let adjustedSignal = adjustSignalForFollowThrough(baseSignal, strength: followThrough, actual: Double(actualReps), old: Double(oldReps), new: Double(newReps), metricName: "reps")
 
-        if difficultyDirection(for: change) == .easier {
-            return evaluateSupportiveSetOutcome(
-                adjustedSignal: adjustedSignal,
-                triggerSet: triggerSetPerformance(for: event),
-                frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty,
-                actualReps: actualReps,
-                context: "Rep reduction"
-            )
-        }
+        if difficultyDirection(for: change) == .easier { return evaluateSupportiveSetOutcome(adjustedSignal: adjustedSignal, triggerSet: triggerSetPerformance(for: event), frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, actualReps: actualReps, context: "Rep reduction") }
 
         return adjustedSignal
     }
@@ -222,8 +169,7 @@ struct OutcomeRuleEngine {
     // MARK: - Set-Level Rest Change
 
     private static func evaluateSetRestChange(change: PrescriptionChange, event: SuggestionEvent, exercisePerf: ExercisePerformance) -> OutcomeSignal? {
-        guard event.isSetScoped,
-              let comparison = recoverySetComparison(for: event, in: exercisePerf) else { return nil }
+        guard event.isSetScoped, let comparison = recoverySetComparison(for: event, in: exercisePerf) else { return nil }
 
         let newRest = Int(change.newValue)
         let oldRest = Int(change.previousValue)
@@ -233,68 +179,28 @@ struct OutcomeRuleEngine {
 
         // Mirror the directional-overshoot handling used by weight/reps so a much larger
         // rest adjustment does not get credited as a clean test of the suggested target.
-        if newRest > oldRest && actualRest >= newRest + restTolerance * 2 {
-            return OutcomeSignal(
-                outcome: .insufficient,
-                confidence: 0.8,
-                reason: "Actual rest (\(actualRest)s) substantially exceeded the new target (\(newRest)s) — the suggested increase was not enough."
-            )
-        }
-        if newRest < oldRest && actualRest <= newRest - restTolerance * 2 {
-            return OutcomeSignal(
-                outcome: .tooEasy,
-                confidence: 0.8,
-                reason: "Actual rest (\(actualRest)s) was substantially shorter than the new target (\(newRest)s) — the suggested decrease was too conservative."
-            )
-        }
+        if newRest > oldRest && actualRest >= newRest + restTolerance * 2 { return OutcomeSignal(outcome: .insufficient, confidence: 0.8, reason: "Actual rest (\(actualRest)s) substantially exceeded the new target (\(newRest)s) — the suggested increase was not enough.") }
+        if newRest < oldRest && actualRest <= newRest - restTolerance * 2 { return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Actual rest (\(actualRest)s) was substantially shorter than the new target (\(newRest)s) — the suggested decrease was too conservative.") }
 
         let followThrough = followThroughStrength(actual: Double(actualRest), old: Double(oldRest), new: Double(newRest), tolerance: Double(restTolerance))
 
         guard followThrough != .none else {
-            if abs(actualRest - oldRest) <= restTolerance {
-                return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual rest (\(actualRest)s) stayed near old target (\(oldRest)s).")
-            }
+            if abs(actualRest - oldRest) <= restTolerance { return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual rest (\(actualRest)s) stayed near old target (\(oldRest)s).") }
             return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Actual rest (\(actualRest)s) not close to new target (\(newRest)s).")
         }
 
         let currentSignal = evaluateRepsInRange(actualReps: comparison.actualDownstreamSet.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: "recovery after rest change to \(newRest)s on the following set")
         let triggerSignal = evaluateRepsInRange(actualReps: comparison.triggerDownstreamSet.reps, frozenRepRange: event.triggerTargetSnapshot?.repRange ?? .empty, context: "trigger performance on the following set")
 
-        let weightTolerance = OutcomeRuleEngine.weightTolerance(
-            for: exercisePerf,
-            baseWeight: max(comparison.actualDownstreamSet.weight, comparison.triggerDownstreamSet.weight),
-            weightStepUsed: nil
-        )
+        let weightTolerance = OutcomeRuleEngine.weightTolerance(for: exercisePerf, baseWeight: max(comparison.actualDownstreamSet.weight, comparison.triggerDownstreamSet.weight), weightStepUsed: nil)
 
-        let improvement = downstreamPerformanceImproved(
-            actual: comparison.actualDownstreamSet,
-            trigger: comparison.triggerDownstreamSet,
-            weightTolerance: weightTolerance
-        )
-        let maintained = downstreamPerformanceMaintained(
-            actual: comparison.actualDownstreamSet,
-            trigger: comparison.triggerDownstreamSet,
-            weightTolerance: weightTolerance
-        )
+        let improvement = downstreamPerformanceImproved(actual: comparison.actualDownstreamSet, trigger: comparison.triggerDownstreamSet, weightTolerance: weightTolerance)
+        let maintained = downstreamPerformanceMaintained(actual: comparison.actualDownstreamSet, trigger: comparison.triggerDownstreamSet, weightTolerance: weightTolerance)
         let followAdjustedSignal = adjustSignalForFollowThrough(currentSignal, strength: followThrough, actual: Double(actualRest), old: Double(oldRest), new: Double(newRest), metricName: "rest")
 
-        if newRest > oldRest {
-            return evaluateIncreaseRestOutcome(
-                adjustedSignal: followAdjustedSignal,
-                triggerSignal: triggerSignal,
-                improvement: improvement,
-                actualDownstreamSet: comparison.actualDownstreamSet,
-                triggerDownstreamSet: comparison.triggerDownstreamSet
-            )
-        }
+        if newRest > oldRest { return evaluateIncreaseRestOutcome(adjustedSignal: followAdjustedSignal, triggerSignal: triggerSignal, improvement: improvement, actualDownstreamSet: comparison.actualDownstreamSet, triggerDownstreamSet: comparison.triggerDownstreamSet) }
 
-        return evaluateDecreaseRestOutcome(
-            adjustedSignal: followAdjustedSignal,
-            triggerSignal: triggerSignal,
-            maintained: maintained,
-            actualDownstreamSet: comparison.actualDownstreamSet,
-            triggerDownstreamSet: comparison.triggerDownstreamSet
-        )
+        return evaluateDecreaseRestOutcome(adjustedSignal: followAdjustedSignal, triggerSignal: triggerSignal, maintained: maintained, actualDownstreamSet: comparison.actualDownstreamSet, triggerDownstreamSet: comparison.triggerDownstreamSet)
     }
 
     // MARK: - Rep Range Change
@@ -329,14 +235,10 @@ struct OutcomeRuleEngine {
             }
             return OutcomeSignal(outcome: outcome, confidence: 0.8, reason: reason)
         }
-        if !aboveCeiling.isEmpty && aboveCeiling.count * 2 >= reps.count {
-            return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Multiple sets (\(aboveCeiling)) exceeded the new range ceiling (\(ceiling)) + buffer (\(buffer)).")
-        }
+        if !aboveCeiling.isEmpty && aboveCeiling.count * 2 >= reps.count { return OutcomeSignal(outcome: .tooEasy, confidence: 0.8, reason: "Multiple sets (\(aboveCeiling)) exceeded the new range ceiling (\(ceiling)) + buffer (\(buffer)).") }
 
         // Require at least 50% in range, or that all sets are near boundaries (within 2 reps).
-        guard ratio >= 0.5 || reps.allSatisfy({ abs($0 - floor) <= 2 || abs($0 - ceiling) <= 2 }) else {
-            return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Most sets (\(reps)) didn't fall in new range (\(floor)-\(ceiling)).")
-        }
+        guard ratio >= 0.5 || reps.allSatisfy({ abs($0 - floor) <= 2 || abs($0 - ceiling) <= 2 }) else { return OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Most sets (\(reps)) didn't fall in new range (\(floor)-\(ceiling)).") }
 
         if ratio >= 0.5 {
             if hasStrongComparableContextRangeMiss(in: exercisePerf, primarySets: regularSets, floor: floor, ceiling: ceiling, buffer: buffer) {
@@ -354,35 +256,23 @@ struct OutcomeRuleEngine {
         guard let setPerf = matchSetPerformance(for: event, in: exercisePerf), let newType = ExerciseSetType(rawValue: Int(change.newValue)) else { return nil }
 
         // Type changes are binary: exact type match means success, otherwise ignored.
-        if setPerf.type == newType {
-            return OutcomeSignal(outcome: .good, confidence: 0.95, reason: "Set type matches the new target (\(newType)).")
-        }
+        if setPerf.type == newType { return OutcomeSignal(outcome: .good, confidence: 0.95, reason: "Set type matches the new target (\(newType)).") }
         return OutcomeSignal(outcome: .ignored, confidence: 0.9, reason: "Actual set type (\(setPerf.type)) doesn't match new target (\(newType)).")
     }
 
     private static func followThroughStrength(actual: Double, old: Double, new: Double, tolerance: Double) -> FollowThroughStrength {
         guard tolerance >= 0 else { return .none }
         guard new != old else { return .full }
-        if abs(actual - new) <= tolerance {
-            return .full
-        }
+        if abs(actual - new) <= tolerance { return .full }
 
         if new > old {
-            if actual > new {
-                return .full
-            }
-            if abs(actual - old) <= tolerance || actual <= old {
-                return .none
-            }
+            if actual > new { return .full }
+            if abs(actual - old) <= tolerance || actual <= old { return .none }
             return .partial
         }
 
-        if actual < new {
-            return .full
-        }
-        if abs(actual - old) <= tolerance || actual >= old {
-            return .none
-        }
+        if actual < new { return .full }
+        if abs(actual - old) <= tolerance || actual >= old { return .none }
         return .partial
     }
 
@@ -390,23 +280,14 @@ struct OutcomeRuleEngine {
         guard let signal else { return nil }
         guard strength == .partial else { return signal }
 
-        return OutcomeSignal(
-            outcome: signal.outcome,
-            confidence: min(signal.confidence, 0.65),
-            reason: "Actual \(metricName) (\(actual)) moved toward new target (\(new)) from old target (\(old)) but did not fully reach it. \(signal.reason)"
-        )
+        return OutcomeSignal(outcome: signal.outcome, confidence: min(signal.confidence, 0.65), reason: "Actual \(metricName) (\(actual)) moved toward new target (\(new)) from old target (\(old)) but did not fully reach it. \(signal.reason)")
     }
 
     private static func difficultyDirection(for change: PrescriptionChange) -> DifficultyDirection {
         switch change.changeType {
-        case .increaseWeight, .increaseReps, .decreaseRest,
-             .increaseRepRangeLower, .decreaseRepRangeUpper, .increaseRepRangeTarget:
-            return .harder
-        case .decreaseWeight, .decreaseReps, .increaseRest,
-             .decreaseRepRangeLower, .increaseRepRangeUpper, .decreaseRepRangeTarget:
-            return .easier
-        case .changeSetType, .changeRepRangeMode:
-            return .neutral
+        case .increaseWeight, .increaseReps, .decreaseRest, .increaseRepRangeLower, .decreaseRepRangeUpper, .increaseRepRangeTarget: return .harder
+        case .decreaseWeight, .decreaseReps, .increaseRest, .decreaseRepRangeLower, .increaseRepRangeUpper, .decreaseRepRangeTarget: return .easier
+        case .changeSetType, .changeRepRangeMode: return .neutral
         }
     }
 
@@ -414,27 +295,18 @@ struct OutcomeRuleEngine {
         let oldDifficultyWeight = difficultyRelativeWeight(oldWeight, equipmentType: equipmentType)
         let newDifficultyWeight = difficultyRelativeWeight(newWeight, equipmentType: equipmentType)
 
-        if newDifficultyWeight > oldDifficultyWeight {
-            return .harder
-        }
-        if newDifficultyWeight < oldDifficultyWeight {
-            return .easier
-        }
+        if newDifficultyWeight > oldDifficultyWeight { return .harder }
+        if newDifficultyWeight < oldDifficultyWeight { return .easier }
         return .neutral
     }
 
-    private static func difficultyRelativeWeight(_ weight: Double, equipmentType: EquipmentType) -> Double {
-        equipmentType.usesAssistanceWeightSemantics ? -weight : weight
-    }
+    private static func difficultyRelativeWeight(_ weight: Double, equipmentType: EquipmentType) -> Double { equipmentType.usesAssistanceWeightSemantics ? -weight : weight }
 
     private static func minimumSuccessfulReps(for frozenRepRange: RepRangeSnapshot) -> Int? {
         switch frozenRepRange.mode {
-        case .range:
-            return frozenRepRange.lower
-        case .target:
-            return max(1, frozenRepRange.target - 1)
-        case .notSet:
-            return nil
+        case .range: return frozenRepRange.lower
+        case .target: return max(1, frozenRepRange.target - 1)
+        case .notSet: return nil
         }
     }
 
@@ -442,14 +314,9 @@ struct OutcomeRuleEngine {
         guard let triggerPerf = event.triggerPerformance else { return nil }
         let triggerSets = ExercisePerformanceSnapshot(performance: triggerPerf).sets.sorted { $0.index < $1.index }
 
-        if let triggerTargetSetID = event.triggerTargetSetID,
-           let triggerSet = triggerSets.first(where: { $0.originalTargetSetID == triggerTargetSetID }) {
-            return triggerSet
-        }
+        if let triggerTargetSetID = event.triggerTargetSetID, let triggerSet = triggerSets.first(where: { $0.originalTargetSetID == triggerTargetSetID }) { return triggerSet }
 
-        if let triggerIndex = event.triggerTargetSetIndex {
-            return triggerSets.first { $0.index == triggerIndex }
-        }
+        if let triggerIndex = event.triggerTargetSetIndex { return triggerSets.first { $0.index == triggerIndex } }
 
         return nil
     }
@@ -459,105 +326,52 @@ struct OutcomeRuleEngine {
 
         switch adjustedSignal.outcome {
         case .tooAggressive:
-            if let triggerSet {
-                return OutcomeSignal(
-                    outcome: .insufficient,
-                    confidence: adjustedSignal.confidence,
-                    reason: "\(context) was followed, but performance still sat below the desired zone (\(actualReps) reps now vs \(triggerSet.reps) at trigger)."
-                )
-            }
-            return OutcomeSignal(
-                outcome: .insufficient,
-                confidence: adjustedSignal.confidence,
-                reason: "\(context) was followed, but performance still sat below the desired zone."
-            )
+            if let triggerSet { return OutcomeSignal(outcome: .insufficient, confidence: adjustedSignal.confidence, reason: "\(context) was followed, but performance still sat below the desired zone (\(actualReps) reps now vs \(triggerSet.reps) at trigger).") }
+            return OutcomeSignal(outcome: .insufficient, confidence: adjustedSignal.confidence, reason: "\(context) was followed, but performance still sat below the desired zone.")
         case .good, .tooEasy:
-            guard let triggerSet,
-                  let minimumSuccessfulReps = minimumSuccessfulReps(for: frozenRepRange),
-                  triggerSet.reps <= minimumSuccessfulReps,
-                  actualReps <= triggerSet.reps else {
-                return adjustedSignal
-            }
+            guard let triggerSet, let minimumSuccessfulReps = minimumSuccessfulReps(for: frozenRepRange), triggerSet.reps <= minimumSuccessfulReps, actualReps <= triggerSet.reps else { return adjustedSignal }
 
-            return OutcomeSignal(
-                outcome: .insufficient,
-                confidence: min(adjustedSignal.confidence, 0.7),
-                reason: "\(context) was followed, but reps did not improve enough versus trigger performance (\(actualReps) reps now vs \(triggerSet.reps) at trigger)."
-            )
-        case .insufficient, .ignored, .pending:
-            return adjustedSignal
+            return OutcomeSignal(outcome: .insufficient, confidence: min(adjustedSignal.confidence, 0.7), reason: "\(context) was followed, but reps did not improve enough versus trigger performance (\(actualReps) reps now vs \(triggerSet.reps) at trigger).")
+        case .insufficient, .ignored, .pending: return adjustedSignal
         }
     }
 
     private static func recoverySetComparison(for event: SuggestionEvent, in exercisePerf: ExercisePerformance) -> RecoverySetComparison? {
-        guard let restOwnerSet = matchSetPerformance(for: event, in: exercisePerf),
-              let actualDownstreamSet = nextCompletedWorkingSet(after: restOwnerSet, in: exercisePerf),
-              let triggerDownstreamSet = nextTriggerWorkingSet(for: event) else {
-            return nil
-        }
+        guard let restOwnerSet = matchSetPerformance(for: event, in: exercisePerf), let actualDownstreamSet = nextCompletedWorkingSet(after: restOwnerSet, in: exercisePerf), let triggerDownstreamSet = nextTriggerWorkingSet(for: event) else { return nil }
 
-        return RecoverySetComparison(
-            actualRestOwnerSet: restOwnerSet,
-            actualDownstreamSet: actualDownstreamSet,
-            triggerDownstreamSet: triggerDownstreamSet
-        )
+        return RecoverySetComparison(actualRestOwnerSet: restOwnerSet, actualDownstreamSet: actualDownstreamSet, triggerDownstreamSet: triggerDownstreamSet)
     }
 
-    private static func nextCompletedWorkingSet(after set: SetPerformance, in exercisePerf: ExercisePerformance) -> SetPerformance? {
-        exercisePerf.sortedSets.first { candidate in
-            candidate.complete && candidate.type == .working && candidate.index > set.index
-        }
-    }
+    private static func nextCompletedWorkingSet(after set: SetPerformance, in exercisePerf: ExercisePerformance) -> SetPerformance? { exercisePerf.sortedSets.first { candidate in candidate.complete && candidate.type == .working && candidate.index > set.index } }
 
     private static func nextTriggerWorkingSet(for event: SuggestionEvent) -> SetPerformanceSnapshot? {
         guard let triggerPerf = event.triggerPerformance else { return nil }
         let triggerSets = ExercisePerformanceSnapshot(performance: triggerPerf).sets.sorted { $0.index < $1.index }
 
-        if let triggerTargetSetID = event.triggerTargetSetID,
-           let triggerSet = triggerSets.first(where: { $0.originalTargetSetID == triggerTargetSetID }) {
-            return triggerSets.first { $0.type == .working && $0.index > triggerSet.index }
-        }
+        if let triggerTargetSetID = event.triggerTargetSetID, let triggerSet = triggerSets.first(where: { $0.originalTargetSetID == triggerTargetSetID }) { return triggerSets.first { $0.type == .working && $0.index > triggerSet.index } }
 
-        if let triggerIndex = event.triggerTargetSetIndex {
-            return triggerSets.first { $0.type == .working && $0.index > triggerIndex }
-        }
+        if let triggerIndex = event.triggerTargetSetIndex { return triggerSets.first { $0.type == .working && $0.index > triggerIndex } }
 
         return nil
     }
 
     private static func downstreamPerformanceImproved(actual: SetPerformance, trigger: SetPerformanceSnapshot, weightTolerance: Double) -> Bool {
-        if actual.reps > trigger.reps {
-            return true
-        }
+        if actual.reps > trigger.reps { return true }
 
-        if actual.weight >= trigger.weight + max(0.5, weightTolerance),
-           actual.reps >= trigger.reps {
-            return true
-        }
+        if actual.weight >= trigger.weight + max(0.5, weightTolerance), actual.reps >= trigger.reps { return true }
 
-        if let actualEstimated1RM = actual.estimated1RM,
-           let triggerEstimated1RM = estimated1RM(weight: trigger.weight, reps: trigger.reps),
-           actualEstimated1RM > triggerEstimated1RM {
-            return true
-        }
+        if let actualEstimated1RM = actual.estimated1RM, let triggerEstimated1RM = estimated1RM(weight: trigger.weight, reps: trigger.reps), actualEstimated1RM > triggerEstimated1RM { return true }
 
         return false
     }
 
     private static func downstreamPerformanceMaintained(actual: SetPerformance, trigger: SetPerformanceSnapshot, weightTolerance: Double) -> Bool {
-        if actual.reps > trigger.reps {
-            return true
-        }
+        if actual.reps > trigger.reps { return true }
 
         let similarWeight = abs(actual.weight - trigger.weight) <= weightTolerance
-        if similarWeight && actual.reps >= trigger.reps {
-            return true
-        }
+        if similarWeight && actual.reps >= trigger.reps { return true }
 
-        if actual.weight > trigger.weight + max(0.5, weightTolerance),
-           actual.reps >= max(1, trigger.reps - 1) {
-            return true
-        }
+        if actual.weight > trigger.weight + max(0.5, weightTolerance), actual.reps >= max(1, trigger.reps - 1) { return true }
 
         return false
     }
@@ -566,23 +380,11 @@ struct OutcomeRuleEngine {
         guard let adjustedSignal else { return nil }
 
         switch adjustedSignal.outcome {
-        case .tooAggressive:
-            return OutcomeSignal(
-                outcome: .insufficient,
-                confidence: adjustedSignal.confidence,
-                reason: "Rest change was followed, but the following set still fell below the desired zone (\(actualDownstreamSet.reps) reps vs \(triggerDownstreamSet.reps) at trigger)."
-            )
+        case .tooAggressive: return OutcomeSignal(outcome: .insufficient, confidence: adjustedSignal.confidence, reason: "Rest change was followed, but the following set still fell below the desired zone (\(actualDownstreamSet.reps) reps vs \(triggerDownstreamSet.reps) at trigger).")
         case .good, .tooEasy:
-            if improvement || triggerSignal?.outcome == .tooAggressive {
-                return adjustedSignal
-            }
-            return OutcomeSignal(
-                outcome: .insufficient,
-                confidence: min(adjustedSignal.confidence, 0.7),
-                reason: "Rest change was followed, but the following set did not improve enough versus trigger performance (\(actualDownstreamSet.reps) reps now vs \(triggerDownstreamSet.reps) at trigger)."
-            )
-        case .insufficient, .ignored, .pending:
-            return adjustedSignal
+            if improvement || triggerSignal?.outcome == .tooAggressive { return adjustedSignal }
+            return OutcomeSignal(outcome: .insufficient, confidence: min(adjustedSignal.confidence, 0.7), reason: "Rest change was followed, but the following set did not improve enough versus trigger performance (\(actualDownstreamSet.reps) reps now vs \(triggerDownstreamSet.reps) at trigger).")
+        case .insufficient, .ignored, .pending: return adjustedSignal
         }
     }
 
@@ -590,25 +392,12 @@ struct OutcomeRuleEngine {
         guard let adjustedSignal else { return nil }
 
         switch adjustedSignal.outcome {
-        case .tooAggressive:
-            return adjustedSignal
+        case .tooAggressive: return adjustedSignal
         case .good, .tooEasy:
-            if maintained {
-                return adjustedSignal
-            }
-            return OutcomeSignal(
-                outcome: .tooAggressive,
-                confidence: min(adjustedSignal.confidence, 0.7),
-                reason: "Reduced rest was followed, but the following set regressed versus trigger performance (\(actualDownstreamSet.reps) reps now vs \(triggerDownstreamSet.reps) at trigger)."
-            )
-        case .insufficient:
-            return triggerSignal?.outcome == .tooAggressive ? adjustedSignal : OutcomeSignal(
-                outcome: .tooAggressive,
-                confidence: min(adjustedSignal.confidence, 0.7),
-                reason: adjustedSignal.reason
-            )
-        case .ignored, .pending:
-            return adjustedSignal
+            if maintained { return adjustedSignal }
+            return OutcomeSignal(outcome: .tooAggressive, confidence: min(adjustedSignal.confidence, 0.7), reason: "Reduced rest was followed, but the following set regressed versus trigger performance (\(actualDownstreamSet.reps) reps now vs \(triggerDownstreamSet.reps) at trigger).")
+        case .insufficient: return triggerSignal?.outcome == .tooAggressive ? adjustedSignal : OutcomeSignal(outcome: .tooAggressive, confidence: min(adjustedSignal.confidence, 0.7), reason: adjustedSignal.reason)
+        case .ignored, .pending: return adjustedSignal
         }
     }
 
@@ -630,12 +419,8 @@ struct OutcomeRuleEngine {
             let ceiling = frozenRepRange.upper
             let buffer = tooEasyBuffer(floor: floor, ceiling: ceiling)
 
-            if actualReps < floor {
-                return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Reps (\(actualReps)) below range floor (\(floor)) after \(context).")
-            }
-            if actualReps > ceiling + buffer {
-                return OutcomeSignal(outcome: .tooEasy, confidence: 0.85, reason: "Reps (\(actualReps)) above range ceiling (\(ceiling)) + buffer (\(buffer)) after \(context).")
-            }
+            if actualReps < floor { return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Reps (\(actualReps)) below range floor (\(floor)) after \(context).") }
+            if actualReps > ceiling + buffer { return OutcomeSignal(outcome: .tooEasy, confidence: 0.85, reason: "Reps (\(actualReps)) above range ceiling (\(ceiling)) + buffer (\(buffer)) after \(context).") }
             return OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Reps (\(actualReps)) within range (\(floor)-\(ceiling)) after \(context).")
 
         case .target:
@@ -643,16 +428,11 @@ struct OutcomeRuleEngine {
             let buffer = tooEasyBuffer(floor: target, ceiling: target)
             let minimumSuccessfulReps = max(1, target - 1)
 
-            if actualReps < minimumSuccessfulReps {
-                return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Reps (\(actualReps)) below the acceptable target zone (\(minimumSuccessfulReps)-\(target)) after \(context).")
-            }
-            if actualReps > target + buffer {
-                return OutcomeSignal(outcome: .tooEasy, confidence: 0.85, reason: "Reps (\(actualReps)) above target (\(target)) + buffer (\(buffer)) after \(context).")
-            }
+            if actualReps < minimumSuccessfulReps { return OutcomeSignal(outcome: .tooAggressive, confidence: 0.85, reason: "Reps (\(actualReps)) below the acceptable target zone (\(minimumSuccessfulReps)-\(target)) after \(context).") }
+            if actualReps > target + buffer { return OutcomeSignal(outcome: .tooEasy, confidence: 0.85, reason: "Reps (\(actualReps)) above target (\(target)) + buffer (\(buffer)) after \(context).") }
             return OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Reps (\(actualReps)) within the acceptable target zone (\(minimumSuccessfulReps)-\(target)) after \(context).")
 
-        case .notSet:
-            return nil
+        case .notSet: return nil
         }
     }
 
@@ -666,9 +446,7 @@ struct OutcomeRuleEngine {
     }
 
     private static func weightTolerance(for exercisePerf: ExercisePerformance, baseWeight: Double, weightStepUsed: Double?) -> Double {
-        if let weightStepUsed, weightStepUsed > 0 {
-            return weightStepUsed
-        }
+        if let weightStepUsed, weightStepUsed > 0 { return weightStepUsed }
         let primaryMuscle = exercisePerf.musclesTargeted.first ?? .chest
         let equipment = exercisePerf.equipmentType
         // Keep tolerance aligned with progression increment granularity.
@@ -678,9 +456,7 @@ struct OutcomeRuleEngine {
     private static func workingAnchorWeight(in exercisePerf: ExercisePerformance, trainingStyle: TrainingStyle?) -> Double? {
         let progressionSets = MetricsCalculator.selectProgressionSets(from: exercisePerf, overrideStyle: trainingStyle)
         let workingSets = progressionSets.filter { $0.complete && $0.type == .working }
-        if let anchor = workingSets.map(\.weight).max(), anchor > 0 {
-            return anchor
-        }
+        if let anchor = workingSets.map(\.weight).max(), anchor > 0 { return anchor }
 
         let fallback = exercisePerf.sortedSets.filter { $0.complete && $0.type == .working }.map(\.weight).max() ?? 0
         return fallback > 0 ? fallback : nil
@@ -701,10 +477,8 @@ struct OutcomeRuleEngine {
                 }
             }
             return (nil, nil)
-        case .increaseRepRangeLower, .decreaseRepRangeLower:
-            return (Int(change.newValue), frozenRepRange.upper)
-        case .increaseRepRangeUpper, .decreaseRepRangeUpper:
-            return (frozenRepRange.lower, Int(change.newValue))
+        case .increaseRepRangeLower, .decreaseRepRangeLower: return (Int(change.newValue), frozenRepRange.upper)
+        case .increaseRepRangeUpper, .decreaseRepRangeUpper: return (frozenRepRange.lower, Int(change.newValue))
         case .increaseRepRangeTarget, .decreaseRepRangeTarget:
             let newTarget = Int(change.newValue)
             return (newTarget, newTarget)

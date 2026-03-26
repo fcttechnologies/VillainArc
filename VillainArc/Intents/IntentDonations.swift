@@ -2,33 +2,18 @@ import AppIntents
 import Foundation
 
 enum IntentDonations {
-    static func donateStartWorkout() async {
-        _ = try? await StartWorkoutIntent().donate()
-    }
+    static func donateStartWorkout() async { _ = try? await StartWorkoutIntent().donate() }
 
-    static func donateOpenWorkoutSplit() async {
-        _ = try? await OpenWorkoutSplitIntent().donate()
-    }
+    static func donateOpenWorkoutSplit() async { _ = try? await OpenWorkoutSplitIntent().donate() }
 
-    static func donateCreateWorkoutSplit() async {
-        _ = try? await CreateWorkoutSplitIntent().donate()
-    }
+    static func donateCreateWorkoutSplit() async { _ = try? await CreateWorkoutSplitIntent().donate() }
 
-    static func donateManageWorkoutSplits() async {
-        _ = try? await ManageWorkoutSplitsIntent().donate()
-    }
+    static func donateManageWorkoutSplits() async { _ = try? await ManageWorkoutSplitsIntent().donate() }
 
-    static func donateOpenTodaysPlan() async {
-        _ = try? await OpenTodaysPlanIntent().donate()
-    }
+    static func donateOpenTodaysPlan() async { _ = try? await OpenTodaysPlanIntent().donate() }
 
-    static func donateStartTodaysWorkout() async {
-        _ = try? await StartTodaysWorkoutIntent().donate()
-    }
-    
-    static func donateViewLastWorkout() async {
-        _ = try? await ViewLastWorkoutIntent().donate()
-    }
+    static func donateStartTodaysWorkout() async { _ = try? await StartTodaysWorkoutIntent().donate() }
+    static func donateViewLastWorkout() async { _ = try? await ViewLastWorkoutIntent().donate() }
 
     static func donateOpenWorkout(workout: WorkoutSession) async {
         let intent = OpenWorkoutIntent()
@@ -48,17 +33,10 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
-    static func donateDeleteAllWorkouts() async {
-        _ = try? await DeleteAllWorkoutsIntent().donate()
-    }
-    
-    static func donateShowWorkoutHistory() async {
-        _ = try? await ShowWorkoutHistoryIntent().donate()
-    }
+    static func donateDeleteAllWorkouts() async { _ = try? await DeleteAllWorkoutsIntent().donate() }
+    static func donateShowWorkoutHistory() async { _ = try? await ShowWorkoutHistoryIntent().donate() }
 
-    static func donateShowWorkoutPlans() async {
-        _ = try? await ShowWorkoutPlansIntent().donate()
-    }
+    static func donateShowWorkoutPlans() async { _ = try? await ShowWorkoutPlansIntent().donate() }
 
     static func donateOpenWorkoutPlan(workoutPlan: WorkoutPlan) async {
         let intent = OpenWorkoutPlanIntent()
@@ -72,29 +50,21 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
-    static func donateDeleteAllWorkoutPlans() async {
-        _ = try? await DeleteAllWorkoutPlansIntent().donate()
-    }
+    static func donateDeleteAllWorkoutPlans() async { _ = try? await DeleteAllWorkoutPlansIntent().donate() }
 
     static func donateToggleWorkoutPlanFavorite(workoutPlan: WorkoutPlan) async {
         let intent = ToggleWorkoutPlanFavoriteIntent()
         intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
         _ = try? await intent.donate()
     }
-    
-    static func donateLastWorkoutSummary() async {
-        _ = try? await LastWorkoutSummaryIntent().donate()
-    }
+    static func donateLastWorkoutSummary() async { _ = try? await LastWorkoutSummaryIntent().donate() }
 
     static func donateTrainingSummary(day: TrainingDay = .today) async {
         let intent = TrainingSummaryIntent()
         intent.day = day
         _ = try? await intent.donate()
     }
-    
-    static func donateCreateWorkoutPlan() async {
-        _ = try? await CreateWorkoutPlanIntent().donate()
-    }
+    static func donateCreateWorkoutPlan() async { _ = try? await CreateWorkoutPlanIntent().donate() }
 
     static func donateStartWorkoutWithPlan(workoutPlan: WorkoutPlan) async {
         let intent = StartWorkoutWithPlanIntent()
@@ -114,21 +84,13 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
-    static func donateOpenExercises() async {
-        _ = try? await OpenExercisesIntent().donate()
-    }
+    static func donateOpenExercises() async { _ = try? await OpenExercisesIntent().donate() }
 
-    static func donateOpenWorkoutSettings() async {
-        _ = try? await OpenWorkoutSettingsIntent().donate()
-    }
+    static func donateOpenWorkoutSettings() async { _ = try? await OpenWorkoutSettingsIntent().donate() }
 
-    static func donateOpenRestTimer() async {
-        _ = try? await OpenRestTimerIntent().donate()
-    }
+    static func donateOpenRestTimer() async { _ = try? await OpenRestTimerIntent().donate() }
 
-    static func donateOpenPreWorkoutContext() async {
-        _ = try? await OpenPreWorkoutContextIntent().donate()
-    }
+    static func donateOpenPreWorkoutContext() async { _ = try? await OpenPreWorkoutContextIntent().donate() }
 
     static func donateStartRestTimer(seconds: Int) async {
         guard seconds > 0 else { return }
@@ -137,21 +99,13 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
-    static func donatePauseRestTimer() async {
-        _ = try? await PauseRestTimerIntent().donate()
-    }
+    static func donatePauseRestTimer() async { _ = try? await PauseRestTimerIntent().donate() }
 
-    static func donateResumeRestTimer() async {
-        _ = try? await ResumeRestTimerIntent().donate()
-    }
+    static func donateResumeRestTimer() async { _ = try? await ResumeRestTimerIntent().donate() }
 
-    static func donateStopRestTimer() async {
-        _ = try? await StopRestTimerIntent().donate()
-    }
+    static func donateStopRestTimer() async { _ = try? await StopRestTimerIntent().donate() }
 
-    static func donateFinishWorkout() async {
-        _ = try? await FinishWorkoutIntent().donate()
-    }
+    static func donateFinishWorkout() async { _ = try? await FinishWorkoutIntent().donate() }
 
     static func donateAddExercises(exercises: [Exercise]) async {
         guard !exercises.isEmpty else { return }
@@ -160,13 +114,9 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
-    static func donateCancelWorkout() async {
-        _ = try? await CancelWorkoutIntent().donate()
-    }
+    static func donateCancelWorkout() async { _ = try? await CancelWorkoutIntent().donate() }
 
-    static func donateCompleteActiveSet() async {
-        _ = try? await CompleteActiveSetIntent().donate()
-    }
+    static func donateCompleteActiveSet() async { _ = try? await CompleteActiveSetIntent().donate() }
 
     static func donateReplaceExercise(newExercise: Exercise) async {
         let intent = ReplaceExerciseIntent()

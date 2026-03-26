@@ -6,15 +6,10 @@ struct ViewLastWorkoutIntent: AppIntent {
     static let description = IntentDescription("Shows your most recent completed workout.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
-        
-        guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else {
-            throw ViewLastWorkoutError.noWorkoutsFound
-        }
-        
+        guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else { throw ViewLastWorkoutError.noWorkoutsFound }
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionDetail(lastWorkoutSession))
         return .result(opensIntent: OpenAppIntent())
@@ -23,11 +18,9 @@ struct ViewLastWorkoutIntent: AppIntent {
 
 enum ViewLastWorkoutError: Error, CustomLocalizedStringResourceConvertible {
     case noWorkoutsFound
-    
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .noWorkoutsFound:
-            return "You haven't completed a workout."
+        case .noWorkoutsFound: return "You haven't completed a workout."
         }
     }
 }

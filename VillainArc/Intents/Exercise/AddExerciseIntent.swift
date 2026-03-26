@@ -5,21 +5,15 @@ struct AddExerciseIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Exercise"
     static let description = IntentDescription("Adds an exercise to the workout session or workout plan.")
     static let supportedModes: IntentModes = .background
-    static var parameterSummary: some ParameterSummary {
-        Summary("Add \(\.$exercise)")
-    }
+    static var parameterSummary: some ParameterSummary { Summary("Add \(\.$exercise)") }
 
-    @Parameter(title: "Exercise", requestValueDialog: IntentDialog("Which exercise?"))
-    var exercise: ExerciseEntity
+    @Parameter(title: "Exercise", requestValueDialog: IntentDialog("Which exercise?")) var exercise: ExerciseEntity
 
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
 
         let exerciseID = exercise.id
-        guard let resolvedExercise = try? context.fetch(Exercise.withCatalogID(exerciseID)).first else {
-            return .result(dialog: "Exercise not found.")
-        }
+        guard let resolvedExercise = try? context.fetch(Exercise.withCatalogID(exerciseID)).first else { return .result(dialog: "Exercise not found.") }
 
         if let workout = try? context.fetch(WorkoutSession.incomplete).first {
             workout.addExercise(resolvedExercise)

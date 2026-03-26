@@ -43,9 +43,7 @@ struct RepRangeSnapshot: Codable, Sendable {
         try container.encode(target, forKey: .target)
     }
 
-    nonisolated static var empty: Self {
-        Self(mode: .notSet, lower: 8, upper: 12, target: 8)
-    }
+    nonisolated static var empty: Self { Self(mode: .notSet, lower: 8, upper: 12, target: 8) }
 }
 
 struct SetTargetSnapshot: Codable, Sendable {
@@ -208,9 +206,7 @@ struct ExerciseTargetSnapshot: Codable, Sendable {
         try container.encode(sets, forKey: .sets)
     }
 
-    nonisolated static var empty: Self {
-        Self(repRange: .empty, sets: [])
-    }
+    nonisolated static var empty: Self { Self(repRange: .empty, sets: []) }
 
     init(prescription: ExercisePrescription) {
         repRange = RepRangeSnapshot(policy: prescription.repRange)
@@ -259,9 +255,7 @@ struct ExercisePerformanceSnapshot: Codable, Sendable {
         try container.encode(sets, forKey: .sets)
     }
 
-    nonisolated static var empty: Self {
-        Self(date: .distantPast, notes: "", repRange: .empty, sets: [])
-    }
+    nonisolated static var empty: Self { Self(date: .distantPast, notes: "", repRange: .empty, sets: []) }
 
     init(performance: ExercisePerformance) {
         date = performance.date

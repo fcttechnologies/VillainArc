@@ -22,15 +22,12 @@ nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
 
     add(nameAndAliases)
     add(exercise.equipmentType.displayName)
-    if let primaryMuscle = exercise.musclesTargeted.first {
-        add(primaryMuscle.displayName)
-    }
+    if let primaryMuscle = exercise.musclesTargeted.first { add(primaryMuscle.displayName) }
 
     return tokens
 }
 
-@MainActor
-func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
+@MainActor func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     guard !queryTokens.isEmpty else { return 0 }
 
     let nameTokens = normalizedTokens(for: exercise.name)
@@ -55,42 +52,28 @@ func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     }
 
     if queryTokens.count > 1 {
-        if phraseMatch(phraseTokens: queryTokens, in: nameTokens) {
-            score += 6
-        }
-        if aliasTokenGroups.contains(where: { phraseMatch(phraseTokens: queryTokens, in: $0) }) {
-            score += 4
-        }
+        if phraseMatch(phraseTokens: queryTokens, in: nameTokens) { score += 6 }
+        if aliasTokenGroups.contains(where: { phraseMatch(phraseTokens: queryTokens, in: $0) }) { score += 4 }
     }
 
-    if exercise.favorite {
-        score += 1
-    }
+    if exercise.favorite { score += 1 }
 
     return score
 }
 
 private nonisolated func tokenMatchScore(for token: String, in tokens: [String], exact: Int, prefix: Int) -> Int? {
-    if tokens.contains(token) {
-        return exact
-    }
+    if tokens.contains(token) { return exact }
     guard prefix > 0, token.count >= 1 else { return nil }
-    if tokens.contains(where: { $0.hasPrefix(token) }) {
-        return prefix
-    }
+    if tokens.contains(where: { $0.hasPrefix(token) }) { return prefix }
     return nil
 }
 
-@MainActor
-func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
-    if !exercise.searchTokens.isEmpty {
-        return exercise.searchTokens
-    }
+@MainActor func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
+    if !exercise.searchTokens.isEmpty { return exercise.searchTokens }
     return exerciseSearchTokens(for: exercise)
 }
 
-@MainActor
-func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
+@MainActor func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
     guard !queryTokens.isEmpty else { return true }
 
     let haystackTokens = cachedExerciseSearchTokens(for: exercise) + additionalTokens
@@ -98,41 +81,31 @@ func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additiona
     return queryTokens.allSatisfy { queryToken in
         let maxDistance = maximumFuzzyDistance(for: queryToken)
         return haystackTokens.contains { token in
-            if token == queryToken {
-                return true
-            }
-            if maxDistance == 0 {
-                return false
-            }
-            if abs(token.count - queryToken.count) > maxDistance {
-                return false
-            }
+            if token == queryToken { return true }
+            if maxDistance == 0 { return false }
+            if abs(token.count - queryToken.count) > maxDistance { return false }
             return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
         }
     }
 }
 
-@MainActor
-func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrderedBefore: (Exercise, Exercise) -> Bool, score: ExerciseSearchScoreResolver, fuzzyAdditionalTokens: ExerciseFuzzyTokenResolver? = nil) -> [Exercise] {
+@MainActor func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrderedBefore: (Exercise, Exercise) -> Bool, score: ExerciseSearchScoreResolver, fuzzyAdditionalTokens: ExerciseFuzzyTokenResolver? = nil) -> [Exercise] {
     let cleanText = query.trimmingCharacters(in: .whitespacesAndNewlines)
     let queryTokens = normalizedTokens(for: cleanText)
 
-    guard !queryTokens.isEmpty else {
-        return exercises.sorted(by: isOrderedBefore)
-    }
+    guard !queryTokens.isEmpty else { return exercises.sorted(by: isOrderedBefore) }
 
     let scored = exercises.compactMap { exercise in
         let resolvedScore = score(exercise, cleanText, queryTokens)
         return resolvedScore > 0 ? ExerciseSearchMatch(exercise: exercise, score: resolvedScore) : nil
     }
     if !scored.isEmpty {
-        return scored.sorted { left, right in
-            if left.score != right.score {
-                return left.score > right.score
+        return
+            scored.sorted { left, right in
+                if left.score != right.score { return left.score > right.score }
+                return isOrderedBefore(left.exercise, right.exercise)
             }
-            return isOrderedBefore(left.exercise, right.exercise)
-        }
-        .map(\.exercise)
+            .map(\.exercise)
     }
 
     guard shouldUseFuzzySearch(queryTokens: queryTokens) else { return [] }
@@ -156,9 +129,7 @@ private nonisolated func phraseMatch(phraseTokens: [String], in tokens: [String]
                 break
             }
         }
-        if matches {
-            return true
-        }
+        if matches { return true }
     }
     return false
 }

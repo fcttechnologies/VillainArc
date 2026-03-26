@@ -1,8 +1,7 @@
 import Foundation
 import HealthKit
 
-@MainActor
-final class HealthStoreUpdateCoordinator {
+@MainActor final class HealthStoreUpdateCoordinator {
     static let shared = HealthStoreUpdateCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared
@@ -75,18 +74,14 @@ final class HealthStoreUpdateCoordinator {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
                 print("Enabled HealthKit background delivery for workouts.")
-            } catch {
-                print("Failed to enable HealthKit background delivery for workouts: \(error)")
-            }
+            } catch { print("Failed to enable HealthKit background delivery for workouts: \(error)") }
         }
 
         if authorizationManager.hasRequestedBodyMassAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWeightType, frequency: .immediate)
                 print("Enabled HealthKit background delivery for body mass.")
-            } catch {
-                print("Failed to enable HealthKit background delivery for body mass: \(error)")
-            }
+            } catch { print("Failed to enable HealthKit background delivery for body mass: \(error)") }
         }
     }
 

@@ -10,9 +10,7 @@ enum HealthWeightEntryLinker {
         HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.weightEntryID, operatorType: .equalTo, value: entryID.uuidString)
     }
 
-    @MainActor
-    @discardableResult
-    static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry {
+    @MainActor @discardableResult static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry {
         let existing = try fetchExistingEntry(for: sample, context: context)
         let weight = sample.quantity.doubleValue(for: weightUnit)
         let isAppOwnedEntry = HealthMetadataKeys.weightEntryID(from: sample) != nil
@@ -26,30 +24,20 @@ enum HealthWeightEntryLinker {
             return existing
         }
 
-        let entry = WeightEntry(
-            date: sample.endDate,
-            weight: weight,
-            hasBeenExportedToHealth: isAppOwnedEntry,
-            healthSampleUUID: sample.uuid,
-            isAvailableInHealthKit: true
-        )
+        let entry = WeightEntry(date: sample.endDate, weight: weight, hasBeenExportedToHealth: isAppOwnedEntry, healthSampleUUID: sample.uuid, isAvailableInHealthKit: true)
         context.insert(entry)
         return entry
     }
 
-    @MainActor
-    private static func fetchExistingEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry? {
-        if let existing = try context.fetch(WeightEntry.byHealthSampleUUID(sample.uuid)).first {
-            return existing
-        }
+    @MainActor private static func fetchExistingEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry? {
+        if let existing = try context.fetch(WeightEntry.byHealthSampleUUID(sample.uuid)).first { return existing }
 
         guard let entryID = HealthMetadataKeys.weightEntryID(from: sample) else { return nil }
         return try context.fetch(WeightEntry.byID(entryID)).first
     }
 }
 
-@MainActor
-final class HealthSyncCoordinator {
+@MainActor final class HealthSyncCoordinator {
     static let shared = HealthSyncCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared
@@ -79,20 +67,14 @@ final class HealthSyncCoordinator {
         do {
             let result = try await descriptor.result(for: authorizationManager.healthStore)
 
-            for workout in result.addedSamples {
-                try upsertHealthWorkout(for: workout, context: context)
-            }
+            for workout in result.addedSamples { try upsertHealthWorkout(for: workout, context: context) }
 
-            for deletedObject in result.deletedObjects {
-                try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context)
-            }
+            for deletedObject in result.deletedObjects { try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
 
             try context.save()
             HealthSyncPreferences.workoutAnchor = result.newAnchor
             print("Health workout sync completed. Added or updated: \(result.addedSamples.count). Deleted: \(result.deletedObjects.count).")
-        } catch {
-            print("Failed to sync Health workouts: \(error)")
-        }
+        } catch { print("Failed to sync Health workouts: \(error)") }
     }
 
     func syncWeightEntries() async {
@@ -109,20 +91,14 @@ final class HealthSyncCoordinator {
         do {
             let result = try await descriptor.result(for: authorizationManager.healthStore)
 
-            for sample in result.addedSamples {
-                try upsertWeightEntry(for: sample, context: context)
-            }
+            for sample in result.addedSamples { try upsertWeightEntry(for: sample, context: context) }
 
-            for deletedObject in result.deletedObjects {
-                try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context)
-            }
+            for deletedObject in result.deletedObjects { try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
 
             try context.save()
             HealthSyncPreferences.weightEntryAnchor = result.newAnchor
             print("Health weight sync completed. Added or updated: \(result.addedSamples.count). Deleted: \(result.deletedObjects.count).")
-        } catch {
-            print("Failed to sync Health weight entries: \(error)")
-        }
+        } catch { print("Failed to sync Health weight entries: \(error)") }
     }
 
     func applyRemovedHealthDataRetentionSetting() async {
@@ -135,21 +111,15 @@ final class HealthSyncCoordinator {
             let unavailableWorkouts = try context.fetch(HealthWorkout.unavailableHealthWorkouts)
             let unavailableWeightEntries = try context.fetch(WeightEntry.unavailableEntries)
 
-            for workout in unavailableWorkouts {
-                context.delete(workout)
-            }
+            for workout in unavailableWorkouts { context.delete(workout) }
 
-            for entry in unavailableWeightEntries {
-                context.delete(entry)
-            }
+            for entry in unavailableWeightEntries { context.delete(entry) }
 
             guard unavailableWorkouts.isEmpty == false || unavailableWeightEntries.isEmpty == false else { return }
 
             try context.save()
             print("Removed \(unavailableWorkouts.count) retained Apple Health workouts and \(unavailableWeightEntries.count) retained Apple Health weight entries after disabling retention.")
-        } catch {
-            print("Failed to apply removed Apple Health data retention setting: \(error)")
-        }
+        } catch { print("Failed to apply removed Apple Health data retention setting: \(error)") }
     }
 
     private func upsertHealthWorkout(for workout: HKWorkout, context: ModelContext) throws {
@@ -157,9 +127,7 @@ final class HealthSyncCoordinator {
         _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
     }
 
-    private func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws {
-        _ = try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context)
-    }
+    private func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws { _ = try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context) }
 
     private func handleDeletedHealthWorkout(id: UUID, retainRemovedHealthData: Bool, context: ModelContext) throws {
         guard let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(id)).first else { return }
@@ -186,13 +154,11 @@ final class HealthSyncCoordinator {
         return try context.fetch(WorkoutSession.byID(workoutSessionID)).first
     }
 
-    private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool {
-        (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true
-    }
+    private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool { (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true }
 }
 
-private extension HealthWorkout {
-    static var unavailableHealthWorkouts: FetchDescriptor<HealthWorkout> {
+extension HealthWorkout {
+    fileprivate static var unavailableHealthWorkouts: FetchDescriptor<HealthWorkout> {
         let predicate = #Predicate<HealthWorkout> { !$0.isAvailableInHealthKit }
         return FetchDescriptor(predicate: predicate)
     }

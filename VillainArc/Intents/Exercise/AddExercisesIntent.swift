@@ -5,20 +5,14 @@ struct AddExercisesIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Exercises"
     static let description = IntentDescription("Adds exercises to the workout session or workout plan.")
     static let supportedModes: IntentModes = .background
-    static var parameterSummary: some ParameterSummary {
-        Summary("Add \(\.$exercises)")
-    }
+    static var parameterSummary: some ParameterSummary { Summary("Add \(\.$exercises)") }
 
-    @Parameter(title: "Exercises", requestValueDialog: IntentDialog("Which exercises?"))
-    var exercises: [ExerciseEntity]
+    @Parameter(title: "Exercises", requestValueDialog: IntentDialog("Which exercises?")) var exercises: [ExerciseEntity]
 
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
 
-        guard !exercises.isEmpty else {
-            return .result(dialog: "No exercises selected.")
-        }
+        guard !exercises.isEmpty else { return .result(dialog: "No exercises selected.") }
 
         if let workout = try? context.fetch(WorkoutSession.incomplete).first {
             let dialog = addExercises(to: workout, context: context)
@@ -33,12 +27,9 @@ struct AddExercisesIntent: AppIntent {
         return .result(dialog: "No current workout session or workout plan found.")
     }
 
-    @MainActor
-    private func addExercises(to workout: WorkoutSession, context: ModelContext) -> IntentDialog {
+    @MainActor private func addExercises(to workout: WorkoutSession, context: ModelContext) -> IntentDialog {
         let resolvedExercises = resolveExercises(in: context)
-        guard !resolvedExercises.isEmpty else {
-            return "No exercises found to add."
-        }
+        guard !resolvedExercises.isEmpty else { return "No exercises found to add." }
 
         for exercise in resolvedExercises {
             workout.addExercise(exercise)
@@ -47,18 +38,13 @@ struct AddExercisesIntent: AppIntent {
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
         let count = resolvedExercises.count
-        if count == 1 {
-            return "Added exercise to your workout."
-        }
+        if count == 1 { return "Added exercise to your workout." }
         return "Added \(count) exercises to your workout."
     }
 
-    @MainActor
-    private func addExercises(to plan: WorkoutPlan, context: ModelContext) -> IntentDialog {
+    @MainActor private func addExercises(to plan: WorkoutPlan, context: ModelContext) -> IntentDialog {
         let resolvedExercises = resolveExercises(in: context)
-        guard !resolvedExercises.isEmpty else {
-            return "No exercises found to add."
-        }
+        guard !resolvedExercises.isEmpty else { return "No exercises found to add." }
 
         for exercise in resolvedExercises {
             plan.addExercise(exercise)
@@ -66,14 +52,11 @@ struct AddExercisesIntent: AppIntent {
         }
         saveContext(context: context)
         let count = resolvedExercises.count
-        if count == 1 {
-            return "Added exercise to your workout plan."
-        }
+        if count == 1 { return "Added exercise to your workout plan." }
         return "Added \(count) exercises to your workout plan."
     }
 
-    @MainActor
-    private func resolveExercises(in context: ModelContext) -> [Exercise] {
+    @MainActor private func resolveExercises(in context: ModelContext) -> [Exercise] {
         let ids = exercises.map(\.id)
         guard !ids.isEmpty else { return [] }
         let predicate = #Predicate<Exercise> { ids.contains($0.catalogID) }

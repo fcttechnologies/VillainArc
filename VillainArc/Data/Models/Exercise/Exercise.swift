@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class Exercise {
+@Model final class Exercise {
     #Index<Exercise>([\.catalogID], [\.lastAddedAt], [\.favorite])
 
     var catalogID: String = ""
@@ -16,9 +15,7 @@ final class Exercise {
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     var preferredWeightChange: Double?
 
-    var displayMuscle: String {
-        musclesTargeted.first?.displayName ?? String(localized: "Unknown Muscle")
-    }
+    var displayMuscle: String { musclesTargeted.first?.displayName ?? String(localized: "Unknown Muscle") }
 
     var detailSubtitle: String {
         let majorMuscles = ListFormatter.localizedString(byJoining: Array(musclesTargeted.filter(\.isMajor).prefix(3).map(\.displayName)))
@@ -54,8 +51,7 @@ final class Exercise {
         return alternateNames
     }
 
-    @MainActor
-    init(from catalogItem: ExerciseCatalogItem) {
+    @MainActor init(from catalogItem: ExerciseCatalogItem) {
         catalogID = catalogItem.id
         name = catalogItem.name
         musclesTargeted = catalogItem.musclesTargeted
@@ -64,28 +60,18 @@ final class Exercise {
         rebuildSearchData()
     }
     
-    func updateLastAddedAt(to time: Date = .now) {
-        lastAddedAt = time
-    }
+    func updateLastAddedAt(to time: Date = .now) { lastAddedAt = time }
     
-    func toggleFavorite() {
-        favorite.toggle()
-    }
+    func toggleFavorite() { favorite.toggle() }
 
-    @MainActor
-    @discardableResult
-    func rebuildSearchData() -> Bool {
+    @MainActor @discardableResult func rebuildSearchData() -> Bool {
         let tokens = exerciseSearchTokens(for: self)
-        if tokens == searchTokens {
-            return false
-        }
+        if tokens == searchTokens { return false }
         searchTokens = tokens
         return true
     }
 
-    @MainActor
-    @discardableResult
-    func applyCatalogItem(_ catalogItem: ExerciseCatalogItem) -> Bool {
+    @MainActor @discardableResult func applyCatalogItem(_ catalogItem: ExerciseCatalogItem) -> Bool {
         var didChange = false
         var needsSearchIndex = false
 
@@ -94,49 +80,43 @@ final class Exercise {
             didChange = true
             needsSearchIndex = true
         }
+
         if musclesTargeted != catalogItem.musclesTargeted {
             musclesTargeted = catalogItem.musclesTargeted
             didChange = true
             needsSearchIndex = true
         }
+
         if aliases != catalogItem.aliases {
             aliases = catalogItem.aliases
             didChange = true
             needsSearchIndex = true
         }
+
         if equipmentType != catalogItem.equipmentType {
             equipmentType = catalogItem.equipmentType
             didChange = true
             needsSearchIndex = true
         }
-        if needsSearchIndex {
-            didChange = rebuildSearchData() || didChange
-        }
+
+        if needsSearchIndex { didChange = rebuildSearchData() || didChange }
+        
         return didChange
     }
 
 }
 
-nonisolated func normalizedSearchPhrase(_ value: String) -> String {
-    normalizedTokens(for: value).joined(separator: " ")
-}
+nonisolated func normalizedSearchPhrase(_ value: String) -> String { normalizedTokens(for: value).joined(separator: " ") }
 
 extension Exercise {
-    static var recentsSort: [SortDescriptor<Exercise>] {
-        [
-            SortDescriptor(\Exercise.lastAddedAt, order: .reverse),
-            SortDescriptor(\Exercise.name)
-        ]
-    }
+    static var recentsSort: [SortDescriptor<Exercise>] { [SortDescriptor(\Exercise.lastAddedAt, order: .reverse), SortDescriptor(\Exercise.name)] }
 
     static var catalogExercises: FetchDescriptor<Exercise> {
         let predicate = #Predicate<Exercise> { !$0.isCustom }
         return FetchDescriptor(predicate: predicate)
     }
-    
-    static var all: FetchDescriptor<Exercise> {
-        FetchDescriptor(sortBy: Exercise.recentsSort)
-    }
+
+    static var all: FetchDescriptor<Exercise> { FetchDescriptor(sortBy: Exercise.recentsSort) }
 
     static func withCatalogID(_ catalogID: String) -> FetchDescriptor<Exercise> {
         let predicate = #Predicate<Exercise> { $0.catalogID == catalogID }

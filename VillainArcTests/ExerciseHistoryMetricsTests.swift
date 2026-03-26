@@ -1,11 +1,11 @@
 import Foundation
 import SwiftData
 import Testing
+
 @testable import VillainArc
 
 struct ExerciseHistoryMetricsTests {
-    @Test @MainActor
-    func recalculateTracksRepBasedMetricsForBodyweightExercise() throws {
+    @Test @MainActor func recalculateTracksRepBasedMetricsForBodyweightExercise() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -21,9 +21,7 @@ struct ExerciseHistoryMetricsTests {
         context.insert(performance)
         session.exercises?.append(performance)
 
-        for set in performance.sets ?? [] {
-            context.delete(set)
-        }
+        for set in performance.sets ?? [] { context.delete(set) }
         performance.sets?.removeAll()
 
         let firstSet = SetPerformance(exercise: performance, setType: .working, weight: 0, reps: 24, restSeconds: 60, index: 0, complete: true, completedAt: firstCompletedAt)
@@ -50,19 +48,14 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.chronologicalProgressionPoints.first?.weight == 0)
         #expect(history.chronologicalProgressionPoints.first?.volume == 0)
     }
-    
-    @Test @MainActor
-    func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() {
+    @Test @MainActor func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() {
         let history = ExerciseHistory(catalogID: "push_ups")
         history.lastCompletedAt = .now
-        
         history.recalculate(using: [])
-        
         #expect(history.lastCompletedAt == nil)
     }
 
-    @Test @MainActor
-    func recalculateCollapsesDuplicateExerciseRowsFromSameWorkoutIntoOneSession() throws {
+    @Test @MainActor func recalculateCollapsesDuplicateExerciseRowsFromSameWorkoutIntoOneSession() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -78,9 +71,7 @@ struct ExerciseHistoryMetricsTests {
         session.exercises?.append(secondPerformance)
 
         for performance in [firstPerformance, secondPerformance] {
-            for set in performance.sets ?? [] {
-                context.delete(set)
-            }
+            for set in performance.sets ?? [] { context.delete(set) }
             performance.sets?.removeAll()
         }
 

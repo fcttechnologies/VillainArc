@@ -6,14 +6,11 @@ struct OpenWorkoutSplitIntent: AppIntent {
     static let description = IntentDescription("Opens your active workout split.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
-    @MainActor
-    func perform() async throws -> some IntentResult & OpensIntent {
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
-        guard let split = try? context.fetch(WorkoutSplit.active).first else {
-            throw OpenWorkoutSplitError.noActiveSplit
-        }
+        guard let split = try? context.fetch(WorkoutSplit.active).first else { throw OpenWorkoutSplitError.noActiveSplit }
 
         split.refreshRotationIfNeeded(context: context)
 
@@ -28,8 +25,7 @@ enum OpenWorkoutSplitError: Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .noActiveSplit:
-            return "You don't have an active workout split."
+        case .noActiveSplit: return "You don't have an active workout split."
         }
     }
 }

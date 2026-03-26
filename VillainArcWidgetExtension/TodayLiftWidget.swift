@@ -1,7 +1,7 @@
-import SwiftUI
-import SwiftData
-import WidgetKit
 import AppIntents
+import SwiftData
+import SwiftUI
+import WidgetKit
 
 struct TodayLiftEntry: TimelineEntry {
     let date: Date
@@ -24,82 +24,54 @@ enum TodayLiftState {
 
     var title: String {
         switch self {
-        case .activeWorkout:
-            "Workout In Progress"
-        case .readyToStart:
-            "Today's Lift"
-        case .restDay:
-            "Rest Day"
-        case .noPlanAssigned:
-            "No Plan Set"
-        case .noActiveSplit:
-            "No Active Split"
-        case .noSplits:
-            "Build Your Split"
+        case .activeWorkout: "Workout In Progress"
+        case .readyToStart: "Today's Lift"
+        case .restDay: "Rest Day"
+        case .noPlanAssigned: "No Plan Set"
+        case .noActiveSplit: "No Active Split"
+        case .noSplits: "Build Your Split"
         }
     }
 
     var ctaTitle: String {
         switch self {
-        case .activeWorkout:
-            "Resume Workout"
-        case .readyToStart:
-            "Start Workout"
-        case .restDay, .noPlanAssigned:
-            "Open Split"
-        case .noActiveSplit:
-            "Manage Splits"
-        case .noSplits:
-            "Create Split"
+        case .activeWorkout: "Resume Workout"
+        case .readyToStart: "Start Workout"
+        case .restDay, .noPlanAssigned: "Open Split"
+        case .noActiveSplit: "Manage Splits"
+        case .noSplits: "Create Split"
         }
     }
 
     var compactCTATitle: String {
         switch self {
-        case .activeWorkout:
-            "Resume"
-        case .readyToStart:
-            "Start"
-        case .restDay, .noPlanAssigned:
-            "Open"
-        case .noActiveSplit:
-            "Manage"
-        case .noSplits:
-            "Create"
+        case .activeWorkout: "Resume"
+        case .readyToStart: "Start"
+        case .restDay, .noPlanAssigned: "Open"
+        case .noActiveSplit: "Manage"
+        case .noSplits: "Create"
         }
     }
 
     var symbolName: String {
         switch self {
-        case .activeWorkout:
-            "figure.strengthtraining.traditional"
-        case .readyToStart:
-            "bolt.fill"
-        case .restDay:
-            "bed.double.fill"
-        case .noPlanAssigned:
-            "calendar.badge.exclamationmark"
-        case .noActiveSplit:
-            "square.grid.2x2.fill"
-        case .noSplits:
-            "plus.circle.fill"
+        case .activeWorkout: "figure.strengthtraining.traditional"
+        case .readyToStart: "bolt.fill"
+        case .restDay: "bed.double.fill"
+        case .noPlanAssigned: "calendar.badge.exclamationmark"
+        case .noActiveSplit: "square.grid.2x2.fill"
+        case .noSplits: "plus.circle.fill"
         }
     }
 
     var tint: Color {
         switch self {
-        case .activeWorkout:
-            .orange
-        case .readyToStart:
-            .green
-        case .restDay:
-            .blue
-        case .noPlanAssigned:
-            .yellow
-        case .noActiveSplit:
-            .indigo
-        case .noSplits:
-            .mint
+        case .activeWorkout: .orange
+        case .readyToStart: .green
+        case .restDay: .blue
+        case .noPlanAssigned: .yellow
+        case .noActiveSplit: .indigo
+        case .noSplits: .mint
         }
     }
 }
@@ -127,25 +99,17 @@ struct TodayLiftProvider: TimelineProvider {
         }
 
         let anySplit = (try? context.fetch(WorkoutSplit.any).first) != nil
-        guard let split = try? context.fetch(WorkoutSplit.active).first else {
-            return TodayLiftEntry(date: .now, state: anySplit ? .noActiveSplit : .noSplits, planTitle: nil, dayTitle: nil, splitTitle: nil, exerciseCount: 0, setCount: 0, exercisePreview: [])
-        }
+        guard let split = try? context.fetch(WorkoutSplit.active).first else { return TodayLiftEntry(date: .now, state: anySplit ? .noActiveSplit : .noSplits, planTitle: nil, dayTitle: nil, splitTitle: nil, exerciseCount: 0, setCount: 0, exercisePreview: []) }
 
         let todaysDay = split.todaysSplitDay
         let dayTitle = todaysDay?.name.nilIfEmpty
         let splitTitle = split.title.nilIfEmpty
 
-        guard let todaysDay else {
-            return TodayLiftEntry(date: .now, state: .restDay, planTitle: nil, dayTitle: nil, splitTitle: splitTitle, exerciseCount: 0, setCount: 0, exercisePreview: [])
-        }
+        guard let todaysDay else { return TodayLiftEntry(date: .now, state: .restDay, planTitle: nil, dayTitle: nil, splitTitle: splitTitle, exerciseCount: 0, setCount: 0, exercisePreview: []) }
 
-        if todaysDay.isRestDay {
-            return TodayLiftEntry(date: .now, state: .restDay, planTitle: nil, dayTitle: dayTitle, splitTitle: splitTitle, exerciseCount: 0, setCount: 0, exercisePreview: [])
-        }
+        if todaysDay.isRestDay { return TodayLiftEntry(date: .now, state: .restDay, planTitle: nil, dayTitle: dayTitle, splitTitle: splitTitle, exerciseCount: 0, setCount: 0, exercisePreview: []) }
 
-        guard let plan = todaysDay.workoutPlan else {
-            return TodayLiftEntry(date: .now, state: .noPlanAssigned, planTitle: nil, dayTitle: dayTitle, splitTitle: splitTitle, exerciseCount: 0, setCount: 0, exercisePreview: [])
-        }
+        guard let plan = todaysDay.workoutPlan else { return TodayLiftEntry(date: .now, state: .noPlanAssigned, planTitle: nil, dayTitle: dayTitle, splitTitle: splitTitle, exerciseCount: 0, setCount: 0, exercisePreview: []) }
 
         let exercises = plan.sortedExercises
         return TodayLiftEntry(date: .now, state: .readyToStart, planTitle: plan.title.nilIfEmpty, dayTitle: dayTitle, splitTitle: splitTitle, exerciseCount: exercises.count, setCount: exercises.reduce(into: 0) { $0 += $1.sets?.count ?? 0 }, exercisePreview: exercises.prefix(3).map(\.name))
@@ -154,10 +118,11 @@ struct TodayLiftProvider: TimelineProvider {
 
 struct TodayLiftWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "TodayLiftWidget", provider: TodayLiftProvider()) { entry in TodayLiftWidgetView(entry: entry) }
-            .configurationDisplayName("Today's Lift")
-            .description("Start or resume the right workout state from your Home Screen.")
-            .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        StaticConfiguration(kind: "TodayLiftWidget", provider: TodayLiftProvider()) { entry in
+            TodayLiftWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Today's Lift").description("Start or resume the right workout state from your Home Screen.")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -167,12 +132,9 @@ struct TodayLiftWidgetView: View {
 
     var body: some View {
         switch family {
-        case .systemSmall:
-            TodayLiftSmallView(entry: entry)
-        case .systemMedium:
-            TodayLiftMediumView(entry: entry)
-        default:
-            TodayLiftLargeView(entry: entry)
+        case .systemSmall: TodayLiftSmallView(entry: entry)
+        case .systemMedium: TodayLiftMediumView(entry: entry)
+        default: TodayLiftLargeView(entry: entry)
         }
     }
 }
@@ -220,9 +182,7 @@ private struct TodayLiftMediumView: View {
                 TodayLiftCTAView(entry: entry, prominent: true, title: entry.state.ctaTitle)
             }
             Spacer(minLength: 0)
-            if entry.state == .readyToStart || entry.state == .activeWorkout {
-                TodayLiftStatsView(entry: entry)
-            }
+            if entry.state == .readyToStart || entry.state == .activeWorkout { TodayLiftStatsView(entry: entry) }
         }
         .containerBackground(for: .widget) { TodayLiftBackgroundView(tint: entry.state.tint) }
     }
@@ -379,67 +339,48 @@ private func todayLiftCTAContent(title: String, prominent: Bool, tint: Color) ->
     )
 }
 
-private extension TodayLiftEntry {
-    var primaryLabel: String {
-        planTitle ?? dayTitle ?? splitTitle ?? state.title
-    }
+extension TodayLiftEntry {
+    fileprivate var primaryLabel: String { planTitle ?? dayTitle ?? splitTitle ?? state.title }
 
-    var mediumDetailLine: String {
+    fileprivate var mediumDetailLine: String {
         switch state {
         case .activeWorkout, .readyToStart:
             let counts = "\(exerciseCount) exercises • \(setCount) sets"
-            if let dayTitle, dayTitle != planTitle {
-                return "\(counts)\n\(dayTitle)"
-            }
+            if let dayTitle, dayTitle != planTitle { return "\(counts)\n\(dayTitle)" }
             return counts
-        case .restDay:
-            return dayTitle ?? "Recover today."
-        case .noPlanAssigned:
-            return dayTitle ?? "No plan assigned today."
-        case .noActiveSplit:
-            return "Choose an active split."
-        case .noSplits:
-            return "Create your first split."
+        case .restDay: return dayTitle ?? "Recover today."
+        case .noPlanAssigned: return dayTitle ?? "No plan assigned today."
+        case .noActiveSplit: return "Choose an active split."
+        case .noSplits: return "Create your first split."
         }
     }
 
-    var largeDetailLine: String {
+    fileprivate var largeDetailLine: String {
         switch state {
         case .activeWorkout, .readyToStart:
             let counts = "\(exerciseCount) exercises • \(setCount) sets"
-            if let dayTitle, dayTitle != planTitle {
-                return "\(counts) • \(dayTitle)"
-            }
+            if let dayTitle, dayTitle != planTitle { return "\(counts) • \(dayTitle)" }
             return counts
-        case .restDay:
-            return dayTitle ?? "Take the day off and recover."
-        case .noPlanAssigned:
-            return dayTitle ?? "Assign a workout plan to today's split day."
-        case .noActiveSplit:
-            return "Pick an active split to unlock today's workout."
-        case .noSplits:
-            return "Create your first split to plan today's training."
+        case .restDay: return dayTitle ?? "Take the day off and recover."
+        case .noPlanAssigned: return dayTitle ?? "Assign a workout plan to today's split day."
+        case .noActiveSplit: return "Pick an active split to unlock today's workout."
+        case .noSplits: return "Create your first split to plan today's training."
         }
     }
 
-    var compactDetailLine: String {
+    fileprivate var compactDetailLine: String {
         switch state {
-        case .activeWorkout, .readyToStart:
-            "\(exerciseCount) ex • \(setCount) sets"
-        case .restDay:
-            "Recovery day"
-        case .noPlanAssigned:
-            dayTitle ?? "No plan today"
-        case .noActiveSplit:
-            "Choose a split"
-        case .noSplits:
-            "No splits yet"
+        case .activeWorkout, .readyToStart: "\(exerciseCount) ex • \(setCount) sets"
+        case .restDay: "Recovery day"
+        case .noPlanAssigned: dayTitle ?? "No plan today"
+        case .noActiveSplit: "Choose a split"
+        case .noSplits: "No splits yet"
         }
     }
 }
 
-private extension String {
-    var nilIfEmpty: String? {
+extension String {
+    fileprivate var nilIfEmpty: String? {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }

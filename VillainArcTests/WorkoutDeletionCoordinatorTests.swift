@@ -1,11 +1,11 @@
+import Foundation
 import SwiftData
 import Testing
-import Foundation
+
 @testable import VillainArc
 
 struct WorkoutDeletionCoordinatorTests {
-    @Test @MainActor
-    func deleteCompletedWorkouts_retainsSnapshotsByHidingSession() throws {
+    @Test @MainActor func deleteCompletedWorkouts_retainsSnapshotsByHidingSession() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -21,12 +21,7 @@ struct WorkoutDeletionCoordinatorTests {
         context.insert(performance)
         session.exercises?.append(performance)
 
-        let event = SuggestionEvent(
-            catalogID: performance.catalogID,
-            sessionFrom: session,
-            triggerPerformance: performance,
-            trainingStyle: .straightSets
-        )
+        let event = SuggestionEvent(catalogID: performance.catalogID, sessionFrom: session, triggerPerformance: performance, trainingStyle: .straightSets)
         context.insert(event)
 
         WorkoutDeletionCoordinator.deleteCompletedWorkouts([session], context: context, save: false)
@@ -39,8 +34,7 @@ struct WorkoutDeletionCoordinatorTests {
         #expect(remainingEvents.contains(where: { $0.id == event.id }))
     }
 
-    @Test @MainActor
-    func deleteCompletedWorkouts_hardDeletesSessionAndLearningArtifacts() throws {
+    @Test @MainActor func deleteCompletedWorkouts_hardDeletesSessionAndLearningArtifacts() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -63,41 +57,16 @@ struct WorkoutDeletionCoordinatorTests {
 
         let linkedChange = PrescriptionChange(changeType: .increaseWeight, previousValue: 100, newValue: 105)
         context.insert(linkedChange)
-        let linkedEvent = SuggestionEvent(
-            catalogID: performance.catalogID,
-            sessionFrom: session,
-            triggerPerformance: performance,
-            trainingStyle: .straightSets,
-            changes: [linkedChange]
-        )
+        let linkedEvent = SuggestionEvent(catalogID: performance.catalogID, sessionFrom: session, triggerPerformance: performance, trainingStyle: .straightSets, changes: [linkedChange])
         context.insert(linkedEvent)
 
-        let performanceLinkedEvent = SuggestionEvent(
-            catalogID: performance.catalogID,
-            sessionFrom: nil,
-            triggerPerformance: performance,
-            trainingStyle: .straightSets
-        )
+        let performanceLinkedEvent = SuggestionEvent(catalogID: performance.catalogID, sessionFrom: nil, triggerPerformance: performance, trainingStyle: .straightSets)
         context.insert(performanceLinkedEvent)
 
-        let sourcedEvaluation = SuggestionEvaluation(
-            event: priorEvent,
-            performance: performance,
-            sourceWorkoutSessionID: session.id,
-            partialOutcome: .good,
-            confidence: 0.8,
-            reason: "Strong session"
-        )
+        let sourcedEvaluation = SuggestionEvaluation(event: priorEvent, performance: performance, sourceWorkoutSessionID: session.id, partialOutcome: .good, confidence: 0.8, reason: "Strong session")
         context.insert(sourcedEvaluation)
 
-        let finalizedSourcedEvaluation = SuggestionEvaluation(
-            event: finalizedExternalEvent,
-            performance: performance,
-            sourceWorkoutSessionID: session.id,
-            partialOutcome: .good,
-            confidence: 0.9,
-            reason: "Locked in"
-        )
+        let finalizedSourcedEvaluation = SuggestionEvaluation(event: finalizedExternalEvent, performance: performance, sourceWorkoutSessionID: session.id, partialOutcome: .good, confidence: 0.9, reason: "Locked in")
         context.insert(finalizedSourcedEvaluation)
 
         WorkoutDeletionCoordinator.deleteCompletedWorkouts([session], context: context, save: false)
@@ -116,8 +85,7 @@ struct WorkoutDeletionCoordinatorTests {
         #expect(remainingChanges.contains(where: { $0.id == linkedChange.id }) == false)
     }
 
-    @Test @MainActor
-    func applyRetentionSetting_deletesAlreadyHiddenWorkoutsWhenDisabled() throws {
+    @Test @MainActor func applyRetentionSetting_deletesAlreadyHiddenWorkoutsWhenDisabled() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -134,12 +102,7 @@ struct WorkoutDeletionCoordinatorTests {
         context.insert(performance)
         session.exercises?.append(performance)
 
-        let hiddenEvent = SuggestionEvent(
-            catalogID: performance.catalogID,
-            sessionFrom: session,
-            triggerPerformance: performance,
-            trainingStyle: .straightSets
-        )
+        let hiddenEvent = SuggestionEvent(catalogID: performance.catalogID, sessionFrom: session, triggerPerformance: performance, trainingStyle: .straightSets)
         context.insert(hiddenEvent)
 
         WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)

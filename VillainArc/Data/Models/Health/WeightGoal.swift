@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class WeightGoal {
+@Model final class WeightGoal {
     #Index<WeightGoal>([\.startedAt], [\.endedAt])
 
     var type: WeightGoalType = WeightGoalType.maintain
@@ -24,9 +23,7 @@ final class WeightGoal {
 }
 
 extension WeightGoal {
-    static var history: FetchDescriptor<WeightGoal> {
-        FetchDescriptor(sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
-    }
+    static var history: FetchDescriptor<WeightGoal> { FetchDescriptor(sortBy: [SortDescriptor(\.startedAt, order: .reverse)]) }
 
     static var active: FetchDescriptor<WeightGoal> {
         let predicate = #Predicate<WeightGoal> { $0.endedAt == nil }

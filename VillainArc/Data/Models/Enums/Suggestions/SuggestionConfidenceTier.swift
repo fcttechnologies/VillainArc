@@ -8,34 +8,25 @@ enum SuggestionConfidenceTier: Int, Codable {
     nonisolated init(score: Double) {
         let clampedScore = max(0, min(1, score))
         switch clampedScore {
-        case 0.8...:
-            self = .strong
-        case 0.6...:
-            self = .moderate
-        default:
-            self = .exploratory
+        case 0.8...: self = .strong
+        case 0.6...: self = .moderate
+        default: self = .exploratory
         }
     }
 
     nonisolated var label: String {
         switch self {
-        case .exploratory:
-            return "Exploratory"
-        case .moderate:
-            return "Moderate"
-        case .strong:
-            return "Strong"
+        case .exploratory: return "Exploratory"
+        case .moderate: return "Moderate"
+        case .strong: return "Strong"
         }
     }
 
     nonisolated var defaultScore: Double {
         switch self {
-        case .exploratory:
-            return 0.5
-        case .moderate:
-            return 0.7
-        case .strong:
-            return 0.9
+        case .exploratory: return 0.5
+        case .moderate: return 0.7
+        case .strong: return 0.9
         }
     }
 }

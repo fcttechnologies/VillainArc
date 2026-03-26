@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-struct AIRepRangeSnapshot {
+@Generable struct AIRepRangeSnapshot {
     @Guide(description: "Mode.")
     let mode: AIRepRangeMode
     @Guide(description: "Lower bound.")
@@ -23,23 +22,17 @@ struct AIRepRangeSnapshot {
         guard let policy else { return nil }
 
         switch policy.activeMode {
-        case .range:
-            self.init(mode: .range, lower: policy.lowerRange, upper: policy.upperRange)
-        case .target:
-            self.init(mode: .target, target: policy.targetReps)
-        case .notSet:
-            return nil
+        case .range: self.init(mode: .range, lower: policy.lowerRange, upper: policy.upperRange)
+        case .target: self.init(mode: .target, target: policy.targetReps)
+        case .notSet: return nil
         }
     }
 
     init?(snapshot: RepRangeSnapshot) {
         switch snapshot.mode {
-        case .range:
-            self.init(mode: .range, lower: snapshot.lower, upper: snapshot.upper)
-        case .target:
-            self.init(mode: .target, target: snapshot.target)
-        case .notSet:
-            return nil
+        case .range: self.init(mode: .range, lower: snapshot.lower, upper: snapshot.upper)
+        case .target: self.init(mode: .target, target: snapshot.target)
+        case .notSet: return nil
         }
     }
 }

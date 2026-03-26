@@ -1,11 +1,11 @@
 import Foundation
 import SwiftData
 import Testing
+
 @testable import VillainArc
 
 struct WeightConversionTests {
-    @Test @MainActor
-    func workoutSessionWeightRoundTrip_preservesCanonicalKg() throws {
+    @Test @MainActor func workoutSessionWeightRoundTrip_preservesCanonicalKg() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, _) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100)
         let workout = WorkoutSession(from: plan)
@@ -25,8 +25,7 @@ struct WeightConversionTests {
         #expect(abs(set.weight - 100) < 0.01)
     }
 
-    @Test @MainActor
-    func workoutPlanWeightSaveConvertsUserEnteredLbsBackToKg() throws {
+    @Test @MainActor func workoutPlanWeightSaveConvertsUserEnteredLbsBackToKg() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100)
 
@@ -39,16 +38,12 @@ struct WeightConversionTests {
         #expect(abs(prescription.sortedSets[0].targetWeight - 102.0582) < 0.01)
     }
 
-    @Test @MainActor
-    func freeformExerciseAddSetCopiesCurrentDisplayedWeightWithoutConvertingAgain() throws {
+    @Test @MainActor func freeformExerciseAddSetCopiesCurrentDisplayedWeightWithoutConvertingAgain() throws {
         let context = try TestDataFactory.makeContext()
         let workout = WorkoutSession()
         context.insert(workout)
 
-        let exercise = ExercisePerformance(
-            exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!),
-            workoutSession: workout
-        )
+        let exercise = ExercisePerformance(exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!), workoutSession: workout)
         context.insert(exercise)
         workout.exercises?.append(exercise)
 
@@ -74,8 +69,7 @@ struct WeightConversionTests {
         #expect(copiedSet.restSeconds == 90)
     }
 
-    @Test @MainActor
-    func workoutFinishConvertsDisplayedLbsBackToCanonicalKgBeforeSave() throws {
+    @Test @MainActor func workoutFinishConvertsDisplayedLbsBackToCanonicalKgBeforeSave() throws {
         let context = try TestDataFactory.makeContext()
         let settings = AppSettings()
         settings.weightUnit = .lbs
@@ -84,10 +78,7 @@ struct WeightConversionTests {
         let workout = WorkoutSession()
         context.insert(workout)
 
-        let exercise = ExercisePerformance(
-            exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!),
-            workoutSession: workout
-        )
+        let exercise = ExercisePerformance(exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!), workoutSession: workout)
         context.insert(exercise)
         workout.exercises?.append(exercise)
 

@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-enum TrainingStyle: String, Codable {
+@Generable enum TrainingStyle: String, Codable {
     case straightSets = "Straight Sets"
     case ascendingPyramid = "Ascending Pyramid"
     case descendingPyramid = "Descending Pyramid"

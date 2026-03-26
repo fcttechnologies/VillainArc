@@ -21,9 +21,7 @@ struct AITrainingStyleClassifier {
             }
             let response = try await session.respond(to: prompt, generating: AIInferenceOutput.self)
             return validate(response.content)
-        } catch {
-            return nil
-        }
+        } catch { return nil }
     }
 
     private static var instructions: String {

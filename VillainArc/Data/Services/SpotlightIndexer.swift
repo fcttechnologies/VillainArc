@@ -158,11 +158,7 @@ enum SpotlightIndexer {
         attributes.displayName = title
         attributes.contentDescription = workoutSplitSpotlightDescription(for: workoutSplit)
         attributes.keywords = workoutSplitSpotlightKeywords(for: workoutSplit)
-        let item = CSSearchableItem(
-            uniqueIdentifier: workoutSplitIdentifier(for: workoutSplitID(for: workoutSplit)),
-            domainIdentifier: workoutSplitDomainIdentifier,
-            attributeSet: attributes
-        )
+        let item = CSSearchableItem(uniqueIdentifier: workoutSplitIdentifier(for: workoutSplitID(for: workoutSplit)), domainIdentifier: workoutSplitDomainIdentifier, attributeSet: attributes)
         item.associateAppEntity(WorkoutSplitEntity(workoutSplit: workoutSplit), priority: workoutSplitPriority(for: workoutSplit))
         return item
     }
@@ -202,12 +198,8 @@ enum SpotlightIndexer {
         priority += recencyPriorityBonus(for: workoutSession.endedAt ?? workoutSession.startedAt)
         priority += min(workoutSession.sortedExercises.count, 8)
 
-        if workoutSession.workoutPlan != nil {
-            priority += 4
-        }
-        if workoutSession.postEffort >= 8 {
-            priority += 3
-        }
+        if workoutSession.workoutPlan != nil { priority += 4 }
+        if workoutSession.postEffort >= 8 { priority += 3 }
 
         return priority
     }
@@ -217,12 +209,8 @@ enum SpotlightIndexer {
         priority += recencyPriorityBonus(for: workoutPlan.lastUsed)
         priority += min(workoutPlan.sortedExercises.count, 8)
 
-        if workoutPlan.favorite {
-            priority += 12
-        }
-        if !(workoutPlan.splitDays ?? []).isEmpty {
-            priority += 8
-        }
+        if workoutPlan.favorite { priority += 12 }
+        if !(workoutPlan.splitDays ?? []).isEmpty { priority += 8 }
 
         return priority
     }
@@ -231,15 +219,9 @@ enum SpotlightIndexer {
         var priority = 16
         priority += recencyPriorityBonus(for: history?.lastCompletedAt ?? exercise.lastAddedAt)
 
-        if exercise.favorite {
-            priority += 10
-        }
-        if exercise.isCustom {
-            priority += 6
-        }
-        if let history {
-            priority += min(history.totalSessions, 12)
-        }
+        if exercise.favorite { priority += 10 }
+        if exercise.isCustom { priority += 6 }
+        if let history { priority += min(history.totalSessions, 12) }
 
         return priority
     }
@@ -247,12 +229,8 @@ enum SpotlightIndexer {
     private static func workoutSplitPriority(for workoutSplit: WorkoutSplit) -> Int {
         var priority = 14
 
-        if workoutSplit.isActive {
-            priority += 18
-        }
-        if !workoutSplit.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            priority += 4
-        }
+        if workoutSplit.isActive { priority += 18 }
+        if !workoutSplit.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { priority += 4 }
 
         let days = workoutSplit.sortedDays
         priority += min(days.count, 7)
@@ -267,26 +245,18 @@ enum SpotlightIndexer {
         let daysAgo = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 365
 
         switch daysAgo {
-        case ..<0:
-            return 20
-        case 0..<7:
-            return 20
-        case 7..<30:
-            return 14
-        case 30..<90:
-            return 9
-        case 90..<180:
-            return 5
-        default:
-            return 0
+        case ..<0: return 20
+        case 0..<7: return 20
+        case 7..<30: return 14
+        case 30..<90: return 9
+        case 90..<180: return 5
+        default: return 0
         }
     }
 
     private static func exerciseSpotlightDescription(for exercise: Exercise) -> String {
         let alternateNames = exercise.systemAlternateNames
-        guard !alternateNames.isEmpty else {
-            return exercise.detailSubtitle
-        }
+        guard !alternateNames.isEmpty else { return exercise.detailSubtitle }
 
         let aliases = ListFormatter.localizedString(byJoining: Array(alternateNames.prefix(3)))
         return "\(exercise.detailSubtitle). Also known as \(aliases)."
@@ -315,9 +285,7 @@ enum SpotlightIndexer {
 
     private static func workoutSplitDisplayTitle(for workoutSplit: WorkoutSplit) -> String {
         let trimmed = workoutSplit.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return workoutSplit.mode.defaultTitle
-        }
+        guard !trimmed.isEmpty else { return workoutSplit.mode.defaultTitle }
         return trimmed
     }
 
@@ -333,22 +301,12 @@ enum SpotlightIndexer {
         let muscles = uniqueStrings(from: days.flatMap { $0.resolvedMuscles.map(\.displayName) })
         let muscleSummary = ListFormatter.localizedString(byJoining: Array(muscles.prefix(3)))
 
-        var parts: [String] = [
-            "\(modeLabel) with \(daySummary)."
-        ]
+        var parts: [String] = ["\(modeLabel) with \(daySummary)."]
 
-        if !highlightedNames.isEmpty {
-            parts.append("Includes \(namesSummary).")
-        }
-        if !planSummary.isEmpty {
-            parts.append("Linked plans: \(planSummary).")
-        }
-        if !muscleSummary.isEmpty {
-            parts.append("Targets \(muscleSummary).")
-        }
-        if workoutSplit.isActive {
-            parts.append("Active split.")
-        }
+        if !highlightedNames.isEmpty { parts.append("Includes \(namesSummary).") }
+        if !planSummary.isEmpty { parts.append("Linked plans: \(planSummary).") }
+        if !muscleSummary.isEmpty { parts.append("Targets \(muscleSummary).") }
+        if workoutSplit.isActive { parts.append("Active split.") }
 
         return parts.joined(separator: " ")
     }
@@ -368,18 +326,12 @@ enum SpotlightIndexer {
         add(workoutSplitDisplayTitle(for: workoutSplit))
         add(workoutSplit.mode.displayName)
         add("Workout Split")
-        if workoutSplit.isActive {
-            add("Active Split")
-        }
+        if workoutSplit.isActive { add("Active Split") }
 
         for day in workoutSplit.sortedDays {
             add(splitDaySpotlightLabel(for: day))
-            if day.isRestDay {
-                add("Rest Day")
-            }
-            if let planTitle = day.workoutPlan?.title {
-                add(planTitle)
-            }
+            if day.isRestDay { add("Rest Day") }
+            if let planTitle = day.workoutPlan?.title { add(planTitle) }
             day.resolvedMuscles.map(\.displayName).forEach(add)
         }
 
@@ -392,17 +344,10 @@ enum SpotlightIndexer {
         let exerciseList = ListFormatter.localizedString(byJoining: Array(workoutSession.sortedExercises.prefix(4).map(\.name)))
         let exerciseSummary = exerciseList.isEmpty ? "No exercises recorded" : exerciseList
 
-        var parts: [String] = [
-            "Completed workout from \(dateText).",
-            "\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises"): \(exerciseSummary)."
-        ]
+        var parts: [String] = ["Completed workout from \(dateText).", "\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises"): \(exerciseSummary)."]
 
-        if let planTitle = workoutSession.workoutPlan?.title.trimmingCharacters(in: .whitespacesAndNewlines), !planTitle.isEmpty {
-            parts.append("Started from plan \(planTitle).")
-        }
-        if workoutSession.postEffort > 0 {
-            parts.append("Effort \(workoutSession.postEffort) out of 10.")
-        }
+        if let planTitle = workoutSession.workoutPlan?.title.trimmingCharacters(in: .whitespacesAndNewlines), !planTitle.isEmpty { parts.append("Started from plan \(planTitle).") }
+        if workoutSession.postEffort > 0 { parts.append("Effort \(workoutSession.postEffort) out of 10.") }
 
         return parts.joined(separator: " ")
     }
@@ -413,9 +358,7 @@ enum SpotlightIndexer {
         let exerciseSummary = exerciseList.isEmpty ? "No exercises yet" : exerciseList
         let majorMuscles = Array(workoutPlan.majorMuscles.prefix(3).map(\.displayName))
 
-        var parts: [String] = [
-            "\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises"): \(exerciseSummary)."
-        ]
+        var parts: [String] = ["\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises"): \(exerciseSummary)."]
 
         if !majorMuscles.isEmpty {
             let muscleSummary = ListFormatter.localizedString(byJoining: majorMuscles)
@@ -425,24 +368,16 @@ enum SpotlightIndexer {
             let lastUsedText = lastUsed.formatted(date: .abbreviated, time: .omitted)
             parts.append("Last used \(lastUsedText).")
         }
-        if workoutPlan.favorite {
-            parts.append("Marked as favorite.")
-        }
+        if workoutPlan.favorite { parts.append("Marked as favorite.") }
 
         return parts.joined(separator: " ")
     }
 
     private static func splitDaySpotlightLabel(for day: WorkoutSplitDay) -> String {
         let name = day.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !name.isEmpty {
-            return name
-        }
-        if let planTitle = day.workoutPlan?.title.trimmingCharacters(in: .whitespacesAndNewlines), !planTitle.isEmpty {
-            return planTitle
-        }
-        if day.isRestDay {
-            return "Rest Day"
-        }
+        if !name.isEmpty { return name }
+        if let planTitle = day.workoutPlan?.title.trimmingCharacters(in: .whitespacesAndNewlines), !planTitle.isEmpty { return planTitle }
+        if day.isRestDay { return "Rest Day" }
         return day.split?.mode == .weekly ? weekdayName(for: day.weekday) : "Day \(day.index + 1)"
     }
 

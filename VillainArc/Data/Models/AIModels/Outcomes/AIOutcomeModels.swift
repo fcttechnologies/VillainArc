@@ -1,14 +1,12 @@
 import Foundation
 import FoundationModels
 
-@Generable
-enum AIChangeScope: String {
+@Generable enum AIChangeScope: String {
     case exercise = "Exercise"
     case set = "Set"
 }
 
-@Generable
-enum AIOutcome: String {
+@Generable enum AIOutcome: String {
     case good = "Good"
     case tooAggressive = "Too Aggressive"
     case tooEasy = "Too Easy"
@@ -37,8 +35,7 @@ enum AIOutcome: String {
     }
 }
 
-@Generable
-struct AIOutcomeChange {
+@Generable struct AIOutcomeChange {
     @Guide(description: "Change type.")
     let changeType: ChangeType
     @Guide(description: "Exercise or set.")
@@ -51,8 +48,7 @@ struct AIOutcomeChange {
     let newValue: String?
 }
 
-@Generable
-struct AIOutcomeGroupInput {
+@Generable struct AIOutcomeGroupInput {
     @Guide(description: "Category.")
     let category: SuggestionCategory
     @Guide(description: "Category-specific lens.")
@@ -81,11 +77,10 @@ struct AIOutcomeGroupInput {
     let ruleReason: String?
 }
 
-@Generable
-struct AIOutcomeInferenceOutput {
+@Generable struct AIOutcomeInferenceOutput {
     @Guide(description: "Outcome.")
     let outcome: AIOutcome
-    @Guide(description: "Confidence 0 to 1.", .range(0.0 ... 1.0))
+    @Guide(description: "Confidence 0 to 1.", .range(0.0...1.0))
     let confidence: Double
     @Guide(description: "One short evidence sentence.")
     let reason: String

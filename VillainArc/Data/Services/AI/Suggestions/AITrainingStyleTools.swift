@@ -1,13 +1,12 @@
 import Foundation
-import SwiftData
 import FoundationModels
+import SwiftData
 
 struct RecentExercisePerformancesTool: Tool, Sendable {
     let name = "getRecentExercisePerformances"
     let description = "Fetch up to 3 recent exercise performances, newest first. Use only when the current workout is ambiguous."
 
-    @Generable
-    struct Arguments {
+    @Generable struct Arguments {
         @Guide(description: "Exercise catalog id.")
         let catalogID: String
         @Guide(description: "How many sessions.", .range(1...3))

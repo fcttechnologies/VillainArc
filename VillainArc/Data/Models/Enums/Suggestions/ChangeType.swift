@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-enum ChangeType: String, Codable {
+@Generable enum ChangeType: String, Codable {
     // Set-level (target a specific set)
     case increaseWeight = "Increase Weight"
     case decreaseWeight = "Decrease Weight"

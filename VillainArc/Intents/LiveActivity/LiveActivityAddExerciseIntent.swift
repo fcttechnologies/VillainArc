@@ -5,8 +5,7 @@ struct LiveActivityAddExerciseIntent: LiveActivityIntent {
     static let isDiscoverable: Bool = false
     static let supportedModes: IntentModes = .foreground(.immediate)
 
-    @MainActor
-    func perform() async throws -> some IntentResult {
+    @MainActor func perform() async throws -> some IntentResult {
         AppRouter.shared.showAddExerciseFromLiveActivity = true
         return .result()
     }

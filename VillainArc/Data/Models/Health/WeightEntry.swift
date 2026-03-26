@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class WeightEntry {
+@Model final class WeightEntry {
     #Index<WeightEntry>([\.date], [\.healthSampleUUID])
 
     var id: UUID = UUID()
@@ -22,9 +21,7 @@ final class WeightEntry {
 }
 
 extension WeightEntry {
-    static var history: FetchDescriptor<WeightEntry> {
-        FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)])
-    }
+    static var history: FetchDescriptor<WeightEntry> { FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)]) }
 
     static var latest: FetchDescriptor<WeightEntry> {
         var descriptor = history
@@ -62,15 +59,9 @@ extension WeightEntry {
         return FetchDescriptor(predicate: predicate)
     }
 
-    var isLinkedToHealth: Bool {
-        healthSampleUUID != nil
-    }
+    var isLinkedToHealth: Bool { healthSampleUUID != nil }
 
-    var isImportedFromHealth: Bool {
-        healthSampleUUID != nil && !hasBeenExportedToHealth
-    }
+    var isImportedFromHealth: Bool { healthSampleUUID != nil && !hasBeenExportedToHealth }
 
-    var canDeleteInApp: Bool {
-        !isImportedFromHealth
-    }
+    var canDeleteInApp: Bool { !isImportedFromHealth }
 }

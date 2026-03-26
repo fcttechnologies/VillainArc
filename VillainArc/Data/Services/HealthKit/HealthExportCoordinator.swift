@@ -2,8 +2,7 @@ import Foundation
 import HealthKit
 import SwiftData
 
-@MainActor
-final class HealthExportCoordinator {
+@MainActor final class HealthExportCoordinator {
     static let shared = HealthExportCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared
@@ -72,9 +71,7 @@ final class HealthExportCoordinator {
                 try HealthWorkoutLinker.upsertHealthWorkout(for: existingWorkout, linkedTo: session, context: context)
                 saveContext(context: context)
                 print("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id)")
-            } catch {
-                print("Failed to link existing Apple Health workout for \(session.id): \(error)")
-            }
+            } catch { print("Failed to link existing Apple Health workout for \(session.id): \(error)") }
             return
         }
 
@@ -97,7 +94,7 @@ final class HealthExportCoordinator {
 
             if let workoutEffortSample, authorizationManager.canWriteWorkoutEffortScore {
                 do {
-                    _ = try await authorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample,with: workout, activity: nil)
+                    _ = try await authorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: workout, activity: nil)
                 } catch {
                     print("Failed to relate workout effort score for \(session.id): \(error)")
                 }
@@ -106,9 +103,7 @@ final class HealthExportCoordinator {
             try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: session, context: context)
             saveContext(context: context)
             print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
-        } catch {
-            print("Failed to export workout \(session.id) to HealthKit: \(error)")
-        }
+        } catch { print("Failed to export workout \(session.id) to HealthKit: \(error)") }
     }
 
     private func exportLoadedWeightEntry(_ weightEntry: WeightEntry) async {
@@ -120,9 +115,7 @@ final class HealthExportCoordinator {
                 try HealthWeightEntryLinker.upsertWeightEntry(for: existingSample, context: context)
                 saveContext(context: context)
                 print("Linked existing Apple Health body mass sample \(existingSample.uuid) to local weight entry \(weightEntry.id)")
-            } catch {
-                print("Failed to link existing Apple Health body mass sample for \(weightEntry.id): \(error)")
-            }
+            } catch { print("Failed to link existing Apple Health body mass sample for \(weightEntry.id): \(error)") }
             return
         }
 
@@ -135,9 +128,7 @@ final class HealthExportCoordinator {
             try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context)
             saveContext(context: context)
             print("Saved weight entry \(weightEntry.id) to Apple Health as \(sample.uuid)")
-        } catch {
-            print("Failed to export weight entry \(weightEntry.id) to HealthKit: \(error)")
-        }
+        } catch { print("Failed to export weight entry \(weightEntry.id) to HealthKit: \(error)") }
     }
 
     func reconcilePendingExports() async {
@@ -156,9 +147,7 @@ final class HealthExportCoordinator {
         let sessions = (try? context.fetch(WorkoutSession.completedSessionsNeedingHealthExport)) ?? []
         print("Reconciling \(sessions.count) completed workouts for Apple Health export")
 
-        for session in sessions {
-            await exportIfEligible(session: session)
-        }
+        for session in sessions { await exportIfEligible(session: session) }
 
         print("Finished Apple Health export reconciliation")
     }
@@ -174,19 +163,13 @@ final class HealthExportCoordinator {
         let weightEntries = (try? context.fetch(WeightEntry.entriesNeedingHealthExport)) ?? []
         print("Reconciling \(weightEntries.count) weight entries for Apple Health export")
 
-        for weightEntry in weightEntries {
-            await exportIfEligible(weightEntry: weightEntry)
-        }
+        for weightEntry in weightEntries { await exportIfEligible(weightEntry: weightEntry) }
 
         print("Finished Apple Health weight export reconciliation")
     }
 
     private func findSavedWeightSample(for entryID: UUID) async throws -> HKQuantitySample? {
-        let descriptor = HKSampleQueryDescriptor(
-            predicates: [.quantitySample(type: bodyMassType, predicate: HealthWeightEntryLinker.samplePredicate(for: entryID))],
-            sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)],
-            limit: 1
-        )
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: bodyMassType, predicate: HealthWeightEntryLinker.samplePredicate(for: entryID))], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
 
         return try await descriptor.result(for: authorizationManager.healthStore).first
     }

@@ -1,37 +1,15 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
-@MainActor
-class PreviewDataContainer {
+@MainActor class PreviewDataContainer {
     var modelContainer: ModelContainer
 
-    var context: ModelContext {
-        modelContainer.mainContext
-    }
+    var context: ModelContext { modelContainer.mainContext }
 
     init(includeIncompleteData: Bool = false) {
         let schema = Schema([
-            WorkoutSession.self,
-            HealthWorkout.self,
-            WeightEntry.self,
-            PreWorkoutContext.self,
-            ExercisePerformance.self,
-            SetPerformance.self,
-            Exercise.self,
-            AppSettings.self,
-            ExerciseHistory.self,
-            ProgressionPoint.self,
-            UserProfile.self,
-            RepRangePolicy.self,
-            RestTimeHistory.self,
-            WorkoutPlan.self,
-            ExercisePrescription.self,
-            SetPrescription.self,
-            WorkoutSplit.self,
-            WorkoutSplitDay.self,
-            SuggestionEvent.self,
-            PrescriptionChange.self,
-            SuggestionEvaluation.self
+            WorkoutSession.self, HealthWorkout.self, WeightEntry.self, PreWorkoutContext.self, ExercisePerformance.self, SetPerformance.self, Exercise.self, AppSettings.self, ExerciseHistory.self, ProgressionPoint.self, UserProfile.self, RepRangePolicy.self, RestTimeHistory.self, WorkoutPlan.self,
+            ExercisePrescription.self, SetPrescription.self, WorkoutSplit.self, WorkoutSplitDay.self, SuggestionEvent.self, PrescriptionChange.self, SuggestionEvaluation.self,
         ])
 
         do {
@@ -51,45 +29,21 @@ class PreviewDataContainer {
             rebuildExerciseHistories()
 
             try context.save()
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
+        } catch { fatalError("Could not create ModelContainer: \(error)") }
     }
 
-    private func syncExercises() {
-        for catalogItem in ExerciseCatalog.all {
-            context.insert(Exercise(from: catalogItem))
-        }
-    }
+    private func syncExercises() { for catalogItem in ExerciseCatalog.all { context.insert(Exercise(from: catalogItem)) } }
 
     private func loadWeightEntries() {
-        let weights: [(Int, Int, Int, Double)] = [
-            (2026, 1, 4, 82.8),
-            (2026, 1, 7, 82.4),
-            (2026, 1, 10, 82.2),
-            (2026, 1, 13, 82.5),
-            (2026, 1, 16, 81.9),
-            (2026, 1, 20, 81.7),
-            (2026, 1, 24, 81.8),
-            (2026, 1, 28, 81.4),
-            (2026, 2, 1, 81.2),
-            (2026, 2, 5, 81.5),
-            (2026, 2, 9, 80.9),
-            (2026, 2, 12, 80.7)
-        ]
+        let weights: [(Int, Int, Int, Double)] = [(2026, 1, 4, 82.8), (2026, 1, 7, 82.4), (2026, 1, 10, 82.2), (2026, 1, 13, 82.5), (2026, 1, 16, 81.9), (2026, 1, 20, 81.7), (2026, 1, 24, 81.8), (2026, 1, 28, 81.4), (2026, 2, 1, 81.2), (2026, 2, 5, 81.5), (2026, 2, 9, 80.9), (2026, 2, 12, 80.7)]
 
-        for (year, month, day, weight) in weights {
-            context.insert(WeightEntry(date: date(year, month, day, 7, 30), weight: weight))
-        }
+        for (year, month, day, weight) in weights { context.insert(WeightEntry(date: date(year, month, day, 7, 30), weight: weight)) }
     }
 
-    @discardableResult
-    private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
+    @discardableResult private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
         let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: session, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)
-        for change in changes {
-            change.event = event
-        }
+        for change in changes { change.event = event }
         return event
     }
 
@@ -100,26 +54,8 @@ class PreviewDataContainer {
         context.insert(plan)
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int, targetRPE: Int)])] = [
-            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
-                (.warmup, 45, 12, 60, 0),
-                (.working, 135, 10, 90, 7),
-                (.working, 155, 8, 90, 8)
-            ]),
-            ("dumbbell_incline_bench_press", "", [
-                (.warmup, 25, 12, 60, 0),
-                (.working, 55, 10, 90, 8),
-                (.working, 60, 8, 90, 10)
-            ]),
-            ("cable_bench_chest_fly", "slow eccentric", [
-                (.working, 30, 12, 90, 8),
-                (.working, 35, 10, 90, 8),
-                (.working, 35, 10, 90, 9)
-            ]),
-            ("cable_bar_pushdown", "triceps finisher", [
-                (.working, 50, 12, 60, 8),
-                (.working, 55, 10, 60, 9),
-                (.working, 60, 8, 60, 9)
-            ])
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [(.warmup, 45, 12, 60, 0), (.working, 135, 10, 90, 7), (.working, 155, 8, 90, 8)]), ("dumbbell_incline_bench_press", "", [(.warmup, 25, 12, 60, 0), (.working, 55, 10, 90, 8), (.working, 60, 8, 90, 10)]),
+            ("cable_bench_chest_fly", "slow eccentric", [(.working, 30, 12, 90, 8), (.working, 35, 10, 90, 8), (.working, 35, 10, 90, 9)]), ("cable_bar_pushdown", "triceps finisher", [(.working, 50, 12, 60, 8), (.working, 55, 10, 60, 9), (.working, 60, 8, 60, 9)]),
         ]
 
         for ex in exercises {
@@ -163,25 +99,8 @@ class PreviewDataContainer {
         session.postEffort = 7
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])] = [
-            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
-                (.warmup, 45, 12),
-                (.working, 135, 10),
-                (.working, 155, 8)
-            ]),
-            ("dumbbell_incline_bench_press", "", [
-                (.warmup, 25, 12),
-                (.working, 55, 10),
-                (.working, 60, 8)
-            ]),
-            ("cable_bench_chest_fly", "slow eccentric", [
-                (.working, 30, 12),
-                (.working, 35, 10),
-                (.working, 35, 10)
-            ]),
-            ("push_ups", "2xAMRAP", [
-                (.working, 0, 25),
-                (.working, 0, 18)
-            ])
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [(.warmup, 45, 12), (.working, 135, 10), (.working, 155, 8)]), ("dumbbell_incline_bench_press", "", [(.warmup, 25, 12), (.working, 55, 10), (.working, 60, 8)]),
+            ("cable_bench_chest_fly", "slow eccentric", [(.working, 30, 12), (.working, 35, 10), (.working, 35, 10)]), ("push_ups", "2xAMRAP", [(.working, 0, 25), (.working, 0, 18)]),
         ]
 
         for (i, ex) in exercises.enumerated() {
@@ -216,26 +135,8 @@ class PreviewDataContainer {
         context.insert(plan)
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int, targetRPE: Int)])] = [
-            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [
-                (.warmup, 45, 12, 60, 0),
-                (.working, 0, 10, 90, 7),
-                (.working, 165, 8, 90, 10)
-            ]),
-            ("dumbbell_incline_bench_press", "", [
-                (.warmup, 25, 12, 60, 0),
-                (.working, 60, 10, 90, 8),
-                (.working, 65, 8, 90, 9)
-            ]),
-            ("cable_bench_chest_fly", "slow eccentric", [
-                (.warmup, 20, 12, 60, 0),
-                (.working, 35, 10, 90, 8),
-                (.working, 40, 8, 90, 9)
-            ]),
-            ("barbell_bent_over_row", "Back focus", [
-                (.warmup, 45, 12, 60, 0),
-                (.working, 95, 10, 90, 8),
-                (.working, 115, 8, 90, 9)
-            ])
+            ("barbell_bench_press", "Warm-up + 3x5 @ RPE 8", [(.warmup, 45, 12, 60, 0), (.working, 0, 10, 90, 7), (.working, 165, 8, 90, 10)]), ("dumbbell_incline_bench_press", "", [(.warmup, 25, 12, 60, 0), (.working, 60, 10, 90, 8), (.working, 65, 8, 90, 9)]),
+            ("cable_bench_chest_fly", "slow eccentric", [(.warmup, 20, 12, 60, 0), (.working, 35, 10, 90, 8), (.working, 40, 8, 90, 9)]), ("barbell_bent_over_row", "Back focus", [(.warmup, 45, 12, 60, 0), (.working, 95, 10, 90, 8), (.working, 115, 8, 90, 9)]),
         ]
 
         for ex in exercises {
@@ -280,17 +181,11 @@ class PreviewDataContainer {
 
     private func loadSampleSplits() {
         let weeklySplit = WorkoutSplit(title: "PPL Split", mode: .weekly, isActive: true)
-        weeklySplit.days = (1...7).map { weekday in
-            WorkoutSplitDay(weekday: weekday, split: weeklySplit, isRestDay: weekday == 1 || weekday == 4)
-        }
+        weeklySplit.days = (1...7).map { weekday in WorkoutSplitDay(weekday: weekday, split: weeklySplit, isRestDay: weekday == 1 || weekday == 4) }
         context.insert(weeklySplit)
 
         let rotationSplit = WorkoutSplit(title: "Upper/Lower", mode: .rotation)
-        rotationSplit.days = [
-            WorkoutSplitDay(index: 0, split: rotationSplit, name: "Upper Body"),
-            WorkoutSplitDay(index: 1, split: rotationSplit, name: "Lower Body"),
-            WorkoutSplitDay(index: 2, split: rotationSplit, name: "Rest", isRestDay: true)
-        ]
+        rotationSplit.days = [WorkoutSplitDay(index: 0, split: rotationSplit, name: "Upper Body"), WorkoutSplitDay(index: 1, split: rotationSplit, name: "Lower Body"), WorkoutSplitDay(index: 2, split: rotationSplit, name: "Rest", isRestDay: true)]
         context.insert(rotationSplit)
     }
 
@@ -300,48 +195,41 @@ class PreviewDataContainer {
         let existingHistories = (try? context.fetch(FetchDescriptor<ExerciseHistory>())) ?? []
         let historyMap = Dictionary(uniqueKeysWithValues: existingHistories.map { ($0.catalogID, $0) })
 
-        for history in existingHistories where !catalogIDs.contains(history.catalogID) {
-            context.delete(history)
-        }
+        for history in existingHistories where !catalogIDs.contains(history.catalogID) { context.delete(history) }
 
         for catalogID in catalogIDs {
-            let history = historyMap[catalogID] ?? {
-                let history = ExerciseHistory(catalogID: catalogID)
-                context.insert(history)
-                return history
-            }()
+            let history =
+                historyMap[catalogID]
+                ?? {
+                    let history = ExerciseHistory(catalogID: catalogID)
+                    context.insert(history)
+                    return history
+                }()
 
-            let matchingPerformances = performances
-                .filter { $0.catalogID == catalogID }
-                .sorted { $0.date > $1.date }
-            history.recalculate(using: matchingPerformances)
+            let matchingPerformances = performances.filter { $0.catalogID == catalogID }.sorted { $0.date > $1.date }
+            history.recalculate(using: matchingPerformances, context: context)
         }
     }
 
     // MARK: - Session with Suggestions
-    
+
     func loadSessionWithSuggestions() {
         let session = WorkoutSession(title: "Suggestions Test", status: .pending)
         context.insert(session)
-        
         let plan = WorkoutPlan(title: "Chest Growth")
         context.insert(plan)
         session.workoutPlan = plan
-        
         // Exercise 1: Bench Press (Groups: Set 1, Set 2)
         let bench = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
         let benchPrescription = ExercisePrescription(exercise: bench, workoutPlan: plan)
         clearSeededSets(from: benchPrescription)
         plan.exercises?.append(benchPrescription)
-        
         // Set 1 changes
         let s1 = SetPrescription(exercisePrescription: benchPrescription, setType: .warmup, targetWeight: 1135, targetReps: 10, index: 0)
         benchPrescription.sets?.append(s1)
-        
         // Set 2 changes
         let s2 = SetPrescription(exercisePrescription: benchPrescription, setType: .working, targetWeight: 155, targetReps: 8, index: 1)
         benchPrescription.sets?.append(s2)
-        
         let change1 = PrescriptionChange(changeType: .increaseWeight, previousValue: 135, newValue: 145)
         context.insert(change1)
 
@@ -352,14 +240,12 @@ class PreviewDataContainer {
         context.insert(change3)
         insertSuggestionEvent(for: benchPrescription, changes: [change1, change2], session: session, targetSet: s1, reasoning: "Hit all reps last 3 sessions")
         insertSuggestionEvent(for: benchPrescription, changes: [change3], session: session, targetSet: s2)
-        
         // Exercise 2: Incline DB (Group: Rep Range)
         let incline = Exercise(from: ExerciseCatalog.byID["dumbbell_incline_bench_press"]!)
         let inclinePrescription = ExercisePrescription(exercise: incline, workoutPlan: plan)
         inclinePrescription.repRange?.activeMode = .target
         inclinePrescription.repRange?.targetReps = 8
         plan.exercises?.append(inclinePrescription)
-        
         let change4 = PrescriptionChange(changeType: .changeRepRangeMode, previousValue: Double(RepRangeMode.target.rawValue), newValue: Double(RepRangeMode.range.rawValue))
         context.insert(change4)
 
@@ -369,7 +255,6 @@ class PreviewDataContainer {
         let change6 = PrescriptionChange(changeType: .increaseRepRangeUpper, previousValue: 10, newValue: 12)
         context.insert(change6)
         insertSuggestionEvent(for: inclinePrescription, changes: [change4, change5, change6], session: session, category: .repRangeConfiguration, reasoning: "Switching to range for hypertrophy phase")
-        
         // Exercise 3: Flys (Group: Rest Time)
         let flys = Exercise(from: ExerciseCatalog.byID["cable_bench_chest_fly"]!)
         let flysPrescription = ExercisePrescription(exercise: flys, workoutPlan: plan)
@@ -377,7 +262,6 @@ class PreviewDataContainer {
         let flysSet1 = SetPrescription(exercisePrescription: flysPrescription, setType: .working, targetWeight: 30, targetReps: 12, targetRest: 60, index: 0)
         flysPrescription.sets?.append(flysSet1)
         plan.exercises?.append(flysPrescription)
-        
         let change7 = PrescriptionChange(changeType: .increaseRest, previousValue: 60, newValue: 90)
         context.insert(change7)
         insertSuggestionEvent(for: flysPrescription, changes: [change7], session: session, targetSet: flysSet1, category: .recovery, reasoning: "Recovery needs increased")
@@ -390,22 +274,8 @@ class PreviewDataContainer {
         context.insert(plan)
 
         let planExercises: [(id: String, repRange: RepRangeMode, lower: Int, upper: Int, target: Int, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int)])] = [
-            ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                (.working, 60, 8, 90),
-                (.working, 60, 8, 90)
-            ]),
-            ("barbell_bent_over_row", .range, 8, 10, 0, [
-                (.working, 135, 8, 120),
-                (.working, 135, 8, 120)
-            ]),
-            ("cable_bench_chest_fly", .notSet, 0, 0, 0, [
-                (.working, 30, 12, 90),
-                (.working, 30, 12, 90)
-            ]),
-            ("cable_bar_pushdown", .range, 10, 12, 0, [
-                (.working, 55, 10, 60),
-                (.working, 55, 10, 60)
-            ])
+            ("dumbbell_incline_bench_press", .range, 8, 10, 0, [(.working, 60, 8, 90), (.working, 60, 8, 90)]), ("barbell_bent_over_row", .range, 8, 10, 0, [(.working, 135, 8, 120), (.working, 135, 8, 120)]), ("cable_bench_chest_fly", .notSet, 0, 0, 0, [(.working, 30, 12, 90), (.working, 30, 12, 90)]),
+            ("cable_bar_pushdown", .range, 10, 12, 0, [(.working, 55, 10, 60), (.working, 55, 10, 60)]),
         ]
 
         for (index, ex) in planExercises.enumerated() {
@@ -433,66 +303,24 @@ class PreviewDataContainer {
             (
                 date(2026, 2, 1, 8, 0),
                 [
-                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                        (.working, 60, 10),
-                        (.working, 60, 10)
-                    ]),
-                    ("barbell_bent_over_row", .range, 8, 10, 0, [
-                        (.working, 135, 6),
-                        (.working, 135, 6)
-                    ]),
-                    ("cable_bench_chest_fly", .range, 12, 15, 0, [
-                        (.working, 30, 12),
-                        (.working, 30, 12)
-                    ]),
-                    ("cable_bar_pushdown", .range, 10, 12, 0, [
-                        (.working, 55, 12),
-                        (.working, 55, 11)
-                    ])
+                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [(.working, 60, 10), (.working, 60, 10)]), ("barbell_bent_over_row", .range, 8, 10, 0, [(.working, 135, 6), (.working, 135, 6)]), ("cable_bench_chest_fly", .range, 12, 15, 0, [(.working, 30, 12), (.working, 30, 12)]),
+                    ("cable_bar_pushdown", .range, 10, 12, 0, [(.working, 55, 12), (.working, 55, 11)]),
                 ]
             ),
             (
                 date(2026, 2, 3, 8, 0),
                 [
-                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                        (.working, 60, 10),
-                        (.working, 60, 10)
-                    ]),
-                    ("barbell_bent_over_row", .range, 8, 10, 0, [
-                        (.working, 135, 7),
-                        (.working, 135, 7)
-                    ]),
-                    ("cable_bench_chest_fly", .range, 12, 15, 0, [
-                        (.working, 30, 13),
-                        (.working, 30, 12)
-                    ]),
-                    ("cable_bar_pushdown", .range, 10, 12, 0, [
-                        (.working, 55, 12),
-                        (.working, 55, 10)
-                    ])
+                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [(.working, 60, 10), (.working, 60, 10)]), ("barbell_bent_over_row", .range, 8, 10, 0, [(.working, 135, 7), (.working, 135, 7)]), ("cable_bench_chest_fly", .range, 12, 15, 0, [(.working, 30, 13), (.working, 30, 12)]),
+                    ("cable_bar_pushdown", .range, 10, 12, 0, [(.working, 55, 12), (.working, 55, 10)]),
                 ]
             ),
             (
                 date(2026, 2, 5, 8, 0),
                 [
-                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [
-                        (.working, 60, 10),
-                        (.working, 60, 10)
-                    ]),
-                    ("barbell_bent_over_row", .range, 8, 10, 0, [
-                        (.working, 135, 9),
-                        (.working, 135, 8)
-                    ]),
-                    ("cable_bench_chest_fly", .range, 12, 15, 0, [
-                        (.working, 30, 12),
-                        (.working, 30, 12)
-                    ]),
-                    ("cable_bar_pushdown", .range, 10, 12, 0, [
-                        (.working, 55, 12),
-                        (.working, 55, 12)
-                    ])
+                    ("dumbbell_incline_bench_press", .range, 8, 10, 0, [(.working, 60, 10), (.working, 60, 10)]), ("barbell_bent_over_row", .range, 8, 10, 0, [(.working, 135, 9), (.working, 135, 8)]), ("cable_bench_chest_fly", .range, 12, 15, 0, [(.working, 30, 12), (.working, 30, 12)]),
+                    ("cable_bar_pushdown", .range, 10, 12, 0, [(.working, 55, 12), (.working, 55, 12)]),
                 ]
-            )
+            ),
         ]
 
         for (sessionIndex, history) in historySessions.enumerated() {
@@ -564,13 +392,9 @@ class PreviewDataContainer {
         return Calendar.current.date(from: components) ?? .now
     }
 
-    private func clearSeededSets(from performance: ExercisePerformance) {
-        performance.sets?.removeAll()
-    }
+    private func clearSeededSets(from performance: ExercisePerformance) { performance.sets?.removeAll() }
 
-    private func clearSeededSets(from prescription: ExercisePrescription) {
-        prescription.sets?.removeAll()
-    }
+    private func clearSeededSets(from prescription: ExercisePrescription) { prescription.sets?.removeAll() }
 }
 
 // MARK: - Shared Containers
@@ -592,12 +416,9 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
 
 // MARK: - Sample Accessors
 
-@MainActor
-func sampleCompletedSession() -> WorkoutSession {
+@MainActor func sampleCompletedSession() -> WorkoutSession {
     let sessions = (try? sampleContainer.context.fetch(WorkoutSession.completedSession)) ?? []
-    if let session = sessions.first {
-        return session
-    }
+    if let session = sessions.first { return session }
 
     let fallback = WorkoutSession(title: "Chest Day", status: .done, endedAt: .now)
     fallback.preWorkoutContext?.feeling = .okay
@@ -607,57 +428,44 @@ func sampleCompletedSession() -> WorkoutSession {
     return fallback
 }
 
-@MainActor
-func sampleIncompleteSession() -> WorkoutSession {
+@MainActor func sampleIncompleteSession() -> WorkoutSession {
     let sessions = (try? sampleContainerWithIncomplete.context.fetch(WorkoutSession.incomplete)) ?? []
-    if let session = sessions.first {
-        return session
-    }
+    if let session = sessions.first { return session }
 
     let fallback = WorkoutSession(title: "New Workout")
     sampleContainerWithIncomplete.context.insert(fallback)
     return fallback
 }
 
-@MainActor
-func sampleCompletedPlan() -> WorkoutPlan {
+@MainActor func sampleCompletedPlan() -> WorkoutPlan {
     let descriptor = FetchDescriptor(predicate: WorkoutPlan.completedPredicate)
     let plans = (try? sampleContainer.context.fetch(descriptor)) ?? []
-    if let plan = plans.first(where: { $0.title == "Push Day" }) ?? plans.first {
-        return plan
-    }
+    if let plan = plans.first(where: { $0.title == "Push Day" }) ?? plans.first { return plan }
 
     let fallback = WorkoutPlan(title: "Push Day", completed: true)
     sampleContainer.context.insert(fallback)
     return fallback
 }
 
-@MainActor
-func sampleIncompletePlan() -> WorkoutPlan {
+@MainActor func sampleIncompletePlan() -> WorkoutPlan {
     let plans = (try? sampleContainerWithIncomplete.context.fetch(WorkoutPlan.incomplete)) ?? []
-    if let plan = plans.first {
-        return plan
-    }
+    if let plan = plans.first { return plan }
 
     let fallback = WorkoutPlan(title: "Back Day")
     sampleContainerWithIncomplete.context.insert(fallback)
     return fallback
 }
 
-@MainActor
-func sampleEditingPlan() -> WorkoutPlan {
+@MainActor func sampleEditingPlan() -> WorkoutPlan {
     let plan = sampleCompletedPlan()
     plan.isEditing = true
     return plan
 }
 
-@MainActor
-func sampleWeeklySplit() -> WorkoutSplit {
+@MainActor func sampleWeeklySplit() -> WorkoutSplit {
     let descriptor = FetchDescriptor<WorkoutSplit>()
     let splits = (try? sampleContainer.context.fetch(descriptor)) ?? []
-    if let split = splits.first(where: { $0.mode == .weekly }) {
-        return split
-    }
+    if let split = splits.first(where: { $0.mode == .weekly }) { return split }
 
     let fallback = WorkoutSplit(mode: .weekly)
     fallback.days = (1...7).map { WorkoutSplitDay(weekday: $0, split: fallback) }
@@ -665,13 +473,10 @@ func sampleWeeklySplit() -> WorkoutSplit {
     return fallback
 }
 
-@MainActor
-func sampleRotationSplit() -> WorkoutSplit {
+@MainActor func sampleRotationSplit() -> WorkoutSplit {
     let descriptor = FetchDescriptor<WorkoutSplit>()
     let splits = (try? sampleContainer.context.fetch(descriptor)) ?? []
-    if let split = splits.first(where: { $0.mode == .rotation }) {
-        return split
-    }
+    if let split = splits.first(where: { $0.mode == .rotation }) { return split }
 
     let fallback = WorkoutSplit(title: "Upper/Lower", mode: .rotation)
     for i in 0..<3 {
@@ -682,27 +487,21 @@ func sampleRotationSplit() -> WorkoutSplit {
     return fallback
 }
 
-@MainActor
-func sampleSessionWithSuggestions() -> WorkoutSession {
+@MainActor func sampleSessionWithSuggestions() -> WorkoutSession {
     let sessions = (try? sampleContainerWithSuggestions.context.fetch(WorkoutSession.incomplete)) ?? []
-    if let session = sessions.first {
-        return session
-    }
+    if let session = sessions.first { return session }
     // Should have been created
     let fallback = WorkoutSession(title: "Suggestions Test (Fallback)")
     sampleContainerWithSuggestions.context.insert(fallback)
     return fallback
 }
 
-@MainActor
-func sampleSuggestionGenerationSession() -> WorkoutSession {
+@MainActor func sampleSuggestionGenerationSession() -> WorkoutSession {
     let summaryStatus = SessionStatus.summary.rawValue
     let predicate = #Predicate<WorkoutSession> { $0.status == summaryStatus }
     var descriptor = FetchDescriptor(predicate: predicate)
     descriptor.fetchLimit = 1
-    if let session = (try? sampleContainerSuggestionGeneration.context.fetch(descriptor))?.first {
-        return session
-    }
+    if let session = (try? sampleContainerSuggestionGeneration.context.fetch(descriptor))?.first { return session }
     let fallback = WorkoutSession(title: "Suggestion Generation (Fallback)", status: .summary)
     sampleContainerSuggestionGeneration.context.insert(fallback)
     return fallback
@@ -711,19 +510,10 @@ func sampleSuggestionGenerationSession() -> WorkoutSession {
 // MARK: - View Modifiers
 
 extension View {
-    func sampleDataContainer() -> some View {
-        self.modelContainer(sampleContainer.modelContainer)
-    }
+    func sampleDataContainer() -> some View { self.modelContainer(sampleContainer.modelContainer) }
 
-    func sampleDataContainerIncomplete() -> some View {
-        self.modelContainer(sampleContainerWithIncomplete.modelContainer)
-    }
-    
-    func sampleDataContainerSuggestions() -> some View {
-        self.modelContainer(sampleContainerWithSuggestions.modelContainer)
-    }
+    func sampleDataContainerIncomplete() -> some View { self.modelContainer(sampleContainerWithIncomplete.modelContainer) }
+    func sampleDataContainerSuggestions() -> some View { self.modelContainer(sampleContainerWithSuggestions.modelContainer) }
 
-    func sampleDataContainerSuggestionGeneration() -> some View {
-        self.modelContainer(sampleContainerSuggestionGeneration.modelContainer)
-    }
+    func sampleDataContainerSuggestionGeneration() -> some View { self.modelContainer(sampleContainerSuggestionGeneration.modelContainer) }
 }

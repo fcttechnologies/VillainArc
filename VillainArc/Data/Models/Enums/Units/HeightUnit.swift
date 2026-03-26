@@ -4,13 +4,9 @@ enum HeightUnit: String, CaseIterable, Codable {
     case cm
     case imperial
 
-    nonisolated static var systemDefault: HeightUnit {
-        Locale.current.measurementSystem == .us ? .imperial : .cm
-    }
+    nonisolated static var systemDefault: HeightUnit { Locale.current.measurementSystem == .us ? .imperial : .cm }
 
-    func toCm(feet: Int, inches: Double) -> Double {
-        (Double(feet) * 12.0 + inches) * 2.54
-    }
+    func toCm(feet: Int, inches: Double) -> Double { (Double(feet) * 12.0 + inches) * 2.54 }
 
     func fromCm(_ cm: Double) -> (feet: Int, inches: Double) {
         let totalInches = cm / 2.54
@@ -21,8 +17,7 @@ enum HeightUnit: String, CaseIterable, Codable {
 
     func displayString(cm: Double) -> String {
         switch self {
-        case .cm:
-            return "\(Int(cm.rounded())) cm"
+        case .cm: return "\(Int(cm.rounded())) cm"
         case .imperial:
             let (feet, inches) = fromCm(cm)
             return "\(feet)'\(Int(inches.rounded()))\""

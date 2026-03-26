@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-struct AIExerciseIdentitySnapshot {
+@Generable struct AIExerciseIdentitySnapshot {
     @Guide(description: "Catalog id.")
     let catalogID: String
     @Guide(description: "Exercise name.")

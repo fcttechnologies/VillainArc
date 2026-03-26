@@ -23,18 +23,12 @@ enum HealthWorkoutLinker {
         HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.workoutSessionID, operatorType: .equalTo, value: sessionID.uuidString)
     }
 
-    @MainActor
-    @discardableResult
-    static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
-        if let workoutSession {
-            workoutSession.hasBeenExportedToHealth = true
-        }
+    @MainActor @discardableResult static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
+        if let workoutSession { workoutSession.hasBeenExportedToHealth = true }
 
         if let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(workout.uuid)).first {
             existing.update(from: workout)
-            if let workoutSession {
-                existing.workoutSession = workoutSession
-            }
+            if let workoutSession { existing.workoutSession = workoutSession }
             return existing
         }
 
@@ -44,9 +38,7 @@ enum HealthWorkoutLinker {
     }
 }
 
-@MainActor
-@Observable
-final class HealthLiveWorkoutSessionCoordinator: NSObject {
+@MainActor @Observable final class HealthLiveWorkoutSessionCoordinator: NSObject {
     static let shared = HealthLiveWorkoutSessionCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared
@@ -76,17 +68,13 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
         guard workout.statusValue == .active else { return }
         guard authorizationManager.canWriteWorkouts else { return }
 
-        if activeWorkoutSessionID == workout.id, liveWorkoutSession != nil, liveWorkoutBuilder != nil {
-            return
-        }
+        if activeWorkoutSessionID == workout.id, liveWorkoutSession != nil, liveWorkoutBuilder != nil { return }
 
         guard liveWorkoutSession == nil, liveWorkoutBuilder == nil else { return }
 
         let configuration = makeWorkoutConfiguration()
 
-        if await recoverIfPossible(for: workout, configuration: configuration) {
-            return
-        }
+        if await recoverIfPossible(for: workout, configuration: configuration) { return }
 
         do {
             let session = try HKWorkoutSession(healthStore: authorizationManager.healthStore, configuration: configuration)
@@ -109,18 +97,11 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
             do {
                 try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context)
                 saveContext(context: context)
-            } catch {
-                print("Failed to relink saved Health workout for \(workout.id): \(error)")
-            }
+            } catch { print("Failed to relink saved Health workout for \(workout.id): \(error)") }
             return
         }
 
-        guard activeWorkoutSessionID == workout.id,
-              let liveWorkoutSession,
-              let liveWorkoutBuilder
-        else {
-            return
-        }
+        guard activeWorkoutSessionID == workout.id, let liveWorkoutSession, let liveWorkoutBuilder else { return }
 
         guard !isFinishingWorkout else { return }
         isFinishingWorkout = true
@@ -215,13 +196,9 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
     }
 
     private func waitForSessionToStop(_ session: HKWorkoutSession) async {
-        if session.state == .stopped || session.state == .ended {
-            return
-        }
+        if session.state == .stopped || session.state == .ended { return }
 
-        await withCheckedContinuation { continuation in
-            stoppedStateContinuation = continuation
-        }
+        await withCheckedContinuation { continuation in stoppedStateContinuation = continuation }
     }
 
     private func updateLiveStatistics(from workoutBuilder: HKLiveWorkoutBuilder, collectedTypes: Set<HKSampleType>) {
@@ -245,13 +222,9 @@ final class HealthLiveWorkoutSessionCoordinator: NSObject {
             activeEnergyBurned = collectedActiveEnergyBurned
         }
 
-        if collectedTypes.contains(restingEnergyType) {
-            restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
-        }
+        if collectedTypes.contains(restingEnergyType) { restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie()) }
 
-        if didChangeDisplayedMetrics, activeWorkoutSessionID != nil {
-            WorkoutActivityManager.update()
-        }
+        if didChangeDisplayedMetrics, activeWorkoutSessionID != nil { WorkoutActivityManager.update() }
     }
 
     private func makeWorkoutEffortSample(for session: WorkoutSession, endDate: Date) -> HKQuantitySample? {

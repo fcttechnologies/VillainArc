@@ -1,30 +1,20 @@
 import Foundation
 import Network
 
-@Observable
-@MainActor
-class NetworkMonitor {
+@Observable @MainActor class NetworkMonitor {
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")
 
     var isConnected = false
 
     init() {
-        monitor.pathUpdateHandler = { path in
-            Task { @MainActor in
-                self.isConnected = path.status == .satisfied
-            }
-        }
+        monitor.pathUpdateHandler = { path in Task { @MainActor in self.isConnected = path.status == .satisfied } }
         monitor.start(queue: queue)
     }
 
-    func stop() {
-        monitor.cancel()
-    }
+    func stop() { monitor.cancel() }
 
-    deinit {
-        monitor.cancel()
-    }
+    deinit { monitor.cancel() }
 
     static func checkConnectivity() async -> Bool {
         await withCheckedContinuation { continuation in

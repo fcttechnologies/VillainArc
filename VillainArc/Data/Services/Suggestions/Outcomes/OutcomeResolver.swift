@@ -39,8 +39,7 @@ private enum FinalizationDecision {
 
 // MARK: - Resolver
 
-@MainActor
-struct OutcomeResolver {
+@MainActor struct OutcomeResolver {
 
     // MARK: - Public Entry Point
 
@@ -89,9 +88,7 @@ struct OutcomeResolver {
             }
             var results: [UUID: AIOutcomeInferenceOutput] = [:]
             for await (eventID, output) in taskGroup {
-                if let output {
-                    results[eventID] = output
-                }
+                if let output { results[eventID] = output }
             }
             return results
         }
@@ -118,20 +115,12 @@ struct OutcomeResolver {
 
         func appendIfEligible(_ event: SuggestionEvent?) {
             guard let event, event.outcome == .pending, event.createdAt < workout.startedAt, event.decision == .accepted || event.decision == .rejected else { return }
-            if seen.insert(event.id).inserted {
-                eligible.append(event)
-            }
+            if seen.insert(event.id).inserted { eligible.append(event) }
         }
 
         for prescription in prescriptions {
-            for event in prescription.suggestionEvents ?? [] {
-                appendIfEligible(event)
-            }
-            for set in prescription.sortedSets {
-                for event in set.suggestionEvents ?? [] {
-                    appendIfEligible(event)
-                }
-            }
+            for event in prescription.suggestionEvents ?? [] { appendIfEligible(event) }
+            for set in prescription.sortedSets { for event in set.suggestionEvents ?? [] { appendIfEligible(event) } }
         }
 
         return eligible
@@ -160,8 +149,7 @@ struct OutcomeResolver {
 
         // Build prescription snapshot (the "before" state) from the frozen trigger target snapshot.
         guard let prescriptionSnapshot = buildPrescriptionSnapshot(group: group) else { return nil }
-        guard let triggerPerf = group.event.triggerPerformance,
-              let triggerTargetSnapshot = group.event.triggerTargetSnapshot else { return nil }
+        guard let triggerPerf = group.event.triggerPerformance, let triggerTargetSnapshot = group.event.triggerTargetSnapshot else { return nil }
 
         let triggerPerformanceSnapshot = ExercisePerformanceSnapshot(performance: triggerPerf)
         let triggerSnapshot = buildAIPerformanceSnapshot(from: triggerPerformanceSnapshot, targetSnapshot: triggerTargetSnapshot, prescription: group.prescription, date: group.event.createdAt)
@@ -188,24 +176,16 @@ struct OutcomeResolver {
         guard let setPrescriptionID = event.targetSetPrescription?.id else { return false }
 
         let completedSets = exercisePerf.sortedSets.filter(\.complete)
-        guard let targetedSet = completedSets.first(where: { $0.prescription?.id == setPrescriptionID }) else {
-            return false
-        }
+        guard let targetedSet = completedSets.first(where: { $0.prescription?.id == setPrescriptionID }) else { return false }
 
         let changeTypes = Set(event.sortedChanges.map(\.changeType))
         let isRecoveryEvent = changeTypes.contains(.increaseRest) || changeTypes.contains(.decreaseRest)
         guard isRecoveryEvent else { return true }
 
-        return completedSets.contains { set in
-            set.index > targetedSet.index &&
-            set.type == .working &&
-            set.prescription != nil
-        }
+        return completedSets.contains { set in set.index > targetedSet.index && set.type == .working && set.prescription != nil }
     }
 
-    private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool {
-        hasSufficientCurrentEvidence(for: group.event, in: group.exercisePerf)
-    }
+    private static func canEvaluateWithCurrentPerformance(group: OutcomeGroup) -> Bool { hasSufficientCurrentEvidence(for: group.event, in: group.exercisePerf) }
 
     private static func resolvedTrainingStyle(for group: OutcomeGroup) -> TrainingStyle {
         let storedStyle = group.event.trainingStyle
@@ -240,9 +220,7 @@ struct OutcomeResolver {
 
         // No primary change in this group — fall back to severity-priority across all signals.
         guard !primarySignals.isEmpty else {
-            for outcome in priority {
-                if let signal = signals.first(where: { $0.outcome == outcome }) { return signal }
-            }
+            for outcome in priority { if let signal = signals.first(where: { $0.outcome == outcome }) { return signal } }
             return signals.first
         }
 
@@ -261,17 +239,13 @@ struct OutcomeResolver {
         // Secondary signals can never promote the result upward past the primary anchor.
         if anchor.outcome != .tooAggressive {
             let secondarySignals = changes.compactMap { !isPrimaryChange($0) ? ruleResults[$0.id] ?? nil : nil }
-            if let aggressiveSecondary = secondarySignals.first(where: { $0.outcome == .tooAggressive }) {
-                return aggressiveSecondary
-            }
+            if let aggressiveSecondary = secondarySignals.first(where: { $0.outcome == .tooAggressive }) { return aggressiveSecondary }
         }
 
         return anchor
     }
 
-    private static func isRejectedGroup(_ group: OutcomeGroup) -> Bool {
-        group.event.decision != .accepted
-    }
+    private static func isRejectedGroup(_ group: OutcomeGroup) -> Bool { group.event.decision != .accepted }
 
     // MARK: - Helpers
 
@@ -279,23 +253,13 @@ struct OutcomeResolver {
         let roundedInt = Int(value.rounded())
 
         switch changeType {
-        case .increaseWeight, .decreaseWeight:
-            return value.formatted(.number.precision(.fractionLength(0...2)))
-        case .increaseReps, .decreaseReps,
-             .increaseRepRangeLower, .decreaseRepRangeLower,
-             .increaseRepRangeUpper, .decreaseRepRangeUpper,
-             .increaseRepRangeTarget, .decreaseRepRangeTarget,
-             .increaseRest, .decreaseRest:
-            return String(roundedInt)
+        case .increaseWeight, .decreaseWeight: return value.formatted(.number.precision(.fractionLength(0...2)))
+        case .increaseReps, .decreaseReps, .increaseRepRangeLower, .decreaseRepRangeLower, .increaseRepRangeUpper, .decreaseRepRangeUpper, .increaseRepRangeTarget, .decreaseRepRangeTarget, .increaseRest, .decreaseRest: return String(roundedInt)
         case .changeSetType:
-            if let type = ExerciseSetType(rawValue: roundedInt) {
-                return type.displayName
-            }
+            if let type = ExerciseSetType(rawValue: roundedInt) { return type.displayName }
             return String(roundedInt)
         case .changeRepRangeMode:
-            if let mode = RepRangeMode(rawValue: roundedInt) {
-                return mode.displayName
-            }
+            if let mode = RepRangeMode(rawValue: roundedInt) { return mode.displayName }
             return String(roundedInt)
         }
     }
@@ -316,9 +280,7 @@ struct OutcomeResolver {
     static func shouldPreferAIOverride(rule: OutcomeSignal, ai: AIOutcomeInferenceOutput) -> Bool {
         guard ai.outcome.outcome != rule.outcome else { return false }
 
-        if rule.confidence < 0.7 {
-            return ai.confidence >= 0.75
-        }
+        if rule.confidence < 0.7 { return ai.confidence >= 0.75 }
 
         return ai.confidence >= max(0.85, rule.confidence + 0.05)
     }
@@ -331,13 +293,9 @@ struct OutcomeResolver {
 
         let ruleOutcome = rule!
 
-        guard let ai else {
-            return ResolvedOutcome(outcome: ruleOutcome.outcome, confidence: ruleOutcome.confidence, reason: "[Rules] \(ruleOutcome.reason)")
-        }
+        guard let ai else { return ResolvedOutcome(outcome: ruleOutcome.outcome, confidence: ruleOutcome.confidence, reason: "[Rules] \(ruleOutcome.reason)") }
 
-        if shouldPreferAIOverride(rule: ruleOutcome, ai: ai) {
-            return ResolvedOutcome(outcome: ai.outcome.outcome, confidence: ai.confidence, reason: "[AI override] \(ai.reason)")
-        }
+        if shouldPreferAIOverride(rule: ruleOutcome, ai: ai) { return ResolvedOutcome(outcome: ai.outcome.outcome, confidence: ai.confidence, reason: "[AI override] \(ai.reason)") }
 
         return ResolvedOutcome(outcome: ruleOutcome.outcome, confidence: ruleOutcome.confidence, reason: "[Rules] \(ruleOutcome.reason)")
     }
@@ -357,19 +315,15 @@ struct OutcomeResolver {
             case 1...4:
                 if isNegative { adjusted *= 0.85 }
                 if isPositive { adjusted *= 1.1 }
-            default:
-                break
+            default: break
             }
         }
 
         if let feeling = workout?.preWorkoutContext?.feeling {
             switch feeling {
-            case .sick, .tired:
-                if isNegative { adjusted *= 0.85 }
-            case .good, .great:
-                if isNegative { adjusted *= 1.05 }
-            case .okay, .notSet:
-                break
+            case .sick, .tired: if isNegative { adjusted *= 0.85 }
+            case .good, .great: if isNegative { adjusted *= 1.05 }
+            case .okay, .notSet: break
             }
         }
 
@@ -399,8 +353,7 @@ struct OutcomeResolver {
         guard allEvaluations.count >= event.requiredEvaluationCount else { return }
 
         switch finalizationDecision(for: allEvaluations, requiredEvaluationCount: event.requiredEvaluationCount) {
-        case .pending:
-            return
+        case .pending: return
         case .escalateToThree:
             event.outcome = .pending
             event.outcomeReason = nil
@@ -418,40 +371,22 @@ struct OutcomeResolver {
         let outcomes = Set(evaluations.map(\.partialOutcome))
         let hasDirectionalEvidence = outcomes.contains(where: isNegativeOutcome) || outcomes.contains(where: isPositiveOutcome)
 
-        if !hasDirectionalEvidence,
-           evaluations.count >= requiredEvaluationCount,
-           let reason = aggregateReason(for: .ignored, evaluations: evaluations) {
-            return .finalize(outcome: .ignored, reason: reason)
+        if !hasDirectionalEvidence, evaluations.count >= requiredEvaluationCount, let reason = aggregateReason(for: .ignored, evaluations: evaluations) { return .finalize(outcome: .ignored, reason: reason) }
+
+        if requiredEvaluationCount == 2, evaluations.count == 2, outcomes.contains(where: isNegativeOutcome), outcomes.contains(where: isPositiveOutcome) {
+            if outcomes == Set([.tooAggressive, .tooEasy]) { return .escalateToThree }
+            if abs(totals.netScore) < 0.75 { return .escalateToThree }
         }
 
-        if requiredEvaluationCount == 2,
-           evaluations.count == 2,
-           outcomes.contains(where: isNegativeOutcome),
-           outcomes.contains(where: isPositiveOutcome) {
-            if outcomes == Set([.tooAggressive, .tooEasy]) {
-                return .escalateToThree
-            }
-            if abs(totals.netScore) < 0.75 {
-                return .escalateToThree
-            }
-        }
-
-        if totals.netScore <= -0.75,
-           let outcome = dominantNegativeOutcome(from: totals.bucketTotals),
-           let reason = aggregateReason(for: outcome, evaluations: evaluations) {
+        if totals.netScore <= -0.75, let outcome = dominantNegativeOutcome(from: totals.bucketTotals), let reason = aggregateReason(for: outcome, evaluations: evaluations) {
             return .finalize(outcome: outcome, reason: reason)
         }
 
-        if totals.netScore >= 0.75,
-           let outcome = dominantPositiveOutcome(from: totals.bucketTotals),
-           let reason = aggregateReason(for: outcome, evaluations: evaluations) {
+        if totals.netScore >= 0.75, let outcome = dominantPositiveOutcome(from: totals.bucketTotals), let reason = aggregateReason(for: outcome, evaluations: evaluations) {
             return .finalize(outcome: outcome, reason: reason)
         }
 
-        if evaluations.count >= 3,
-           let reason = aggregateReason(for: .ignored, evaluations: evaluations) {
-            return .finalize(outcome: .ignored, reason: reason)
-        }
+        if evaluations.count >= 3, let reason = aggregateReason(for: .ignored, evaluations: evaluations) { return .finalize(outcome: .ignored, reason: reason) }
 
         return .pending
     }
@@ -498,16 +433,11 @@ struct OutcomeResolver {
 
     private static func scoreValue(for outcome: Outcome) -> Double {
         switch outcome {
-        case .tooAggressive:
-            return -2
-        case .insufficient:
-            return -1
-        case .ignored, .pending:
-            return 0
-        case .tooEasy:
-            return 1
-        case .good:
-            return 2
+        case .tooAggressive: return -2
+        case .insufficient: return -1
+        case .ignored, .pending: return 0
+        case .tooEasy: return 1
+        case .good: return 2
         }
     }
 

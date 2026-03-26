@@ -1,19 +1,11 @@
 import CoreSpotlight
-import SwiftUI
 import SwiftData
+import SwiftUI
 
-@MainActor
-@Observable
-final class AppRouter {
+@MainActor @Observable final class AppRouter {
     static let shared = AppRouter()
     var activeWorkoutSession: WorkoutSession?
-    var activeWorkoutPlan: WorkoutPlan? {
-        didSet {
-            if activeWorkoutPlan == nil {
-                activeWorkoutPlanOriginal = nil
-            }
-        }
-    }
+    var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
     var activeWorkoutPlanOriginal: WorkoutPlan?
     var showAddExerciseFromLiveActivity = false
     var showSplitBuilderFromIntent = false
@@ -24,7 +16,6 @@ final class AppRouter {
     var showCancelWorkoutFromIntent = false
     var showFinishWorkoutFromIntent = false
     var tabSelection: Tabs = .home
-    
     enum Destination: Hashable {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
@@ -43,57 +34,36 @@ final class AppRouter {
 
     var homeTabPath = NavigationPath()
     var healthTabPath = NavigationPath()
-    
     private init() {}
-    
-    private var context: ModelContext {
-        SharedModelContainer.container.mainContext
-    }
+    private var context: ModelContext { SharedModelContainer.container.mainContext }
 
-    private func weightUnit() -> WeightUnit {
-        (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
-    }
+    private func weightUnit() -> WeightUnit { (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs }
 
-    private var hasPresentedFlow: Bool {
-        activeWorkoutSession != nil || activeWorkoutPlan != nil
-    }
+    private var hasPresentedFlow: Bool { activeWorkoutSession != nil || activeWorkoutPlan != nil }
 
-    private func hasPersistedIncompleteWorkoutSession() -> Bool {
-        (try? context.fetch(WorkoutSession.incomplete).first) != nil
-    }
+    private func hasPersistedIncompleteWorkoutSession() -> Bool { (try? context.fetch(WorkoutSession.incomplete).first) != nil }
 
-    private func hasPersistedActivePlanWork() -> Bool {
-        (try? context.fetch(WorkoutPlan.incomplete).first) != nil
-    }
+    private func hasPersistedActivePlanWork() -> Bool { (try? context.fetch(WorkoutPlan.incomplete).first) != nil }
 
-    private func hasActiveFlow() -> Bool {
-        hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork()
-    }
+    private func hasActiveFlow() -> Bool { hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork() }
 
     private func isReadyForIntentActions() -> Bool {
         do {
             try SetupGuard.requireReady(context: context)
             return true
-        } catch {
-            return false
-        }
+        } catch { return false }
     }
 
-    private func incompleteWorkoutSession() -> WorkoutSession? {
-        try? context.fetch(WorkoutSession.incomplete).first
-    }
+    private func incompleteWorkoutSession() -> WorkoutSession? { try? context.fetch(WorkoutSession.incomplete).first }
 
     func cancelWorkoutSession(_ workoutSession: WorkoutSession) {
         RestTimerState.shared.stop()
         HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
         context.delete(workoutSession)
         saveContext(context: context)
-        if activeWorkoutSession?.id == workoutSession.id {
-            activeWorkoutSession = nil
-        }
+        if activeWorkoutSession?.id == workoutSession.id { activeWorkoutSession = nil }
         WorkoutActivityManager.end()
     }
-    
     func navigate(to destination: Destination) {
         switch destination {
         case .weightHistory(_), .allWeightEntriesList(_), .weightGoalHistory(_):
@@ -104,7 +74,6 @@ final class AppRouter {
             homeTabPath.append(destination)
         }
     }
-    
     func popToRoot() {
         tabSelection = .home
         homeTabPath = NavigationPath()
@@ -119,7 +88,6 @@ final class AppRouter {
         saveContext(context: context)
         activeWorkoutSession = newWorkout
     }
-    
     func createWorkoutPlan() {
         guard !hasActiveFlow() else { return }
         Haptics.selection()
@@ -160,9 +128,7 @@ final class AppRouter {
 
         // Check for pending/deferred suggestions before starting
         let hasDeferredSuggestions = !pendingSuggestionEvents(for: plan, in: context).isEmpty
-        if hasDeferredSuggestions {
-            workoutSession.status = SessionStatus.pending.rawValue
-        }
+        if hasDeferredSuggestions { workoutSession.status = SessionStatus.pending.rawValue }
 
         context.insert(workoutSession)
         saveContext(context: context)
@@ -173,22 +139,18 @@ final class AppRouter {
         Haptics.selection()
         activeWorkoutSession = workoutSession
     }
-    
     func resumeWorkoutPlanCreation(_ workoutPlan: WorkoutPlan) {
         Haptics.selection()
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = workoutPlan
     }
-    
     func checkForUnfinishedData() {
         guard !hasPresentedFlow else { return }
         if let unfinishedWorkoutSession = try? context.fetch(WorkoutSession.incomplete).first {
             resumeWorkoutSession(unfinishedWorkoutSession)
             return
         }
-        if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.resumableIncomplete).first {
-            resumeWorkoutPlanCreation(unfinishedWorkoutPlan)
-        }
+        if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.resumableIncomplete).first { resumeWorkoutPlanCreation(unfinishedWorkoutPlan) }
     }
 
     func handleSiriWorkout(_ userActivity: NSUserActivity) {
@@ -202,8 +164,7 @@ final class AppRouter {
         guard let workoutSession = incompleteWorkoutSession() else { return }
 
         switch workoutSession.statusValue {
-        case .pending:
-            cancelWorkoutSession(workoutSession)
+        case .pending: cancelWorkoutSession(workoutSession)
         case .active:
             if workoutSession.exercises?.isEmpty ?? true {
                 cancelWorkoutSession(workoutSession)
@@ -211,8 +172,7 @@ final class AppRouter {
                 activeWorkoutSession = workoutSession
                 showCancelWorkoutFromIntent = true
             }
-        case .summary, .done:
-            activeWorkoutSession = workoutSession
+        case .summary, .done: activeWorkoutSession = workoutSession
         }
     }
 
@@ -229,12 +189,8 @@ final class AppRouter {
     }
 
     func handleSpotlight(_ userActivity: NSUserActivity) {
-        guard !hasActiveFlow() else {
-            return
-        }
-        guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
-            return
-        }
+        guard !hasActiveFlow() else { return }
+        guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
 
         if identifier.hasPrefix(SpotlightIndexer.workoutSessionIdentifierPrefix) {
             let idString = String(identifier.dropFirst(SpotlightIndexer.workoutSessionIdentifierPrefix.count))

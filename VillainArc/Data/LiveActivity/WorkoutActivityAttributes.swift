@@ -1,5 +1,5 @@
-import ActivityKit
 import Foundation
+import ActivityKit
 
 nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
     var startDate: Date
@@ -30,16 +30,10 @@ nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
             return remaining > 0
         }
 
-        var isTimerActive: Bool {
-            isTimerRunning || isTimerPaused
-        }
+        var isTimerActive: Bool { isTimerRunning || isTimerPaused }
 
-        var hasActiveSet: Bool {
-            exerciseName != nil
-        }
+        var hasActiveSet: Bool { exerciseName != nil }
 
-        var hasLiveMetrics: Bool {
-            liveHeartRateBPM != nil || liveActiveEnergyBurned != nil
-        }
+        var hasLiveMetrics: Bool { liveHeartRateBPM != nil || liveActiveEnergyBurned != nil }
     }
 }

@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-struct AIExercisePrescriptionSnapshot {
+@Generable struct AIExercisePrescriptionSnapshot {
     @Guide(description: "Exercise.")
     let exercise: AIExerciseIdentitySnapshot
     @Guide(description: "Rep range.")
@@ -29,8 +28,7 @@ struct AIExercisePrescriptionSnapshot {
     }
 }
 
-@Generable
-struct AISetPrescriptionSnapshot {
+@Generable struct AISetPrescriptionSnapshot {
     @Guide(description: "Set index.")
     let index: Int
     @Guide(description: "Set type.")

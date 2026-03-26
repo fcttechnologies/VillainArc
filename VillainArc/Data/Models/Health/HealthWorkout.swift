@@ -2,8 +2,7 @@ import Foundation
 import HealthKit
 import SwiftData
 
-@Model
-final class HealthWorkout {
+@Model final class HealthWorkout {
     #Index<HealthWorkout>([\.healthWorkoutUUID])
 
     private static let activeEnergyType = HKQuantityType(.activeEnergyBurned)
@@ -61,10 +60,7 @@ final class HealthWorkout {
     }
 
     private static func energyBurned(for type: HKQuantityType, in workout: HKWorkout) -> Double? {
-        workout
-            .statistics(for: type)?
-            .sumQuantity()?
-            .doubleValue(for: .kilocalorie())
+        workout.statistics(for: type)?.sumQuantity()?.doubleValue(for: .kilocalorie())
     }
 }
 
@@ -76,67 +72,41 @@ extension HealthWorkout {
         return descriptor
     }
 
-    static var history: FetchDescriptor<HealthWorkout> {
-        FetchDescriptor(sortBy: [SortDescriptor(\.startDate, order: .reverse)])
-    }
+    static var history: FetchDescriptor<HealthWorkout> { FetchDescriptor(sortBy: [SortDescriptor(\.startDate, order: .reverse)]) }
 
-    var activityTypeDisplayName: String {
-        activityType.displayName(indoorWorkout: isIndoorWorkout)
-    }
+    var activityTypeDisplayName: String { activityType.displayName(indoorWorkout: isIndoorWorkout) }
 }
 
 extension HKWorkoutActivityType {
-    nonisolated var displayName: String {
-        displayName(indoorWorkout: nil)
-    }
+    nonisolated var displayName: String { displayName(indoorWorkout: nil) }
 
     nonisolated func displayName(indoorWorkout: Bool?) -> String {
         switch self {
-        case .traditionalStrengthTraining:
-            return "Traditional Strength Training"
-        case .functionalStrengthTraining:
-            return "Functional Strength Training"
-        case .highIntensityIntervalTraining:
-            return "HIIT"
-        case .running:
-            return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Run", outdoor: "Outdoor Run", fallback: "Running")
-        case .walking:
-            return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Walk", outdoor: "Outdoor Walk", fallback: "Walking")
-        case .cycling:
-            return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Ride", outdoor: "Outdoor Ride", fallback: "Cycling")
-        case .hiking:
-            return "Hiking"
-        case .mixedCardio:
-            return "Mixed Cardio"
-        case .elliptical:
-            return "Elliptical"
-        case .rowing:
-            return "Rowing"
-        case .stairClimbing:
-            return "Stair Climbing"
-        case .cooldown:
-            return "Cooldown"
-        case .coreTraining:
-            return "Core Training"
-        case .yoga:
-            return "Yoga"
-        case .pilates:
-            return "Pilates"
-        case .other:
-            return "Workout"
-        default:
-            return "Workout"
+        case .traditionalStrengthTraining: return "Traditional Strength Training"
+        case .functionalStrengthTraining: return "Functional Strength Training"
+        case .highIntensityIntervalTraining: return "HIIT"
+        case .running: return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Run", outdoor: "Outdoor Run", fallback: "Running")
+        case .walking: return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Walk", outdoor: "Outdoor Walk", fallback: "Walking")
+        case .cycling: return locationQualifiedName(indoorWorkout: indoorWorkout, indoor: "Indoor Ride", outdoor: "Outdoor Ride", fallback: "Cycling")
+        case .hiking: return "Hiking"
+        case .mixedCardio: return "Mixed Cardio"
+        case .elliptical: return "Elliptical"
+        case .rowing: return "Rowing"
+        case .stairClimbing: return "Stair Climbing"
+        case .cooldown: return "Cooldown"
+        case .coreTraining: return "Core Training"
+        case .yoga: return "Yoga"
+        case .pilates: return "Pilates"
+        case .other: return "Workout"
+        default: return "Workout"
         }
     }
 
     private nonisolated func locationQualifiedName(indoorWorkout: Bool?, indoor: String, outdoor: String, fallback: String) -> String {
         switch indoorWorkout {
-        case true:
-            return indoor
-        case false:
-            return outdoor
-        case nil:
-            return fallback
+        case true: return indoor
+        case false: return outdoor
+        case nil: return fallback
         }
     }
 }

@@ -1,11 +1,9 @@
+import AudioToolbox
 import Foundation
 import Observation
-import AudioToolbox
 import UIKit
 
-@MainActor
-@Observable
-final class RestTimerState {
+@MainActor @Observable final class RestTimerState {
     static let shared = RestTimerState()
     private static let completionSoundID: SystemSoundID = 1005
     private static let maximumRestSeconds = 10 * 60
@@ -17,14 +15,12 @@ final class RestTimerState {
         static let startedFromSetID = "restTimerStartedFromSetID"
         static let startedSeconds = "restTimerStartedSeconds"
     }
-    
     private var stopTask: Task<Void, Never>?
     var endDate: Date?
     var pausedRemainingSeconds: Int
     var isPaused: Bool
     var startedFromSetID: UUID?
     var startedSeconds: Int
-    
     init() {
         let defaults = SharedModelContainer.sharedDefaults
         let storedEndDate = defaults.double(forKey: StorageKey.endDate)
@@ -32,17 +28,14 @@ final class RestTimerState {
         let storedPaused = defaults.bool(forKey: StorageKey.isPaused)
         let storedStartedSeconds = defaults.integer(forKey: StorageKey.startedSeconds)
         let storedStartedSetID = defaults.data(forKey: StorageKey.startedFromSetID)
-        
         pausedRemainingSeconds = max(0, storedRemaining)
         isPaused = storedPaused
         startedSeconds = max(0, storedStartedSeconds)
-        if let storedStartedSetID,
-           let decodedID = try? JSONDecoder().decode(UUID.self, from: storedStartedSetID) {
+        if let storedStartedSetID, let decodedID = try? JSONDecoder().decode(UUID.self, from: storedStartedSetID) {
             startedFromSetID = decodedID
         } else {
             startedFromSetID = nil
         }
-        
         if storedEndDate > 0 {
             let date = Date(timeIntervalSince1970: storedEndDate)
             if date > Date.now {
@@ -55,9 +48,7 @@ final class RestTimerState {
             }
         } else {
             endDate = nil
-            if isPaused && pausedRemainingSeconds == 0 {
-                isPaused = false
-            }
+            if isPaused && pausedRemainingSeconds == 0 { isPaused = false }
         }
 
         if !isActive {
@@ -65,22 +56,14 @@ final class RestTimerState {
             startedSeconds = 0
         }
     }
-    
-    var isRunning: Bool {
-        endDate != nil && !isPaused
-    }
-    
-    var isActive: Bool {
-        isRunning || (isPaused && pausedRemainingSeconds > 0)
-    }
-    
+    var isRunning: Bool { endDate != nil && !isPaused }
+    var isActive: Bool { isRunning || (isPaused && pausedRemainingSeconds > 0) }
     func start(seconds: Int, startedFromSetID: UUID? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
             stopInternal(playAlert: false)
             return
         }
-        
         endDate = Date.now.addingTimeInterval(TimeInterval(clamped))
         pausedRemainingSeconds = 0
         isPaused = false
@@ -99,7 +82,6 @@ final class RestTimerState {
             stopInternal(playAlert: false)
             return
         }
-        
         pausedRemainingSeconds = remaining
         self.endDate = nil
         isPaused = true
@@ -120,9 +102,7 @@ final class RestTimerState {
         WorkoutActivityManager.update()
     }
 
-    func stop() {
-        stopInternal(playAlert: false)
-    }
+    func stop() { stopInternal(playAlert: false) }
 
     private func stopInternal(playAlert: Bool) {
         endDate = nil
@@ -135,9 +115,7 @@ final class RestTimerState {
         stopTask = nil
         cancelNotification()
         WorkoutActivityManager.update()
-        if playAlert {
-            playCompletionAlertIfActive()
-        }
+        if playAlert { playCompletionAlertIfActive() }
     }
 
     func adjust(by deltaSeconds: Int) {
@@ -169,7 +147,6 @@ final class RestTimerState {
             WorkoutActivityManager.update()
         }
     }
-    
     private func scheduleStop() {
         stopTask?.cancel()
         guard let endDate else { return }
@@ -181,7 +158,6 @@ final class RestTimerState {
                 self?.stopIfStillScheduled(scheduledEndDate)
                 return
             }
-            
             do {
                 try await Task.sleep(for: .seconds(Int(seconds.rounded(.up))))
             } catch is CancellationError {
@@ -189,15 +165,10 @@ final class RestTimerState {
             } catch {
                 return
             }
-            
-            if Task.isCancelled {
-                return
-            }
-            
+            if Task.isCancelled { return }
             self?.stopIfStillScheduled(scheduledEndDate)
         }
     }
-    
     private func stopIfStillScheduled(_ scheduledEndDate: Date) {
         if endDate == scheduledEndDate {
             let now = Date.now
@@ -206,7 +177,6 @@ final class RestTimerState {
             WorkoutActivityManager.update()
         }
     }
-    
     private func persist() {
         let defaults = SharedModelContainer.sharedDefaults
         if let endDate {
@@ -217,8 +187,7 @@ final class RestTimerState {
         defaults.set(pausedRemainingSeconds, forKey: StorageKey.remainingSeconds)
         defaults.set(isPaused, forKey: StorageKey.isPaused)
         defaults.set(startedSeconds, forKey: StorageKey.startedSeconds)
-        if let startedFromSetID,
-           let encodedID = try? JSONEncoder().encode(startedFromSetID) {
+        if let startedFromSetID, let encodedID = try? JSONEncoder().encode(startedFromSetID) {
             defaults.set(encodedID, forKey: StorageKey.startedFromSetID)
         } else {
             defaults.removeObject(forKey: StorageKey.startedFromSetID)
@@ -228,18 +197,10 @@ final class RestTimerState {
     private func scheduleNotification() {
         guard let endDate else { return }
         let duration = startedSeconds
-        Task {
-            await RestTimerNotifications.schedule(endDate: endDate, durationSeconds: duration)
-        }
+        Task { await RestTimerNotifications.schedule(endDate: endDate, durationSeconds: duration) }
     }
 
-    private func cancelNotification() {
-        Task {
-            await RestTimerNotifications.cancel()
-        }
-    }
+    private func cancelNotification() { Task { await RestTimerNotifications.cancel() } }
 
-    private func playCompletionAlertIfActive() {
-        AudioServicesPlayAlertSound(Self.completionSoundID)
-    }
+    private func playCompletionAlertIfActive() { AudioServicesPlayAlertSound(Self.completionSoundID) }
 }

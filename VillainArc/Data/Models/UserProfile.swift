@@ -7,20 +7,14 @@ enum UserGender: String, Codable, CaseIterable, Hashable {
     case other
     case notSet
 
-    static var selectableCases: [UserGender] {
-        [.male, .female, .other]
-    }
+    static var selectableCases: [UserGender] { [.male, .female, .other] }
 
     var displayName: String {
         switch self {
-        case .male:
-            return "Male"
-        case .female:
-            return "Female"
-        case .other:
-            return "Other"
-        case .notSet:
-            return "Not Set"
+        case .male: return "Male"
+        case .female: return "Female"
+        case .other: return "Other"
+        case .notSet: return "Not Set"
         }
     }
 }
@@ -36,8 +30,7 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
     }
 }
 
-@Model
-final class UserProfile {
+@Model final class UserProfile {
     var name: String = ""
     var birthday: Date?
     var gender: UserGender = UserGender.notSet
@@ -46,27 +39,15 @@ final class UserProfile {
 
     init() {}
 
-    var trimmedName: String {
-        name.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
+    var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-    var isComplete: Bool {
-        firstMissingStep == nil
-    }
+    var isComplete: Bool { firstMissingStep == nil }
 
     var firstMissingStep: UserProfileOnboardingStep? {
-        if trimmedName.isEmpty {
-            return .name
-        }
-        if birthday == nil {
-            return .birthday
-        }
-        if gender == .notSet {
-            return .gender
-        }
-        if heightCm == nil {
-            return .height
-        }
+        if trimmedName.isEmpty { return .name }
+        if birthday == nil { return .birthday }
+        if gender == .notSet { return .gender }
+        if heightCm == nil { return .height }
         return nil
     }
 }

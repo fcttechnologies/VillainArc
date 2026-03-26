@@ -6,31 +6,21 @@ struct DeleteAllWorkoutPlansIntent: AppIntent {
     static let description = IntentDescription("Deletes all completed workout plans.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
         let workoutPlans = (try? context.fetch(WorkoutPlan.all)) ?? []
 
-        guard !workoutPlans.isEmpty else {
-            return .result(dialog: "No workout plans to delete.")
-        }
+        guard !workoutPlans.isEmpty else { return .result(dialog: "No workout plans to delete.") }
 
         let count = workoutPlans.count
         let label = count == 1 ? "1 workout plan" : "\(count) workout plans"
-        let choice = try await requestChoice(
-            between: [IntentChoiceOption(title: "Delete All", style: .destructive), .cancel],
-            dialog: IntentDialog("Delete \(label)? This action cannot be undone.")
-        )
+        let choice = try await requestChoice(between: [IntentChoiceOption(title: "Delete All", style: .destructive), .cancel], dialog: IntentDialog("Delete \(label)? This action cannot be undone."))
 
-        guard choice.style == .destructive else {
-            throw DeleteAllWorkoutPlansIntentError.cancelled
-        }
+        guard choice.style == .destructive else { throw DeleteAllWorkoutPlansIntentError.cancelled }
 
         let linkedSplits = workoutPlans.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
         SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
-        for plan in workoutPlans {
-            plan.deleteWithSuggestionCleanup(context: context)
-        }
+        for plan in workoutPlans { plan.deleteWithSuggestionCleanup(context: context) }
         saveContext(context: context)
         SpotlightIndexer.index(workoutSplits: linkedSplits)
         return .result(dialog: "Deleted \(label).")
@@ -42,8 +32,7 @@ enum DeleteAllWorkoutPlansIntentError: Error, CustomLocalizedStringResourceConve
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .cancelled:
-            return "Delete all workout plans canceled."
+        case .cancelled: return "Delete all workout plans canceled."
         }
     }
 }

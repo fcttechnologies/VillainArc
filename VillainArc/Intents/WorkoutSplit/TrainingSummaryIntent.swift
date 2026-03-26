@@ -14,26 +14,14 @@ enum TrainingDay: String, AppEnum {
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Training Day")
 
-    static let caseDisplayRepresentations: [TrainingDay: DisplayRepresentation] = [
-        .today: "Today",
-        .tomorrow: "Tomorrow",
-        .monday: "Monday",
-        .tuesday: "Tuesday",
-        .wednesday: "Wednesday",
-        .thursday: "Thursday",
-        .friday: "Friday",
-        .saturday: "Saturday",
-        .sunday: "Sunday"
-    ]
+    static let caseDisplayRepresentations: [TrainingDay: DisplayRepresentation] = [.today: "Today", .tomorrow: "Tomorrow", .monday: "Monday", .tuesday: "Tuesday", .wednesday: "Wednesday", .thursday: "Thursday", .friday: "Friday", .saturday: "Saturday", .sunday: "Sunday"]
 
     var date: Date {
         let calendar = Calendar.current
         let now = Date.now
         switch self {
-        case .today:
-            return now
-        case .tomorrow:
-            return calendar.date(byAdding: .day, value: 1, to: now)!
+        case .today: return now
+        case .tomorrow: return calendar.date(byAdding: .day, value: 1, to: now)!
         case .monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday:
             let targetWeekday = weekday
             let currentWeekday = calendar.component(.weekday, from: now)
@@ -75,43 +63,29 @@ struct TrainingSummaryIntent: AppIntent {
     static let title: LocalizedStringResource = "Training Summary"
     static let description = IntentDescription("Tells you what you're training on a specific day.")
     static let supportedModes: IntentModes = .background
-    static var parameterSummary: some ParameterSummary {
-        Summary("What am I training \(\.$day)")
-    }
+    static var parameterSummary: some ParameterSummary { Summary("What am I training \(\.$day)") }
 
-    @Parameter(title: "Day")
-    var day: TrainingDay
+    @Parameter(title: "Day") var day: TrainingDay
 
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        guard let split = try? context.fetch(WorkoutSplit.active).first else {
-            return .result(dialog: "You don't have an active workout split.")
-        }
+        guard let split = try? context.fetch(WorkoutSplit.active).first else { return .result(dialog: "You don't have an active workout split.") }
 
-        guard !(split.days?.isEmpty ?? true) else {
-            return .result(dialog: "Your split doesn't have any days set up yet.")
-        }
+        guard !(split.days?.isEmpty ?? true) else { return .result(dialog: "Your split doesn't have any days set up yet.") }
 
         split.refreshRotationIfNeeded(context: context)
 
         let targetDate = day.date
-        guard let splitDay = split.splitDay(for: targetDate) else {
-            return .result(dialog: "Couldn't determine your training day.")
-        }
+        guard let splitDay = split.splitDay(for: targetDate) else { return .result(dialog: "Couldn't determine your training day.") }
 
         let dayLabel = day.label
 
-        if splitDay.isRestDay {
-            return .result(dialog: "\(dayLabel) is a rest day.")
-        }
+        if splitDay.isRestDay { return .result(dialog: "\(dayLabel) is a rest day.") }
 
         guard let workoutPlan = splitDay.workoutPlan else {
             let majorMuscles = splitDay.targetMuscles.filter(\.isMajor)
             let musclesSummary = ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName))
-            if !musclesSummary.isEmpty {
-                return .result(dialog: "You are hitting: \(musclesSummary).")
-            }
+            if !musclesSummary.isEmpty { return .result(dialog: "You are hitting: \(musclesSummary).") }
 
             let splitDayTitle = splitDay.name.isEmpty ? "Workout" : splitDay.name
             return .result(dialog: "\(dayLabel) training is \(splitDayTitle).")

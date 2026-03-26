@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@Model
-final class ExercisePerformance {
+@Model final class ExercisePerformance {
     #Index<ExercisePerformance>([\.catalogID], [\.date], [\.catalogID, \.date])
 
     var id: UUID = UUID()
@@ -13,24 +12,17 @@ final class ExercisePerformance {
     var notes: String = ""
     var musclesTargeted: [Muscle] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
-    @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePerformance)
-    var repRange: RepRangePolicy? = RepRangePolicy()
+    @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePerformance) var repRange: RepRangePolicy? = RepRangePolicy()
     var originalTargetSnapshot: ExerciseTargetSnapshot?
     var workoutSession: WorkoutSession?
     var activeInSession: WorkoutSession?
-    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.activePerformance)
-    var prescription: ExercisePrescription?
-    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.triggerPerformance)
-    var triggeredSuggestions: [SuggestionEvent]?
-    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvaluation.performance)
-    var suggestionEvaluations: [SuggestionEvaluation]?
-    @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise)
-    var sets: [SetPerformance]? = [SetPerformance]()
-    
-    var sortedSets: [SetPerformance] {
-        (sets ?? []).sorted { $0.index < $1.index }
-    }
-    
+    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.activePerformance) var prescription: ExercisePrescription?
+    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.triggerPerformance) var triggeredSuggestions: [SuggestionEvent]?
+    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvaluation.performance) var suggestionEvaluations: [SuggestionEvaluation]?
+    @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise) var sets: [SetPerformance]? = [SetPerformance]()
+
+    var sortedSets: [SetPerformance] { (sets ?? []).sorted { $0.index < $1.index } }
+
     // Adding exercise in session
     init(exercise: Exercise, workoutSession: WorkoutSession) {
         index = workoutSession.exercises?.count ?? 0
@@ -38,7 +30,6 @@ final class ExercisePerformance {
         name = exercise.name
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
-        repRange = RepRangePolicy()
         self.workoutSession = workoutSession
         addSet()
     }
@@ -47,26 +38,21 @@ final class ExercisePerformance {
     convenience init(exercise: Exercise, workoutSession: WorkoutSession, notes: String = "", index: Int? = nil, repRangeMode: RepRangeMode? = nil, lowerRange: Int = 0, upperRange: Int = 0, targetReps: Int = 0) {
         self.init(exercise: exercise, workoutSession: workoutSession)
         self.notes = notes
-        if let index {
-            self.index = index
-        }
+        if let index { self.index = index }
         if let repRangeMode, let repRange = self.repRange {
             repRange.activeMode = repRangeMode
             switch repRangeMode {
             case .range:
                 repRange.lowerRange = lowerRange
                 repRange.upperRange = upperRange
-            case .target:
-                repRange.targetReps = targetReps
-            case .notSet:
-                break
+            case .target: repRange.targetReps = targetReps
+            case .notSet: break
             }
         }
     }
-    
+
     // Adding exercise from plan
-    @MainActor
-    init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
+    @MainActor init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
         index = exercisePrescription.index
         catalogID = exercisePrescription.catalogID
         name = exercisePrescription.name
@@ -81,10 +67,7 @@ final class ExercisePerformance {
     }
 
     func effectiveRestSeconds(after set: SetPerformance) -> Int {
-        if let nextSet = sortedSets.first(where: { $0.index == set.index + 1 }),
-           nextSet.type == .dropSet {
-            return 0
-        }
+        if let nextSet = sortedSets.first(where: { $0.index == set.index + 1 }), nextSet.type == .dropSet { return 0 }
         return set.restSeconds
     }
 
@@ -104,7 +87,7 @@ final class ExercisePerformance {
         }
     }
 
-    func replaceWith(_ exercise: Exercise, keepSets: Bool) {
+    func replaceWith(_ exercise: Exercise, keepSets: Bool, context: ModelContext) {
         guard catalogID != exercise.catalogID else { return }
         prescription?.activePerformance = nil
         catalogID = exercise.catalogID
@@ -124,9 +107,7 @@ final class ExercisePerformance {
         }
 
         if !keepSets {
-            for set in sets ?? [] {
-                modelContext?.delete(set)
-            }
+            for set in sets ?? [] { context.delete(set) }
             sets?.removeAll()
             addSet()
         }
@@ -137,12 +118,9 @@ final class ExercisePerformance {
         reindexSets()
     }
 
-    func reindexSets() {
-        reindexSetsByCurrentOrder()
-    }
+    func reindexSets() { reindexSetsByCurrentOrder() }
 
-    @discardableResult
-    func applyCatalogMetadata(name: String, musclesTargeted: [Muscle], equipmentType: EquipmentType) -> Bool {
+    @discardableResult func applyCatalogMetadata(name: String, musclesTargeted: [Muscle], equipmentType: EquipmentType) -> Bool {
         var didChange = false
 
         if self.name != name {
@@ -171,9 +149,7 @@ final class ExercisePerformance {
     }
 
     private func reindexSetsByCurrentOrder() {
-        for (index, set) in sortedSets.enumerated() {
-            set.index = index
-        }
+        for (index, set) in sortedSets.enumerated() { set.index = index }
     }
 
     func clearPrescriptionLinksForHistoricalUse() {
@@ -190,28 +166,21 @@ final class ExercisePerformance {
 extension ExercisePerformance: RestTimeEditable {}
 
 extension ExercisePerformance {
-    @MainActor
-    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
+    @MainActor func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
         guard let prescription, prescription.id == event.targetExercisePrescription?.id else { return }
 
-        if let targetSet = event.targetSetPrescription,
-           let setPerformance = sortedSets.first(where: { $0.prescription?.id == targetSet.id }) {
-            for change in event.sortedChanges {
-                setPerformance.applyAcceptedSuggestionChange(change, weightUnit: weightUnit)
-            }
+        if let targetSet = event.targetSetPrescription, let setPerformance = sortedSets.first(where: { $0.prescription?.id == targetSet.id }) {
+            for change in event.sortedChanges { setPerformance.applyAcceptedSuggestionChange(change, weightUnit: weightUnit) }
         }
 
         syncRepRangeFromPrescription()
         originalTargetSnapshot = ExerciseTargetSnapshot(prescription: prescription)
     }
 
-    @MainActor
-    private func syncRepRangeFromPrescription() {
+    @MainActor private func syncRepRangeFromPrescription() {
         guard let prescriptionRepRange = prescription?.repRange else { return }
 
-        if repRange == nil {
-            repRange = RepRangePolicy()
-        }
+        if repRange == nil { repRange = RepRangePolicy() }
 
         repRange?.activeMode = prescriptionRepRange.activeMode
         repRange?.lowerRange = prescriptionRepRange.lowerRange
@@ -234,24 +203,19 @@ extension ExercisePerformance {
         return !sets.isEmpty && sets.allSatisfy(\.complete)
     }
 
-    @discardableResult
-    func syncDateToLatestCompletedSet(sessionFinishedAt: Date? = nil) -> Date {
+    @discardableResult func syncDateToLatestCompletedSet(sessionFinishedAt: Date? = nil) -> Date {
         guard allSetsComplete else { return date }
         if let latestCompletedSetAt {
             date = latestCompletedSetAt
             return latestCompletedSetAt
         }
 
-        if let sessionFinishedAt {
-            date = sessionFinishedAt
-        }
+        if let sessionFinishedAt { date = sessionFinishedAt }
 
         return date
     }
 
-    var bestEstimated1RM: Double? {
-        sets?.compactMap(\.estimated1RM).max()
-    }
+    var bestEstimated1RM: Double? { sets?.compactMap(\.estimated1RM).max() }
 
     var bestWeight: Double? {
         let maxWeight = sets?.map(\.weight).max() ?? 0
@@ -263,13 +227,9 @@ extension ExercisePerformance {
         return maxReps > 0 ? maxReps : nil
     }
 
-    var totalCompletedReps: Int {
-        sets?.reduce(0) { $0 + $1.reps } ?? 0
-    }
+    var totalCompletedReps: Int { sets?.reduce(0) { $0 + $1.reps } ?? 0 }
 
-    var totalVolume: Double {
-        sets?.reduce(0) { $0 + $1.volume } ?? 0
-    }
+    var totalVolume: Double { sets?.reduce(0) { $0 + $1.volume } ?? 0 }
 
     static func historicalBestEstimated1RM(in performances: [ExercisePerformance]) -> Double? {
         performances.compactMap(\.bestEstimated1RM).max()
@@ -291,9 +251,7 @@ extension ExercisePerformance {
     static func lastCompleted(for exercise: ExercisePerformance) -> FetchDescriptor<ExercisePerformance> {
         let catalogID = exercise.catalogID
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in
-            item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
-        }
+        let predicate = #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.fetchLimit = 1
         descriptor.relationshipKeyPathsForPrefetching = [\.sets]
@@ -302,13 +260,7 @@ extension ExercisePerformance {
 
     static func matching(catalogID: String, includingHidden: Bool = false) -> FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = includingHidden
-            ? #Predicate<ExercisePerformance> { item in
-                item.catalogID == catalogID && item.workoutSession?.status == done
-              }
-            : #Predicate<ExercisePerformance> { item in
-                item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
-              }
+        let predicate = includingHidden ? #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && item.workoutSession?.status == done } : #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.repRange]
         return descriptor
@@ -316,18 +268,14 @@ extension ExercisePerformance {
 
     static func matching(catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in
-            catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done && item.workoutSession?.isHidden == false
-        }
+        let predicate = #Predicate<ExercisePerformance> { item in catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.workoutSession]
         return descriptor
     }
 
     static func forSession(_ sessionID: UUID, catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
-        let predicate = #Predicate<ExercisePerformance> { item in
-            item.workoutSession?.id == sessionID && catalogIDs.contains(item.catalogID)
-        }
+        let predicate = #Predicate<ExercisePerformance> { item in item.workoutSession?.id == sessionID && catalogIDs.contains(item.catalogID) }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.workoutSession]
         return descriptor
@@ -340,9 +288,7 @@ extension ExercisePerformance {
 
     static var completedAll: FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in
-            item.workoutSession?.status == done && item.workoutSession?.isHidden == false
-        }
+        let predicate = #Predicate<ExercisePerformance> { item in item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
     }
 }

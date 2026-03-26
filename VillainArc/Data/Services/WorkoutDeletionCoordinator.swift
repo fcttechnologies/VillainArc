@@ -1,8 +1,7 @@
 import Foundation
 import SwiftData
 
-@MainActor
-enum WorkoutDeletionCoordinator {
+@MainActor enum WorkoutDeletionCoordinator {
     static func deleteCompletedWorkouts(_ workouts: [WorkoutSession], context: ModelContext, settings: AppSettings? = nil, save: Bool = true) {
         guard !workouts.isEmpty else { return }
 
@@ -12,9 +11,7 @@ enum WorkoutDeletionCoordinator {
         SpotlightIndexer.deleteWorkoutSessions(ids: workouts.map(\.id))
 
         if shouldRetainSnapshots {
-            for workout in workouts {
-                workout.isHidden = true
-            }
+            for workout in workouts { workout.isHidden = true }
         } else {
             for workout in workouts {
                 deleteSuggestionLearningArtifactsLinked(to: workout, context: context)
@@ -35,14 +32,10 @@ enum WorkoutDeletionCoordinator {
 
             deleteCompletedWorkouts(hiddenWorkouts, context: context, settings: settings)
             print("Removed \(hiddenWorkouts.count) retained hidden workouts after disabling performance snapshot retention.")
-        } catch {
-            print("Failed to apply performance snapshot retention setting: \(error)")
-        }
+        } catch { print("Failed to apply performance snapshot retention setting: \(error)") }
     }
 
-    private static func currentRetentionSetting(context: ModelContext) -> Bool {
-        (try? context.fetch(AppSettings.single).first?.retainPerformancesForLearning) ?? true
-    }
+    private static func currentRetentionSetting(context: ModelContext) -> Bool { (try? context.fetch(AppSettings.single).first?.retainPerformancesForLearning) ?? true }
 
     private static func deleteSuggestionLearningArtifactsLinked(to workout: WorkoutSession, context: ModelContext) {
         let workoutID = workout.id
@@ -62,20 +55,14 @@ enum WorkoutDeletionCoordinator {
             guard !seenEventIDs.contains(event.id) else { continue }
 
             if isFinalized(event) {
-                if seenEventIDs.insert(event.id).inserted {
-                    finalizedExternalEvents.append(event)
-                }
+                if seenEventIDs.insert(event.id).inserted { finalizedExternalEvents.append(event) }
             } else {
                 context.delete(evaluation)
             }
         }
 
-        for event in linkedEvents + finalizedExternalEvents {
-            context.delete(event)
-        }
+        for event in linkedEvents + finalizedExternalEvents { context.delete(event) }
     }
 
-    private static func isFinalized(_ event: SuggestionEvent) -> Bool {
-        event.outcome != .pending || event.evaluatedAt != nil
-    }
+    private static func isFinalized(_ event: SuggestionEvent) -> Bool { event.outcome != .pending || event.evaluatedAt != nil }
 }

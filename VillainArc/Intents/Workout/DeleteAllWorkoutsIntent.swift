@@ -6,27 +6,19 @@ struct DeleteAllWorkoutsIntent: AppIntent {
     static let description = IntentDescription("Deletes all completed workouts.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
-    @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
         var descriptor = WorkoutSession.completedSession
         descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
         let workouts = (try? context.fetch(descriptor)) ?? []
 
-        guard !workouts.isEmpty else {
-            return .result(dialog: "No completed workouts to delete.")
-        }
+        guard !workouts.isEmpty else { return .result(dialog: "No completed workouts to delete.") }
 
         let count = workouts.count
         let label = count == 1 ? "1 workout" : "\(count) workouts"
-        let choice = try await requestChoice(
-            between: [IntentChoiceOption(title: "Delete All", style: .destructive), .cancel],
-            dialog: IntentDialog("Delete \(label)? This action cannot be undone.")
-        )
+        let choice = try await requestChoice(between: [IntentChoiceOption(title: "Delete All", style: .destructive), .cancel], dialog: IntentDialog("Delete \(label)? This action cannot be undone."))
 
-        guard choice.style == .destructive else {
-            throw DeleteAllWorkoutsIntentError.cancelled
-        }
+        guard choice.style == .destructive else { throw DeleteAllWorkoutsIntentError.cancelled }
 
         WorkoutDeletionCoordinator.deleteCompletedWorkouts(workouts, context: context)
         return .result(dialog: "Deleted \(label).")
@@ -38,8 +30,7 @@ enum DeleteAllWorkoutsIntentError: Error, CustomLocalizedStringResourceConvertib
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .cancelled:
-            return "Delete all workouts canceled."
+        case .cancelled: return "Delete all workouts canceled."
         }
     }
 }

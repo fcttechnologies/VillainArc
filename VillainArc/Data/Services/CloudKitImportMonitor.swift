@@ -9,8 +9,7 @@ enum CloudKitImportStatus: Equatable {
     case failed(String)
 }
 
-@MainActor
-final class CloudKitImportMonitor {
+@MainActor final class CloudKitImportMonitor {
     static let shared = CloudKitImportMonitor()
 
     private(set) var status: CloudKitImportStatus = .idle
@@ -23,48 +22,32 @@ final class CloudKitImportMonitor {
     func start() {
         guard observationTask == nil else { return }
 
-        if status == .idle {
-            status = .waiting
-        }
+        if status == .idle { status = .waiting }
 
         observationTask = Task { @MainActor [weak self] in
             guard let self else { return }
 
-            for await notification in NotificationCenter.default.notifications(
-                named: NSPersistentCloudKitContainer.eventChangedNotification
-            ) {
-                handle(notification)
-            }
+            for await notification in NotificationCenter.default.notifications(named: NSPersistentCloudKitContainer.eventChangedNotification) { handle(notification) }
         }
     }
 
     func prepareForBootstrapWait() {
         start()
 
-        if case .failed = status {
-            status = .waiting
-        }
+        if case .failed = status { status = .waiting }
     }
 
     func waitForImportCompletion() async -> CloudKitImportStatus {
         prepareForBootstrapWait()
 
         switch status {
-        case .completed, .failed:
-            return status
-        case .idle, .waiting, .importing:
-            return await withCheckedContinuation { continuation in
-                waiters.append(continuation)
-            }
+        case .completed, .failed: return status
+        case .idle, .waiting, .importing: return await withCheckedContinuation { continuation in waiters.append(continuation) }
         }
     }
 
     private func handle(_ notification: Notification) {
-        guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
-            as? NSPersistentCloudKitContainer.Event
-        else {
-            return
-        }
+        guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event else { return }
 
         guard event.type == .import else { return }
 
@@ -88,8 +71,6 @@ final class CloudKitImportMonitor {
         let pendingWaiters = waiters
         waiters.removeAll()
 
-        for waiter in pendingWaiters {
-            waiter.resume(returning: status)
-        }
+        for waiter in pendingWaiters { waiter.resume(returning: status) }
     }
 }

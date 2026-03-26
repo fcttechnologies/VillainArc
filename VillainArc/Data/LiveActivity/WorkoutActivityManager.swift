@@ -1,8 +1,7 @@
-import ActivityKit
 import Foundation
 import SwiftData
+import ActivityKit
 
-@MainActor
 enum WorkoutActivityManager {
     private static var liveActivitiesEnabled: Bool {
         let context = SharedModelContainer.container.mainContext
@@ -41,14 +40,10 @@ enum WorkoutActivityManager {
 
         let activityID = activity.id
         let state = contentState(for: workout)
-        Task {
-            await updateActivity(id: activityID, state: state)
-        }
+        Task { await updateActivity(id: activityID, state: state) }
     }
 
-    static func end() {
-        endAllActivities()
-    }
+    static func end() { endAllActivities() }
 
     static func restoreIfNeeded(workout: WorkoutSession) {
         guard liveActivitiesEnabled else {
@@ -75,26 +70,18 @@ enum WorkoutActivityManager {
         }
     }
 
-    private static var currentActivity: Activity<WorkoutActivityAttributes>? {
-        Activity<WorkoutActivityAttributes>.activities.first
-    }
+    private static var currentActivity: Activity<WorkoutActivityAttributes>? { Activity<WorkoutActivityAttributes>.activities.first }
 
     private static func endAllActivities() {
         let activityIDs = Activity<WorkoutActivityAttributes>.activities.map(\.id)
-        Task {
-            await endActivities(ids: activityIDs)
-        }
+        Task { await endActivities(ids: activityIDs) }
     }
 
     private static func requestActivity(for workout: WorkoutSession) {
         let attributes = WorkoutActivityAttributes(startDate: workout.startedAt)
         let state = contentState(for: workout)
         do {
-            _ = try Activity.request(
-                attributes: attributes,
-                content: .init(state: state, staleDate: nil),
-                pushType: nil
-            )
+            _ = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil), pushType: nil)
         } catch {
             print("Failed to start Live Activity: \(error)")
         }

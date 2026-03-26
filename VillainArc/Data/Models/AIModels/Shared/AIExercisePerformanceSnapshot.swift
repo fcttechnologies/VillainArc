@@ -1,8 +1,7 @@
 import Foundation
 import FoundationModels
 
-@Generable
-struct AIExercisePerformanceSnapshot {
+@Generable struct AIExercisePerformanceSnapshot {
     @Guide(description: "Exercise.")
     let exercise: AIExerciseIdentitySnapshot
     @Guide(description: "Workout date.")
@@ -33,8 +32,7 @@ struct AIExercisePerformanceSnapshot {
     }
 }
 
-@Generable
-struct AISetPerformanceSnapshot {
+@Generable struct AISetPerformanceSnapshot {
     @Guide(description: "Set index.")
     let index: Int
     @Guide(description: "Original target slot.")
@@ -50,10 +48,7 @@ struct AISetPerformanceSnapshot {
 
     init(set: SetPerformance, targetSnapshot: ExerciseTargetSnapshot?) {
         index = set.index
-        originalTargetSetIndex = Self.resolveOriginalTargetSetIndex(
-            targetSetID: set.originalTargetSetID ?? set.prescription?.id,
-            targetSnapshot: targetSnapshot
-        )
+        originalTargetSetIndex = Self.resolveOriginalTargetSetIndex(targetSetID: set.originalTargetSetID ?? set.prescription?.id, targetSnapshot: targetSnapshot)
         setType = AIExerciseSetType(from: set.type)
         weight = set.weight
         reps = set.reps
@@ -62,10 +57,7 @@ struct AISetPerformanceSnapshot {
 
     init(snapshot: SetPerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot?) {
         index = snapshot.index
-        originalTargetSetIndex = Self.resolveOriginalTargetSetIndex(
-            targetSetID: snapshot.originalTargetSetID,
-            targetSnapshot: targetSnapshot
-        )
+        originalTargetSetIndex = Self.resolveOriginalTargetSetIndex(targetSetID: snapshot.originalTargetSetID, targetSnapshot: targetSnapshot)
         setType = AIExerciseSetType(from: snapshot.type)
         weight = snapshot.weight
         reps = snapshot.reps

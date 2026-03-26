@@ -1,8 +1,7 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
-@Model
-final class WorkoutPlan {
+@Model final class WorkoutPlan {
     #Index<WorkoutPlan>([\.id], [\.completed], [\.isEditing], [\.lastUsed], [\.completed, \.isEditing, \.lastUsed])
 
     var id: UUID = UUID()
@@ -12,27 +11,14 @@ final class WorkoutPlan {
     var completed: Bool = false
     var isEditing: Bool = false
     var lastUsed: Date?
-    @Relationship(deleteRule: .cascade, inverse: \ExercisePrescription.workoutPlan)
-    var exercises: [ExercisePrescription]? = [ExercisePrescription]()
-    @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan)
-    var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
+    @Relationship(deleteRule: .cascade, inverse: \ExercisePrescription.workoutPlan) var exercises: [ExercisePrescription]? = [ExercisePrescription]()
+    @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan) var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
     var workoutSessions: [WorkoutSession]? = [WorkoutSession]()
 
-    var sortedExercises: [ExercisePrescription] {
-        (exercises ?? []).sorted { $0.index < $1.index }
-    }
-
-    var totalExercises: Int {
-        sortedExercises.count
-    }
-
-    var totalSets: Int {
-        sortedExercises.reduce(0) { $0 + $1.sortedSets.count }
-    }
-
-    var totalVolume: Double {
-        sortedExercises.reduce(0) { $0 + $1.totalVolume }
-    }
+    var sortedExercises: [ExercisePrescription] { (exercises ?? []).sorted { $0.index < $1.index } }
+    var totalExercises: Int { sortedExercises.count }
+    var totalSets: Int { sortedExercises.reduce(0) { $0 + $1.sortedSets.count } }
+    var totalVolume: Double { sortedExercises.reduce(0) { $0 + $1.totalVolume } }
 
     func convertTargetWeightsToKg(from unit: WeightUnit) {
         guard unit == .lbs else { return }
@@ -63,14 +49,12 @@ final class WorkoutPlan {
         self.completed = completed
         self.lastUsed = lastUsed
     }
-    
+
     init(from session: WorkoutSession, completed: Bool = false) {
         title = session.title
         notes = session.notes
         self.completed = completed
-        if completed {
-            lastUsed = Date()
-        }
+        if completed { lastUsed = Date() }
         exercises = session.sortedExercises.map { ExercisePrescription(workoutPlan: self, exercisePerformance: $0) }
     }
 
@@ -79,10 +63,8 @@ final class WorkoutPlan {
             session.clearPrescriptionLinksForHistoricalUse()
         }
     }
-    
-    func musclesTargeted() -> String {
-        ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName))
-    }
+
+    func musclesTargeted() -> String { ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName)) }
 
     var musclesArray: [Muscle] {
         var seen = Set<Muscle>()
@@ -107,22 +89,20 @@ final class WorkoutPlan {
         }
         return result
     }
-    
-    func addExercise(_ exercise: Exercise) {
-        exercises?.append(ExercisePrescription(exercise: exercise, workoutPlan: self))
-    }
-    
+
+    func addExercise(_ exercise: Exercise) { exercises?.append(ExercisePrescription(exercise: exercise, workoutPlan: self)) }
+
     func deleteExercise(_ exercise: ExercisePrescription) {
         exercises?.removeAll { $0 == exercise }
         reindexExercises()
     }
-    
+
     func moveExercise(from source: IndexSet, to destination: Int) {
         var sorted = sortedExercises
         sorted.move(fromOffsets: source, toOffset: destination)
         for (i, ex) in sorted.enumerated() { ex.index = i }
     }
-    
+
     private func reindexExercises() {
         for (i, ex) in sortedExercises.enumerated() { ex.index = i }
     }
@@ -136,7 +116,7 @@ extension WorkoutPlan {
         }
         return exerciseSummaries.joined(separator: ", ")
     }
-    
+
     static var incomplete: FetchDescriptor<WorkoutPlan> {
         let predicate = #Predicate<WorkoutPlan> { !$0.completed || $0.isEditing }
         var descriptor = FetchDescriptor(predicate: predicate)
@@ -151,16 +131,9 @@ extension WorkoutPlan {
         return descriptor
     }
 
-    static var completedPredicate: Predicate<WorkoutPlan> {
-        #Predicate<WorkoutPlan> { $0.completed && !$0.isEditing }
-    }
+    static var completedPredicate: Predicate<WorkoutPlan> { #Predicate<WorkoutPlan> { $0.completed && !$0.isEditing } }
 
-    static var recentsSort: [SortDescriptor<WorkoutPlan>] {
-        [
-            SortDescriptor(\WorkoutPlan.lastUsed, order: .reverse),
-            SortDescriptor(\WorkoutPlan.title)
-        ]
-    }
+    static var recentsSort: [SortDescriptor<WorkoutPlan>] { [SortDescriptor(\WorkoutPlan.lastUsed, order: .reverse), SortDescriptor(\WorkoutPlan.title)] }
 
     static func byID(_ id: UUID) -> FetchDescriptor<WorkoutPlan> {
         let predicate = #Predicate<WorkoutPlan> { $0.id == id }
@@ -180,7 +153,7 @@ extension WorkoutPlan {
         descriptor.relationshipKeyPathsForPrefetching = [\.exercises, \.splitDays]
         return descriptor
     }
-    
+
     static var all: FetchDescriptor<WorkoutPlan> {
         var descriptor = FetchDescriptor(predicate: completedPredicate, sortBy: recentsSort)
         descriptor.relationshipKeyPathsForPrefetching = [\.exercises]

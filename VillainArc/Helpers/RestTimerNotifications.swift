@@ -3,46 +3,34 @@ import SwiftData
 import UserNotifications
 
 enum RestTimerNotifications {
-    @MainActor
-    private static let coordinator = RestTimerNotificationCoordinator()
+    @MainActor private static let coordinator = RestTimerNotificationCoordinator()
     fileprivate static let notificationID = "restTimerComplete"
 
-    static func schedule(endDate: Date, durationSeconds: Int) async {
-        await coordinator.schedule(endDate: endDate, durationSeconds: durationSeconds)
-    }
+    static func schedule(endDate: Date, durationSeconds: Int) async { await coordinator.schedule(endDate: endDate, durationSeconds: durationSeconds) }
 
-    static func cancel() async {
-        await coordinator.cancel()
-    }
+    static func cancel() async { await coordinator.cancel() }
 
     fileprivate static func cancel(center: UNUserNotificationCenter) {
         center.removePendingNotificationRequests(withIdentifiers: [notificationID])
         center.removeDeliveredNotifications(withIdentifiers: [notificationID])
     }
 
-    fileprivate static func requestAuthorizationIfNeeded(
-        center: UNUserNotificationCenter,
-        settings: UNNotificationSettings
-    ) async -> Bool {
+    fileprivate static func requestAuthorizationIfNeeded(center: UNUserNotificationCenter, settings: UNNotificationSettings) async -> Bool {
         switch settings.authorizationStatus {
-        case .authorized, .provisional, .ephemeral:
-            return true
+        case .authorized, .provisional, .ephemeral: return true
         case .notDetermined:
             do {
                 return try await center.requestAuthorization(options: [.alert, .sound])
             } catch {
                 return false
             }
-        case .denied:
-            return false
-        @unknown default:
-            return false
+        case .denied: return false
+        @unknown default: return false
         }
     }
 }
 
-@MainActor
-private final class RestTimerNotificationCoordinator {
+@MainActor private final class RestTimerNotificationCoordinator {
     private var generation = 0
 
     func schedule(endDate: Date, durationSeconds: Int) async {
@@ -74,11 +62,7 @@ private final class RestTimerNotificationCoordinator {
 
         let interval = max(1, endDate.timeIntervalSinceNow)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        let request = UNNotificationRequest(
-            identifier: RestTimerNotifications.notificationID,
-            content: content,
-            trigger: trigger
-        )
+        let request = UNNotificationRequest(identifier: RestTimerNotifications.notificationID, content: content, trigger: trigger)
 
         do {
             try await center.add(request)
@@ -86,9 +70,7 @@ private final class RestTimerNotificationCoordinator {
                 RestTimerNotifications.cancel(center: center)
                 return
             }
-        } catch {
-            return
-        }
+        } catch { return }
     }
 
     func cancel() async {

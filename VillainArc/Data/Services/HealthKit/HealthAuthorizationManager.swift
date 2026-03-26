@@ -9,20 +9,14 @@ enum HealthAuthorizationState: Equatable {
 
     var statusText: String {
         switch self {
-        case .unavailable:
-            return "Unavailable"
-        case .notDetermined:
-            return "Not Connected"
-        case .authorized:
-            return "Connected"
-        case .denied:
-            return "Access Denied"
+        case .unavailable: return "Unavailable"
+        case .notDetermined: return "Not Connected"
+        case .authorized: return "Connected"
+        case .denied: return "Access Denied"
         }
     }
 
-    var isAuthorized: Bool {
-        self == .authorized
-    }
+    var isAuthorized: Bool { self == .authorized }
 }
 
 enum HealthAuthorizationAction: Equatable {
@@ -33,25 +27,18 @@ enum HealthAuthorizationAction: Equatable {
 
     var buttonTitle: String {
         switch self {
-        case .requestAccess:
-            return "Connect Apple Health"
-        case .openSettings:
-            return "Open Settings"
-        case .manageInSettings:
-            return "Manage In Settings"
-        case .unavailable:
-            return "Unavailable"
+        case .requestAccess: return "Connect Apple Health"
+        case .openSettings: return "Open Settings"
+        case .manageInSettings: return "Manage In Settings"
+        case .unavailable: return "Unavailable"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .requestAccess:
-            return "heart.text.square"
-        case .openSettings, .manageInSettings:
-            return "gearshape"
-        case .unavailable:
-            return "heart.slash"
+        case .requestAccess: return "heart.text.square"
+        case .openSettings, .manageInSettings: return "gearshape"
+        case .unavailable: return "heart.slash"
         }
     }
 }
@@ -69,22 +56,16 @@ final class HealthAuthorizationManager {
 
     private init() {}
 
-    var isHealthDataAvailable: Bool {
-        HKHealthStore.isHealthDataAvailable()
-    }
+    var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
     var currentAuthorizationState: HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
 
         let statuses = healthShareTypes.map { healthStore.authorizationStatus(for: $0) }
 
-        if statuses.allSatisfy({ $0 == .sharingAuthorized }) {
-            return .authorized
-        }
+        if statuses.allSatisfy({ $0 == .sharingAuthorized }) { return .authorized }
 
-        if statuses.contains(.sharingDenied) {
-            return .denied
-        }
+        if statuses.contains(.sharingDenied) { return .denied }
 
         return .notDetermined
     }
@@ -131,12 +112,9 @@ final class HealthAuthorizationManager {
         do {
             let requestStatus = try await healthStore.statusForAuthorizationRequest(toShare: healthShareTypes, read: healthReadTypes)
             switch requestStatus {
-            case .shouldRequest:
-                return .requestAccess
-            case .unnecessary, .unknown:
-                return state == .authorized ? .manageInSettings : .openSettings
-            @unknown default:
-                return state == .authorized ? .manageInSettings : .openSettings
+            case .shouldRequest: return .requestAccess
+            case .unnecessary, .unknown: return state == .authorized ? .manageInSettings : .openSettings
+            @unknown default: return state == .authorized ? .manageInSettings : .openSettings
             }
         } catch {
             print("Failed to determine HealthKit authorization request status: \(error)")
@@ -157,18 +135,11 @@ final class HealthAuthorizationManager {
     }
 
     func metadata(for session: WorkoutSession) -> [String: Any] {
-        [
-            "Workout Title": session.title,
-            HKMetadataKeyIndoorWorkout: true,
-            HealthMetadataKeys.workoutSessionID: session.id.uuidString
-        ]
+        ["Workout Title": session.title, HKMetadataKeyIndoorWorkout: true, HealthMetadataKeys.workoutSessionID: session.id.uuidString]
     }
 
     func metadata(for weightEntry: WeightEntry) -> [String: Any] {
-        [
-            HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString,
-            HKMetadataKeyWasUserEntered: true
-        ]
+        [HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString, HKMetadataKeyWasUserEntered: true]
     }
 
     private var healthShareTypes: Set<HKSampleType> {
@@ -183,17 +154,17 @@ final class HealthAuthorizationManager {
 
     private var healthReadTypes: Set<HKObjectType> {
         [
-            HKObjectType.workoutType(),
+            workoutType,
             HKSeriesType.workoutRoute(),
             HKCharacteristicType(.dateOfBirth),
             HKCharacteristicType(.biologicalSex),
             HKQuantityType(.heartRate),
-            HKQuantityType(.activeEnergyBurned),
-            HKQuantityType(.basalEnergyBurned),
+            activeEnergyType,
+            restingEnergyType,
             HKQuantityType(.respiratoryRate),
             HKQuantityType(.flightsClimbed),
             HKQuantityType(.height),
-            HKQuantityType(.bodyMass),
+            bodyMassType,
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.distanceCycling),
             HKQuantityType(.distanceSwimming),
@@ -212,7 +183,7 @@ final class HealthAuthorizationManager {
             HKQuantityType(.cyclingPower),
             HKQuantityType(.cyclingSpeed),
             HKQuantityType(.physicalEffort),
-            HKQuantityType(.workoutEffortScore),
+            workoutEffortScoreType,
             HKQuantityType(.estimatedWorkoutEffortScore)
         ]
     }

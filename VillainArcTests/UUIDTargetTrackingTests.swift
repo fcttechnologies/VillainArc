@@ -1,6 +1,7 @@
-import SwiftData
 import Foundation
+import SwiftData
 import Testing
+
 @testable import VillainArc
 
 // Tests for the originalTargetSetID UUID tracking system.
@@ -11,17 +12,11 @@ import Testing
 // correct even after the working-set indices shift.
 //
 struct UUIDTargetTrackingTests {
-    @MainActor
-    private func flattenedChanges(from drafts: [SuggestionEventDraft]) -> [(draft: SuggestionEventDraft, change: PrescriptionChangeDraft)] {
-        drafts.flatMap { draft in
-            draft.changes.map { (draft: draft, change: $0) }
-        }
-    }
+    @MainActor private func flattenedChanges(from drafts: [SuggestionEventDraft]) -> [(draft: SuggestionEventDraft, change: PrescriptionChangeDraft)] { drafts.flatMap { draft in draft.changes.map { (draft: draft, change: $0) } } }
 
     // MARK: - Invariant: UUID set at creation
 
-    @Test @MainActor
-    func originalTargetSetID_isSetFromPrescriptionIDAtSessionCreation() throws {
+    @Test @MainActor func originalTargetSetID_isSetFromPrescriptionIDAtSessionCreation() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -35,7 +30,7 @@ struct UUIDTargetTrackingTests {
         }
 
         let prescriptionSets = prescription.sortedSets
-        let performanceSets  = performance.sortedSets
+        let performanceSets = performance.sortedSets
 
         // Every set must carry the UUID of the prescription slot it was built from.
         #expect(performanceSets[0].originalTargetSetID == prescriptionSets[0].id)
@@ -45,8 +40,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - Invariant: UUID survives clearPrescriptionLinksForHistoricalUse
 
-    @Test @MainActor
-    func originalTargetSetID_survivesAfterPrescriptionLinksAreCleared() throws {
+    @Test @MainActor func originalTargetSetID_survivesAfterPrescriptionLinksAreCleared() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -82,8 +76,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - UUID matching survives warmup-add reindex
 
-    @Test @MainActor
-    func originalTargetSetID_matchesCorrectPrescriptionAfterWarmupAddShiftsWorkingSetIndices() throws {
+    @Test @MainActor func originalTargetSetID_matchesCorrectPrescriptionAfterWarmupAddShiftsWorkingSetIndices() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -117,9 +110,9 @@ struct UUIDTargetTrackingTests {
         prescription.reindexSets()
 
         #expect(prescription.sortedSets.count == 3)
-        #expect(prescription.sortedSets[0].type  == .warmup)
-        #expect(prescription.sortedSets[1].id    == w1ID)  // W1 shifted to index 1
-        #expect(prescription.sortedSets[2].id    == w2ID)  // W2 shifted to index 2
+        #expect(prescription.sortedSets[0].type == .warmup)
+        #expect(prescription.sortedSets[1].id == w1ID)  // W1 shifted to index 1
+        #expect(prescription.sortedSets[2].id == w2ID)  // W2 shifted to index 2
 
         // Historical UUIDs remain correct — unaffected by the prescription mutation.
         #expect(histPerf.sortedSets[0].originalTargetSetID == w1ID)
@@ -128,8 +121,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - New warmup has no historical match
 
-    @Test @MainActor
-    func matchingSetPerformance_returnsNilForNewWarmupWithNoHistoricalEvidence() throws {
+    @Test @MainActor func matchingSetPerformance_returnsNilForNewWarmupWithNoHistoricalEvidence() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
 
@@ -141,7 +133,9 @@ struct UUIDTargetTrackingTests {
             return
         }
         for set in histPerf.sortedSets {
-            set.weight = 100; set.reps = 9; set.complete = true
+            set.weight = 100
+            set.reps = 9
+            set.complete = true
         }
         histSession.clearPrescriptionLinksForHistoricalUse()
 
@@ -160,28 +154,22 @@ struct UUIDTargetTrackingTests {
         }
         for set in currentPerf.sortedSets {
             set.weight = set.type == .warmup ? 40 : 100
-            set.reps  = set.type == .warmup ? 10 : 9
+            set.reps = set.type == .warmup ? 10 : 9
             set.complete = true
         }
 
-        let suggestionContext = ExerciseSuggestionContext(
-            session: currentSession, performance: currentPerf, prescription: prescription,
-            history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
-        )
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
 
         // warmupActingLikeWorkingSet and calibrateWarmupWeights both need 2 sessions of warmup
         // data — the new warmup has zero historical evidence so neither should fire for it.
-        let warmupSetChanges = flattenedChanges(from: suggestions).filter {
-            $0.draft.targetSetPrescription?.id == warmupPrescriptionID
-        }
+        let warmupSetChanges = flattenedChanges(from: suggestions).filter { $0.draft.targetSetPrescription?.id == warmupPrescriptionID }
         #expect(warmupSetChanges.isEmpty, "No rule should fire for a warmup set that has no historical performance.")
     }
 
     // MARK: - confirmedProgressionRange fires for the right sets after warmup-add reindex
 
-    @Test @MainActor
-    func confirmedProgressionRange_firesForCorrectSetsAfterWarmupAddShiftsWorkingSetIndices() throws {
+    @Test @MainActor func confirmedProgressionRange_firesForCorrectSetsAfterWarmupAddShiftsWorkingSetIndices() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -195,8 +183,12 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected historical performance with 2 sets.")
             return
         }
-        histPerf.sortedSets[0].weight = 100; histPerf.sortedSets[0].reps = 9; histPerf.sortedSets[0].complete = true
-        histPerf.sortedSets[1].weight = 100; histPerf.sortedSets[1].reps = 9; histPerf.sortedSets[1].complete = true
+        histPerf.sortedSets[0].weight = 100
+        histPerf.sortedSets[0].reps = 9
+        histPerf.sortedSets[0].complete = true
+        histPerf.sortedSets[1].weight = 100
+        histPerf.sortedSets[1].reps = 9
+        histPerf.sortedSets[1].complete = true
         histSession.clearPrescriptionLinksForHistoricalUse()
 
         // Add warmup: W1 shifts to index 1, W2 shifts to index 2.
@@ -212,14 +204,17 @@ struct UUIDTargetTrackingTests {
             return
         }
         let cSets = currentPerf.sortedSets
-        cSets[0].weight = 40;  cSets[0].reps = 10; cSets[0].complete = true  // WU
-        cSets[1].weight = 100; cSets[1].reps = 9;  cSets[1].complete = true  // W1
-        cSets[2].weight = 100; cSets[2].reps = 9;  cSets[2].complete = true  // W2
+        cSets[0].weight = 40
+        cSets[0].reps = 10
+        cSets[0].complete = true  // WU
+        cSets[1].weight = 100
+        cSets[1].reps = 9
+        cSets[1].complete = true  // W1
+        cSets[2].weight = 100
+        cSets[2].reps = 9
+        cSets[2].complete = true  // W2
 
-        let suggestionContext = ExerciseSuggestionContext(
-            session: currentSession, performance: currentPerf, prescription: prescription,
-            history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
-        )
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseWeight }
 
@@ -237,8 +232,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - setTypeMismatch detects consistent mismatch after warmup-add reindex
 
-    @Test @MainActor
-    func setTypeMismatch_detectsConsistentMismatchAfterWarmupAddReindex() throws {
+    @Test @MainActor func setTypeMismatch_detectsConsistentMismatchAfterWarmupAddReindex() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -254,10 +248,14 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected historical performance with 2 sets.")
             return
         }
-        histPerf.sortedSets[0].type   = .warmup
-        histPerf.sortedSets[0].weight = 60; histPerf.sortedSets[0].reps = 8; histPerf.sortedSets[0].complete = true
-        histPerf.sortedSets[1].type   = .working
-        histPerf.sortedSets[1].weight = 100; histPerf.sortedSets[1].reps = 8; histPerf.sortedSets[1].complete = true
+        histPerf.sortedSets[0].type = .warmup
+        histPerf.sortedSets[0].weight = 60
+        histPerf.sortedSets[0].reps = 8
+        histPerf.sortedSets[0].complete = true
+        histPerf.sortedSets[1].type = .working
+        histPerf.sortedSets[1].weight = 100
+        histPerf.sortedSets[1].reps = 8
+        histPerf.sortedSets[1].complete = true
         histSession.clearPrescriptionLinksForHistoricalUse()
 
         // Add a warmup to prescription → W1 shifts from index 0 to 1, W2 from 1 to 2.
@@ -273,14 +271,20 @@ struct UUIDTargetTrackingTests {
             return
         }
         let cSets = currentPerf.sortedSets
-        cSets[0].type = .warmup;  cSets[0].weight = 30;  cSets[0].reps = 12; cSets[0].complete = true  // new WU
-        cSets[1].type = .warmup;  cSets[1].weight = 60;  cSets[1].reps = 8;  cSets[1].complete = true  // W1 (again as warmup)
-        cSets[2].type = .working; cSets[2].weight = 100; cSets[2].reps = 8;  cSets[2].complete = true  // W2
+        cSets[0].type = .warmup
+        cSets[0].weight = 30
+        cSets[0].reps = 12
+        cSets[0].complete = true  // new WU
+        cSets[1].type = .warmup
+        cSets[1].weight = 60
+        cSets[1].reps = 8
+        cSets[1].complete = true  // W1 (again as warmup)
+        cSets[2].type = .working
+        cSets[2].weight = 100
+        cSets[2].reps = 8
+        cSets[2].complete = true  // W2
 
-        let suggestionContext = ExerciseSuggestionContext(
-            session: currentSession, performance: currentPerf, prescription: prescription,
-            history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
-        )
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let typeChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .changeSetType }
 
@@ -290,7 +294,7 @@ struct UUIDTargetTrackingTests {
         #expect(mismatchForW1 != nil, "setTypeMismatch should fire for W1 — UUID matching spans the index shift.")
         if let m = mismatchForW1 {
             #expect(m.change.previousValue == Double(ExerciseSetType.working.rawValue))
-            #expect(m.change.newValue      == Double(ExerciseSetType.warmup.rawValue))
+            #expect(m.change.newValue == Double(ExerciseSetType.warmup.rawValue))
         }
 
         // W2 was correctly logged as .working in both sessions — no mismatch.
@@ -298,8 +302,7 @@ struct UUIDTargetTrackingTests {
         #expect(mismatchForW2 == nil, "W2 was logged correctly — no mismatch expected.")
     }
 
-    @Test @MainActor
-    func setTypeMismatch_requiresThreeSessionsForDropSetReclassification() throws {
+    @Test @MainActor func setTypeMismatch_requiresThreeSessionsForDropSetReclassification() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -328,21 +331,16 @@ struct UUIDTargetTrackingTests {
         currentPerf.sortedSets[0].reps = 8
         currentPerf.sortedSets[0].complete = true
 
-        let suggestionContext = ExerciseSuggestionContext(
-            session: currentSession, performance: currentPerf, prescription: prescription,
-            history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
-        )
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: [histPerf], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let typeChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .changeSetType }
 
-        #expect(typeChanges.isEmpty,
-            "Drop-set reclassification should need 3 sessions of consistent evidence, not 2")
+        #expect(typeChanges.isEmpty, "Drop-set reclassification should need 3 sessions of consistent evidence, not 2")
     }
 
     // MARK: - belowRangeWeightDecrease resolves target weight from snapshot UUID after reindex
 
-    @Test @MainActor
-    func historicalTargetWeightLookup_usesSnapshotUUIDToConfirmAttemptedLoadAfterWarmupAddReindex() throws {
+    @Test @MainActor func historicalTargetWeightLookup_usesSnapshotUUIDToConfirmAttemptedLoadAfterWarmupAddReindex() throws {
         let context = try TestDataFactory.makeContext()
         // Single working set. User repeatedly fails to hit the lower rep bound.
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
@@ -356,7 +354,9 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected perf1.")
             return
         }
-        set1.weight = 100; set1.reps = 5; set1.complete = true
+        set1.weight = 100
+        set1.reps = 5
+        set1.complete = true
         session1.clearPrescriptionLinksForHistoricalUse()
 
         // Add warmup: W1 shifts from index 0 to index 1.
@@ -371,8 +371,12 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected perf2 with 2 sets.")
             return
         }
-        perf2.sortedSets[0].weight = 50;  perf2.sortedSets[0].reps = 10; perf2.sortedSets[0].complete = true  // WU
-        perf2.sortedSets[1].weight = 100; perf2.sortedSets[1].reps = 5;  perf2.sortedSets[1].complete = true  // W1
+        perf2.sortedSets[0].weight = 50
+        perf2.sortedSets[0].reps = 10
+        perf2.sortedSets[0].complete = true  // WU
+        perf2.sortedSets[1].weight = 100
+        perf2.sortedSets[1].reps = 5
+        perf2.sortedSets[1].complete = true  // W1
         session2.clearPrescriptionLinksForHistoricalUse()
 
         // Current session: user still cannot hit reps at the prescribed load.
@@ -382,13 +386,14 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected current performance with 2 sets.")
             return
         }
-        currentPerf.sortedSets[0].weight = 50;  currentPerf.sortedSets[0].reps = 10; currentPerf.sortedSets[0].complete = true
-        currentPerf.sortedSets[1].weight = 100; currentPerf.sortedSets[1].reps = 5;  currentPerf.sortedSets[1].complete = true
+        currentPerf.sortedSets[0].weight = 50
+        currentPerf.sortedSets[0].reps = 10
+        currentPerf.sortedSets[0].complete = true
+        currentPerf.sortedSets[1].weight = 100
+        currentPerf.sortedSets[1].reps = 5
+        currentPerf.sortedSets[1].complete = true
 
-        let suggestionContext = ExerciseSuggestionContext(
-            session: currentSession, performance: currentPerf, prescription: prescription,
-            history: [perf2, perf1], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
-        )
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: [perf2, perf1], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightDecrease = flattenedChanges(from: suggestions).first(where: { $0.change.changeType == .decreaseWeight })
 
@@ -403,8 +408,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - Double reindex (add warmup → remove warmup) leaves UUID matching intact
 
-    @Test @MainActor
-    func doubleReindex_UUIDMatchingUnbrokenAfterAddWarmupThenRemoveWarmup() throws {
+    @Test @MainActor func doubleReindex_UUIDMatchingUnbrokenAfterAddWarmupThenRemoveWarmup() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -418,8 +422,12 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected perf1 with 2 sets.")
             return
         }
-        perf1.sortedSets[0].weight = 100; perf1.sortedSets[0].reps = 9; perf1.sortedSets[0].complete = true
-        perf1.sortedSets[1].weight = 100; perf1.sortedSets[1].reps = 9; perf1.sortedSets[1].complete = true
+        perf1.sortedSets[0].weight = 100
+        perf1.sortedSets[0].reps = 9
+        perf1.sortedSets[0].complete = true
+        perf1.sortedSets[1].weight = 100
+        perf1.sortedSets[1].reps = 9
+        perf1.sortedSets[1].complete = true
         session1.clearPrescriptionLinksForHistoricalUse()
 
         // Phase 2: add warmup → W1@idx1, W2@idx2.
@@ -433,9 +441,15 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected perf2 with 3 sets.")
             return
         }
-        perf2.sortedSets[0].weight = 40;  perf2.sortedSets[0].reps = 10; perf2.sortedSets[0].complete = true  // WU
-        perf2.sortedSets[1].weight = 100; perf2.sortedSets[1].reps = 9;  perf2.sortedSets[1].complete = true  // W1
-        perf2.sortedSets[2].weight = 100; perf2.sortedSets[2].reps = 9;  perf2.sortedSets[2].complete = true  // W2
+        perf2.sortedSets[0].weight = 40
+        perf2.sortedSets[0].reps = 10
+        perf2.sortedSets[0].complete = true  // WU
+        perf2.sortedSets[1].weight = 100
+        perf2.sortedSets[1].reps = 9
+        perf2.sortedSets[1].complete = true  // W1
+        perf2.sortedSets[2].weight = 100
+        perf2.sortedSets[2].reps = 9
+        perf2.sortedSets[2].complete = true  // W2
         session2.clearPrescriptionLinksForHistoricalUse()
 
         // Verify first reindex did not corrupt historical UUIDs.
@@ -462,13 +476,14 @@ struct UUIDTargetTrackingTests {
             Issue.record("Expected current performance with 2 sets.")
             return
         }
-        currentPerf.sortedSets[0].weight = 100; currentPerf.sortedSets[0].reps = 9; currentPerf.sortedSets[0].complete = true
-        currentPerf.sortedSets[1].weight = 100; currentPerf.sortedSets[1].reps = 9; currentPerf.sortedSets[1].complete = true
+        currentPerf.sortedSets[0].weight = 100
+        currentPerf.sortedSets[0].reps = 9
+        currentPerf.sortedSets[0].complete = true
+        currentPerf.sortedSets[1].weight = 100
+        currentPerf.sortedSets[1].reps = 9
+        currentPerf.sortedSets[1].complete = true
 
-        let suggestionContext = ExerciseSuggestionContext(
-            session: currentSession, performance: currentPerf, prescription: prescription,
-            history: [perf2, perf1], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg
-        )
+        let suggestionContext = ExerciseSuggestionContext(session: currentSession, performance: currentPerf, prescription: prescription, history: [perf2, perf1], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let weightChanges = flattenedChanges(from: suggestions).filter { $0.change.changeType == .increaseWeight }
 

@@ -35,9 +35,7 @@ struct SuggestionEventDraft {
         self.changes = changes
     }
 
-    var idScope: EventKey {
-        EventKey(exerciseID: targetExercisePrescription.id, setID: targetSetPrescription?.id)
-    }
+    var idScope: EventKey { EventKey(exerciseID: targetExercisePrescription.id, setID: targetSetPrescription?.id) }
 
     var catalogID: String { targetExercisePrescription.catalogID }
 
