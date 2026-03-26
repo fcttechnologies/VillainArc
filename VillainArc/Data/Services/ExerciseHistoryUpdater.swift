@@ -137,7 +137,7 @@ struct ExerciseHistoryUpdater {
                 return created
             }()
 
-            history.recalculate(using: performances)
+            history.recalculate(using: performances, context: context)
 
             if let exercise = exercisesByCatalogID[catalogID] {
                 SpotlightIndexer.index(exercise: exercise, history: history)

@@ -432,7 +432,7 @@ private struct WorkoutPlanExerciseView: View {
         }
         .sheet(isPresented: $showReplaceExerciseSheet) {
             ReplaceExerciseView(currentCatalogID: exercise.catalogID) { newExercise, keepSets in
-                exercise.replaceWith(newExercise, keepSets: keepSets)
+                exercise.replaceWith(newExercise, keepSets: keepSets, context: context)
                 saveContext(context: context)
             }
         }
