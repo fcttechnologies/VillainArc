@@ -36,12 +36,21 @@ import Testing
         #expect(validated == nil)
     }
 
-    @Test @MainActor func outcomeValidation_rejectsMultilineOrLongReason() {
+    @Test @MainActor func outcomeValidation_normalizesMultilineReason() {
         let multiline = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: "Line one.\nLine two.")
+
+        let validated = AIOutcomeInferrer.validate(multiline)
+
+        #expect(validated?.reason == "Line one. Line two.")
+    }
+
+    @Test @MainActor func outcomeValidation_truncatesLongReason() {
         let longReason = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: String(repeating: "a", count: 161))
 
-        #expect(AIOutcomeInferrer.validate(multiline) == nil)
-        #expect(AIOutcomeInferrer.validate(longReason) == nil)
+        let validated = AIOutcomeInferrer.validate(longReason)
+
+        #expect(validated?.reason.count == 160)
+        #expect(validated?.reason == String(repeating: "a", count: 160))
     }
 
     @Test @MainActor func outcomeValidation_trimsAndAcceptsShortReason() {
@@ -51,5 +60,30 @@ import Testing
 
         #expect(validated?.confidence == 0.8)
         #expect(validated?.reason == "Strong adherence to the new target.")
+    }
+
+    @Test @MainActor func aiPerformanceSnapshot_includesSetRPE() {
+        let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
+        let session = WorkoutSession(status: .done)
+        let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
+        let set = SetPerformance(exercise: performance, setType: .working, weight: 100, reps: 8, restSeconds: 90, index: 0, complete: true)
+        set.rpe = 9
+        performance.sets = [set]
+
+        let snapshot = AIExercisePerformanceSnapshot(performance: performance)
+
+        #expect(snapshot.sets.first?.rpe == 9)
+    }
+
+    @Test @MainActor func aiPrescriptionSnapshot_includesTargetRPE() {
+        let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
+        let plan = WorkoutPlan(title: "Push")
+        let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+        let set = SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: 100, targetReps: 8, targetRest: 90, targetRPE: 8, index: 0)
+        prescription.sets = [set]
+
+        let snapshot = AIExercisePrescriptionSnapshot(from: prescription)
+
+        #expect(snapshot.sets.first?.targetRPE == 8)
     }
 }

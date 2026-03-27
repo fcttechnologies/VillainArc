@@ -45,6 +45,8 @@ import FoundationModels
     let reps: Int
     @Guide(description: "Rest sec.")
     let restSeconds: Int
+    @Guide(description: "Actual RPE 1 to 10, or 0 when not recorded.")
+    let rpe: Int
 
     init(set: SetPerformance, targetSnapshot: ExerciseTargetSnapshot?) {
         index = set.index
@@ -53,6 +55,7 @@ import FoundationModels
         weight = set.weight
         reps = set.reps
         restSeconds = set.restSeconds
+        rpe = set.rpe
     }
 
     init(snapshot: SetPerformanceSnapshot, targetSnapshot: ExerciseTargetSnapshot?) {
@@ -62,6 +65,7 @@ import FoundationModels
         weight = snapshot.weight
         reps = snapshot.reps
         restSeconds = snapshot.restSeconds
+        rpe = snapshot.rpe
     }
 
     private static func resolveOriginalTargetSetIndex(targetSetID: UUID?, targetSnapshot: ExerciseTargetSnapshot?) -> Int? {

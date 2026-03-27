@@ -81,7 +81,7 @@ struct WorkoutView: View {
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthButton)
                         .accessibilityLabel(AccessibilityText.workoutLiveHealthLabel)
-                        .accessibilityValue(WorkoutLiveHealthStatsView.toolbarAccessibilityValue(for: workout.id))
+                        .accessibilityValue(WorkoutLiveStatsView.toolbarAccessibilityValue(for: workout.id))
                         .accessibilityHint(AccessibilityText.workoutLiveHealthHint)
                     }
                 }
@@ -120,7 +120,7 @@ struct WorkoutView: View {
                     .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showLiveHealthSheet) {
-                WorkoutLiveHealthStatsView()
+                WorkoutLiveStatsView(workout: workout)
                     .presentationDetents([.height(240)])
                     .presentationDragIndicator(.visible)
                     .presentationBackground(Color(.systemBackground))

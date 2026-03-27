@@ -21,6 +21,9 @@ struct ContentView: View {
         }) {
             WorkoutPlanView(plan: $0, originalPlan: router.activeWorkoutPlanOriginal)
         }
+        .fullScreenCover(item: $router.activeWeightGoalCompletion) {
+            WeightGoalCompletionView(route: $0)
+        }
     }
 }
 

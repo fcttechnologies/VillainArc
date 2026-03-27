@@ -83,7 +83,14 @@ struct OutcomeRuleEngine {
         let actualDifficultyWeight = difficultyRelativeWeight(actualWeight, equipmentType: exercisePerf.equipmentType)
         let oldDifficultyWeight = difficultyRelativeWeight(oldWeight, equipmentType: exercisePerf.equipmentType)
         let newDifficultyWeight = difficultyRelativeWeight(newWeight, equipmentType: exercisePerf.equipmentType)
-        let loadLabel = exercisePerf.equipmentType.usesAssistanceWeightSemantics ? "assistance" : "weight"
+        let loadLabel =
+            if exercisePerf.equipmentType.usesAssistanceWeightSemantics {
+                "assistance"
+            } else if exercisePerf.equipmentType.usesPerSideLoadSemantics {
+                "weight per side"
+            } else {
+                "weight"
+            }
 
         // A large directional overshoot means the athlete had to move substantially past the
         // prescribed adjustment. Upward overshoot means the increase was too small; downward

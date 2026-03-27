@@ -39,13 +39,16 @@ import FoundationModels
     let targetReps: Int
     @Guide(description: "Target rest sec.")
     let targetRest: Int
+    @Guide(description: "Target RPE 1 to 10, or 0 when not set.")
+    let targetRPE: Int
 
-    init(index: Int, setType: AIExerciseSetType, targetWeight: Double, targetReps: Int, targetRest: Int) {
+    init(index: Int, setType: AIExerciseSetType, targetWeight: Double, targetReps: Int, targetRest: Int, targetRPE: Int) {
         self.index = index
         self.setType = setType
         self.targetWeight = targetWeight
         self.targetReps = targetReps
         self.targetRest = targetRest
+        self.targetRPE = targetRPE
     }
 
     init(from set: SetPrescription) {
@@ -54,6 +57,7 @@ import FoundationModels
         targetWeight = set.targetWeight
         targetReps = set.targetReps
         targetRest = set.targetRest
+        targetRPE = set.targetRPE
     }
 
     init(snapshot: SetTargetSnapshot) {
@@ -62,5 +66,6 @@ import FoundationModels
         targetWeight = snapshot.targetWeight
         targetReps = snapshot.targetReps
         targetRest = snapshot.targetRest
+        targetRPE = snapshot.targetRPE
     }
 }

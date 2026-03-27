@@ -3,9 +3,23 @@ import SwiftData
 import SwiftUI
 
 @MainActor @Observable final class AppRouter {
+    struct WeightGoalCompletionRoute: Identifiable, Hashable {
+        enum Trigger: String, Hashable {
+            case achievedByEntry
+            case manualCompletion
+        }
+
+        let id = UUID()
+        let goalID: UUID
+        let triggeringEntryID: UUID?
+        let trigger: Trigger
+        let referenceDate: Date
+    }
+
     static let shared = AppRouter()
     var activeWorkoutSession: WorkoutSession?
     var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
+    var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     var activeWorkoutPlanOriginal: WorkoutPlan?
     var showAddExerciseFromLiveActivity = false
     var showSplitBuilderFromIntent = false
@@ -78,6 +92,11 @@ import SwiftUI
         tabSelection = .home
         homeTabPath = NavigationPath()
         healthTabPath = NavigationPath()
+    }
+
+    func presentWeightGoalCompletion(for goal: WeightGoal, trigger: WeightGoalCompletionRoute.Trigger, triggeringEntry: WeightEntry? = nil, referenceDate: Date? = nil) {
+        tabSelection = .health
+        activeWeightGoalCompletion = WeightGoalCompletionRoute(goalID: goal.id, triggeringEntryID: triggeringEntry?.id, trigger: trigger, referenceDate: referenceDate ?? triggeringEntry?.date ?? .now)
     }
 
     func startWorkoutSession() {

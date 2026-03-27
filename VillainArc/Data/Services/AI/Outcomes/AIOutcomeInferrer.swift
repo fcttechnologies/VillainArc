@@ -55,6 +55,7 @@ struct AIOutcomeInferrer {
         - Took pre-workout and still struggled slightly strengthens negative evidence.
         - Context should not override strong direct performance evidence by itself.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds usually count as attempted.
+        - Use actual RPE and target RPE when present; higher-than-target RPE is evidence of struggle even when weight and reps look similar.
         - Use trainingStyle to focus on the sets that matter most.
         - In Top Set Then Backoffs, weigh the heavy top sets more than the lighter backoff sets.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
@@ -85,6 +86,7 @@ struct AIOutcomeInferrer {
         - Took pre-workout and still struggled slightly strengthens negative evidence.
         - Context should not override strong direct performance evidence by itself.
         - Weight within one normal increment, reps within 1, and rest within 15 seconds can count as following.
+        - Use actual RPE and target RPE when present; higher-than-target RPE is evidence of struggle even when weight and reps look similar.
         - Use trainingStyle to focus on the sets that matter most.
         - Use ruleOutcome, ruleConfidence, and ruleReason as hints, not ground truth.
         - If evidence is ambiguous, prefer Ignored with lower confidence.
@@ -95,9 +97,19 @@ struct AIOutcomeInferrer {
     static func validate(_ output: AIOutcomeInferenceOutput) -> AIOutcomeInferenceOutput? {
         guard (0.0...1.0).contains(output.confidence) else { return nil }
 
-        let trimmedReason = output.reason.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedReason.isEmpty, trimmedReason.count <= 160, !trimmedReason.contains("\n") else { return nil }
+        let normalizedReason = normalizeReason(output.reason)
+        guard !normalizedReason.isEmpty else { return nil }
 
-        return AIOutcomeInferenceOutput(outcome: output.outcome, confidence: output.confidence, reason: trimmedReason)
+        return AIOutcomeInferenceOutput(outcome: output.outcome, confidence: output.confidence, reason: normalizedReason)
+    }
+
+    private static func normalizeReason(_ reason: String) -> String {
+        let collapsedWhitespace = reason
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+
+        let trimmed = collapsedWhitespace.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > 160 else { return trimmed }
+        return String(trimmed.prefix(160)).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

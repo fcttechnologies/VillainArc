@@ -174,12 +174,12 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
             if state.liveHeartRateBPM != nil || state.liveActiveEnergyBurned != nil {
                 HStack {
                     if let liveHeartRateBPM = state.liveHeartRateBPM {
-                        WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", text: "\(Int(liveHeartRateBPM.rounded()))", tint: .red)
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", number: Double(Int(liveHeartRateBPM.rounded())), tint: .red)
                         Spacer()
                     }
 
                     if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
-                        WorkoutLiveActivityExpandedMetricView(symbolName: "flame.fill", text: "\(Int(liveActiveEnergyBurned.rounded())) cal", tint: .orange)
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "flame.fill", number: Double(Int(liveActiveEnergyBurned.rounded())), unitText: "cal", tint: .orange)
                         Spacer()
                     }
 
@@ -266,8 +266,16 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
 
 private struct WorkoutLiveActivityExpandedMetricView: View {
     let symbolName: String
-    let text: String
+    let number: Double
+    let unitText: String
     let tint: Color
+
+    init(symbolName: String, number: Double, unitText: String = "", tint: Color) {
+        self.symbolName = symbolName
+        self.number = number
+        self.unitText = unitText
+        self.tint = tint
+    }
 
     var body: some View {
         HStack(spacing: 4) {
@@ -275,11 +283,19 @@ private struct WorkoutLiveActivityExpandedMetricView: View {
                 .font(.title2)
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
-            Text(text)
-                .font(.title)
-                .lineLimit(1)
-                .monospacedDigit()
-                .contentTransition(.numericText())
+            HStack(spacing: unitText.isEmpty ? 0 : 4) {
+                Text(number, format: .number.precision(.fractionLength(0)))
+                    .font(.title)
+                    .lineLimit(1)
+                    .monospacedDigit()
+                    .contentTransition(.numericText(value: number))
+
+                if !unitText.isEmpty {
+                    Text(unitText)
+                        .font(.title)
+                        .lineLimit(1)
+                }
+            }
         }
         .accessibilityElement(children: .combine)
     }
@@ -291,33 +307,34 @@ private struct WorkoutLiveActivityIslandLeadingMetricView: View {
     var body: some View {
         Group {
             if let liveHeartRateBPM = state.liveHeartRateBPM {
-                HStack(spacing: 4) {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(.red)
-                        .accessibilityHidden(true)
-                    Text("\(Int(liveHeartRateBPM.rounded()))")
-                        .font(.title2)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                }
-                .fontDesign(.rounded)
-                .fontWeight(.semibold)
+                WorkoutLiveActivityIslandMetricView(symbolName: "heart.fill", number: Double(Int(liveHeartRateBPM.rounded())), tint: .red)
             } else if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill")
-                        .foregroundStyle(.orange)
-                        .accessibilityHidden(true)
-                    Text("\(Int(liveActiveEnergyBurned.rounded()))")
-                        .font(.title2)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                }
-                .fontDesign(.rounded)
-                .fontWeight(.semibold)
+                WorkoutLiveActivityIslandMetricView(symbolName: "flame.fill", number: Double(Int(liveActiveEnergyBurned.rounded())), tint: .orange)
             } else {
                 EmptyView()
             }
         }
+    }
+}
+
+private struct WorkoutLiveActivityIslandMetricView: View {
+    let symbolName: String
+    let number: Double
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbolName)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+            Text(number, format: .number.precision(.fractionLength(0)))
+                .font(.title2)
+                .monospacedDigit()
+                .contentTransition(.numericText(value: number))
+        }
+        .fontDesign(.rounded)
+        .fontWeight(.semibold)
+        .accessibilityElement(children: .combine)
     }
 }
 

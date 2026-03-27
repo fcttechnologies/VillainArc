@@ -2,87 +2,17 @@ import SwiftUI
 import SwiftData
 import Charts
 
-fileprivate enum WeightHistoryRangeFilter: String, CaseIterable, Identifiable {
-    case week = "Week"
-    case month = "Month"
-    case year = "Year"
-    case goal = "Goal"
-    case all = "All"
-    
-    var id: String { rawValue }
-    
-    func domain(now: Date, calendar: Calendar, entries: [WeightEntry], activeGoal: WeightGoal?) -> ClosedRange<Date> {
-        let startOfToday = calendar.startOfDay(for: now)
-        let endOfToday = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: startOfToday) ?? now
-        
-        let lowerBound: Date
-        switch self {
-        case .week:
-            lowerBound = calendar.date(byAdding: .day, value: -7, to: startOfToday) ?? startOfToday
-        case .month:
-            lowerBound = calendar.date(byAdding: .day, value: -31, to: startOfToday) ?? startOfToday
-        case .year:
-            lowerBound = calendar.date(byAdding: .year, value: -1, to: startOfToday) ?? startOfToday
-        case .goal:
-            return goalDomain(now: now, calendar: calendar, entries: entries, activeGoal: activeGoal)
-        case .all:
-            if let oldestEntry = entries.last?.date {
-                lowerBound = calendar.startOfDay(for: oldestEntry)
-            } else {
-                lowerBound = startOfToday
-            }
-        }
-        
-        return lowerBound...endOfToday
-    }
-
-    private func goalDomain(now: Date, calendar: Calendar, entries: [WeightEntry], activeGoal: WeightGoal?) -> ClosedRange<Date> {
-        let startOfToday = calendar.startOfDay(for: now)
-        let endOfToday = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: startOfToday) ?? now
-
-        guard let activeGoal else {
-            return startOfToday...endOfToday
-        }
-
-        let lowerBound = calendar.startOfDay(for: activeGoal.startedAt)
-        let goalEndDay = calendar.startOfDay(for: activeGoal.targetDate ?? now)
-        let goalUpperBound = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: goalEndDay) ?? goalEndDay
-
-        let hasEntriesInGoalRange = entries.contains { entry in
-            entry.date >= lowerBound && entry.date <= goalUpperBound
-        }
-
-        if hasEntriesInGoalRange {
-            return lowerBound...goalUpperBound
-        }
-
-        if activeGoal.targetDate != nil {
-            let startedAtUpperBound = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: lowerBound) ?? lowerBound
-            return lowerBound...startedAtUpperBound
-        }
-
-        if let latestEntryDate = entries.first?.date {
-            let latestEntryLowerBound = calendar.startOfDay(for: latestEntryDate)
-            return latestEntryLowerBound...endOfToday
-        }
-
-        return lowerBound...endOfToday
-    }
-    
-    func includes(_ date: Date, in domain: ClosedRange<Date>) -> Bool {
-        domain.contains(date)
-    }
-    
-    func emptyStateDescription(activeGoal: WeightGoal?) -> String {
+private extension TimeSeriesRangeFilter {
+    func emptyStateDescription() -> String {
         switch self {
         case .week:
             return "No weight entries were recorded in the last 7 days."
         case .month:
             return "No weight entries were recorded in the last month."
+        case .sixMonths:
+            return "No weight entries were recorded in the last 6 months."
         case .year:
             return "No weight entries were recorded in the last year."
-        case .goal:
-            return activeGoal == nil ? "Create a weight goal to see goal-specific history." : "No weight entries were recorded during this goal yet."
         case .all:
             return "No weight entries have been recorded yet."
         }
@@ -91,71 +21,48 @@ fileprivate enum WeightHistoryRangeFilter: String, CaseIterable, Identifiable {
 
 struct WeightHistoryView: View {
     private let router = AppRouter.shared
-    let weightUnit: WeightUnit
     
-    @Query(WeightEntry.history) private var weightEntries: [WeightEntry]
+    let weightUnit: WeightUnit
+    @Query(WeightEntry.history, animation: .smooth) private var weightEntries: [WeightEntry]
     @Query(WeightGoal.active) private var activeGoals: [WeightGoal]
+    @Query(WeightGoal.inactiveLatest) private var inactiveGoals: [WeightGoal]
     
     @State private var showAddWeightEntrySheet = false
     @State private var showNewWeightGoalSheet = false
-    @State private var selectedRange: WeightHistoryRangeFilter = .month
-    @State private var selectedDate: Date?
-
+    @State private var selectedRange: TimeSeriesRangeFilter = .month
+    
     private var activeGoal: WeightGoal? {
         activeGoals.first
     }
-
-    private var availableRanges: [WeightHistoryRangeFilter] {
-        if activeGoal == nil {
-            return WeightHistoryRangeFilter.allCases.filter { $0 != .goal }
-        }
-        return WeightHistoryRangeFilter.allCases
+    
+    private var goalAnalysis: WeightGoalAnalysis? {
+        guard let activeGoal else { return nil }
+        return WeightGoalAnalysis(goal: activeGoal, entries: weightEntries)
     }
     
-    private var currentDomain: ClosedRange<Date> {
-        selectedRange.domain(now: Date(), calendar: .autoupdatingCurrent, entries: weightEntries, activeGoal: activeGoal)
+    private var availableRanges: [TimeSeriesRangeFilter] {
+        TimeSeriesRangeFilter.allCases
     }
     
-    private var filteredEntries: [WeightEntry] {
-        weightEntries
-            .filter { selectedRange.includes($0.date, in: currentDomain) }
-            .sorted { $0.date < $1.date }
-    }
-    
-    private var chartData: WeightHistoryChartData {
-        WeightHistoryChartData(entries: filteredEntries, rangeFilter: selectedRange)
-    }
-    
-    private var chartPoints: [WeightChartPoint] {
-        chartData.points
-    }
-    
-    private var displayedPoint: WeightChartPoint? {
-        if let selectedPoint {
-            return selectedPoint
-        }
-        
-        return chartPoints.last
-    }
-    
-    private var selectedPoint: WeightChartPoint? {
-        guard let selectedDate else { return nil }
-        return nearestPoint(to: selectedDate)
+    private var hasGoalHistory: Bool {
+        !inactiveGoals.isEmpty
     }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                WeightGoalSummaryButton(activeGoal: activeGoal, weightUnit: weightUnit) {
+                WeightGoalSummaryCard(activeGoal: activeGoal, analysis: goalAnalysis, entries: weightEntries, weightUnit: weightUnit, hasGoalHistory: hasGoalHistory) {
                     Haptics.selection()
-                    if activeGoal == nil {
-                        showNewWeightGoalSheet = true
-                    } else {
+                    if activeGoal != nil || hasGoalHistory {
                         router.navigate(to: .weightGoalHistory(weightUnit))
+                    } else {
+                        showNewWeightGoalSheet = true
                     }
                 }
                 
-                WeightHistoryMainSection(displayedPoint: displayedPoint, points: chartPoints, xDomain: currentDomain, grouping: chartData.grouping, selectedDate: $selectedDate, weightUnit: weightUnit, selectedRange: $selectedRange, activeGoal: activeGoal, availableRanges: availableRanges)
+                WeightHistoryMainSection(entries: weightEntries, activeGoal: activeGoal, weightUnit: weightUnit, selectedRange: $selectedRange, availableRanges: availableRanges) {
+                    showAddWeightEntrySheet = true
+                }
                 
                 Button {
                     Haptics.selection()
@@ -200,486 +107,442 @@ struct WeightHistoryView: View {
                 .presentationDetents([.fraction(0.7), .large])
                 .presentationBackground(Color(.systemBackground))
         }
-        .onChange(of: selectedRange) { _, _ in
-            selectedDate = nil
-        }
-        .onChange(of: activeGoal) { oldValue, newValue in
-            if newValue == nil, selectedRange == .goal {
-                selectedRange = .month
-            } else if oldValue == nil, newValue != nil {
-                selectedRange = .goal
-            }
-        }
-        .onChange(of: chartPoints) { _, newPoints in
-            guard let selectedDate else { return }
-            self.selectedDate = nearestPoint(in: newPoints, to: selectedDate)?.date
-        }
-        .onAppear {
-            selectedRange = activeGoal == nil ? .month : .goal
-        }
-    }
-    
-    private func nearestPoint(to date: Date) -> WeightChartPoint? {
-        nearestPoint(in: chartPoints, to: date)
-    }
-    
-    private func nearestPoint(in points: [WeightChartPoint], to date: Date) -> WeightChartPoint? {
-        points.min { left, right in
-            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
-        }
     }
 }
 
 private struct WeightHistoryMainSection: View {
-    let displayedPoint: WeightChartPoint?
-    let points: [WeightChartPoint]
-    let xDomain: ClosedRange<Date>
-    let grouping: WeightHistoryGrouping
-    @Binding var selectedDate: Date?
-    let weightUnit: WeightUnit
-    @Binding var selectedRange: WeightHistoryRangeFilter
-    let activeGoal: WeightGoal?
-    let availableRanges: [WeightHistoryRangeFilter]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(displayedDateText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                
-                Text(displayedWeightText)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.primary)
-            }
-            
-            WeightHistoryChart(points: points, xDomain: xDomain, grouping: grouping, selectedDate: $selectedDate, weightUnit: weightUnit, rangeFilter: selectedRange, targetWeight: selectedRange == .goal ? activeGoal?.targetWeight : nil)
-                .overlay {
-                    if points.isEmpty && !(selectedRange == .goal && activeGoal != nil) {
-                        ContentUnavailableView("No Weight Entries", systemImage: "chart.line.uptrend.xyaxis", description: Text(selectedRange.emptyStateDescription(activeGoal: activeGoal)))
-                    }
-                }
-                .frame(height: 260)
-            
-            Picker("Range", selection: $selectedRange) {
-                ForEach(availableRanges) { range in
-                    Text(range.rawValue).tag(range)
-                }
-            }
-            .pickerStyle(.segmented)
-        }
-        .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+    private struct EntrySnapshot {
+        let date: Date
+        let weight: Double
     }
-    
-    private var displayedDateText: String {
-        if selectedDate == nil, selectedRange == .goal {
-            return formattedAbsoluteDateRange(start: xDomain.lowerBound, end: xDomain.upperBound)
-        }
 
-        guard let displayedPoint else { return "No entries in this range" }
-        
-        if displayedPoint.entryCount > 1 {
-            return formattedAbsoluteDateRange(start: displayedPoint.startDate, end: displayedPoint.endDate)
-        }
-        
-        return formattedRecentDayAndTime(displayedPoint.date)
+    private struct SummaryStat: Identifiable {
+        let id: String
+        let title: String
+        let text: String
     }
-    
-    private var displayedWeightText: String {
-        guard let displayedPoint else { return "-" }
-        
-        let formattedWeight = formattedWeightText(displayedPoint.weight, unit: weightUnit)
-        if displayedPoint.entryCount > 1 {
-            return "Avg \(formattedWeight)"
-        }
-        return formattedWeight
-    }
-}
 
-private struct WeightGoalSummaryButton: View {
+    private enum MetadataAlignment {
+        case leading
+        case trailing
+    }
+
+    private struct CachedRangeData {
+        let layout: TimeSeriesChartLayout
+        let yDomain: ClosedRange<Double>
+        let linePoints: [TimeSeriesBucketedPoint]
+        let averageWeightKg: Double?
+        let entryCount: Int
+        let changeKg: Double?
+        let trendKgPerWeek: Double?
+        let lowWeightKg: Double?
+        let highWeightKg: Double?
+    }
+
+    let entries: [WeightEntry]
     let activeGoal: WeightGoal?
     let weightUnit: WeightUnit
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
-                    Image(systemName: "target")
-                        .font(.subheadline)
-                    Text("Weight Goal")
-                        .fontWeight(.semibold)
-                }
-                .foregroundStyle(.secondary)
-
-                if let activeGoal {
-                    Text(activeGoalTitle(activeGoal))
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.primary)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let targetDate = activeGoal.targetDate {
-                            Text("Target Date \(formattedRecentDay(targetDate))")
-                        }
-                        if let targetRatePerWeek = activeGoal.targetRatePerWeek {
-                            Text("Target Pace \(formattedWeightValue(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)/wk")
-                        }
-                    }
-                    .foregroundStyle(.secondary)
-                    .fontWeight(.semibold)
-                } else {
-                    Text("No active goal")
-                        .font(.title3)
-                        .bold()
-                        .fontDesign(.rounded)
-
-                    Text("Tap to create a weight goal.")
-                        .foregroundStyle(.secondary)
-                        .fontWeight(.semibold)
-                }
-            }
-            .padding(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.roundedRectangle(radius: 12))
-        .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalSummaryButton)
-        .accessibilityHint(AccessibilityText.healthWeightGoalSummaryHint)
-    }
-
-    private func activeGoalTitle(_ goal: WeightGoal) -> String {
-        if goal.type == .maintain {
-            return goal.type.title
-        }
-
-        return "\(goal.type.title) to \(formattedWeightText(goal.targetWeight, unit: weightUnit))"
-    }
-}
-
-private struct WeightHistoryChart: View {
-    let points: [WeightChartPoint]
-    let xDomain: ClosedRange<Date>
-    let grouping: WeightHistoryGrouping
-    @Binding var selectedDate: Date?
-    let weightUnit: WeightUnit
-    let rangeFilter: WeightHistoryRangeFilter
-    let targetWeight: Double?
+    @Binding var selectedRange: TimeSeriesRangeFilter
+    let availableRanges: [TimeSeriesRangeFilter]
+    let onAddEntry: () -> Void
+    
+    @State private var selectedDate: Date?
+    @State private var rangeCache: [TimeSeriesRangeFilter: CachedRangeData] = [:]
     
     private let tint = Color.blue
     
-    private var selectedPoint: WeightChartPoint? {
-        guard let selectedDate else { return nil }
-        return nearestPoint(to: selectedDate)
+    private var timeSeriesSamples: [TimeSeriesSample] {
+        entries.map { TimeSeriesSample(id: $0.id, date: $0.date, value: $0.weight) }
+    }
+
+    private var entrySnapshots: [EntrySnapshot] {
+        entries.map { EntrySnapshot(date: $0.date, weight: $0.weight) }
     }
     
-    private var yDomain: ClosedRange<Double> {
-        var values = points.map(\.weight)
-        if rangeFilter == .goal, let targetWeight {
-            values.append(targetWeight)
+    private var latestEntry: WeightEntry? {
+        entries.first
+    }
+
+    private var currentRangeData: CachedRangeData? {
+        rangeCache[selectedRange]
+    }
+
+    private var cacheSeed: Int {
+        var hasher = Hasher()
+        hasher.combine(entries.count)
+        for entry in entries {
+            hasher.combine(entry.id)
+            hasher.combine(entry.date)
+            hasher.combine(entry.weight.bitPattern)
         }
-        return weightYDomain(for: values)
+        return hasher.finalize()
     }
     
-    private var axisMode: WeightHistoryAxisMode {
-        WeightHistoryAxisMode(rangeFilter: rangeFilter, domain: xDomain)
+    private var selectedPoint: TimeSeriesBucketedPoint? {
+        guard let currentRangeData else { return nil }
+        guard let selectedDate else { return nil }
+        return nearestPoint(in: currentRangeData.layout.points, to: selectedDate)
+    }
+
+    private var headerDetailTitle: String? {
+        if let selectedPoint, selectedPoint.sampleCount > 1 { return "Entries" }
+        return nil
+    }
+
+    private var headerDetailText: String? {
+        if let selectedPoint, selectedPoint.sampleCount > 1 {
+            return "\(selectedPoint.sampleCount)"
+        }
+        return nil
+    }
+    
+    private var displayedDateText: String {
+        if let selectedPoint { return selectedPointDateText(selectedPoint) }
+        guard let latestEntry else { return "No entries in this range" }
+        return formattedRecentDayAndTime(latestEntry.date)
+    }
+
+    private var visibleRangeText: String? {
+        guard let currentRangeData else { return nil }
+        return formattedAbsoluteDateRange(start: currentRangeData.layout.currentDomain.lowerBound, end: currentRangeData.layout.currentDomain.upperBound)
+    }
+    
+    private var displayedWeightValue: Double? {
+        if let selectedPoint { return weightUnit.fromKg(selectedPoint.value) }
+        guard let latestEntry else { return nil }
+        return weightUnit.fromKg(latestEntry.weight)
+    }
+    
+    private var showsAverageContext: Bool {
+        (selectedPoint?.sampleCount ?? 0) > 1
+    }
+
+    private var summaryStats: [SummaryStat] {
+        guard let currentRangeData, currentRangeData.entryCount > 0 else { return [] }
+        var stats = [SummaryStat(id: "change", title: "Change", text: changeText(for: currentRangeData))]
+        if let trendText = trendText(for: currentRangeData) {
+            stats.append(SummaryStat(id: "trend", title: "Trend", text: trendText))
+        }
+        return stats
+    }
+
+    private var targetWeightKg: Double? {
+        activeGoal?.targetWeight
+    }
+
+    private var chartYDomain: ClosedRange<Double> {
+        guard let currentRangeData else { return 0...1 }
+        guard let targetWeightKg, shouldShowTargetLine(in: currentRangeData, targetWeightKg: targetWeightKg) else { return currentRangeData.yDomain }
+        return weightYDomain(for: currentRangeData.layout.points.map(\.value) + [targetWeightKg])
+    }
+
+    private var showsCurrentTargetLine: Bool {
+        guard let currentRangeData, let targetWeightKg else { return false }
+        return shouldShowTargetLine(in: currentRangeData, targetWeightKg: targetWeightKg)
     }
     
     var body: some View {
-        Chart {
-            if rangeFilter == .goal, let targetWeight {
-                RuleMark(y: .value("Target Weight", targetWeight))
-                    .foregroundStyle(.green)
-                    .lineStyle(.init(lineWidth: 1.5, dash: [6, 4]))
-                    .annotation(position: .top, alignment: .leading) {
-                        Text("Target")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(displayedDateText)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        
+                        Group {
+                            if let displayedWeightValue {
+                                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                                    Text("\(displayedWeightValue, format: .number.precision(.fractionLength(0...1))) \(weightUnit.rawValue)")
+                                    
+                                    if showsAverageContext {
+                                        Text("avg")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            } else {
+                                Text("-")
+                            }
+                        }
+                        .font(.largeTitle)
+                        .bold()
+                        .fontDesign(.rounded)
                     }
-            }
-
-            ForEach(points) { point in
-                LineMark(x: .value("Date", point.date), y: .value("Weight", point.weight))
-                    .foregroundStyle(tint)
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
-
-                if points.count <= 60 {
-                    PointMark(x: .value("Date", point.date), y: .value("Weight", point.weight))
-                        .foregroundStyle(tint.opacity(0.8))
-                        .symbolSize(24)
+                    
+                    Spacer()
+                    
+                    if let headerDetailTitle, let headerDetailText {
+                        VStack(alignment: .trailing, spacing: 3) {
+                            Text(headerDetailTitle)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            Text(headerDetailText)
+                                .font(.largeTitle)
+                                .bold()
+                                .fontDesign(.rounded)
+                        }
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityElement(children: .combine)
+                    }
                 }
 
-                if point.id == selectedPoint?.id {
-                    RuleMark(x: .value("Selected Date", point.date))
-                        .foregroundStyle(tint)
-                        .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                if let currentRangeData {
+                    Chart {
+                        targetRuleMark()
+                        historyLineMarks(for: currentRangeData)
+                        historyPointMarks(for: currentRangeData)
+                        selectedPointMarks()
+                    }
+                    .chartLegend(.hidden)
+                    .chartXSelection(value: $selectedDate)
+                    .chartXScale(domain: currentRangeData.layout.currentDomain)
+                    .chartYScale(domain: chartYDomain)
+                    .chartYAxis {
+                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
+                            AxisGridLine()
+                            AxisValueLabel {
+                                if let doubleValue = value.as(Double.self) {
+                                    Text(formattedWeightValue(doubleValue, unit: weightUnit, fractionDigits: 0...1))
+                                }
+                            }
+                        }
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: currentRangeData.layout.axisDates) { value in
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel {
+                                if let date = value.as(Date.self) {
+                                    Text(axisLabel(for: date, style: currentRangeData.layout.axisLabelStyle))
+                                }
+                            }
+                        }
+                    }
+                    .overlay {
+                        if currentRangeData.layout.points.isEmpty {
+                            emptyStateView()
+                        }
+                    }
+                    .frame(height: 260)
 
-                    PointMark(x: .value("Selected Date", point.date), y: .value("Selected Weight", point.weight))
-                        .foregroundStyle(.white)
-                        .symbolSize(80)
+                    if let visibleRangeText, currentRangeData.entryCount > 0 {
+                        VStack(spacing: 5) {
+                            HStack {
+                                if let averageWeightKg = currentRangeData.averageWeightKg {
+                                    metadataWeightValue(title: "Avg", weightKg: averageWeightKg, alignment: .leading)
+                                }
+                                Spacer()
+                                if let lowWeightKg = currentRangeData.lowWeightKg {
+                                    metadataWeightValue(title: "Low", weightKg: lowWeightKg, alignment: .trailing)
+                                }
+                            }
+                            
+                            HStack {
+                                Text(visibleRangeText)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .fontWeight(.semibold)
+                                Spacer()
+                                if let highWeightKg = currentRangeData.highWeightKg {
+                                    metadataWeightValue(title: "High", weightKg: highWeightKg, alignment: .trailing)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    ProgressView("Updating chart")
+                        .frame(maxWidth: .infinity, minHeight: 260)
+                }
 
-                    PointMark(x: .value("Selected Date", point.date), y: .value("Selected Weight", point.weight))
-                        .foregroundStyle(tint)
-                        .symbolSize(36)
+                Picker("Range", selection: $selectedRange) {
+                    ForEach(availableRanges) { range in
+                        Text(range.rawValue).tag(range)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding()
+            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            
+            if !summaryStats.isEmpty {
+                HStack(spacing: 10) {
+                    ForEach(summaryStats) { stat in
+                        SummaryStatCard(title: stat.title, text: stat.text)
+                    }
                 }
             }
         }
-        .chartLegend(.hidden)
-        .chartXSelection(value: $selectedDate)
-        .chartXScale(domain: xDomain)
-        .chartYScale(domain: yDomain)
-        .chartYAxis {
-            AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let doubleValue = value.as(Double.self) {
-                        Text(formattedWeightValue(doubleValue, unit: weightUnit, fractionDigits: 0...1))
-                    }
-                }
-            }
-        }
-        .chartXAxis {
-            switch axisMode {
-            case .week:
-                AxisMarks(values: .automatic(desiredCount: 7)) { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            Text(axisLabel(for: date))
-                        }
-                    }
-                }
-            case .month:
-                AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            Text(axisLabel(for: date))
-                        }
-                    }
-                }
-            case .year:
-                AxisMarks(values: monthAxisDates) { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            Text(axisLabel(for: date))
-                        }
-                    }
-                }
-            case .multiYear:
-                AxisMarks(values: yearAxisDates) { value in
-                    AxisGridLine()
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            Text(axisLabel(for: date))
-                        }
-                    }
-                }
-            }
+        .onChange(of: selectedRange) { selectedDate = nil }
+        .task(id: cacheSeed) {
+            prepareRangeCache()
         }
     }
     
-    private func axisLabel(for date: Date) -> String {
-        switch axisMode {
-        case .week:
-            return date.formatted(.dateTime.weekday(.abbreviated))
-        case .month:
-            return date.formatted(.dateTime.month(.abbreviated).day())
-        case .year:
-            return date.formatted(.dateTime.month(.abbreviated))
-        case .multiYear:
-            return date.formatted(.dateTime.year())
-        }
+    private func axisLabel(for date: Date, style: TimeSeriesAxisLabelStyle) -> String {
+        timeSeriesAxisLabelText(for: date, style: style)
     }
     
-    private func nearestPoint(to date: Date) -> WeightChartPoint? {
+    private func nearestPoint(in points: [TimeSeriesBucketedPoint], to date: Date) -> TimeSeriesBucketedPoint? {
         points.min { left, right in
             abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
         }
     }
     
-    private var monthAxisDates: [Date] {
-        let calendar = Calendar.autoupdatingCurrent
-        
-        if rangeFilter == .year {
-            let upperMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: xDomain.upperBound)) ?? xDomain.upperBound
-            return (0..<12)
-                .compactMap { calendar.date(byAdding: .month, value: -11 + $0, to: upperMonthStart) }
-                .filter { xDomain.contains($0) }
-        }
-        
-        return monthTickDates(in: xDomain, calendar: calendar, maxCount: 12)
+    private func selectedPointDateText(_ point: TimeSeriesBucketedPoint) -> String {
+        timeSeriesBucketLabelText(for: point, bucketStyle: currentRangeData?.layout.bucketStyle ?? .day)
     }
-    
-    private var yearAxisDates: [Date] {
-        let calendar = Calendar.autoupdatingCurrent
-        return yearTickDates(in: xDomain, calendar: calendar)
-    }
-}
 
-private enum WeightHistoryGrouping {
-    case raw
-    case multiDay
-    case weekly
-    case monthly
-}
+    @ChartContentBuilder
+    private func targetRuleMark() -> some ChartContent {
+        if showsCurrentTargetLine, let targetWeightKg {
+            RuleMark(y: .value("Goal Target", targetWeightKg))
+                .foregroundStyle(Color.green.opacity(0.7))
+                .lineStyle(.init(lineWidth: 1.5, dash: [5, 4]))
+        }
+    }
 
-private struct WeightHistoryChartData {
-    let points: [WeightChartPoint]
-    let grouping: WeightHistoryGrouping
-    
-    init(entries: [WeightEntry], rangeFilter: WeightHistoryRangeFilter) {
-        let grouping = Self.grouping(for: entries, rangeFilter: rangeFilter)
-        self.grouping = grouping
-        self.points = Self.makePoints(from: entries, grouping: grouping)
-    }
-    
-    private static func grouping(for entries: [WeightEntry], rangeFilter: WeightHistoryRangeFilter) -> WeightHistoryGrouping {
-        let sortedEntries = entries.sorted { $0.date < $1.date }
-        guard let firstDate = sortedEntries.first?.date, let lastDate = sortedEntries.last?.date else {
-            return .raw
-        }
-        
-        let spanDays = max(0, Calendar.autoupdatingCurrent.dateComponents([.day], from: firstDate, to: lastDate).day ?? 0)
-        
-        switch rangeFilter {
-        case .week:
-            return .raw
-        case .month:
-            return entries.count > 45 ? .multiDay : .raw
-        case .year:
-            return entries.count > 90 || spanDays > 180 ? .weekly : .raw
-        case .goal, .all:
-            if spanDays > 730 || entries.count > 180 {
-                return .monthly
-            }
-            if spanDays > 180 || entries.count > 90 {
-                return .weekly
-            }
-            if spanDays > 45 || entries.count > 45 {
-                return .multiDay
-            }
-            return .raw
+    @ChartContentBuilder
+    private func historyLineMarks(for data: CachedRangeData) -> some ChartContent {
+        ForEach(data.linePoints) { point in
+            LineMark(x: .value("Date", point.date), y: .value("Weight", point.value), series: .value("Series", "Weight"))
+                .foregroundStyle(tint)
+                .interpolationMethod(.catmullRom)
+                .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
         }
     }
-    
-    private static func makePoints(from entries: [WeightEntry], grouping: WeightHistoryGrouping) -> [WeightChartPoint] {
-        let sortedEntries = entries.sorted { $0.date < $1.date }
-        
-        switch grouping {
-        case .raw:
-            return sortedEntries.map(WeightChartPoint.init)
-        case .multiDay:
-            return bucketedPoints(from: sortedEntries, grouping: grouping) { entry, calendar in
-                let startOfEntryDay = calendar.startOfDay(for: entry.date)
-                let dayNumber = calendar.dateComponents([.day], from: .distantPast, to: startOfEntryDay).day ?? 0
-                return "days-\(dayNumber / 3)"
-            }
-        case .weekly:
-            return bucketedPoints(from: sortedEntries, grouping: grouping) { entry, calendar in
-                let week = calendar.component(.weekOfYear, from: entry.date)
-                let year = calendar.component(.yearForWeekOfYear, from: entry.date)
-                return "week-\(year)-\(week)"
-            }
-        case .monthly:
-            return bucketedPoints(from: sortedEntries, grouping: grouping) { entry, calendar in
-                let month = calendar.component(.month, from: entry.date)
-                let year = calendar.component(.year, from: entry.date)
-                return "month-\(year)-\(month)"
+
+    @ChartContentBuilder
+    private func historyPointMarks(for data: CachedRangeData) -> some ChartContent {
+        if data.layout.points.count <= 60 {
+            ForEach(data.layout.points) { point in
+                PointMark(x: .value("Date", point.date), y: .value("Weight", point.value))
+                    .foregroundStyle(tint.opacity(0.8))
+                    .symbolSize(24)
             }
         }
     }
-    
-    private static func bucketedPoints(from entries: [WeightEntry], grouping: WeightHistoryGrouping, key: (WeightEntry, Calendar) -> String) -> [WeightChartPoint] {
+
+    @ChartContentBuilder
+    private func selectedPointMarks() -> some ChartContent {
+        if let selectedPoint {
+            RuleMark(x: .value("Selected Date", selectedPoint.date))
+                .foregroundStyle(tint)
+                .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+            
+            PointMark(x: .value("Selected Date", selectedPoint.date), y: .value("Selected Weight", selectedPoint.value))
+                .foregroundStyle(.white)
+                .symbolSize(80)
+            
+            PointMark(x: .value("Selected Date", selectedPoint.date), y: .value("Selected Weight", selectedPoint.value))
+                .foregroundStyle(tint)
+                .symbolSize(36)
+        }
+    }
+
+    @ViewBuilder
+    private func emptyStateView() -> some View {
+        ContentUnavailableView {
+            Label("No Weight Entries", systemImage: "chart.line.uptrend.xyaxis")
+        } description: {
+            Text(selectedRange.emptyStateDescription())
+        } actions: {
+            Button("Log Weight") {
+                Haptics.selection()
+                onAddEntry()
+            }
+        }
+    }
+
+    private func changeText(for data: CachedRangeData) -> String {
+        let delta = weightUnit.fromKg(data.changeKg ?? 0)
+        let sign = delta > 0 ? "+" : ""
+        return "\(sign)\(delta.formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.rawValue)"
+    }
+
+    @ViewBuilder
+    private func metadataWeightValue(title: String, weightKg: Double, alignment: MetadataAlignment) -> some View {
+        let displayedWeight = weightUnit.fromKg(weightKg)
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text("\(displayedWeight, format: .number.precision(.fractionLength(0...1))) \(weightUnit.rawValue)")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .fontDesign(.rounded)
+                .monospacedDigit()
+                .contentTransition(.numericText(value: displayedWeight))
+        }
+        .animation(.smooth, value: displayedWeight)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func trendText(for data: CachedRangeData) -> String? {
+        guard let trendKgPerWeek = data.trendKgPerWeek else { return nil }
+        let pacePerWeek = weightUnit.fromKg(trendKgPerWeek)
+        let direction = pacePerWeek > 0.05 ? "Up" : pacePerWeek < -0.05 ? "Down" : "Flat"
+        if direction == "Flat" { return "Flat" }
+        return "\(direction) \(abs(pacePerWeek).formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.rawValue)/wk"
+    }
+
+    private func shouldShowTargetLine(in data: CachedRangeData, targetWeightKg: Double) -> Bool {
+        guard !data.layout.points.isEmpty else { return false }
+        let naturalSpan = data.yDomain.upperBound - data.yDomain.lowerBound
+        guard naturalSpan > 0 else { return false }
+        let expandedDomain = weightYDomain(for: data.layout.points.map(\.value) + [targetWeightKg])
+        let expandedSpan = expandedDomain.upperBound - expandedDomain.lowerBound
+        return expandedSpan <= naturalSpan * 1.3
+    }
+
+    private static func smoothedDailyPoints(from entries: [EntrySnapshot]) -> [TimeSeriesSample] {
         let calendar = Calendar.autoupdatingCurrent
-        let buckets = Dictionary(grouping: entries) { key($0, calendar) }
-        
-        return buckets.values.compactMap { bucketEntries in
-            let sortedBucket = bucketEntries.sorted { $0.date < $1.date }
-            guard let lastEntry = sortedBucket.last else { return nil }
-            guard let firstEntry = sortedBucket.first else { return nil }
-            let averageWeight = sortedBucket.reduce(0) { $0 + $1.weight } / Double(sortedBucket.count)
-            return WeightChartPoint(id: UUID(), date: lastEntry.date, weight: averageWeight, startDate: firstEntry.date, endDate: lastEntry.date, entryCount: sortedBucket.count)
+        let buckets = Dictionary(grouping: entries) { calendar.startOfDay(for: $0.date) }
+        let sortedDates: [Date] = buckets.keys.sorted(by: <)
+        let dailyPoints: [TimeSeriesSample] = sortedDates.map { date in
+            let bucketEntries = buckets[date] ?? []
+            let averageWeight = bucketEntries.reduce(0) { $0 + $1.weight } / Double(bucketEntries.count)
+            return TimeSeriesSample(date: date, value: averageWeight)
         }
-        .sorted { $0.date < $1.date }
+        let windowSize = Swift.min(5, dailyPoints.count)
+        guard windowSize > 1 else { return dailyPoints }
+        return dailyPoints.indices.map { index in
+            let lowerBound = index >= windowSize ? (index - windowSize + 1) : 0
+            let window = dailyPoints[lowerBound...index]
+            let averageWeight = window.reduce(0) { $0 + $1.value } / Double(window.count)
+            return TimeSeriesSample(date: dailyPoints[index].date, value: averageWeight)
+        }
     }
-}
 
-private enum WeightHistoryAxisMode {
-    case week
-    case month
-    case year
-    case multiYear
-    
-    init(rangeFilter: WeightHistoryRangeFilter, domain: ClosedRange<Date>) {
-        let spanDays = max(0, Calendar.autoupdatingCurrent.dateComponents([.day], from: domain.lowerBound, to: domain.upperBound).day ?? 0)
-        
-        switch rangeFilter {
-        case .week:
-            self = .week
-        case .month:
-            self = .month
-        case .year:
-            self = .year
-        case .goal, .all:
-            if spanDays <= 8 {
-                self = .week
-            } else if spanDays <= 31 {
-                self = .month
-            } else if spanDays <= 366 {
-                self = .year
+    private func prepareRangeCache() {
+        let samples = timeSeriesSamples
+        let entrySnapshots = entrySnapshots
+        let ranges = availableRanges
+        let now = Date()
+        let calendar = Calendar.autoupdatingCurrent
+        let cache = Dictionary(uniqueKeysWithValues: ranges.map { range in
+            let layout = TimeSeriesChartLayout(rangeFilter: range, samples: samples, now: now, calendar: calendar, aggregation: .average)
+            let visibleEntries = entrySnapshots.filter { layout.currentDomain.contains($0.date) }.sorted { $0.date < $1.date }
+            let averageWeightKg = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.weight } / Double(visibleEntries.count))
+            let changeKg = layout.points.count >= 2 ? (layout.points.last!.value - layout.points.first!.value) : nil
+            let smoothedPoints = Self.smoothedDailyPoints(from: visibleEntries)
+            let trendKgPerWeek: Double?
+            if smoothedPoints.count >= 2, let firstPoint = smoothedPoints.first, let lastPoint = smoothedPoints.last {
+                let spanDays = lastPoint.date.timeIntervalSince(firstPoint.date) / 86_400
+                trendKgPerWeek = spanDays > 0 ? (((lastPoint.value - firstPoint.value) / spanDays) * 7) : nil
             } else {
-                self = .multiYear
+                trendKgPerWeek = nil
             }
-        }
+            let lowWeightKg = visibleEntries.map(\.weight).min()
+            let highWeightKg = visibleEntries.map(\.weight).max()
+            let data = CachedRangeData(layout: layout, yDomain: weightYDomain(for: layout.points.map(\.value)), linePoints: timeSeriesAnchoredLinePoints(points: layout.points, samples: samples, domain: layout.currentDomain), averageWeightKg: averageWeightKg, entryCount: visibleEntries.count, changeKg: changeKg, trendKgPerWeek: trendKgPerWeek, lowWeightKg: lowWeightKg, highWeightKg: highWeightKg)
+            return (range, data)
+        })
+        rangeCache = cache
     }
-}
-
-private func monthTickDates(in domain: ClosedRange<Date>, calendar: Calendar, maxCount: Int) -> [Date] {
-    let lowerMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: domain.lowerBound)) ?? domain.lowerBound
-    let upperMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: domain.upperBound)) ?? domain.upperBound
-    
-    var dates: [Date] = []
-    var current = lowerMonthStart
-    
-    while current <= upperMonthStart {
-        if domain.contains(current) {
-            dates.append(current)
-        }
-        guard let next = calendar.date(byAdding: .month, value: 1, to: current) else { break }
-        current = next
-    }
-    
-    if dates.count <= maxCount {
-        return dates
-    }
-    
-    return Array(dates.suffix(maxCount))
-}
-
-private func yearTickDates(in domain: ClosedRange<Date>, calendar: Calendar) -> [Date] {
-    let lowerYearStart = calendar.date(from: calendar.dateComponents([.year], from: domain.lowerBound)) ?? domain.lowerBound
-    let upperYearStart = calendar.date(from: calendar.dateComponents([.year], from: domain.upperBound)) ?? domain.upperBound
-    
-    var dates: [Date] = []
-    var current = lowerYearStart
-    
-    while current <= upperYearStart {
-        if domain.contains(current) {
-            dates.append(current)
-        }
-        guard let next = calendar.date(byAdding: .year, value: 1, to: current) else { break }
-        current = next
-    }
-    
-    return dates
 }
 
 #Preview {

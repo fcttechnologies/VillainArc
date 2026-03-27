@@ -83,7 +83,7 @@ struct ExerciseReplacementTests {
         #expect(performance.originalTargetSnapshot != nil)
         #expect(performance.sortedSets.isEmpty == false)
         #expect(performance.sortedSets.allSatisfy { $0.prescription != nil })
-        performance.replaceWith(replacement, keepSets: true)
+        performance.replaceWith(replacement, keepSets: true, context: context)
         #expect(performance.catalogID == replacement.catalogID)
         #expect(performance.prescription == nil)
         #expect(performance.originalTargetSnapshot == nil)
@@ -130,7 +130,7 @@ struct ExerciseReplacementTests {
         }
         let beforeReplace = try context.fetch(ExercisePerformance.lastCompleted(for: livePerf)).first
         #expect(beforeReplace?.catalogID == bench.catalogID)
-        livePerf.replaceWith(incline, keepSets: true)
+        livePerf.replaceWith(incline, keepSets: true, context: context)
         let afterReplace = try context.fetch(ExercisePerformance.lastCompleted(for: livePerf)).first
         #expect(afterReplace?.catalogID == incline.catalogID)
         #expect(afterReplace?.sortedSets.first?.reps == 10)
@@ -158,7 +158,7 @@ struct ExerciseReplacementTests {
         }
         #expect(performance.prescription?.id == prescription.id)
         #expect(set.prescription?.exercise?.id == prescription.id)
-        prescription.replaceWith(incline, keepSets: true)
+        prescription.replaceWith(incline, keepSets: true, context: context)
         #expect(performance.prescription == nil)
         #expect(set.prescription == nil)
         #expect(prescription.catalogID == incline.catalogID)
@@ -186,7 +186,7 @@ struct ExerciseReplacementTests {
         }
         #expect(performance.prescription?.id == originalExercise.id)
         #expect(set.prescription?.exercise?.id == originalExercise.id)
-        copyExercise.replaceWith(incline, keepSets: true)
+        copyExercise.replaceWith(incline, keepSets: true, context: context)
         plan.applyEditingCopy(editCopy, context: context)
         #expect(originalExercise.catalogID == incline.catalogID)
         #expect(performance.prescription == nil)

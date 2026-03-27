@@ -204,12 +204,12 @@ struct HealthWorkoutDetailContent: View {
                 .font(.headline)
 
             if showsSourceCard {
-                SummaryStatCard(title: "Source", value: loader.summary.sourceName)
+                SummaryStatCard(title: "Source", text: loader.summary.sourceName)
             }
 
             LazyVGrid(columns: summaryGridColumns, spacing: 12) {
                 ForEach(summaryItems) { item in
-                    SummaryStatCard(title: item.title, value: item.value)
+                    SummaryStatCard(title: item.title, text: item.value)
                 }
             }
 
@@ -269,7 +269,7 @@ struct HealthWorkoutDetailContent: View {
 
             LazyVGrid(columns: metricGridColumns, spacing: 12) {
                 ForEach(loader.metrics) { metric in
-                    SummaryStatCard(title: metric.title, value: formattedMetricValue(metric))
+                    SummaryStatCard(title: metric.title, text: formattedMetricValue(metric))
                 }
             }
         }

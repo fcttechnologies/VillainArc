@@ -57,12 +57,12 @@ struct ExerciseSummaryRow: View {
     }
 
     private var metadataChipItems: [MetadataChipItem] {
-        var items = [MetadataChipItem(systemImage: "clock.arrow.circlepath", text: lastUsedText)]
+        var items = [MetadataChipItem(systemImage: "clock.arrow.circlepath", text: lastUsedText, tint: .secondary)]
         if let sessionText {
-            items.append(MetadataChipItem(systemImage: "figure.strengthtraining.traditional", text: sessionText))
+            items.append(MetadataChipItem(systemImage: "figure.strengthtraining.traditional", text: sessionText, tint: .blue))
         }
         if let recordText {
-            items.append(MetadataChipItem(systemImage: "trophy.fill", text: recordText))
+            items.append(MetadataChipItem(systemImage: "trophy.fill", text: recordText, tint: .yellow))
         }
         return items
     }
@@ -74,7 +74,7 @@ struct ExerciseSummaryRow: View {
     
     private var sessionText: String? {
         guard let history, history.totalSessions > 0 else { return nil }
-        return "\(history.totalSessions) \(history.totalSessions == 1 ? "session" : "sessions")"
+        return "\(history.totalSessions) \(history.totalSessions == 1 ? "time" : "times")"
     }
     
     private var recordText: String? {

@@ -209,7 +209,7 @@ struct ExerciseDetailView: View {
                     if !statItems.isEmpty {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(statItems) { item in
-                                SummaryStatCard(title: item.title, value: item.value)
+                                SummaryStatCard(title: item.title, text: item.value)
                             }
                         }
                     }
@@ -227,7 +227,7 @@ struct ExerciseDetailView: View {
                                     .font(.headline)
                             }
 
-                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint, unit: activeMetric.unitString(weightUnit: weightUnit))
+                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint, unit: activeMetric.unitString(weightUnit: weightUnit), aggregation: aggregation(for: activeMetric))
 
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {
@@ -310,6 +310,15 @@ struct ExerciseDetailView: View {
             return repsPoints
         }
     }
+    
+    private func aggregation(for metric: ChartMetric) -> ExerciseMetricChartCard.Aggregation {
+        switch metric {
+        case .estimatedOneRepMax, .topWeight, .reps:
+            return .maximum
+        case .volume:
+            return .sum
+        }
+    }
 }
 
 private struct ExerciseStatItem: Identifiable {
@@ -319,14 +328,41 @@ private struct ExerciseStatItem: Identifiable {
 }
 
 private struct ExerciseMetricChartCard: View {
+    enum Aggregation {
+        case maximum
+        case sum
+        
+        var timeSeriesStrategy: TimeSeriesAggregationStrategy {
+            switch self {
+            case .maximum:
+                return .maximum
+            case .sum:
+                return .sum
+            }
+        }
+    }
+    
     let points: [ExerciseMetricPoint]
     let tint: Color
     let unit: String
+    let aggregation: Aggregation
 
     @State private var selectedDate: Date?
+    
+    private var timeSeriesSamples: [TimeSeriesSample] {
+        points.map { TimeSeriesSample(date: $0.date, value: $0.value) }
+    }
+    
+    private var chartLayout: TimeSeriesChartLayout {
+        TimeSeriesChartLayout(rangeFilter: .all, samples: timeSeriesSamples, now: .now, calendar: .autoupdatingCurrent, aggregation: aggregation.timeSeriesStrategy)
+    }
+    
+    private var linePoints: [TimeSeriesBucketedPoint] {
+        timeSeriesAnchoredLinePoints(points: chartLayout.points, samples: timeSeriesSamples, domain: chartLayout.currentDomain)
+    }
 
     private var yDomain: ClosedRange<Double> {
-        let values = points.map(\.value)
+        let values = chartLayout.points.map(\.value)
         guard let minimum = values.min(), let maximum = values.max() else {
             return 0...1
         }
@@ -341,49 +377,54 @@ private struct ExerciseMetricChartCard: View {
         return (minimum - padding)...(maximum + padding)
     }
 
-    private var displayedPoint: ExerciseMetricPoint? {
+    private var displayedPoint: TimeSeriesBucketedPoint? {
         guard let selectedDate else { return nil }
         return nearestPoint(to: selectedDate)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Chart(points) { point in
-                LineMark(
-                    x: .value("Date", point.date),
-                    y: .value("Value", point.value)
-                )
-                .foregroundStyle(tint)
-                .interpolationMethod(.catmullRom)
+            Chart {
+                ForEach(linePoints) { point in
+                    LineMark(
+                        x: .value("Date", point.date),
+                        y: .value("Value", point.value)
+                    )
+                    .foregroundStyle(tint)
+                    .interpolationMethod(.catmullRom)
+                }
+                
+                ForEach(chartLayout.points) { point in
+                    PointMark(
+                        x: .value("Date", point.date),
+                        y: .value("Value", point.value)
+                    )
+                    .foregroundStyle(tint)
 
-                PointMark(
-                    x: .value("Date", point.date),
-                    y: .value("Value", point.value)
-                )
-                .foregroundStyle(tint)
-
-                if point.id == displayedPoint?.id {
-                    RuleMark(x: .value("Selected Date", point.date))
-                        .foregroundStyle(tint)
-                        .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
-                        .annotation(position: .top, spacing: 8, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(point.date, style: .date)
-                                    .foregroundStyle(.white.opacity(0.9))
-                                Text("\(point.value, format: .number) \(unit)")
-                                    .font(.title2)
-                                    .foregroundStyle(.white)
+                    if point.id == displayedPoint?.id {
+                        RuleMark(x: .value("Selected Date", point.date))
+                            .foregroundStyle(tint)
+                            .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                            .annotation(position: .top, spacing: 8, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(annotationDateText(for: point))
+                                        .foregroundStyle(.white.opacity(0.9))
+                                    Text("\(point.value, format: .number) \(unit)")
+                                        .font(.title2)
+                                        .foregroundStyle(.white)
+                                }
+                                .bold()
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(tint.gradient, in: .rect(cornerRadius: 12))
                             }
-                            .bold()
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(tint.gradient, in: .rect(cornerRadius: 12))
-                        }
+                    }
                 }
             }
             .frame(height: 220)
             .chartYScale(domain: yDomain)
             .chartXSelection(value: $selectedDate)
+            .chartXScale(domain: chartLayout.currentDomain)
             
             .chartYAxis {
                 AxisMarks(position: .leading, values: .stride(by: axisStep)) { value in
@@ -396,9 +437,13 @@ private struct ExerciseMetricChartCard: View {
                 }
             }
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: min(points.count, 4))) { _ in
+                AxisMarks(values: chartLayout.axisDates) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(axisLabel(for: date))
+                        }
+                    }
                 }
             }
         }
@@ -406,7 +451,7 @@ private struct ExerciseMetricChartCard: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
         .onChange(of: points) { _, newPoints in
             if let selectedDate {
-                self.selectedDate = nearestPoint(in: newPoints, to: selectedDate)?.date
+                self.selectedDate = nearestPoint(in: newPoints.map { TimeSeriesBucketedPoint(id: UUID(), date: $0.date, value: $0.value) }, to: selectedDate)?.date
             }
         }
     }
@@ -425,14 +470,22 @@ private struct ExerciseMetricChartCard: View {
         return max((range / 4).rounded(.up), 10)
     }
 
-    private func nearestPoint(to date: Date) -> ExerciseMetricPoint? {
-        nearestPoint(in: points, to: date)
+    private func nearestPoint(to date: Date) -> TimeSeriesBucketedPoint? {
+        nearestPoint(in: chartLayout.points, to: date)
     }
 
-    private func nearestPoint(in points: [ExerciseMetricPoint], to date: Date) -> ExerciseMetricPoint? {
+    private func nearestPoint(in points: [TimeSeriesBucketedPoint], to date: Date) -> TimeSeriesBucketedPoint? {
         points.min { left, right in
             abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
         }
+    }
+    
+    private func axisLabel(for date: Date) -> String {
+        timeSeriesAxisLabelText(for: date, style: chartLayout.axisLabelStyle)
+    }
+    
+    private func annotationDateText(for point: TimeSeriesBucketedPoint) -> String {
+        timeSeriesBucketLabelText(for: point, bucketStyle: chartLayout.bucketStyle)
     }
 }
 

@@ -29,9 +29,10 @@ This file is the structure map for the app. Use it to understand the major layer
 ### `Views/ContentView.swift`
 
 - Top-level foreground shell after launch is ready.
-- Hosts the root `TabView` and the two full-screen active flows:
+- Hosts the root `TabView` and the app-level full-screen flows:
   - `activeWorkoutSession` -> `Views/Workout/WorkoutSessionContainer.swift`
   - `activeWorkoutPlan` -> `Views/WorkoutPlan/WorkoutPlanView.swift`
+  - `activeWeightGoalCompletion` -> `Views/Health/WeightGoalCompletionView.swift`
 - Does not own the per-tab `NavigationStack`s.
 
 ### `Views/HomeTabView.swift`
@@ -54,6 +55,7 @@ This file is the structure map for the app. Use it to understand the major layer
   - current tab selection
   - the single active workout flow
   - the single active plan flow
+  - the active weight-goal completion presentation
   - the original-plan pointer for edit-copy flows
   - intent/live-activity flags that feature views listen to
 - Enforces the app-wide single-active-flow rule by checking both presented state and persisted incomplete flows.
@@ -208,7 +210,7 @@ This file is the structure map for the app. Use it to understand the major layer
 ### `Data/Models/Health/WeightGoal.swift`
 
 - Local weight-goal record for the Health tab.
-- Stores goal type, start/end dates, target weight, optional target date, optional target pace, and end reason when replaced or finished.
+- Stores a stable local goal ID, goal type, start/end dates, target weight, optional target date, optional target pace, and end reason when replaced or finished.
 
 ### `Data/Models/AppSettings.swift`
 
@@ -288,13 +290,19 @@ This file is the structure map for the app. Use it to understand the major layer
 - `Views/Health/WeightSectionCard.swift`
   - Health tab summary card for weight.
 - `Views/Health/WeightHistoryView.swift`
-  - Detailed weight chart, range filters, and active goal summary.
+  - Detailed weight chart, cached multi-range time-series view, active goal summary, and goal-aware metadata.
 - `Views/Health/AllWeightEntriesListView.swift`
   - Full list of stored weight entries.
+- `Views/Health/WeightGoalSummaryCard.swift`
+  - Reusable active-goal summary card and compact goal progress chart.
 - `Views/Health/WeightGoalHistoryView.swift`
-  - History of active and ended weight goals.
+  - History of active and ended weight goals with reusable mini progress charts.
+- `Views/Health/WeightGoalCompletionView.swift`
+  - App-level full-screen goal completion flow for achieved, manual-override, and same-day delete cases.
 - `Views/Workout/HealthWorkoutDetailView.swift`
   - On-demand Health workout detail.
+- `Helpers/TimeSeriesCharting.swift`
+  - Shared chart bucketing, axis labeling, and time-series helpers used by weight and exercise analytics.
 
 ## Integrations
 

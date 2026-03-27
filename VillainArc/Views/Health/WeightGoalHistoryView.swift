@@ -2,7 +2,10 @@ import SwiftUI
 import SwiftData
 
 struct WeightGoalHistoryView: View {
+    @Environment(\.modelContext) private var context
     @Query(WeightGoal.history) private var goals: [WeightGoal]
+    @Query(WeightEntry.history) private var entries: [WeightEntry]
+    @State private var router = AppRouter.shared
 
     let weightUnit: WeightUnit
 
@@ -11,14 +14,30 @@ struct WeightGoalHistoryView: View {
     var body: some View {
         List {
             ForEach(goals) { goal in
-                WeightGoalHistoryRowView(goal: goal, weightUnit: weightUnit)
+                WeightGoalHistoryRowView(goal: goal, entries: entries, weightUnit: weightUnit)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalRow(goal))
-                    .accessibilityHint(AccessibilityText.healthWeightGoalRowHint)
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        if goal.endedAt == nil {
+                            Button("Complete", systemImage: "checkmark.circle") {
+                                Haptics.selection()
+                                router.presentWeightGoalCompletion(for: goal, trigger: .manualCompletion)
+                            }
+                            .tint(.blue)
+                        }
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            deleteGoal(goal)
+                        }
+                    }
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalHistoryList)
         .navigationTitle("Weight Goals")
         .toolbarTitleDisplayMode(.inline)
+        .listStyle(.plain)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -44,61 +63,139 @@ struct WeightGoalHistoryView: View {
             }
         }
     }
+
+    private func deleteGoal(_ goal: WeightGoal) {
+        Haptics.selection()
+        context.delete(goal)
+        saveContext(context: context)
+    }
 }
 
 private struct WeightGoalHistoryRowView: View {
     let goal: WeightGoal
+    let entries: [WeightEntry]
     let weightUnit: WeightUnit
 
     private var isActive: Bool {
         goal.endedAt == nil
     }
+    
+    private var progressModel: WeightGoalProgressChartModel? {
+        WeightGoalProgressChartModel(goal: goal, entries: entries, now: goal.endedAt ?? .now)
+    }
+    
+    private var latestGoalWeight: Double? {
+        progressModel?.latestPoint?.value
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(goal.type.title)
-                    .font(.headline)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(goalTitle)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .fontDesign(.rounded)
 
-                if isActive {
-                    Text("Active")
-                        .font(.caption)
+                        Text(goalStatusBadgeTitle)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(goalStatusBadgeColor.gradient, in: Capsule())
+                            .foregroundStyle(.white)
+                    }
+
+                    Text(periodText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .fontWeight(.semibold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.green.opacity(0.15), in: Capsule())
                 }
 
-                Spacer()
-
-                Text(formattedWeightText(goal.targetWeight, unit: weightUnit))
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
+                Spacer(minLength: 12)
+                
+                if let progressModel {
+                    WeightGoalProgressChart(model: progressModel, weightUnit: weightUnit)
+                        .frame(width: 180, height: 90)
+                        .accessibilityHidden(true)
+                }
             }
 
-            Text("Started \(formattedRecentDay(goal.startedAt))")
-                .foregroundStyle(.secondary)
+            Divider()
 
-            if let endedAt = goal.endedAt {
-                Text("Ended \(formattedRecentDay(endedAt))")
-                    .foregroundStyle(.secondary)
-            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
+                SummaryStatCard(title: "Starting Weight", text: formattedWeightText(goal.startWeight, unit: weightUnit))
+                SummaryStatCard(title: "Target Weight", text: formattedWeightText(goal.targetWeight, unit: weightUnit))
+                
+                if let latestGoalWeight {
+                    SummaryStatCard(title: "Progress", text: weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit))
+                }
 
-            if let targetDate = goal.targetDate {
-                Text("Target Date \(formattedRecentDay(targetDate))")
-                    .foregroundStyle(.secondary)
-            }
+                if let targetDate = goal.targetDate {
+                    SummaryStatCard(title: "Target Date", text: formattedRecentDay(targetDate))
+                }
 
-            if let targetRatePerWeek = goal.targetRatePerWeek {
-                Text("Target Pace \(formattedWeightValue(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)/wk")
-                    .foregroundStyle(.secondary)
+                if let targetRatePerWeek = goal.targetRatePerWeek, goal.type != .maintain {
+                    SummaryStatCard(title: "Target Pace", text: "\(formattedWeightValue(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)/wk")
+                }
+
+                if let endedAt = goal.endedAt {
+                    SummaryStatCard(title: "Ended", text: formattedRecentDay(endedAt))
+                }
             }
         }
-        .fontWeight(.semibold)
+        .padding(16)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(accessibilityValue)
+    }
+
+    private var goalTitle: String {
+        if goal.type == .maintain {
+            return "Maintain Goal"
+        }
+
+        return "\(goal.type.title) Goal"
+    }
+    
+    private var goalStatusBadgeTitle: String {
+        if isActive { return "Active" }
+        
+        switch goal.endReason {
+        case .achieved:
+            return "Completed"
+        case .manualOverride:
+            return "Ended Early"
+        case .replaced:
+            return "Replaced"
+        case nil:
+            return "Ended"
+        }
+    }
+    
+    private var goalStatusBadgeColor: Color {
+        if isActive { return .green }
+        
+        switch goal.endReason {
+        case .achieved:
+            return .blue
+        case .manualOverride:
+            return .purple
+        case .replaced:
+            return .orange
+        case nil:
+            return .secondary
+        }
+    }
+
+    private var periodText: String {
+        if let endedAt = goal.endedAt {
+            return "\(formattedRecentDay(goal.startedAt))- \(formattedRecentDay(endedAt))"
+        }
+
+        return "Started \(formattedRecentDay(goal.startedAt))"
     }
 
     private var accessibilityLabel: String {
@@ -119,6 +216,14 @@ private struct WeightGoalHistoryRowView: View {
 
         if let targetDate = goal.targetDate {
             parts.append("Target date \(formattedRecentDay(targetDate))")
+        }
+        
+        if let latestGoalWeight {
+            parts.append(weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit))
+        }
+        
+        if let progressModel {
+            parts.append(progressModel.accessibilitySummary(unit: weightUnit))
         }
 
         return parts.joined(separator: ", ")

@@ -194,7 +194,7 @@ struct WorkoutPlanDetailView: View {
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
                 ForEach(summaryItems) { item in
-                    SummaryStatCard(title: item.title, value: item.value)
+                    SummaryStatCard(title: item.title, text: item.value)
                 }
             }
         }

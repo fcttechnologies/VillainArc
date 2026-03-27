@@ -126,15 +126,24 @@ struct ExerciseView: View {
                 }
                 .padding(.horizontal)
 
-                Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+                Grid(verticalSpacing: 12) {
                     GridRow {
+                        Spacer()
                         Text("Set")
+                        Spacer()
                         Text("Reps")
                             .gridColumnAlignment(.leading)
+                        Spacer()
                         Text(exercise.equipmentType.loadDisplayName)
                             .gridColumnAlignment(.leading)
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
+                            .frame(alignment: .leading)
+                        Spacer()
                         Text(shouldUseTargetReference ? "Target" : "Previous")
+                        Spacer()
                         Text(" ")
+                        Spacer()
                     }
                     .font(.title3)
                     .bold()

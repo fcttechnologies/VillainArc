@@ -216,6 +216,7 @@ struct RestTimerView: View {
                     Text(displayText)
                         .font(.system(size: timerFontSize, weight: .bold))
                         .minimumScaleFactor(0.7)
+                        .contentTransition(.numericText(value: Double(restTimer.pausedRemainingSeconds)))
 
                     adjustButton(deltaSeconds: 15)
                 }
@@ -223,7 +224,7 @@ struct RestTimerView: View {
             } else {
                 Text(displayText)
                     .font(.system(size: timerFontSize, weight: .bold))
-                    .contentTransition(.numericText())
+                    .contentTransition(.numericText(value: Double(selectedSeconds)))
             }
         }
     }
@@ -231,7 +232,9 @@ struct RestTimerView: View {
     private func adjustButton(deltaSeconds: Int) -> some View {
         Button {
             Haptics.selection()
-            restTimer.adjust(by: deltaSeconds)
+            withAnimation(.smooth) {
+                restTimer.adjust(by: deltaSeconds)
+            }
         } label: {
             Text(verbatim: "\(deltaSeconds < 0 ? "-" : "+")15")
                 .fontWeight(.semibold)

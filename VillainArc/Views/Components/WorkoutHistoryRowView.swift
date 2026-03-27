@@ -78,14 +78,14 @@ struct WorkoutHistoryRowView: View {
     private func healthMetadataChipItems(for workout: HealthWorkout) -> [MetadataChipItem] {
         var items: [MetadataChipItem] = []
 
-        items.append(.init(systemImage: "clock", text: secondsToTime(Int(workout.duration.rounded()))))
+        items.append(.init(systemImage: "clock", text: secondsToTime(Int(workout.duration.rounded())), tint: .secondary))
 
         if let totalDistance = workout.totalDistance {
-            items.append(.init(systemImage: "point.topleft.down.curvedto.point.bottomright.up", text: appSettingsSnapshot.distanceUnit.display(totalDistance)))
+            items.append(.init(systemImage: "point.topleft.down.curvedto.point.bottomright.up", text: appSettingsSnapshot.distanceUnit.display(totalDistance), tint: .blue))
         }
 
         if let activeEnergyBurned = workout.activeEnergyBurned {
-            items.append(.init(systemImage: "flame", text: "\(Int(activeEnergyBurned.rounded())) cal"))
+            items.append(.init(systemImage: "flame", text: "\(Int(activeEnergyBurned.rounded())) cal", tint: .orange))
         }
 
         return items

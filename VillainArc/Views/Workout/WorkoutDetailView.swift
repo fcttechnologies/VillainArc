@@ -309,7 +309,7 @@ private struct WorkoutSessionDetailContent: View {
 
             LazyVGrid(columns: summaryColumns, spacing: 12) {
                 ForEach(summaryItems, id: \.title) { item in
-                    SummaryStatCard(title: item.title, value: item.value)
+                    SummaryStatCard(title: item.title, text: item.value)
                 }
             }
         }

@@ -74,6 +74,15 @@ extension HealthWorkout {
 
     static var history: FetchDescriptor<HealthWorkout> { FetchDescriptor(sortBy: [SortDescriptor(\.startDate, order: .reverse)]) }
 
+    static func recentStandaloneWorkouts(limit: Int? = nil) -> FetchDescriptor<HealthWorkout> {
+        let predicate = #Predicate<HealthWorkout> { $0.workoutSession == nil || $0.workoutSession?.isHidden == true }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startDate, order: .reverse)])
+        if let limit { descriptor.fetchLimit = limit }
+        return descriptor
+    }
+
+    static var recentStandalone: FetchDescriptor<HealthWorkout> { recentStandaloneWorkouts(limit: 1) }
+
     var activityTypeDisplayName: String { activityType.displayName(indoorWorkout: isIndoorWorkout) }
 }
 

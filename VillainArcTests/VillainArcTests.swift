@@ -150,7 +150,7 @@ struct VillainArcTests {
         #expect(copyIncline != nil)
         guard let copyIncline else { return }
         let replacement = Exercise(from: ExerciseCatalog.byID["barbell_shoulder_press"]!)
-        copyIncline.replaceWith(replacement, keepSets: true)
+        copyIncline.replaceWith(replacement, keepSets: true, context: context)
         finishEditing(editCopy, originalPlan: data.plan, context: context)
         #expect(data.incline.catalogID == replacement.catalogID)
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []

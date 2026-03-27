@@ -106,28 +106,28 @@ struct WorkoutSummaryView: View {
                     }
 
                     HStack(spacing: 12) {
-                        SummaryStatCard(title: "Exercises", value: "\(workout.totalExercises)")
-                        SummaryStatCard(title: "Sets", value: "\(workout.totalSets)")
-                        SummaryStatCard(title: "Duration", value: durationText)
+                        SummaryStatCard(title: "Exercises", text: "\(workout.totalExercises)")
+                        SummaryStatCard(title: "Sets", text: "\(workout.totalSets)")
+                        SummaryStatCard(title: "Duration", text: durationText)
                     }
 
                     if prEntries.isEmpty {
-                        SummaryStatCard(title: "Total Volume", value: formattedTotalVolume)
+                        SummaryStatCard(title: "Total Volume", text: formattedTotalVolume)
                     } else {
                         HStack(spacing: 12) {
-                            SummaryStatCard(title: "Total Volume", value: formattedTotalVolume)
-                            SummaryStatCard(title: "New PRs", value: "\(prCount)")
+                            SummaryStatCard(title: "Total Volume", text: formattedTotalVolume)
+                            SummaryStatCard(title: "New PRs", text: "\(prCount)")
                         }
                     }
 
                     if !workoutHealthSummaryItems.isEmpty {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        HStack(spacing: 12) {
                             ForEach(workoutHealthSummaryItems) { item in
-                                SummaryStatCard(title: item.title, value: item.value)
+                                SummaryStatCard(title: item.title, text: item.value)
                             }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryHealthStatsSection)
+                            .accessibilityLabel(AccessibilityText.workoutSummaryHealthStatsLabel)
                         }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryHealthStatsSection)
-                        .accessibilityLabel(AccessibilityText.workoutSummaryHealthStatsLabel)
                     }
 
                     Button {

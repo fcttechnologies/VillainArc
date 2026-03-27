@@ -34,7 +34,7 @@ enum AccessibilityIdentifiers {
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }
 
-    static func healthWeightGoalRow(_ goal: WeightGoal) -> String { "healthWeightGoalRow-\(Int(goal.startedAt.timeIntervalSince1970))" }
+    static func healthWeightGoalRow(_ goal: WeightGoal) -> String { "healthWeightGoalRow-\(goal.id.uuidString)" }
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitLink = "workoutSplitLink"

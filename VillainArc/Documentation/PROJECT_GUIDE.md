@@ -341,6 +341,7 @@ Current user-facing areas are:
 - weight summary on the tab root
 - detailed weight history with multiple time ranges
 - active weight-goal summary and goal history
+- full-screen weight-goal completion flow for achieved or manually-ended goals
 - add-weight-entry flow
 - merged workout history that can include Apple Health workouts
 - on-demand Health workout detail
@@ -351,6 +352,13 @@ Under the hood, VillainArc treats Apple Health as an integration layer:
 - `HealthWorkout` is a local mirror/cache of Health workouts
 - `WeightEntry` is the single local body-mass record used for both app-created and Health-imported data
 - `WeightGoal` is local goal-tracking state for the Health tab
+
+The weight and goal surfaces also share a reusable time-series charting layer:
+
+- fixed `W / M / 6M / Y / All` ranges for weight history
+- adaptive grouping for long-range charts
+- reusable goal mini charts in both the active goal card and goal history
+- app-level goal completion presentation triggered either from goal history or after a qualifying weight entry
 
 For the full design, read `Documentation/HEALTHKIT_INTEGRATION.md`.
 

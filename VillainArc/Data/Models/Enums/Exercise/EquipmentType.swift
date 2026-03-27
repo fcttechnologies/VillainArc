@@ -23,6 +23,13 @@ import FoundationModels
 }
 
 extension EquipmentType {
+    var usesPerSideLoadSemantics: Bool {
+        switch self {
+        case .cables, .dumbbells, .kettlebell: return true
+        default: return false
+        }
+    }
+
     var displayName: String {
         switch self {
         case .barbell: return String(localized: "Barbell")
@@ -49,7 +56,7 @@ extension EquipmentType {
     var loadDisplayName: String {
         switch self {
         case .machineAssisted: return String(localized: "Assistance")
-        case .dumbbells, .cables: return String(localized: "Weight / side")
+        case .cables, .dumbbells, .kettlebell: return String(localized: "Weight/Side")
         default: return String(localized: "Weight")
         }
     }

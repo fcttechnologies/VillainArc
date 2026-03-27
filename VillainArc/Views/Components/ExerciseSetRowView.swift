@@ -6,11 +6,11 @@ struct SetReferenceData {
     let weight: Double?
     let targetRPE: Int?
     let actionLabel: String
-
+    
     var hasActionableValues: Bool {
         reps != nil || weight != nil
     }
-
+    
     func displayText(unit: WeightUnit) -> String {
         if let reps, reps > 0, (weight ?? 0) == 0 {
             return "\(reps) reps"
@@ -34,26 +34,27 @@ struct ExerciseSetRowView: View {
     @State private var showOverrideTimerAlert = false
     @FocusState private var focusedField: Field?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
+    
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
-
+    
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
-
+    
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
     }
-
+    
     private var autoCompleteSetAfterRPEEnabled: Bool {
         appSettingsSnapshot.autoCompleteSetAfterRPE
     }
-
+    
     private var loadFieldLabel: String {
         exercise.equipmentType.loadDisplayName
     }
-
+    
     var body: some View {
         Group {
+            Spacer()
             Menu {
                 Picker("", selection: Binding(get: { set.type }, set: { newValue in
                     let oldValue = set.type
@@ -104,7 +105,7 @@ struct ExerciseSetRowView: View {
             .accessibilityLabel(AccessibilityText.exerciseSetMenuLabel(for: set))
             .accessibilityValue(AccessibilityText.exerciseSetMenuValue(for: set))
             .accessibilityHint(AccessibilityText.exerciseSetMenuHint)
-
+            Spacer()
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
                 .focused($focusedField, equals: .reps)
@@ -112,6 +113,7 @@ struct ExerciseSetRowView: View {
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetRepsLabel)
+            Spacer()
             TextField(loadFieldLabel, value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .weight)
@@ -119,7 +121,7 @@ struct ExerciseSetRowView: View {
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
                 .accessibilityLabel(loadFieldLabel)
-
+            Spacer()
             Text(referenceData?.displayText(unit: weightUnit) ?? "-")
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -129,28 +131,28 @@ struct ExerciseSetRowView: View {
                             .offset(x: targetRPE == 10 ? 14 : 7, y: -4)
                     }
                 }
-            .frame(maxWidth: fieldWidth)
-            .opacity(set.complete ? 0.4 : 1)
-            .contextMenu {
-                if let referenceData, referenceData.hasActionableValues {
-                    Button(referenceData.actionLabel) {
-                        Haptics.selection()
-                        if let reps = referenceData.reps {
-                            set.reps = reps
+                .frame(maxWidth: fieldWidth)
+                .opacity(set.complete ? 0.4 : 1)
+                .contextMenu {
+                    if let referenceData, referenceData.hasActionableValues {
+                        Button(referenceData.actionLabel) {
+                            Haptics.selection()
+                            if let reps = referenceData.reps {
+                                set.reps = reps
+                            }
+                            if let weight = referenceData.weight {
+                                set.weight = weightUnit.fromKg(weight)
+                            }
+                            saveContext(context: context)
                         }
-                        if let weight = referenceData.weight {
-                            set.weight = weightUnit.fromKg(weight)
-                        }
-                        saveContext(context: context)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetUsePreviousButton(exercise, set: set))
                 }
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
-            .accessibilityLabel(referenceData?.hasActionableValues == true ? (referenceData?.actionLabel ?? "Reference") : "Target")
-            .accessibilityValue(referenceValueText)
-            .accessibilityHint(referenceData?.hasActionableValues == true ? "Long-press for options." : "No quick-fill options.")
-
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
+                .accessibilityLabel(referenceData?.hasActionableValues == true ? (referenceData?.actionLabel ?? "Reference") : "Target")
+                .accessibilityValue(referenceValueText)
+                .accessibilityHint(referenceData?.hasActionableValues == true ? "Long-press for options." : "No quick-fill options.")
+            Spacer()
             if set.complete {
                 Button {
                     Haptics.selection()
@@ -179,6 +181,7 @@ struct ExerciseSetRowView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
             }
+            Spacer()
         }
         .animation(reduceMotion ? .none : .bouncy, value: set.complete)
         .onChange(of: focusedField) { _, field in
@@ -210,14 +213,14 @@ struct ExerciseSetRowView: View {
             Text(replaceTimerPrompt)
         }
     }
-
+    
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)
         saveContext(context: context)
         WorkoutActivityManager.update()
     }
-
+    
     private func updateRPE(to value: Int) {
         guard set.rpe != value else { return }
         dismissKeyboard()
@@ -231,7 +234,7 @@ struct ExerciseSetRowView: View {
         saveContext(context: context)
         WorkoutActivityManager.update()
     }
-
+    
     private func completeSet(playHaptics: Bool = true) {
         let shouldPrewarmSuggestions = shouldPrewarmSuggestionModelsOnCompletion
         if playHaptics {
@@ -247,12 +250,12 @@ struct ExerciseSetRowView: View {
         }
         Task { await IntentDonations.donateCompleteActiveSet() }
     }
-
+    
     private func handleAutoStartTimer() {
         guard autoStartRestTimerEnabled else { return }
         let restSeconds = set.effectiveRestSeconds
         guard restSeconds > 0 else { return }
-
+        
         if restTimer.isActive {
             showOverrideTimerAlert = true
         } else {
@@ -262,7 +265,7 @@ struct ExerciseSetRowView: View {
             Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
         }
     }
-
+    
     private var referenceValueText: String {
         guard let referenceData else { return "None" }
         let text = referenceData.displayText(unit: weightUnit)
@@ -271,23 +274,23 @@ struct ExerciseSetRowView: View {
         }
         return text
     }
-
+    
     private var shouldPrewarmSuggestionModelsOnCompletion: Bool {
         guard let workout = exercise.workoutSession, workout.workoutPlan != nil else { return false }
         return workout.isFinalIncompleteSet(set)
     }
-
+    
     private var actualRPELabel: String {
         if set.rpe == 0 {
             return String(localized: "RPE")
         }
         return String(localized: "RPE: \(set.rpe)")
     }
-
+    
     private var replaceTimerPrompt: String {
         String(localized: "Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
     }
-
+    
     private var setIndicator: some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
@@ -301,7 +304,7 @@ struct ExerciseSetRowView: View {
                 }
             }
     }
-
+    
 }
 
 #Preview {
@@ -309,5 +312,5 @@ struct ExerciseSetRowView: View {
         exercise: sampleIncompleteSession().sortedExercises.first!,
         appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
     )
-        .sampleDataContainerIncomplete()
+    .sampleDataContainerIncomplete()
 }

@@ -260,9 +260,6 @@
     "Action" : {
 
     },
-    "Active" : {
-
-    },
     "Active Split" : {
 
     },
@@ -434,6 +431,9 @@
     "Automatically starts rest timer when a set is marked complete." : {
 
     },
+    "avg" : {
+
+    },
     "Awaiting Outcome" : {
 
     },
@@ -537,6 +537,9 @@
 
     },
     "Collapsed" : {
+
+    },
+    "Complete" : {
 
     },
     "Complete Active Set" : {
@@ -861,7 +864,7 @@
     "Enable iCloud in Settings" : {
 
     },
-    "Ended %@" : {
+    "Ended Date" : {
 
     },
     "Enjoy the day off." : {
@@ -978,6 +981,9 @@
     "Go back" : {
 
     },
+    "Goal Target" : {
+
+    },
     "Goal Type" : {
 
     },
@@ -1015,6 +1021,12 @@
     "History" : {
 
     },
+    "History Date" : {
+
+    },
+    "History Weight" : {
+
+    },
     "Hourglass" : {
 
     },
@@ -1049,6 +1061,9 @@
 
     },
     "Increase rest time by 15 seconds" : {
+
+    },
+    "Keep Active" : {
 
     },
     "Keep Current" : {
@@ -1105,10 +1120,13 @@
     "Live Health stats" : {
 
     },
-    "Live Health Stats" : {
+    "Live Stats" : {
 
     },
     "Loading Apple Health details..." : {
+
+    },
+    "Log Weight" : {
 
     },
     "Long Head (Biceps)" : {
@@ -1139,6 +1157,18 @@
 
     },
     "Machine Assisted" : {
+
+    },
+    "Maintain Band End" : {
+
+    },
+    "Maintain Band Start" : {
+
+    },
+    "Maintain Lower" : {
+
+    },
+    "Maintain Upper" : {
 
     },
     "Makes this split active." : {
@@ -1961,6 +1991,9 @@
     "Sends a local notification when rest timer finishes." : {
 
     },
+    "Series" : {
+
+    },
     "Servers Unavailable" : {
 
     },
@@ -1977,6 +2010,9 @@
 
     },
     "Set as Current Day" : {
+
+    },
+    "Set Custom Start Date" : {
 
     },
     "Set Inactive" : {
@@ -2201,6 +2237,9 @@
     "Start a timer for %@" : {
 
     },
+    "Start Date" : {
+
+    },
     "Start empty workout" : {
 
     },
@@ -2231,7 +2270,7 @@
     "Start Workout with Plan" : {
 
     },
-    "Started %@" : {
+    "Started At" : {
 
     },
     "Starting" : {
@@ -2324,16 +2363,10 @@
     "Tap the %@ button to start your first workout." : {
 
     },
-    "Tap to create a weight goal." : {
-
-    },
     "Target" : {
 
     },
     "Target Date" : {
-
-    },
-    "Target Date %@" : {
 
     },
     "Target muscles" : {
@@ -2341,16 +2374,6 @@
     },
     "Target Muscles" : {
 
-    },
-    "Target Pace %@ %@/wk" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Target Pace %1$@ %2$@/wk"
-          }
-        }
-      }
     },
     "Target Rate Per Week" : {
 
@@ -2517,6 +2540,9 @@
     "Updates your pre-workout energy." : {
 
     },
+    "Updating chart" : {
+
+    },
     "Updating Exercises" : {
 
     },
@@ -2592,13 +2618,13 @@
     "Weight" : {
 
     },
-    "Weight / side" : {
-
-    },
     "Weight Goal" : {
 
     },
     "Weight Goals" : {
+
+    },
+    "Weight/Side" : {
 
     },
     "Weighted Ball" : {

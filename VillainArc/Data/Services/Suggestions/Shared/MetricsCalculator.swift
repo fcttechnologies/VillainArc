@@ -293,14 +293,11 @@ struct MetricsCalculator {
         return selected.sorted { $0.index < $1.index }
     }
 
-    // All weight values are stored in kg. Increments are calibrated for kg plate sizes.
+    // All weight values are stored in kg. For double implements that use per-side semantics,
+    // currentWeight is the per-side working load rather than the combined total.
     static func weightIncrement(for currentWeight: Double, primaryMuscle: Muscle, equipmentType: EquipmentType, catalogID: String? = nil) -> Double {
         switch equipmentType {
-        case .dumbbellSingle, .kettlebellSingle: return currentWeight < 7 ? 1.25 : 2.5
-        case .dumbbells: return currentWeight < 7 ? 1.25 : 2.5
-        case .kettlebell:
-            let perHand = max(0, currentWeight / 2)
-            return perHand < 7 ? 2.5 : 5.0
+        case .dumbbellSingle, .dumbbells, .kettlebellSingle, .kettlebell: return currentWeight < 7 ? 1.25 : 2.5
         case .cableSingle: return currentWeight < 14 ? 1.25 : 2.5
         case .cables: return currentWeight < 14 ? 1.25 : 2.5
         case .rope: return currentWeight < 27 ? 2.5 : 5.0

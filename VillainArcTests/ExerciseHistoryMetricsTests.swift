@@ -32,7 +32,7 @@ struct ExerciseHistoryMetricsTests {
         performance.sets?.append(secondSet)
 
         let history = ExerciseHistory(catalogID: performance.catalogID)
-        history.recalculate(using: [performance])
+        history.recalculate(using: [performance], context: context)
 
         #expect(history.totalSessions == 1)
         #expect(history.totalCompletedSets == 2)
@@ -48,10 +48,12 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.chronologicalProgressionPoints.first?.weight == 0)
         #expect(history.chronologicalProgressionPoints.first?.volume == 0)
     }
-    @Test @MainActor func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() {
+    @Test @MainActor func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
         let history = ExerciseHistory(catalogID: "push_ups")
         history.lastCompletedAt = .now
-        history.recalculate(using: [])
+        history.recalculate(using: [], context: context)
         #expect(history.lastCompletedAt == nil)
     }
 
@@ -84,7 +86,7 @@ struct ExerciseHistoryMetricsTests {
 
         let history = ExerciseHistory(catalogID: firstPerformance.catalogID)
         let expectedVolume = (185.0 * 5.0) + (165.0 * 8.0)
-        history.recalculate(using: [firstPerformance, secondPerformance])
+        history.recalculate(using: [firstPerformance, secondPerformance], context: context)
 
         #expect(history.totalSessions == 1)
         #expect(history.totalCompletedSets == 2)

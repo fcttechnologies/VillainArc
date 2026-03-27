@@ -113,12 +113,19 @@ struct SuggestionSystemTests {
         #expect(abs(WeightUnit.lbs.fromKg(rounded) - 50.0) < 0.001)
     }
 
-    @Test @MainActor func weightIncrement_usesSingleImplementStepsForDoubleDumbbellsAndDoubleCables() {
+    @Test @MainActor func weightIncrement_usesSingleImplementStepsForDoubleDumbbellsDoubleCablesAndDoubleKettlebells() {
         let dumbbellIncrement = MetricsCalculator.weightIncrement(for: 6, primaryMuscle: .chest, equipmentType: .dumbbells, catalogID: "dumbbell_bench_press")
         let cableIncrement = MetricsCalculator.weightIncrement(for: 10, primaryMuscle: .back, equipmentType: .cables, catalogID: "cable_rows")
+        let kettlebellIncrement = MetricsCalculator.weightIncrement(for: 6, primaryMuscle: .shoulders, equipmentType: .kettlebell, catalogID: "kettlebell_double_press")
 
         #expect(dumbbellIncrement == 1.25)
         #expect(cableIncrement == 1.25)
+        #expect(kettlebellIncrement == 1.25)
+    }
+
+    @Test @MainActor func doubleKettlebells_usePerSideLoadLabel() {
+        #expect(EquipmentType.kettlebell.usesPerSideLoadSemantics)
+        #expect(EquipmentType.kettlebell.loadDisplayName == "Weight / side")
     }
     @Test @MainActor func detectTrainingStyle_ignoresExplicitWarmupRamp_beforeStraightTopSets() throws {
         let context = try TestDataFactory.makeContext()
@@ -1357,6 +1364,56 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 10 })
     }
+
+    @Test @MainActor func notSetRepRangeSuggestsNarrowObservedRangeWithoutInventingExtraWidth() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 1, targetRest: 180, repRangeMode: .notSet)
+
+        let session1 = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        session1.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session1, prescription: prescription, sets: [(weight: 100, reps: 1, rest: 180, type: .working)])
+
+        let session2 = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        session2.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session2, prescription: prescription, sets: [(weight: 100, reps: 1, rest: 180, type: .working)])
+
+        let session3 = TestDataFactory.makeSession(context: context)
+        let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 2, rest: 180, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let exerciseChanges = exerciseLevelChanges(from: suggestions)
+
+        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
+        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeLower && $0.newValue == 1 })
+        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 2 })
+        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeUpper && $0.newValue == 3 } == false)
+    }
+
+    @Test @MainActor func notSetRepRangeDoesNotSuggestArtificialRangeForFixedSingles() throws {
+        let context = try TestDataFactory.makeContext()
+        let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 1, targetRest: 180, repRangeMode: .notSet)
+
+        let session1 = TestDataFactory.makeSession(context: context, daysAgo: 6)
+        session1.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session1, prescription: prescription, sets: [(weight: 100, reps: 1, rest: 180, type: .working)])
+
+        let session2 = TestDataFactory.makeSession(context: context, daysAgo: 3)
+        session2.statusValue = .done
+        _ = TestDataFactory.makePerformance(context: context, session: session2, prescription: prescription, sets: [(weight: 100, reps: 1, rest: 180, type: .working)])
+
+        let session3 = TestDataFactory.makeSession(context: context)
+        let perf3 = TestDataFactory.makePerformance(context: context, session: session3, prescription: prescription, sets: [(weight: 100, reps: 1, rest: 180, type: .working)])
+
+        let suggestionContext = ExerciseSuggestionContext(session: session3, performance: perf3, prescription: prescription, history: [session2.sortedExercises.first!, session1.sortedExercises.first!], plan: plan, resolvedTrainingStyle: .straightSets, weightUnit: .kg)
+        let suggestions = RuleEngine.evaluate(context: suggestionContext)
+        let exerciseChanges = exerciseLevelChanges(from: suggestions)
+
+        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
+        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeUpper || $0.changeType == .decreaseRepRangeUpper } == false)
+        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower || $0.changeType == .decreaseRepRangeLower } == false)
+    }
+
     @Test @MainActor func targetRepRangeSuggestsRangeWhenRecentSessionsSpanABand() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian (median) can be >= target-1 even if one set is below.

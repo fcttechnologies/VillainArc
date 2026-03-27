@@ -2,25 +2,96 @@ import SwiftUI
 
 struct SummaryStatCard: View {
     let title: String
-    let value: String
+    let text: String
+    let date: Date?
+    private let number: Double?
+    private let fractionDigits: ClosedRange<Int>
+    private let placeholderText: String
+    private let usesNumericLayout: Bool
+
+    init(title: String, text: String, date: Date? = nil) {
+        self.title = title
+        self.text = text
+        self.date = date
+        self.number = nil
+        self.fractionDigits = 0...0
+        self.placeholderText = text
+        self.usesNumericLayout = false
+    }
+
+    init(title: String, number: Int, text: String = "", date: Date? = nil) {
+        self.title = title
+        self.text = text
+        self.date = date
+        self.number = Double(number)
+        self.fractionDigits = 0...0
+        self.placeholderText = "-"
+        self.usesNumericLayout = true
+    }
+
+    init(title: String, number: Double, text: String = "", date: Date? = nil) {
+        self.title = title
+        self.text = text
+        self.date = date
+        self.number = number
+        self.fractionDigits = 0...1
+        self.placeholderText = "-"
+        self.usesNumericLayout = true
+    }
+
+    init(title: String, number: Int?, text: String = "", placeholderText: String = "-", date: Date? = nil) {
+        self.title = title
+        self.text = text
+        self.date = date
+        self.number = number.map(Double.init)
+        self.fractionDigits = 0...0
+        self.placeholderText = placeholderText
+        self.usesNumericLayout = true
+    }
+
+    init(title: String, number: Double?, text: String = "", placeholderText: String = "-", date: Date? = nil) {
+        self.title = title
+        self.text = text
+        self.date = date
+        self.number = number
+        self.fractionDigits = 0...1
+        self.placeholderText = placeholderText
+        self.usesNumericLayout = true
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .fontWeight(.semibold)
-            Text(value)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .fixedSize(horizontal: false, vertical: true)
-                .multilineTextAlignment(.leading)
+            if let date {
+                Text(date, style: .timer)
+                    .monospacedDigit()
+            } else if usesNumericLayout {
+                HStack(alignment: .firstTextBaseline, spacing: text.isEmpty ? 0 : 4) {
+                    if let number {
+                        Text(number, format: .number.precision(.fractionLength(fractionDigits)))
+                            .monospacedDigit()
+                            .contentTransition(.numericText(value: number))
+                    } else {
+                        Text(placeholderText)
+                    }
+
+                    if !text.isEmpty, number != nil {
+                        Text(text)
+                    }
+                }
+                .animation(.smooth(duration: 0.2), value: number)
+            } else {
+                Text(text)
+            }
         }
         .fontDesign(.rounded)
+        .font(.title3)
+        .fontWeight(.semibold)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(AccessibilityText.summaryStatCardLabel(title: title, value: value))
+        .glassEffect(.regular, in: .rect(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
     }
 }

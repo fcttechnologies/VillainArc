@@ -93,14 +93,15 @@ That is why body-mass sync does not use a separate mirror model the way workouts
 
 `WeightGoal` is local app state used by the Health tab. It stores:
 
+- a stable local goal ID
 - goal type such as cut, bulk, or maintain
 - start and optional end date
 - target weight
 - optional target date
 - optional target pace per week
-- end reason when an active goal is replaced
+- end reason when an active goal is replaced or finished
 
-Goals are used for chart filtering and goal summaries, not for HealthKit syncing.
+Goals are used for chart filtering, goal summaries, goal history, and the local goal-completion flow. They are not used for HealthKit syncing.
 
 ## Health Permission Flow
 
@@ -367,8 +368,9 @@ The Health tab is currently centered on weight and weight goals.
 `WeightHistoryView` expands that into:
 
 - charted weight history
-- range filters such as week, month, year, goal, and all
+- cached range filters for `W / M / 6M / Y / All`
 - active goal summary
+- app-level goal completion presentation when a new weight entry qualifies or a user manually completes a goal
 - links to all entries and goal history
 
 ### Weight Goals
@@ -376,8 +378,9 @@ The Health tab is currently centered on weight and weight goals.
 `WeightGoal` powers:
 
 - the active goal summary in weight history
-- goal-focused chart range behavior
+- reusable goal mini charts in the active card and goal history
 - the goal history list
+- the full-screen goal completion flow
 
 Creating a new goal automatically ends the previous active goal with a replacement end reason.
 

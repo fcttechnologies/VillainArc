@@ -1130,7 +1130,8 @@ struct ExerciseSuggestionContext {
         }
 
         let lower = max(1, min(representativeMin, robustFloor))
-        let upper = max(lower + 2, max(representativeMax, robustCeiling))
+        let upper = max(representativeMax, robustCeiling)
+        guard upper > lower else { return nil }
         guard upper - lower <= 4 else { return nil }
         return (lower, upper)
     }
@@ -1322,7 +1323,7 @@ struct ExerciseSuggestionContext {
 
     private static func matchActualWeightReason(newWeight: Double, sessionsRequired: Int, context: ExerciseSuggestionContext) -> String {
         if context.prescription.equipmentType.usesAssistanceWeightSemantics { return "You've used about \(context.weightUnit.display(newWeight)) of assistance for \(sessionsRequired) sessions. Update the prescription to match your current assistance setting." }
-        if context.prescription.equipmentType == .dumbbells || context.prescription.equipmentType == .cables { return "You've used about \(context.weightUnit.display(newWeight)) per side for \(sessionsRequired) sessions. Update the prescription to match your working weight." }
+        if context.prescription.equipmentType.usesPerSideLoadSemantics { return "You've used about \(context.weightUnit.display(newWeight)) per side for \(sessionsRequired) sessions. Update the prescription to match your working weight." }
         return "You've used about \(context.weightUnit.display(newWeight)) for \(sessionsRequired) sessions. Update the prescription to match your working weight."
     }
 
