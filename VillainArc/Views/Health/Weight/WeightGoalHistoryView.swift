@@ -5,11 +5,14 @@ struct WeightGoalHistoryView: View {
     @Environment(\.modelContext) private var context
     @Query(WeightGoal.history) private var goals: [WeightGoal]
     @Query(WeightEntry.history) private var entries: [WeightEntry]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
 
-    let weightUnit: WeightUnit
-
     @State private var showNewWeightGoalSheet = false
+
+    private var weightUnit: WeightUnit {
+        appSettings.first?.weightUnit ?? .systemDefault
+    }
 
     var body: some View {
         List {
@@ -232,7 +235,7 @@ private struct WeightGoalHistoryRowView: View {
 
 #Preview {
     NavigationStack {
-        WeightGoalHistoryView(weightUnit: .lbs)
+        WeightGoalHistoryView()
     }
     .sampleDataContainer()
 }

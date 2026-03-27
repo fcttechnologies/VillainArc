@@ -6,15 +6,15 @@ private extension TimeSeriesRangeFilter {
     func emptyStateDescription() -> String {
         switch self {
         case .week:
-            return "No weight entries were recorded in the last 7 days."
+            return String(localized: "No weight entries were recorded in the last 7 days.")
         case .month:
-            return "No weight entries were recorded in the last month."
+            return String(localized: "No weight entries were recorded in the last month.")
         case .sixMonths:
-            return "No weight entries were recorded in the last 6 months."
+            return String(localized: "No weight entries were recorded in the last 6 months.")
         case .year:
-            return "No weight entries were recorded in the last year."
+            return String(localized: "No weight entries were recorded in the last year.")
         case .all:
-            return "No weight entries have been recorded yet."
+            return String(localized: "No weight entries have been recorded yet.")
         }
     }
 }
@@ -22,10 +22,10 @@ private extension TimeSeriesRangeFilter {
 struct WeightHistoryView: View {
     private let router = AppRouter.shared
     
-    let weightUnit: WeightUnit
     @Query(WeightEntry.history, animation: .smooth) private var weightEntries: [WeightEntry]
     @Query(WeightGoal.active) private var activeGoals: [WeightGoal]
     @Query(WeightGoal.inactiveLatest) private var inactiveGoals: [WeightGoal]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     
     @State private var showAddWeightEntrySheet = false
     @State private var showNewWeightGoalSheet = false
@@ -47,6 +47,10 @@ struct WeightHistoryView: View {
     private var hasGoalHistory: Bool {
         !inactiveGoals.isEmpty
     }
+
+    private var weightUnit: WeightUnit {
+        appSettings.first?.weightUnit ?? .systemDefault
+    }
     
     var body: some View {
         ScrollView {
@@ -54,7 +58,7 @@ struct WeightHistoryView: View {
                 WeightGoalSummaryCard(activeGoal: activeGoal, analysis: goalAnalysis, entries: weightEntries, weightUnit: weightUnit, hasGoalHistory: hasGoalHistory) {
                     Haptics.selection()
                     if activeGoal != nil || hasGoalHistory {
-                        router.navigate(to: .weightGoalHistory(weightUnit))
+                        router.navigate(to: .weightGoalHistory)
                     } else {
                         showNewWeightGoalSheet = true
                     }
@@ -66,7 +70,7 @@ struct WeightHistoryView: View {
                 
                 Button {
                     Haptics.selection()
-                    router.navigate(to: .allWeightEntriesList(weightUnit))
+                    router.navigate(to: .allWeightEntriesList)
                 } label: {
                     Text("View All Entries")
                         .fontWeight(.semibold)
@@ -111,6 +115,8 @@ struct WeightHistoryView: View {
 }
 
 private struct WeightHistoryMainSection: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private struct EntrySnapshot {
         let date: Date
         let weight: Double
@@ -211,6 +217,11 @@ private struct WeightHistoryMainSection: View {
         if let selectedPoint { return weightUnit.fromKg(selectedPoint.value) }
         guard let latestEntry else { return nil }
         return weightUnit.fromKg(latestEntry.weight)
+    }
+
+    private var chartAccessibilityValue: String {
+        let weightText = displayedWeightValue.map { "\(formattedWeightValue($0, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)" } ?? String(localized: "No weight data")
+        return AccessibilityText.healthWeightHistoryChartValue(dateText: displayedDateText, weightText: weightText)
     }
     
     private var showsAverageContext: Bool {
@@ -327,16 +338,19 @@ private struct WeightHistoryMainSection: View {
                         }
                     }
                     .frame(height: 260)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightHistoryChart)
+                    .accessibilityLabel(AccessibilityText.healthWeightHistoryChartLabel)
+                    .accessibilityValue(chartAccessibilityValue)
 
                     if let visibleRangeText, currentRangeData.entryCount > 0 {
                         VStack(spacing: 5) {
                             HStack {
                                 if let averageWeightKg = currentRangeData.averageWeightKg {
-                                    metadataWeightValue(title: "Avg", weightKg: averageWeightKg, alignment: .leading)
+                                    metadataWeightValue(title: "Avg", weightKg: averageWeightKg)
                                 }
                                 Spacer()
                                 if let lowWeightKg = currentRangeData.lowWeightKg {
-                                    metadataWeightValue(title: "Low", weightKg: lowWeightKg, alignment: .trailing)
+                                    metadataWeightValue(title: "Low", weightKg: lowWeightKg)
                                 }
                             }
                             
@@ -348,7 +362,7 @@ private struct WeightHistoryMainSection: View {
                                     .fontWeight(.semibold)
                                 Spacer()
                                 if let highWeightKg = currentRangeData.highWeightKg {
-                                    metadataWeightValue(title: "High", weightKg: highWeightKg, alignment: .trailing)
+                                    metadataWeightValue(title: "High", weightKg: highWeightKg)
                                 }
                             }
                         }
@@ -465,7 +479,7 @@ private struct WeightHistoryMainSection: View {
     }
 
     @ViewBuilder
-    private func metadataWeightValue(title: String, weightKg: Double, alignment: MetadataAlignment) -> some View {
+    private func metadataWeightValue(title: String, weightKg: Double) -> some View {
         let displayedWeight = weightUnit.fromKg(weightKg)
         HStack(spacing: 4) {
             Text(title)
@@ -475,10 +489,9 @@ private struct WeightHistoryMainSection: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .fontDesign(.rounded)
-                .monospacedDigit()
                 .contentTransition(.numericText(value: displayedWeight))
         }
-        .animation(.smooth, value: displayedWeight)
+        .animation(reduceMotion ? nil : .smooth, value: displayedWeight)
         .accessibilityElement(children: .combine)
     }
 
@@ -521,10 +534,13 @@ private struct WeightHistoryMainSection: View {
     private func prepareRangeCache() {
         let samples = timeSeriesSamples
         let entrySnapshots = entrySnapshots
-        let ranges = availableRanges
         let now = Date()
         let calendar = Calendar.autoupdatingCurrent
-        let cache = Dictionary(uniqueKeysWithValues: ranges.map { range in
+        let buildOrder = [TimeSeriesRangeFilter.month, .week, .sixMonths, .year, .all].filter { availableRanges.contains($0) }
+        var cache = [TimeSeriesRangeFilter: CachedRangeData]()
+        rangeCache = [:]
+
+        for range in buildOrder {
             let layout = TimeSeriesChartLayout(rangeFilter: range, samples: samples, now: now, calendar: calendar, aggregation: .average)
             let visibleEntries = entrySnapshots.filter { layout.currentDomain.contains($0.date) }.sorted { $0.date < $1.date }
             let averageWeightKg = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.weight } / Double(visibleEntries.count))
@@ -540,15 +556,15 @@ private struct WeightHistoryMainSection: View {
             let lowWeightKg = visibleEntries.map(\.weight).min()
             let highWeightKg = visibleEntries.map(\.weight).max()
             let data = CachedRangeData(layout: layout, yDomain: weightYDomain(for: layout.points.map(\.value)), linePoints: timeSeriesAnchoredLinePoints(points: layout.points, samples: samples, domain: layout.currentDomain), averageWeightKg: averageWeightKg, entryCount: visibleEntries.count, changeKg: changeKg, trendKgPerWeek: trendKgPerWeek, lowWeightKg: lowWeightKg, highWeightKg: highWeightKg)
-            return (range, data)
-        })
-        rangeCache = cache
+            cache[range] = data
+            rangeCache = cache
+        }
     }
 }
 
 #Preview {
     NavigationStack {
-        WeightHistoryView(weightUnit: .lbs)
+        WeightHistoryView()
     }
     .sampleDataContainer()
 }

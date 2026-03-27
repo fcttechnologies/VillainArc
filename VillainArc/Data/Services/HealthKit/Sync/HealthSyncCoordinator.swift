@@ -51,6 +51,7 @@ enum HealthWeightEntryLinker {
     func syncAll() async {
         await syncWorkouts()
         await syncWeightEntries()
+        await HealthDailyMetricsSync.shared.syncAll()
     }
 
     func syncWorkouts() async {

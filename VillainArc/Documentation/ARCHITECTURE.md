@@ -26,28 +26,28 @@ This file is the structure map for the app. Use it to understand the major layer
 - Starts the Health observer pipeline plus the first post-ready sync pass when onboarding finishes.
 - Presents `Views/Onboarding/OnboardingView.swift` as the blocking setup sheet.
 
-### `Views/ContentView.swift`
+### `Views/AppShell/ContentView.swift`
 
 - Top-level foreground shell after launch is ready.
 - Hosts the root `TabView` and the app-level full-screen flows:
   - `activeWorkoutSession` -> `Views/Workout/WorkoutSessionContainer.swift`
   - `activeWorkoutPlan` -> `Views/WorkoutPlan/WorkoutPlanView.swift`
-  - `activeWeightGoalCompletion` -> `Views/Health/WeightGoalCompletionView.swift`
+  - `activeWeightGoalCompletion` -> `Views/Health/Weight/WeightGoalCompletionView.swift`
 - Does not own the per-tab `NavigationStack`s.
 
-### `Views/HomeTabView.swift`
+### `Views/Tabs/Home/HomeTabView.swift`
 
 - Home tab navigation shell.
 - Owns the home `NavigationStack`, home destinations, settings sheet, and the bottom-bar plus menu for starting workouts and creating plans.
 - Routes detailed navigation through `AppRouter.homeTabPath`.
 
-### `Views/Health/HealthTabView.swift`
+### `Views/Tabs/Health/HealthTabView.swift`
 
 - Health tab navigation shell.
-- Owns the Health `NavigationStack`, the add-weight-entry sheet, and health-specific destinations such as weight history, all weight entries, and weight goals.
+- Owns the Health `NavigationStack`, the add-weight-entry sheet, and health-specific destinations such as weight history, steps history, energy history, all weight entries, and weight goals.
 - Routes detailed navigation through `AppRouter.healthTabPath`.
 
-### `Data/Services/AppRouter.swift`
+### `Data/Services/App/AppRouter.swift`
 
 - Global navigation and active-flow coordinator.
 - Owns:
@@ -68,7 +68,7 @@ This file is the structure map for the app. Use it to understand the major layer
 - Stores app data in the app-group container and enables private CloudKit sync.
 - Defines the full schema used by the main app, intents, widgets, and Live Activity surfaces.
 
-### `Data/Services/OnboardingManager.swift`
+### `Data/Services/App/OnboardingManager.swift`
 
 - First-run and returning-launch readiness state machine.
 - Handles:
@@ -80,23 +80,23 @@ This file is the structure map for the app. Use it to understand the major layer
   - profile onboarding
   - optional Apple Health prompt timing
 
-### `Data/Services/CloudKitImportMonitor.swift`
+### `Data/Services/App/CloudKitImportMonitor.swift`
 
 - Watches `NSPersistentCloudKitContainer` import events during first bootstrap.
 - Lets onboarding wait for import completion before seeding the bundled exercise catalog.
 
-### `Data/Services/DataManager.swift`
+### `Data/Services/App/DataManager.swift`
 
 - Exercise catalog sync service.
 - Seeds missing built-in exercises, updates changed catalog metadata, and propagates metadata changes into stored prescriptions and performances.
 - Also owns the bootstrap marker through `exerciseCatalogVersionKey`.
 
-### `Data/Services/SystemState.swift`
+### `Data/Services/App/SystemState.swift`
 
 - Ensures `AppSettings` and `UserProfile` exist.
 - Used by onboarding and other startup-safe code paths.
 
-### `Data/Services/SetupGuard.swift`
+### `Data/Services/App/SetupGuard.swift`
 
 - Readiness boundary for App Intents.
 - Verifies bootstrap completed, singleton records exist, the user profile is complete, and optionally that no incomplete workout or plan exists.
@@ -207,6 +207,18 @@ This file is the structure map for the app. Use it to understand the major layer
   - an app-created entry linked to Apple Health
   - a Health-imported entry
 
+### `Data/Models/Health/HealthStepsDistance.swift`
+
+- Per-day Apple Health aggregate cache for the Health tab.
+- Stores start-of-day, total step count, and walking/running distance in meters for that day.
+- Used by the steps card, steps history, and daily HealthKit sync.
+
+### `Data/Models/Health/HealthEnergy.swift`
+
+- Per-day Apple Health aggregate cache for the Health tab.
+- Stores start-of-day, active energy burned, resting energy burned, and derives total energy for that day.
+- Used by the energy card, energy history, and daily HealthKit sync.
+
 ### `Data/Models/Health/WeightGoal.swift`
 
 - Local weight-goal record for the Health tab.
@@ -231,11 +243,11 @@ This file is the structure map for the app. Use it to understand the major layer
   - Active logging surface and owner of finish/cancel flow, sheets, and runtime hooks.
 - `Views/Workout/WorkoutSummaryView.swift`
   - Summary/finalization orchestrator for PRs, suggestion generation, save-as-plan, history rebuild, and final completion.
-- `Data/Services/RestTimerState.swift`
+- `Data/Services/Workout/RestTimerState.swift`
   - Shared rest timer state persisted in shared defaults.
 - `Data/LiveActivity/WorkoutActivityManager.swift`
   - Live Activity projection of the active workout and timer state.
-- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
+- `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
   - Live Apple Health workout session manager during local active logging.
 
 ### Suggestions and Outcomes
@@ -259,7 +271,7 @@ This file is the structure map for the app. Use it to understand the major layer
 
 ### Exercise Analytics
 
-- `Data/Services/ExerciseHistoryUpdater.swift`
+- `Data/Services/Workout/ExerciseHistoryUpdater.swift`
   - Rebuilds `ExerciseHistory` after completion or deletion flows.
 - `Views/Exercise/ExercisesListView.swift`
   - Searchable exercise browser ordered by cached completed-workout recency.
@@ -267,7 +279,7 @@ This file is the structure map for the app. Use it to understand the major layer
   - Cached analytics detail screen with chart metric switching.
 - `Views/Exercise/ExerciseHistoryView.swift`
   - Raw completed-performance drill-down.
-- `Views/HomeSections/RecentExercisesSectionView.swift`
+- `Views/Tabs/Home/Sections/RecentExercisesSectionView.swift`
   - Home card backed by `ExerciseHistory`, not picker recency.
 
 ### Plans and Splits
@@ -280,50 +292,64 @@ This file is the structure map for the app. Use it to understand the major layer
   - Split management surface.
 - `Views/WorkoutSplit/WorkoutSplitDayView.swift`
   - Per-day editing and plan assignment.
-- `Views/HomeSections/WorkoutSplitSectionView.swift`
+- `Views/Tabs/Home/Sections/WorkoutSplitSectionView.swift`
   - Home card for today's split state and today's plan entry.
 
 ### Health Surfaces
 
-- `Views/Health/HealthTabView.swift`
+- `Views/Tabs/Health/HealthTabView.swift`
   - Health tab root.
-- `Views/Health/WeightSectionCard.swift`
+- `Views/Health/Weight/WeightSectionCard.swift`
   - Health tab summary card for weight.
-- `Views/Health/WeightHistoryView.swift`
+- `Views/Health/Steps/HealthStepsSectionCard.swift`
+  - Health tab summary card for steps.
+- `Views/Health/Energy/HealthEnergySectionCard.swift`
+  - Health tab summary card for energy.
+- `Views/Health/Weight/WeightHistoryView.swift`
   - Detailed weight chart, cached multi-range time-series view, active goal summary, and goal-aware metadata.
-- `Views/Health/AllWeightEntriesListView.swift`
+- `Views/Health/Steps/StepsDistanceHistoryView.swift`
+  - Detailed steps chart, distance header summary, and cached multi-range aggregate metadata.
+- `Views/Health/Energy/HealthEnergyHistoryView.swift`
+  - Detailed energy chart with total and active overlays plus cached multi-range aggregate metadata.
+- `Views/Health/Weight/AllWeightEntriesListView.swift`
   - Full list of stored weight entries.
-- `Views/Health/WeightGoalSummaryCard.swift`
+- `Views/Health/Weight/WeightGoalSummaryCard.swift`
   - Reusable active-goal summary card and compact goal progress chart.
-- `Views/Health/WeightGoalHistoryView.swift`
+- `Views/Health/Weight/WeightGoalHistoryView.swift`
   - History of active and ended weight goals with reusable mini progress charts.
-- `Views/Health/WeightGoalCompletionView.swift`
+- `Views/Health/Weight/WeightGoalCompletionView.swift`
   - App-level full-screen goal completion flow for achieved, manual-override, and same-day delete cases.
 - `Views/Workout/HealthWorkoutDetailView.swift`
   - On-demand Health workout detail.
 - `Helpers/TimeSeriesCharting.swift`
-  - Shared chart bucketing, axis labeling, and time-series helpers used by weight and exercise analytics.
+  - Shared chart bucketing, axis labeling, and time-series helpers used by weight, steps, energy, and exercise analytics.
+- `Views/Workout/History/WorkoutsListView.swift`
+  - Merged workout history list for app and Apple Health workouts.
+- `Views/Workout/History/WorkoutHistoryItem.swift`
+  - Shared merged-row projection type used by workout history.
 
 ## Integrations
 
 ### Apple Health
 
-- `Data/Services/HealthKit/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
   - Health availability, status, request boundary, and metadata helpers.
-- `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
-  - Observer registration, background delivery registration, and serialized Health sync entrypoint.
-- `Data/Services/HealthKit/HealthSyncCoordinator.swift`
-  - Anchored sync for workouts and body mass.
-- `Data/Services/HealthKit/HealthExportCoordinator.swift`
+- `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
+  - Observer registration, background delivery registration, and serialized Health sync entrypoint for workouts, body mass, steps, distance, and energy.
+- `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
+  - Top-level Health sync orchestration for workouts, body mass, and daily aggregate metrics.
+- `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
+  - Per-metric anchored sync plus daily-statistics rebuild for steps, walking/running distance, active energy, and resting energy.
+- `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
   - Reconciliation-aware export/repair path for completed workouts and weight entries.
-- `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`
+- `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
   - On-demand richer Health workout detail loading.
-- `Data/Services/HealthKit/HealthPreferences.swift`
-  - Shared-defaults storage for Health sync anchors.
+- `Data/Services/HealthKit/Sync/HealthPreferences.swift`
+  - Shared-defaults storage for Health sync anchors and synced coverage ranges.
 
 ### Spotlight and App Intents
 
-- `Data/Services/SpotlightIndexer.swift`
+- `Data/Services/App/SpotlightIndexer.swift`
   - Indexes completed workouts, completed plans, history-backed exercises, and splits.
 - `Intents/Workout/*`, `Intents/WorkoutPlan/*`, `Intents/WorkoutSplit/*`, `Intents/Exercise/*`, `Intents/RestTimer/*`
   - App Intent entrypoints that reuse `SetupGuard`, `AppRouter`, and the same models/services used by the UI.

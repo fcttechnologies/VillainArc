@@ -4,16 +4,16 @@ This document explains the exercise-history side of the app: when VillainArc reb
 
 ## Main Files
 
-- `Data/Services/ExerciseHistoryUpdater.swift`
+- `Data/Services/Workout/ExerciseHistoryUpdater.swift`
 - `Data/Models/Exercise/ExerciseHistory.swift`
 - `Data/Models/Exercise/ProgressionPoint.swift`
 - `Data/Models/Exercise/Exercise.swift`
-- `Views/HomeSections/RecentExercisesSectionView.swift`
+- `Views/Tabs/Home/Sections/RecentExercisesSectionView.swift`
 - `Views/Exercise/ExercisesListView.swift`
 - `Views/Exercise/ExerciseDetailView.swift`
 - `Views/Exercise/ExerciseHistoryView.swift`
-- `Data/Services/WorkoutDeletionCoordinator.swift`
-- `Data/Services/SpotlightIndexer.swift`
+- `Data/Services/Workout/WorkoutDeletionCoordinator.swift`
+- `Data/Services/App/SpotlightIndexer.swift`
 
 ## Core Idea
 

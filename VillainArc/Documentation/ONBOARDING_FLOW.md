@@ -7,13 +7,13 @@ This document explains VillainArc's startup and readiness path: how first bootst
 - `Root/VillainArcApp.swift`
 - `Root/RootView.swift`
 - `Views/Onboarding/OnboardingView.swift`
-- `Data/Services/OnboardingManager.swift`
-- `Data/Services/CloudKitImportMonitor.swift`
-- `Data/Services/DataManager.swift`
-- `Data/Services/SystemState.swift`
-- `Data/Services/SetupGuard.swift`
-- `Data/Services/HealthKit/HealthAuthorizationManager.swift`
-- `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
+- `Data/Services/App/OnboardingManager.swift`
+- `Data/Services/App/CloudKitImportMonitor.swift`
+- `Data/Services/App/DataManager.swift`
+- `Data/Services/App/SystemState.swift`
+- `Data/Services/App/SetupGuard.swift`
+- `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
 - `Data/SharedModelContainer.swift`
 
 ## Startup Entry
@@ -202,7 +202,7 @@ When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 1. Health data sync through `HealthSyncCoordinator`
 2. export/relink reconciliation through `HealthExportCoordinator`
 
-This is how VillainArc backfills Health mirrors and repairs older workouts or weight entries that still need links/exports.
+This is how VillainArc backfills Health mirrors, daily Health aggregate caches, and repairs older workouts or weight entries that still need links/exports.
 
 ## What Catalog Sync Actually Does
 

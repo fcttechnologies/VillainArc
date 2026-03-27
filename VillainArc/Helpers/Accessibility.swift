@@ -31,6 +31,14 @@ enum AccessibilityIdentifiers {
     static let healthWeightEntriesEditButton = "healthWeightEntriesEditButton"
     static let healthWeightEntriesDoneEditingButton = "healthWeightEntriesDoneEditingButton"
     static let healthWeightEntriesEmptyState = "healthWeightEntriesEmptyState"
+    static let healthNewWeightGoalCustomStartDateToggle = "healthNewWeightGoalCustomStartDateToggle"
+    static let healthNewWeightGoalStartDatePicker = "healthNewWeightGoalStartDatePicker"
+    static let healthWeightSectionCard = "healthWeightSectionCard"
+    static let healthWeightHistoryChart = "healthWeightHistoryChart"
+    static let healthStepsSectionCard = "healthStepsSectionCard"
+    static let healthEnergySectionCard = "healthEnergySectionCard"
+    static let healthStepsHistoryChart = "healthStepsHistoryChart"
+    static let healthEnergyHistoryChart = "healthEnergyHistoryChart"
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }
 
@@ -482,6 +490,22 @@ enum AccessibilityText {
     static let healthWeightEntriesDeleteAllHint = localized("Deletes all app-created weight entries.")
     static let healthWeightEntriesEditHint = localized("Enters edit mode.")
     static let healthWeightEntriesDoneEditingHint = localized("Exits edit mode.")
+    static let healthWeightSectionHint = localized("Opens detailed weight history.")
+    static let healthStepsSectionHint = localized("Opens detailed steps history.")
+    static let healthEnergySectionHint = localized("Opens detailed energy history.")
+    static let healthWeightHistoryChartLabel = localized("Weight history chart")
+    static let healthStepsHistoryChartLabel = localized("Steps history chart")
+    static let healthEnergyHistoryChartLabel = localized("Energy history chart")
+
+    static func healthWeightHistoryChartValue(dateText: String, weightText: String) -> String { localized("\(dateText), \(weightText)") }
+
+    static func healthStepsSectionValue(stepCount: Int) -> String { localized("Today \(stepCount.formatted(.number)) steps. Last 7 days chart.") }
+
+    static func healthEnergySectionValue(totalEnergy: Int, activeEnergy: Int) -> String { localized("Today \(totalEnergy.formatted(.number)) total calories. \(activeEnergy.formatted(.number)) active calories. Last 7 days chart.") }
+
+    static func healthStepsHistoryChartValue(dateText: String, stepsText: String) -> String { localized("\(dateText), \(stepsText)") }
+
+    static func healthEnergyHistoryChartValue(dateText: String, totalText: String, activeText: String) -> String { localized("\(dateText), \(totalText), \(activeText)") }
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitHeaderHint = localized("Shows your workout split settings.")

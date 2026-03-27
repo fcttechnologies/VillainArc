@@ -29,6 +29,9 @@
     "%@ beats per minute" : {
 
     },
+    "%@ cal" : {
+
+    },
     "%@ is a rest day." : {
 
     },
@@ -260,6 +263,15 @@
     "Action" : {
 
     },
+    "Active" : {
+
+    },
+    "active calories" : {
+
+    },
+    "Active Energy" : {
+
+    },
     "Active Split" : {
 
     },
@@ -431,6 +443,9 @@
     "Automatically starts rest timer when a set is marked complete." : {
 
     },
+    "Average" : {
+
+    },
     "avg" : {
 
     },
@@ -444,6 +459,9 @@
 
     },
     "Barbell" : {
+
+    },
+    "Baseline" : {
 
     },
     "Biceps" : {
@@ -867,6 +885,15 @@
     "Ended Date" : {
 
     },
+    "Energy" : {
+
+    },
+    "Energy history chart" : {
+
+    },
+    "Energy. Update Apple Health permissions so your health metrics appear here." : {
+
+    },
     "Enjoy the day off." : {
 
     },
@@ -1279,6 +1306,9 @@
     "No" : {
 
     },
+    "No active energy data" : {
+
+    },
     "No active exercise to replace." : {
 
     },
@@ -1307,6 +1337,24 @@
 
     },
     "No current workout session to cancel." : {
+
+    },
+    "No Energy Data" : {
+
+    },
+    "No energy data has been recorded yet." : {
+
+    },
+    "No energy data was recorded in the last 6 months." : {
+
+    },
+    "No energy data was recorded in the last 7 days." : {
+
+    },
+    "No energy data was recorded in the last month." : {
+
+    },
+    "No energy data was recorded in the last year." : {
 
     },
     "No Exercise History" : {
@@ -1339,6 +1387,9 @@
     "No Favorites Selected" : {
 
     },
+    "No Health Data" : {
+
+    },
     "No incomplete sets found." : {
 
     },
@@ -1369,10 +1420,52 @@
     "No Splits" : {
 
     },
+    "No step data" : {
+
+    },
+    "No Step Data" : {
+
+    },
+    "No step data has been recorded yet." : {
+
+    },
+    "No step data was recorded in the last 6 months." : {
+
+    },
+    "No step data was recorded in the last 7 days." : {
+
+    },
+    "No step data was recorded in the last month." : {
+
+    },
+    "No step data was recorded in the last year." : {
+
+    },
     "No target set" : {
 
     },
+    "No total energy data" : {
+
+    },
+    "No weight data" : {
+
+    },
     "No Weight Entries" : {
+
+    },
+    "No weight entries have been recorded yet." : {
+
+    },
+    "No weight entries were recorded in the last 6 months." : {
+
+    },
+    "No weight entries were recorded in the last 7 days." : {
+
+    },
+    "No weight entries were recorded in the last month." : {
+
+    },
+    "No weight entries were recorded in the last year." : {
 
     },
     "No Weight Goals" : {
@@ -1502,6 +1595,12 @@
 
     },
     "Opens a specific workout." : {
+
+    },
+    "Opens detailed energy history." : {
+
+    },
+    "Opens detailed steps history." : {
 
     },
     "Opens detailed weight history." : {
@@ -2315,6 +2414,24 @@
     "Status" : {
 
     },
+    "step" : {
+
+    },
+    "Step" : {
+
+    },
+    "steps" : {
+
+    },
+    "Steps" : {
+
+    },
+    "Steps history chart" : {
+
+    },
+    "Steps. Update Apple Health permissions so your health metrics appear here." : {
+
+    },
     "Still Syncing..." : {
 
     },
@@ -2450,6 +2567,19 @@
     "Today" : {
 
     },
+    "Today %@ steps. Last 7 days chart." : {
+
+    },
+    "Today %@ total calories. %@ active calories. Last 7 days chart." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Today %1$@ total calories. %2$@ active calories. Last 7 days chart."
+          }
+        }
+      }
+    },
     "Today is a rest day! Enjoy your recovery." : {
 
     },
@@ -2490,6 +2620,15 @@
 
     },
     "Top Weight" : {
+
+    },
+    "Total" : {
+
+    },
+    "total calories" : {
+
+    },
+    "Total Energy" : {
 
     },
     "Train your entire body each session" : {
@@ -2541,6 +2680,9 @@
 
     },
     "Update" : {
+
+    },
+    "Update Apple Health permissions so your health metrics appear here." : {
 
     },
     "Update Rest Timer?" : {
@@ -2631,6 +2773,9 @@
 
     },
     "Weight Goals" : {
+
+    },
+    "Weight history chart" : {
 
     },
     "Weight/Side" : {
@@ -2891,6 +3036,9 @@
 
     },
     "Your split doesn't have any days set up yet." : {
+
+    },
+    "Your weight data will show up here once you add or sync body weight entries" : {
 
     },
     "Your workout data won't sync across devices or be backed up if you delete the app." : {

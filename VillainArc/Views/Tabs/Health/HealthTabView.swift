@@ -7,8 +7,12 @@ struct HealthTabView: View {
     var body: some View {
         NavigationStack(path: $router.healthTabPath) {
             ScrollView {
-                WeightSectionCard()
-                    .padding()
+                VStack(spacing: 16) {
+                    WeightSectionCard()
+                    HealthStepsSectionCard()
+                    HealthEnergySectionCard()
+                }
+                .padding()
             }
             .navBar(title: "Health", includePadding: false) {
                 Button {
@@ -34,12 +38,16 @@ struct HealthTabView: View {
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
-                case .weightHistory(let weightUnit):
-                    WeightHistoryView(weightUnit: weightUnit)
-                case .allWeightEntriesList(let weightUnit):
-                    AllWeightEntriesListView(weightUnit: weightUnit)
-                case .weightGoalHistory(let weightUnit):
-                    WeightGoalHistoryView(weightUnit: weightUnit)
+                case .weightHistory:
+                    WeightHistoryView()
+                case .stepsDistanceHistory:
+                    StepsDistanceHistoryView()
+                case .energyHistory:
+                    HealthEnergyHistoryView()
+                case .allWeightEntriesList:
+                    AllWeightEntriesListView()
+                case .weightGoalHistory:
+                    WeightGoalHistoryView()
                 default:
                     EmptyView()
                 }

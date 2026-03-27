@@ -185,16 +185,16 @@ struct NewWeightGoalView: View {
                 if allowsCustomStartDate {
                     Section {
                         Toggle("Set Custom Start Date", isOn: $includeCustomStartDate)
-                            .accessibilityIdentifier("healthNewWeightGoalCustomStartDateToggle")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalCustomStartDateToggle)
                             .fontWeight(.semibold)
                         
                         if includeCustomStartDate {
                             if let minimumStartDate {
                                 DatePicker("Started At", selection: $selectedStartDate, in: minimumStartDate...Date(), displayedComponents: .date)
-                                    .accessibilityIdentifier("healthNewWeightGoalStartDatePicker")
+                                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalStartDatePicker)
                             } else {
                                 DatePicker("Started At", selection: $selectedStartDate, in: ...Date(), displayedComponents: .date)
-                                    .accessibilityIdentifier("healthNewWeightGoalStartDatePicker")
+                                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalStartDatePicker)
                             }
                         }
                     }

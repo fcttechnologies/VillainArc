@@ -1,25 +1,30 @@
 # HealthKit Integration
 
-This document explains the current Apple Health integration in VillainArc: how Health access is requested over time, how workout and body-mass data are exported and synced, how the Health tab gets its data, how Health workouts appear in history, how workout detail loads richer metrics, and what happens when Health data disappears from Apple Health.
+This document explains the current Apple Health integration in VillainArc: how Health access is requested over time, how workout and body-mass data are exported and synced, how daily step/distance and energy aggregates are mirrored, how the Health tab gets its data, how Health workouts appear in history, how workout detail loads richer metrics, and what happens when Health data disappears from Apple Health.
 
 ## Main Files
 
-- `Data/Services/HealthKit/HealthAuthorizationManager.swift`
-- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
-- `Data/Services/HealthKit/HealthPreferences.swift`
-- `Data/Services/HealthKit/HealthExportCoordinator.swift`
-- `Data/Services/HealthKit/HealthSyncCoordinator.swift`
-- `Data/Services/HealthKit/HealthStoreUpdateCoordinator.swift`
-- `Data/Services/HealthKit/HealthWorkoutDetailLoader.swift`
+- `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
+- `Data/Services/HealthKit/Sync/HealthPreferences.swift`
+- `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
+- `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
+- `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
+- `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
+- `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
 - `Data/Models/Health/HealthWorkout.swift`
 - `Data/Models/Health/WeightEntry.swift`
+- `Data/Models/Health/HealthStepsDistance.swift`
+- `Data/Models/Health/HealthEnergy.swift`
 - `Data/Models/Health/WeightGoal.swift`
 - `Data/Models/Sessions/WorkoutSession.swift`
-- `Views/Health/HealthTabView.swift`
-- `Views/Health/WeightHistoryView.swift`
-- `Views/History/WorkoutsListView.swift`
+- `Views/Tabs/Health/HealthTabView.swift`
+- `Views/Health/Weight/WeightHistoryView.swift`
+- `Views/Health/Steps/StepsDistanceHistoryView.swift`
+- `Views/Health/Energy/HealthEnergyHistoryView.swift`
+- `Views/Workout/History/WorkoutsListView.swift`
 - `Views/Workout/HealthWorkoutDetailView.swift`
-- `Views/AppSettingsView.swift`
+- `Views/Settings/AppSettingsView.swift`
 
 ## Core Idea
 
@@ -29,6 +34,8 @@ The current split is:
 
 - workouts use an app-owned `WorkoutSession` plus a mirrored `HealthWorkout`
 - body mass uses a single local `WeightEntry` row that can be created locally, imported from Apple Health, or linked to both
+- daily steps and walking/running distance use `HealthStepsDistance` as a per-day aggregate cache
+- daily active and resting energy use `HealthEnergy` as a per-day aggregate cache
 - weight goals are local VillainArc state through `WeightGoal`, not Apple Health data
 
 That means:
@@ -36,6 +43,7 @@ That means:
 - VillainArc-specific workout behavior stays on `WorkoutSession`
 - Apple Health workout identity and cached summary data stay on `HealthWorkout`
 - body-mass samples use `WeightEntry` as the local persistence layer for both app-entered and Health-synced weight history
+- daily step, distance, and energy reads are mirrored as per-day aggregate caches instead of raw HealthKit samples
 - richer workout Health details are loaded on demand instead of being copied into SwiftData
 
 ## Health Records
@@ -102,6 +110,26 @@ That is why body-mass sync does not use a separate mirror model the way workouts
 - end reason when an active goal is replaced or finished
 
 Goals are used for chart filtering, goal summaries, goal history, and the local goal-completion flow. They are not used for HealthKit syncing.
+
+### `HealthStepsDistance`
+
+`HealthStepsDistance` is the local per-day steps and walking/running distance cache. It stores:
+
+- the start of the calendar day
+- total step count for that day
+- total walking/running distance in meters for that day
+
+This model is not a raw HealthKit sample mirror. It is a daily aggregate cache used by the Health tab cards and steps history surfaces.
+
+### `HealthEnergy`
+
+`HealthEnergy` is the local per-day energy cache. It stores:
+
+- the start of the calendar day
+- active energy burned
+- resting energy burned
+
+Total energy is derived from those two fields rather than stored separately.
 
 ## Health Permission Flow
 
@@ -171,6 +199,8 @@ VillainArc reads:
 - biological sex
 - height
 - body mass
+- step count
+- walking/running distance
 - heart rate
 - active energy burned
 - resting energy burned
@@ -186,6 +216,7 @@ The important design rules are:
 
 - `HealthWorkout` stays small
 - `WeightEntry` stays a lightweight local history record
+- daily steps, distance, and energy stay in one-row-per-day aggregate caches
 - richer workout reads exist to support detail screens, not to keep inflating the persisted mirror
 
 ## Live Workout Flow
@@ -270,21 +301,33 @@ Observer callbacks also trigger `HealthStoreUpdateCoordinator`, but that path cu
 
 - an `HKObserverQuery` for workouts
 - an `HKObserverQuery` for body mass
+- an `HKObserverQuery` for step count
+- an `HKObserverQuery` for walking/running distance
+- an `HKObserverQuery` for active energy burned
+- an `HKObserverQuery` for resting energy burned
 
 It also enables background delivery for each type once that type has crossed the request boundary.
 
 ### How Sync Works
 
-VillainArc uses separate anchored queries for workouts and body mass.
+VillainArc uses separate Health sync paths for:
+
+- workouts
+- body mass
+- daily aggregate metrics
 
 The anchors are stored in shared defaults:
 
 - `HealthSyncPreferences.workoutAnchor`
 - `HealthSyncPreferences.weightEntryAnchor`
+- `HealthSyncPreferences.stepCountAnchor`
+- `HealthSyncPreferences.walkingRunningDistanceAnchor`
+- `HealthSyncPreferences.activeEnergyBurnedAnchor`
+- `HealthSyncPreferences.restingEnergyBurnedAnchor`
 
 That gives the app this behavior:
 
-- first sync with no anchor: backfill all matching workouts and body-mass samples
+- first sync with no anchor: backfill all matching workouts, body-mass samples, and raw samples for the daily metric categories
 - later syncs: only fetch changes since the last successful sync for each category
 
 The workout sync pass:
@@ -304,6 +347,17 @@ The weight sync pass:
 - inserts new local `WeightEntry` rows for Health-only samples when no local row exists
 
 That is what lets the Health tab show weight history even when the data originated in Apple Health instead of in VillainArc.
+
+The daily-metrics sync pass is different:
+
+- anchored queries are used as change detectors for step count, walking/running distance, active energy, and resting energy
+- changed samples are collapsed into affected calendar days
+- the app then reruns daily cumulative statistics queries for the affected date range
+- `HealthStepsDistance` rows are updated only for steps/distance fields
+- `HealthEnergy` rows are updated only for active/resting energy fields
+- deletion-driven refreshes can rebuild the already-synced coverage range for that metric because `HKDeletedObject` does not expose the deleted sample date
+
+This keeps the local Health tab caches compact: one row per day instead of one row per raw HealthKit sample.
 
 ## Deletions From Apple Health
 
@@ -353,15 +407,21 @@ That prevents duplicates for exported VillainArc workouts while still letting im
 
 ## Health Tab
 
-The Health tab is currently centered on weight and weight goals.
+The Health tab now combines weight, steps, energy, and Apple Health workout history.
 
 ### Tab Root
 
-`HealthTabView` shows `WeightSectionCard`, which summarizes:
+`HealthTabView` shows:
 
-- latest recorded weight
-- a simple weight trend
-- a small sparkline built from recent entries
+- `WeightSectionCard`
+- `HealthStepsSectionCard`
+- `HealthEnergySectionCard`
+
+Those cards summarize:
+
+- the latest recorded weight plus a recent sparkline
+- today's steps plus a recent steps bar chart
+- today's total and active energy plus a recent stacked energy bar chart
 
 ### Weight History
 
@@ -372,6 +432,19 @@ The Health tab is currently centered on weight and weight goals.
 - active goal summary
 - app-level goal completion presentation when a new weight entry qualifies or a user manually completes a goal
 - links to all entries and goal history
+
+`StepsDistanceHistoryView` expands the steps card into:
+
+- grouped steps history using the shared time-series layout
+- distance summary for the currently displayed or selected span
+- cached range filters for `W / M / 6M / Y / All`
+- aggregate metadata such as average, high, and total values for the visible span
+
+`HealthEnergyHistoryView` expands the energy card into:
+
+- grouped total-energy history with active-energy overlays
+- cached range filters for `W / M / 6M / Y / All`
+- aggregate metadata such as average total and average active energy for the visible span
 
 ### Weight Goals
 

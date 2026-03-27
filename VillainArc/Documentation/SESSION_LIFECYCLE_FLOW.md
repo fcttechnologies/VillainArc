@@ -4,7 +4,7 @@ This document explains how workout sessions move through the app: where they sta
 
 ## Main Files
 
-- `Data/Services/AppRouter.swift`
+- `Data/Services/App/AppRouter.swift`
 - `Data/Models/Sessions/WorkoutSession.swift`
 - `Data/Models/Sessions/ExercisePerformance.swift`
 - `Data/Models/Sessions/SetPerformance.swift`
@@ -13,9 +13,9 @@ This document explains how workout sessions move through the app: where they sta
 - `Views/Workout/WorkoutSummaryView.swift`
 - `Views/Suggestions/DeferredSuggestionsView.swift`
 - `Views/Suggestions/SuggestionReviewView.swift`
-- `Data/Services/RestTimerState.swift`
+- `Data/Services/Workout/RestTimerState.swift`
 - `Data/LiveActivity/WorkoutActivityManager.swift`
-- `Data/Services/HealthKit/HealthLiveWorkoutSessionCoordinator.swift`
+- `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
 
 ## Session Model
 

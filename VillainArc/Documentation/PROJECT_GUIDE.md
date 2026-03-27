@@ -12,7 +12,7 @@ VillainArc is a SwiftUI + SwiftData strength-training app centered around:
 - live workout logging
 - plan suggestions and later outcome evaluation
 - cached exercise analytics
-- Apple Health integration for workouts and body mass
+- Apple Health integration for workouts, body mass, daily steps and distance, and daily energy
 - Shortcuts, Spotlight, widgets, and Live Activities built on the same app state
 
 The main product areas are:
@@ -80,9 +80,9 @@ For any launch that reaches the standalone Health screen, onboarding currently b
 
 Once the app is ready, the post-ready Health pass:
 
-- starts workout and body-mass observers
+- starts workout, body-mass, daily steps and distance, and daily energy observers
 - refreshes background delivery registration
-- syncs Health data into local mirrors
+- syncs Health data into local mirrors and daily aggregate caches
 - reconciles pending local workout and weight exports
 
 ## Foreground Navigation
@@ -339,7 +339,11 @@ The Health tab is the app's health-history surface.
 Current user-facing areas are:
 
 - weight summary on the tab root
+- steps summary on the tab root
+- energy summary on the tab root
 - detailed weight history with multiple time ranges
+- detailed steps history with multiple time ranges
+- detailed energy history with multiple time ranges
 - active weight-goal summary and goal history
 - full-screen weight-goal completion flow for achieved or manually-ended goals
 - add-weight-entry flow
@@ -351,11 +355,14 @@ Under the hood, VillainArc treats Apple Health as an integration layer:
 - `WorkoutSession` remains the app-owned workout source of truth
 - `HealthWorkout` is a local mirror/cache of Health workouts
 - `WeightEntry` is the single local body-mass record used for both app-created and Health-imported data
+- `HealthStepsDistance` is the per-day Apple Health cache for steps and walking/running distance
+- `HealthEnergy` is the per-day Apple Health cache for active and resting energy
 - `WeightGoal` is local goal-tracking state for the Health tab
 
-The weight and goal surfaces also share a reusable time-series charting layer:
+The health surfaces also share a reusable time-series charting layer:
 
 - fixed `W / M / 6M / Y / All` ranges for weight history
+- fixed `W / M / 6M / Y / All` ranges for steps and energy history
 - adaptive grouping for long-range charts
 - reusable goal mini charts in both the active goal card and goal history
 - app-level goal completion presentation triggered either from goal history or after a qualifying weight entry

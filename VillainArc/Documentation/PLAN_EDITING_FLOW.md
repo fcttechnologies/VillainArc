@@ -6,10 +6,10 @@ This document explains how workout plan authoring and editing work in VillainArc
 
 - `Data/Models/Plans/WorkoutPlan.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
-- `Data/Services/AppRouter.swift`
+- `Data/Services/App/AppRouter.swift`
 - `Views/WorkoutPlan/WorkoutPlanView.swift`
 - `Views/WorkoutPlan/WorkoutPlanDetailView.swift`
-- `Data/Services/SpotlightIndexer.swift`
+- `Data/Services/App/SpotlightIndexer.swift`
 
 ## The Core Rule
 

@@ -3,12 +3,16 @@ import SwiftData
 
 struct AllWeightEntriesListView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(WeightEntry.history) private var entries: [WeightEntry]
-
-    let weightUnit: WeightUnit
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
+
+    private var weightUnit: WeightUnit {
+        appSettings.first?.weightUnit ?? .systemDefault
+    }
 
     private var editModeBinding: Binding<EditMode> {
         Binding(get: { isEditing ? .active : .inactive }, set: { newValue in isEditing = newValue == .active })
@@ -30,7 +34,7 @@ struct AllWeightEntriesListView: View {
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightEntriesList)
         .environment(\.editMode, editModeBinding)
-        .animation(.smooth, value: isEditing)
+        .animation(reduceMotion ? nil : .smooth, value: isEditing)
         .navigationTitle("All Weight Entries")
         .toolbarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(isEditing)
@@ -160,7 +164,7 @@ private struct AllWeightEntriesRowView: View {
 
 #Preview {
     NavigationStack {
-        AllWeightEntriesListView(weightUnit: .lbs)
+        AllWeightEntriesListView()
     }
     .sampleDataContainer()
 }

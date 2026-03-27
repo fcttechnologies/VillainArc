@@ -53,6 +53,8 @@ final class HealthAuthorizationManager {
     private let activeEnergyType = HKQuantityType(.activeEnergyBurned)
     private let restingEnergyType = HKQuantityType(.basalEnergyBurned)
     private let bodyMassType = HKQuantityType(.bodyMass)
+    private let stepCountType = HKQuantityType(.stepCount)
+    private let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
 
     private init() {}
 
@@ -103,6 +105,26 @@ final class HealthAuthorizationManager {
     var hasRequestedBodyMassAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: bodyMassType) != .notDetermined
+    }
+
+    var hasRequestedStepCountAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: stepCountType) != .notDetermined
+    }
+
+    var hasRequestedWalkingRunningDistanceAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: walkingRunningDistanceType) != .notDetermined
+    }
+
+    var hasRequestedActiveEnergyBurnedAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: activeEnergyType) != .notDetermined
+    }
+
+    var hasRequestedRestingEnergyBurnedAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: restingEnergyType) != .notDetermined
     }
 
     func authorizationAction() async -> HealthAuthorizationAction {
@@ -158,6 +180,7 @@ final class HealthAuthorizationManager {
             HKSeriesType.workoutRoute(),
             HKCharacteristicType(.dateOfBirth),
             HKCharacteristicType(.biologicalSex),
+            stepCountType,
             HKQuantityType(.heartRate),
             activeEnergyType,
             restingEnergyType,
@@ -165,7 +188,7 @@ final class HealthAuthorizationManager {
             HKQuantityType(.flightsClimbed),
             HKQuantityType(.height),
             bodyMassType,
-            HKQuantityType(.distanceWalkingRunning),
+            walkingRunningDistanceType,
             HKQuantityType(.distanceCycling),
             HKQuantityType(.distanceSwimming),
             HKQuantityType(.distanceWheelchair),

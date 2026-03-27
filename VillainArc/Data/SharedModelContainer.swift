@@ -15,6 +15,8 @@ enum SharedModelContainer {
         WorkoutSession.self,
         HealthWorkout.self,
         WeightEntry.self,
+        HealthStepsDistance.self,
+        HealthEnergy.self,
         WeightGoal.self,
         PreWorkoutContext.self,
         ExercisePerformance.self,
