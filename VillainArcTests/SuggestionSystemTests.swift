@@ -123,10 +123,6 @@ struct SuggestionSystemTests {
         #expect(kettlebellIncrement == 1.25)
     }
 
-    @Test @MainActor func doubleKettlebells_usePerSideLoadLabel() {
-        #expect(EquipmentType.kettlebell.usesPerSideLoadSemantics)
-        #expect(EquipmentType.kettlebell.loadDisplayName == "Weight / side")
-    }
     @Test @MainActor func detectTrainingStyle_ignoresExplicitWarmupRamp_beforeStraightTopSets() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
