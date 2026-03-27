@@ -263,6 +263,10 @@ private struct WorkoutSessionDetailContent: View {
     let workout: WorkoutSession
     let weightUnit: WeightUnit
 
+    private var muscleDistributionSlices: [MuscleDistributionSlice] {
+        MuscleDistributionCalculator.slices(for: workout)
+    }
+
     private var summaryColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 130), spacing: 12, alignment: .top)]
     }
@@ -298,6 +302,10 @@ private struct WorkoutSessionDetailContent: View {
                 notesSection
             }
 
+            if !muscleDistributionSlices.isEmpty {
+                muscleDistributionSection
+            }
+
             exercisesSection
         }
     }
@@ -328,6 +336,17 @@ private struct WorkoutSessionDetailContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var muscleDistributionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Muscle Distribution")
+                .font(.headline)
+
+            MuscleDistributionView(slices: muscleDistributionSlices)
+                .padding(16)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 

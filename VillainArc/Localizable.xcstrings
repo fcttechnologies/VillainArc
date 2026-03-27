@@ -1246,6 +1246,12 @@
     "Moves the weekly split back by one day." : {
 
     },
+    "Muscle Distribution" : {
+
+    },
+    "Muscle distribution chart" : {
+
+    },
     "Muscle Filters" : {
 
     },
@@ -1587,6 +1593,9 @@
 
     },
     "Pauses the rest timer." : {
+
+    },
+    "Percentage" : {
 
     },
     "Personal Records" : {

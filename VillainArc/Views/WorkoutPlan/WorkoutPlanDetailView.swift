@@ -72,6 +72,10 @@ struct WorkoutPlanDetailView: View {
         return items
     }
 
+    private var muscleDistributionSlices: [MuscleDistributionSlice] {
+        MuscleDistributionCalculator.slices(for: plan)
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
@@ -79,6 +83,10 @@ struct WorkoutPlanDetailView: View {
 
                 if !plan.notes.isEmpty {
                     notesSection
+                }
+
+                if !muscleDistributionSlices.isEmpty {
+                    muscleDistributionSection
                 }
 
                 exercisesSection
@@ -213,6 +221,17 @@ struct WorkoutPlanDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private var muscleDistributionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Muscle Distribution")
+                .font(.headline)
+
+            MuscleDistributionView(slices: muscleDistributionSlices)
+                .padding(16)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 

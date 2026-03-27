@@ -125,21 +125,20 @@ struct WeightSectionCard: View {
                         HStack(alignment: .bottom, spacing: 0) {
                             VStack(alignment: .leading, spacing: 5) {
                                 HStack(alignment: .lastTextBaseline, spacing: 3) {
-                                    Text(formattedWeightValue(latestEntry.weight, unit: weightUnit, fractionDigits: 1...1))
-                                        .font(.title2)
+                                    Text(formattedWeightValue(latestEntry.weight, unit: weightUnit, fractionDigits: 0...1))
+                                        .font(.largeTitle)
                                         .bold()
                                         .foregroundStyle(.primary)
                                     
                                     Text(weightUnit.rawValue)
-                                        .font(.title3)
+                                        .font(.title)
                                 }
+                                .lineLimit(1)
                                 
                                 HStack(spacing: 5) {
                                     Image(systemName: trend.icon)
                                     Text(trend.title)
-                                        .fontWeight(.semibold)
                                 }
-                                .foregroundStyle(.secondary)
                             }
                             .fontDesign(.rounded)
                             .foregroundStyle(.secondary)

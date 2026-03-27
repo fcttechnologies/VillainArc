@@ -7,15 +7,15 @@ struct WorkoutSplitSectionView: View {
     @Query(WorkoutSplit.active) private var activeSplits: [WorkoutSplit]
     @Query(WorkoutSplit.any) private var storedSplits: [WorkoutSplit]
     private let appRouter = AppRouter.shared
-
+    
     private var activeSplit: WorkoutSplit? {
         activeSplits.first
     }
-
+    
     private var hasAnySplit: Bool {
         !storedSplits.isEmpty
     }
-
+    
     var body: some View {
         content
             .onAppear {
@@ -26,14 +26,14 @@ struct WorkoutSplitSectionView: View {
                 refreshRotationIfNeeded()
             }
     }
-
+    
     @ViewBuilder
     private var content: some View {
         if !hasAnySplit {
             splitUnavailableView(title: String(localized: "No Workout Split"), description: String(localized: "Create a split to plan your training days."), autoOpenBuilder: true) {
                 await IntentDonations.donateCreateWorkoutSplit()
             }
-                .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitEmptyState)
+            .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitEmptyState)
         } else if let activeSplit {
             if let day = activeSplit.todaysSplitDay {
                 activeSplitCard(split: activeSplit, day: day)
@@ -42,16 +42,16 @@ struct WorkoutSplitSectionView: View {
                 splitUnavailableView(title: String(localized: "No Split Day Configured"), description: String(localized: "Add days to your split to get started.")) {
                     await IntentDonations.donateOpenWorkoutSplit()
                 }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoDayState)
+                .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoDayState)
             }
         } else {
             splitUnavailableView(title: String(localized: "No Active Split"), description: String(localized: "Set one of your splits as active.")) {
                 await IntentDonations.donateManageWorkoutSplits()
             }
-                .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoActiveState)
+            .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitNoActiveState)
         }
     }
-
+    
     private func splitUnavailableView(title: String, description: String, autoOpenBuilder: Bool = false, onNavigate: @escaping () async -> Void = {}) -> some View {
         Button {
             appRouter.navigate(to: .workoutSplit(autoPresentBuilder: autoOpenBuilder))
@@ -67,12 +67,12 @@ struct WorkoutSplitSectionView: View {
         .accessibilityValue(description)
         .accessibilityHint(AccessibilityText.workoutSplitUnavailableHint)
     }
-
+    
     private func activeSplitCard(split: WorkoutSplit, day: WorkoutSplitDay) -> some View {
         let isRestDay = day.isRestDay
         let titleText = isRestDay ? String(localized: "Today is your rest day") : activeSplitTitle(for: day)
         let subtitleText = isRestDay ? String(localized: "Enjoy the day off.") : activeSplitSubtitle(for: split)
-
+        
         return ZStack(alignment: .trailing) {
             Button {
                 appRouter.navigate(to: .workoutSplit(autoPresentBuilder: false))
@@ -102,7 +102,7 @@ struct WorkoutSplitSectionView: View {
             .accessibilityLabel(titleText)
             .accessibilityValue(subtitleText)
             .accessibilityHint(AccessibilityText.workoutSplitActiveRowHint)
-
+            
             if !isRestDay, let plan = day.workoutPlan {
                 Button {
                     appRouter.navigate(to: .workoutPlanDetail(plan, true))
@@ -119,12 +119,12 @@ struct WorkoutSplitSectionView: View {
             }
         }
     }
-
+    
     private func activeSplitTitle(for day: WorkoutSplitDay) -> String {
         let name = day.name.trimmingCharacters(in: .whitespacesAndNewlines)
         return name.isEmpty ? String(localized: "Unnamed split day") : name
     }
-
+    
     private func activeSplitSubtitle(for split: WorkoutSplit) -> String {
         switch split.mode {
         case .weekly:
@@ -135,7 +135,7 @@ struct WorkoutSplitSectionView: View {
             return String(localized: "Rotation · Cycle Day \(dayNumber) of \(count)")
         }
     }
-
+    
     private func weeklyScheduleStatus(for split: WorkoutSplit) -> String {
         let offset = split.normalizedWeeklyOffset
         let behindDays = abs(offset)
@@ -148,7 +148,7 @@ struct WorkoutSplitSectionView: View {
             return String(localized: "\(behindDays) days behind")
         }
     }
-
+    
     private func refreshRotationIfNeeded() {
         guard let split = activeSplit, split.mode == .rotation else { return }
         split.refreshRotationIfNeeded(context: context)

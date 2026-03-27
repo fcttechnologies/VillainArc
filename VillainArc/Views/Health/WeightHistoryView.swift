@@ -364,6 +364,7 @@ private struct WeightHistoryMainSection: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .onChange(of: selectedRange) { Haptics.selection() }
             }
             .padding()
             .glassEffect(.regular, in: .rect(cornerRadius: 18))
