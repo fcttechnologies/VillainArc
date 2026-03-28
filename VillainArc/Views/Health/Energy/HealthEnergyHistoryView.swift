@@ -340,13 +340,13 @@ private struct HealthEnergyWeekdayChartSection: View {
         }
         let caloriesText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
         let valueText = Text(caloriesText).foregroundStyle(tint)
-        let weekdayText = displayedWeekdayPoint.weekday.fullLabel()
+        let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
-            let summaryText = String(localized: "You burn \(caloriesText) calories on \(weekdayText) on average.")
-            return WeekdayAverageChartPresentation(headline: Text("You burn \(valueText) calories on \(weekdayText) on average."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            let summaryText = String(localized: "On average, you burn \(caloriesText) calories on \(weekdayText).")
+            return WeekdayAverageChartPresentation(headline: Text("On average, you burn \(valueText) calories on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
         }
-        let summaryText = String(localized: "You burn the most calories on \(weekdayText). \(caloriesText) calories on average.")
-        return WeekdayAverageChartPresentation(headline: Text("You burn the most calories on \(weekdayText). \(valueText) calories on average."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        let summaryText = String(localized: "On average, you burn the most calories on \(weekdayText). \(caloriesText) calories.")
+        return WeekdayAverageChartPresentation(headline: Text("On average, you burn the most calories on \(weekdayText). \(valueText) calories."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
     }
 
     var body: some View {

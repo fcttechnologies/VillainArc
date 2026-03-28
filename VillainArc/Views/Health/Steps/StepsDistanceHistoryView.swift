@@ -346,13 +346,13 @@ private struct StepsDistanceWeekdayChartSection: View {
         }
         let stepsText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
         let valueText = Text(stepsText).foregroundStyle(tint)
-        let weekdayText = displayedWeekdayPoint.weekday.fullLabel()
+        let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
-            let summaryText = String(localized: "You walk \(stepsText) steps on \(weekdayText) on average.")
-            return WeekdayAverageChartPresentation(headline: Text("You walk \(valueText) steps on \(weekdayText) on average."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            let summaryText = String(localized: "On average, you walk \(stepsText) steps on \(weekdayText).")
+            return WeekdayAverageChartPresentation(headline: Text("On average, you walk \(valueText) steps on \(weekdayText)."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
         }
-        let summaryText = String(localized: "You walk the most on \(weekdayText). \(stepsText) steps on average.")
-        return WeekdayAverageChartPresentation(headline: Text("You walk the most on \(weekdayText). \(valueText) steps on average."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        let summaryText = String(localized: "On average, you walk the most on \(weekdayText). \(stepsText) steps.")
+        return WeekdayAverageChartPresentation(headline: Text("On average, you walk the most on \(weekdayText). \(valueText) steps."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
     }
 
     var body: some View {

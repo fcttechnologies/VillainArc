@@ -7,7 +7,6 @@ import SwiftData
         case none
         case created
         case updated
-        case deleted
     }
 
     private struct MetricRefreshResult {
@@ -145,16 +144,26 @@ import SwiftData
     }
 
     private func refreshRange(addedDays: Set<Date>, syncedRange: ClosedRange<Date>?, hasDeletions: Bool) -> ClosedRange<Date>? {
-        let addedRange = dateRange(from: addedDays)
+        let changedRange = dateRange(from: addedDays)
 
-        guard hasDeletions else { return addedRange }
-        guard let syncedRange else { return addedRange }
-
-        if let addedRange {
-            return min(syncedRange.lowerBound, addedRange.lowerBound)...max(syncedRange.upperBound, addedRange.upperBound)
+        if hasDeletions {
+            return mergedRange(syncedRange, changedRange)
         }
 
-        return syncedRange
+        guard let changedRange else { return nil }
+        guard let syncedRange else { return changedRange }
+
+        if changedRange.lowerBound > syncedRange.upperBound {
+            let gapStart = nextDay(after: syncedRange.upperBound)
+            return gapStart...changedRange.upperBound
+        }
+
+        if changedRange.upperBound < syncedRange.lowerBound {
+            let gapEnd = previousDay(before: syncedRange.lowerBound)
+            return changedRange.lowerBound...gapEnd
+        }
+
+        return changedRange
     }
 
     private func expandedSyncedRange(afterRefreshing refreshedRange: ClosedRange<Date>, existingRange: ClosedRange<Date>?) -> ClosedRange<Date> {
@@ -165,6 +174,29 @@ import SwiftData
     private func dateRange(from days: Set<Date>) -> ClosedRange<Date>? {
         guard let earliest = days.min(), let latest = days.max() else { return nil }
         return earliest...latest
+    }
+
+    private func mergedRange(_ lhs: ClosedRange<Date>?, _ rhs: ClosedRange<Date>?) -> ClosedRange<Date>? {
+        switch (lhs, rhs) {
+        case let (.some(lhs), .some(rhs)):
+            return min(lhs.lowerBound, rhs.lowerBound)...max(lhs.upperBound, rhs.upperBound)
+        case let (.some(lhs), .none):
+            return lhs
+        case let (.none, .some(rhs)):
+            return rhs
+        case (.none, .none):
+            return nil
+        }
+    }
+
+    private func nextDay(after date: Date) -> Date {
+        let dayStart = calendar.startOfDay(for: date)
+        return calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+    }
+
+    private func previousDay(before date: Date) -> Date {
+        let dayStart = calendar.startOfDay(for: date)
+        return calendar.date(byAdding: .day, value: -1, to: dayStart) ?? dayStart
     }
 
     private func syncMetric<Value>(type: HKQuantityType, unit: HKUnit, anchor: HKQueryAnchor?, syncedRange: ClosedRange<Date>?, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool)) async throws -> MetricRefreshResult {
@@ -236,28 +268,28 @@ import SwiftData
         let (summary, wasCreated) = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         let previousStepCount = summary.stepCount
         summary.stepCount = max(0, stepCount)
-        return tuple(for: rowChange(afterUpdating: summary, wasCreated: wasCreated, valueChanged: previousStepCount != summary.stepCount, context: context))
+        return tuple(for: rowChange(afterUpdating: summary, wasCreated: wasCreated, valueChanged: previousStepCount != summary.stepCount))
     }
 
     private func upsertWalkingRunningDistance(for dayStart: Date, distance: Double, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
         let (summary, wasCreated) = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         let previousDistance = summary.distance
         summary.distance = max(0, distance)
-        return tuple(for: rowChange(afterUpdating: summary, wasCreated: wasCreated, valueChanged: previousDistance != summary.distance, context: context))
+        return tuple(for: rowChange(afterUpdating: summary, wasCreated: wasCreated, valueChanged: previousDistance != summary.distance))
     }
 
     private func upsertActiveEnergyBurned(for dayStart: Date, activeEnergyBurned: Double, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
         let (energy, wasCreated) = try fetchOrCreateEnergy(for: dayStart, context: context)
         let previousActiveEnergy = energy.activeEnergyBurned
         energy.activeEnergyBurned = max(0, activeEnergyBurned)
-        return tuple(for: rowChange(afterUpdating: energy, wasCreated: wasCreated, valueChanged: previousActiveEnergy != energy.activeEnergyBurned, context: context))
+        return tuple(for: rowChange(afterUpdating: energy, wasCreated: wasCreated, valueChanged: previousActiveEnergy != energy.activeEnergyBurned))
     }
 
     private func upsertRestingEnergyBurned(for dayStart: Date, restingEnergyBurned: Double, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
         let (energy, wasCreated) = try fetchOrCreateEnergy(for: dayStart, context: context)
         let previousRestingEnergy = energy.restingEnergyBurned
         energy.restingEnergyBurned = max(0, restingEnergyBurned)
-        return tuple(for: rowChange(afterUpdating: energy, wasCreated: wasCreated, valueChanged: previousRestingEnergy != energy.restingEnergyBurned, context: context))
+        return tuple(for: rowChange(afterUpdating: energy, wasCreated: wasCreated, valueChanged: previousRestingEnergy != energy.restingEnergyBurned))
     }
 
     private func fetchOrCreateStepsDistance(for dayStart: Date, context: ModelContext) throws -> (summary: HealthStepsDistance, created: Bool) {
@@ -274,27 +306,13 @@ import SwiftData
         return (energy, true)
     }
 
-    private func deleteStepsDistanceIfEmpty(_ summary: HealthStepsDistance, context: ModelContext) -> Bool {
-        if summary.stepCount <= 0 && summary.distance <= 0 { context.delete(summary); return true }
-        return false
-    }
-
-    private func deleteEnergyIfEmpty(_ energy: HealthEnergy, context: ModelContext) -> Bool {
-        if energy.activeEnergyBurned <= 0 && energy.restingEnergyBurned <= 0 { context.delete(energy); return true }
-        return false
-    }
-
-    private func rowChange(afterUpdating summary: HealthStepsDistance, wasCreated: Bool, valueChanged: Bool, context: ModelContext) -> RowChange {
-        let wasDeleted = deleteStepsDistanceIfEmpty(summary, context: context)
-        if wasDeleted { return .deleted }
+    private func rowChange(afterUpdating summary: HealthStepsDistance, wasCreated: Bool, valueChanged: Bool) -> RowChange {
         if wasCreated { return .created }
         if valueChanged { return .updated }
         return .none
     }
 
-    private func rowChange(afterUpdating energy: HealthEnergy, wasCreated: Bool, valueChanged: Bool, context: ModelContext) -> RowChange {
-        let wasDeleted = deleteEnergyIfEmpty(energy, context: context)
-        if wasDeleted { return .deleted }
+    private func rowChange(afterUpdating energy: HealthEnergy, wasCreated: Bool, valueChanged: Bool) -> RowChange {
         if wasCreated { return .created }
         if valueChanged { return .updated }
         return .none
@@ -308,8 +326,6 @@ import SwiftData
             return (true, false, false)
         case .updated:
             return (false, true, false)
-        case .deleted:
-            return (false, false, true)
         }
     }
 }

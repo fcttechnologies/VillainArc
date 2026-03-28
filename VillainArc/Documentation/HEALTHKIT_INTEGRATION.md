@@ -355,9 +355,11 @@ The daily-metrics sync pass is different:
 - the app then reruns daily cumulative statistics queries for the affected date range
 - `HealthStepsDistance` rows are updated only for steps/distance fields
 - `HealthEnergy` rows are updated only for active/resting energy fields
+- zero-value daily aggregate rows are retained once a day is part of a refreshed range
+- coverage expands only when changed sample days or deletion-driven rebuilds require a wider refresh; the cache does not automatically materialize every day through today
 - deletion-driven refreshes can rebuild the already-synced coverage range for that metric because `HKDeletedObject` does not expose the deleted sample date
 
-This keeps the local Health tab caches compact: one row per day instead of one row per raw HealthKit sample.
+This keeps the local Health tab caches compact: one row per refreshed day instead of one row per raw HealthKit sample.
 
 ## Deletions From Apple Health
 

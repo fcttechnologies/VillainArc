@@ -45,6 +45,10 @@ enum Weekday: String, CaseIterable, Identifiable, Sendable {
         let labels = calendar.weekdaySymbols
         return labels[max(0, min(calendarWeekdayNumber - 1, labels.count - 1))]
     }
+
+    func pluralLabel(calendar: Calendar = .autoupdatingCurrent) -> String {
+        "\(fullLabel(calendar: calendar))s"
+    }
 }
 
 struct WeekdayAveragePoint: Identifiable, Equatable, Sendable {

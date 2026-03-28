@@ -1548,6 +1548,46 @@
     "Okay" : {
 
     },
+    "On average, you burn %@ calories on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On average, you burn %1$@ calories on %2$@."
+          }
+        }
+      }
+    },
+    "On average, you burn the most calories on %@. %@ calories." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On average, you burn the most calories on %1$@. %2$@ calories."
+          }
+        }
+      }
+    },
+    "On average, you walk %@ steps on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On average, you walk %1$@ steps on %2$@."
+          }
+        }
+      }
+    },
+    "On average, you walk the most on %@. %@ steps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On average, you walk the most on %1$@. %2$@ steps."
+          }
+        }
+      }
+    },
     "On schedule" : {
 
     },
@@ -3004,26 +3044,6 @@
     "You are hitting: %@." : {
 
     },
-    "You burn %@ calories on %@ on average." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "You burn %1$@ calories on %2$@ on average."
-          }
-        }
-      }
-    },
-    "You burn the most calories on %@. %@ calories on average." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "You burn the most calories on %1$@. %2$@ calories on average."
-          }
-        }
-      }
-    },
     "You don't have a completed workout plan yet." : {
 
     },
@@ -3085,26 +3105,6 @@
     },
     "You need to launch and finish setting up the app before you can use this feature." : {
 
-    },
-    "You walk %@ steps on %@ on average." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "You walk %1$@ steps on %2$@ on average."
-          }
-        }
-      }
-    },
-    "You walk the most on %@. %@ steps on average." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "You walk the most on %1$@. %2$@ steps on average."
-          }
-        }
-      }
     },
     "You're already working out. Resume it first or cancel it." : {
 
