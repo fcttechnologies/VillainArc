@@ -169,9 +169,7 @@ private struct HealthEnergyHistoryMainSection: View {
                             }
                         }
                         .font(.largeTitle)
-                        
                         Spacer()
-                        
                         Group {
                             if let displayedActiveEnergy {
                                 Text("\(Int(displayedActiveEnergy.rounded()).formatted(.number)) cal")
@@ -265,7 +263,7 @@ private struct HealthEnergyHistoryMainSection: View {
                         .frame(maxWidth: .infinity, minHeight: 260)
                 }
 
-                Picker("Range", selection: $selectedRange) {
+                Picker("Range", selection: $selectedRange.animation(.easeInOut)) {
                     ForEach(availableRanges) { range in
                         Text(range.rawValue).tag(range)
                     }

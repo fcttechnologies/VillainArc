@@ -268,7 +268,7 @@ private struct StepsDistanceHistoryMainSection: View {
                         .frame(maxWidth: .infinity, minHeight: 260)
                 }
 
-                Picker("Range", selection: $selectedRange) {
+                Picker("Range", selection: $selectedRange.animation(.easeInOut)) {
                     ForEach(availableRanges) { range in
                         Text(range.rawValue).tag(range)
                     }

@@ -136,7 +136,6 @@ private struct WeightHistoryMainSection: View {
     private struct CachedRangeData {
         let layout: TimeSeriesChartLayout
         let yDomain: ClosedRange<Double>
-        let linePoints: [TimeSeriesBucketedPoint]
         let averageWeightKg: Double?
         let entryCount: Int
         let changeKg: Double?
@@ -203,7 +202,13 @@ private struct WeightHistoryMainSection: View {
     }
     
     private var displayedDateText: String {
-        if let selectedPoint { return selectedPointDateText(selectedPoint) }
+        if let selectedPoint {
+            let baseText = selectedPointDateText(selectedPoint)
+            if selectedPoint.sampleCount > 1 {
+                return "\(baseText) • \(String(localized: "Average"))"
+            }
+            return baseText
+        }
         guard let latestEntry else { return "No entries in this range" }
         return formattedRecentDayAndTime(latestEntry.date)
     }
@@ -224,10 +229,6 @@ private struct WeightHistoryMainSection: View {
         return AccessibilityText.healthWeightHistoryChartValue(dateText: displayedDateText, weightText: weightText)
     }
     
-    private var showsAverageContext: Bool {
-        (selectedPoint?.sampleCount ?? 0) > 1
-    }
-
     private var summaryStats: [SummaryStat] {
         guard let currentRangeData, currentRangeData.entryCount > 0 else { return [] }
         var stats = [SummaryStat(id: "change", title: "Change", text: changeText(for: currentRangeData))]
@@ -255,57 +256,68 @@ private struct WeightHistoryMainSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
+                VStack(spacing: 0) {
+                    HStack(alignment: .bottom) {
                         Text(displayedDateText)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Spacer()
+                        if let headerDetailTitle {
+                            Text(headerDetailTitle)
+                        }
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    
+                    HStack(alignment: .bottom) {
                         Group {
                             if let displayedWeightValue {
                                 HStack(alignment: .lastTextBaseline, spacing: 4) {
-                                    Text("\(displayedWeightValue, format: .number.precision(.fractionLength(0...1))) \(weightUnit.rawValue)")
-                                    
-                                    if showsAverageContext {
-                                        Text("avg")
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .foregroundStyle(.secondary)
-                                    }
+                                    Text(displayedWeightValue, format: .number.precision(.fractionLength(0...1)))
+                                    Text(weightUnit.rawValue)
+                                        .font(.title3)
+                                        .foregroundStyle(.secondary)
                                 }
                             } else {
                                 Text("-")
                             }
                         }
-                        .font(.largeTitle)
-                        .bold()
-                        .fontDesign(.rounded)
-                    }
-                    
-                    Spacer()
-                    
-                    if let headerDetailTitle, let headerDetailText {
-                        VStack(alignment: .trailing, spacing: 3) {
-                            Text(headerDetailTitle)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            
+                        Spacer()
+                        if let headerDetailText {
                             Text(headerDetailText)
-                                .font(.largeTitle)
-                                .bold()
-                                .fontDesign(.rounded)
                         }
-                        .multilineTextAlignment(.trailing)
-                        .accessibilityElement(children: .combine)
                     }
+                    .font(.largeTitle)
+                    .bold()
+                    .fontDesign(.rounded)
                 }
 
                 if let currentRangeData {
                     Chart {
-                        targetRuleMark()
-                        historyLineMarks(for: currentRangeData)
-                        historyPointMarks(for: currentRangeData)
-                        selectedPointMarks()
+                        if showsCurrentTargetLine, let targetWeightKg {
+                            RuleMark(y: .value("Goal Target", targetWeightKg))
+                                .foregroundStyle(Color.green.opacity(0.7))
+                                .lineStyle(.init(lineWidth: 1.5, dash: [5, 4]))
+                        }
+                        ForEach(currentRangeData.layout.points) { point in
+                            LineMark(x: .value("Date", point.date), y: .value("Weight", point.value), series: .value("Series", "Weight"))
+                                .foregroundStyle(tint)
+                                .interpolationMethod(.catmullRom)
+                                .symbol(.circle)
+                        }
+                        if let selectedPoint {
+                            RuleMark(x: .value("Selected Date", selectedPoint.date))
+                                .foregroundStyle(tint)
+                                .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                            
+                            PointMark(x: .value("Selected Date", selectedPoint.date), y: .value("Selected Weight", selectedPoint.value))
+                                .foregroundStyle(.white)
+                                .symbolSize(80)
+                            
+                            PointMark(x: .value("Selected Date", selectedPoint.date), y: .value("Selected Weight", selectedPoint.value))
+                                .foregroundStyle(tint)
+                                .symbolSize(36)
+                        }
                     }
                     .chartLegend(.hidden)
                     .chartXSelection(value: $selectedDate)
@@ -411,53 +423,6 @@ private struct WeightHistoryMainSection: View {
         timeSeriesBucketLabelText(for: point, bucketStyle: currentRangeData?.layout.bucketStyle ?? .day)
     }
 
-    @ChartContentBuilder
-    private func targetRuleMark() -> some ChartContent {
-        if showsCurrentTargetLine, let targetWeightKg {
-            RuleMark(y: .value("Goal Target", targetWeightKg))
-                .foregroundStyle(Color.green.opacity(0.7))
-                .lineStyle(.init(lineWidth: 1.5, dash: [5, 4]))
-        }
-    }
-
-    @ChartContentBuilder
-    private func historyLineMarks(for data: CachedRangeData) -> some ChartContent {
-        ForEach(data.linePoints) { point in
-            LineMark(x: .value("Date", point.date), y: .value("Weight", point.value), series: .value("Series", "Weight"))
-                .foregroundStyle(tint)
-                .interpolationMethod(.catmullRom)
-                .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
-        }
-    }
-
-    @ChartContentBuilder
-    private func historyPointMarks(for data: CachedRangeData) -> some ChartContent {
-        if data.layout.points.count <= 60 {
-            ForEach(data.layout.points) { point in
-                PointMark(x: .value("Date", point.date), y: .value("Weight", point.value))
-                    .foregroundStyle(tint.opacity(0.8))
-                    .symbolSize(24)
-            }
-        }
-    }
-
-    @ChartContentBuilder
-    private func selectedPointMarks() -> some ChartContent {
-        if let selectedPoint {
-            RuleMark(x: .value("Selected Date", selectedPoint.date))
-                .foregroundStyle(tint)
-                .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
-            
-            PointMark(x: .value("Selected Date", selectedPoint.date), y: .value("Selected Weight", selectedPoint.value))
-                .foregroundStyle(.white)
-                .symbolSize(80)
-            
-            PointMark(x: .value("Selected Date", selectedPoint.date), y: .value("Selected Weight", selectedPoint.value))
-                .foregroundStyle(tint)
-                .symbolSize(36)
-        }
-    }
-
     @ViewBuilder
     private func emptyStateView() -> some View {
         ContentUnavailableView {
@@ -509,7 +474,7 @@ private struct WeightHistoryMainSection: View {
         guard naturalSpan > 0 else { return false }
         let expandedDomain = weightYDomain(for: data.layout.points.map(\.value) + [targetWeightKg])
         let expandedSpan = expandedDomain.upperBound - expandedDomain.lowerBound
-        return expandedSpan <= naturalSpan * 1.3
+        return expandedSpan <= naturalSpan * 1.4
     }
 
     private static func smoothedDailyPoints(from entries: [EntrySnapshot]) -> [TimeSeriesSample] {
@@ -531,6 +496,24 @@ private struct WeightHistoryMainSection: View {
         }
     }
 
+    private static func trendKgPerWeek(from entries: [EntrySnapshot]) -> Double? {
+        let smoothedPoints = smoothedDailyPoints(from: entries)
+        guard smoothedPoints.count >= 2, let firstPoint = smoothedPoints.first, let lastPoint = smoothedPoints.last else { return nil }
+        let spanDays = lastPoint.date.timeIntervalSince(firstPoint.date) / 86_400
+        guard spanDays > 0 else { return nil }
+        return ((lastPoint.value - firstPoint.value) / spanDays) * 7
+    }
+
+    private func buildRangeData(for range: TimeSeriesRangeFilter, samples: [TimeSeriesSample], entrySnapshots: [EntrySnapshot], now: Date, calendar: Calendar) -> CachedRangeData {
+        let layout = TimeSeriesChartLayout(rangeFilter: range, samples: samples, now: now, calendar: calendar, aggregation: .average)
+        let visibleEntries = entrySnapshots.filter { layout.currentDomain.contains($0.date) }.sorted { $0.date < $1.date }
+        let averageWeightKg = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.weight } / Double(visibleEntries.count))
+        let changeKg = layout.points.count >= 2 ? (layout.points.last!.value - layout.points.first!.value) : nil
+        let lowWeightKg = visibleEntries.map(\.weight).min()
+        let highWeightKg = visibleEntries.map(\.weight).max()
+        return CachedRangeData(layout: layout, yDomain: weightYDomain(for: layout.points.map(\.value)), averageWeightKg: averageWeightKg, entryCount: visibleEntries.count, changeKg: changeKg, trendKgPerWeek: Self.trendKgPerWeek(from: visibleEntries), lowWeightKg: lowWeightKg, highWeightKg: highWeightKg)
+    }
+
     private func prepareRangeCache() {
         let samples = timeSeriesSamples
         let entrySnapshots = entrySnapshots
@@ -541,21 +524,7 @@ private struct WeightHistoryMainSection: View {
         rangeCache = [:]
 
         for range in buildOrder {
-            let layout = TimeSeriesChartLayout(rangeFilter: range, samples: samples, now: now, calendar: calendar, aggregation: .average)
-            let visibleEntries = entrySnapshots.filter { layout.currentDomain.contains($0.date) }.sorted { $0.date < $1.date }
-            let averageWeightKg = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.weight } / Double(visibleEntries.count))
-            let changeKg = layout.points.count >= 2 ? (layout.points.last!.value - layout.points.first!.value) : nil
-            let smoothedPoints = Self.smoothedDailyPoints(from: visibleEntries)
-            let trendKgPerWeek: Double?
-            if smoothedPoints.count >= 2, let firstPoint = smoothedPoints.first, let lastPoint = smoothedPoints.last {
-                let spanDays = lastPoint.date.timeIntervalSince(firstPoint.date) / 86_400
-                trendKgPerWeek = spanDays > 0 ? (((lastPoint.value - firstPoint.value) / spanDays) * 7) : nil
-            } else {
-                trendKgPerWeek = nil
-            }
-            let lowWeightKg = visibleEntries.map(\.weight).min()
-            let highWeightKg = visibleEntries.map(\.weight).max()
-            let data = CachedRangeData(layout: layout, yDomain: weightYDomain(for: layout.points.map(\.value)), linePoints: timeSeriesAnchoredLinePoints(points: layout.points, samples: samples, domain: layout.currentDomain), averageWeightKg: averageWeightKg, entryCount: visibleEntries.count, changeKg: changeKg, trendKgPerWeek: trendKgPerWeek, lowWeightKg: lowWeightKg, highWeightKg: highWeightKg)
+            let data = buildRangeData(for: range, samples: samples, entrySnapshots: entrySnapshots, now: now, calendar: calendar)
             cache[range] = data
             rangeCache = cache
         }
