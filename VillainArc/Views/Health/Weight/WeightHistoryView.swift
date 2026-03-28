@@ -2,23 +2,6 @@ import SwiftUI
 import SwiftData
 import Charts
 
-private extension TimeSeriesRangeFilter {
-    func emptyStateDescription() -> String {
-        switch self {
-        case .week:
-            return String(localized: "No weight entries were recorded in the last 7 days.")
-        case .month:
-            return String(localized: "No weight entries were recorded in the last month.")
-        case .sixMonths:
-            return String(localized: "No weight entries were recorded in the last 6 months.")
-        case .year:
-            return String(localized: "No weight entries were recorded in the last year.")
-        case .all:
-            return String(localized: "No weight entries have been recorded yet.")
-        }
-    }
-}
-
 struct WeightHistoryView: View {
     private let router = AppRouter.shared
     
@@ -186,7 +169,7 @@ private struct WeightHistoryMainSection: View {
     private var selectedPoint: TimeSeriesBucketedPoint? {
         guard let currentRangeData else { return nil }
         guard let selectedDate else { return nil }
-        return nearestPoint(in: currentRangeData.layout.points, to: selectedDate)
+        return selectedTimeSeriesPoint(in: currentRangeData.layout.points, for: selectedDate)
     }
 
     private var headerDetailTitle: String? {
@@ -298,6 +281,7 @@ private struct WeightHistoryMainSection: View {
                             RuleMark(y: .value("Goal Target", targetWeightKg))
                                 .foregroundStyle(Color.green.opacity(0.7))
                                 .lineStyle(.init(lineWidth: 1.5, dash: [5, 4]))
+                                .zIndex(-1)
                         }
                         ForEach(currentRangeData.layout.points) { point in
                             LineMark(x: .value("Date", point.date), y: .value("Weight", point.value), series: .value("Series", "Weight"))
@@ -319,9 +303,7 @@ private struct WeightHistoryMainSection: View {
                                 .symbolSize(36)
                         }
                     }
-                    .chartLegend(.hidden)
-                    .chartXSelection(value: $selectedDate)
-                    .chartXScale(domain: currentRangeData.layout.currentDomain)
+                    .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.layout)
                     .chartYScale(domain: chartYDomain)
                     .chartYAxis {
                         AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
@@ -333,23 +315,11 @@ private struct WeightHistoryMainSection: View {
                             }
                         }
                     }
-                    .chartXAxis {
-                        AxisMarks(values: currentRangeData.layout.axisDates) { value in
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel {
-                                if let date = value.as(Date.self) {
-                                    Text(axisLabel(for: date, style: currentRangeData.layout.axisLabelStyle))
-                                }
-                            }
-                        }
-                    }
                     .overlay {
                         if currentRangeData.layout.points.isEmpty {
                             emptyStateView()
                         }
                     }
-                    .frame(height: 260)
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightHistoryChart)
                     .accessibilityLabel(AccessibilityText.healthWeightHistoryChartLabel)
                     .accessibilityValue(chartAccessibilityValue)
@@ -409,16 +379,6 @@ private struct WeightHistoryMainSection: View {
         }
     }
     
-    private func axisLabel(for date: Date, style: TimeSeriesAxisLabelStyle) -> String {
-        timeSeriesAxisLabelText(for: date, style: style)
-    }
-    
-    private func nearestPoint(in points: [TimeSeriesBucketedPoint], to date: Date) -> TimeSeriesBucketedPoint? {
-        points.min { left, right in
-            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
-        }
-    }
-    
     private func selectedPointDateText(_ point: TimeSeriesBucketedPoint) -> String {
         timeSeriesBucketLabelText(for: point, bucketStyle: currentRangeData?.layout.bucketStyle ?? .day)
     }
@@ -426,9 +386,9 @@ private struct WeightHistoryMainSection: View {
     @ViewBuilder
     private func emptyStateView() -> some View {
         ContentUnavailableView {
-            Label("No Weight Entries", systemImage: "chart.line.uptrend.xyaxis")
+            Label(AccessibilityText.healthWeightHistoryEmptyTitle, systemImage: "chart.line.uptrend.xyaxis")
         } description: {
-            Text(selectedRange.emptyStateDescription())
+            Text(AccessibilityText.healthWeightHistoryEmptyDescription(for: selectedRange))
         } actions: {
             Button("Log Weight") {
                 Haptics.selection()

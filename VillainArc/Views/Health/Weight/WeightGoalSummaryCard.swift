@@ -128,18 +128,8 @@ struct WeightGoalSummaryCard: View {
     }
     
     private var accessibilityValue: String {
-        guard let activeGoal else { return "No active goal" }
-        var parts = [activeGoalTitle(activeGoal)]
-        if let analysis {
-            parts.append(analysis.status.title)
-        }
-        if let progressText {
-            parts.append(progressText)
-        }
-        if let progressModel {
-            parts.append(progressModel.accessibilitySummary(unit: weightUnit))
-        }
-        return parts.joined(separator: ", ")
+        guard let activeGoal else { return AccessibilityText.healthWeightGoalSummaryEmptyValue }
+        return AccessibilityText.healthWeightGoalSummaryValue(goalTitle: activeGoalTitle(activeGoal), statusText: analysis?.status.title, progressText: progressText, chartSummary: progressModel?.accessibilitySummary(unit: weightUnit))
     }
     
     private var emptyStateText: String {

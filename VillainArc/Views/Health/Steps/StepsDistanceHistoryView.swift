@@ -2,23 +2,6 @@ import SwiftUI
 import SwiftData
 import Charts
 
-private extension TimeSeriesRangeFilter {
-    func stepsEmptyStateDescription() -> String {
-        switch self {
-        case .week:
-            return String(localized: "No step data was recorded in the last 7 days.")
-        case .month:
-            return String(localized: "No step data was recorded in the last month.")
-        case .sixMonths:
-            return String(localized: "No step data was recorded in the last 6 months.")
-        case .year:
-            return String(localized: "No step data was recorded in the last year.")
-        case .all:
-            return String(localized: "No step data has been recorded yet.")
-        }
-    }
-}
-
 struct StepsDistanceHistoryView: View {
     @Query(HealthStepsDistance.history, animation: .smooth) private var entries: [HealthStepsDistance]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -71,13 +54,15 @@ private struct StepsDistanceHistoryMainSection: View {
     @State private var rangeCache: [TimeSeriesRangeFilter: CachedRangeData] = [:]
 
     private let tint = Color.red
+    private let stepsSampleNamespace: UInt64 = 0x5354455053000001
+    private let distanceSampleNamespace: UInt64 = 0x5354455053000002
 
     private var stepSamples: [TimeSeriesSample] {
-        entries.map { TimeSeriesSample(id: UUID(), date: $0.date, value: Double($0.stepCount)) }
+        entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: stepsSampleNamespace, date: $0.date), date: $0.date, value: Double($0.stepCount)) }
     }
 
     private var distanceSamples: [TimeSeriesSample] {
-        entries.map { TimeSeriesSample(id: UUID(), date: $0.date, value: $0.distance) }
+        entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: distanceSampleNamespace, date: $0.date), date: $0.date, value: $0.distance) }
     }
 
     private var latestEntry: HealthStepsDistance? {
@@ -105,7 +90,7 @@ private struct StepsDistanceHistoryMainSection: View {
 
     private var selectedPoint: TimeSeriesBucketedPoint? {
         guard let currentRangeData, let selectedDate else { return nil }
-        return nearestPoint(in: currentRangeData.layout.points, to: selectedDate)
+        return selectedTimeSeriesPoint(in: currentRangeData.layout.points, for: selectedDate)
     }
 
     private var selectedDistancePoint: TimeSeriesBucketedPoint? {
@@ -193,6 +178,7 @@ private struct StepsDistanceHistoryMainSection: View {
                             RuleMark(x: .value("Selected Date", selectedPoint.date))
                                 .foregroundStyle(tint)
                                 .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                                .zIndex(-1)
                         }
 
                         ForEach(currentRangeData.layout.points) { point in
@@ -201,9 +187,7 @@ private struct StepsDistanceHistoryMainSection: View {
                                 .opacity(selectedPoint == nil || selectedPoint?.id == point.id ? 1 : 0.5)
                         }
                     }
-                    .chartLegend(.hidden)
-                    .chartXSelection(value: $selectedDate)
-                    .chartXScale(domain: currentRangeData.layout.currentDomain)
+                    .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.layout)
                     .chartYScale(domain: currentRangeData.yDomain)
                     .chartYAxis {
                         AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
@@ -215,23 +199,11 @@ private struct StepsDistanceHistoryMainSection: View {
                             }
                         }
                     }
-                    .chartXAxis {
-                        AxisMarks(values: currentRangeData.layout.axisDates) { value in
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel {
-                                if let date = value.as(Date.self) {
-                                    Text(timeSeriesAxisLabelText(for: date, style: currentRangeData.layout.axisLabelStyle))
-                                }
-                            }
-                        }
-                    }
                     .overlay {
                         if currentRangeData.layout.points.isEmpty {
                             emptyStateView()
                         }
                     }
-                    .frame(height: 260)
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsHistoryChart)
                     .accessibilityLabel(AccessibilityText.healthStepsHistoryChartLabel)
                     .accessibilityValue(chartAccessibilityValue)
@@ -274,7 +246,7 @@ private struct StepsDistanceHistoryMainSection: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .onChange(of: selectedRange) { selectedDate = nil; Haptics.selection() }
+                .onChange(of: selectedRange) { Haptics.selection() }
             }
             .padding()
             .glassEffect(.regular, in: .rect(cornerRadius: 18))
@@ -285,36 +257,19 @@ private struct StepsDistanceHistoryMainSection: View {
         }
     }
 
-    private func nearestPoint(in points: [TimeSeriesBucketedPoint], to date: Date) -> TimeSeriesBucketedPoint? {
-        points.min { left, right in
-            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
-        }
-    }
-
-    private func chartCalendarComponent(for bucketStyle: TimeSeriesBucketStyle) -> Calendar.Component {
-        switch bucketStyle {
-        case .day:
-            return .day
-        case .week:
-            return .weekOfYear
-        case .month:
-            return .month
-        }
-    }
-
     @ViewBuilder
     private func emptyStateView() -> some View {
         if hasAnyData {
             ContentUnavailableView {
-                Label("No Step Data", systemImage: "figure.walk")
+                Label(AccessibilityText.healthStepsHistoryEmptyTitle, systemImage: "figure.walk")
             } description: {
-                Text(selectedRange.stepsEmptyStateDescription())
+                Text(AccessibilityText.healthStepsHistoryEmptyDescription(for: selectedRange))
             }
         } else {
             ContentUnavailableView {
-                Label("No Health Data", systemImage: "heart.text.square")
+                Label(AccessibilityText.healthHistoryNoHealthDataTitle, systemImage: "heart.text.square")
             } description: {
-                Text("Update Apple Health permissions so your health metrics appear here.")
+                Text(AccessibilityText.healthHistoryNoHealthDataDescription)
             }
         }
     }

@@ -27,8 +27,9 @@ struct MuscleDistributionView: View {
             .chartBackground { _ in
                 Color.clear
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.muscleDistributionChart)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Muscle distribution chart")
+            .accessibilityLabel(AccessibilityText.muscleDistributionChartLabel)
             .accessibilityValue(chartAccessibilityValue)
 
             VStack(spacing: 2) {
@@ -70,18 +71,17 @@ struct MuscleDistributionView: View {
                         .foregroundStyle(.secondary)
                 }
                 .fontWeight(.semibold)
+                .accessibilityIdentifier(AccessibilityIdentifiers.muscleDistributionLegendRow(slice.muscle))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(slice.muscle.displayName)
-                .accessibilityValue(percentageText(for: slice.percentage))
+                .accessibilityValue(AccessibilityText.muscleDistributionLegendRowValue(muscleName: slice.muscle.displayName, percentageText: percentageText(for: slice.percentage)))
             }
         }
         .frame(maxWidth: .infinity)
     }
 
     private var chartAccessibilityValue: String {
-        slices
-            .map { "\($0.muscle.displayName) \(percentageText(for: $0.percentage))" }
-            .joined(separator: ", ")
+        AccessibilityText.muscleDistributionChartValue(rows: slices.map { AccessibilityText.muscleDistributionLegendRowValue(muscleName: $0.muscle.displayName, percentageText: percentageText(for: $0.percentage)) })
     }
 
     private func percentageText(for percentage: Double) -> String {

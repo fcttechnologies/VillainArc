@@ -1,4 +1,6 @@
 import Foundation
+import SwiftUI
+import Charts
 
 enum TimeSeriesRangeFilter: String, CaseIterable, Identifiable, Sendable {
     case week = "W"
@@ -364,6 +366,82 @@ func timeSeriesBucketLabelText(for point: TimeSeriesBucketedPoint, bucketStyle: 
             return point.startDate.formatted(.dateTime.month(.abbreviated).year())
         }
         return formattedTimeSeriesMonthRange(start: point.startDate, end: point.endDate)
+    }
+}
+
+func selectedTimeSeriesPoint(in points: [TimeSeriesBucketedPoint], for date: Date) -> TimeSeriesBucketedPoint? {
+    if let containingPoint = points.first(where: { ($0.startDate ... $0.endDate).contains(date) }) {
+        return containingPoint
+    }
+
+    return points.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+}
+
+func chartCalendarComponent(for bucketStyle: TimeSeriesBucketStyle) -> Calendar.Component {
+    switch bucketStyle {
+    case .day:
+        return .day
+    case .week:
+        return .weekOfYear
+    case .month:
+        return .month
+    }
+}
+
+func stableTimeSeriesSampleID(namespace: UInt64, date: Date) -> UUID {
+    let timestamp = date.timeIntervalSinceReferenceDate.bitPattern
+    return UUID(uuid: uuidBytes(high: namespace, low: timestamp))
+}
+
+private func uuidBytes(high: UInt64, low: UInt64) -> uuid_t {
+    (
+        UInt8((high >> 56) & 0xFF),
+        UInt8((high >> 48) & 0xFF),
+        UInt8((high >> 40) & 0xFF),
+        UInt8((high >> 32) & 0xFF),
+        UInt8((high >> 24) & 0xFF),
+        UInt8((high >> 16) & 0xFF),
+        UInt8((high >> 8) & 0xFF),
+        UInt8(high & 0xFF),
+        UInt8((low >> 56) & 0xFF),
+        UInt8((low >> 48) & 0xFF),
+        UInt8((low >> 40) & 0xFF),
+        UInt8((low >> 32) & 0xFF),
+        UInt8((low >> 24) & 0xFF),
+        UInt8((low >> 16) & 0xFF),
+        UInt8((low >> 8) & 0xFF),
+        UInt8(low & 0xFF)
+    )
+}
+
+private struct HealthHistoryChartScaffoldModifier: ViewModifier {
+    @Binding var selectedDate: Date?
+    let layout: TimeSeriesChartLayout
+    let height: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .chartLegend(.hidden)
+            .chartXSelection(value: $selectedDate)
+            .chartXScale(domain: layout.currentDomain)
+            .chartXAxis {
+                AxisMarks(values: layout.axisDates) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(timeSeriesAxisLabelText(for: date, style: layout.axisLabelStyle))
+                        }
+                    }
+                }
+            }
+            .frame(height: height)
+    }
+}
+
+extension View {
+    func healthHistoryChartScaffold(selectedDate: Binding<Date?>, layout: TimeSeriesChartLayout, height: CGFloat = 260) -> some View {
+        modifier(HealthHistoryChartScaffoldModifier(selectedDate: selectedDate, layout: layout, height: height))
     }
 }
 

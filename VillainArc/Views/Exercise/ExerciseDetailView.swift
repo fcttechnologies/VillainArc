@@ -451,7 +451,7 @@ private struct ExerciseMetricChartCard: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
         .onChange(of: points) { _, newPoints in
             if let selectedDate {
-                self.selectedDate = nearestPoint(in: newPoints.map { TimeSeriesBucketedPoint(id: UUID(), date: $0.date, value: $0.value) }, to: selectedDate)?.date
+                self.selectedDate = selectedTimeSeriesPoint(in: newPoints.map { TimeSeriesBucketedPoint(date: $0.date, value: $0.value) }, for: selectedDate)?.date
             }
         }
     }
@@ -471,13 +471,7 @@ private struct ExerciseMetricChartCard: View {
     }
 
     private func nearestPoint(to date: Date) -> TimeSeriesBucketedPoint? {
-        nearestPoint(in: chartLayout.points, to: date)
-    }
-
-    private func nearestPoint(in points: [TimeSeriesBucketedPoint], to date: Date) -> TimeSeriesBucketedPoint? {
-        points.min { left, right in
-            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
-        }
+        selectedTimeSeriesPoint(in: chartLayout.points, for: date)
     }
     
     private func axisLabel(for date: Date) -> String {

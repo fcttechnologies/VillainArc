@@ -58,6 +58,9 @@
         }
       }
     },
+    "%@ weight goal" : {
+
+    },
     "%@, %@" : {
       "localizations" : {
         "en" : {
@@ -879,6 +882,9 @@
     "Enable iCloud in Settings" : {
 
     },
+    "Ended %@" : {
+
+    },
     "Ended Date" : {
 
     },
@@ -1075,6 +1081,9 @@
     "If the next set is a drop set, rest time is skipped." : {
 
     },
+    "Imported from Apple Health" : {
+
+    },
     "In your last workout, you did %@." : {
 
     },
@@ -1132,7 +1141,13 @@
     "Latest Date" : {
 
     },
+    "Latest entry %@" : {
+
+    },
     "Latest Weight" : {
+
+    },
+    "Latest weight %@" : {
 
     },
     "Lats" : {
@@ -2375,6 +2390,9 @@
     "Start Workout with Plan" : {
 
     },
+    "Started %@" : {
+
+    },
     "Started At" : {
 
     },
@@ -2489,7 +2507,13 @@
     "Target" : {
 
     },
+    "Target %@" : {
+
+    },
     "Target Date" : {
+
+    },
+    "Target date %@" : {
 
     },
     "Target muscles" : {
@@ -2766,6 +2790,9 @@
     "Weight" : {
 
     },
+    "Weight entry" : {
+
+    },
     "Weight Goal" : {
 
     },
@@ -2773,6 +2800,9 @@
 
     },
     "Weight history chart" : {
+
+    },
+    "Weight. No weight entries yet." : {
 
     },
     "Weight/Side" : {

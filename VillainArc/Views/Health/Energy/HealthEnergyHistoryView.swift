@@ -2,23 +2,6 @@ import SwiftUI
 import SwiftData
 import Charts
 
-private extension TimeSeriesRangeFilter {
-    func energyEmptyStateDescription() -> String {
-        switch self {
-        case .week:
-            return String(localized: "No energy data was recorded in the last 7 days.")
-        case .month:
-            return String(localized: "No energy data was recorded in the last month.")
-        case .sixMonths:
-            return String(localized: "No energy data was recorded in the last 6 months.")
-        case .year:
-            return String(localized: "No energy data was recorded in the last year.")
-        case .all:
-            return String(localized: "No energy data has been recorded yet.")
-        }
-    }
-}
-
 struct HealthEnergyHistoryView: View {
     @Query(HealthEnergy.history, animation: .smooth) private var entries: [HealthEnergy]
 
@@ -65,13 +48,15 @@ private struct HealthEnergyHistoryMainSection: View {
     @State private var rangeCache: [TimeSeriesRangeFilter: CachedRangeData] = [:]
 
     private let tint = Color.orange
+    private let totalEnergySampleNamespace: UInt64 = 0x454E455247590001
+    private let activeEnergySampleNamespace: UInt64 = 0x454E455247590002
 
     private var totalEnergySamples: [TimeSeriesSample] {
-        entries.map { TimeSeriesSample(id: UUID(), date: $0.date, value: $0.totalEnergyBurned) }
+        entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: totalEnergySampleNamespace, date: $0.date), date: $0.date, value: $0.totalEnergyBurned) }
     }
 
     private var activeEnergySamples: [TimeSeriesSample] {
-        entries.map { TimeSeriesSample(id: UUID(), date: $0.date, value: $0.activeEnergyBurned) }
+        entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: activeEnergySampleNamespace, date: $0.date), date: $0.date, value: $0.activeEnergyBurned) }
     }
 
     private var latestEntry: HealthEnergy? {
@@ -99,7 +84,7 @@ private struct HealthEnergyHistoryMainSection: View {
 
     private var selectedTotalPoint: TimeSeriesBucketedPoint? {
         guard let currentRangeData, let selectedDate else { return nil }
-        return nearestPoint(in: currentRangeData.totalLayout.points, to: selectedDate)
+        return selectedTimeSeriesPoint(in: currentRangeData.totalLayout.points, for: selectedDate)
     }
 
     private var selectedActivePoint: TimeSeriesBucketedPoint? {
@@ -189,6 +174,7 @@ private struct HealthEnergyHistoryMainSection: View {
                             RuleMark(x: .value("Selected Date", selectedTotalPoint.date))
                                 .foregroundStyle(tint)
                                 .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                                .zIndex(-1)
                         }
 
                         ForEach(currentRangeData.totalLayout.points) { point in
@@ -203,9 +189,7 @@ private struct HealthEnergyHistoryMainSection: View {
                                 .opacity(selectedTotalPoint == nil || selectedTotalPoint?.startDate == point.startDate ? 1 : 0.5)
                         }
                     }
-                    .chartLegend(.hidden)
-                    .chartXSelection(value: $selectedDate)
-                    .chartXScale(domain: currentRangeData.totalLayout.currentDomain)
+                    .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.totalLayout)
                     .chartYScale(domain: currentRangeData.yDomain)
                     .chartYAxis {
                         AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
@@ -217,23 +201,11 @@ private struct HealthEnergyHistoryMainSection: View {
                             }
                         }
                     }
-                    .chartXAxis {
-                        AxisMarks(values: currentRangeData.totalLayout.axisDates) { value in
-                            AxisGridLine()
-                            AxisTick()
-                            AxisValueLabel {
-                                if let date = value.as(Date.self) {
-                                    Text(timeSeriesAxisLabelText(for: date, style: currentRangeData.totalLayout.axisLabelStyle))
-                                }
-                            }
-                        }
-                    }
                     .overlay {
                         if currentRangeData.totalLayout.points.isEmpty {
                             emptyStateView()
                         }
                     }
-                    .frame(height: 260)
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthEnergyHistoryChart)
                     .accessibilityLabel(AccessibilityText.healthEnergyHistoryChartLabel)
                     .accessibilityValue(chartAccessibilityValue)
@@ -269,7 +241,7 @@ private struct HealthEnergyHistoryMainSection: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .onChange(of: selectedRange) { selectedDate = nil; Haptics.selection() }
+                .onChange(of: selectedRange) { Haptics.selection() }
             }
             .padding()
             .glassEffect(.regular, in: .rect(cornerRadius: 18))
@@ -280,36 +252,19 @@ private struct HealthEnergyHistoryMainSection: View {
         }
     }
 
-    private func nearestPoint(in points: [TimeSeriesBucketedPoint], to date: Date) -> TimeSeriesBucketedPoint? {
-        points.min { left, right in
-            abs(left.date.timeIntervalSince(date)) < abs(right.date.timeIntervalSince(date))
-        }
-    }
-
-    private func chartCalendarComponent(for bucketStyle: TimeSeriesBucketStyle) -> Calendar.Component {
-        switch bucketStyle {
-        case .day:
-            return .day
-        case .week:
-            return .weekOfYear
-        case .month:
-            return .month
-        }
-    }
-
     @ViewBuilder
     private func emptyStateView() -> some View {
         if hasAnyData {
             ContentUnavailableView {
-                Label("No Energy Data", systemImage: "flame.fill")
+                Label(AccessibilityText.healthEnergyHistoryEmptyTitle, systemImage: "flame.fill")
             } description: {
-                Text(selectedRange.energyEmptyStateDescription())
+                Text(AccessibilityText.healthEnergyHistoryEmptyDescription(for: selectedRange))
             }
         } else {
             ContentUnavailableView {
-                Label("No Health Data", systemImage: "heart.text.square")
+                Label(AccessibilityText.healthHistoryNoHealthDataTitle, systemImage: "heart.text.square")
             } description: {
-                Text("Update Apple Health permissions so your health metrics appear here.")
+                Text(AccessibilityText.healthHistoryNoHealthDataDescription)
             }
         }
     }

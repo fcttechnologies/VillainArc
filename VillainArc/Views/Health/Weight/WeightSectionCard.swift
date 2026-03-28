@@ -41,19 +41,8 @@ struct WeightSectionCard: View {
     }
 
     private var cardAccessibilityLabel: String {
-        guard let latestEntry else { return "Weight. No weight entries yet." }
-
-        var parts = [
-            "Weight",
-            "Latest entry \(formattedRecentDay(latestEntry.date))",
-            "Latest weight \(formattedWeightText(latestEntry.weight, unit: weightUnit))",
-        ]
-
-        if let activeGoalText {
-            parts.append(activeGoalText)
-        }
-
-        return parts.joined(separator: ". ") + "."
+        guard let latestEntry else { return AccessibilityText.healthWeightSectionEmptyValue }
+        return AccessibilityText.healthWeightSectionValue(dateText: formattedRecentDay(latestEntry.date), weightText: formattedWeightText(latestEntry.weight, unit: weightUnit), goalText: activeGoalText)
     }
 
     var body: some View {

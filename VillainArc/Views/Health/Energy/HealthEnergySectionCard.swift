@@ -48,9 +48,7 @@ struct HealthEnergySectionCard: View {
     }
 
     private var cardAccessibilityLabel: String {
-        if !hasAnyEnergyData {
-            return String(localized: "Energy. Update Apple Health permissions so your health metrics appear here.")
-        }
+        if !hasAnyEnergyData { return AccessibilityText.healthEnergySectionEmptyValue }
         return AccessibilityText.healthEnergySectionValue(totalEnergy: Int(todayTotalEnergy.rounded()), activeEnergy: Int(todayActiveEnergy.rounded()))
     }
 
@@ -105,7 +103,7 @@ struct HealthEnergySectionCard: View {
                             .accessibilityHidden(true)
                     }
                 } else {
-                    Text("Update Apple Health permissions so your health metrics appear here.")
+                    Text(AccessibilityText.healthHistoryNoHealthDataDescription)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)

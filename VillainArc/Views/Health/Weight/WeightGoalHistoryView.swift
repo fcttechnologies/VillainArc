@@ -151,7 +151,7 @@ private struct WeightGoalHistoryRowView: View {
         .padding(16)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel(AccessibilityText.healthWeightGoalRowLabel(typeTitle: goal.type.title))
         .accessibilityValue(accessibilityValue)
     }
 
@@ -201,35 +201,8 @@ private struct WeightGoalHistoryRowView: View {
         return "Started \(formattedRecentDay(goal.startedAt))"
     }
 
-    private var accessibilityLabel: String {
-        "\(goal.type.title) weight goal"
-    }
-
     private var accessibilityValue: String {
-        var parts = [
-            "Target \(formattedWeightText(goal.targetWeight, unit: weightUnit))",
-            "Started \(formattedRecentDay(goal.startedAt))"
-        ]
-
-        if let endedAt = goal.endedAt {
-            parts.append("Ended \(formattedRecentDay(endedAt))")
-        } else {
-            parts.append("Active")
-        }
-
-        if let targetDate = goal.targetDate {
-            parts.append("Target date \(formattedRecentDay(targetDate))")
-        }
-        
-        if let latestGoalWeight {
-            parts.append(weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit))
-        }
-        
-        if let progressModel {
-            parts.append(progressModel.accessibilitySummary(unit: weightUnit))
-        }
-
-        return parts.joined(separator: ", ")
+        AccessibilityText.healthWeightGoalRowValue(targetText: formattedWeightText(goal.targetWeight, unit: weightUnit), startedText: formattedRecentDay(goal.startedAt), endedText: goal.endedAt.map(formattedRecentDay), targetDateText: goal.targetDate.map(formattedRecentDay), progressText: latestGoalWeight.map { weightGoalProgressText(goal: goal, currentWeight: $0, unit: weightUnit) }, chartSummary: progressModel?.accessibilitySummary(unit: weightUnit), isActive: isActive)
     }
 }
 

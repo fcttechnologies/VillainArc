@@ -37,9 +37,7 @@ struct HealthStepsSectionCard: View {
     }
 
     private var cardAccessibilityLabel: String {
-        if !hasAnyStepData {
-            return String(localized: "Steps. Update Apple Health permissions so your health metrics appear here.")
-        }
+        if !hasAnyStepData { return AccessibilityText.healthStepsSectionEmptyValue }
         return AccessibilityText.healthStepsSectionValue(stepCount: todayStepCount)
     }
 
@@ -82,7 +80,7 @@ struct HealthStepsSectionCard: View {
                             .accessibilityHidden(true)
                     }
                 } else {
-                    Text("Update Apple Health permissions so your health metrics appear here.")
+                    Text(AccessibilityText.healthHistoryNoHealthDataDescription)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)

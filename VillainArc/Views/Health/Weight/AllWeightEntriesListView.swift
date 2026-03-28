@@ -143,22 +143,8 @@ private struct AllWeightEntriesRowView: View {
                 .multilineTextAlignment(.trailing)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue(accessibilityValue)
-    }
-
-    private var accessibilityLabel: String {
-        "Weight entry"
-    }
-
-    private var accessibilityValue: String {
-        var parts = [formattedWeightText(entry.weight, unit: weightUnit), formattedRecentDayAndTime(entry.date)]
-
-        if entry.isImportedFromHealth {
-            parts.append("Imported from Apple Health")
-        }
-
-        return parts.joined(separator: ", ")
+        .accessibilityLabel(AccessibilityText.healthWeightEntryRowLabel)
+        .accessibilityValue(AccessibilityText.healthWeightEntryRowValue(weightText: formattedWeightText(entry.weight, unit: weightUnit), dateText: formattedRecentDayAndTime(entry.date), isImportedFromHealth: entry.isImportedFromHealth))
     }
 }
 

@@ -39,10 +39,13 @@ enum AccessibilityIdentifiers {
     static let healthEnergySectionCard = "healthEnergySectionCard"
     static let healthStepsHistoryChart = "healthStepsHistoryChart"
     static let healthEnergyHistoryChart = "healthEnergyHistoryChart"
+    static let muscleDistributionChart = "muscleDistributionChart"
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }
 
     static func healthWeightGoalRow(_ goal: WeightGoal) -> String { "healthWeightGoalRow-\(goal.id.uuidString)" }
+
+    static func muscleDistributionLegendRow(_ muscle: Muscle) -> String { "muscleDistributionLegendRow-\(slug(muscle.rawValue))" }
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitLink = "workoutSplitLink"
@@ -496,16 +499,111 @@ enum AccessibilityText {
     static let healthWeightHistoryChartLabel = localized("Weight history chart")
     static let healthStepsHistoryChartLabel = localized("Steps history chart")
     static let healthEnergyHistoryChartLabel = localized("Energy history chart")
+    static let healthWeightSectionEmptyValue = localized("Weight. No weight entries yet.")
+    static let healthWeightGoalSummaryEmptyValue = localized("No active goal")
+    static let healthStepsSectionEmptyValue = localized("Steps. Update Apple Health permissions so your health metrics appear here.")
+    static let healthEnergySectionEmptyValue = localized("Energy. Update Apple Health permissions so your health metrics appear here.")
+    static let healthWeightEntryRowLabel = localized("Weight entry")
+    static let muscleDistributionChartLabel = localized("Muscle distribution chart")
+    static let healthHistoryNoHealthDataTitle = localized("No Health Data")
+    static let healthHistoryNoHealthDataDescription = localized("Update Apple Health permissions so your health metrics appear here.")
+    static let healthStepsHistoryEmptyTitle = localized("No Step Data")
+    static let healthEnergyHistoryEmptyTitle = localized("No Energy Data")
+    static let healthWeightHistoryEmptyTitle = localized("No Weight Entries")
 
     static func healthWeightHistoryChartValue(dateText: String, weightText: String) -> String { localized("\(dateText), \(weightText)") }
 
+    static func healthWeightHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
+        switch range {
+        case .week:
+            return localized("No weight entries were recorded in the last 7 days.")
+        case .month:
+            return localized("No weight entries were recorded in the last month.")
+        case .sixMonths:
+            return localized("No weight entries were recorded in the last 6 months.")
+        case .year:
+            return localized("No weight entries were recorded in the last year.")
+        case .all:
+            return localized("No weight entries have been recorded yet.")
+        }
+    }
+
+    static func healthWeightSectionValue(dateText: String, weightText: String, goalText: String?) -> String {
+        var parts = [localized("Weight"), localized("Latest entry \(dateText)"), localized("Latest weight \(weightText)")]
+        if let goalText { parts.append(goalText) }
+        return parts.joined(separator: ". ") + "."
+    }
+
     static func healthStepsSectionValue(stepCount: Int) -> String { localized("Today \(stepCount.formatted(.number)) steps. Last 7 days chart.") }
 
+    static func healthStepsHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
+        switch range {
+        case .week:
+            return localized("No step data was recorded in the last 7 days.")
+        case .month:
+            return localized("No step data was recorded in the last month.")
+        case .sixMonths:
+            return localized("No step data was recorded in the last 6 months.")
+        case .year:
+            return localized("No step data was recorded in the last year.")
+        case .all:
+            return localized("No step data has been recorded yet.")
+        }
+    }
+
     static func healthEnergySectionValue(totalEnergy: Int, activeEnergy: Int) -> String { localized("Today \(totalEnergy.formatted(.number)) total calories. \(activeEnergy.formatted(.number)) active calories. Last 7 days chart.") }
+
+    static func healthEnergyHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
+        switch range {
+        case .week:
+            return localized("No energy data was recorded in the last 7 days.")
+        case .month:
+            return localized("No energy data was recorded in the last month.")
+        case .sixMonths:
+            return localized("No energy data was recorded in the last 6 months.")
+        case .year:
+            return localized("No energy data was recorded in the last year.")
+        case .all:
+            return localized("No energy data has been recorded yet.")
+        }
+    }
+
+    static func healthWeightEntryRowValue(weightText: String, dateText: String, isImportedFromHealth: Bool) -> String {
+        var parts = [weightText, dateText]
+        if isImportedFromHealth { parts.append(localized("Imported from Apple Health")) }
+        return localized("\(parts.joined(separator: ", "))")
+    }
+
+    static func healthWeightGoalSummaryValue(goalTitle: String, statusText: String?, progressText: String?, chartSummary: String?) -> String {
+        var parts = [goalTitle]
+        if let statusText { parts.append(statusText) }
+        if let progressText { parts.append(progressText) }
+        if let chartSummary { parts.append(chartSummary) }
+        return localized("\(parts.joined(separator: ", "))")
+    }
+
+    static func healthWeightGoalRowLabel(typeTitle: String) -> String { localized("\(typeTitle) weight goal") }
+
+    static func healthWeightGoalRowValue(targetText: String, startedText: String, endedText: String?, targetDateText: String?, progressText: String?, chartSummary: String?, isActive: Bool) -> String {
+        var parts = [localized("Target \(targetText)"), localized("Started \(startedText)")]
+        if let endedText {
+            parts.append(localized("Ended \(endedText)"))
+        } else if isActive {
+            parts.append(localized("Active"))
+        }
+        if let targetDateText { parts.append(localized("Target date \(targetDateText)")) }
+        if let progressText { parts.append(progressText) }
+        if let chartSummary { parts.append(chartSummary) }
+        return localized("\(parts.joined(separator: ", "))")
+    }
 
     static func healthStepsHistoryChartValue(dateText: String, stepsText: String) -> String { localized("\(dateText), \(stepsText)") }
 
     static func healthEnergyHistoryChartValue(dateText: String, totalText: String, activeText: String) -> String { localized("\(dateText), \(totalText), \(activeText)") }
+
+    static func muscleDistributionChartValue(rows: [String]) -> String { localized("\(rows.joined(separator: ", "))") }
+
+    static func muscleDistributionLegendRowValue(muscleName: String, percentageText: String) -> String { localized("\(muscleName), \(percentageText)") }
 
     // MARK: - WorkoutSplitSectionView
     static let workoutSplitHeaderHint = localized("Shows your workout split settings.")
