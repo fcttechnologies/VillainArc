@@ -359,7 +359,6 @@ enum AccessibilityIdentifiers {
     static let workoutPlanNotesEditorField = "workoutPlanNotesEditorField"
     static let workoutPreMoodButton = "workoutPreMoodButton"
     static let preWorkoutMoodSheet = "preWorkoutMoodSheet"
-    static let preWorkoutMoodNotesField = "preWorkoutMoodNotesField"
     static let preWorkoutEnergyDrinkCard = "preWorkoutEnergyDrinkCard"
     static let replaceExerciseCloseButton = "replaceExerciseCloseButton"
     static let replaceExerciseConfirmButton = "replaceExerciseConfirmButton"

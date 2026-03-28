@@ -95,7 +95,6 @@ import SwiftUI
 
         session.preWorkoutContext?.feeling = .okay
         session.preWorkoutContext?.tookPreWorkout = true
-        session.preWorkoutContext?.notes = "Slept fine, but appetite was low before training."
         session.postEffort = 7
 
         let exercises: [(id: String, notes: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])] = [
@@ -423,7 +422,6 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     let fallback = WorkoutSession(title: "Chest Day", status: .done, endedAt: .now)
     fallback.preWorkoutContext?.feeling = .okay
     fallback.preWorkoutContext?.tookPreWorkout = true
-    fallback.preWorkoutContext?.notes = "Slept fine, but appetite was low before training."
     sampleContainer.context.insert(fallback)
     return fallback
 }

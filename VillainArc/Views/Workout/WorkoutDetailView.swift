@@ -22,28 +22,14 @@ struct WorkoutDetailView: View {
     }
     private var hasPreWorkoutDrink: Bool { preWorkoutContext?.tookPreWorkout == true }
 
-    private var preWorkoutNotesText: String? {
-        let trimmed = preWorkoutContext?.notes.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private var hasPreWorkoutNotes: Bool { preWorkoutNotesText != nil }
-
     private var postWorkoutEffortText: String? {
         guard (1...10).contains(workout.postEffort) else { return nil }
         return "\(workout.postEffort)/10 • \(workoutEffortDescription(workout.postEffort))"
     }
 
     private var preWorkoutToolbarIdentifier: String? {
-        if hasPreWorkoutFeeling {
-            return AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton
-        }
-        if hasPreWorkoutDrink {
-            return AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton
-        }
-        if hasPreWorkoutNotes {
-            return AccessibilityIdentifiers.workoutDetailPreWorkoutNotesButton
-        }
+        if hasPreWorkoutFeeling { return AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton }
+        if hasPreWorkoutDrink { return AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton }
         return nil
     }
     
@@ -128,12 +114,6 @@ struct WorkoutDetailView: View {
                     if hasPreWorkoutDrink {
                         LabeledContent("Took pre workout", value: "Yes")
                     }
-                    if let preWorkoutNotesText {
-                        Section("Notes") {
-                            Text(preWorkoutNotesText)
-                                .multilineTextAlignment(.leading)
-                        }
-                    }
                 }
                 .fontWeight(.semibold)
                 .fontDesign(.rounded)
@@ -194,12 +174,7 @@ struct WorkoutDetailView: View {
         if hasPreWorkoutFeeling, let feeling = preWorkoutContext?.feeling.displayName {
             parts.append(feeling)
         }
-        if hasPreWorkoutDrink {
-            parts.append("Pre workout taken")
-        }
-        if hasPreWorkoutNotes {
-            parts.append("Notes added")
-        }
+        if hasPreWorkoutDrink { parts.append("Pre workout taken") }
 
         return parts.joined(separator: ". ")
     }
@@ -213,9 +188,6 @@ struct WorkoutDetailView: View {
         } else if hasPreWorkoutDrink {
             Image(systemName: "bolt.fill")
                 .foregroundStyle(.yellow)
-                .accessibilityHidden(true)
-        } else if hasPreWorkoutNotes {
-            Image(systemName: "note.text")
                 .accessibilityHidden(true)
         }
     }

@@ -11,19 +11,11 @@ struct PreWorkoutContextView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 30) {
-                    
                     HStack(spacing: 12) {
                         ForEach(MoodLevel.allCases.filter { $0 != .notSet }, id: \.self) { level in
                             moodCard(for: level)
                         }
                     }
-                    
-                    TextField("Notes (optional)", text: $preWorkoutContext.notes)
-                        .fontWeight(.semibold)
-                        .onChange(of: preWorkoutContext.notes) {
-                            scheduleSave(context: modelContext)
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodNotesField)
                 }
                 .padding()
             }
@@ -33,10 +25,7 @@ struct PreWorkoutContextView: View {
                     dismissKeyboard()
                 }
             )
-            .onDisappear {
-                preWorkoutContext.notes = preWorkoutContext.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                saveContext(context: modelContext)
-            }
+            .onDisappear { saveContext(context: modelContext) }
             .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodSheet)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

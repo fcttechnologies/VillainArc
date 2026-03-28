@@ -2,7 +2,6 @@ import Foundation
 
 enum MoodLevel: String, Codable, CaseIterable {
     case notSet
-    case sick
     case tired
     case okay
     case good
@@ -14,7 +13,6 @@ enum MoodLevel: String, Codable, CaseIterable {
         case .good: return "😊"
         case .okay: return "😐"
         case .tired: return "😴"
-        case .sick: return "🤒"
         case .notSet: return ""
         }
     }
@@ -22,7 +20,6 @@ enum MoodLevel: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .notSet: return String(localized: "Not Set")
-        case .sick: return String(localized: "Sick")
         case .tired: return String(localized: "Tired")
         case .okay: return String(localized: "Okay")
         case .good: return String(localized: "Good")

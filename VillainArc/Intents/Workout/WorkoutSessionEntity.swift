@@ -6,7 +6,6 @@ import UniformTypeIdentifiers
 struct WorkoutSessionFullContent: Codable {
     struct PreWorkoutContext: Codable {
         let feeling: String
-        let notes: String?
         let tookPreWorkout: Bool
     }
 
@@ -66,16 +65,13 @@ extension WorkoutSessionEntity {
         startedAt = workoutSession.startedAt
         let exercises = workoutSession.sortedExercises
         exerciseNames = exercises.map(\.name)
-        let trimmedPreWorkoutNotes = workoutSession.preWorkoutContext?.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        let preWorkoutNotes = (trimmedPreWorkoutNotes?.isEmpty == false) ? trimmedPreWorkoutNotes : nil
         let preWorkoutFeeling = workoutSession.preWorkoutContext?.feeling
         let hasPreWorkoutFeeling = preWorkoutFeeling != nil && preWorkoutFeeling != .notSet
         let tookPreWorkout = workoutSession.preWorkoutContext?.tookPreWorkout ?? false
         let preWorkoutContext: WorkoutSessionFullContent.PreWorkoutContext? =
-            if hasPreWorkoutFeeling || tookPreWorkout || preWorkoutNotes != nil {
+            if hasPreWorkoutFeeling || tookPreWorkout {
                 WorkoutSessionFullContent.PreWorkoutContext(
                     feeling: hasPreWorkoutFeeling ? (preWorkoutFeeling?.displayName ?? "") : "",
-                    notes: preWorkoutNotes,
                     tookPreWorkout: tookPreWorkout
                 )
             } else {
