@@ -8,14 +8,6 @@ enum HealthSyncPreferences {
     private static let walkingRunningDistanceAnchorKey = "health_walking_running_distance_anchor"
     private static let activeEnergyBurnedAnchorKey = "health_active_energy_burned_anchor"
     private static let restingEnergyBurnedAnchorKey = "health_resting_energy_burned_anchor"
-    private static let stepCountSyncedRangeStartKey = "health_step_count_synced_range_start"
-    private static let stepCountSyncedRangeEndKey = "health_step_count_synced_range_end"
-    private static let walkingRunningDistanceSyncedRangeStartKey = "health_walking_running_distance_synced_range_start"
-    private static let walkingRunningDistanceSyncedRangeEndKey = "health_walking_running_distance_synced_range_end"
-    private static let activeEnergyBurnedSyncedRangeStartKey = "health_active_energy_burned_synced_range_start"
-    private static let activeEnergyBurnedSyncedRangeEndKey = "health_active_energy_burned_synced_range_end"
-    private static let restingEnergyBurnedSyncedRangeStartKey = "health_resting_energy_burned_synced_range_start"
-    private static let restingEnergyBurnedSyncedRangeEndKey = "health_resting_energy_burned_synced_range_end"
 
     private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
 
@@ -49,14 +41,6 @@ enum HealthSyncPreferences {
         set { setAnchor(newValue, forKey: restingEnergyBurnedAnchorKey) }
     }
 
-    static var stepCountSyncedRange: ClosedRange<Date>? { get { dateRange(startKey: stepCountSyncedRangeStartKey, endKey: stepCountSyncedRangeEndKey) } set { setDateRange(newValue, startKey: stepCountSyncedRangeStartKey, endKey: stepCountSyncedRangeEndKey) } }
-
-    static var walkingRunningDistanceSyncedRange: ClosedRange<Date>? { get { dateRange(startKey: walkingRunningDistanceSyncedRangeStartKey, endKey: walkingRunningDistanceSyncedRangeEndKey) } set { setDateRange(newValue, startKey: walkingRunningDistanceSyncedRangeStartKey, endKey: walkingRunningDistanceSyncedRangeEndKey) } }
-
-    static var activeEnergyBurnedSyncedRange: ClosedRange<Date>? { get { dateRange(startKey: activeEnergyBurnedSyncedRangeStartKey, endKey: activeEnergyBurnedSyncedRangeEndKey) } set { setDateRange(newValue, startKey: activeEnergyBurnedSyncedRangeStartKey, endKey: activeEnergyBurnedSyncedRangeEndKey) } }
-
-    static var restingEnergyBurnedSyncedRange: ClosedRange<Date>? { get { dateRange(startKey: restingEnergyBurnedSyncedRangeStartKey, endKey: restingEnergyBurnedSyncedRangeEndKey) } set { setDateRange(newValue, startKey: restingEnergyBurnedSyncedRangeStartKey, endKey: restingEnergyBurnedSyncedRangeEndKey) } }
-
     private static func anchor(forKey key: String) -> HKQueryAnchor? {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
@@ -71,21 +55,5 @@ enum HealthSyncPreferences {
         guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else { return }
 
         defaults.set(data, forKey: key)
-    }
-
-    private static func dateRange(startKey: String, endKey: String) -> ClosedRange<Date>? {
-        guard let start = defaults.object(forKey: startKey) as? Date, let end = defaults.object(forKey: endKey) as? Date else { return nil }
-        return start...end
-    }
-
-    private static func setDateRange(_ range: ClosedRange<Date>?, startKey: String, endKey: String) {
-        guard let range else {
-            defaults.removeObject(forKey: startKey)
-            defaults.removeObject(forKey: endKey)
-            return
-        }
-
-        defaults.set(range.lowerBound, forKey: startKey)
-        defaults.set(range.upperBound, forKey: endKey)
     }
 }

@@ -19,4 +19,13 @@ import SwiftData
         try context.save()
         return settings
     }
+
+    static func ensureHealthSyncState(context: ModelContext) throws -> HealthSyncState {
+        if let existing = try context.fetch(HealthSyncState.single).first { return existing }
+
+        let syncState = HealthSyncState()
+        context.insert(syncState)
+        try context.save()
+        return syncState
+    }
 }

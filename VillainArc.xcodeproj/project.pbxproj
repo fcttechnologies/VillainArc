@@ -137,6 +137,7 @@
 				Data/Models/Exercise/RestTimeDefaults.swift,
 				Data/Models/Health/HealthEnergy.swift,
 				Data/Models/Health/HealthStepsDistance.swift,
+				Data/Models/Health/HealthSyncState.swift,
 				Data/Models/Health/HealthWorkout.swift,
 				Data/Models/Health/WeightEntry.swift,
 				Data/Models/Health/WeightGoal.swift,

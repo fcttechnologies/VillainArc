@@ -6,6 +6,7 @@ import SwiftData
         guard DataManager.hasCompletedInitialBootstrap() else { throw SetupGuardError.onboardingNotComplete }
 
         guard (try context.fetch(AppSettings.single).first) != nil else { throw SetupGuardError.onboardingNotComplete }
+        guard (try context.fetch(HealthSyncState.single).first) != nil else { throw SetupGuardError.onboardingNotComplete }
 
         guard let profile = try context.fetch(UserProfile.single).first else { throw SetupGuardError.onboardingNotComplete }
 

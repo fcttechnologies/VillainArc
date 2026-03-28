@@ -133,6 +133,7 @@ enum OnboardingState: Equatable {
 
         do {
             _ = try SystemState.ensureAppSettings(context: context)
+            _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             guard attemptID == onboardingAttemptID else { return }
             isNewUser = true
@@ -154,6 +155,7 @@ enum OnboardingState: Equatable {
             // Seed exercises locally only
             _ = try await DataManager.seedExercisesForOnboarding()
             _ = try SystemState.ensureAppSettings(context: context)
+            _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             isNewUser = true
             routeFromProfile(profile)
@@ -217,6 +219,7 @@ enum OnboardingState: Equatable {
         isNewUser = false
         do {
             _ = try SystemState.ensureAppSettings(context: context)
+            _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             if let missingStep = profile.firstMissingStep {
                 self.profile = profile

@@ -16,6 +16,7 @@ This document explains the current Apple Health integration in VillainArc: how H
 - `Data/Models/Health/WeightEntry.swift`
 - `Data/Models/Health/HealthStepsDistance.swift`
 - `Data/Models/Health/HealthEnergy.swift`
+- `Data/Models/Health/HealthSyncState.swift`
 - `Data/Models/Health/WeightGoal.swift`
 - `Data/Models/Sessions/WorkoutSession.swift`
 - `Views/Tabs/Health/HealthTabView.swift`
@@ -324,6 +325,8 @@ The anchors are stored in shared defaults:
 - `HealthSyncPreferences.walkingRunningDistanceAnchor`
 - `HealthSyncPreferences.activeEnergyBurnedAnchor`
 - `HealthSyncPreferences.restingEnergyBurnedAnchor`
+
+Daily-metric synced coverage is stored separately in SwiftData through `HealthSyncState`, which lets reinstall or CloudKit-imported cache data preserve the known coverage range even though HealthKit anchors remain device-local.
 
 That gives the app this behavior:
 

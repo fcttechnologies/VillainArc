@@ -15,7 +15,6 @@ import SwiftData
         let refreshedDayCount: Int
         let createdRowCount: Int
         let updatedRowCount: Int
-        let deletedRowCount: Int
         let refreshedRange: ClosedRange<Date>?
         let newAnchor: HKQueryAnchor
         let newSyncedRange: ClosedRange<Date>?
@@ -51,15 +50,17 @@ import SwiftData
         defer { isSyncingSteps = false }
 
         let context = SharedModelContainer.container.mainContext
-        let syncedRange = HealthSyncPreferences.stepCountSyncedRange
+        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        let syncedRange = syncState.stepCountSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.stepCountAnchor
 
         do {
             let result = try await syncMetric(type: stepCountType, unit: stepsUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { Int($0.rounded()) }, applyValue: { try self.upsertStepCount(for: $0, stepCount: $1, context: $2) })
             HealthSyncPreferences.stepCountAnchor = result.newAnchor
-            HealthSyncPreferences.stepCountSyncedRange = result.newSyncedRange
-            print("Health steps sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Deleted rows: \(result.deletedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
+            syncState.stepCountSyncedRange = result.newSyncedRange
+            try context.save()
+            print("Health steps sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health steps: \(error)")
         }
@@ -74,15 +75,17 @@ import SwiftData
         defer { isSyncingWalkingRunningDistance = false }
 
         let context = SharedModelContainer.container.mainContext
-        let syncedRange = HealthSyncPreferences.walkingRunningDistanceSyncedRange
+        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        let syncedRange = syncState.walkingRunningDistanceSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.walkingRunningDistanceAnchor
 
         do {
             let result = try await syncMetric(type: walkingRunningDistanceType, unit: distanceUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertWalkingRunningDistance(for: $0, distance: $1, context: $2) })
             HealthSyncPreferences.walkingRunningDistanceAnchor = result.newAnchor
-            HealthSyncPreferences.walkingRunningDistanceSyncedRange = result.newSyncedRange
-            print("Health walking/running distance sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Deleted rows: \(result.deletedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
+            syncState.walkingRunningDistanceSyncedRange = result.newSyncedRange
+            try context.save()
+            print("Health walking/running distance sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health walking/running distance: \(error)")
         }
@@ -97,15 +100,17 @@ import SwiftData
         defer { isSyncingActiveEnergy = false }
 
         let context = SharedModelContainer.container.mainContext
-        let syncedRange = HealthSyncPreferences.activeEnergyBurnedSyncedRange
+        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        let syncedRange = syncState.activeEnergyBurnedSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.activeEnergyBurnedAnchor
 
         do {
             let result = try await syncMetric(type: activeEnergyBurnedType, unit: energyUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertActiveEnergyBurned(for: $0, activeEnergyBurned: $1, context: $2) })
             HealthSyncPreferences.activeEnergyBurnedAnchor = result.newAnchor
-            HealthSyncPreferences.activeEnergyBurnedSyncedRange = result.newSyncedRange
-            print("Health active energy sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Deleted rows: \(result.deletedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
+            syncState.activeEnergyBurnedSyncedRange = result.newSyncedRange
+            try context.save()
+            print("Health active energy sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health active energy: \(error)")
         }
@@ -120,15 +125,17 @@ import SwiftData
         defer { isSyncingRestingEnergy = false }
 
         let context = SharedModelContainer.container.mainContext
-        let syncedRange = HealthSyncPreferences.restingEnergyBurnedSyncedRange
+        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        let syncedRange = syncState.restingEnergyBurnedSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.restingEnergyBurnedAnchor
 
         do {
             let result = try await syncMetric(type: restingEnergyBurnedType, unit: energyUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertRestingEnergyBurned(for: $0, restingEnergyBurned: $1, context: $2) })
             HealthSyncPreferences.restingEnergyBurnedAnchor = result.newAnchor
-            HealthSyncPreferences.restingEnergyBurnedSyncedRange = result.newSyncedRange
-            print("Health resting energy sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Deleted rows: \(result.deletedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
+            syncState.restingEnergyBurnedSyncedRange = result.newSyncedRange
+            try context.save()
+            print("Health resting energy sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health resting energy: \(error)")
         }
@@ -205,17 +212,16 @@ import SwiftData
         var refreshedDayCount = 0
         var createdRowCount = 0
         var updatedRowCount = 0
-        var deletedRowCount = 0
 
         if let refreshRange {
-            (refreshedDayCount, createdRowCount, updatedRowCount, deletedRowCount) = try await refreshMetricRange(dayRange: refreshRange, type: type, unit: unit, context: context, mapValue: mapValue, applyValue: applyValue)
+            (refreshedDayCount, createdRowCount, updatedRowCount) = try await refreshMetricRange(dayRange: refreshRange, type: type, unit: unit, context: context, mapValue: mapValue, applyValue: applyValue)
             try context.save()
         }
 
-        return MetricRefreshResult(fetchedSampleCount: result.addedSamples.count, deletedSampleCount: result.deletedObjects.count, refreshedDayCount: refreshedDayCount, createdRowCount: createdRowCount, updatedRowCount: updatedRowCount, deletedRowCount: deletedRowCount, refreshedRange: refreshRange, newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange)
+        return MetricRefreshResult(fetchedSampleCount: result.addedSamples.count, deletedSampleCount: result.deletedObjects.count, refreshedDayCount: refreshedDayCount, createdRowCount: createdRowCount, updatedRowCount: updatedRowCount, refreshedRange: refreshRange, newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange)
     }
 
-    private func refreshMetricRange<Value>(dayRange: ClosedRange<Date>, type: HKQuantityType, unit: HKUnit, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool)) async throws -> (days: Int, created: Int, updated: Int, deleted: Int) {
+    private func refreshMetricRange<Value>(dayRange: ClosedRange<Date>, type: HKQuantityType, unit: HKUnit, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool)) async throws -> (days: Int, created: Int, updated: Int) {
         let lowerDayStart = calendar.startOfDay(for: dayRange.lowerBound)
         let upperDayStart = calendar.startOfDay(for: dayRange.upperBound)
         let upperDayExclusive = calendar.date(byAdding: .day, value: 1, to: upperDayStart) ?? upperDayStart
@@ -223,7 +229,6 @@ import SwiftData
         var refreshedDayCount = 0
         var createdRowCount = 0
         var updatedRowCount = 0
-        var deletedRowCount = 0
 
         var currentDay = lowerDayStart
         while currentDay < upperDayExclusive {
@@ -232,19 +237,17 @@ import SwiftData
                 refreshedDayCount += 1
                 createdRowCount += change.created ? 1 : 0
                 updatedRowCount += change.updated ? 1 : 0
-                deletedRowCount += change.deleted ? 1 : 0
             } else {
                 let change = try applyValue(currentDay, mapValue(0), context)
                 refreshedDayCount += 1
                 createdRowCount += change.created ? 1 : 0
                 updatedRowCount += change.updated ? 1 : 0
-                deletedRowCount += change.deleted ? 1 : 0
             }
             guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
             currentDay = nextDay
         }
 
-        return (refreshedDayCount, createdRowCount, updatedRowCount, deletedRowCount)
+        return (refreshedDayCount, createdRowCount, updatedRowCount)
     }
 
     private func dailyTotalsByDay<Value>(for type: HKQuantityType, unit: HKUnit, rangeStart: Date, rangeEndExclusive: Date, mapValue: @escaping (Double) -> Value) async throws -> [Date: Value] {
