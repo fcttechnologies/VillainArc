@@ -3,18 +3,11 @@ import SwiftData
 import Charts
 
 struct WeightSectionCard: View {
-    private static let recentChartWindowDays = 35
-
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let router = AppRouter.shared
-    @Query private var recentEntries: [WeightEntry]
-    @Query(WeightEntry.latest, animation: .smooth) private var latestEntries: [WeightEntry]
+    @Query(WeightEntry.summary, animation: .smooth) private var summaryEntries: [WeightEntry]
     @Query(WeightGoal.active, animation: .smooth) private var activeGoals: [WeightGoal]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
-
-    init() {
-        _recentEntries = Query(WeightEntry.recent(days: Self.recentChartWindowDays), animation: .smooth)
-    }
 
     private var weightUnit: WeightUnit {
         appSettings.first?.weightUnit ?? .systemDefault
@@ -25,11 +18,7 @@ struct WeightSectionCard: View {
     }
 
     private var latestEntry: WeightEntry? {
-        latestEntries.first
-    }
-
-    private var chartPoints: [WeightChartPoint] {
-        recentEntries.reversed().map(WeightChartPoint.init)
+        summaryEntries.first
     }
 
     private var activeGoalText: String? {
@@ -61,30 +50,28 @@ struct WeightSectionCard: View {
 
                     Spacer()
 
-                    if let activeGoalText {
-                        Text(activeGoalText)
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                    if let latestEntry {
+                        Text(formattedRecentDay(latestEntry.date))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(.blue.gradient, in: Capsule())
-                            .foregroundStyle(.white)
                     }
                 }
 
                 if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(formattedRecentDay(latestEntry.date))
-                                .font(.subheadline)
+                            if let activeGoalText {
+                                Text(activeGoalText)
+                                    .font(.subheadline)
+                                    .lineLimit(1)
+                            }
 
                             HStack(alignment: .lastTextBaseline, spacing: 3) {
                                 Text(formattedWeightValue(latestEntry.weight, unit: weightUnit, fractionDigits: 0...1))
                                     .font(.largeTitle)
                                     .bold()
                                     .contentTransition(.numericText(value: latestEntry.weight))
-                                    .animation(reduceMotion ? nil : .smooth, value: latestEntry.weight)
                                     .foregroundStyle(.primary)
                                 
                                 Text(weightUnit.rawValue)
@@ -98,12 +85,13 @@ struct WeightSectionCard: View {
                         
                         Spacer()
                         
-                        if chartPoints.count > 1 {
-                            WeightSparklineChart(points: chartPoints)
+                        if summaryEntries.count > 1 {
+                            WeightSparklineChart(entries: summaryEntries, latestEntry: latestEntry)
                                 .frame(width: 160, height: 80)
                                 .accessibilityHidden(true)
                         }
                     }
+                    .animation(reduceMotion ? nil : .smooth, value: latestEntry.weight)
                 } else {
                     Text("Your weight data will show up here once you add or sync body weight entries")
                         .font(.subheadline)
@@ -125,37 +113,34 @@ struct WeightSectionCard: View {
 }
 
 private struct WeightSparklineChart: View {
-    let points: [WeightChartPoint]
+    let entries: [WeightEntry]
+    let latestEntry: WeightEntry?
 
     private let tint = Color.blue
 
-    private var latestPoint: WeightChartPoint? {
-        points.last
-    }
-
     private var yDomain: ClosedRange<Double> {
-        weightYDomain(for: points.map(\.weight), minimumPadding: 0.5)
+        weightYDomain(for: entries.map(\.weight), minimumPadding: 0.5)
     }
 
     var body: some View {
         Chart {
-            ForEach(points) { point in
-                LineMark(x: .value("Date", point.date), y: .value("Weight", point.weight))
+            ForEach(entries, id: \.id) { entry in
+                LineMark(x: .value("Date", entry.date), y: .value("Weight", entry.weight))
                     .foregroundStyle(tint)
                     .lineStyle(.init(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
                     .interpolationMethod(.catmullRom)
             }
 
-            if let latestPoint {
-                PointMark(x: .value("Latest Date", latestPoint.date), y: .value("Latest Weight", latestPoint.weight))
+            if let latestEntry {
+                PointMark(x: .value("Latest Date", latestEntry.date), y: .value("Latest Weight", latestEntry.weight))
                     .foregroundStyle(tint.opacity(0.2))
                     .symbolSize(280)
 
-                PointMark(x: .value("Latest Date", latestPoint.date), y: .value("Latest Weight", latestPoint.weight))
+                PointMark(x: .value("Latest Date", latestEntry.date), y: .value("Latest Weight", latestEntry.weight))
                     .foregroundStyle(.white)
                     .symbolSize(120)
 
-                PointMark(x: .value("Latest Date", latestPoint.date), y: .value("Latest Weight", latestPoint.weight))
+                PointMark(x: .value("Latest Date", latestEntry.date), y: .value("Latest Weight", latestEntry.weight))
                     .foregroundStyle(tint)
                     .symbolSize(64)
             }
@@ -163,28 +148,6 @@ private struct WeightSparklineChart: View {
         .chartYScale(domain: yDomain)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
-    }
-}
-
-struct WeightChartPoint: Identifiable, Equatable {
-    let id: UUID
-    let date: Date
-    let weight: Double
-    let startDate: Date
-    let endDate: Date
-    let entryCount: Int
-
-    init(id: UUID, date: Date, weight: Double, startDate: Date? = nil, endDate: Date? = nil, entryCount: Int = 1) {
-        self.id = id
-        self.date = date
-        self.weight = weight
-        self.startDate = startDate ?? date
-        self.endDate = endDate ?? date
-        self.entryCount = entryCount
-    }
-
-    init(_ entry: WeightEntry) {
-        self.init(id: entry.id, date: entry.date, weight: entry.weight)
     }
 }
 

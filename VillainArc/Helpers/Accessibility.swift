@@ -499,6 +499,8 @@ enum AccessibilityText {
     static let healthWeightHistoryChartLabel = localized("Weight history chart")
     static let healthStepsHistoryChartLabel = localized("Steps history chart")
     static let healthEnergyHistoryChartLabel = localized("Energy history chart")
+    static let healthStepsWeekdayChartLabel = localized("Weekday average steps chart")
+    static let healthEnergyWeekdayChartLabel = localized("Weekday average active calories chart")
     static let healthWeightSectionEmptyValue = localized("Weight. No weight entries yet.")
     static let healthWeightGoalSummaryEmptyValue = localized("No active goal")
     static let healthStepsSectionEmptyValue = localized("Steps. Update Apple Health permissions so your health metrics appear here.")
@@ -534,7 +536,9 @@ enum AccessibilityText {
         return parts.joined(separator: ". ") + "."
     }
 
-    static func healthStepsSectionValue(stepCount: Int) -> String { localized("Today \(stepCount.formatted(.number)) steps. Last 7 days chart.") }
+    static func healthStepsSectionValue(dateText: String, stepCount: Int) -> String {
+        localized("Latest steps entry \(dateText). \(stepCount.formatted(.number)) steps. Recent entries chart.")
+    }
 
     static func healthStepsHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
@@ -551,7 +555,9 @@ enum AccessibilityText {
         }
     }
 
-    static func healthEnergySectionValue(totalEnergy: Int, activeEnergy: Int) -> String { localized("Today \(totalEnergy.formatted(.number)) total calories. \(activeEnergy.formatted(.number)) active calories. Last 7 days chart.") }
+    static func healthEnergySectionValue(dateText: String, totalEnergy: Int, activeEnergy: Int) -> String {
+        localized("Latest energy entry \(dateText). \(totalEnergy.formatted(.number)) total calories. \(activeEnergy.formatted(.number)) active calories. Recent entries chart.")
+    }
 
     static func healthEnergyHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
@@ -598,8 +604,10 @@ enum AccessibilityText {
     }
 
     static func healthStepsHistoryChartValue(dateText: String, stepsText: String) -> String { localized("\(dateText), \(stepsText)") }
+    static func healthStepsWeekdayChartValue(summaryText: String) -> String { localized("\(summaryText)") }
 
     static func healthEnergyHistoryChartValue(dateText: String, totalText: String, activeText: String) -> String { localized("\(dateText), \(totalText), \(activeText)") }
+    static func healthEnergyWeekdayChartValue(summaryText: String) -> String { localized("\(summaryText)") }
 
     static func muscleDistributionChartValue(rows: [String]) -> String { localized("\(rows.joined(separator: ", "))") }
 

@@ -3,55 +3,23 @@ import SwiftData
 import Charts
 
 struct HealthEnergySectionCard: View {
-    private static let visibleDayCount = 7
-
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let router = AppRouter.shared
-    @Query private var energyEntries: [HealthEnergy]
-    @Query(HealthEnergy.latest) private var latestEnergyEntries: [HealthEnergy]
-
-    init() {
-        _energyEntries = Query(HealthEnergy.recent(days: Self.visibleDayCount), animation: .smooth)
+    @Query(HealthEnergy.summary, animation: .smooth) private var summaryEntries: [HealthEnergy]
+    
+    private var latestEntry: HealthEnergy? {
+        summaryEntries.first
     }
-
-    private var hasAnyEnergyData: Bool {
-        !latestEnergyEntries.isEmpty
+    
+    private var chartSegments: [HealthEnergy.ChartSegment] {
+        summaryEntries.flatMap(\.chartSegments)
     }
-
-    private var todayStart: Date {
-        Calendar.autoupdatingCurrent.startOfDay(for: .now)
-    }
-
-    private var todayEnergy: HealthEnergy? {
-        energyEntries.first(where: { Calendar.autoupdatingCurrent.isDate($0.date, inSameDayAs: todayStart) })
-    }
-
-    private var todayActiveEnergy: Double {
-        todayEnergy?.activeEnergyBurned ?? 0
-    }
-
-    private var todayTotalEnergy: Double {
-        todayEnergy?.totalEnergyBurned ?? 0
-    }
-
-    private var chartPoints: [HealthEnergyChartPoint] {
-        let calendar = Calendar.autoupdatingCurrent
-        let entriesByDay = Dictionary(uniqueKeysWithValues: energyEntries.map { (calendar.startOfDay(for: $0.date), $0) })
-
-        return (0..<Self.visibleDayCount).compactMap { index in
-            guard let date = calendar.date(byAdding: .day, value: index - (Self.visibleDayCount - 1), to: todayStart) else { return nil }
-            let entry = entriesByDay[date]
-            let activeEnergy = entry?.activeEnergyBurned ?? 0
-            let totalEnergy = entry?.totalEnergyBurned ?? 0
-            return HealthEnergyChartPoint(date: date, activeEnergy: activeEnergy, restingEnergy: max(0, totalEnergy - activeEnergy))
-        }
-    }
-
+    
     private var cardAccessibilityLabel: String {
-        if !hasAnyEnergyData { return AccessibilityText.healthEnergySectionEmptyValue }
-        return AccessibilityText.healthEnergySectionValue(totalEnergy: Int(todayTotalEnergy.rounded()), activeEnergy: Int(todayActiveEnergy.rounded()))
+        guard let latestEntry else { return AccessibilityText.healthEnergySectionEmptyValue }
+        return AccessibilityText.healthEnergySectionValue(dateText: formattedRecentDay(latestEntry.date), totalEnergy: Int(latestEntry.totalEnergyBurned.rounded()), activeEnergy: Int(latestEntry.activeEnergyBurned.rounded()))
     }
-
+    
     var body: some View {
         Button {
             router.navigate(to: .energyHistory)
@@ -65,27 +33,34 @@ struct HealthEnergySectionCard: View {
                         .fontWeight(.semibold)
                     
                     Spacer()
+                    
+                    if let latestEntry {
+                        Text(formattedRecentDay(latestEntry.date))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
-
-                if hasAnyEnergyData {
+                
+                if let latestEntry {
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 1) {
-                            HStack(alignment: .lastTextBaseline, spacing: 3) {
-                                Text(Int(todayActiveEnergy.rounded()), format: .number)
-                                    .contentTransition(.numericText(value: todayActiveEnergy))
+                            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                                Text(Int(latestEntry.activeEnergyBurned.rounded()), format: .number)
+                                    .contentTransition(.numericText(value: latestEntry.activeEnergyBurned))
                                     .font(.title3)
-
+                                    .bold()
+                                
                                 Text("Active")
                                     .foregroundStyle(.secondary)
                             }
                             .font(.subheadline)
-
+                            
                             HStack(alignment: .lastTextBaseline, spacing: 2) {
-                                Text(Int(todayTotalEnergy.rounded()), format: .number)
+                                Text(Int(latestEntry.totalEnergyBurned.rounded()), format: .number)
                                     .font(.largeTitle)
-                                    .bold()
-                                    .contentTransition(.numericText(value: todayTotalEnergy))
-
+                                    .contentTransition(.numericText(value: latestEntry.totalEnergyBurned))
+                                
                                 Text("Total")
                                     .font(.title)
                                     .foregroundStyle(.secondary)
@@ -94,14 +69,14 @@ struct HealthEnergySectionCard: View {
                         }
                         .fontDesign(.rounded)
                         .fontWeight(.semibold)
-                        .animation(reduceMotion ? nil : .smooth, value: todayEnergy)
-
+                        
                         Spacer()
-
-                        HealthEnergySparkBarChart(points: chartPoints)
+                        
+                        HealthEnergySparkBarChart(segments: chartSegments)
                             .frame(width: 160, height: 80)
                             .accessibilityHidden(true)
                     }
+                    .animation(reduceMotion ? nil : .smooth, value: latestEntry.totalEnergyBurned)
                 } else {
                     Text(AccessibilityText.healthHistoryNoHealthDataDescription)
                         .font(.subheadline)
@@ -122,33 +97,37 @@ struct HealthEnergySectionCard: View {
 }
 
 private struct HealthEnergySparkBarChart: View {
-    let points: [HealthEnergyChartPoint]
+    let segments: [HealthEnergy.ChartSegment]
 
-    private var yDomain: ClosedRange<Double> {
-        0...(max(points.map(\.totalEnergy).max() ?? 0, 1) * 1.15)
+    private var latestDate: Date? {
+        segments.map(\.date).max()
     }
 
+    private var yDomain: ClosedRange<Double> {
+        let totalsByDate = Dictionary(grouping: segments, by: \.date)
+            .mapValues { $0.reduce(0) { $0 + $1.value } }
+        return 0...(max(totalsByDate.values.max() ?? 0, 1) * 1.15)
+    }
+    
     var body: some View {
-        Chart(points) { point in
-            BarMark(x: .value("Date", point.date, unit: .day), y: .value("Total Energy", point.totalEnergy), width: .ratio(0.92))
-                .foregroundStyle(.orange.opacity(0.22).gradient)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
-
-            BarMark(x: .value("Date", point.date, unit: .day), yStart: .value("Baseline", 0), yEnd: .value("Active Energy", point.activeEnergy), width: .ratio(0.92))
-                .foregroundStyle(.orange.gradient)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
+        Chart(segments) { segment in
+            BarMark(x: .value("Date", segment.date, unit: .day), y: .value(segment.kind.rawValue.capitalized, segment.value), width: .ratio(0.92))
+            .foregroundStyle(barStyle(for: segment))
+            .clipShape(UnevenRoundedRectangle(topLeadingRadius: segment.kind == .active ? 1 : 4, topTrailingRadius: segment.kind == .active ? 1 : 4))
         }
         .chartYScale(domain: yDomain)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
     }
-}
 
-private struct HealthEnergyChartPoint: Identifiable {
-    let date: Date
-    let activeEnergy: Double
-    let restingEnergy: Double
-    var totalEnergy: Double { activeEnergy + restingEnergy }
-    let id = UUID()
+    private func barStyle(for segment: HealthEnergy.ChartSegment) -> AnyShapeStyle {
+        let isLatest = segment.date == latestDate
+        switch segment.kind {
+        case .active:
+            return isLatest ? AnyShapeStyle(Color.orange.gradient) : AnyShapeStyle(Color.orange.opacity(0.35).gradient)
+        case .resting:
+            return isLatest ? AnyShapeStyle(Color.orange.opacity(0.22).gradient) : AnyShapeStyle(Color.orange.opacity(0.1).gradient)
+        }
+    }
 }

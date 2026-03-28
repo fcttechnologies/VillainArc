@@ -29,9 +29,6 @@
     "%@ beats per minute" : {
 
     },
-    "%@ cal" : {
-
-    },
     "%@ is a rest day." : {
 
     },
@@ -272,9 +269,6 @@
     "active calories" : {
 
     },
-    "Active Energy" : {
-
-    },
     "Active Split" : {
 
     },
@@ -461,9 +455,6 @@
     "Barbell" : {
 
     },
-    "Baseline" : {
-
-    },
     "Biceps" : {
 
     },
@@ -483,6 +474,9 @@
 
     },
     "Cable (Single)" : {
+
+    },
+    "cal" : {
 
     },
     "Calves" : {
@@ -1141,8 +1135,28 @@
     "Latest Date" : {
 
     },
+    "Latest energy entry %@. %@ total calories. %@ active calories. Recent entries chart." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Latest energy entry %1$@. %2$@ total calories. %3$@ active calories. Recent entries chart."
+          }
+        }
+      }
+    },
     "Latest entry %@" : {
 
+    },
+    "Latest steps entry %@. %@ steps. Recent entries chart." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Latest steps entry %1$@. %2$@ steps. Recent entries chart."
+          }
+        }
+      }
     },
     "Latest Weight" : {
 
@@ -2588,19 +2602,6 @@
     "Today" : {
 
     },
-    "Today %@ steps. Last 7 days chart." : {
-
-    },
-    "Today %@ total calories. %@ active calories. Last 7 days chart." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Today %1$@ total calories. %2$@ active calories. Last 7 days chart."
-          }
-        }
-      }
-    },
     "Today is a rest day! Enjoy your recovery." : {
 
     },
@@ -2647,9 +2648,6 @@
 
     },
     "total calories" : {
-
-    },
-    "Total Energy" : {
 
     },
     "Train your entire body each session" : {
@@ -2773,6 +2771,24 @@
 
     },
     "Wednesday" : {
+
+    },
+    "Weekday" : {
+
+    },
+    "Weekday average active calories chart" : {
+
+    },
+    "Weekday average steps chart" : {
+
+    },
+    "Weekday averages need at least 2 entries for every weekday" : {
+
+    },
+    "Weekday calorie averages are unavailable" : {
+
+    },
+    "Weekday step averages are unavailable" : {
 
     },
     "Weekly" : {
@@ -2988,6 +3004,26 @@
     "You are hitting: %@." : {
 
     },
+    "You burn %@ calories on %@ on average." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You burn %1$@ calories on %2$@ on average."
+          }
+        }
+      }
+    },
+    "You burn the most calories on %@. %@ calories on average." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You burn the most calories on %1$@. %2$@ calories on average."
+          }
+        }
+      }
+    },
     "You don't have a completed workout plan yet." : {
 
     },
@@ -3049,6 +3085,26 @@
     },
     "You need to launch and finish setting up the app before you can use this feature." : {
 
+    },
+    "You walk %@ steps on %@ on average." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You walk %1$@ steps on %2$@ on average."
+          }
+        }
+      }
+    },
+    "You walk the most on %@. %@ steps on average." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You walk the most on %1$@. %2$@ steps on average."
+          }
+        }
+      }
     },
     "You're already working out. Resume it first or cancel it." : {
 

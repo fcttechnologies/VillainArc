@@ -6,20 +6,16 @@ struct StepsDistanceHistoryView: View {
     @Query(HealthStepsDistance.history, animation: .smooth) private var entries: [HealthStepsDistance]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
-    @State private var selectedRange: TimeSeriesRangeFilter = .month
-
     private var distanceUnit: DistanceUnit {
         appSettings.first?.distanceUnit ?? .systemDefault
-    }
-
-    private var availableRanges: [TimeSeriesRangeFilter] {
-        TimeSeriesRangeFilter.allCases
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                StepsDistanceHistoryMainSection(entries: entries, distanceUnit: distanceUnit, selectedRange: $selectedRange, availableRanges: availableRanges)
+                StepsDistanceMainChartSection(entries: entries, distanceUnit: distanceUnit)
+
+                StepsDistanceWeekdayChartSection(entries: entries)
             }
             .padding()
         }
@@ -28,30 +24,23 @@ struct StepsDistanceHistoryView: View {
     }
 }
 
-private struct StepsDistanceHistoryMainSection: View {
+private struct StepsDistanceCachedRangeData {
+    let layout: TimeSeriesChartLayout
+    let distanceLayout: TimeSeriesChartLayout
+    let yDomain: ClosedRange<Double>
+    let totalSteps: Double?
+    let averageSteps: Double?
+    let highSteps: Double?
+}
+
+private struct StepsDistanceMainChartSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private struct CachedRangeData {
-        let layout: TimeSeriesChartLayout
-        let distanceLayout: TimeSeriesChartLayout
-        let yDomain: ClosedRange<Double>
-        let totalSteps: Double?
-        let averageSteps: Double?
-        let highSteps: Double?
-    }
-
-    private enum MetadataAlignment {
-        case leading
-        case trailing
-    }
+    @State private var selectedRange: TimeSeriesRangeFilter = .month
+    @State private var selectedDate: Date?
+    @State private var rangeCache: [TimeSeriesRangeFilter: StepsDistanceCachedRangeData] = [:]
 
     let entries: [HealthStepsDistance]
     let distanceUnit: DistanceUnit
-    @Binding var selectedRange: TimeSeriesRangeFilter
-    let availableRanges: [TimeSeriesRangeFilter]
-
-    @State private var selectedDate: Date?
-    @State private var rangeCache: [TimeSeriesRangeFilter: CachedRangeData] = [:]
 
     private let tint = Color.red
     private let stepsSampleNamespace: UInt64 = 0x5354455053000001
@@ -73,11 +62,11 @@ private struct StepsDistanceHistoryMainSection: View {
         !entries.isEmpty
     }
 
-    private var currentRangeData: CachedRangeData? {
+    private var currentRangeData: StepsDistanceCachedRangeData? {
         rangeCache[selectedRange]
     }
 
-    private var cacheSeed: Int {
+    private var cacheKey: Int {
         var hasher = Hasher()
         hasher.combine(entries.count)
         for entry in entries {
@@ -120,9 +109,9 @@ private struct StepsDistanceHistoryMainSection: View {
         return latestEntry?.distance
     }
 
-    private var displayedDistanceText: String {
+    private var displayedDistanceValueText: String {
         guard let displayedDistanceMeters else { return "-" }
-        return distanceUnit.display(displayedDistanceMeters, fractionDigits: 0...2)
+        return distanceUnit.fromMeters(displayedDistanceMeters).formatted(.number.precision(.fractionLength(0...2)))
     }
 
     private var visibleRangeText: String? {
@@ -138,122 +127,142 @@ private struct StepsDistanceHistoryMainSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(spacing: 0) {
-                    HStack(alignment: .bottom) {
-                        Text(displayedDateText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                        Spacer()
+            VStack(spacing: 0) {
+                HStack(alignment: .bottom) {
+                    Text(displayedDateText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Spacer()
+                    if displayedDistanceMeters != nil {
                         Text("Distance")
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                    HStack(alignment: .bottom) {
-                        Group {
-                            if let displayedSteps {
-                                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                                    Text(displayedSteps, format: .number)
-                                    Text(displayedSteps == 1 ? "Step" : "Steps")
-                                        .font(.title3)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } else {
-                                Text("-")
-                            }
-                        }
-                        .font(.largeTitle)
-                        Spacer()
-                        Text(displayedDistanceText)
-                            .font(.title)
-                    }
-                    .bold()
-                    .fontDesign(.rounded)
                 }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                if let currentRangeData {
-                    Chart {
-                        if let selectedPoint {
-                            RuleMark(x: .value("Selected Date", selectedPoint.date))
-                                .foregroundStyle(tint)
-                                .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
-                                .zIndex(-1)
-                        }
-
-                        ForEach(currentRangeData.layout.points) { point in
-                            BarMark(x: .value("Date", point.startDate, unit: chartCalendarComponent(for: currentRangeData.layout.bucketStyle)), y: .value("Steps", point.value), width: .ratio(0.92))
-                                .foregroundStyle(tint.gradient)
-                                .opacity(selectedPoint == nil || selectedPoint?.id == point.id ? 1 : 0.5)
-                        }
-                    }
-                    .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.layout)
-                    .chartYScale(domain: currentRangeData.yDomain)
-                    .chartYAxis {
-                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
-                            AxisGridLine()
-                            AxisValueLabel {
-                                if let doubleValue = value.as(Double.self) {
-                                    Text(doubleValue.formatted(.number.notation(.compactName).precision(.fractionLength(0))))
-                                }
-                            }
-                        }
-                    }
-                    .overlay {
-                        if currentRangeData.layout.points.isEmpty {
-                            emptyStateView()
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsHistoryChart)
-                    .accessibilityLabel(AccessibilityText.healthStepsHistoryChartLabel)
-                    .accessibilityValue(chartAccessibilityValue)
-
-                    if let visibleRangeText, !currentRangeData.layout.points.isEmpty {
-                        VStack(spacing: 5) {
-                            if currentRangeData.averageSteps != nil || currentRangeData.highSteps != nil {
-                                HStack {
-                                    if let averageSteps = currentRangeData.averageSteps {
-                                        metadataStepsValue(title: "Avg", steps: averageSteps)
-                                    }
-                                    Spacer()
-                                    if let highSteps = currentRangeData.highSteps {
-                                        metadataStepsValue(title: "High", steps: highSteps)
-                                    }
-                                }
-                            }
-
-                            HStack {
-                                Text(visibleRangeText)
-                                    .font(.subheadline)
+                HStack(alignment: .bottom) {
+                    Group {
+                        if let displayedSteps {
+                            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                                Text(displayedSteps, format: .number)
+                                Text(displayedSteps == 1 ? "Step" : "Steps")
+                                    .font(.title3)
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .fontWeight(.semibold)
-                                Spacer()
-                                if let totalSteps = currentRangeData.totalSteps {
-                                    metadataStepsValue(title: "Total", steps: totalSteps)
-                                }
+                            }
+                        } else {
+                            Text("-")
+                        }
+                    }
+                    .font(.largeTitle)
+                    Spacer()
+                    if displayedDistanceMeters != nil {
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text(displayedDistanceValueText)
+                            Text(distanceUnit.rawValue)
+                                .foregroundStyle(.secondary)
+                                .font(.title3)
+                        }
+                        .font(.title)
+                    }
+                }
+                .bold()
+                .fontDesign(.rounded)
+            }
+
+            if let currentRangeData {
+                Chart {
+                    if let selectedPoint {
+                        RuleMark(x: .value("Selected Date", selectedPoint.date))
+                            .foregroundStyle(tint)
+                            .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                            .zIndex(-1)
+                    }
+
+                    ForEach(currentRangeData.layout.points) { point in
+                        BarMark(x: .value("Date", point.startDate, unit: chartCalendarComponent(for: currentRangeData.layout.bucketStyle)), y: .value("Steps", point.value), width: .ratio(0.92))
+                            .foregroundStyle(tint.gradient)
+                            .opacity(selectedPoint == nil || selectedPoint?.id == point.id ? 1 : 0.5)
+                    }
+                }
+                .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.layout)
+                .chartYScale(domain: currentRangeData.yDomain)
+                .chartYAxis {
+                    AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let doubleValue = value.as(Double.self) {
+                                Text(doubleValue.formatted(.number.notation(.compactName).precision(.fractionLength(0))))
                             }
                         }
                     }
-                } else {
-                    ProgressView("Updating chart")
-                        .frame(maxWidth: .infinity, minHeight: 260)
                 }
-
-                Picker("Range", selection: $selectedRange.animation(.easeInOut)) {
-                    ForEach(availableRanges) { range in
-                        Text(range.rawValue).tag(range)
+                .overlay {
+                    if currentRangeData.layout.points.isEmpty {
+                        emptyStateView()
                     }
                 }
-                .pickerStyle(.segmented)
-                .onChange(of: selectedRange) { Haptics.selection() }
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsHistoryChart)
+                .accessibilityLabel(AccessibilityText.healthStepsHistoryChartLabel)
+                .accessibilityValue(chartAccessibilityValue)
+
+                if let visibleRangeText, !currentRangeData.layout.points.isEmpty {
+                    VStack(spacing: 5) {
+                        if currentRangeData.averageSteps != nil || currentRangeData.highSteps != nil {
+                            HStack {
+                                if let averageSteps = currentRangeData.averageSteps {
+                                    metadataStepsValue(title: "Avg", steps: averageSteps)
+                                }
+                                Spacer()
+                                if let highSteps = currentRangeData.highSteps {
+                                    metadataStepsValue(title: "High", steps: highSteps)
+                                }
+                            }
+                        }
+
+                        HStack {
+                            Text(visibleRangeText)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .fontWeight(.semibold)
+                            Spacer()
+                            if let totalSteps = currentRangeData.totalSteps {
+                                metadataStepsValue(title: "Total", steps: totalSteps)
+                            }
+                        }
+                    }
+                }
+            } else {
+                ProgressView("Updating chart")
+                    .frame(maxWidth: .infinity, minHeight: 260)
             }
-            .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+
+            Picker("Range", selection: $selectedRange.animation(reduceMotion ? nil : .easeInOut)) {
+                ForEach(TimeSeriesRangeFilter.allCases) { range in
+                    Text(range.rawValue).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: selectedRange) { Haptics.selection() }
         }
+        .padding()
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .onChange(of: selectedRange) { selectedDate = nil }
-        .task(id: cacheSeed) {
-            prepareRangeCache()
+        .task(id: cacheKey) {
+            let calendar = Calendar.autoupdatingCurrent
+            let now = Date()
+            progressivelyRebuildRangeCache(existing: rangeCache, publish: { rangeCache = $0 }) { range in
+                let layout = TimeSeriesChartLayout(rangeFilter: range, samples: stepSamples, now: now, calendar: calendar, aggregation: .average)
+                let distanceLayout = TimeSeriesChartLayout(rangeFilter: range, samples: distanceSamples, now: now, calendar: calendar, aggregation: .average)
+                let pointValues = layout.points.map(\.value)
+                let visibleEntries = entries.filter { layout.currentDomain.contains($0.date) }
+                let totalSteps = visibleEntries.reduce(0) { $0 + Double($1.stepCount) }
+                let maximumValue = max(pointValues.max() ?? 0, 1)
+                let yDomain = 0...(maximumValue * 1.15)
+                let averageSteps = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + Double($1.stepCount) } / Double(visibleEntries.count))
+                let highSteps = visibleEntries.map(\.stepCount).max().map(Double.init)
+                return StepsDistanceCachedRangeData(layout: layout, distanceLayout: distanceLayout, yDomain: yDomain, totalSteps: pointValues.isEmpty ? nil : totalSteps, averageSteps: averageSteps, highSteps: highSteps)
+            }
         }
     }
 
@@ -289,27 +298,72 @@ private struct StepsDistanceHistoryMainSection: View {
         .animation(reduceMotion ? nil : .smooth, value: steps)
         .accessibilityElement(children: .combine)
     }
+}
 
-    private func prepareRangeCache() {
-        let calendar = Calendar.autoupdatingCurrent
-        let now = Date()
-        let buildOrder = [TimeSeriesRangeFilter.month, .week, .sixMonths, .year, .all].filter { availableRanges.contains($0) }
-        var cache = [TimeSeriesRangeFilter: CachedRangeData]()
-        rangeCache = [:]
+private struct StepsDistanceWeekdayChartSection: View {
+    let entries: [HealthStepsDistance]
 
-        for range in buildOrder {
-            let layout = TimeSeriesChartLayout(rangeFilter: range, samples: stepSamples, now: now, calendar: calendar, aggregation: .average)
-            let distanceLayout = TimeSeriesChartLayout(rangeFilter: range, samples: distanceSamples, now: now, calendar: calendar, aggregation: .average)
-            let pointValues = layout.points.map(\.value)
-            let visibleEntries = entries.filter { layout.currentDomain.contains($0.date) }
-            let totalSteps = visibleEntries.reduce(0) { $0 + Double($1.stepCount) }
-            let maximumValue = max(pointValues.max() ?? 0, 1)
-            let yDomain = 0...(maximumValue * 1.15)
-            let averageSteps = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + Double($1.stepCount) } / Double(visibleEntries.count))
-            let highSteps = visibleEntries.map(\.stepCount).max().map(Double.init)
-            cache[range] = CachedRangeData(layout: layout, distanceLayout: distanceLayout, yDomain: yDomain, totalSteps: pointValues.isEmpty ? nil : totalSteps, averageSteps: averageSteps, highSteps: highSteps)
-            rangeCache = cache
+    @State private var selectedWeekday: Weekday?
+    @State private var points: [WeekdayAveragePoint] = []
+
+    private let tint = Color.red
+
+    private var cacheKey: Int {
+        var hasher = Hasher()
+        hasher.combine(entries.count)
+        for entry in entries {
+            hasher.combine(entry.date)
+            hasher.combine(entry.stepCount)
         }
+        return hasher.finalize()
+    }
+
+    private var isWeekdayChartAvailable: Bool {
+        points.count == 7 && points.allSatisfy { $0.sampleCount >= 2 }
+    }
+
+    private var selectedWeekdayPoint: WeekdayAveragePoint? {
+        guard let selectedWeekday else { return nil }
+        return points.first { $0.weekday == selectedWeekday }
+    }
+
+    private var strongestWeekdayPoint: WeekdayAveragePoint? {
+        points.filter { $0.sampleCount > 0 }.max(by: { $0.averageValue < $1.averageValue })
+    }
+
+    private var displayedWeekdayPoint: WeekdayAveragePoint? {
+        selectedWeekdayPoint ?? strongestWeekdayPoint
+    }
+
+    private var presentation: WeekdayAverageChartPresentation {
+        guard isWeekdayChartAvailable else {
+            let summaryText = String(localized: "Weekday averages need at least 2 entries for every weekday")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        }
+        guard let displayedWeekdayPoint else {
+            let summaryText = String(localized: "Weekday step averages are unavailable")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        }
+        let stepsText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
+        let valueText = Text(stepsText).foregroundStyle(tint)
+        let weekdayText = displayedWeekdayPoint.weekday.fullLabel()
+        if selectedWeekdayPoint != nil {
+            let summaryText = String(localized: "You walk \(stepsText) steps on \(weekdayText) on average.")
+            return WeekdayAverageChartPresentation(headline: Text("You walk \(valueText) steps on \(weekdayText) on average."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        }
+        let summaryText = String(localized: "You walk the most on \(weekdayText). \(stepsText) steps on average.")
+        return WeekdayAverageChartPresentation(headline: Text("You walk the most on \(weekdayText). \(valueText) steps on average."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+    }
+
+    var body: some View {
+        WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthStepsWeekdayChartLabel)
+            .padding()
+            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .task(id: cacheKey) {
+                let newPoints = makeWeekdayAveragePoints(from: entries, date: \.date, value: { Double($0.stepCount) })
+                points = newPoints
+                if !(newPoints.count == 7 && newPoints.allSatisfy { $0.sampleCount >= 2 }) { selectedWeekday = nil }
+            }
     }
 }
 

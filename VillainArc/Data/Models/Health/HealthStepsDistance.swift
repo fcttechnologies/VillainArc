@@ -22,17 +22,9 @@ extension HealthStepsDistance {
         FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)])
     }
 
-    static func recent(days: Int, now: Date = .now) -> FetchDescriptor<HealthStepsDistance> {
-        let calendar = Calendar.autoupdatingCurrent
-        let safeDayCount = max(1, days)
-        let startDate = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -(safeDayCount - 1), to: now) ?? now)
-        let predicate = #Predicate<HealthStepsDistance> { $0.date >= startDate }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.date, order: .reverse)])
-    }
-
-    static var latest: FetchDescriptor<HealthStepsDistance> {
+    static var summary: FetchDescriptor<HealthStepsDistance> {
         var descriptor = history
-        descriptor.fetchLimit = 1
+        descriptor.fetchLimit = 7
         return descriptor
     }
 

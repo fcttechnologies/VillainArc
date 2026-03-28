@@ -2,19 +2,24 @@ import SwiftUI
 import SwiftData
 import Charts
 
+private func bucketedEnergyChartSegments(totalPoints: [TimeSeriesBucketedPoint], activePoints: [TimeSeriesBucketedPoint]) -> [HealthEnergy.ChartSegment] {
+    totalPoints.flatMap { totalPoint in
+        let activePoint = activePoints.first { $0.startDate == totalPoint.startDate && $0.endDate == totalPoint.endDate }
+        let activeEnergy = activePoint?.value ?? 0
+        let restingEnergy = max(0, totalPoint.value - activeEnergy)
+        return HealthEnergy.makeChartSegments(date: totalPoint.startDate, startDate: totalPoint.startDate, endDate: totalPoint.endDate, sampleCount: totalPoint.sampleCount, activeEnergy: activeEnergy, restingEnergy: restingEnergy)
+    }
+}
+
 struct HealthEnergyHistoryView: View {
     @Query(HealthEnergy.history, animation: .smooth) private var entries: [HealthEnergy]
-
-    @State private var selectedRange: TimeSeriesRangeFilter = .month
-
-    private var availableRanges: [TimeSeriesRangeFilter] {
-        TimeSeriesRangeFilter.allCases
-    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                HealthEnergyHistoryMainSection(entries: entries, selectedRange: $selectedRange, availableRanges: availableRanges)
+                HealthEnergyMainChartSection(entries: entries)
+
+                HealthEnergyWeekdayChartSection(entries: entries)
             }
             .padding()
         }
@@ -23,29 +28,21 @@ struct HealthEnergyHistoryView: View {
     }
 }
 
-private struct HealthEnergyHistoryMainSection: View {
+private struct HealthEnergyCachedRangeData {
+    let layout: TimeSeriesChartLayout
+    let chartSegments: [HealthEnergy.ChartSegment]
+    let yDomain: ClosedRange<Double>
+    let averageTotalEnergy: Double?
+    let averageActiveEnergy: Double?
+}
+
+private struct HealthEnergyMainChartSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private struct CachedRangeData {
-        let totalLayout: TimeSeriesChartLayout
-        let activeLayout: TimeSeriesChartLayout
-        let yDomain: ClosedRange<Double>
-        let averageTotalEnergy: Double?
-        let averageActiveEnergy: Double?
-        let highActiveEnergy: Double?
-    }
-
-    private enum MetadataAlignment {
-        case leading
-        case trailing
-    }
+    @State private var selectedRange: TimeSeriesRangeFilter = .month
+    @State private var selectedDate: Date?
+    @State private var rangeCache: [TimeSeriesRangeFilter: HealthEnergyCachedRangeData] = [:]
 
     let entries: [HealthEnergy]
-    @Binding var selectedRange: TimeSeriesRangeFilter
-    let availableRanges: [TimeSeriesRangeFilter]
-
-    @State private var selectedDate: Date?
-    @State private var rangeCache: [TimeSeriesRangeFilter: CachedRangeData] = [:]
 
     private let tint = Color.orange
     private let totalEnergySampleNamespace: UInt64 = 0x454E455247590001
@@ -54,7 +51,7 @@ private struct HealthEnergyHistoryMainSection: View {
     private var totalEnergySamples: [TimeSeriesSample] {
         entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: totalEnergySampleNamespace, date: $0.date), date: $0.date, value: $0.totalEnergyBurned) }
     }
-
+    
     private var activeEnergySamples: [TimeSeriesSample] {
         entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: activeEnergySampleNamespace, date: $0.date), date: $0.date, value: $0.activeEnergyBurned) }
     }
@@ -67,11 +64,11 @@ private struct HealthEnergyHistoryMainSection: View {
         !entries.isEmpty
     }
 
-    private var currentRangeData: CachedRangeData? {
+    private var currentRangeData: HealthEnergyCachedRangeData? {
         rangeCache[selectedRange]
     }
 
-    private var cacheSeed: Int {
+    private var cacheKey: Int {
         var hasher = Hasher()
         hasher.combine(entries.count)
         for entry in entries {
@@ -84,17 +81,21 @@ private struct HealthEnergyHistoryMainSection: View {
 
     private var selectedTotalPoint: TimeSeriesBucketedPoint? {
         guard let currentRangeData, let selectedDate else { return nil }
-        return selectedTimeSeriesPoint(in: currentRangeData.totalLayout.points, for: selectedDate)
+        return selectedTimeSeriesPoint(in: currentRangeData.layout.points, for: selectedDate)
     }
-
-    private var selectedActivePoint: TimeSeriesBucketedPoint? {
+    
+    private var selectedActiveSegment: HealthEnergy.ChartSegment? {
         guard let currentRangeData, let selectedTotalPoint else { return nil }
-        return currentRangeData.activeLayout.points.first { $0.startDate == selectedTotalPoint.startDate && $0.endDate == selectedTotalPoint.endDate }
+        return currentRangeData.chartSegments.first {
+            $0.kind == .active &&
+            $0.startDate == selectedTotalPoint.startDate &&
+            $0.endDate == selectedTotalPoint.endDate
+        }
     }
-
+    
     private var displayedDateText: String {
         if let selectedTotalPoint {
-            let baseText = timeSeriesBucketLabelText(for: selectedTotalPoint, bucketStyle: currentRangeData?.totalLayout.bucketStyle ?? .day)
+            let baseText = timeSeriesBucketLabelText(for: selectedTotalPoint, bucketStyle: currentRangeData?.layout.bucketStyle ?? .day)
             if selectedTotalPoint.sampleCount > 1 {
                 return "\(baseText) • \(String(localized: "Average"))"
             }
@@ -103,22 +104,22 @@ private struct HealthEnergyHistoryMainSection: View {
         guard let latestEntry else { return "No entries in this range" }
         return formattedRecentDay(latestEntry.date)
     }
-
+    
     private var displayedTotalEnergy: Double? {
         if let selectedTotalPoint { return selectedTotalPoint.value }
         return latestEntry?.totalEnergyBurned
     }
-
+    
     private var displayedActiveEnergy: Double? {
-        if selectedTotalPoint != nil { return selectedActivePoint?.value ?? 0 }
+        if selectedTotalPoint != nil { return selectedActiveSegment?.value ?? 0 }
         return latestEntry?.activeEnergyBurned
     }
-
+    
     private var visibleRangeText: String? {
         guard let currentRangeData else { return nil }
-        return formattedAbsoluteDateRange(start: currentRangeData.totalLayout.currentDomain.lowerBound, end: currentRangeData.totalLayout.currentDomain.upperBound)
+        return formattedAbsoluteDateRange(start: currentRangeData.layout.currentDomain.lowerBound, end: currentRangeData.layout.currentDomain.upperBound)
     }
-
+    
     private var chartAccessibilityValue: String {
         let dateText = displayedDateText
         let totalText = displayedTotalEnergy.map { "\(Int($0.rounded()).formatted(.number)) \(String(localized: "total calories"))" } ?? String(localized: "No total energy data")
@@ -128,127 +129,134 @@ private struct HealthEnergyHistoryMainSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(spacing: 0) {
-                    HStack(alignment: .bottom) {
-                        Text(displayedDateText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                        Spacer()
+            VStack(spacing: 0) {
+                HStack(alignment: .bottom) {
+                    Text(displayedDateText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Spacer()
+                    if displayedActiveEnergy != nil {
                         Text("Active")
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    
-                    HStack(alignment: .bottom) {
-                        Group {
-                            if let displayedTotalEnergy {
-                                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                                    Text(Int(displayedTotalEnergy.rounded()), format: .number)
-                                    Text("Total")
-                                        .font(.title3)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } else {
-                                Text("-")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                
+                HStack(alignment: .bottom) {
+                    Group {
+                        if let displayedTotalEnergy {
+                            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                                Text(Int(displayedTotalEnergy.rounded()), format: .number)
+                                Text("Total")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
                             }
+                        } else {
+                            Text("-")
                         }
-                        .font(.largeTitle)
-                        Spacer()
-                        Group {
-                            if let displayedActiveEnergy {
-                                Text("\(Int(displayedActiveEnergy.rounded()).formatted(.number)) cal")
-                            } else {
-                                Text("-")
-                            }
+                    }
+                    .font(.largeTitle)
+                    Spacer()
+                    if let displayedActiveEnergy {
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text(Int(displayedActiveEnergy.rounded()), format: .number)
+                            Text("cal")
+                                .foregroundStyle(.secondary)
+                                .font(.title3)
                         }
                         .font(.title)
                     }
-                    .bold()
-                    .fontDesign(.rounded)
                 }
-
-                if let currentRangeData {
-                    Chart {
-                        if let selectedTotalPoint {
-                            RuleMark(x: .value("Selected Date", selectedTotalPoint.date))
-                                .foregroundStyle(tint)
-                                .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
-                                .zIndex(-1)
-                        }
-
-                        ForEach(currentRangeData.totalLayout.points) { point in
-                            BarMark(x: .value("Date", point.startDate, unit: chartCalendarComponent(for: currentRangeData.totalLayout.bucketStyle)), y: .value("Total Energy", point.value), width: .ratio(0.92))
-                                .foregroundStyle(.orange.opacity(0.22).gradient)
-                                .opacity(selectedTotalPoint == nil || selectedTotalPoint?.id == point.id ? 1 : 0.5)
-                        }
-
-                        ForEach(currentRangeData.activeLayout.points) { point in
-                            BarMark(x: .value("Date", point.startDate, unit: chartCalendarComponent(for: currentRangeData.activeLayout.bucketStyle)), yStart: .value("Baseline", 0), yEnd: .value("Active Energy", point.value), width: .ratio(0.92))
-                                .foregroundStyle(tint.gradient)
-                                .opacity(selectedTotalPoint == nil || selectedTotalPoint?.startDate == point.startDate ? 1 : 0.5)
-                        }
-                    }
-                    .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.totalLayout)
-                    .chartYScale(domain: currentRangeData.yDomain)
-                    .chartYAxis {
-                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
-                            AxisGridLine()
-                            AxisValueLabel {
-                                if let doubleValue = value.as(Double.self) {
-                                    Text(doubleValue.formatted(.number.notation(.compactName).precision(.fractionLength(0))))
-                                }
-                            }
-                        }
-                    }
-                    .overlay {
-                        if currentRangeData.totalLayout.points.isEmpty {
-                            emptyStateView()
-                        }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.healthEnergyHistoryChart)
-                    .accessibilityLabel(AccessibilityText.healthEnergyHistoryChartLabel)
-                    .accessibilityValue(chartAccessibilityValue)
-
-                    if let visibleRangeText, !currentRangeData.totalLayout.points.isEmpty {
-                        VStack(spacing: 5) {
-                            HStack(alignment: .bottom) {
-                                Text(visibleRangeText)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .fontWeight(.semibold)
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 5) {
-                                    if let averageActiveEnergy = currentRangeData.averageActiveEnergy {
-                                        metadataEnergyValue(title: "Avg Active", energy: averageActiveEnergy)
-                                    }
-                                    if let averageTotalEnergy = currentRangeData.averageTotalEnergy {
-                                        metadataEnergyValue(title: "Avg Total", energy: averageTotalEnergy)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    ProgressView("Updating chart")
-                        .frame(maxWidth: .infinity, minHeight: 260)
-                }
-
-                Picker("Range", selection: $selectedRange.animation(.easeInOut)) {
-                    ForEach(availableRanges) { range in
-                        Text(range.rawValue).tag(range)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: selectedRange) { Haptics.selection() }
+                .bold()
+                .fontDesign(.rounded)
             }
-            .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            
+            if let currentRangeData {
+                Chart {
+                    if let selectedTotalPoint {
+                        RuleMark(x: .value("Selected Date", selectedTotalPoint.date))
+                            .foregroundStyle(tint)
+                            .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
+                            .zIndex(-1)
+                    }
+                    
+                    ForEach(currentRangeData.chartSegments) { segment in
+                        BarMark(x: .value("Date", segment.startDate, unit: chartCalendarComponent(for: currentRangeData.layout.bucketStyle)), y: .value(segment.kind.rawValue.capitalized, segment.value), width: .ratio(0.92))
+                            .foregroundStyle(segment.kind == .active ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(Color.orange.opacity(0.22).gradient))
+                            .opacity(selectedTotalPoint == nil || (selectedTotalPoint?.startDate == segment.startDate && selectedTotalPoint?.endDate == segment.endDate) ? 1 : 0.5)
+                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: segment.kind == .active ? 1 : 4, topTrailingRadius: segment.kind == .active ? 1 : 4))
+                    }
+                }
+                .healthHistoryChartScaffold(selectedDate: $selectedDate, layout: currentRangeData.layout)
+                .chartYScale(domain: currentRangeData.yDomain)
+                .chartYAxis {
+                    AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let doubleValue = value.as(Double.self) {
+                                Text(doubleValue.formatted(.number.notation(.compactName).precision(.fractionLength(0))))
+                            }
+                        }
+                    }
+                }
+                .overlay {
+                    if currentRangeData.layout.points.isEmpty {
+                        emptyStateView()
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthEnergyHistoryChart)
+                .accessibilityLabel(AccessibilityText.healthEnergyHistoryChartLabel)
+                .accessibilityValue(chartAccessibilityValue)
+                
+                if let visibleRangeText, !currentRangeData.layout.points.isEmpty {
+                    VStack(spacing: 5) {
+                        HStack(alignment: .bottom) {
+                            Text(visibleRangeText)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .fontWeight(.semibold)
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 5) {
+                                if let averageActiveEnergy = currentRangeData.averageActiveEnergy {
+                                    metadataEnergyValue(title: "Avg Active", energy: averageActiveEnergy)
+                                }
+                                if let averageTotalEnergy = currentRangeData.averageTotalEnergy {
+                                    metadataEnergyValue(title: "Avg Total", energy: averageTotalEnergy)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                ProgressView("Updating chart")
+                    .frame(maxWidth: .infinity, minHeight: 260)
+            }
+            
+            Picker("Range", selection: $selectedRange.animation(reduceMotion ? nil : .easeInOut)) {
+                ForEach(TimeSeriesRangeFilter.allCases) { range in
+                    Text(range.rawValue).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: selectedRange) { Haptics.selection() }
         }
+        .padding()
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .onChange(of: selectedRange) { selectedDate = nil }
-        .task(id: cacheSeed) {
-            prepareRangeCache()
+        .task(id: cacheKey) {
+            let calendar = Calendar.autoupdatingCurrent
+            let now = Date()
+            progressivelyRebuildRangeCache(existing: rangeCache, publish: { rangeCache = $0 }) { range in
+                let totalLayout = TimeSeriesChartLayout(rangeFilter: range, samples: totalEnergySamples, now: now, calendar: calendar, aggregation: .average)
+                let activeLayout = TimeSeriesChartLayout(rangeFilter: range, samples: activeEnergySamples, now: now, calendar: calendar, aggregation: .average)
+                let chartSegments = bucketedEnergyChartSegments(totalPoints: totalLayout.points, activePoints: activeLayout.points)
+                let visibleEntries = entries.filter { totalLayout.currentDomain.contains($0.date) }
+                let yDomain = 0...(max(totalLayout.points.map(\.value).max() ?? 0, 1) * 1.15)
+                let averageTotalEnergy = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.totalEnergyBurned } / Double(visibleEntries.count))
+                let averageActiveEnergy = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.activeEnergyBurned } / Double(visibleEntries.count))
+                return HealthEnergyCachedRangeData(layout: totalLayout, chartSegments: chartSegments, yDomain: yDomain, averageTotalEnergy: averageTotalEnergy, averageActiveEnergy: averageActiveEnergy)
+            }
         }
     }
 
@@ -284,27 +292,72 @@ private struct HealthEnergyHistoryMainSection: View {
         .animation(reduceMotion ? nil : .smooth, value: energy)
         .accessibilityElement(children: .combine)
     }
+}
 
-    private func prepareRangeCache() {
-        let calendar = Calendar.autoupdatingCurrent
-        let now = Date()
-        let buildOrder = [TimeSeriesRangeFilter.month, .week, .sixMonths, .year, .all].filter { availableRanges.contains($0) }
-        var cache = [TimeSeriesRangeFilter: CachedRangeData]()
-        rangeCache = [:]
+private struct HealthEnergyWeekdayChartSection: View {
+    let entries: [HealthEnergy]
 
-        for range in buildOrder {
-            let totalLayout = TimeSeriesChartLayout(rangeFilter: range, samples: totalEnergySamples, now: now, calendar: calendar, aggregation: .average)
-            let activeLayout = TimeSeriesChartLayout(rangeFilter: range, samples: activeEnergySamples, now: now, calendar: calendar, aggregation: .average)
-            let totalValues = totalLayout.points.map(\.value)
-            let visibleEntries = entries.filter { totalLayout.currentDomain.contains($0.date) }
-            let maximumValue = max(totalValues.max() ?? 0, 1)
-            let yDomain = 0...(maximumValue * 1.15)
-            let averageTotalEnergy = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.totalEnergyBurned } / Double(visibleEntries.count))
-            let averageActiveEnergy = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.activeEnergyBurned } / Double(visibleEntries.count))
-            let highActiveEnergy = visibleEntries.map(\.activeEnergyBurned).max()
-            cache[range] = CachedRangeData(totalLayout: totalLayout, activeLayout: activeLayout, yDomain: yDomain, averageTotalEnergy: averageTotalEnergy, averageActiveEnergy: averageActiveEnergy, highActiveEnergy: highActiveEnergy)
-            rangeCache = cache
+    @State private var selectedWeekday: Weekday?
+    @State private var points: [WeekdayAveragePoint] = []
+
+    private let tint = Color.orange
+
+    private var cacheKey: Int {
+        var hasher = Hasher()
+        hasher.combine(entries.count)
+        for entry in entries {
+            hasher.combine(entry.date)
+            hasher.combine(entry.activeEnergyBurned.bitPattern)
         }
+        return hasher.finalize()
+    }
+
+    private var isWeekdayChartAvailable: Bool {
+        points.count == 7 && points.allSatisfy { $0.sampleCount >= 2 }
+    }
+
+    private var selectedWeekdayPoint: WeekdayAveragePoint? {
+        guard let selectedWeekday else { return nil }
+        return points.first { $0.weekday == selectedWeekday }
+    }
+
+    private var strongestWeekdayPoint: WeekdayAveragePoint? {
+        points.filter { $0.sampleCount > 0 }.max(by: { $0.averageValue < $1.averageValue })
+    }
+
+    private var displayedWeekdayPoint: WeekdayAveragePoint? {
+        selectedWeekdayPoint ?? strongestWeekdayPoint
+    }
+
+    private var presentation: WeekdayAverageChartPresentation {
+        guard isWeekdayChartAvailable else {
+            let summaryText = String(localized: "Weekday averages need at least 2 entries for every weekday")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        }
+        guard let displayedWeekdayPoint else {
+            let summaryText = String(localized: "Weekday calorie averages are unavailable")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        }
+        let caloriesText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
+        let valueText = Text(caloriesText).foregroundStyle(tint)
+        let weekdayText = displayedWeekdayPoint.weekday.fullLabel()
+        if selectedWeekdayPoint != nil {
+            let summaryText = String(localized: "You burn \(caloriesText) calories on \(weekdayText) on average.")
+            return WeekdayAverageChartPresentation(headline: Text("You burn \(valueText) calories on \(weekdayText) on average."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        }
+        let summaryText = String(localized: "You burn the most calories on \(weekdayText). \(caloriesText) calories on average.")
+        return WeekdayAverageChartPresentation(headline: Text("You burn the most calories on \(weekdayText). \(valueText) calories on average."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+    }
+
+    var body: some View {
+        WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthEnergyWeekdayChartLabel)
+            .padding()
+            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .task(id: cacheKey) {
+                let newPoints = makeWeekdayAveragePoints(from: entries, date: \.date, value: \.activeEnergyBurned)
+                points = newPoints
+                if !(newPoints.count == 7 && newPoints.allSatisfy { $0.sampleCount >= 2 }) { selectedWeekday = nil }
+            }
     }
 }
 

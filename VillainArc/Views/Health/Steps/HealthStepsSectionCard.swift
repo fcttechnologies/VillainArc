@@ -3,42 +3,17 @@ import SwiftData
 import Charts
 
 struct HealthStepsSectionCard: View {
-    private static let visibleDayCount = 7
-
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let router = AppRouter.shared
-    @Query private var stepEntries: [HealthStepsDistance]
-    @Query(HealthStepsDistance.latest) private var latestStepEntries: [HealthStepsDistance]
+    @Query(HealthStepsDistance.summary, animation: .smooth) private var summaryEntries: [HealthStepsDistance]
 
-    init() {
-        _stepEntries = Query(HealthStepsDistance.recent(days: Self.visibleDayCount), animation: .smooth)
-    }
-
-    private var hasAnyStepData: Bool {
-        !latestStepEntries.isEmpty
-    }
-
-    private var todayStart: Date {
-        Calendar.autoupdatingCurrent.startOfDay(for: .now)
-    }
-
-    private var todayStepCount: Int {
-        stepEntries.first(where: { Calendar.autoupdatingCurrent.isDate($0.date, inSameDayAs: todayStart) })?.stepCount ?? 0
-    }
-
-    private var chartPoints: [HealthStepsChartPoint] {
-        let calendar = Calendar.autoupdatingCurrent
-        let entriesByDay = Dictionary(uniqueKeysWithValues: stepEntries.map { (calendar.startOfDay(for: $0.date), $0.stepCount) })
-
-        return (0..<Self.visibleDayCount).compactMap { index in
-            guard let date = calendar.date(byAdding: .day, value: index - (Self.visibleDayCount - 1), to: todayStart) else { return nil }
-            return HealthStepsChartPoint(date: date, steps: entriesByDay[date] ?? 0)
-        }
+    private var latestEntry: HealthStepsDistance? {
+        summaryEntries.first
     }
 
     private var cardAccessibilityLabel: String {
-        if !hasAnyStepData { return AccessibilityText.healthStepsSectionEmptyValue }
-        return AccessibilityText.healthStepsSectionValue(stepCount: todayStepCount)
+        guard let latestEntry else { return AccessibilityText.healthStepsSectionEmptyValue }
+        return AccessibilityText.healthStepsSectionValue(dateText: formattedRecentDay(latestEntry.date), stepCount: latestEntry.stepCount)
     }
 
     var body: some View {
@@ -54,19 +29,25 @@ struct HealthStepsSectionCard: View {
                         .fontWeight(.semibold)
                     
                     Spacer()
+
+                    if let latestEntry {
+                        Text(formattedRecentDay(latestEntry.date))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
 
-                if hasAnyStepData {
+                if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
                         HStack(alignment: .lastTextBaseline, spacing: 2) {
-                            Text(todayStepCount, format: .number)
+                            Text(latestEntry.stepCount, format: .number)
                                 .font(.largeTitle)
                                 .bold()
-                                .contentTransition(.numericText(value: Double(todayStepCount)))
-                                .animation(reduceMotion ? nil : .smooth, value: todayStepCount)
+                                .contentTransition(.numericText(value: Double(latestEntry.stepCount)))
 
-                            Text(todayStepCount == 1 ? "Step" : "Steps")
-                                .font(.title2)
+                            Text(latestEntry.stepCount == 1 ? "Step" : "Steps")
+                                .font(.title)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
                         }
@@ -75,10 +56,11 @@ struct HealthStepsSectionCard: View {
 
                         Spacer()
 
-                        HealthStepsSparkBarChart(points: chartPoints)
+                        HealthStepsSparkBarChart(entries: summaryEntries)
                             .frame(width: 160, height: 80)
                             .accessibilityHidden(true)
                     }
+                    .animation(reduceMotion ? nil : .smooth, value: latestEntry.stepCount)
                 } else {
                     Text(AccessibilityText.healthHistoryNoHealthDataDescription)
                         .font(.subheadline)
@@ -99,16 +81,20 @@ struct HealthStepsSectionCard: View {
 }
 
 private struct HealthStepsSparkBarChart: View {
-    let points: [HealthStepsChartPoint]
+    let entries: [HealthStepsDistance]
+
+    private var latestDate: Date? {
+        entries.max(by: { $0.date < $1.date })?.date
+    }
 
     private var yDomain: ClosedRange<Double> {
-        0...max(points.map { Double($0.steps) }.max() ?? 0, 1) * 1.15
+        0...max(entries.map { Double($0.stepCount) }.max() ?? 0, 1) * 1.15
     }
 
     var body: some View {
-        Chart(points) { point in
-            BarMark(x: .value("Date", point.date, unit: .day), y: .value("Steps", point.steps), width: .ratio(0.92))
-                .foregroundStyle(.red.gradient)
+        Chart(entries, id: \.date) { entry in
+            BarMark(x: .value("Date", entry.date, unit: .day), y: .value("Steps", entry.stepCount), width: .ratio(0.92))
+                .foregroundStyle(entry.date == latestDate ? AnyShapeStyle(Color.red.gradient) : AnyShapeStyle(Color.red.opacity(0.3).gradient))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
         }
         .chartYScale(domain: yDomain)
@@ -116,10 +102,4 @@ private struct HealthStepsSparkBarChart: View {
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
     }
-}
-
-private struct HealthStepsChartPoint: Identifiable {
-    let date: Date
-    let steps: Int
-    let id = UUID()
 }

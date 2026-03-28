@@ -23,10 +23,10 @@ import SwiftData
 extension WeightEntry {
     static var history: FetchDescriptor<WeightEntry> { FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)]) }
 
-    static func recent(days: Int, now: Date = .now) -> FetchDescriptor<WeightEntry> {
-        let cutoffDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: -days, to: now) ?? now
-        let predicate = #Predicate<WeightEntry> { $0.date >= cutoffDate }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.date, order: .reverse)])
+    static var summary: FetchDescriptor<WeightEntry> {
+        var descriptor = history
+        descriptor.fetchLimit = 14
+        return descriptor
     }
 
     static var latest: FetchDescriptor<WeightEntry> {

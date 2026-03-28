@@ -12,7 +12,6 @@ struct WeightHistoryView: View {
     
     @State private var showAddWeightEntrySheet = false
     @State private var showNewWeightGoalSheet = false
-    @State private var selectedRange: TimeSeriesRangeFilter = .month
     
     private var activeGoal: WeightGoal? {
         activeGoals.first
@@ -21,10 +20,6 @@ struct WeightHistoryView: View {
     private var goalAnalysis: WeightGoalAnalysis? {
         guard let activeGoal else { return nil }
         return WeightGoalAnalysis(goal: activeGoal, entries: weightEntries)
-    }
-    
-    private var availableRanges: [TimeSeriesRangeFilter] {
-        TimeSeriesRangeFilter.allCases
     }
     
     private var hasGoalHistory: Bool {
@@ -47,7 +42,7 @@ struct WeightHistoryView: View {
                     }
                 }
                 
-                WeightHistoryMainSection(entries: weightEntries, activeGoal: activeGoal, weightUnit: weightUnit, selectedRange: $selectedRange, availableRanges: availableRanges) {
+                WeightHistoryMainSection(entries: weightEntries, activeGoal: activeGoal, weightUnit: weightUnit) {
                     showAddWeightEntrySheet = true
                 }
                 
@@ -111,11 +106,6 @@ private struct WeightHistoryMainSection: View {
         let text: String
     }
 
-    private enum MetadataAlignment {
-        case leading
-        case trailing
-    }
-
     private struct CachedRangeData {
         let layout: TimeSeriesChartLayout
         let yDomain: ClosedRange<Double>
@@ -130,8 +120,7 @@ private struct WeightHistoryMainSection: View {
     let entries: [WeightEntry]
     let activeGoal: WeightGoal?
     let weightUnit: WeightUnit
-    @Binding var selectedRange: TimeSeriesRangeFilter
-    let availableRanges: [TimeSeriesRangeFilter]
+    @State private var selectedRange: TimeSeriesRangeFilter = .month
     let onAddEntry: () -> Void
     
     @State private var selectedDate: Date?
@@ -355,7 +344,7 @@ private struct WeightHistoryMainSection: View {
                 }
 
                 Picker("Range", selection: $selectedRange) {
-                    ForEach(availableRanges) { range in
+                    ForEach(TimeSeriesRangeFilter.allCases) { range in
                         Text(range.rawValue).tag(range)
                     }
                 }
@@ -479,14 +468,8 @@ private struct WeightHistoryMainSection: View {
         let entrySnapshots = entrySnapshots
         let now = Date()
         let calendar = Calendar.autoupdatingCurrent
-        let buildOrder = [TimeSeriesRangeFilter.month, .week, .sixMonths, .year, .all].filter { availableRanges.contains($0) }
-        var cache = [TimeSeriesRangeFilter: CachedRangeData]()
-        rangeCache = [:]
-
-        for range in buildOrder {
-            let data = buildRangeData(for: range, samples: samples, entrySnapshots: entrySnapshots, now: now, calendar: calendar)
-            cache[range] = data
-            rangeCache = cache
+        progressivelyRebuildRangeCache(existing: rangeCache, publish: { rangeCache = $0 }) { range in
+            buildRangeData(for: range, samples: samples, entrySnapshots: entrySnapshots, now: now, calendar: calendar)
         }
     }
 }

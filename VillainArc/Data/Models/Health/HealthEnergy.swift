@@ -22,17 +22,9 @@ import SwiftData
 extension HealthEnergy {
     static var history: FetchDescriptor<HealthEnergy> { FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)]) }
 
-    static func recent(days: Int, now: Date = .now) -> FetchDescriptor<HealthEnergy> {
-        let calendar = Calendar.autoupdatingCurrent
-        let safeDayCount = max(1, days)
-        let startDate = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -(safeDayCount - 1), to: now) ?? now)
-        let predicate = #Predicate<HealthEnergy> { $0.date >= startDate }
-        return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.date, order: .reverse)])
-    }
-
-    static var latest: FetchDescriptor<HealthEnergy> {
+    static var summary: FetchDescriptor<HealthEnergy> {
         var descriptor = history
-        descriptor.fetchLimit = 1
+        descriptor.fetchLimit = 7
         return descriptor
     }
 
@@ -42,5 +34,40 @@ extension HealthEnergy {
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.date)])
         descriptor.fetchLimit = 1
         return descriptor
+    }
+
+    enum ChartSegmentKind: String, Sendable {
+        case resting
+        case active
+    }
+
+    struct ChartSegment: Identifiable, Equatable, Sendable {
+        let id: String
+        let date: Date
+        let startDate: Date
+        let endDate: Date
+        let sampleCount: Int
+        let kind: ChartSegmentKind
+        let value: Double
+    }
+
+    var chartSegments: [ChartSegment] {
+        Self.makeChartSegments(date: date, startDate: date, endDate: date, sampleCount: 1, activeEnergy: activeEnergyBurned, restingEnergy: restingEnergyBurned)
+    }
+
+    static func makeChartSegments(date: Date, startDate: Date, endDate: Date, sampleCount: Int, activeEnergy: Double, restingEnergy: Double) -> [ChartSegment] {
+        let restingEnergy = max(0, restingEnergy)
+        let activeEnergy = max(0, activeEnergy)
+        var segments: [ChartSegment] = []
+
+        if activeEnergy > 0 {
+            segments.append(ChartSegment(id: "\(startDate.timeIntervalSinceReferenceDate)-active", date: date, startDate: startDate, endDate: endDate, sampleCount: sampleCount, kind: .active, value: activeEnergy))
+        }
+
+        if restingEnergy > 0 {
+            segments.append(ChartSegment(id: "\(startDate.timeIntervalSinceReferenceDate)-resting", date: date, startDate: startDate, endDate: endDate, sampleCount: sampleCount, kind: .resting, value: restingEnergy))
+        }
+
+        return segments
     }
 }
