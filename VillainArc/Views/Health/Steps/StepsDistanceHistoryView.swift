@@ -16,6 +16,8 @@ struct StepsDistanceHistoryView: View {
                 StepsDistanceMainChartSection(entries: entries, distanceUnit: distanceUnit)
 
                 StepsDistanceWeekdayChartSection(entries: entries)
+
+                StepsDistancePeriodHighlightsSection(entries: entries)
             }
             .padding()
         }
@@ -364,6 +366,57 @@ private struct StepsDistanceWeekdayChartSection: View {
                 points = newPoints
                 if !(newPoints.count == 7 && newPoints.allSatisfy { $0.sampleCount >= 2 }) { selectedWeekday = nil }
             }
+    }
+}
+
+private struct StepsDistancePeriodHighlightsSection: View {
+    let entries: [HealthStepsDistance]
+
+    private let tint = Color.red
+
+    private var monthlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .month, date: \.date, value: { Double($0.stepCount) }) }
+
+    private var yearlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .year, date: \.date, value: { Double($0.stepCount) }) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if let monthlyHighlight { PeriodComparisonHighlightCard(summary: stepsSummaryText(for: monthlyHighlight), accessibilitySummary: stepsSummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: "steps/day", tint: tint) }
+            if let yearlyHighlight { PeriodComparisonHighlightCard(summary: stepsSummaryText(for: yearlyHighlight), accessibilitySummary: stepsSummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: "steps/day", tint: tint) }
+        }
+    }
+
+    private func stepsSummaryText(for highlight: PeriodComparisonHighlight) -> Text {
+        switch (highlight.kind, highlight.trend) {
+        case (.month, .up):
+            return Text("On average, you're walking \(Text("more").foregroundStyle(tint)) this month than you did last month.")
+        case (.month, .down):
+            return Text("On average, you're walking \(Text("less").foregroundStyle(tint)) this month than you did last month.")
+        case (.month, .flat):
+            return Text("On average, you're walking \(Text("about the same").foregroundStyle(tint)) this month as you did last month.")
+        case (.year, .up):
+            return Text("So far this year, you're taking \(Text("more").foregroundStyle(tint)) steps a day than you did last year.")
+        case (.year, .down):
+            return Text("So far this year, you're taking \(Text("fewer").foregroundStyle(tint)) steps a day than you did last year.")
+        case (.year, .flat):
+            return Text("So far this year, you're taking \(Text("about the same").foregroundStyle(tint)) number of steps a day as you did last year.")
+        }
+    }
+
+    private func stepsSummary(for highlight: PeriodComparisonHighlight) -> String {
+        switch (highlight.kind, highlight.trend) {
+        case (.month, .up):
+            return "On average, you're walking more this month than you did last month."
+        case (.month, .down):
+            return "On average, you're walking less this month than you did last month."
+        case (.month, .flat):
+            return "On average, you're walking about the same this month as you did last month."
+        case (.year, .up):
+            return "So far this year, you're taking more steps a day than you did last year."
+        case (.year, .down):
+            return "So far this year, you're taking fewer steps a day than you did last year."
+        case (.year, .flat):
+            return "So far this year, you're taking about the same number of steps a day as you did last year."
+        }
     }
 }
 

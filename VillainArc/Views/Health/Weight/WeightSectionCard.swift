@@ -46,6 +46,7 @@ struct WeightSectionCard: View {
                             .foregroundStyle(.blue.gradient)
                         Text("Weight")
                             .fontWeight(.semibold)
+                            .foregroundStyle(.blue.gradient)
                     }
 
                     Spacer()

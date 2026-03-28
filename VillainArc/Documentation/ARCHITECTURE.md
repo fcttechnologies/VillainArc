@@ -93,7 +93,7 @@ This file is the structure map for the app. Use it to understand the major layer
 
 ### `Data/Services/App/SystemState.swift`
 
-- Ensures `AppSettings` and `UserProfile` exist.
+- Ensures `AppSettings`, `UserProfile`, and `HealthSyncState` exist.
 - Used by onboarding and other startup-safe code paths.
 
 ### `Data/Services/App/SetupGuard.swift`
@@ -219,6 +219,11 @@ This file is the structure map for the app. Use it to understand the major layer
 - Stores start-of-day, active energy burned, resting energy burned, and derives total energy for that day.
 - Used by the energy card, energy history, and daily HealthKit sync.
 
+### `Data/Models/Health/HealthSyncState.swift`
+
+- Singleton synced-coverage record for daily metric cache ranges.
+- Lets reinstall and CloudKit import preserve the known coverage span for daily steps, distance, and energy data while HealthKit anchors stay device-local.
+
 ### `Data/Models/Health/WeightGoal.swift`
 
 - Local weight-goal record for the Health tab.
@@ -321,8 +326,12 @@ This file is the structure map for the app. Use it to understand the major layer
   - App-level full-screen goal completion flow for achieved, manual-override, and same-day delete cases.
 - `Views/Workout/HealthWorkoutDetailView.swift`
   - On-demand Health workout detail.
-- `Helpers/TimeSeriesCharting.swift`
+- `Helpers/Health/TimeSeriesCharting.swift`
   - Shared chart bucketing, axis labeling, and time-series helpers used by weight, steps, energy, and exercise analytics.
+- `Helpers/Health/WeekdayAverages.swift`
+  - Shared weekday-average grouping and weekday ordering helpers for steps and energy history.
+- `Helpers/Health/PeriodComparisonHighlights.swift`
+  - Shared monthly/yearly comparison highlight helper for steps and energy history cards.
 - `Views/Workout/History/WorkoutsListView.swift`
   - Merged workout history list for app and Apple Health workouts.
 - `Views/Workout/History/WorkoutHistoryItem.swift`

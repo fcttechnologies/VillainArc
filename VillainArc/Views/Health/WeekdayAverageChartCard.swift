@@ -37,7 +37,7 @@ struct WeekdayAverageChart: View {
             if presentation.isAvailable {
                 presentation.headline
                     .font(.title3)
-                    .fontWeight(.bold)
+                    .bold()
                     .fontDesign(.rounded)
             }
 

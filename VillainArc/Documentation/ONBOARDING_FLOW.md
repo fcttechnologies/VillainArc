@@ -226,6 +226,7 @@ The bootstrap marker therefore means two things:
 After catalog sync, onboarding ensures the singleton-style records exist:
 
 - `SystemState.ensureAppSettings(context:)`
+- `SystemState.ensureHealthSyncState(context:)`
 - `SystemState.ensureUserProfile(context:)`
 
 These helpers fetch the existing record or create and save one if it does not exist.
@@ -271,6 +272,7 @@ That creates real risks:
 
 - bootstrap may not have completed
 - `AppSettings` may not exist yet
+- `HealthSyncState` may not exist yet
 - `UserProfile` may not exist yet
 - profile onboarding may still be incomplete
 - an unfinished workout or plan may already exist
@@ -283,6 +285,7 @@ Checks:
 
 - bootstrap marker exists
 - `AppSettings` exists
+- `HealthSyncState` exists
 - `UserProfile` exists
 - `UserProfile.firstMissingStep == nil`
 

@@ -23,6 +23,10 @@ This document explains the current Apple Health integration in VillainArc: how H
 - `Views/Health/Weight/WeightHistoryView.swift`
 - `Views/Health/Steps/StepsDistanceHistoryView.swift`
 - `Views/Health/Energy/HealthEnergyHistoryView.swift`
+- `Views/Health/PeriodComparisonHighlightCard.swift`
+- `Helpers/Health/TimeSeriesCharting.swift`
+- `Helpers/Health/WeekdayAverages.swift`
+- `Helpers/Health/PeriodComparisonHighlights.swift`
 - `Views/Workout/History/WorkoutsListView.swift`
 - `Views/Workout/HealthWorkoutDetailView.swift`
 - `Views/Settings/AppSettingsView.swift`
@@ -131,6 +135,17 @@ This model is not a raw HealthKit sample mirror. It is a daily aggregate cache u
 - resting energy burned
 
 Total energy is derived from those two fields rather than stored separately.
+
+### `HealthSyncState`
+
+`HealthSyncState` is the singleton local-plus-CloudKit synced-coverage record for daily metric caches. It stores:
+
+- the synced date range for step count
+- the synced date range for walking/running distance
+- the synced date range for active energy burned
+- the synced date range for resting energy burned
+
+This model is separate from `HealthPreferences` because HealthKit anchors remain device-local, while synced coverage needs to survive reinstall and CloudKit import.
 
 ## Health Permission Flow
 
@@ -358,6 +373,7 @@ The daily-metrics sync pass is different:
 - the app then reruns daily cumulative statistics queries for the affected date range
 - `HealthStepsDistance` rows are updated only for steps/distance fields
 - `HealthEnergy` rows are updated only for active/resting energy fields
+- `HealthSyncState` stores the known synced coverage range for each daily metric category
 - zero-value daily aggregate rows are retained once a day is part of a refreshed range
 - coverage expands only when changed sample days or deletion-driven rebuilds require a wider refresh; the cache does not automatically materialize every day through today
 - deletion-driven refreshes can rebuild the already-synced coverage range for that metric because `HKDeletedObject` does not expose the deleted sample date
@@ -441,6 +457,7 @@ Those cards summarize:
 `StepsDistanceHistoryView` expands the steps card into:
 
 - grouped steps history using the shared time-series layout
+- monthly and yearly comparison highlight cards based on current-period versus prior-period daily averages
 - distance summary for the currently displayed or selected span
 - cached range filters for `W / M / 6M / Y / All`
 - aggregate metadata such as average, high, and total values for the visible span
@@ -448,6 +465,7 @@ Those cards summarize:
 `HealthEnergyHistoryView` expands the energy card into:
 
 - grouped total-energy history with active-energy overlays
+- monthly and yearly comparison highlight cards based on current-period versus prior-period daily averages
 - cached range filters for `W / M / 6M / Y / All`
 - aggregate metadata such as average total and average active energy for the visible span
 

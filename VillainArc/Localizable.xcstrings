@@ -245,6 +245,9 @@
     "Abductors" : {
 
     },
+    "about the same" : {
+
+    },
     "Abs" : {
 
     },
@@ -942,6 +945,9 @@
     "Felt" : {
 
     },
+    "fewer" : {
+
+    },
     "Filters" : {
 
     },
@@ -1167,6 +1173,9 @@
     "Lats" : {
 
     },
+    "less" : {
+
+    },
     "Live Activity" : {
 
     },
@@ -1279,6 +1288,9 @@
 
     },
     "Monday" : {
+
+    },
+    "more" : {
 
     },
     "Most Recent" : {
@@ -1587,6 +1599,18 @@
           }
         }
       }
+    },
+    "On average, you're burning %@ calories this month than you did last month." : {
+
+    },
+    "On average, you're burning %@ number of calories this month as you did last month." : {
+
+    },
+    "On average, you're walking %@ this month as you did last month." : {
+
+    },
+    "On average, you're walking %@ this month than you did last month." : {
+
     },
     "On schedule" : {
 
@@ -2376,6 +2400,18 @@
 
     },
     "Smith Machine" : {
+
+    },
+    "So far this year, you're burning %@ calories a day than you did last year." : {
+
+    },
+    "So far this year, you're burning %@ number of calories a day as you did last year." : {
+
+    },
+    "So far this year, you're taking %@ number of steps a day as you did last year." : {
+
+    },
+    "So far this year, you're taking %@ steps a day than you did last year." : {
 
     },
     "Sort" : {

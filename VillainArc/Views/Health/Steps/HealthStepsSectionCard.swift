@@ -27,6 +27,7 @@ struct HealthStepsSectionCard: View {
                         .foregroundStyle(.red.gradient)
                     Text("Steps")
                         .fontWeight(.semibold)
+                        .foregroundStyle(.red.gradient)
                     
                     Spacer()
 

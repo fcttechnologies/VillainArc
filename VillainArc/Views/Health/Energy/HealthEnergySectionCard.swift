@@ -31,6 +31,7 @@ struct HealthEnergySectionCard: View {
                         .foregroundStyle(.orange.gradient)
                     Text("Energy")
                         .fontWeight(.semibold)
+                        .foregroundStyle(.orange.gradient)
                     
                     Spacer()
                     

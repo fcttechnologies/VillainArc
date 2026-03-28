@@ -20,6 +20,8 @@ struct HealthEnergyHistoryView: View {
                 HealthEnergyMainChartSection(entries: entries)
 
                 HealthEnergyWeekdayChartSection(entries: entries)
+
+                HealthEnergyPeriodHighlightsSection(entries: entries)
             }
             .padding()
         }
@@ -358,6 +360,57 @@ private struct HealthEnergyWeekdayChartSection: View {
                 points = newPoints
                 if !(newPoints.count == 7 && newPoints.allSatisfy { $0.sampleCount >= 2 }) { selectedWeekday = nil }
             }
+    }
+}
+
+private struct HealthEnergyPeriodHighlightsSection: View {
+    let entries: [HealthEnergy]
+
+    private let tint = Color.orange
+
+    private var monthlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .month, date: \.date, value: \.activeEnergyBurned) }
+
+    private var yearlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .year, date: \.date, value: \.activeEnergyBurned) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if let monthlyHighlight { PeriodComparisonHighlightCard(summary: energySummaryText(for: monthlyHighlight), accessibilitySummary: energySummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: "cal/day", tint: tint) }
+            if let yearlyHighlight { PeriodComparisonHighlightCard(summary: energySummaryText(for: yearlyHighlight), accessibilitySummary: energySummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: "cal/day", tint: tint) }
+        }
+    }
+
+    private func energySummaryText(for highlight: PeriodComparisonHighlight) -> Text {
+        switch (highlight.kind, highlight.trend) {
+        case (.month, .up):
+            return Text("On average, you're burning \(Text("more").foregroundStyle(tint)) calories this month than you did last month.")
+        case (.month, .down):
+            return Text("On average, you're burning \(Text("fewer").foregroundStyle(tint)) calories this month than you did last month.")
+        case (.month, .flat):
+            return Text("On average, you're burning \(Text("about the same").foregroundStyle(tint)) number of calories this month as you did last month.")
+        case (.year, .up):
+            return Text("So far this year, you're burning \(Text("more").foregroundStyle(tint)) calories a day than you did last year.")
+        case (.year, .down):
+            return Text("So far this year, you're burning \(Text("fewer").foregroundStyle(tint)) calories a day than you did last year.")
+        case (.year, .flat):
+            return Text("So far this year, you're burning \(Text("about the same").foregroundStyle(tint)) number of calories a day as you did last year.")
+        }
+    }
+
+    private func energySummary(for highlight: PeriodComparisonHighlight) -> String {
+        switch (highlight.kind, highlight.trend) {
+        case (.month, .up):
+            return "On average, you're burning more calories this month than you did last month."
+        case (.month, .down):
+            return "On average, you're burning fewer calories this month than you did last month."
+        case (.month, .flat):
+            return "On average, you're burning about the same number of calories this month as you did last month."
+        case (.year, .up):
+            return "So far this year, you're burning more calories a day than you did last year."
+        case (.year, .down):
+            return "So far this year, you're burning fewer calories a day than you did last year."
+        case (.year, .flat):
+            return "So far this year, you're burning about the same number of calories a day as you did last year."
+        }
     }
 }
 

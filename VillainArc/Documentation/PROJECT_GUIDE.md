@@ -344,6 +344,7 @@ Current user-facing areas are:
 - detailed weight history with multiple time ranges
 - detailed steps history with multiple time ranges
 - detailed energy history with multiple time ranges
+- monthly and yearly comparison highlights for steps and energy history
 - active weight-goal summary and goal history
 - full-screen weight-goal completion flow for achieved or manually-ended goals
 - add-weight-entry flow
@@ -357,6 +358,7 @@ Under the hood, VillainArc treats Apple Health as an integration layer:
 - `WeightEntry` is the single local body-mass record used for both app-created and Health-imported data
 - `HealthStepsDistance` is the per-day Apple Health cache for steps and walking/running distance
 - `HealthEnergy` is the per-day Apple Health cache for active and resting energy
+- `HealthSyncState` is the singleton synced-coverage record for daily metric caches
 - `WeightGoal` is local goal-tracking state for the Health tab
 
 The health surfaces also share a reusable time-series charting layer:
@@ -364,6 +366,7 @@ The health surfaces also share a reusable time-series charting layer:
 - fixed `W / M / 6M / Y / All` ranges for weight history
 - fixed `W / M / 6M / Y / All` ranges for steps and energy history
 - adaptive grouping for long-range charts
+- reusable monthly and yearly comparison highlight cards for steps and energy
 - reusable goal mini charts in both the active goal card and goal history
 - app-level goal completion presentation triggered either from goal history or after a qualifying weight entry
 
