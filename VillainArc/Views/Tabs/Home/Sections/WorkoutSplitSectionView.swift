@@ -60,8 +60,9 @@ struct WorkoutSplitSectionView: View {
             SmallUnavailableView(sfIconName: "calendar.badge.exclamationmark", title: title, subtitle: description)
                 .padding()
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .tint(.primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
         .accessibilityValue(description)
@@ -96,8 +97,9 @@ struct WorkoutSplitSectionView: View {
                 }
                 .padding()
                 .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .tint(.primary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(titleText)
             .accessibilityValue(subtitleText)

@@ -63,7 +63,7 @@ struct WorkoutSplitView: View {
         .navigationBarBackButtonHidden(isSwapMode)
         .toolbar { toolbarItems }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreationView)
-        .confirmationDialog("Delete Split?", isPresented: $showDeleteSplitConfirmation) {
+        .alert("Delete Split?", isPresented: $showDeleteSplitConfirmation) {
             Button("Delete", role: .destructive) { deleteSplit() }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDeleteConfirmButton)
         } message: {
@@ -649,9 +649,8 @@ struct WorkoutSplitView: View {
         guard let split = currentSplit else { return }
         Haptics.selection()
         SpotlightIndexer.deleteWorkoutSplit(split)
-        context.delete(split)
-        saveContext(context: context)
         if isOverride { dismiss() }
+        context.delete(split)
     }
 
     private func startSwapMode() {

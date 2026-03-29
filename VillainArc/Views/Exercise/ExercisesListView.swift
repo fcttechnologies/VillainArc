@@ -8,33 +8,33 @@ struct ExercisesListView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var searchText = ""
     @State private var favoritesOnly = false
-
+    
     private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
-
+    
     private var hasFavorites: Bool {
         exercises.contains(where: \.favorite)
     }
-
+    
     private var historyOrdering: ExerciseHistoryOrdering {
         ExerciseHistoryOrdering(histories: histories)
     }
-
+    
     private var filteredExercises: [Exercise] {
         let sourceExercises = favoritesOnly ? exercises.filter(\.favorite) : exercises
         return searchedExercises(in: sourceExercises, query: searchText, orderedBy: historyOrdering.isOrderedBefore, score: { exercise, _, queryTokens in
-                exerciseSearchScore(for: exercise, queryTokens: queryTokens)
-            }
+            exerciseSearchScore(for: exercise, queryTokens: queryTokens)
+        }
         )
     }
-
+    
     var body: some View {
         List {
             ForEach(filteredExercises) { exercise in
                 ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise), appSettingsSnapshot: appSettingsSnapshot)
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    favoriteAction(for: exercise)
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseListRow(exercise))
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        favoriteAction(for: exercise)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseListRow(exercise))
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -77,7 +77,7 @@ struct ExercisesListView: View {
             Haptics.selection()
         }
     }
-
+    
     @ViewBuilder
     private func favoriteAction(for exercise: Exercise) -> some View {
         Button(exercise.favorite ? "Unfavorite" : "Favorite", systemImage: exercise.favorite ? "star.slash.fill" : "star.fill") {

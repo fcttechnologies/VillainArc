@@ -366,6 +366,7 @@ struct ExerciseSuggestionContext {
         guard !progressionSets.isEmpty else { return [] }
 
         let overshootMet: Bool
+        let overshootThreshold: Int
         var lower = 0
         var shouldResetReps = false
         switch repRange.activeMode {
@@ -373,14 +374,19 @@ struct ExerciseSuggestionContext {
             lower = repRange.lowerRange
             shouldResetReps = true
             let upper = repRange.upperRange
-            overshootMet = progressionSets.allSatisfy { $0.reps >= upper + profile.overshootRangeExtraReps }
+            let requiredExtra = scaledOvershootRangeExtraReps(lower: lower, upper: upper, profile: profile)
+            overshootThreshold = upper + requiredExtra
+            overshootMet = progressionSets.allSatisfy { $0.reps >= overshootThreshold }
         case .target:
             let target = repRange.targetReps
-            overshootMet = progressionSets.allSatisfy { $0.reps >= target + profile.overshootTargetExtraReps }
+            let requiredExtra = scaledOvershootTargetExtraReps(target: target, profile: profile)
+            overshootThreshold = target + requiredExtra
+            overshootMet = progressionSets.allSatisfy { $0.reps >= overshootThreshold }
         case .notSet: return []
         }
 
         guard overshootMet else { return [] }
+        guard !hasStrongComparableContextMiss(in: context.performance, primarySets: progressionSets, repThreshold: overshootThreshold) else { return [] }
 
         var events: [SuggestionEventDraft] = []
         let weightReason = "You significantly overshot the target on your primary sets this session. \(harderLoadAction(context)) to better match your current strength."
@@ -1020,6 +1026,35 @@ struct ExerciseSuggestionContext {
         case .reversePyramid: return 1.25
         default: return 1.0
         }
+    }
+
+    // Larger rep ranges should require a meaningfully larger overshoot before we treat
+    // one session as exceptional enough to justify a bigger-than-normal jump.
+    private static func scaledOvershootRangeExtraReps(lower: Int, upper: Int, profile: ProgressionProfile) -> Int {
+        let span = max(1, upper - lower)
+        let scaledExtra: Int
+
+        switch profile.kind {
+        case .default, .controlledAccessory:
+            scaledExtra = Int(ceil(Double(span) * 0.5))
+        case .heavyCompound, .largeJumpLoad, .bodyweightAssisted:
+            scaledExtra = Int(ceil(Double(span) * 0.6))
+        }
+
+        return max(profile.overshootRangeExtraReps, scaledExtra)
+    }
+
+    private static func scaledOvershootTargetExtraReps(target: Int, profile: ProgressionProfile) -> Int {
+        let scaledExtra: Int
+
+        switch profile.kind {
+        case .default, .controlledAccessory:
+            scaledExtra = Int(ceil(Double(max(1, target)) * 0.15))
+        case .heavyCompound, .largeJumpLoad, .bodyweightAssisted:
+            scaledExtra = Int(ceil(Double(max(1, target)) * 0.2))
+        }
+
+        return max(profile.overshootTargetExtraReps, scaledExtra)
     }
 
     private static func repFloor(for repRange: RepRangeSnapshot) -> Int? {

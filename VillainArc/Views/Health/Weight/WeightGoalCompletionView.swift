@@ -141,35 +141,7 @@ struct WeightGoalCompletionView: View {
         case .maintain:
             return "Wrap this maintain goal up and save its range to your history."
         case .cut, .bulk:
-            return "Finish this goal now. It will be saved as an ended-early override if you haven’t actually hit the target."
-        }
-    }
-
-    private var symbolName: String {
-        guard let goal else { return "target" }
-        if isSameDayGoal { return "xmark.circle.fill" }
-        if route.trigger == .achievedByEntry { return "checkmark.seal.fill" }
-        switch goal.type {
-        case .cut:
-            return "arrow.down.circle.fill"
-        case .bulk:
-            return "arrow.up.circle.fill"
-        case .maintain:
-            return "checkmark.circle.fill"
-        }
-    }
-
-    private var symbolTint: Color {
-        guard let goal else { return .secondary }
-        if isSameDayGoal { return .red }
-        if route.trigger == .achievedByEntry { return .green }
-        switch goal.type {
-        case .cut:
-            return .blue
-        case .bulk:
-            return .orange
-        case .maintain:
-            return .green
+            return "Finish this goal now. It will be saved as an ended early override if you haven’t actually hit the target."
         }
     }
 
@@ -184,48 +156,35 @@ struct WeightGoalCompletionView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Image(systemName: symbolName)
-                            .font(.system(size: 48, weight: .medium))
-                            .foregroundStyle(symbolTint)
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(titleText)
+                        .font(.largeTitle)
+                        .bold()
+                        .fontDesign(.rounded)
 
-                        Text(titleText)
-                            .font(.largeTitle.bold())
-                            .fontDesign(.rounded)
+                    Text(subtitleText)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
-                        Text(subtitleText)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                if let chartModel {
+                    WeightGoalProgressChart(model: chartModel, weightUnit: weightUnit)
+                        .frame(height: 220)
+                        .padding(16)
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(chartModel.accessibilitySummary(unit: weightUnit))
+                }
 
-                    if let chartModel {
-                        WeightGoalProgressChart(model: chartModel, weightUnit: weightUnit)
-                            .frame(height: 220)
-                            .padding(16)
-                            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(chartModel.accessibilitySummary(unit: weightUnit))
-                    }
-
-                    if !metrics.isEmpty {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12, alignment: .top)], spacing: 12) {
-                            ForEach(metrics) { metric in
-                                SummaryStatCard(title: metric.title, text: metric.text)
-                            }
+                if !metrics.isEmpty {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12, alignment: .top)], spacing: 12) {
+                        ForEach(metrics) { metric in
+                            SummaryStatCard(title: metric.title, text: metric.text)
                         }
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 120)
-            }
-            .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
-            .interactiveDismissDisabled()
-            .safeAreaInset(edge: .bottom) {
+                Spacer()
                 VStack(spacing: 12) {
                     if let primaryAction {
                         primaryActionButton(for: primaryAction)
@@ -236,16 +195,15 @@ struct WeightGoalCompletionView: View {
                         dismissFlow()
                     } label: {
                         Text("Keep Active")
-                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 5)
                     }
+                    .buttonSizing(.flexible)
                     .buttonStyle(.glass)
-                    .buttonBorderShape(.roundedRectangle(radius: 16))
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
-                .background(.ultraThinMaterial)
+                .font(.title3)
+                .fontWeight(.semibold)
             }
+            .padding()
             .task {
                 guard let goal else {
                     dismissFlow()
@@ -261,7 +219,6 @@ struct WeightGoalCompletionView: View {
                     hasPlayedCelebration = true
                 }
             }
-        }
     }
 
     private func finishGoal(using action: PrimaryAction) {
@@ -293,21 +250,24 @@ struct WeightGoalCompletionView: View {
     @ViewBuilder
     private func primaryActionButton(for action: PrimaryAction) -> some View {
         if action.isDestructive {
-            Button(action.buttonTitle, role: .destructive) {
+            Button(role: .destructive) {
                 finishGoal(using: action)
+            } label: {
+                Text(action.buttonTitle)
+                    .padding(.vertical, 5)
             }
-            .frame(maxWidth: .infinity)
-            .buttonStyle(.glass)
-            .buttonBorderShape(.roundedRectangle(radius: 16))
+            .buttonSizing(.flexible)
+            .buttonStyle(.glassProminent)
+            .tint(.red)
         } else {
             Button {
                 finishGoal(using: action)
             } label: {
                 Text(action.buttonTitle)
-                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 5)
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.roundedRectangle(radius: 16))
+            .buttonSizing(.flexible)
+            .buttonStyle(.glassProminent)
         }
     }
 

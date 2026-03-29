@@ -116,7 +116,10 @@ private struct SelectTypeView: View {
                     Haptics.selection()
                     showScratchPicker = true
                 } label: {
-                    Label("Start from Scratch", systemImage: "plus")
+                    HStack {
+                        Label("Start from Scratch", systemImage: "plus")
+                        Spacer()
+                    }
                 }
                 .buttonStyle(.borderless)
                 .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderScratchButton)
@@ -156,8 +159,9 @@ private struct SelectTypeView: View {
                                 .foregroundStyle(.tertiary)
                                 .accessibilityHidden(true)
                         }
+                        .tint(.primary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderType(type))
                 }
             } header: {
@@ -201,8 +205,9 @@ private struct SelectModeView: View {
                             .foregroundStyle(.tertiary)
                             .accessibilityHidden(true)
                     }
+                    .tint(.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderModeWeekly)
 
                 Button {
@@ -227,8 +232,9 @@ private struct SelectModeView: View {
                             .foregroundStyle(.tertiary)
                             .accessibilityHidden(true)
                     }
+                    .tint(.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderModeRotation)
             } header: {
                 Text("How do you want to schedule it?")
@@ -292,8 +298,9 @@ private struct SelectDaysView: View {
                                 .foregroundStyle(.tertiary)
                                 .accessibilityHidden(true)
                         }
+                        .tint(.primary)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderDays(days))
                 }
             } header: {
@@ -381,6 +388,7 @@ private struct SelectRestDaysView: View {
                                 Text(subtitle)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
                             }
                         }
                         Spacer()
@@ -388,8 +396,9 @@ private struct SelectRestDaysView: View {
                             .foregroundStyle(.tertiary)
                             .accessibilityHidden(true)
                     }
+                    .tint(.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .accessibilityIdentifier(option.accessibilityId)
             }
         } header: {
@@ -413,8 +422,9 @@ private struct SelectRestDaysView: View {
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
                 }
+                .tint(.primary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderWeekendsYes)
 
             Button {
@@ -430,8 +440,9 @@ private struct SelectRestDaysView: View {
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
                 }
+                .tint(.primary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderWeekendsNo)
         } header: {
             Text("Keep weekends free?")

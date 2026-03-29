@@ -76,7 +76,7 @@ struct WeightSectionCard: View {
                                     .foregroundStyle(.primary)
                                 
                                 Text(weightUnit.rawValue)
-                                    .font(.title)
+                                    .font(.title2)
                             }
                             .lineLimit(1)
                         }

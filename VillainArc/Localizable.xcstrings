@@ -554,6 +554,9 @@
     "Collapsed" : {
 
     },
+    "Common Quick Picks" : {
+
+    },
     "Complete" : {
 
     },
@@ -576,6 +579,9 @@
 
     },
     "Complete this exercise in a workout to see progress and personal records." : {
+
+    },
+    "Complete this exercise in a workout to start tracking progress and personal records." : {
 
     },
     "Completed set %lld of %@." : {
@@ -676,6 +682,12 @@
 
     },
     "Current" : {
+
+    },
+    "Current Setting" : {
+
+    },
+    "Custom Step" : {
 
     },
     "Date" : {
@@ -850,6 +862,9 @@
 
     },
     "Edit Plan" : {
+
+    },
+    "Edit Progression Step" : {
 
     },
     "Edit Workout Plan" : {
@@ -1069,6 +1084,9 @@
     "How hard was this workout?" : {
 
     },
+    "How It Will Be Used" : {
+
+    },
     "How long should the rest timer be?" : {
 
     },
@@ -1171,6 +1189,9 @@
 
     },
     "Lats" : {
+
+    },
+    "Leave this blank and save to go back to the system default. The default adapts to the exercise and working load." : {
 
     },
     "less" : {
@@ -1548,9 +1569,6 @@
     "Notes" : {
 
     },
-    "Notes (optional)" : {
-
-    },
     "Obliques" : {
 
     },
@@ -1705,6 +1723,9 @@
     "Opens progress and history for a specific exercise." : {
 
     },
+    "Opens progression step settings." : {
+
+    },
     "Opens set options." : {
 
     },
@@ -1818,6 +1839,12 @@
 
     },
     "Progress Charts" : {
+
+    },
+    "Progression Step" : {
+
+    },
+    "Progression Step (%@)" : {
 
     },
     "Prompt For Post Workout Effort" : {
@@ -2381,9 +2408,6 @@
     "Shows your workout split settings." : {
 
     },
-    "Sick" : {
-
-    },
     "Side Delt" : {
 
     },
@@ -2583,6 +2607,9 @@
 
     },
     "Syncing Your Data" : {
+
+    },
+    "System default" : {
 
     },
     "Tap the %@ button to add exercises." : {

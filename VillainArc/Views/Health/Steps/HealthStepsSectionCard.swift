@@ -48,7 +48,7 @@ struct HealthStepsSectionCard: View {
                                 .contentTransition(.numericText(value: Double(latestEntry.stepCount)))
 
                             Text(latestEntry.stepCount == 1 ? "Step" : "Steps")
-                                .font(.title)
+                                .font(.title2)
                                 .foregroundStyle(.secondary)
                                 .fontWeight(.semibold)
                         }

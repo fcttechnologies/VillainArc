@@ -63,7 +63,7 @@ struct HealthEnergySectionCard: View {
                                     .contentTransition(.numericText(value: latestEntry.totalEnergyBurned))
                                 
                                 Text("Total")
-                                    .font(.title)
+                                    .font(.title2)
                                     .foregroundStyle(.secondary)
                             }
                             .lineLimit(1)

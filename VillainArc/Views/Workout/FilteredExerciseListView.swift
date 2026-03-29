@@ -6,6 +6,7 @@ struct FilteredExerciseListView: View {
     @Query private var allExercises: [Exercise]
     @Binding var selectedExercises: [Exercise]
     @Binding var selectedExerciseIDs: Set<String>
+    @State private var progressionStepExercise: Exercise?
     
     let searchText: String
     let muscleFilters: Set<Muscle>
@@ -82,6 +83,10 @@ struct FilteredExerciseListView: View {
                     .swipeActions(edge: .leading) {
                         favoriteAction(for: exercise)
                     }
+                    .contextMenu {
+                        progressionStepAction(for: exercise)
+                        favoriteAction(for: exercise)
+                    }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
                     .accessibilityLabel(exercise.name)
                     .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: true))
@@ -102,6 +107,10 @@ struct FilteredExerciseListView: View {
                     .swipeActions(edge: .leading) {
                         favoriteAction(for: exercise)
                     }
+                    .contextMenu {
+                        progressionStepAction(for: exercise)
+                        favoriteAction(for: exercise)
+                    }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
                     .accessibilityLabel(exercise.name)
                     .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: false))
@@ -110,6 +119,11 @@ struct FilteredExerciseListView: View {
             }
         }
         .scrollDismissesKeyboard(.immediately)
+        .sheet(isPresented: Binding(get: { progressionStepExercise != nil }, set: { if !$0 { progressionStepExercise = nil } })) {
+            if let progressionStepExercise {
+                ProgressionStepEditorSheet(exercise: progressionStepExercise)
+            }
+        }
         .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseList)
         .overlay {
             if visibleExercises.isEmpty {
@@ -161,6 +175,16 @@ struct FilteredExerciseListView: View {
         }
         .tint(.yellow)
         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseFavoriteToggle(exercise))
+    }
+
+    @ViewBuilder
+    private func progressionStepAction(for exercise: Exercise) -> some View {
+        Button {
+            progressionStepExercise = exercise
+            Haptics.selection()
+        } label: {
+            Label("Edit Progression Step", systemImage: "slider.horizontal.3")
+        }
     }
     
     @ViewBuilder

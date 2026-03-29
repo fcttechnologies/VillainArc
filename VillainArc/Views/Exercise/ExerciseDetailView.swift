@@ -60,6 +60,7 @@ struct ExerciseDetailView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
+    @State private var showProgressionStepEditor = false
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -204,8 +205,8 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         ScrollView {
-            if hasContent {
-                LazyVStack(alignment: .leading, spacing: 44) {
+            LazyVStack(alignment: .leading, spacing: 44) {
+                if hasContent {
                     if !statItems.isEmpty {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(statItems) { item in
@@ -241,16 +242,27 @@ struct ExerciseDetailView: View {
                     } else if totalSessions > 0 {
                         chartUnavailableCard
                     }
+                } else if exercise != nil {
+                    noHistoryCard
                 }
-                .padding(.horizontal)
+
+                if let exercise {
+                    progressionStepSection(for: exercise)
+                }
             }
+            .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showProgressionStepEditor) {
+            if let exercise {
+                ProgressionStepEditorSheet(exercise: exercise)
+            }
+        }
         .overlay {
-            if !hasContent {
+            if exercise == nil {
                 ContentUnavailableView("No Exercise History", systemImage: "chart.line.uptrend.xyaxis", description: Text("Complete this exercise in a workout to see progress and personal records."))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailEmptyState)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailEmptyState)
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailScrollView)
@@ -296,6 +308,46 @@ struct ExerciseDetailView: View {
         .padding()
         .frame(maxWidth: .infinity)
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
+    }
+
+    private var noHistoryCard: some View {
+        ContentUnavailableView("No Exercise History", systemImage: "chart.line.uptrend.xyaxis", description: Text("Complete this exercise in a workout to start tracking progress and personal records."))
+            .padding()
+            .frame(maxWidth: .infinity)
+            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailEmptyState)
+    }
+
+    private func progressionStepSection(for exercise: Exercise) -> some View {
+        Button {
+            showProgressionStepEditor = true
+        } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text("Progression Step (\(exercise.equipmentType.progressionStepValueText(preferredWeightChange: exercise.preferredWeightChange, unit: weightUnit)))")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+
+                Text(exercise.equipmentType.progressionStepCardDescription)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .tint(.primary)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityIdentifier("exerciseDetailProgressionStepButton")
+        .accessibilityHint("Opens progression step settings.")
     }
 
     private func points(for metric: ChartMetric) -> [ExerciseMetricPoint] {

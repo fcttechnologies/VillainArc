@@ -173,6 +173,7 @@
 				Helpers/RestTimerNotifications.swift,
 				Helpers/TextNormalization.swift,
 				Helpers/TimeFormatting.swift,
+				Helpers/WeightFormatting.swift,
 				Intents/Exercise/ExerciseEntity.swift,
 				Intents/LiveActivity/LiveActivityAddExerciseIntent.swift,
 				Intents/LiveActivity/LiveActivityCompleteSetIntent.swift,
