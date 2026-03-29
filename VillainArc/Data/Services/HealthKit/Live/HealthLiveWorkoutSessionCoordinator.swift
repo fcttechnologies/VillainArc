@@ -23,7 +23,7 @@ enum HealthWorkoutLinker {
         HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.workoutSessionID, operatorType: .equalTo, value: sessionID.uuidString)
     }
 
-    @MainActor @discardableResult static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
+    @discardableResult static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
         if let workoutSession { workoutSession.hasBeenExportedToHealth = true }
 
         if let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(workout.uuid)).first {
@@ -38,7 +38,7 @@ enum HealthWorkoutLinker {
     }
 }
 
-@MainActor @Observable final class HealthLiveWorkoutSessionCoordinator: NSObject {
+@Observable final class HealthLiveWorkoutSessionCoordinator: NSObject {
     static let shared = HealthLiveWorkoutSessionCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared

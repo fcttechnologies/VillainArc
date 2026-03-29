@@ -14,7 +14,6 @@ import SwiftData
 /// - Creates history if it doesn't exist, updates it if it does
 /// - Deletes history if no performances remain
 /// - Keeps all cached aggregates in sync, including progression points and cumulative totals
-@MainActor
 struct ExerciseHistoryUpdater {
     
     /// Updates or creates ExerciseHistory for all exercises in the completed workout session.

@@ -51,7 +51,7 @@ import SwiftData
         return alternateNames
     }
 
-    @MainActor init(from catalogItem: ExerciseCatalogItem) {
+    init(from catalogItem: ExerciseCatalogItem) {
         catalogID = catalogItem.id
         name = catalogItem.name
         musclesTargeted = catalogItem.musclesTargeted
@@ -64,14 +64,14 @@ import SwiftData
     
     func toggleFavorite() { favorite.toggle() }
 
-    @MainActor @discardableResult func rebuildSearchData() -> Bool {
+    @discardableResult func rebuildSearchData() -> Bool {
         let tokens = exerciseSearchTokens(for: self)
         if tokens == searchTokens { return false }
         searchTokens = tokens
         return true
     }
 
-    @MainActor @discardableResult func applyCatalogItem(_ catalogItem: ExerciseCatalogItem) -> Bool {
+    @discardableResult func applyCatalogItem(_ catalogItem: ExerciseCatalogItem) -> Bool {
         var didChange = false
         var needsSearchIndex = false
 

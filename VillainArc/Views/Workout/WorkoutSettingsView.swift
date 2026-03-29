@@ -14,9 +14,6 @@ struct WorkoutSettingsView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task {
-                        _ = try? SystemState.ensureAppSettings(context: context)
-                }
             }
         }
         .listSectionSpacing(20)

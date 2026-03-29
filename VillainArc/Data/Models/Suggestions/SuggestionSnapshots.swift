@@ -97,7 +97,7 @@ struct SetTargetSnapshot: Codable, Sendable {
         try container.encode(targetRPE, forKey: .targetRPE)
     }
 
-    init(prescription: SetPrescription) {
+    nonisolated init(prescription: SetPrescription) {
         targetSetID = prescription.id
         index = prescription.index
         type = prescription.type
@@ -208,7 +208,7 @@ struct ExerciseTargetSnapshot: Codable, Sendable {
 
     nonisolated static var empty: Self { Self(repRange: .empty, sets: []) }
 
-    init(prescription: ExercisePrescription) {
+    nonisolated init(prescription: ExercisePrescription) {
         repRange = RepRangeSnapshot(policy: prescription.repRange)
         sets = prescription.sortedSets.map { SetTargetSnapshot(prescription: $0) }
     }

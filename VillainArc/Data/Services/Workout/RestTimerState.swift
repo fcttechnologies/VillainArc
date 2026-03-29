@@ -3,7 +3,7 @@ import Foundation
 import Observation
 import UIKit
 
-@MainActor @Observable final class RestTimerState {
+@Observable final class RestTimerState {
     static let shared = RestTimerState()
     private static let completionSoundID: SystemSoundID = 1005
     private static let maximumRestSeconds = 10 * 60

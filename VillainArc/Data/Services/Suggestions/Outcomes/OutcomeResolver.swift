@@ -39,7 +39,7 @@ private enum FinalizationDecision {
 
 // MARK: - Resolver
 
-@MainActor struct OutcomeResolver {
+struct OutcomeResolver {
 
     // MARK: - Public Entry Point
 

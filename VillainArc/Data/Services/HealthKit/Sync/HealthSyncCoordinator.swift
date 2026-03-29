@@ -2,42 +2,7 @@ import Foundation
 import HealthKit
 import SwiftData
 
-enum HealthWeightEntryLinker {
-    private static let bodyMassType = HKQuantityType(.bodyMass)
-    private static let weightUnit = HKUnit.gramUnit(with: .kilo)
-
-    static func samplePredicate(for entryID: UUID) -> NSPredicate {
-        HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.weightEntryID, operatorType: .equalTo, value: entryID.uuidString)
-    }
-
-    @MainActor @discardableResult static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry {
-        let existing = try fetchExistingEntry(for: sample, context: context)
-        let weight = sample.quantity.doubleValue(for: weightUnit)
-        let isAppOwnedEntry = HealthMetadataKeys.weightEntryID(from: sample) != nil
-
-        if let existing {
-            existing.date = sample.endDate
-            existing.weight = weight
-            existing.hasBeenExportedToHealth = isAppOwnedEntry
-            existing.healthSampleUUID = sample.uuid
-            existing.isAvailableInHealthKit = true
-            return existing
-        }
-
-        let entry = WeightEntry(date: sample.endDate, weight: weight, hasBeenExportedToHealth: isAppOwnedEntry, healthSampleUUID: sample.uuid, isAvailableInHealthKit: true)
-        context.insert(entry)
-        return entry
-    }
-
-    @MainActor private static func fetchExistingEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry? {
-        if let existing = try context.fetch(WeightEntry.byHealthSampleUUID(sample.uuid)).first { return existing }
-
-        guard let entryID = HealthMetadataKeys.weightEntryID(from: sample) else { return nil }
-        return try context.fetch(WeightEntry.byID(entryID)).first
-    }
-}
-
-@MainActor final class HealthSyncCoordinator {
+final class HealthSyncCoordinator {
     static let shared = HealthSyncCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared
@@ -58,10 +23,15 @@ enum HealthWeightEntryLinker {
         guard authorizationManager.hasRequestedWorkoutAuthorization else { return }
         guard !isSyncingWorkouts else { return }
 
+        let context = SharedModelContainer.container.mainContext
+        guard SetupGuard.isReady(context: context) else {
+            print("Skipping Health workout sync because app setup is incomplete.")
+            return
+        }
+
         isSyncingWorkouts = true
         defer { isSyncingWorkouts = false }
 
-        let context = SharedModelContainer.container.mainContext
         let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
         let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.workout()], anchor: HealthSyncPreferences.workoutAnchor)
 
@@ -74,7 +44,6 @@ enum HealthWeightEntryLinker {
 
             try context.save()
             HealthSyncPreferences.workoutAnchor = result.newAnchor
-            print("Health workout sync completed. Added or updated: \(result.addedSamples.count). Deleted: \(result.deletedObjects.count).")
         } catch { print("Failed to sync Health workouts: \(error)") }
     }
 
@@ -82,10 +51,15 @@ enum HealthWeightEntryLinker {
         guard authorizationManager.hasRequestedBodyMassAuthorization else { return }
         guard !isSyncingWeightEntries else { return }
 
+        let context = SharedModelContainer.container.mainContext
+        guard SetupGuard.isReady(context: context) else {
+            print("Skipping Health weight sync because app setup is incomplete.")
+            return
+        }
+
         isSyncingWeightEntries = true
         defer { isSyncingWeightEntries = false }
 
-        let context = SharedModelContainer.container.mainContext
         let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
         let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: bodyMassType)], anchor: HealthSyncPreferences.weightEntryAnchor)
 
@@ -98,7 +72,6 @@ enum HealthWeightEntryLinker {
 
             try context.save()
             HealthSyncPreferences.weightEntryAnchor = result.newAnchor
-            print("Health weight sync completed. Added or updated: \(result.addedSamples.count). Deleted: \(result.deletedObjects.count).")
         } catch { print("Failed to sync Health weight entries: \(error)") }
     }
 
@@ -155,12 +128,49 @@ enum HealthWeightEntryLinker {
         return try context.fetch(WorkoutSession.byID(workoutSessionID)).first
     }
 
-    private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool { (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true }
+    private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool {
+        (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true
+    }
 }
 
 extension HealthWorkout {
     fileprivate static var unavailableHealthWorkouts: FetchDescriptor<HealthWorkout> {
         let predicate = #Predicate<HealthWorkout> { !$0.isAvailableInHealthKit }
         return FetchDescriptor(predicate: predicate)
+    }
+}
+
+enum HealthWeightEntryLinker {
+    private static let bodyMassType = HKQuantityType(.bodyMass)
+    private static let weightUnit = HKUnit.gramUnit(with: .kilo)
+
+    static func samplePredicate(for entryID: UUID) -> NSPredicate {
+        HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.weightEntryID, operatorType: .equalTo, value: entryID.uuidString)
+    }
+
+    @discardableResult static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry {
+        let existing = try fetchExistingEntry(for: sample, context: context)
+        let weight = sample.quantity.doubleValue(for: weightUnit)
+        let isAppOwnedEntry = HealthMetadataKeys.weightEntryID(from: sample) != nil
+
+        if let existing {
+            existing.date = sample.endDate
+            existing.weight = weight
+            existing.hasBeenExportedToHealth = isAppOwnedEntry
+            existing.healthSampleUUID = sample.uuid
+            existing.isAvailableInHealthKit = true
+            return existing
+        }
+
+        let entry = WeightEntry(date: sample.endDate, weight: weight, hasBeenExportedToHealth: isAppOwnedEntry, healthSampleUUID: sample.uuid, isAvailableInHealthKit: true)
+        context.insert(entry)
+        return entry
+    }
+
+    private static func fetchExistingEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry? {
+        if let existing = try context.fetch(WeightEntry.byHealthSampleUUID(sample.uuid)).first { return existing }
+
+        guard let entryID = HealthMetadataKeys.weightEntryID(from: sample) else { return nil }
+        return try context.fetch(WeightEntry.byID(entryID)).first
     }
 }

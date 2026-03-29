@@ -42,7 +42,7 @@ struct AddExercisesIntent: AppIntent {
         return "Added \(count) exercises to your workout."
     }
 
-    @MainActor private func addExercises(to plan: WorkoutPlan, context: ModelContext) -> IntentDialog {
+    private func addExercises(to plan: WorkoutPlan, context: ModelContext) -> IntentDialog {
         let resolvedExercises = resolveExercises(in: context)
         guard !resolvedExercises.isEmpty else { return "No exercises found to add." }
 
@@ -50,13 +50,13 @@ struct AddExercisesIntent: AppIntent {
             plan.addExercise(exercise)
             exercise.updateLastAddedAt()
         }
-        saveContext(context: context)
+        try? context.save()
         let count = resolvedExercises.count
         if count == 1 { return "Added exercise to your workout plan." }
         return "Added \(count) exercises to your workout plan."
     }
 
-    @MainActor private func resolveExercises(in context: ModelContext) -> [Exercise] {
+    private func resolveExercises(in context: ModelContext) -> [Exercise] {
         let ids = exercises.map(\.id)
         guard !ids.isEmpty else { return [] }
         let predicate = #Predicate<Exercise> { ids.contains($0.catalogID) }

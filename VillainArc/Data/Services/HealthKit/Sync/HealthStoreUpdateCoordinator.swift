@@ -1,7 +1,7 @@
 import Foundation
 import HealthKit
 
-@MainActor final class HealthStoreUpdateCoordinator {
+final class HealthStoreUpdateCoordinator {
     static let shared = HealthStoreUpdateCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared
@@ -23,7 +23,7 @@ import HealthKit
 
     private init() {}
 
-    func start() {
+    func installObserversIfNeeded() {
         guard authorizationManager.isHealthDataAvailable else { return }
         startWorkoutObserverIfNeeded()
         startWeightObserverIfNeeded()
@@ -35,7 +35,7 @@ import HealthKit
 
     private func startWorkoutObserverIfNeeded() {
         guard workoutObserverQuery == nil else { return }
-        let query = HKObserverQuery(sampleType: observedWorkoutType, predicate: nil) { [weak self] _, completionHandler, error in
+        let query = HKObserverQuery(sampleType: observedWorkoutType, predicate: nil) { _, completionHandler, error in
             guard error == nil else {
                 print("Health workout observer received an error: \(error!.localizedDescription)")
                 completionHandler()
@@ -45,7 +45,7 @@ import HealthKit
             nonisolated(unsafe) let completionHandler = completionHandler
             Task { @MainActor in
                 defer { completionHandler() }
-                await self?.syncNow(reason: "HealthKit workout observer")
+                await HealthSyncCoordinator.shared.syncWorkouts()
             }
         }
 
@@ -56,7 +56,7 @@ import HealthKit
     private func startWeightObserverIfNeeded() {
         guard weightObserverQuery == nil else { return }
 
-        let query = HKObserverQuery(sampleType: observedWeightType, predicate: nil) { [weak self] _, completionHandler, error in
+        let query = HKObserverQuery(sampleType: observedWeightType, predicate: nil) { _, completionHandler, error in
             guard error == nil else {
                 print("Health weight observer received an error: \(error!.localizedDescription)")
                 completionHandler()
@@ -66,7 +66,7 @@ import HealthKit
             nonisolated(unsafe) let completionHandler = completionHandler
             Task { @MainActor in
                 defer { completionHandler() }
-                await self?.syncNow(reason: "HealthKit body mass observer")
+                await HealthSyncCoordinator.shared.syncWeightEntries()
             }
         }
 
@@ -77,7 +77,7 @@ import HealthKit
     private func startStepObserverIfNeeded() {
         guard stepObserverQuery == nil else { return }
 
-        let query = HKObserverQuery(sampleType: observedStepType, predicate: nil) { [weak self] _, completionHandler, error in
+        let query = HKObserverQuery(sampleType: observedStepType, predicate: nil) { _, completionHandler, error in
             guard error == nil else {
                 print("Health step observer received an error: \(error!.localizedDescription)")
                 completionHandler()
@@ -87,7 +87,7 @@ import HealthKit
             nonisolated(unsafe) let completionHandler = completionHandler
             Task { @MainActor in
                 defer { completionHandler() }
-                await self?.syncNow(reason: "HealthKit step observer")
+                await HealthDailyMetricsSync.shared.syncSteps()
             }
         }
 
@@ -98,7 +98,7 @@ import HealthKit
     private func startWalkingRunningDistanceObserverIfNeeded() {
         guard walkingRunningDistanceObserverQuery == nil else { return }
 
-        let query = HKObserverQuery(sampleType: observedWalkingRunningDistanceType, predicate: nil) { [weak self] _, completionHandler, error in
+        let query = HKObserverQuery(sampleType: observedWalkingRunningDistanceType, predicate: nil) { _, completionHandler, error in
             guard error == nil else {
                 print("Health walking/running distance observer received an error: \(error!.localizedDescription)")
                 completionHandler()
@@ -108,7 +108,7 @@ import HealthKit
             nonisolated(unsafe) let completionHandler = completionHandler
             Task { @MainActor in
                 defer { completionHandler() }
-                await self?.syncNow(reason: "HealthKit walking/running distance observer")
+                await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
             }
         }
 
@@ -119,7 +119,7 @@ import HealthKit
     private func startActiveEnergyObserverIfNeeded() {
         guard activeEnergyObserverQuery == nil else { return }
 
-        let query = HKObserverQuery(sampleType: observedActiveEnergyType, predicate: nil) { [weak self] _, completionHandler, error in
+        let query = HKObserverQuery(sampleType: observedActiveEnergyType, predicate: nil) { _, completionHandler, error in
             guard error == nil else {
                 print("Health active energy observer received an error: \(error!.localizedDescription)")
                 completionHandler()
@@ -129,7 +129,7 @@ import HealthKit
             nonisolated(unsafe) let completionHandler = completionHandler
             Task { @MainActor in
                 defer { completionHandler() }
-                await self?.syncNow(reason: "HealthKit active energy observer")
+                await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
             }
         }
 
@@ -140,7 +140,7 @@ import HealthKit
     private func startRestingEnergyObserverIfNeeded() {
         guard restingEnergyObserverQuery == nil else { return }
 
-        let query = HKObserverQuery(sampleType: observedRestingEnergyType, predicate: nil) { [weak self] _, completionHandler, error in
+        let query = HKObserverQuery(sampleType: observedRestingEnergyType, predicate: nil) { _, completionHandler, error in
             guard error == nil else {
                 print("Health resting energy observer received an error: \(error!.localizedDescription)")
                 completionHandler()
@@ -150,7 +150,7 @@ import HealthKit
             nonisolated(unsafe) let completionHandler = completionHandler
             Task { @MainActor in
                 defer { completionHandler() }
-                await self?.syncNow(reason: "HealthKit resting energy observer")
+                await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
             }
         }
 
@@ -159,8 +159,6 @@ import HealthKit
     }
 
     func refreshBackgroundDeliveryRegistration() async {
-        start()
-
         guard !isRefreshingBackgroundDelivery else { return }
 
         isRefreshingBackgroundDelivery = true
@@ -169,42 +167,36 @@ import HealthKit
         if authorizationManager.hasRequestedWorkoutAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
-                print("Enabled HealthKit background delivery for workouts.")
             } catch { print("Failed to enable HealthKit background delivery for workouts: \(error)") }
         }
 
         if authorizationManager.hasRequestedBodyMassAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWeightType, frequency: .immediate)
-                print("Enabled HealthKit background delivery for body mass.")
             } catch { print("Failed to enable HealthKit background delivery for body mass: \(error)") }
         }
 
         if authorizationManager.hasRequestedStepCountAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedStepType, frequency: .immediate)
-                print("Enabled HealthKit background delivery for steps.")
             } catch { print("Failed to enable HealthKit background delivery for steps: \(error)") }
         }
 
         if authorizationManager.hasRequestedWalkingRunningDistanceAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWalkingRunningDistanceType, frequency: .immediate)
-                print("Enabled HealthKit background delivery for walking/running distance.")
             } catch { print("Failed to enable HealthKit background delivery for walking/running distance: \(error)") }
         }
 
         if authorizationManager.hasRequestedActiveEnergyBurnedAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedActiveEnergyType, frequency: .immediate)
-                print("Enabled HealthKit background delivery for active energy.")
             } catch { print("Failed to enable HealthKit background delivery for active energy: \(error)") }
         }
 
         if authorizationManager.hasRequestedRestingEnergyBurnedAuthorization {
             do {
                 try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedRestingEnergyType, frequency: .immediate)
-                print("Enabled HealthKit background delivery for resting energy.")
             } catch { print("Failed to enable HealthKit background delivery for resting energy: \(error)") }
         }
     }
@@ -221,9 +213,7 @@ import HealthKit
         }
 
         let task = Task { @MainActor in
-            print("Starting HealthKit sync (\(reason)).")
             await HealthSyncCoordinator.shared.syncAll()
-            print("Finished HealthKit sync (\(reason)).")
         }
 
         inFlightSyncTask = task

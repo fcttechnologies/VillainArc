@@ -22,7 +22,7 @@ struct ExerciseSuggestionContext {
     }
 }
 
-@MainActor struct RuleEngine {
+struct RuleEngine {
     private struct TargetSetContext {
         let targetSetID: UUID?
         let index: Int

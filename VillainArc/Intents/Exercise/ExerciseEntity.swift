@@ -73,14 +73,14 @@ struct ExerciseEntityQuery: EntityQuery, EntityStringQuery {
 
 }
 
-@MainActor private func fetchExercises(for catalogIDs: [String], in context: ModelContext) -> [Exercise] {
+private func fetchExercises(for catalogIDs: [String], in context: ModelContext) -> [Exercise] {
     guard !catalogIDs.isEmpty else { return [] }
     let fetchedExercises = (try? context.fetch(Exercise.withCatalogIDs(catalogIDs))) ?? []
     let exerciseByCatalogID = Dictionary(uniqueKeysWithValues: fetchedExercises.map { ($0.catalogID, $0) })
     return catalogIDs.compactMap { exerciseByCatalogID[$0] }
 }
 
-@MainActor func exerciseEntitySearchScore(for exercise: Exercise, query: String, queryTokens: [String]? = nil) -> Int {
+func exerciseEntitySearchScore(for exercise: Exercise, query: String, queryTokens: [String]? = nil) -> Int {
     let resolvedQueryTokens = queryTokens ?? normalizedTokens(for: query)
     guard !resolvedQueryTokens.isEmpty else { return 0 }
 

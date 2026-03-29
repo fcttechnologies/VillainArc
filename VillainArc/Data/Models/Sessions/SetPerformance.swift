@@ -68,7 +68,7 @@ import SwiftData
 extension SetPerformance: RestTimeEditableSet {}
 
 extension SetPerformance {
-    @MainActor func applyAcceptedSuggestionChange(_ change: PrescriptionChange, weightUnit: WeightUnit) {
+    func applyAcceptedSuggestionChange(_ change: PrescriptionChange, weightUnit: WeightUnit) {
         switch change.changeType {
         case .increaseWeight, .decreaseWeight: weight = weightUnit.fromKg(change.newValue)
         case .increaseReps, .decreaseReps: reps = Int(change.newValue)

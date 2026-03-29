@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-@MainActor extension WorkoutPlan {
+extension WorkoutPlan {
     func deleteWithSuggestionCleanup(context: ModelContext) {
         deletePendingOutcomeChanges(context: context)
         context.delete(self)

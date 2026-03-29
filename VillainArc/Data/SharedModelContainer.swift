@@ -4,7 +4,7 @@ import Foundation
 enum SharedModelContainer {
 
     static let appGroupID = "group.com.fcttechnologies.VillainArcCont"
-    @MainActor static let sharedDefaults: UserDefaults = {
+    static let sharedDefaults: UserDefaults = {
         guard let defaults = UserDefaults(suiteName: appGroupID) else {
             fatalError("App Group defaults not found for \(appGroupID). Check App Groups capability + entitlements.")
         }

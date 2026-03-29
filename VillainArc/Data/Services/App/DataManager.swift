@@ -69,7 +69,7 @@ final class DataManager {
     }
 }
 
-@MainActor func saveContext(context: ModelContext) {
+func saveContext(context: ModelContext) {
     do {
         try context.save()
     } catch {
@@ -77,9 +77,9 @@ final class DataManager {
     }
 }
 
-@MainActor private var pendingSaveTask: Task<Void, Never>?
+private var pendingSaveTask: Task<Void, Never>?
 
-@MainActor func scheduleSave(context: ModelContext, delay: Duration = .milliseconds(500)) {
+func scheduleSave(context: ModelContext, delay: Duration = .milliseconds(500)) {
     pendingSaveTask?.cancel()
     pendingSaveTask = Task {
         do {

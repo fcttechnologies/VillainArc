@@ -3,7 +3,7 @@ import SwiftData
 import UserNotifications
 
 enum RestTimerNotifications {
-    @MainActor private static let coordinator = RestTimerNotificationCoordinator()
+    private static let coordinator = RestTimerNotificationCoordinator()
     fileprivate static let notificationID = "restTimerComplete"
 
     static func schedule(endDate: Date, durationSeconds: Int) async { await coordinator.schedule(endDate: endDate, durationSeconds: durationSeconds) }
@@ -30,7 +30,7 @@ enum RestTimerNotifications {
     }
 }
 
-@MainActor private final class RestTimerNotificationCoordinator {
+private final class RestTimerNotificationCoordinator {
     private var generation = 0
 
     func schedule(endDate: Date, durationSeconds: Int) async {

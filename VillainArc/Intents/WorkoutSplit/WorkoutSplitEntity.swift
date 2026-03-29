@@ -188,7 +188,6 @@ private func weekdayName(for weekday: Int) -> String {
     return symbols[weekday - 1]
 }
 
-@MainActor
 private func workoutSplitDisplayTitle(for split: WorkoutSplit) -> String {
     let trimmed = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
@@ -197,7 +196,6 @@ private func workoutSplitDisplayTitle(for split: WorkoutSplit) -> String {
     return trimmed
 }
 
-@MainActor
 private func workoutSplitSummary(for split: WorkoutSplit, days: [WorkoutSplitFullContent.Day]) -> String {
     let dayCount = days.count
     let base = split.mode.summaryLabel
@@ -213,7 +211,6 @@ private func workoutSplitSummary(for split: WorkoutSplit, days: [WorkoutSplitFul
     return "\(base) • \(dayText) • \(labelPrefix): \(currentLabel)"
 }
 
-@MainActor
 private func sortedWorkoutSplits(_ splits: [WorkoutSplit]) -> [WorkoutSplit] {
     splits.sorted { lhs, rhs in
         if lhs.isActive != rhs.isActive {

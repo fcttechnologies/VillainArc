@@ -52,7 +52,7 @@ import SwiftData
     }
 
     // Adding exercise from plan
-    @MainActor init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
+    init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
         index = exercisePrescription.index
         catalogID = exercisePrescription.catalogID
         name = exercisePrescription.name
@@ -166,7 +166,7 @@ import SwiftData
 extension ExercisePerformance: RestTimeEditable {}
 
 extension ExercisePerformance {
-    @MainActor func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
+    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
         guard let prescription, prescription.id == event.targetExercisePrescription?.id else { return }
 
         if let targetSet = event.targetSetPrescription, let setPerformance = sortedSets.first(where: { $0.prescription?.id == targetSet.id }) {
@@ -177,7 +177,7 @@ extension ExercisePerformance {
         originalTargetSnapshot = ExerciseTargetSnapshot(prescription: prescription)
     }
 
-    @MainActor private func syncRepRangeFromPrescription() {
+    private func syncRepRangeFromPrescription() {
         guard let prescriptionRepRange = prescription?.repRange else { return }
 
         if repRange == nil { repRange = RepRangePolicy() }

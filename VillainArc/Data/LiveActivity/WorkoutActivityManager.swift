@@ -63,7 +63,7 @@ enum WorkoutActivityManager {
             return
         }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        Task { @MainActor in
+        Task {
             let activityIDs = Activity<WorkoutActivityAttributes>.activities.map(\.id)
             await endActivities(ids: activityIDs)
             requestActivity(for: workout)

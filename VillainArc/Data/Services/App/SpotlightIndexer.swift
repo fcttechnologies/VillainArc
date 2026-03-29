@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 import AppIntents
 import SwiftData
 
-@MainActor
 enum SpotlightIndexer {
     static let workoutSessionIdentifierPrefix = "workoutSession:"
     static let workoutPlanIdentifierPrefix = "workoutPlan:"

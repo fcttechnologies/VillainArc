@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-@MainActor enum WorkoutDeletionCoordinator {
+enum WorkoutDeletionCoordinator {
     static func deleteCompletedWorkouts(_ workouts: [WorkoutSession], context: ModelContext, settings: AppSettings? = nil, save: Bool = true) {
         guard !workouts.isEmpty else { return }
 

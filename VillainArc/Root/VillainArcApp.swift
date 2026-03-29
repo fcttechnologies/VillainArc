@@ -1,31 +1,33 @@
 import CoreSpotlight
 import SwiftUI
 import SwiftData
+import UIKit
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+        return true
+    }
+}
 
 @main
 struct VillainArcApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
-                    Task { @MainActor in
-                        AppRouter.shared.handleSpotlight(userActivity)
-                    }
+                    AppRouter.shared.handleSpotlight(userActivity)
                 }
                 .onContinueUserActivity("com.villainarc.siri.startWorkout") { userActivity in
-                    Task { @MainActor in
-                        AppRouter.shared.handleSiriWorkout(userActivity)
-                    }
+                    AppRouter.shared.handleSiriWorkout(userActivity)
                 }
                 .onContinueUserActivity("com.villainarc.siri.cancelWorkout") { userActivity in
-                    Task { @MainActor in
-                        AppRouter.shared.handleSiriCancelWorkout(userActivity)
-                    }
+                    AppRouter.shared.handleSiriCancelWorkout(userActivity)
                 }
                 .onContinueUserActivity("com.villainarc.siri.endWorkout") { userActivity in
-                    Task { @MainActor in
-                        AppRouter.shared.handleSiriEndWorkout(userActivity)
-                    }
+                    AppRouter.shared.handleSiriEndWorkout(userActivity)
                 }
         }
         .modelContainer(SharedModelContainer.container)

@@ -62,7 +62,6 @@ struct RecentExercisesSectionView: View {
         .accessibilityHint(AccessibilityText.recentExercisesUnavailableHint)
     }
 
-    @MainActor
     private func fetchRecentExercises() {
         guard !recentCatalogIDs.isEmpty else {
             exercises = []

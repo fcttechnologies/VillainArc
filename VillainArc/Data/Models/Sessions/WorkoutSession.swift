@@ -40,7 +40,7 @@ import SwiftUI
     }
 
     // From workout plan
-    @MainActor init(from plan: WorkoutPlan) {
+    init(from plan: WorkoutPlan) {
         title = plan.title
         notes = plan.notes
         workoutPlan = plan
@@ -83,7 +83,7 @@ enum UnfinishedSetCase {
     case emptyAndLogged
 }
 
-struct UnfinishedSetSummary {
+nonisolated struct UnfinishedSetSummary {
     let emptySets: [SetPerformance]
     let loggedSets: [SetPerformance]
 
@@ -142,14 +142,14 @@ extension WorkoutSession {
         return survivingExerciseCount > 0 ? .finished : .workoutDeleted
     }
 
-    @MainActor func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
+    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
         guard statusValue == .pending else { return }
         guard let targetExerciseID = event.targetExercisePrescription?.id, let performance = sortedExercises.first(where: { $0.prescription?.id == targetExerciseID }) else { return }
 
         performance.applyAcceptedSuggestionEvent(event, weightUnit: weightUnit)
     }
 
-    @MainActor var unfinishedSetSummary: UnfinishedSetSummary {
+    var unfinishedSetSummary: UnfinishedSetSummary {
         var emptySets: [SetPerformance] = []
         var loggedSets: [SetPerformance] = []
 
@@ -243,7 +243,7 @@ extension WorkoutSession {
         for exercise in exercises ?? [] { for set in exercise.sets ?? [] { set.weight = (unit.fromKg(set.weight) * 100).rounded() / 100 } }
     }
 
-    @MainActor func finish(action: WorkoutFinishAction, context: ModelContext) -> WorkoutFinishResult {
+    func finish(action: WorkoutFinishAction, context: ModelContext) -> WorkoutFinishResult {
         let summary = unfinishedSetSummary
         switch action {
         case .markLoggedComplete:

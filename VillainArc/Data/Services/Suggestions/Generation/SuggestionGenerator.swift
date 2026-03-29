@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-@MainActor struct SuggestionGenerator {
+struct SuggestionGenerator {
     static func generateSuggestions(for session: WorkoutSession, context: ModelContext) async -> [SuggestionEvent] {
         guard let plan = session.workoutPlan else { return [] }
 

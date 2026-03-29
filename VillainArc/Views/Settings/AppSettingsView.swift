@@ -19,9 +19,6 @@ struct AppSettingsView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task {
-                        _ = try? SystemState.ensureAppSettings(context: context)
-                    }
             }
         }
         .listSectionSpacing(20)
@@ -156,7 +153,6 @@ struct AppSettingsView: View {
         }
     }
 
-    @MainActor
     private func refreshHealthAuthorizationState() async {
         isRefreshingHealthStatus = true
         let manager = HealthAuthorizationManager.shared
@@ -165,7 +161,6 @@ struct AppSettingsView: View {
         isRefreshingHealthStatus = false
     }
 
-    @MainActor
     private func handleHealthAuthorizationAction() async {
         guard !isHandlingHealthAction else { return }
         isHandlingHealthAction = true

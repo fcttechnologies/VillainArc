@@ -4,6 +4,6 @@ func formattedWeightValue(_ kg: Double, unit: WeightUnit, fractionDigits: Closed
     unit.fromKg(kg).formatted(.number.precision(.fractionLength(fractionDigits)))
 }
 
-func formattedWeightText(_ kg: Double, unit: WeightUnit, fractionDigits: ClosedRange<Int> = 0...1) -> String {
+nonisolated func formattedWeightText(_ kg: Double, unit: WeightUnit, fractionDigits: ClosedRange<Int> = 0...1) -> String {
     unit.display(kg, fractionDigits: fractionDigits)
 }

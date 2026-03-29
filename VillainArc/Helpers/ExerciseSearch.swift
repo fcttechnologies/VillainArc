@@ -27,7 +27,7 @@ nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
     return tokens
 }
 
-@MainActor func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
+func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     guard !queryTokens.isEmpty else { return 0 }
 
     let nameTokens = normalizedTokens(for: exercise.name)
@@ -68,12 +68,12 @@ private nonisolated func tokenMatchScore(for token: String, in tokens: [String],
     return nil
 }
 
-@MainActor func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
+func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
     if !exercise.searchTokens.isEmpty { return exercise.searchTokens }
     return exerciseSearchTokens(for: exercise)
 }
 
-@MainActor func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
+func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
     guard !queryTokens.isEmpty else { return true }
 
     let haystackTokens = cachedExerciseSearchTokens(for: exercise) + additionalTokens
@@ -89,7 +89,7 @@ private nonisolated func tokenMatchScore(for token: String, in tokens: [String],
     }
 }
 
-@MainActor func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrderedBefore: (Exercise, Exercise) -> Bool, score: ExerciseSearchScoreResolver, fuzzyAdditionalTokens: ExerciseFuzzyTokenResolver? = nil) -> [Exercise] {
+func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrderedBefore: (Exercise, Exercise) -> Bool, score: ExerciseSearchScoreResolver, fuzzyAdditionalTokens: ExerciseFuzzyTokenResolver? = nil) -> [Exercise] {
     let cleanText = query.trimmingCharacters(in: .whitespacesAndNewlines)
     let queryTokens = normalizedTokens(for: cleanText)
 

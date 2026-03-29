@@ -61,7 +61,7 @@ extension EquipmentType {
         }
     }
 
-    @MainActor func progressionStepValueText(preferredWeightChange: Double?, unit: WeightUnit) -> String {
+    func progressionStepValueText(preferredWeightChange: Double?, unit: WeightUnit) -> String {
         guard let preferredWeightChange, preferredWeightChange > 0 else {
             return "System Default"
         }
@@ -166,7 +166,7 @@ extension EquipmentType {
         }
     }
 
-    @MainActor func progressionStepPreviewLines(amountKg: Double, unit: WeightUnit) -> [String] {
+    func progressionStepPreviewLines(amountKg: Double, unit: WeightUnit) -> [String] {
         let amountText = formattedWeightText(amountKg, unit: unit, fractionDigits: 0...2)
 
         if self == .bodyweight {

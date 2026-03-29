@@ -436,7 +436,6 @@ struct WorkoutSummaryView: View {
         }
     }
 
-    @MainActor
     private func loadWorkoutHealthSummaryItems() async {
         guard let healthWorkout = workout.healthWorkout else {
             workoutHealthSummaryItems = []
@@ -488,7 +487,6 @@ struct WorkoutSummaryView: View {
         }
     }
 
-    @MainActor
     private func generateSuggestionsIfNeeded() async {
         guard shouldShowSuggestions else { return }
         guard !isGeneratingSuggestions else { return }
@@ -512,7 +510,6 @@ struct WorkoutSummaryView: View {
         }
     }
 
-    @MainActor
     private func deferRemainingSuggestions() {
         guard !sessionSuggestionEvents.isEmpty else { return }
         for event in sessionSuggestionEvents where event.decision == .pending {

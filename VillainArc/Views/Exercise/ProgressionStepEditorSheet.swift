@@ -219,7 +219,6 @@ struct ProgressionStepEditorSheet: View {
     .sampleDataContainer()
 }
 
-@MainActor
 private func sampleExerciseForPreview() -> Exercise {
     let exercise = Exercise(from: ExerciseCatalog.all.first!)
     exercise.preferredWeightChange = 2.5

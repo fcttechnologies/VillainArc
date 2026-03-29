@@ -2,7 +2,7 @@ import Foundation
 import HealthKit
 import SwiftData
 
-@MainActor final class HealthDailyMetricsSync {
+final class HealthDailyMetricsSync {
     private enum RowChange {
         case none
         case created
@@ -39,7 +39,12 @@ import SwiftData
 
     private init() {}
 
-    func syncAll() async { await syncSteps(); await syncWalkingRunningDistance(); await syncActiveEnergyBurned(); await syncRestingEnergyBurned() }
+    func syncAll() async {
+        await syncSteps()
+        await syncWalkingRunningDistance()
+        await syncActiveEnergyBurned()
+        await syncRestingEnergyBurned()
+    }
 
     func syncSteps() async {
         guard authorizationManager.isHealthDataAvailable else { return }
@@ -50,7 +55,7 @@ import SwiftData
         defer { isSyncingSteps = false }
 
         let context = SharedModelContainer.container.mainContext
-        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.stepCountSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.stepCountAnchor
@@ -60,7 +65,6 @@ import SwiftData
             HealthSyncPreferences.stepCountAnchor = result.newAnchor
             syncState.stepCountSyncedRange = result.newSyncedRange
             try context.save()
-            print("Health steps sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health steps: \(error)")
         }
@@ -75,7 +79,7 @@ import SwiftData
         defer { isSyncingWalkingRunningDistance = false }
 
         let context = SharedModelContainer.container.mainContext
-        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.walkingRunningDistanceSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.walkingRunningDistanceAnchor
@@ -85,7 +89,6 @@ import SwiftData
             HealthSyncPreferences.walkingRunningDistanceAnchor = result.newAnchor
             syncState.walkingRunningDistanceSyncedRange = result.newSyncedRange
             try context.save()
-            print("Health walking/running distance sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health walking/running distance: \(error)")
         }
@@ -100,7 +103,7 @@ import SwiftData
         defer { isSyncingActiveEnergy = false }
 
         let context = SharedModelContainer.container.mainContext
-        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.activeEnergyBurnedSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.activeEnergyBurnedAnchor
@@ -110,7 +113,6 @@ import SwiftData
             HealthSyncPreferences.activeEnergyBurnedAnchor = result.newAnchor
             syncState.activeEnergyBurnedSyncedRange = result.newSyncedRange
             try context.save()
-            print("Health active energy sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health active energy: \(error)")
         }
@@ -125,7 +127,7 @@ import SwiftData
         defer { isSyncingRestingEnergy = false }
 
         let context = SharedModelContainer.container.mainContext
-        guard let syncState = try? SystemState.ensureHealthSyncState(context: context) else { return }
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.restingEnergyBurnedSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.restingEnergyBurnedAnchor
@@ -135,7 +137,6 @@ import SwiftData
             HealthSyncPreferences.restingEnergyBurnedAnchor = result.newAnchor
             syncState.restingEnergyBurnedSyncedRange = result.newSyncedRange
             try context.save()
-            print("Health resting energy sync completed. Fetched samples: \(result.fetchedSampleCount). Deleted samples: \(result.deletedSampleCount). Refreshed days: \(result.refreshedDayCount). Created rows: \(result.createdRowCount). Updated rows: \(result.updatedRowCount). Refreshed range: \(result.refreshedRange.map { "\($0.lowerBound) - \($0.upperBound)" } ?? "none").")
         } catch {
             print("Failed to sync Health resting energy: \(error)")
         }

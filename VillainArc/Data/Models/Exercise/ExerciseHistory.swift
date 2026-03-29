@@ -54,7 +54,7 @@ import SwiftData
     /// - Workout completed (WorkoutSummaryView)
     /// - Workout deleted (if catalogID affected)
     /// - Manual rebuild (migration, data fix)
-    @MainActor func recalculate(using performances: [ExercisePerformance], context: ModelContext) {
+    func recalculate(using performances: [ExercisePerformance], context: ModelContext) {
         guard !performances.isEmpty else {
             reset(context: context)
             return
@@ -136,7 +136,7 @@ import SwiftData
         self.progressionPoints?.removeAll()
     }
 
-    @MainActor private func summarizedSessions(from performances: [ExercisePerformance]) -> [ExerciseHistorySessionSummary] {
+    private func summarizedSessions(from performances: [ExercisePerformance]) -> [ExerciseHistorySessionSummary] {
         let groupedBySession = Dictionary(grouping: performances) { performance in performance.workoutSession?.id ?? performance.id }
 
         var summaries: [ExerciseHistorySessionSummary] = []
@@ -184,7 +184,7 @@ private struct ExerciseHistorySessionSummary {
     let bestWeight: Double?
     let bestReps: Int?
 
-    @MainActor init?(performances: [ExercisePerformance]) {
+    nonisolated init?(performances: [ExercisePerformance]) {
         guard let first = performances.first else { return nil }
 
         id = first.workoutSession?.id ?? first.id

@@ -180,7 +180,7 @@ enum HealthWorkoutSummaryStatsLoader {
     }
 }
 
-@MainActor @Observable final class HealthWorkoutDetailLoader {
+@Observable final class HealthWorkoutDetailLoader {
     private static let chartMaxPoints = 180
     private let cachedWorkout: HealthWorkout
     private let healthStore = HealthAuthorizationManager.shared.healthStore

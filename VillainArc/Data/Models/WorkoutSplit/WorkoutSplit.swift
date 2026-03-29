@@ -59,7 +59,7 @@ import SwiftData
         rotationCurrentIndex = normalized
     }
 
-    @MainActor func refreshRotationIfNeeded(today: Date = .now, context: ModelContext) {
+    func refreshRotationIfNeeded(today: Date = .now, context: ModelContext) {
         guard mode == .rotation && !(days?.isEmpty ?? true) else { return }
         let cal = Calendar.current
         let last = rotationLastUpdatedDate ?? today
@@ -75,7 +75,9 @@ import SwiftData
             rotationLastUpdatedDate = startToday
             didUpdate = true
         }
-        if didUpdate { saveContext(context: context) }
+        if didUpdate {
+            try? context.save()
+        }
     }
 
     func deleteDay(_ day: WorkoutSplitDay) {

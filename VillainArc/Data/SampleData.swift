@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-@MainActor class PreviewDataContainer {
+class PreviewDataContainer {
     var modelContainer: ModelContainer
 
     var context: ModelContext { modelContainer.mainContext }
@@ -415,7 +415,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
 
 // MARK: - Sample Accessors
 
-@MainActor func sampleCompletedSession() -> WorkoutSession {
+func sampleCompletedSession() -> WorkoutSession {
     let sessions = (try? sampleContainer.context.fetch(WorkoutSession.completedSession)) ?? []
     if let session = sessions.first { return session }
 
@@ -426,7 +426,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleIncompleteSession() -> WorkoutSession {
+func sampleIncompleteSession() -> WorkoutSession {
     let sessions = (try? sampleContainerWithIncomplete.context.fetch(WorkoutSession.incomplete)) ?? []
     if let session = sessions.first { return session }
 
@@ -435,7 +435,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleCompletedPlan() -> WorkoutPlan {
+func sampleCompletedPlan() -> WorkoutPlan {
     let descriptor = FetchDescriptor(predicate: WorkoutPlan.completedPredicate)
     let plans = (try? sampleContainer.context.fetch(descriptor)) ?? []
     if let plan = plans.first(where: { $0.title == "Push Day" }) ?? plans.first { return plan }
@@ -445,7 +445,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleIncompletePlan() -> WorkoutPlan {
+func sampleIncompletePlan() -> WorkoutPlan {
     let plans = (try? sampleContainerWithIncomplete.context.fetch(WorkoutPlan.incomplete)) ?? []
     if let plan = plans.first { return plan }
 
@@ -454,13 +454,13 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleEditingPlan() -> WorkoutPlan {
+func sampleEditingPlan() -> WorkoutPlan {
     let plan = sampleCompletedPlan()
     plan.isEditing = true
     return plan
 }
 
-@MainActor func sampleWeeklySplit() -> WorkoutSplit {
+func sampleWeeklySplit() -> WorkoutSplit {
     let descriptor = FetchDescriptor<WorkoutSplit>()
     let splits = (try? sampleContainer.context.fetch(descriptor)) ?? []
     if let split = splits.first(where: { $0.mode == .weekly }) { return split }
@@ -471,7 +471,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleRotationSplit() -> WorkoutSplit {
+func sampleRotationSplit() -> WorkoutSplit {
     let descriptor = FetchDescriptor<WorkoutSplit>()
     let splits = (try? sampleContainer.context.fetch(descriptor)) ?? []
     if let split = splits.first(where: { $0.mode == .rotation }) { return split }
@@ -485,7 +485,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleSessionWithSuggestions() -> WorkoutSession {
+func sampleSessionWithSuggestions() -> WorkoutSession {
     let sessions = (try? sampleContainerWithSuggestions.context.fetch(WorkoutSession.incomplete)) ?? []
     if let session = sessions.first { return session }
     // Should have been created
@@ -494,7 +494,7 @@ private let sampleContainerSuggestionGeneration: PreviewDataContainer = {
     return fallback
 }
 
-@MainActor func sampleSuggestionGenerationSession() -> WorkoutSession {
+func sampleSuggestionGenerationSession() -> WorkoutSession {
     let summaryStatus = SessionStatus.summary.rawValue
     let predicate = #Predicate<WorkoutSession> { $0.status == summaryStatus }
     var descriptor = FetchDescriptor(predicate: predicate)

@@ -251,9 +251,6 @@ struct ChangeDescriptionRow: View {
     }
 }
 
-
-
-@MainActor
 func applyChange(_ change: PrescriptionChange, in event: SuggestionEvent, context: ModelContext) {
     switch change.changeType {
     case .increaseWeight, .decreaseWeight:
@@ -275,7 +272,6 @@ func applyChange(_ change: PrescriptionChange, in event: SuggestionEvent, contex
     }
 }
 
-@MainActor
 func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .accepted
     for change in group.changes {
@@ -285,19 +281,16 @@ func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     saveContext(context: context)
 }
 
-@MainActor
 func rejectGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .rejected
     saveContext(context: context)
 }
 
-@MainActor
 func deferGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .deferred
     saveContext(context: context)
 }
 
-@MainActor
 private func hydratePendingSessionCopy(for event: SuggestionEvent, context: ModelContext) {
     guard let workout = event.targetExercisePrescription?.activePerformance?.workoutSession,
           workout.statusValue == .pending else {

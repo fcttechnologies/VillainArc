@@ -14,7 +14,7 @@ enum CloudKitStatus {
     case accountIssue
 }
 
-@MainActor class CloudKitStatusChecker {
+class CloudKitStatusChecker {
 
     static func checkiCloudStatus() -> iCloudStatus {
         // Check if user is signed into iCloud

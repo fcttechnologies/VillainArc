@@ -2,7 +2,7 @@ import CoreSpotlight
 import SwiftData
 import SwiftUI
 
-@MainActor @Observable final class AppRouter {
+@Observable final class AppRouter {
     struct WeightGoalCompletionRoute: Identifiable, Hashable {
         enum Trigger: String, Hashable {
             case achievedByEntry

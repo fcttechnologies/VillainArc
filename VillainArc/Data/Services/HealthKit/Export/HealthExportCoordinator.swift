@@ -2,7 +2,7 @@ import Foundation
 import HealthKit
 import SwiftData
 
-@MainActor final class HealthExportCoordinator {
+final class HealthExportCoordinator {
     static let shared = HealthExportCoordinator()
 
     private let authorizationManager = HealthAuthorizationManager.shared

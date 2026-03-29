@@ -1,6 +1,6 @@
 import UIKit
 
-@MainActor enum Haptics {
+enum Haptics {
     private static let impactGenerators = ImpactGeneratorCache()
     private static let selectionGenerator = UISelectionFeedbackGenerator()
     private static let notificationGenerator = UINotificationFeedbackGenerator()
@@ -22,7 +22,7 @@ import UIKit
     }
 }
 
-@MainActor private final class ImpactGeneratorCache {
+private final class ImpactGeneratorCache {
     private var generators: [Int: UIImpactFeedbackGenerator] = [:]
     func generator(for style: UIImpactFeedbackGenerator.FeedbackStyle) -> UIImpactFeedbackGenerator {
         let key = style.rawValue

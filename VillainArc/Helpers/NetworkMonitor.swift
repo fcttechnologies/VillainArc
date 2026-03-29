@@ -1,14 +1,18 @@
 import Foundation
 import Network
 
-@Observable @MainActor class NetworkMonitor {
+@Observable class NetworkMonitor {
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")
 
     var isConnected = false
 
     init() {
-        monitor.pathUpdateHandler = { path in Task { @MainActor in self.isConnected = path.status == .satisfied } }
+        monitor.pathUpdateHandler = { path in
+            Task { @MainActor in
+                self.isConnected = path.status == .satisfied
+            }
+        }
         monitor.start(queue: queue)
     }
 

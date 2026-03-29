@@ -1,16 +1,17 @@
 import AppIntents
 import SwiftData
 
-@MainActor enum SetupGuard {
+enum SetupGuard {
+    static func isReady(context: ModelContext) -> Bool {
+        guard DataManager.hasCompletedInitialBootstrap() else { return false }
+        guard (try? context.fetch(AppSettings.single).first) != nil else { return false }
+        guard (try? context.fetch(HealthSyncState.single).first) != nil else { return false }
+        guard let profile = try? context.fetch(UserProfile.single).first else { return false }
+        return profile.firstMissingStep == nil
+    }
+
     static func requireReady(context: ModelContext) throws {
-        guard DataManager.hasCompletedInitialBootstrap() else { throw SetupGuardError.onboardingNotComplete }
-
-        guard (try context.fetch(AppSettings.single).first) != nil else { throw SetupGuardError.onboardingNotComplete }
-        guard (try context.fetch(HealthSyncState.single).first) != nil else { throw SetupGuardError.onboardingNotComplete }
-
-        guard let profile = try context.fetch(UserProfile.single).first else { throw SetupGuardError.onboardingNotComplete }
-
-        guard profile.firstMissingStep == nil else { throw SetupGuardError.onboardingNotComplete }
+        guard isReady(context: context) else { throw SetupGuardError.onboardingNotComplete }
     }
 
     static func requireNoActiveFlow(context: ModelContext) throws {

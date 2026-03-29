@@ -22,7 +22,6 @@ struct RootView: View {
             .onChange(of: onboardingManager.state) { _, newState in
                 guard newState == .ready else { return }
                 AppRouter.shared.checkForUnfinishedData()
-                HealthStoreUpdateCoordinator.shared.start()
                 Task {
                     await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                     await HealthStoreUpdateCoordinator.shared.syncNow()
@@ -36,7 +35,6 @@ struct RootView: View {
             }
     }
 
-    @MainActor
     private func cleanupEditingWorkoutPlanCopies() {
         let context = SharedModelContainer.container.mainContext
         let editingCopies = (try? context.fetch(WorkoutPlan.editingCopies)) ?? []

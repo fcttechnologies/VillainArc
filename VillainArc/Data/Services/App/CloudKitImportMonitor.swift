@@ -9,7 +9,7 @@ enum CloudKitImportStatus: Equatable {
     case failed(String)
 }
 
-@MainActor final class CloudKitImportMonitor {
+final class CloudKitImportMonitor {
     static let shared = CloudKitImportMonitor()
 
     private(set) var status: CloudKitImportStatus = .idle
