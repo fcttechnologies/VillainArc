@@ -52,11 +52,64 @@ Why sleep comes first:
 
 Recommended design:
 
-- add a daily sleep cache model rather than storing raw HealthKit sleep samples in SwiftData
-- anchor sleep to the wake date, not a simple midnight calendar day
-- start with the simplest useful metrics:
-  - total asleep duration
-  - optionally total in-bed duration
+- use a hybrid approach:
+  - persist a lightweight nightly sleep summary in SwiftData
+  - load raw stage and interval detail on demand when the user opens sleep detail
+- do not store every raw HealthKit sleep sample in SwiftData
+- anchor each night to the wake date, not a simple midnight calendar day
+- rebuild whole affected nights when sleep samples change rather than trying to patch tiny fragments in place
+
+Recommended persisted model:
+
+- `HealthSleepNight`
+- one row per wake date
+- enough summary data to power cards, charts, and future coaching context without persisting raw stage intervals
+
+Recommended summary fields:
+
+- `wakeDate`
+- `sleepStart`
+- `sleepEnd`
+- `timeAsleep`
+- `timeInBed`
+- `awakeWhileInBed`
+- `remDuration`
+- `coreDuration`
+- `deepDuration`
+- `napDuration`
+- `hasStageBreakdown`
+- `sourceName`
+- `isAvailableInHealthKit`
+
+Derived values can stay computed:
+
+- sleep efficiency
+- bedtime and wake time display values
+- stage percentages
+- restorative sleep totals
+- primary sleep versus naps
+
+Recommended sync approach:
+
+- add sleep authorization using `sleepAnalysis`
+- create a dedicated `HealthSleepSync` service instead of forcing sleep into the existing daily metrics sync
+- use HealthKit sleep-analysis changes as the trigger, then rebuild affected wake dates from raw samples
+- track sleep sync state and coverage similarly to the other Health cache models
+
+Recommended grouping behavior:
+
+- identify one primary overnight sleep block for each wake date
+- accumulate sleep stages for that primary block when stage data is available
+- roll additional sleep on the same wake date into `napDuration`
+- if only older-style sleep data exists, still populate `timeAsleep` and `timeInBed` and mark `hasStageBreakdown = false`
+
+Recommended detail behavior:
+
+- add a `HealthSleepDetailLoader`
+- start from the cached `HealthSleepNight` summary for fast list and card rendering
+- fetch raw stage and interval detail only when the user opens a sleep detail view
+- build the timeline, stage segments, awakenings, and nap breakdown dynamically at that point
+- this should mirror the pattern used by the Health workout detail loader: cache summaries first, load richer detail only when needed
 
 Sleep will later become one of the contextual inputs for suggestions, outcome interpretation, and session adaptation.
 

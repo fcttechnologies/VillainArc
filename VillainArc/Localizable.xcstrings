@@ -160,9 +160,6 @@
     "%lld bpm" : {
 
     },
-    "%lld cal" : {
-
-    },
     "%lld cm" : {
 
     },
@@ -267,9 +264,6 @@
 
     },
     "Active" : {
-
-    },
-    "active calories" : {
 
     },
     "Active Split" : {
@@ -477,9 +471,6 @@
 
     },
     "Cable (Single)" : {
-
-    },
-    "cal" : {
 
     },
     "Calves" : {
@@ -1159,12 +1150,12 @@
     "Latest Date" : {
 
     },
-    "Latest energy entry %@. %@ total calories. %@ active calories. Recent entries chart." : {
+    "Latest energy entry %@. %@ total energy. %@ active energy. Recent entries chart." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Latest energy entry %1$@. %2$@ total calories. %3$@ active calories. Recent entries chart."
+            "value" : "Latest energy entry %1$@. %2$@ total energy. %3$@ active energy. Recent entries chart."
           }
         }
       }
@@ -1578,22 +1569,22 @@
     "Okay" : {
 
     },
-    "On average, you burn %@ calories on %@." : {
+    "On average, you burn %@ %@ on %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "On average, you burn %1$@ calories on %2$@."
+            "value" : "On average, you burn %1$@ %2$@ on %3$@."
           }
         }
       }
     },
-    "On average, you burn the most calories on %@. %@ calories." : {
+    "On average, you burn the most calories on %@. %@ %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "On average, you burn the most calories on %1$@. %2$@ calories."
+            "value" : "On average, you burn the most calories on %1$@. %2$@ %3$@."
           }
         }
       }
@@ -1618,10 +1609,10 @@
         }
       }
     },
-    "On average, you're burning %@ calories this month than you did last month." : {
+    "On average, you're burning %@ amount of energy this month as you did last month." : {
 
     },
-    "On average, you're burning %@ number of calories this month as you did last month." : {
+    "On average, you're burning %@ energy this month than you did last month." : {
 
     },
     "On average, you're walking %@ this month as you did last month." : {
@@ -2426,10 +2417,10 @@
     "Smith Machine" : {
 
     },
-    "So far this year, you're burning %@ calories a day than you did last year." : {
+    "So far this year, you're burning %@ amount of energy a day as you did last year." : {
 
     },
-    "So far this year, you're burning %@ number of calories a day as you did last year." : {
+    "So far this year, you're burning %@ energy a day than you did last year." : {
 
     },
     "So far this year, you're taking %@ number of steps a day as you did last year." : {
@@ -2672,7 +2663,7 @@
     "That workout plan is no longer available." : {
 
     },
-    "These units control how weight, height, and distance are displayed throughout the app." : {
+    "These units control how weight, height, distance, and energy are displayed throughout the app." : {
 
     },
     "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing." : {
@@ -2748,9 +2739,6 @@
 
     },
     "Total" : {
-
-    },
-    "total calories" : {
 
     },
     "Train your entire body each session" : {
@@ -2879,7 +2867,7 @@
     "Weekday" : {
 
     },
-    "Weekday average active calories chart" : {
+    "Weekday average active energy chart" : {
 
     },
     "Weekday average steps chart" : {
@@ -2888,7 +2876,7 @@
     "Weekday averages need at least 2 entries for every weekday" : {
 
     },
-    "Weekday calorie averages are unavailable" : {
+    "Weekday energy averages are unavailable" : {
 
     },
     "Weekday step averages are unavailable" : {

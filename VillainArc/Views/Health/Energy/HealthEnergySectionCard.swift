@@ -6,18 +6,36 @@ struct HealthEnergySectionCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let router = AppRouter.shared
     @Query(HealthEnergy.summary, animation: .smooth) private var summaryEntries: [HealthEnergy]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var energyUnit: EnergyUnit {
+        appSettings.first?.energyUnit ?? .systemDefault
+    }
     
     private var latestEntry: HealthEnergy? {
         summaryEntries.first
     }
     
     private var chartSegments: [HealthEnergy.ChartSegment] {
-        summaryEntries.flatMap(\.chartSegments)
+        summaryEntries.flatMap { entry in
+            HealthEnergy.makeChartSegments(
+                date: entry.date,
+                startDate: entry.date,
+                endDate: entry.date,
+                sampleCount: 1,
+                activeEnergy: energyUnit.fromKilocalories(entry.activeEnergyBurned),
+                restingEnergy: energyUnit.fromKilocalories(entry.restingEnergyBurned)
+            )
+        }
     }
     
     private var cardAccessibilityLabel: String {
         guard let latestEntry else { return AccessibilityText.healthEnergySectionEmptyValue }
-        return AccessibilityText.healthEnergySectionValue(dateText: formattedRecentDay(latestEntry.date), totalEnergy: Int(latestEntry.totalEnergyBurned.rounded()), activeEnergy: Int(latestEntry.activeEnergyBurned.rounded()))
+        return AccessibilityText.healthEnergySectionValue(
+            dateText: formattedRecentDay(latestEntry.date),
+            totalEnergyText: formattedEnergyAccessibilityText(latestEntry.totalEnergyBurned, unit: energyUnit),
+            activeEnergyText: formattedEnergyAccessibilityText(latestEntry.activeEnergyBurned, unit: energyUnit)
+        )
     }
     
     var body: some View {
@@ -47,8 +65,10 @@ struct HealthEnergySectionCard: View {
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 1) {
                             HStack(alignment: .lastTextBaseline, spacing: 2) {
-                                Text(Int(latestEntry.activeEnergyBurned.rounded()), format: .number)
-                                    .contentTransition(.numericText(value: latestEntry.activeEnergyBurned))
+                                let activeEnergy = energyUnit.fromKilocalories(latestEntry.activeEnergyBurned)
+
+                                Text(Int(activeEnergy.rounded()), format: .number)
+                                    .contentTransition(.numericText(value: activeEnergy))
                                     .font(.title3)
                                     .bold()
                                 
@@ -58,9 +78,11 @@ struct HealthEnergySectionCard: View {
                             .font(.subheadline)
                             
                             HStack(alignment: .lastTextBaseline, spacing: 2) {
-                                Text(Int(latestEntry.totalEnergyBurned.rounded()), format: .number)
+                                let totalEnergy = energyUnit.fromKilocalories(latestEntry.totalEnergyBurned)
+
+                                Text(Int(totalEnergy.rounded()), format: .number)
                                     .font(.largeTitle)
-                                    .contentTransition(.numericText(value: latestEntry.totalEnergyBurned))
+                                    .contentTransition(.numericText(value: totalEnergy))
                                 
                                 Text("Total")
                                     .font(.title2)

@@ -15,10 +15,11 @@ import SwiftData
     var duration: TimeInterval = 0
     var activityTypeRawValue: UInt = HKWorkoutActivityType.other.rawValue
     var isIndoorWorkout: Bool?
+    var averageHeartRateBPM: Double?
+    var maximumHeartRateBPM: Double?
     var activeEnergyBurned: Double?
     var restingEnergyBurned: Double?
     var totalDistance: Double?
-    var sourceName: String = ""
     var isAvailableInHealthKit: Bool = true
 
     var activityType: HKWorkoutActivityType {
@@ -39,10 +40,12 @@ import SwiftData
         duration = workout.duration
         activityType = workout.workoutActivityType
         isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
+        let heartRateStats = Self.heartRateStats(for: workout)
+        averageHeartRateBPM = heartRateStats.average
+        maximumHeartRateBPM = heartRateStats.maximum
         activeEnergyBurned = Self.energyBurned(for: Self.activeEnergyType, in: workout)
         restingEnergyBurned = Self.energyBurned(for: Self.restingEnergyType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
-        sourceName = workout.sourceRevision.source.name
         isAvailableInHealthKit = true
     }
 
@@ -52,15 +55,27 @@ import SwiftData
         duration = workout.duration
         activityType = workout.workoutActivityType
         isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
+        let heartRateStats = Self.heartRateStats(for: workout)
+        averageHeartRateBPM = heartRateStats.average
+        maximumHeartRateBPM = heartRateStats.maximum
         activeEnergyBurned = Self.energyBurned(for: Self.activeEnergyType, in: workout)
         restingEnergyBurned = Self.energyBurned(for: Self.restingEnergyType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
-        sourceName = workout.sourceRevision.source.name
         isAvailableInHealthKit = true
     }
 
     private static func energyBurned(for type: HKQuantityType, in workout: HKWorkout) -> Double? {
         workout.statistics(for: type)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+    }
+
+    private static func heartRateStats(for workout: HKWorkout) -> (average: Double?, maximum: Double?) {
+        let heartRateType = HKQuantityType(.heartRate)
+        let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+        let statistics = workout.statistics(for: heartRateType)
+        return (
+            statistics?.averageQuantity()?.doubleValue(for: bpmUnit),
+            statistics?.maximumQuantity()?.doubleValue(for: bpmUnit)
+        )
     }
 }
 

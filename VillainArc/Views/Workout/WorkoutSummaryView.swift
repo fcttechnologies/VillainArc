@@ -32,6 +32,7 @@ struct WorkoutSummaryView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
@@ -450,7 +451,7 @@ struct WorkoutSummaryView: View {
         }
 
         if let totalEnergyBurned = healthStats.totalEnergyBurned {
-            items.append(SummaryStatItem(title: "Total Energy", value: "\(Int(totalEnergyBurned.rounded())) cal"))
+            items.append(SummaryStatItem(title: "Total Energy", value: formattedEnergyText(totalEnergyBurned, unit: energyUnit)))
         }
 
         workoutHealthSummaryItems = items

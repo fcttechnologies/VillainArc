@@ -499,7 +499,7 @@ enum AccessibilityText {
     static let healthStepsHistoryChartLabel = localized("Steps history chart")
     static let healthEnergyHistoryChartLabel = localized("Energy history chart")
     static let healthStepsWeekdayChartLabel = localized("Weekday average steps chart")
-    static let healthEnergyWeekdayChartLabel = localized("Weekday average active calories chart")
+    static let healthEnergyWeekdayChartLabel = localized("Weekday average active energy chart")
     static let healthWeightSectionEmptyValue = localized("Weight. No weight entries yet.")
     static let healthWeightGoalSummaryEmptyValue = localized("No active goal")
     static let healthStepsSectionEmptyValue = localized("Steps. Update Apple Health permissions so your health metrics appear here.")
@@ -554,8 +554,8 @@ enum AccessibilityText {
         }
     }
 
-    static func healthEnergySectionValue(dateText: String, totalEnergy: Int, activeEnergy: Int) -> String {
-        localized("Latest energy entry \(dateText). \(totalEnergy.formatted(.number)) total calories. \(activeEnergy.formatted(.number)) active calories. Recent entries chart.")
+    static func healthEnergySectionValue(dateText: String, totalEnergyText: String, activeEnergyText: String) -> String {
+        localized("Latest energy entry \(dateText). \(totalEnergyText) total energy. \(activeEnergyText) active energy. Recent entries chart.")
     }
 
     static func healthEnergyHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {

@@ -13,15 +13,20 @@ private func bucketedEnergyChartSegments(totalPoints: [TimeSeriesBucketedPoint],
 
 struct HealthEnergyHistoryView: View {
     @Query(HealthEnergy.history, animation: .smooth) private var entries: [HealthEnergy]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+
+    private var energyUnit: EnergyUnit {
+        appSettings.first?.energyUnit ?? .systemDefault
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                HealthEnergyMainChartSection(entries: entries)
+                HealthEnergyMainChartSection(entries: entries, energyUnit: energyUnit)
 
-                HealthEnergyWeekdayChartSection(entries: entries)
+                HealthEnergyWeekdayChartSection(entries: entries, energyUnit: energyUnit)
 
-                HealthEnergyPeriodHighlightsSection(entries: entries)
+                HealthEnergyPeriodHighlightsSection(entries: entries, energyUnit: energyUnit)
             }
             .padding()
         }
@@ -45,17 +50,30 @@ private struct HealthEnergyMainChartSection: View {
     @State private var rangeCache: [TimeSeriesRangeFilter: HealthEnergyCachedRangeData] = [:]
 
     let entries: [HealthEnergy]
+    let energyUnit: EnergyUnit
 
     private let tint = Color.orange
     private let totalEnergySampleNamespace: UInt64 = 0x454E455247590001
     private let activeEnergySampleNamespace: UInt64 = 0x454E455247590002
 
     private var totalEnergySamples: [TimeSeriesSample] {
-        entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: totalEnergySampleNamespace, date: $0.date), date: $0.date, value: $0.totalEnergyBurned) }
+        entries.map {
+            TimeSeriesSample(
+                id: stableTimeSeriesSampleID(namespace: totalEnergySampleNamespace, date: $0.date),
+                date: $0.date,
+                value: energyUnit.fromKilocalories($0.totalEnergyBurned)
+            )
+        }
     }
     
     private var activeEnergySamples: [TimeSeriesSample] {
-        entries.map { TimeSeriesSample(id: stableTimeSeriesSampleID(namespace: activeEnergySampleNamespace, date: $0.date), date: $0.date, value: $0.activeEnergyBurned) }
+        entries.map {
+            TimeSeriesSample(
+                id: stableTimeSeriesSampleID(namespace: activeEnergySampleNamespace, date: $0.date),
+                date: $0.date,
+                value: energyUnit.fromKilocalories($0.activeEnergyBurned)
+            )
+        }
     }
 
     private var latestEntry: HealthEnergy? {
@@ -109,12 +127,12 @@ private struct HealthEnergyMainChartSection: View {
     
     private var displayedTotalEnergy: Double? {
         if let selectedTotalPoint { return selectedTotalPoint.value }
-        return latestEntry?.totalEnergyBurned
+        return latestEntry.map { energyUnit.fromKilocalories($0.totalEnergyBurned) }
     }
     
     private var displayedActiveEnergy: Double? {
         if selectedTotalPoint != nil { return selectedActiveSegment?.value ?? 0 }
-        return latestEntry?.activeEnergyBurned
+        return latestEntry.map { energyUnit.fromKilocalories($0.activeEnergyBurned) }
     }
     
     private var visibleRangeText: String? {
@@ -124,8 +142,8 @@ private struct HealthEnergyMainChartSection: View {
     
     private var chartAccessibilityValue: String {
         let dateText = displayedDateText
-        let totalText = displayedTotalEnergy.map { "\(Int($0.rounded()).formatted(.number)) \(String(localized: "total calories"))" } ?? String(localized: "No total energy data")
-        let activeText = displayedActiveEnergy.map { "\(Int($0.rounded()).formatted(.number)) \(String(localized: "active calories"))" } ?? String(localized: "No active energy data")
+        let totalText = displayedTotalEnergy.map { "\(Int($0.rounded()).formatted(.number)) \(energyUnit.accessibilityUnitLabel) total energy" } ?? String(localized: "No total energy data")
+        let activeText = displayedActiveEnergy.map { "\(Int($0.rounded()).formatted(.number)) \(energyUnit.accessibilityUnitLabel) active energy" } ?? String(localized: "No active energy data")
         return AccessibilityText.healthEnergyHistoryChartValue(dateText: dateText, totalText: totalText, activeText: activeText)
     }
 
@@ -162,7 +180,7 @@ private struct HealthEnergyMainChartSection: View {
                     if let displayedActiveEnergy {
                         HStack(alignment: .lastTextBaseline, spacing: 4) {
                             Text(Int(displayedActiveEnergy.rounded()), format: .number)
-                            Text("cal")
+                            Text(energyUnit.unitLabel)
                                 .foregroundStyle(.secondary)
                                 .font(.title3)
                         }
@@ -255,8 +273,8 @@ private struct HealthEnergyMainChartSection: View {
                 let chartSegments = bucketedEnergyChartSegments(totalPoints: totalLayout.points, activePoints: activeLayout.points)
                 let visibleEntries = entries.filter { totalLayout.currentDomain.contains($0.date) }
                 let yDomain = 0...(max(totalLayout.points.map(\.value).max() ?? 0, 1) * 1.15)
-                let averageTotalEnergy = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.totalEnergyBurned } / Double(visibleEntries.count))
-                let averageActiveEnergy = visibleEntries.isEmpty ? nil : (visibleEntries.reduce(0) { $0 + $1.activeEnergyBurned } / Double(visibleEntries.count))
+                let averageTotalEnergy = visibleEntries.isEmpty ? nil : energyUnit.fromKilocalories(visibleEntries.reduce(0) { $0 + $1.totalEnergyBurned } / Double(visibleEntries.count))
+                let averageActiveEnergy = visibleEntries.isEmpty ? nil : energyUnit.fromKilocalories(visibleEntries.reduce(0) { $0 + $1.activeEnergyBurned } / Double(visibleEntries.count))
                 return HealthEnergyCachedRangeData(layout: totalLayout, chartSegments: chartSegments, yDomain: yDomain, averageTotalEnergy: averageTotalEnergy, averageActiveEnergy: averageActiveEnergy)
             }
         }
@@ -298,6 +316,7 @@ private struct HealthEnergyMainChartSection: View {
 
 private struct HealthEnergyWeekdayChartSection: View {
     let entries: [HealthEnergy]
+    let energyUnit: EnergyUnit
 
     @State private var selectedWeekday: Weekday?
     @State private var points: [WeekdayAveragePoint] = []
@@ -337,18 +356,18 @@ private struct HealthEnergyWeekdayChartSection: View {
             return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
         }
         guard let displayedWeekdayPoint else {
-            let summaryText = String(localized: "Weekday calorie averages are unavailable")
+            let summaryText = String(localized: "Weekday energy averages are unavailable")
             return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
         }
         let caloriesText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
         let valueText = Text(caloriesText).foregroundStyle(tint)
         let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
-            let summaryText = String(localized: "On average, you burn \(caloriesText) calories on \(weekdayText).")
-            return WeekdayAverageChartPresentation(headline: Text("On average, you burn \(valueText) calories on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            let summaryText = String(localized: "On average, you burn \(caloriesText) \(energyUnit.unitLabel) on \(weekdayText).")
+            return WeekdayAverageChartPresentation(headline: Text("On average, you burn \(valueText) \(energyUnit.unitLabel) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
         }
-        let summaryText = String(localized: "On average, you burn the most calories on \(weekdayText). \(caloriesText) calories.")
-        return WeekdayAverageChartPresentation(headline: Text("On average, you burn the most calories on \(weekdayText). \(valueText) calories."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        let summaryText = String(localized: "On average, you burn the most calories on \(weekdayText). \(caloriesText) \(energyUnit.unitLabel).")
+        return WeekdayAverageChartPresentation(headline: Text("On average, you burn the most calories on \(weekdayText). \(valueText) \(energyUnit.unitLabel)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
     }
 
     var body: some View {
@@ -357,6 +376,7 @@ private struct HealthEnergyWeekdayChartSection: View {
             .glassEffect(.regular, in: .rect(cornerRadius: 18))
             .task(id: cacheKey) {
                 let newPoints = makeWeekdayAveragePoints(from: entries, date: \.date, value: \.activeEnergyBurned)
+                    .map { WeekdayAveragePoint(weekday: $0.weekday, averageValue: energyUnit.fromKilocalories($0.averageValue), sampleCount: $0.sampleCount) }
                 points = newPoints
                 if !(newPoints.count == 7 && newPoints.allSatisfy { $0.sampleCount >= 2 }) { selectedWeekday = nil }
             }
@@ -365,6 +385,7 @@ private struct HealthEnergyWeekdayChartSection: View {
 
 private struct HealthEnergyPeriodHighlightsSection: View {
     let entries: [HealthEnergy]
+    let energyUnit: EnergyUnit
 
     private let tint = Color.orange
 
@@ -374,42 +395,64 @@ private struct HealthEnergyPeriodHighlightsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            if let monthlyHighlight { PeriodComparisonHighlightCard(summary: energySummaryText(for: monthlyHighlight), accessibilitySummary: energySummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: "cal/day", tint: tint) }
-            if let yearlyHighlight { PeriodComparisonHighlightCard(summary: energySummaryText(for: yearlyHighlight), accessibilitySummary: energySummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: "cal/day", tint: tint) }
+            if let monthlyHighlight {
+                PeriodComparisonHighlightCard(
+                    summary: energySummaryText(for: monthlyHighlight),
+                    accessibilitySummary: energySummary(for: monthlyHighlight),
+                    currentValue: energyUnit.fromKilocalories(monthlyHighlight.currentAverage),
+                    previousValue: energyUnit.fromKilocalories(monthlyHighlight.previousAverage),
+                    currentLabel: monthlyHighlight.currentLabel,
+                    previousLabel: monthlyHighlight.previousLabel,
+                    unitText: energyUnit.perDayUnitLabel,
+                    tint: tint
+                )
+            }
+            if let yearlyHighlight {
+                PeriodComparisonHighlightCard(
+                    summary: energySummaryText(for: yearlyHighlight),
+                    accessibilitySummary: energySummary(for: yearlyHighlight),
+                    currentValue: energyUnit.fromKilocalories(yearlyHighlight.currentAverage),
+                    previousValue: energyUnit.fromKilocalories(yearlyHighlight.previousAverage),
+                    currentLabel: yearlyHighlight.currentLabel,
+                    previousLabel: yearlyHighlight.previousLabel,
+                    unitText: energyUnit.perDayUnitLabel,
+                    tint: tint
+                )
+            }
         }
     }
 
     private func energySummaryText(for highlight: PeriodComparisonHighlight) -> Text {
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return Text("On average, you're burning \(Text("more").foregroundStyle(tint)) calories this month than you did last month.")
+            return Text("On average, you're burning \(Text("more").foregroundStyle(tint)) energy this month than you did last month.")
         case (.month, .down):
-            return Text("On average, you're burning \(Text("fewer").foregroundStyle(tint)) calories this month than you did last month.")
+            return Text("On average, you're burning \(Text("less").foregroundStyle(tint)) energy this month than you did last month.")
         case (.month, .flat):
-            return Text("On average, you're burning \(Text("about the same").foregroundStyle(tint)) number of calories this month as you did last month.")
+            return Text("On average, you're burning \(Text("about the same").foregroundStyle(tint)) amount of energy this month as you did last month.")
         case (.year, .up):
-            return Text("So far this year, you're burning \(Text("more").foregroundStyle(tint)) calories a day than you did last year.")
+            return Text("So far this year, you're burning \(Text("more").foregroundStyle(tint)) energy a day than you did last year.")
         case (.year, .down):
-            return Text("So far this year, you're burning \(Text("fewer").foregroundStyle(tint)) calories a day than you did last year.")
+            return Text("So far this year, you're burning \(Text("less").foregroundStyle(tint)) energy a day than you did last year.")
         case (.year, .flat):
-            return Text("So far this year, you're burning \(Text("about the same").foregroundStyle(tint)) number of calories a day as you did last year.")
+            return Text("So far this year, you're burning \(Text("about the same").foregroundStyle(tint)) amount of energy a day as you did last year.")
         }
     }
 
     private func energySummary(for highlight: PeriodComparisonHighlight) -> String {
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return "On average, you're burning more calories this month than you did last month."
+            return "On average, you're burning more energy this month than you did last month."
         case (.month, .down):
-            return "On average, you're burning fewer calories this month than you did last month."
+            return "On average, you're burning less energy this month than you did last month."
         case (.month, .flat):
-            return "On average, you're burning about the same number of calories this month as you did last month."
+            return "On average, you're burning about the same amount of energy this month as you did last month."
         case (.year, .up):
-            return "So far this year, you're burning more calories a day than you did last year."
+            return "So far this year, you're burning more energy a day than you did last year."
         case (.year, .down):
-            return "So far this year, you're burning fewer calories a day than you did last year."
+            return "So far this year, you're burning less energy a day than you did last year."
         case (.year, .flat):
-            return "So far this year, you're burning about the same number of calories a day as you did last year."
+            return "So far this year, you're burning about the same amount of energy a day as you did last year."
         }
     }
 }

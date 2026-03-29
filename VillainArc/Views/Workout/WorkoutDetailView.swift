@@ -14,6 +14,7 @@ struct WorkoutDetailView: View {
     @State private var showPreWorkoutContextSheet = false
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
+    private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
 
     private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
     private var hasPreWorkoutFeeling: Bool {
@@ -36,7 +37,7 @@ struct WorkoutDetailView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
-                if workout.healthWorkout != nil { WorkoutLinkedHealthDetailSection(workout: workout, weightUnit: weightUnit) }
+                if workout.healthWorkout != nil { WorkoutLinkedHealthDetailSection(workout: workout, weightUnit: weightUnit, energyUnit: energyUnit) }
 
                 WorkoutSessionDetailContent(workout: workout, weightUnit: weightUnit)
             }
@@ -196,13 +197,15 @@ struct WorkoutDetailView: View {
 private struct WorkoutLinkedHealthDetailSection: View {
     let workout: WorkoutSession
     let weightUnit: WeightUnit
+    let energyUnit: EnergyUnit
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(UserProfile.single) private var userProfiles: [UserProfile]
     @State private var loader: HealthWorkoutDetailLoader
 
-    init(workout: WorkoutSession, weightUnit: WeightUnit) {
+    init(workout: WorkoutSession, weightUnit: WeightUnit, energyUnit: EnergyUnit) {
         self.workout = workout
         self.weightUnit = weightUnit
+        self.energyUnit = energyUnit
         _loader = State(initialValue: HealthWorkoutDetailLoader(workout: workout.healthWorkout!))
     }
 
@@ -224,7 +227,7 @@ private struct WorkoutLinkedHealthDetailSection: View {
     }
 
     var body: some View {
-        HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, showsSourceCard: false, extraSummaryItems: workoutSummaryItems)
+        HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: workoutSummaryItems)
         .task(id: workout.healthWorkout?.healthWorkoutUUID) {
             await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
         }

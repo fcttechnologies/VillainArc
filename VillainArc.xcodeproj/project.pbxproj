@@ -127,6 +127,7 @@
 				Data/Models/Enums/Suggestions/UserFeedback.swift,
 				Data/Models/Enums/Tabs.swift,
 				Data/Models/Enums/Units/DistanceUnit.swift,
+				Data/Models/Enums/Units/EnergyUnit.swift,
 				Data/Models/Enums/Units/HeightUnit.swift,
 				Data/Models/Enums/Units/WeightUnit.swift,
 				Data/Models/Exercise/Exercise.swift,

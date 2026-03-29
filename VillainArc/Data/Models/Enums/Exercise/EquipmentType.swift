@@ -104,6 +104,10 @@ extension EquipmentType {
     }
 
     var progressionStepCardDescription: String {
+        if self == .bodyweight {
+            return "Choose how big the added-weight jump should usually be once this exercise is tracked with external load."
+        }
+
         if usesAssistanceWeightSemantics {
             return "Choose how much assistance should usually change at a time for this exercise."
         }
@@ -116,6 +120,10 @@ extension EquipmentType {
     }
 
     var progressionStepEditorDescription: String {
+        if self == .bodyweight {
+            return "Set how much added weight should usually change at a time once this exercise is tracked with external load."
+        }
+
         if usesAssistanceWeightSemantics {
             return "Set how much assistance should usually change at a time for this exercise."
         }
@@ -128,15 +136,19 @@ extension EquipmentType {
     }
 
     var progressionStepEditorSupportText: String {
+        if self == .bodyweight {
+            return "This only applies when weight is added to the sets for this exercise. Pure bodyweight work will still be guided through reps and rep ranges first. Larger load changes can still use a multiple of this amount when needed."
+        }
+
         if usesAssistanceWeightSemantics {
-            return "Harder suggestions lower assistance by this amount. Easier suggestions raise assistance by this amount."
+            return "When the suggestion system decides this exercise should get harder or easier through a load change, it will usually change assistance by this amount. Larger changes can still use a multiple of this amount when needed."
         }
 
         if usesPerSideLoadSemantics {
-            return "This amount is per side, not the combined total."
+            return "When the suggestion system decides a load increase or decrease could help, it will usually use this amount for each side, not the combined total. Larger changes can still use a multiple of this amount when needed."
         }
 
-        return "This amount is used for both heavier and lighter load-change suggestions."
+        return "When the suggestion system decides a weight increase or decrease could help, this is the amount it will usually use. Larger changes can still use a multiple of this amount when needed."
     }
 
     var progressionStepPresetSupportText: String {
@@ -157,23 +169,31 @@ extension EquipmentType {
     @MainActor func progressionStepPreviewLines(amountKg: Double, unit: WeightUnit) -> [String] {
         let amountText = formattedWeightText(amountKg, unit: unit, fractionDigits: 0...2)
 
+        if self == .bodyweight {
+            return [
+                "This will only be used when this exercise has added weight on the sets.",
+                "If the suggestion system decides adding load would help, it will usually increase the added weight by \(amountText).",
+                "If it decides easing the load would help, it will usually reduce the added weight by \(amountText)."
+            ]
+        }
+
         if usesAssistanceWeightSemantics {
             return [
-                "Harder suggestions lower assistance by \(amountText).",
-                "Easier suggestions raise assistance by \(amountText)."
+                "If the suggestion system decides this exercise should get harder through a load change, it will usually lower assistance by \(amountText).",
+                "If it decides this exercise should get easier through a load change, it will usually raise assistance by \(amountText)."
             ]
         }
 
         if usesPerSideLoadSemantics {
             return [
-                "Heavier suggestions add \(amountText) to each side.",
-                "Lighter suggestions remove \(amountText) from each side."
+                "If the suggestion system decides more load would help, it will usually add \(amountText) to each side.",
+                "If it decides less load would help, it will usually remove \(amountText) from each side."
             ]
         }
 
         return [
-            "Heavier suggestions add \(amountText).",
-            "Lighter suggestions remove \(amountText)."
+            "If the suggestion system decides more load would help, it will usually increase this exercise by \(amountText).",
+            "If it decides less load would help, it will usually decrease this exercise by \(amountText)."
         ]
     }
 

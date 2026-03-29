@@ -1,13 +1,19 @@
 import SwiftUI
+import SwiftData
 
 struct WorkoutLiveStatsView: View {
     let workout: WorkoutSession
     @State private var coordinator = HealthLiveWorkoutSessionCoordinator.shared
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
+    private var energyUnit: EnergyUnit {
+        appSettings.first?.energyUnit ?? .systemDefault
+    }
+
     private var summary: Summary {
-        Summary(coordinator: coordinator)
+        Summary(coordinator: coordinator, energyUnit: energyUnit)
     }
 
     var body: some View {
@@ -18,8 +24,8 @@ struct WorkoutLiveStatsView: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 SummaryStatCard(title: "Duration", text: "", date: workout.startedAt)
                 SummaryStatCard(title: "Heart Rate", number: summary.heartRateValue, text: "bpm")
-                SummaryStatCard(title: "Active Energy", number: summary.activeEnergyValue, text: "cal")
-                SummaryStatCard(title: "Total Energy", number: summary.totalEnergyValue, text: "cal")
+                SummaryStatCard(title: "Active Energy", number: summary.activeEnergyValue, text: energyUnit.unitLabel)
+                SummaryStatCard(title: "Total Energy", number: summary.totalEnergyValue, text: energyUnit.unitLabel)
             }
         }
         .fontDesign(.rounded)
@@ -27,7 +33,9 @@ struct WorkoutLiveStatsView: View {
     }
 
     static func toolbarAccessibilityValue(for workoutID: UUID) -> String {
-        let summary = Summary(coordinator: HealthLiveWorkoutSessionCoordinator.shared, workoutID: workoutID)
+        let context = SharedModelContainer.container.mainContext
+        let energyUnit = (try? context.fetch(AppSettings.single))?.first?.energyUnit ?? .systemDefault
+        let summary = Summary(coordinator: HealthLiveWorkoutSessionCoordinator.shared, workoutID: workoutID, energyUnit: energyUnit)
         return AccessibilityText.workoutLiveHealthValue(heartRate: summary.heartRateToolbarText, activeEnergy: summary.activeEnergyToolbarText, totalEnergy: summary.totalEnergyToolbarText)
     }
 }
@@ -41,7 +49,7 @@ private extension WorkoutLiveStatsView {
         let activeEnergyValue: Int?
         let totalEnergyValue: Int?
 
-        init(coordinator: HealthLiveWorkoutSessionCoordinator, workoutID: UUID? = nil) {
+        init(coordinator: HealthLiveWorkoutSessionCoordinator, workoutID: UUID? = nil, energyUnit: EnergyUnit) {
             let isActiveWorkout = workoutID == nil || coordinator.activeWorkoutSessionID == workoutID
 
             if let heartRate = coordinator.latestHeartRate {
@@ -55,8 +63,8 @@ private extension WorkoutLiveStatsView {
             }
 
             if let activeEnergy = coordinator.activeEnergyBurned {
-                let roundedValue = Int(activeEnergy.rounded())
-                let text = "\(roundedValue) cal"
+                let roundedValue = Int(energyUnit.fromKilocalories(activeEnergy).rounded())
+                let text = formattedEnergyText(activeEnergy, unit: energyUnit)
                 activeEnergyToolbarText = text
                 activeEnergyValue = roundedValue
             } else {
@@ -65,8 +73,8 @@ private extension WorkoutLiveStatsView {
             }
 
             if let totalEnergy = coordinator.totalEnergyBurned {
-                let roundedValue = Int(totalEnergy.rounded())
-                let text = "\(roundedValue) cal"
+                let roundedValue = Int(energyUnit.fromKilocalories(totalEnergy).rounded())
+                let text = formattedEnergyText(totalEnergy, unit: energyUnit)
                 totalEnergyToolbarText = text
                 totalEnergyValue = roundedValue
             } else {

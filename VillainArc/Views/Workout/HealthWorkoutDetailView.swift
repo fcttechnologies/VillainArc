@@ -20,6 +20,10 @@ struct HealthWorkoutDetailView: View {
         appSettings.first?.distanceUnit ?? .systemDefault
     }
 
+    private var energyUnit: EnergyUnit {
+        appSettings.first?.energyUnit ?? .systemDefault
+    }
+
     private var estimatedMaxHeartRate: Double? {
         guard let birthday = userProfiles.first?.birthday else { return nil }
         let years = Calendar.current.dateComponents([.year], from: birthday, to: loader.summary.startDate).year ?? 0
@@ -31,7 +35,7 @@ struct HealthWorkoutDetailView: View {
 
     var body: some View {
         ScrollView {
-            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, showsSourceCard: true, extraSummaryItems: [])
+            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: [])
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
@@ -91,8 +95,8 @@ struct HealthWorkoutDetailView: View {
 struct HealthWorkoutDetailContent: View {
     let loader: HealthWorkoutDetailLoader
     let distanceUnit: DistanceUnit
+    let energyUnit: EnergyUnit
     let estimatedMaxHeartRate: Double?
-    let showsSourceCard: Bool
     let extraSummaryItems: [SummaryStatItem]
 
     private var summaryGridColumns: [GridItem] {
@@ -112,12 +116,12 @@ struct HealthWorkoutDetailContent: View {
 
     private var activeEnergyText: String {
         guard let activeEnergyBurned = loader.summary.activeEnergyBurned else { return "-" }
-        return "\(Int(activeEnergyBurned.rounded())) cal"
+        return formattedEnergyText(activeEnergyBurned, unit: energyUnit)
     }
 
     private var totalEnergyText: String? {
         guard let totalCalories = loader.summary.totalCalories else { return nil }
-        return "\(Int(totalCalories.rounded())) cal"
+        return formattedEnergyText(totalCalories, unit: energyUnit)
     }
 
     private var distanceText: String {
@@ -155,7 +159,6 @@ struct HealthWorkoutDetailContent: View {
     private var chartAccessibilitySummary: String {
         let parts = [
             loader.heartRateSummary.averageBPM.map { "Average \(Int($0.rounded())) bpm" },
-            loader.heartRateSummary.minimumBPM.map { "Low \(Int($0.rounded())) bpm" },
             loader.heartRateSummary.maximumBPM.map { "High \(Int($0.rounded())) bpm" }
         ]
             .compactMap(\.self)
@@ -202,10 +205,6 @@ struct HealthWorkoutDetailContent: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Summary")
                 .font(.headline)
-
-            if showsSourceCard {
-                SummaryStatCard(title: "Source", text: loader.summary.sourceName)
-            }
 
             LazyVGrid(columns: summaryGridColumns, spacing: 12) {
                 ForEach(summaryItems) { item in
@@ -302,7 +301,7 @@ struct HealthWorkoutDetailContent: View {
                     }
 
                     if let energyBurned = activity.energyBurned {
-                        Text("\(Int(energyBurned.rounded())) cal")
+                        Text(formattedEnergyText(energyBurned, unit: energyUnit))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -619,10 +618,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
 
                 Spacer(minLength: 12)
 
-                HStack(spacing: 16) {
-                    heartRateMetric(title: "High", value: summary.maximumBPM)
-                    heartRateMetric(title: "Low", value: summary.minimumBPM)
-                }
+                heartRateMetric(title: "High", value: summary.maximumBPM)
             }
 
             Chart {
@@ -656,7 +652,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
                 }
             }
             .chartYAxis {
-                AxisMarks(position: .leading)
+                AxisMarks(position: .trailing)
             }
             .frame(height: 220)
         }

@@ -104,10 +104,17 @@ struct AppSettingsView: View {
                             .tag(unit)
                     }
                 }
+
+                Picker("Energy", selection: $settings.energyUnit) {
+                    ForEach(EnergyUnit.allCases, id: \.self) { unit in
+                        Text(unit.unitLabel)
+                            .tag(unit)
+                    }
+                }
             } header: {
                 Text("Units")
             } footer: {
-                Text("These units control how weight, height, and distance are displayed throughout the app.")
+                Text("These units control how weight, height, distance, and energy are displayed throughout the app.")
             }
         }
         .onChange(of: settings.retainPerformancesForLearning) {
@@ -129,6 +136,9 @@ struct AppSettingsView: View {
             saveContext(context: context)
         }
         .onChange(of: settings.distanceUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.energyUnit) {
             saveContext(context: context)
         }
     }

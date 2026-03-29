@@ -10,23 +10,28 @@ struct HealthWorkoutDetailSummary: Equatable {
     let startDate: Date
     let endDate: Date
     let duration: TimeInterval
+    let averageHeartRateBPM: Double?
+    let maximumHeartRateBPM: Double?
     let activeEnergyBurned: Double?
     let restingEnergyBurned: Double?
     let totalDistance: Double?
-    let sourceName: String
 
     init(workout: HKWorkout) {
         let activeEnergyType = HKQuantityType(.activeEnergyBurned)
         let basalEnergyType = HKQuantityType(.basalEnergyBurned)
+        let heartRateType = HKQuantityType(.heartRate)
+        let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+        let heartRateStats = workout.statistics(for: heartRateType)
         activityType = workout.workoutActivityType
         isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
+        averageHeartRateBPM = heartRateStats?.averageQuantity()?.doubleValue(for: bpmUnit)
+        maximumHeartRateBPM = heartRateStats?.maximumQuantity()?.doubleValue(for: bpmUnit)
         activeEnergyBurned = workout.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
         restingEnergyBurned = workout.statistics(for: basalEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
-        sourceName = workout.sourceRevision.source.name
     }
 
     init(workout: HealthWorkout) {
@@ -35,10 +40,11 @@ struct HealthWorkoutDetailSummary: Equatable {
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
+        averageHeartRateBPM = workout.averageHeartRateBPM
+        maximumHeartRateBPM = workout.maximumHeartRateBPM
         activeEnergyBurned = workout.activeEnergyBurned
         restingEnergyBurned = workout.restingEnergyBurned
         totalDistance = workout.totalDistance
-        sourceName = workout.sourceName
     }
 
     var activityTypeDisplayName: String { activityType.displayName(indoorWorkout: isIndoorWorkout) }
@@ -52,6 +58,10 @@ struct HealthWorkoutDetailSummary: Equatable {
     var totalCalories: Double? {
         guard let activeEnergyBurned, let restingEnergyBurned else { return nil }
         return activeEnergyBurned + restingEnergyBurned
+    }
+
+    var heartRateSummary: HealthWorkoutHeartRateSummary {
+        HealthWorkoutHeartRateSummary(averageBPM: averageHeartRateBPM, maximumBPM: maximumHeartRateBPM)
     }
 }
 
@@ -70,9 +80,8 @@ struct HealthWorkoutHeartRateSample: Hashable {
 
 struct HealthWorkoutHeartRateSummary: Equatable {
     let averageBPM: Double?
-    let minimumBPM: Double?
     let maximumBPM: Double?
-    var hasContent: Bool { averageBPM != nil || minimumBPM != nil || maximumBPM != nil }
+    var hasContent: Bool { averageBPM != nil || maximumBPM != nil }
 }
 
 struct HealthWorkoutHeartRateZoneSummary: Identifiable, Hashable {
@@ -152,7 +161,7 @@ enum HealthWorkoutSummaryStatsLoader {
     private static let healthStore = HealthAuthorizationManager.shared.healthStore
 
     static func load(for workout: HealthWorkout) async -> HealthWorkoutSummaryStats {
-        let cachedStats = HealthWorkoutSummaryStats(averageHeartRate: nil, totalEnergyBurned: workout.totalEnergyBurned)
+        let cachedStats = HealthWorkoutSummaryStats(averageHeartRate: workout.averageHeartRateBPM, totalEnergyBurned: workout.totalEnergyBurned)
 
         guard workout.isAvailableInHealthKit else { return cachedStats }
 
@@ -162,12 +171,8 @@ enum HealthWorkoutSummaryStatsLoader {
 
             guard let liveWorkout = try await descriptor.result(for: healthStore).first else { return cachedStats }
 
-            let bpmUnit = HKUnit.count().unitDivided(by: .minute())
-            let averageHeartRate = liveWorkout.statistics(for: HKQuantityType(.heartRate))?.averageQuantity()?.doubleValue(for: bpmUnit)
-
-            let totalEnergyBurned = HealthWorkoutDetailSummary(workout: liveWorkout).totalCalories ?? workout.totalEnergyBurned
-
-            return HealthWorkoutSummaryStats(averageHeartRate: averageHeartRate, totalEnergyBurned: totalEnergyBurned)
+            let liveSummary = HealthWorkoutDetailSummary(workout: liveWorkout)
+            return HealthWorkoutSummaryStats(averageHeartRate: liveSummary.averageHeartRateBPM, totalEnergyBurned: liveSummary.totalCalories ?? workout.totalEnergyBurned)
         } catch {
             print("Failed to load summary Health stats for \(workout.healthWorkoutUUID): \(error)")
             return cachedStats
@@ -180,7 +185,7 @@ enum HealthWorkoutSummaryStatsLoader {
     private let cachedWorkout: HealthWorkout
     private let healthStore = HealthAuthorizationManager.shared.healthStore
     var summary: HealthWorkoutDetailSummary
-    var heartRateSummary = HealthWorkoutHeartRateSummary(averageBPM: nil, minimumBPM: nil, maximumBPM: nil)
+    var heartRateSummary: HealthWorkoutHeartRateSummary
     var heartRatePoints: [HealthWorkoutHeartRatePoint] = []
     var heartRateZones: [HealthWorkoutHeartRateZoneSummary] = []
     var metrics: [HealthWorkoutDetailMetric] = []
@@ -198,7 +203,9 @@ enum HealthWorkoutSummaryStatsLoader {
 
     init(workout: HealthWorkout) {
         cachedWorkout = workout
-        summary = HealthWorkoutDetailSummary(workout: workout)
+        let cachedSummary = HealthWorkoutDetailSummary(workout: workout)
+        summary = cachedSummary
+        heartRateSummary = cachedSummary.heartRateSummary
         isUsingCachedSummaryOnly = !workout.isAvailableInHealthKit
     }
     func loadIfNeeded(distanceUnit: DistanceUnit, estimatedMaxHeartRate: Double?) async {
@@ -230,17 +237,18 @@ enum HealthWorkoutSummaryStatsLoader {
                 return
             }
             loadedWorkout = workout
-            summary = HealthWorkoutDetailSummary(workout: workout)
+            let liveSummary = HealthWorkoutDetailSummary(workout: workout)
+            summary = liveSummary
+            heartRateSummary = liveSummary.heartRateSummary
             isUsingCachedSummaryOnly = false
             async let heartRateLoad = loadHeartRate(for: workout)
             async let distanceLoad = loadDistanceSamples(for: workout)
             async let effortLoad = loadEffort(for: workout)
             async let routeLoad = loadRoute(for: workout)
-            let (loadedHeartRateSummary, loadedHeartRatePoints, loadedHeartRateSamples) = try await heartRateLoad
+            let (loadedHeartRatePoints, loadedHeartRateSamples) = try await heartRateLoad
             let loadedDistanceSamples = try await distanceLoad
             let loadedEffortSummary = await effortLoad
             let loadedRoutePoints = try await routeLoad
-            heartRateSummary = loadedHeartRateSummary
             heartRatePoints = loadedHeartRatePoints
             heartRateSamples = loadedHeartRateSamples
             metrics = loadMetrics(for: workout)
@@ -277,17 +285,15 @@ enum HealthWorkoutSummaryStatsLoader {
         let descriptor = HKSampleQueryDescriptor(predicates: [.workout(predicate)], sortDescriptors: [], limit: 1)
         return try await descriptor.result(for: healthStore).first
     }
-    private func loadHeartRate(for workout: HKWorkout) async throws -> (HealthWorkoutHeartRateSummary, [HealthWorkoutHeartRatePoint], [HealthWorkoutHeartRateSample]) {
+    private func loadHeartRate(for workout: HKWorkout) async throws -> ([HealthWorkoutHeartRatePoint], [HealthWorkoutHeartRateSample]) {
         let heartRateType = HKQuantityType(.heartRate)
         let workoutPredicate = HKQuery.predicateForObjects(from: workout)
         let bpmUnit = HKUnit.count().unitDivided(by: .minute())
-        let statistics = workout.statistics(for: heartRateType)
-        let summary = HealthWorkoutHeartRateSummary(averageBPM: statistics?.averageQuantity()?.doubleValue(for: bpmUnit), minimumBPM: statistics?.minimumQuantity()?.doubleValue(for: bpmUnit), maximumBPM: statistics?.maximumQuantity()?.doubleValue(for: bpmUnit))
         let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: heartRateType, predicate: workoutPredicate)], sortDescriptors: [SortDescriptor(\.startDate, order: .forward)], limit: HKObjectQueryNoLimit)
         let samples = try await descriptor.result(for: healthStore)
         let heartRateSamples = samples.map { sample in HealthWorkoutHeartRateSample(startDate: sample.startDate, endDate: sample.endDate, bpm: sample.quantity.doubleValue(for: bpmUnit)) }.filter { $0.bpm > 0 }.sorted { $0.representativeDate < $1.representativeDate }
         let points = heartRateSamples.map { sample in HealthWorkoutHeartRatePoint(date: sample.representativeDate, bpm: sample.bpm) }
-        return (summary, downsampledHeartRatePoints(from: points, maxPoints: Self.chartMaxPoints), heartRateSamples)
+        return (downsampledHeartRatePoints(from: points, maxPoints: Self.chartMaxPoints), heartRateSamples)
     }
     private func loadDistanceSamples(for workout: HKWorkout) async throws -> [HealthWorkoutDistanceSample] {
         guard let distanceType = distanceType(for: workout.workoutActivityType) else { return [] }

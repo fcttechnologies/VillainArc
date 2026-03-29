@@ -13,6 +13,7 @@ import SwiftData
     var weightUnit: WeightUnit = WeightUnit.systemDefault
     var heightUnit: HeightUnit = HeightUnit.systemDefault
     var distanceUnit: DistanceUnit = DistanceUnit.systemDefault
+    var energyUnit: EnergyUnit = EnergyUnit.systemDefault
 
     init() {}
 }
@@ -29,6 +30,7 @@ struct AppSettingsSnapshot {
     let weightUnit: WeightUnit
     let heightUnit: HeightUnit
     let distanceUnit: DistanceUnit
+    let energyUnit: EnergyUnit
 
     init(settings: AppSettings?) {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
@@ -42,6 +44,7 @@ struct AppSettingsSnapshot {
         weightUnit = settings?.weightUnit ?? .systemDefault
         heightUnit = settings?.heightUnit ?? .systemDefault
         distanceUnit = settings?.distanceUnit ?? .systemDefault
+        energyUnit = settings?.energyUnit ?? .systemDefault
     }
 }
 

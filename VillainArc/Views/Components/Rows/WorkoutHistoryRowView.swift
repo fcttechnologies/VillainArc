@@ -85,7 +85,7 @@ struct WorkoutHistoryRowView: View {
         }
 
         if let activeEnergyBurned = workout.activeEnergyBurned {
-            items.append(.init(systemImage: "flame", text: "\(Int(activeEnergyBurned.rounded())) cal", tint: .orange))
+            items.append(.init(systemImage: "flame", text: formattedEnergyText(activeEnergyBurned, unit: appSettingsSnapshot.energyUnit), tint: .orange))
         }
 
         return items
