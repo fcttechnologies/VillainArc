@@ -103,9 +103,9 @@ struct WeightSectionCard: View {
             }
             .padding()
             .glassEffect(.regular, in: .rect(cornerRadius: 12))
-            .contentShape(Rectangle())
+            .tint(.primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightSectionCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)

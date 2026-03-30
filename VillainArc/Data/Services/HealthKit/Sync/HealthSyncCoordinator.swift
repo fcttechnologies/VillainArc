@@ -2,10 +2,8 @@ import Foundation
 import HealthKit
 import SwiftData
 
-final class HealthSyncCoordinator {
+actor HealthSyncCoordinator {
     static let shared = HealthSyncCoordinator()
-
-    private let authorizationManager = HealthAuthorizationManager.shared
     private let bodyMassType = HKQuantityType(.bodyMass)
 
     private var isSyncingWorkouts = false
@@ -20,10 +18,10 @@ final class HealthSyncCoordinator {
     }
 
     func syncWorkouts() async {
-        guard authorizationManager.hasRequestedWorkoutAuthorization else { return }
+        guard HealthAuthorizationManager.hasRequestedWorkoutAuthorization else { return }
         guard !isSyncingWorkouts else { return }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard SetupGuard.isReady(context: context) else {
             print("Skipping Health workout sync because app setup is incomplete.")
             return
@@ -36,7 +34,7 @@ final class HealthSyncCoordinator {
         let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.workout()], anchor: HealthSyncPreferences.workoutAnchor)
 
         do {
-            let result = try await descriptor.result(for: authorizationManager.healthStore)
+            let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
 
             for workout in result.addedSamples { try upsertHealthWorkout(for: workout, context: context) }
 
@@ -48,10 +46,10 @@ final class HealthSyncCoordinator {
     }
 
     func syncWeightEntries() async {
-        guard authorizationManager.hasRequestedBodyMassAuthorization else { return }
+        guard HealthAuthorizationManager.hasRequestedBodyMassAuthorization else { return }
         guard !isSyncingWeightEntries else { return }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard SetupGuard.isReady(context: context) else {
             print("Skipping Health weight sync because app setup is incomplete.")
             return
@@ -64,7 +62,7 @@ final class HealthSyncCoordinator {
         let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: bodyMassType)], anchor: HealthSyncPreferences.weightEntryAnchor)
 
         do {
-            let result = try await descriptor.result(for: authorizationManager.healthStore)
+            let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
 
             for sample in result.addedSamples { try upsertWeightEntry(for: sample, context: context) }
 
@@ -78,7 +76,7 @@ final class HealthSyncCoordinator {
     func applyRemovedHealthDataRetentionSetting() async {
         guard !isSyncingWorkouts, !isSyncingWeightEntries else { return }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard currentKeepRemovedHealthDataSetting(context: context) == false else { return }
 
         do {
@@ -131,6 +129,12 @@ final class HealthSyncCoordinator {
     private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool {
         (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true
     }
+
+    private func makeBackgroundContext() -> ModelContext {
+        let context = ModelContext(SharedModelContainer.container)
+        context.autosaveEnabled = false
+        return context
+    }
 }
 
 extension HealthWorkout {
@@ -140,7 +144,7 @@ extension HealthWorkout {
     }
 }
 
-enum HealthWeightEntryLinker {
+nonisolated enum HealthWeightEntryLinker {
     private static let bodyMassType = HKQuantityType(.bodyMass)
     private static let weightUnit = HKUnit.gramUnit(with: .kilo)
 

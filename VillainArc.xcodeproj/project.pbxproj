@@ -166,6 +166,7 @@
 				Data/Services/App/SetupGuard.swift,
 				Data/Services/App/SpotlightIndexer.swift,
 				Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift,
+				Data/Services/HealthKit/HealthMirrorSupport.swift,
 				Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift,
 				Data/Services/Workout/RestTimerState.swift,
 				Data/SharedModelContainer.swift,

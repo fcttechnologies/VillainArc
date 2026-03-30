@@ -1,7 +1,7 @@
 import Foundation
 import HealthKit
 
-enum HealthAuthorizationState: Equatable {
+nonisolated enum HealthAuthorizationState: Equatable {
     case unavailable
     case notDetermined
     case authorized
@@ -19,7 +19,7 @@ enum HealthAuthorizationState: Equatable {
     var isAuthorized: Bool { self == .authorized }
 }
 
-enum HealthAuthorizationAction: Equatable {
+nonisolated enum HealthAuthorizationAction: Equatable {
     case requestAccess
     case openSettings
     case manageInSettings
@@ -43,24 +43,20 @@ enum HealthAuthorizationAction: Equatable {
     }
 }
 
-final class HealthAuthorizationManager {
-    static let shared = HealthAuthorizationManager()
+nonisolated enum HealthAuthorizationManager {
+    static let healthStore = HKHealthStore()
 
-    let healthStore = HKHealthStore()
+    private static let workoutType = HKObjectType.workoutType()
+    private static let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
+    private static let activeEnergyType = HKQuantityType(.activeEnergyBurned)
+    private static let restingEnergyType = HKQuantityType(.basalEnergyBurned)
+    private static let bodyMassType = HKQuantityType(.bodyMass)
+    private static let stepCountType = HKQuantityType(.stepCount)
+    private static let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
 
-    private let workoutType = HKObjectType.workoutType()
-    private let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
-    private let activeEnergyType = HKQuantityType(.activeEnergyBurned)
-    private let restingEnergyType = HKQuantityType(.basalEnergyBurned)
-    private let bodyMassType = HKQuantityType(.bodyMass)
-    private let stepCountType = HKQuantityType(.stepCount)
-    private let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
+    static var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
-    private init() {}
-
-    var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
-
-    var currentAuthorizationState: HealthAuthorizationState {
+    static var currentAuthorizationState: HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
 
         let statuses = healthShareTypes.map { healthStore.authorizationStatus(for: $0) }
@@ -72,62 +68,62 @@ final class HealthAuthorizationManager {
         return .notDetermined
     }
 
-    var canWriteWorkouts: Bool {
+    static var canWriteWorkouts: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: workoutType) == .sharingAuthorized
     }
 
-    var canWriteWorkoutEffortScore: Bool {
+    static var canWriteWorkoutEffortScore: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: workoutEffortScoreType) == .sharingAuthorized
     }
 
-    var canWriteActiveEnergyBurned: Bool {
+    static var canWriteActiveEnergyBurned: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: activeEnergyType) == .sharingAuthorized
     }
 
-    var canWriteRestingEnergyBurned: Bool {
+    static var canWriteRestingEnergyBurned: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: restingEnergyType) == .sharingAuthorized
     }
 
-    var canWriteBodyMass: Bool {
+    static var canWriteBodyMass: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: bodyMassType) == .sharingAuthorized
     }
 
-    var hasRequestedWorkoutAuthorization: Bool {
+    static var hasRequestedWorkoutAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: workoutType) != .notDetermined
     }
 
-    var hasRequestedBodyMassAuthorization: Bool {
+    static var hasRequestedBodyMassAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: bodyMassType) != .notDetermined
     }
 
-    var hasRequestedStepCountAuthorization: Bool {
+    static var hasRequestedStepCountAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: stepCountType) != .notDetermined
     }
 
-    var hasRequestedWalkingRunningDistanceAuthorization: Bool {
+    static var hasRequestedWalkingRunningDistanceAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: walkingRunningDistanceType) != .notDetermined
     }
 
-    var hasRequestedActiveEnergyBurnedAuthorization: Bool {
+    static var hasRequestedActiveEnergyBurnedAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: activeEnergyType) != .notDetermined
     }
 
-    var hasRequestedRestingEnergyBurnedAuthorization: Bool {
+    static var hasRequestedRestingEnergyBurnedAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: restingEnergyType) != .notDetermined
     }
 
-    func authorizationAction() async -> HealthAuthorizationAction {
+    static func authorizationAction() async -> HealthAuthorizationAction {
         let state = currentAuthorizationState
         guard state != .unavailable else { return .unavailable }
 
@@ -144,7 +140,7 @@ final class HealthAuthorizationManager {
         }
     }
 
-    func requestAuthorization() async -> HealthAuthorizationState {
+    static func requestAuthorization() async -> HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
 
         do {
@@ -156,15 +152,15 @@ final class HealthAuthorizationManager {
         return currentAuthorizationState
     }
 
-    func metadata(for session: WorkoutSession) -> [String: Any] {
+    static func metadata(for session: WorkoutSession) -> [String: Any] {
         ["Workout Title": session.title, HKMetadataKeyIndoorWorkout: true, HealthMetadataKeys.workoutSessionID: session.id.uuidString]
     }
 
-    func metadata(for weightEntry: WeightEntry) -> [String: Any] {
+    static func metadata(for weightEntry: WeightEntry) -> [String: Any] {
         [HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString, HKMetadataKeyWasUserEntered: true]
     }
 
-    private var healthShareTypes: Set<HKSampleType> {
+    private static var healthShareTypes: Set<HKSampleType> {
         [
             workoutType,
             workoutEffortScoreType,
@@ -174,7 +170,7 @@ final class HealthAuthorizationManager {
         ]
     }
 
-    private var healthReadTypes: Set<HKObjectType> {
+    private static var healthReadTypes: Set<HKObjectType> {
         [
             workoutType,
             HKSeriesType.workoutRoute(),

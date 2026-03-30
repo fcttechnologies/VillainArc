@@ -2,27 +2,18 @@ import Foundation
 import HealthKit
 import SwiftData
 
-final class HealthDailyMetricsSync {
-    private enum RowChange {
-        case none
-        case created
-        case updated
+actor HealthDailyMetricsSync {
+    private final class TotalsByDayBox<Value>: @unchecked Sendable {
+        var value: [Date: Value] = [:]
     }
 
-    private struct MetricRefreshResult {
-        let fetchedSampleCount: Int
-        let deletedSampleCount: Int
-        let refreshedDayCount: Int
-        let createdRowCount: Int
-        let updatedRowCount: Int
-        let refreshedRange: ClosedRange<Date>?
+    private struct MetricSyncResult {
         let newAnchor: HKQueryAnchor
         let newSyncedRange: ClosedRange<Date>?
     }
 
     static let shared = HealthDailyMetricsSync()
 
-    private let authorizationManager = HealthAuthorizationManager.shared
     private let stepCountType = HKQuantityType(.stepCount)
     private let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
     private let activeEnergyBurnedType = HKQuantityType(.activeEnergyBurned)
@@ -47,14 +38,14 @@ final class HealthDailyMetricsSync {
     }
 
     func syncSteps() async {
-        guard authorizationManager.isHealthDataAvailable else { return }
-        guard authorizationManager.hasRequestedStepCountAuthorization else { return }
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedStepCountAuthorization else { return }
         guard !isSyncingSteps else { return }
 
         isSyncingSteps = true
         defer { isSyncingSteps = false }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.stepCountSyncedRange
         let usesInitialImport = syncedRange == nil
@@ -71,14 +62,14 @@ final class HealthDailyMetricsSync {
     }
 
     func syncWalkingRunningDistance() async {
-        guard authorizationManager.isHealthDataAvailable else { return }
-        guard authorizationManager.hasRequestedWalkingRunningDistanceAuthorization else { return }
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization else { return }
         guard !isSyncingWalkingRunningDistance else { return }
 
         isSyncingWalkingRunningDistance = true
         defer { isSyncingWalkingRunningDistance = false }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.walkingRunningDistanceSyncedRange
         let usesInitialImport = syncedRange == nil
@@ -95,14 +86,14 @@ final class HealthDailyMetricsSync {
     }
 
     func syncActiveEnergyBurned() async {
-        guard authorizationManager.isHealthDataAvailable else { return }
-        guard authorizationManager.hasRequestedActiveEnergyBurnedAuthorization else { return }
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization else { return }
         guard !isSyncingActiveEnergy else { return }
 
         isSyncingActiveEnergy = true
         defer { isSyncingActiveEnergy = false }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.activeEnergyBurnedSyncedRange
         let usesInitialImport = syncedRange == nil
@@ -119,14 +110,14 @@ final class HealthDailyMetricsSync {
     }
 
     func syncRestingEnergyBurned() async {
-        guard authorizationManager.isHealthDataAvailable else { return }
-        guard authorizationManager.hasRequestedRestingEnergyBurnedAuthorization else { return }
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization else { return }
         guard !isSyncingRestingEnergy else { return }
 
         isSyncingRestingEnergy = true
         defer { isSyncingRestingEnergy = false }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.restingEnergyBurnedSyncedRange
         let usesInitialImport = syncedRange == nil
@@ -144,7 +135,7 @@ final class HealthDailyMetricsSync {
 
     private func anchoredResult(for type: HKQuantityType, anchor: HKQueryAnchor?) async throws -> HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result {
         let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: type)], anchor: anchor)
-        return try await descriptor.result(for: authorizationManager.healthStore)
+        return try await descriptor.result(for: HealthAuthorizationManager.healthStore)
     }
 
     private func dayStart(for sample: HKQuantitySample) -> Date {
@@ -207,48 +198,30 @@ final class HealthDailyMetricsSync {
         return calendar.date(byAdding: .day, value: -1, to: dayStart) ?? dayStart
     }
 
-    private func syncMetric<Value>(type: HKQuantityType, unit: HKUnit, anchor: HKQueryAnchor?, syncedRange: ClosedRange<Date>?, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool)) async throws -> MetricRefreshResult {
+    private func syncMetric<Value>(type: HKQuantityType, unit: HKUnit, anchor: HKQueryAnchor?, syncedRange: ClosedRange<Date>?, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> Void) async throws -> MetricSyncResult {
         let result = try await anchoredResult(for: type, anchor: anchor)
         let refreshRange = refreshRange(addedDays: Set(result.addedSamples.map(dayStart(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
-        var refreshedDayCount = 0
-        var createdRowCount = 0
-        var updatedRowCount = 0
 
         if let refreshRange {
-            (refreshedDayCount, createdRowCount, updatedRowCount) = try await refreshMetricRange(dayRange: refreshRange, type: type, unit: unit, context: context, mapValue: mapValue, applyValue: applyValue)
+            try await refreshMetricRange(dayRange: refreshRange, type: type, unit: unit, context: context, mapValue: mapValue, applyValue: applyValue)
             try context.save()
         }
 
-        return MetricRefreshResult(fetchedSampleCount: result.addedSamples.count, deletedSampleCount: result.deletedObjects.count, refreshedDayCount: refreshedDayCount, createdRowCount: createdRowCount, updatedRowCount: updatedRowCount, refreshedRange: refreshRange, newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange)
+        return MetricSyncResult(newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange)
     }
 
-    private func refreshMetricRange<Value>(dayRange: ClosedRange<Date>, type: HKQuantityType, unit: HKUnit, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool)) async throws -> (days: Int, created: Int, updated: Int) {
+    private func refreshMetricRange<Value>(dayRange: ClosedRange<Date>, type: HKQuantityType, unit: HKUnit, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> Void) async throws {
         let lowerDayStart = calendar.startOfDay(for: dayRange.lowerBound)
         let upperDayStart = calendar.startOfDay(for: dayRange.upperBound)
         let upperDayExclusive = calendar.date(byAdding: .day, value: 1, to: upperDayStart) ?? upperDayStart
         let valuesByDay = try await dailyTotalsByDay(for: type, unit: unit, rangeStart: lowerDayStart, rangeEndExclusive: upperDayExclusive, mapValue: mapValue)
-        var refreshedDayCount = 0
-        var createdRowCount = 0
-        var updatedRowCount = 0
 
         var currentDay = lowerDayStart
         while currentDay < upperDayExclusive {
-            if let value = valuesByDay[currentDay] {
-                let change = try applyValue(currentDay, value, context)
-                refreshedDayCount += 1
-                createdRowCount += change.created ? 1 : 0
-                updatedRowCount += change.updated ? 1 : 0
-            } else {
-                let change = try applyValue(currentDay, mapValue(0), context)
-                refreshedDayCount += 1
-                createdRowCount += change.created ? 1 : 0
-                updatedRowCount += change.updated ? 1 : 0
-            }
+            try applyValue(currentDay, valuesByDay[currentDay] ?? mapValue(0), context)
             guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
             currentDay = nextDay
         }
-
-        return (refreshedDayCount, createdRowCount, updatedRowCount)
     }
 
     private func dailyTotalsByDay<Value>(for type: HKQuantityType, unit: HKUnit, rangeStart: Date, rangeEndExclusive: Date, mapValue: @escaping (Double) -> Value) async throws -> [Date: Value] {
@@ -256,80 +229,56 @@ final class HealthDailyMetricsSync {
         let samplePredicate = HKSamplePredicate.quantitySample(type: type, predicate: predicate)
         let descriptor = HKStatisticsCollectionQueryDescriptor(predicate: samplePredicate, options: .cumulativeSum, anchorDate: rangeStart, intervalComponents: DateComponents(day: 1))
 
-        let result = try await descriptor.result(for: authorizationManager.healthStore)
-        var totalsByDay: [Date: Value] = [:]
+        let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+        let totalsByDay = TotalsByDayBox<Value>()
+        let calendar = self.calendar
 
         result.enumerateStatistics(from: rangeStart, to: rangeEndExclusive) { statistics, _ in
-            let dayStart = self.calendar.startOfDay(for: statistics.startDate)
+            let dayStart = calendar.startOfDay(for: statistics.startDate)
             let total = statistics.sumQuantity()?.doubleValue(for: unit) ?? 0
-            totalsByDay[dayStart] = mapValue(max(0, total))
+            totalsByDay.value[dayStart] = mapValue(max(0, total))
         }
 
-        return totalsByDay
+        return totalsByDay.value
     }
 
-    private func upsertStepCount(for dayStart: Date, stepCount: Int, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
-        let (summary, wasCreated) = try fetchOrCreateStepsDistance(for: dayStart, context: context)
-        let previousStepCount = summary.stepCount
+    private func upsertStepCount(for dayStart: Date, stepCount: Int, context: ModelContext) throws {
+        let summary = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         summary.stepCount = max(0, stepCount)
-        return tuple(for: rowChange(afterUpdating: summary, wasCreated: wasCreated, valueChanged: previousStepCount != summary.stepCount))
     }
 
-    private func upsertWalkingRunningDistance(for dayStart: Date, distance: Double, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
-        let (summary, wasCreated) = try fetchOrCreateStepsDistance(for: dayStart, context: context)
-        let previousDistance = summary.distance
+    private func upsertWalkingRunningDistance(for dayStart: Date, distance: Double, context: ModelContext) throws {
+        let summary = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         summary.distance = max(0, distance)
-        return tuple(for: rowChange(afterUpdating: summary, wasCreated: wasCreated, valueChanged: previousDistance != summary.distance))
     }
 
-    private func upsertActiveEnergyBurned(for dayStart: Date, activeEnergyBurned: Double, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
-        let (energy, wasCreated) = try fetchOrCreateEnergy(for: dayStart, context: context)
-        let previousActiveEnergy = energy.activeEnergyBurned
+    private func upsertActiveEnergyBurned(for dayStart: Date, activeEnergyBurned: Double, context: ModelContext) throws {
+        let energy = try fetchOrCreateEnergy(for: dayStart, context: context)
         energy.activeEnergyBurned = max(0, activeEnergyBurned)
-        return tuple(for: rowChange(afterUpdating: energy, wasCreated: wasCreated, valueChanged: previousActiveEnergy != energy.activeEnergyBurned))
     }
 
-    private func upsertRestingEnergyBurned(for dayStart: Date, restingEnergyBurned: Double, context: ModelContext) throws -> (created: Bool, updated: Bool, deleted: Bool) {
-        let (energy, wasCreated) = try fetchOrCreateEnergy(for: dayStart, context: context)
-        let previousRestingEnergy = energy.restingEnergyBurned
+    private func upsertRestingEnergyBurned(for dayStart: Date, restingEnergyBurned: Double, context: ModelContext) throws {
+        let energy = try fetchOrCreateEnergy(for: dayStart, context: context)
         energy.restingEnergyBurned = max(0, restingEnergyBurned)
-        return tuple(for: rowChange(afterUpdating: energy, wasCreated: wasCreated, valueChanged: previousRestingEnergy != energy.restingEnergyBurned))
     }
 
-    private func fetchOrCreateStepsDistance(for dayStart: Date, context: ModelContext) throws -> (summary: HealthStepsDistance, created: Bool) {
-        if let existing = try context.fetch(HealthStepsDistance.forDay(dayStart)).first { return (existing, false) }
+    private func fetchOrCreateStepsDistance(for dayStart: Date, context: ModelContext) throws -> HealthStepsDistance {
+        if let existing = try context.fetch(HealthStepsDistance.forDay(dayStart)).first { return existing }
         let summary = HealthStepsDistance(date: dayStart)
         context.insert(summary)
-        return (summary, true)
+        return summary
     }
 
-    private func fetchOrCreateEnergy(for dayStart: Date, context: ModelContext) throws -> (energy: HealthEnergy, created: Bool) {
-        if let existing = try context.fetch(HealthEnergy.forDay(dayStart)).first { return (existing, false) }
+    private func fetchOrCreateEnergy(for dayStart: Date, context: ModelContext) throws -> HealthEnergy {
+        if let existing = try context.fetch(HealthEnergy.forDay(dayStart)).first { return existing }
         let energy = HealthEnergy(date: dayStart)
         context.insert(energy)
-        return (energy, true)
+        return energy
     }
 
-    private func rowChange(afterUpdating summary: HealthStepsDistance, wasCreated: Bool, valueChanged: Bool) -> RowChange {
-        if wasCreated { return .created }
-        if valueChanged { return .updated }
-        return .none
-    }
-
-    private func rowChange(afterUpdating energy: HealthEnergy, wasCreated: Bool, valueChanged: Bool) -> RowChange {
-        if wasCreated { return .created }
-        if valueChanged { return .updated }
-        return .none
-    }
-
-    private func tuple(for change: RowChange) -> (created: Bool, updated: Bool, deleted: Bool) {
-        switch change {
-        case .none:
-            return (false, false, false)
-        case .created:
-            return (true, false, false)
-        case .updated:
-            return (false, true, false)
-        }
+    private func makeBackgroundContext() -> ModelContext {
+        let context = ModelContext(SharedModelContainer.container)
+        context.autosaveEnabled = false
+        return context
     }
 }

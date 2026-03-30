@@ -1,7 +1,7 @@
 import AppIntents
 import SwiftData
 
-enum SetupGuard {
+nonisolated enum SetupGuard {
     static func isReady(context: ModelContext) -> Bool {
         guard DataManager.hasCompletedInitialBootstrap() else { return false }
         guard (try? context.fetch(AppSettings.single).first) != nil else { return false }

@@ -35,8 +35,8 @@ The launch path is:
 3. `OnboardingManager` decides whether the app is doing first bootstrap or a returning launch.
 4. Only after onboarding reaches `.ready` does `RootView`:
    - ask `AppRouter` to resume unfinished work
-   - start Health observer queries
-   - run the first Health sync pass
+   - refresh Health background delivery registration
+   - run the first full Health refresh pass
 
 That ordering matters. VillainArc does not resume persisted incomplete workouts or plans before setup is in a valid state.
 

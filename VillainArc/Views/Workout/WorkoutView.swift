@@ -30,7 +30,7 @@ struct WorkoutView: View {
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
     private var shouldPromptForPreWorkoutContext: Bool { appSettingsSnapshot.promptForPreWorkoutContext }
     private var shouldPromptForPostWorkoutEffort: Bool { appSettingsSnapshot.promptForPostWorkoutEffort }
-    private var showsLiveHealthButton: Bool { HealthAuthorizationManager.shared.canWriteWorkouts }
+    private var showsLiveHealthButton: Bool { HealthAuthorizationManager.canWriteWorkouts }
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary

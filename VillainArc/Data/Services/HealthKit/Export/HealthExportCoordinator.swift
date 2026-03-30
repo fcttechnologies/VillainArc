@@ -2,10 +2,8 @@ import Foundation
 import HealthKit
 import SwiftData
 
-final class HealthExportCoordinator {
+actor HealthExportCoordinator {
     static let shared = HealthExportCoordinator()
-
-    private let authorizationManager = HealthAuthorizationManager.shared
     private let bodyMassType = HKQuantityType(.bodyMass)
     private let weightUnit = HKUnit.gramUnit(with: .kilo)
     private var inFlightSessionIDs: Set<UUID> = []
@@ -15,76 +13,54 @@ final class HealthExportCoordinator {
 
     private init() {}
 
-    func exportIfEligible(session: WorkoutSession) async {
-        guard authorizationManager.canWriteWorkouts else { return }
-        guard !inFlightSessionIDs.contains(session.id) else { return }
-
-        inFlightSessionIDs.insert(session.id)
-        defer { inFlightSessionIDs.remove(session.id) }
-
-        await exportLoadedSession(session)
-    }
-
     func exportIfEligible(sessionID: UUID) async {
-        guard authorizationManager.canWriteWorkouts else { return }
+        guard HealthAuthorizationManager.canWriteWorkouts else { return }
         guard !inFlightSessionIDs.contains(sessionID) else { return }
 
         inFlightSessionIDs.insert(sessionID)
         defer { inFlightSessionIDs.remove(sessionID) }
 
-        let context = SharedModelContainer.container.mainContext
-
+        let context = makeBackgroundContext()
         guard let session = try? context.fetch(WorkoutSession.byID(sessionID)).first else { return }
-        await exportLoadedSession(session)
-    }
-
-    func exportIfEligible(weightEntry: WeightEntry) async {
-        guard authorizationManager.canWriteBodyMass else { return }
-        guard !inFlightWeightEntryIDs.contains(weightEntry.id) else { return }
-
-        inFlightWeightEntryIDs.insert(weightEntry.id)
-        defer { inFlightWeightEntryIDs.remove(weightEntry.id) }
-
-        await exportLoadedWeightEntry(weightEntry)
+        await exportLoadedSession(session, context: context)
     }
 
     func exportIfEligible(weightEntryID: UUID) async {
-        guard authorizationManager.canWriteBodyMass else { return }
+        guard HealthAuthorizationManager.canWriteBodyMass else { return }
         guard !inFlightWeightEntryIDs.contains(weightEntryID) else { return }
 
         inFlightWeightEntryIDs.insert(weightEntryID)
         defer { inFlightWeightEntryIDs.remove(weightEntryID) }
 
-        let context = SharedModelContainer.container.mainContext
+        let context = makeBackgroundContext()
         guard let weightEntry = try? context.fetch(WeightEntry.byID(weightEntryID)).first else { return }
-        await exportLoadedWeightEntry(weightEntry)
+        await exportLoadedWeightEntry(weightEntry, context: context)
     }
 
-    private func exportLoadedSession(_ session: WorkoutSession) async {
+    private func exportLoadedSession(_ session: WorkoutSession, context: ModelContext) async {
         guard session.statusValue == .done else { return }
         guard !session.isHidden else { return }
         guard !session.hasBeenExportedToHealth else { return }
 
-        let context = SharedModelContainer.container.mainContext
-        if let existingWorkout = try? await HealthLiveWorkoutSessionCoordinator.shared.findSavedWorkout(for: session.id) {
+        if let existingWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: session.id) {
             do {
                 try HealthWorkoutLinker.upsertHealthWorkout(for: existingWorkout, linkedTo: session, context: context)
-                saveContext(context: context)
+                try context.save()
                 print("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id)")
             } catch { print("Failed to link existing Apple Health workout for \(session.id): \(error)") }
             return
         }
 
         let endDate = max(session.startedAt, session.endedAt ?? session.startedAt)
-        let workoutEffortSample = makeWorkoutEffortSample(for: session, endDate: endDate)
+        let workoutEffortSample = HealthWorkoutEffortSampleBuilder.makeSample(for: session, endDate: endDate)
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = .traditionalStrengthTraining
         configuration.locationType = .indoor
-        let workoutBuilder = HKWorkoutBuilder(healthStore: authorizationManager.healthStore, configuration: configuration, device: nil)
+        let workoutBuilder = HKWorkoutBuilder(healthStore: HealthAuthorizationManager.healthStore, configuration: configuration, device: nil)
 
         do {
             try await workoutBuilder.beginCollection(at: session.startedAt)
-            try await workoutBuilder.addMetadata(authorizationManager.metadata(for: session))
+            try await workoutBuilder.addMetadata(HealthAuthorizationManager.metadata(for: session))
             try await workoutBuilder.endCollection(at: endDate)
 
             guard let workout = try await workoutBuilder.finishWorkout() else {
@@ -92,28 +68,27 @@ final class HealthExportCoordinator {
                 return
             }
 
-            if let workoutEffortSample, authorizationManager.canWriteWorkoutEffortScore {
+            if let workoutEffortSample, HealthAuthorizationManager.canWriteWorkoutEffortScore {
                 do {
-                    _ = try await authorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: workout, activity: nil)
+                    _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: workout, activity: nil)
                 } catch {
                     print("Failed to relate workout effort score for \(session.id): \(error)")
                 }
             }
 
             try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: session, context: context)
-            saveContext(context: context)
+            try context.save()
             print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
         } catch { print("Failed to export workout \(session.id) to HealthKit: \(error)") }
     }
 
-    private func exportLoadedWeightEntry(_ weightEntry: WeightEntry) async {
+    private func exportLoadedWeightEntry(_ weightEntry: WeightEntry, context: ModelContext) async {
         guard !weightEntry.hasBeenExportedToHealth else { return }
 
-        let context = SharedModelContainer.container.mainContext
-        if let existingSample = try? await findSavedWeightSample(for: weightEntry.id) {
+        if let existingSample = try? await HealthMirrorQueries.findSavedWeightSample(for: weightEntry.id) {
             do {
                 try HealthWeightEntryLinker.upsertWeightEntry(for: existingSample, context: context)
-                saveContext(context: context)
+                try context.save()
                 print("Linked existing Apple Health body mass sample \(existingSample.uuid) to local weight entry \(weightEntry.id)")
             } catch { print("Failed to link existing Apple Health body mass sample for \(weightEntry.id): \(error)") }
             return
@@ -121,12 +96,12 @@ final class HealthExportCoordinator {
 
         let sampleDate = weightEntry.date
         let quantity = HKQuantity(unit: weightUnit, doubleValue: weightEntry.weight)
-        let sample = HKQuantitySample(type: bodyMassType, quantity: quantity, start: sampleDate, end: sampleDate, metadata: authorizationManager.metadata(for: weightEntry))
+        let sample = HKQuantitySample(type: bodyMassType, quantity: quantity, start: sampleDate, end: sampleDate, metadata: HealthAuthorizationManager.metadata(for: weightEntry))
 
         do {
-            try await authorizationManager.healthStore.save(sample)
+            try await HealthAuthorizationManager.healthStore.save(sample)
             try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context)
-            saveContext(context: context)
+            try context.save()
             print("Saved weight entry \(weightEntry.id) to Apple Health as \(sample.uuid)")
         } catch { print("Failed to export weight entry \(weightEntry.id) to HealthKit: \(error)") }
     }
@@ -137,59 +112,40 @@ final class HealthExportCoordinator {
     }
 
     func reconcileCompletedSessions() async {
-        guard authorizationManager.canWriteWorkouts else { return }
+        guard HealthAuthorizationManager.canWriteWorkouts else { return }
         guard !isReconcilingSessions else { return }
 
         isReconcilingSessions = true
         defer { isReconcilingSessions = false }
 
-        let context = SharedModelContainer.container.mainContext
-        let sessions = (try? context.fetch(WorkoutSession.completedSessionsNeedingHealthExport)) ?? []
-        print("Reconciling \(sessions.count) completed workouts for Apple Health export")
+        let context = makeBackgroundContext()
+        let sessionIDs = ((try? context.fetch(WorkoutSession.completedSessionsNeedingHealthExport)) ?? []).map(\.id)
+        print("Reconciling \(sessionIDs.count) completed workouts for Apple Health export")
 
-        for session in sessions { await exportIfEligible(session: session) }
+        for sessionID in sessionIDs { await exportIfEligible(sessionID: sessionID) }
 
         print("Finished Apple Health export reconciliation")
     }
 
     func reconcileWeightEntries() async {
-        guard authorizationManager.canWriteBodyMass else { return }
+        guard HealthAuthorizationManager.canWriteBodyMass else { return }
         guard !isReconcilingWeightEntries else { return }
 
         isReconcilingWeightEntries = true
         defer { isReconcilingWeightEntries = false }
 
-        let context = SharedModelContainer.container.mainContext
-        let weightEntries = (try? context.fetch(WeightEntry.entriesNeedingHealthExport)) ?? []
-        print("Reconciling \(weightEntries.count) weight entries for Apple Health export")
+        let context = makeBackgroundContext()
+        let weightEntryIDs = ((try? context.fetch(WeightEntry.entriesNeedingHealthExport)) ?? []).map(\.id)
+        print("Reconciling \(weightEntryIDs.count) weight entries for Apple Health export")
 
-        for weightEntry in weightEntries { await exportIfEligible(weightEntry: weightEntry) }
+        for weightEntryID in weightEntryIDs { await exportIfEligible(weightEntryID: weightEntryID) }
 
         print("Finished Apple Health weight export reconciliation")
     }
 
-    private func findSavedWeightSample(for entryID: UUID) async throws -> HKQuantitySample? {
-        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: bodyMassType, predicate: HealthWeightEntryLinker.samplePredicate(for: entryID))], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
-
-        return try await descriptor.result(for: authorizationManager.healthStore).first
-    }
-
-    private func makeWorkoutEffortSample(for session: WorkoutSession, endDate: Date) -> HKQuantitySample? {
-        let mappedEffortScore = mappedWorkoutEffortScore(for: session)
-        guard mappedEffortScore > 0 else { return nil }
-
-        let duration = endDate.timeIntervalSince(session.startedAt)
-        guard duration > 0 else { return nil }
-
-        let sampleStartDate = session.startedAt.addingTimeInterval(min(1, max(0.001, duration / 2)))
-        let quantity = HKQuantity(unit: .appleEffortScore(), doubleValue: mappedEffortScore)
-
-        return HKQuantitySample(type: HKQuantityType(.workoutEffortScore), quantity: quantity, start: sampleStartDate, end: endDate)
-    }
-
-    private func mappedWorkoutEffortScore(for session: WorkoutSession) -> Double {
-        let effort = max(0, min(session.postEffort, 10))
-        guard effort > 0 else { return 0 }
-        return Double(effort)
+    private func makeBackgroundContext() -> ModelContext {
+        let context = ModelContext(SharedModelContainer.container)
+        context.autosaveEnabled = false
+        return context
     }
 }

@@ -249,11 +249,14 @@ private struct StepsDistanceMainChartSection: View {
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .animation(.smooth, value: latestEntry?.stepCount)
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
             let calendar = Calendar.autoupdatingCurrent
             let now = Date()
-            progressivelyRebuildRangeCache(existing: rangeCache, publish: { rangeCache = $0 }) { range in
+            progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
+                if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
+            }) { range in
                 let layout = TimeSeriesChartLayout(rangeFilter: range, samples: stepSamples, now: now, calendar: calendar, aggregation: .average)
                 let distanceLayout = TimeSeriesChartLayout(rangeFilter: range, samples: distanceSamples, now: now, calendar: calendar, aggregation: .average)
                 let pointValues = layout.points.map(\.value)
@@ -380,8 +383,12 @@ private struct StepsDistancePeriodHighlightsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            if let monthlyHighlight { PeriodComparisonHighlightCard(summary: stepsSummaryText(for: monthlyHighlight), accessibilitySummary: stepsSummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: "steps/day", tint: tint) }
-            if let yearlyHighlight { PeriodComparisonHighlightCard(summary: stepsSummaryText(for: yearlyHighlight), accessibilitySummary: stepsSummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: "steps/day", tint: tint) }
+            if let monthlyHighlight {
+                PeriodComparisonHighlightCard(summary: stepsSummaryText(for: monthlyHighlight), accessibilitySummary: stepsSummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: "steps/day", tint: tint)
+            }
+            if let yearlyHighlight {
+                PeriodComparisonHighlightCard(summary: stepsSummaryText(for: yearlyHighlight), accessibilitySummary: stepsSummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: "steps/day", tint: tint)
+            }
         }
     }
 

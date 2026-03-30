@@ -180,7 +180,7 @@ struct TimeSeriesChartLayout: Sendable {
             guard !bucketSamples.isEmpty else { return nil }
             let dayEnd = calendar.endOfDay(for: dayStart)
             let value = aggregate(bucketSamples, using: aggregation)
-            return TimeSeriesBucketedPoint(id: UUID(), date: midpointDate(start: dayStart, end: dayEnd), value: value, startDate: dayStart, endDate: dayEnd, sampleCount: bucketSamples.count)
+            return TimeSeriesBucketedPoint(id: stableTimeSeriesSampleID(namespace: 0x4255434B44415900, date: dayStart), date: midpointDate(start: dayStart, end: dayEnd), value: value, startDate: dayStart, endDate: dayEnd, sampleCount: bucketSamples.count)
         }
         .sorted { $0.date < $1.date }
     }
@@ -193,7 +193,7 @@ struct TimeSeriesChartLayout: Sendable {
             guard !bucketSamples.isEmpty else { return nil }
             let interval = calendar.dateInterval(of: .weekOfYear, for: weekStart) ?? DateInterval(start: weekStart, end: calendar.endOfDay(for: weekStart).addingTimeInterval(1))
             let value = aggregate(bucketSamples, using: aggregation)
-            return TimeSeriesBucketedPoint(id: UUID(), date: midpointDate(start: interval.start, end: interval.chartUpperBound), value: value, startDate: interval.start, endDate: interval.chartUpperBound, sampleCount: bucketSamples.count)
+            return TimeSeriesBucketedPoint(id: stableTimeSeriesSampleID(namespace: 0x4255434B57454B00, date: weekStart), date: midpointDate(start: interval.start, end: interval.chartUpperBound), value: value, startDate: interval.start, endDate: interval.chartUpperBound, sampleCount: bucketSamples.count)
         }
         .sorted { $0.date < $1.date }
     }
@@ -215,7 +215,7 @@ struct TimeSeriesChartLayout: Sendable {
             let bucketEndStart = calendar.date(byAdding: .month, value: monthsPerBucket, to: bucketStart) ?? bucketStart
             let bucketEnd = bucketEndStart.addingTimeInterval(-1)
             let value = aggregate(bucketSamples, using: aggregation)
-            return TimeSeriesBucketedPoint(id: UUID(), date: midpointDate(start: bucketStart, end: bucketEnd), value: value, startDate: bucketStart, endDate: bucketEnd, sampleCount: bucketSamples.count)
+            return TimeSeriesBucketedPoint(id: stableTimeSeriesSampleID(namespace: 0x4255434B4D4F4E00, date: bucketStart), date: midpointDate(start: bucketStart, end: bucketEnd), value: value, startDate: bucketStart, endDate: bucketEnd, sampleCount: bucketSamples.count)
         }
         .sorted { $0.date < $1.date }
     }
@@ -241,7 +241,7 @@ func timeSeriesAnchoredLinePoints(points: [TimeSeriesBucketedPoint], samples: [T
     guard let previousSample else { return points }
     
     let anchoredValue = anchoredValueAtDomainStart(domainStart: domain.lowerBound, previousDate: previousSample.date, previousValue: previousSample.value, nextPoint: firstVisiblePoint)
-    return [TimeSeriesBucketedPoint(id: UUID(), date: domain.lowerBound, value: anchoredValue)] + points
+    return [TimeSeriesBucketedPoint(id: stableTimeSeriesSampleID(namespace: 0x4255434B414E4300, date: domain.lowerBound), date: domain.lowerBound, value: anchoredValue)] + points
 }
 
 func dayBoundaryDates(in domain: ClosedRange<Date>, calendar: Calendar) -> [Date] {

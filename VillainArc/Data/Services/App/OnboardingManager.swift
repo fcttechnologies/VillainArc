@@ -188,12 +188,12 @@ enum OnboardingState: Equatable {
     }
 
     func connectAppleHealthDuringOnboarding() async {
-        _ = await HealthAuthorizationManager.shared.requestAuthorization()
+        _ = await HealthAuthorizationManager.requestAuthorization()
         await prefillProfileFromHealthKit()
     }
 
     private func prefillProfileFromHealthKit() async {
-        let healthStore = HealthAuthorizationManager.shared.healthStore
+        let healthStore = HealthAuthorizationManager.healthStore
 
         if profile?.birthday == nil { if let components = try? healthStore.dateOfBirthComponents(), let date = Calendar.current.date(from: components) { prefetchedBirthday = date } }
 
@@ -223,7 +223,7 @@ enum OnboardingState: Equatable {
             let profile = try SystemState.ensureUserProfile(context: context)
             if let missingStep = profile.firstMissingStep {
                 self.profile = profile
-                let action = await HealthAuthorizationManager.shared.authorizationAction()
+                let action = await HealthAuthorizationManager.authorizationAction()
                 if action == .requestAccess { isNewUser = true }
                 state = .profile(missingStep)
                 return
@@ -304,7 +304,7 @@ enum OnboardingState: Equatable {
     }
 
     private func shouldOfferHealthPermissions() async -> Bool {
-        let action = await HealthAuthorizationManager.shared.authorizationAction()
+        let action = await HealthAuthorizationManager.authorizationAction()
         return action == .requestAccess
     }
 
@@ -317,7 +317,7 @@ enum OnboardingState: Equatable {
     }
 
     func connectAppleHealth() async {
-        _ = await HealthAuthorizationManager.shared.requestAuthorization()
+        _ = await HealthAuthorizationManager.requestAuthorization()
         transitionToReady()
     }
 

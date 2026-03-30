@@ -263,11 +263,14 @@ private struct HealthEnergyMainChartSection: View {
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .animation(.smooth, value: latestEntry?.totalEnergyBurned)
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
             let calendar = Calendar.autoupdatingCurrent
             let now = Date()
-            progressivelyRebuildRangeCache(existing: rangeCache, publish: { rangeCache = $0 }) { range in
+            progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
+                if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
+            }) { range in
                 let totalLayout = TimeSeriesChartLayout(rangeFilter: range, samples: totalEnergySamples, now: now, calendar: calendar, aggregation: .average)
                 let activeLayout = TimeSeriesChartLayout(rangeFilter: range, samples: activeEnergySamples, now: now, calendar: calendar, aggregation: .average)
                 let chartSegments = bucketedEnergyChartSegments(totalPoints: totalLayout.points, activePoints: activeLayout.points)
@@ -396,28 +399,10 @@ private struct HealthEnergyPeriodHighlightsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             if let monthlyHighlight {
-                PeriodComparisonHighlightCard(
-                    summary: energySummaryText(for: monthlyHighlight),
-                    accessibilitySummary: energySummary(for: monthlyHighlight),
-                    currentValue: energyUnit.fromKilocalories(monthlyHighlight.currentAverage),
-                    previousValue: energyUnit.fromKilocalories(monthlyHighlight.previousAverage),
-                    currentLabel: monthlyHighlight.currentLabel,
-                    previousLabel: monthlyHighlight.previousLabel,
-                    unitText: energyUnit.perDayUnitLabel,
-                    tint: tint
-                )
+                PeriodComparisonHighlightCard(summary: energySummaryText(for: monthlyHighlight), accessibilitySummary: energySummary(for: monthlyHighlight), currentValue: energyUnit.fromKilocalories(monthlyHighlight.currentAverage), previousValue: energyUnit.fromKilocalories(monthlyHighlight.previousAverage), currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: energyUnit.perDayUnitLabel, tint: tint)
             }
             if let yearlyHighlight {
-                PeriodComparisonHighlightCard(
-                    summary: energySummaryText(for: yearlyHighlight),
-                    accessibilitySummary: energySummary(for: yearlyHighlight),
-                    currentValue: energyUnit.fromKilocalories(yearlyHighlight.currentAverage),
-                    previousValue: energyUnit.fromKilocalories(yearlyHighlight.previousAverage),
-                    currentLabel: yearlyHighlight.currentLabel,
-                    previousLabel: yearlyHighlight.previousLabel,
-                    unitText: energyUnit.perDayUnitLabel,
-                    tint: tint
-                )
+                PeriodComparisonHighlightCard(summary: energySummaryText(for: yearlyHighlight), accessibilitySummary: energySummary(for: yearlyHighlight), currentValue: energyUnit.fromKilocalories(yearlyHighlight.currentAverage), previousValue: energyUnit.fromKilocalories(yearlyHighlight.previousAverage), currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: energyUnit.perDayUnitLabel, tint: tint)
             }
         }
     }

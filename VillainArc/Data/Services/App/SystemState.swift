@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-enum SystemState {
+nonisolated enum SystemState {
     static func userProfile(context: ModelContext) throws -> UserProfile? {
         try context.fetch(UserProfile.single).first
     }

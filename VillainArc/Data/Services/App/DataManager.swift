@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 final class DataManager {
-    static let exerciseCatalogVersionKey = "exerciseCatalogVersion"
+    nonisolated static let exerciseCatalogVersionKey = "exerciseCatalogVersion"
 
     // MARK: - Onboarding Methods (First Launch)
 
@@ -20,7 +20,7 @@ final class DataManager {
         return try syncExercisesAndPersist()
     }
 
-    static func hasCompletedInitialBootstrap() -> Bool { SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != nil }
+    nonisolated static func hasCompletedInitialBootstrap() -> Bool { SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != nil }
 
     static func catalogNeedsSync() -> Bool { SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != ExerciseCatalog.catalogVersion }
 

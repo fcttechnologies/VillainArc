@@ -155,9 +155,8 @@ struct AppSettingsView: View {
 
     private func refreshHealthAuthorizationState() async {
         isRefreshingHealthStatus = true
-        let manager = HealthAuthorizationManager.shared
-        healthAuthorizationState = manager.currentAuthorizationState
-        healthAuthorizationAction = await manager.authorizationAction()
+        healthAuthorizationState = HealthAuthorizationManager.currentAuthorizationState
+        healthAuthorizationAction = await HealthAuthorizationManager.authorizationAction()
         isRefreshingHealthStatus = false
     }
 
@@ -168,7 +167,7 @@ struct AppSettingsView: View {
 
         switch healthAuthorizationAction {
         case .requestAccess:
-            _ = await HealthAuthorizationManager.shared.requestAuthorization()
+            _ = await HealthAuthorizationManager.requestAuthorization()
             await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
             await HealthStoreUpdateCoordinator.shared.syncNow()
         case .openSettings, .manageInSettings:

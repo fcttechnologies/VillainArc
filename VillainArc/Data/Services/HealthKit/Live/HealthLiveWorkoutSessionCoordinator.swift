@@ -3,45 +3,8 @@ import HealthKit
 import Observation
 import SwiftData
 
-enum HealthMetadataKeys {
-    static let workoutSessionID = "com.villainarc.workoutsession.id"
-    static let weightEntryID = "com.villainarc.weightentry.id"
-
-    static func workoutSessionID(from workout: HKWorkout) -> UUID? {
-        guard let rawValue = workout.metadata?[workoutSessionID] as? String else { return nil }
-        return UUID(uuidString: rawValue)
-    }
-
-    static func weightEntryID(from sample: HKSample) -> UUID? {
-        guard let rawValue = sample.metadata?[weightEntryID] as? String else { return nil }
-        return UUID(uuidString: rawValue)
-    }
-}
-
-enum HealthWorkoutLinker {
-    static func workoutPredicate(for sessionID: UUID) -> NSPredicate {
-        HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.workoutSessionID, operatorType: .equalTo, value: sessionID.uuidString)
-    }
-
-    @discardableResult static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
-        if let workoutSession { workoutSession.hasBeenExportedToHealth = true }
-
-        if let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(workout.uuid)).first {
-            existing.update(from: workout)
-            if let workoutSession { existing.workoutSession = workoutSession }
-            return existing
-        }
-
-        let healthWorkout = HealthWorkout(workout: workout, workoutSession: workoutSession)
-        context.insert(healthWorkout)
-        return healthWorkout
-    }
-}
-
 @Observable final class HealthLiveWorkoutSessionCoordinator: NSObject {
     static let shared = HealthLiveWorkoutSessionCoordinator()
-
-    private let authorizationManager = HealthAuthorizationManager.shared
 
     private(set) var activeWorkoutSessionID: UUID?
     private(set) var latestHeartRate: Double?
@@ -66,7 +29,7 @@ enum HealthWorkoutLinker {
 
     func ensureRunning(for workout: WorkoutSession) async {
         guard workout.statusValue == .active else { return }
-        guard authorizationManager.canWriteWorkouts else { return }
+        guard HealthAuthorizationManager.canWriteWorkouts else { return }
 
         if activeWorkoutSessionID == workout.id, liveWorkoutSession != nil, liveWorkoutBuilder != nil { return }
 
@@ -77,14 +40,14 @@ enum HealthWorkoutLinker {
         if await recoverIfPossible(for: workout, configuration: configuration) { return }
 
         do {
-            let session = try HKWorkoutSession(healthStore: authorizationManager.healthStore, configuration: configuration)
+            let session = try HKWorkoutSession(healthStore: HealthAuthorizationManager.healthStore, configuration: configuration)
             let builder = session.associatedWorkoutBuilder()
 
             attachLiveObjects(session: session, builder: builder, workout: workout, configuration: configuration)
 
             session.startActivity(with: workout.startedAt)
             try await builder.beginCollection(at: workout.startedAt)
-            try await builder.addMetadata(authorizationManager.metadata(for: workout))
+            try await builder.addMetadata(HealthAuthorizationManager.metadata(for: workout))
         } catch {
             lastErrorMessage = "Unable to start Apple Health workout collection."
             clearLiveWorkoutState()
@@ -93,7 +56,7 @@ enum HealthWorkoutLinker {
     }
 
     func finishIfRunning(for workout: WorkoutSession, context: ModelContext) async {
-        if workout.healthWorkout == nil, let savedWorkout = try? await findSavedWorkout(for: workout.id) {
+        if workout.healthWorkout == nil, let savedWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: workout.id) {
             do {
                 try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context)
                 saveContext(context: context)
@@ -107,21 +70,21 @@ enum HealthWorkoutLinker {
         isFinishingWorkout = true
 
         let endDate = max(workout.startedAt, workout.endedAt ?? .now)
-        let workoutEffortSample = makeWorkoutEffortSample(for: workout, endDate: endDate)
+        let workoutEffortSample = HealthWorkoutEffortSampleBuilder.makeSample(for: workout, endDate: endDate)
 
         liveWorkoutSession.stopActivity(with: endDate)
         await waitForSessionToStop(liveWorkoutSession)
 
         do {
-            try await liveWorkoutBuilder.addMetadata(authorizationManager.metadata(for: workout))
+            try await liveWorkoutBuilder.addMetadata(HealthAuthorizationManager.metadata(for: workout))
             try await liveWorkoutBuilder.endCollection(at: endDate)
 
             let savedWorkout = try await liveWorkoutBuilder.finishWorkout()
 
             if let savedWorkout {
-                if let workoutEffortSample, authorizationManager.canWriteWorkoutEffortScore {
+                if let workoutEffortSample, HealthAuthorizationManager.canWriteWorkoutEffortScore {
                     do {
-                        _ = try await authorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
+                        _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
                     } catch {
                         print("Failed to relate workout effort score for \(workout.id): \(error)")
                     }
@@ -150,12 +113,6 @@ enum HealthWorkoutLinker {
         clearLiveWorkoutState()
     }
 
-    func findSavedWorkout(for sessionID: UUID) async throws -> HKWorkout? {
-        let descriptor = HKSampleQueryDescriptor(predicates: [.workout(HealthWorkoutLinker.workoutPredicate(for: sessionID))], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
-
-        return try await descriptor.result(for: authorizationManager.healthStore).first
-    }
-
     private func makeWorkoutConfiguration() -> HKWorkoutConfiguration {
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = .traditionalStrengthTraining
@@ -164,7 +121,7 @@ enum HealthWorkoutLinker {
     }
 
     private func recoverIfPossible(for workout: WorkoutSession, configuration: HKWorkoutConfiguration) async -> Bool {
-        guard let recoveredSession = try? await authorizationManager.healthStore.recoverActiveWorkoutSession() else { return false }
+        guard let recoveredSession = try? await HealthAuthorizationManager.healthStore.recoverActiveWorkoutSession() else { return false }
 
         let recoveredBuilder = recoveredSession.associatedWorkoutBuilder()
         let recoveredSessionID = recoveredBuilder.metadata[HealthMetadataKeys.workoutSessionID] as? String
@@ -183,7 +140,7 @@ enum HealthWorkoutLinker {
     private func attachLiveObjects(session: HKWorkoutSession, builder: HKLiveWorkoutBuilder, workout: WorkoutSession, configuration: HKWorkoutConfiguration) {
         session.delegate = self
         builder.delegate = self
-        builder.dataSource = HKLiveWorkoutDataSource(healthStore: authorizationManager.healthStore, workoutConfiguration: configuration)
+        builder.dataSource = HKLiveWorkoutDataSource(healthStore: HealthAuthorizationManager.healthStore, workoutConfiguration: configuration)
 
         activeWorkoutSessionID = workout.id
         currentSessionState = session.state
@@ -225,25 +182,6 @@ enum HealthWorkoutLinker {
         if collectedTypes.contains(restingEnergyType) { restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie()) }
 
         if didChangeDisplayedMetrics, activeWorkoutSessionID != nil { WorkoutActivityManager.update() }
-    }
-
-    private func makeWorkoutEffortSample(for session: WorkoutSession, endDate: Date) -> HKQuantitySample? {
-        let mappedEffortScore = mappedWorkoutEffortScore(for: session)
-        guard mappedEffortScore > 0 else { return nil }
-
-        let duration = endDate.timeIntervalSince(session.startedAt)
-        guard duration > 0 else { return nil }
-
-        let sampleStartDate = session.startedAt.addingTimeInterval(min(1, max(0.001, duration / 2)))
-        let quantity = HKQuantity(unit: .appleEffortScore(), doubleValue: mappedEffortScore)
-
-        return HKQuantitySample(type: HKQuantityType(.workoutEffortScore), quantity: quantity, start: sampleStartDate, end: endDate)
-    }
-
-    private func mappedWorkoutEffortScore(for session: WorkoutSession) -> Double {
-        let effort = max(0, min(session.postEffort, 10))
-        guard effort > 0 else { return 0 }
-        return Double(effort)
     }
 
     private func clearLiveWorkoutState() {

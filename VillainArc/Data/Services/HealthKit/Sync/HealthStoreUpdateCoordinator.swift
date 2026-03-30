@@ -3,8 +3,6 @@ import HealthKit
 
 final class HealthStoreUpdateCoordinator {
     static let shared = HealthStoreUpdateCoordinator()
-
-    private let authorizationManager = HealthAuthorizationManager.shared
     private let observedWorkoutType = HKObjectType.workoutType()
     private let observedWeightType = HKQuantityType(.bodyMass)
     private let observedStepType = HKQuantityType(.stepCount)
@@ -19,12 +17,12 @@ final class HealthStoreUpdateCoordinator {
     private var activeEnergyObserverQuery: HKObserverQuery?
     private var restingEnergyObserverQuery: HKObserverQuery?
     private var isRefreshingBackgroundDelivery = false
-    private var inFlightSyncTask: Task<Void, Never>?
+    private var inFlightRefreshTask: Task<Void, Never>?
 
     private init() {}
 
     func installObserversIfNeeded() {
-        guard authorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
         startWorkoutObserverIfNeeded()
         startWeightObserverIfNeeded()
         startStepObserverIfNeeded()
@@ -43,14 +41,14 @@ final class HealthStoreUpdateCoordinator {
             }
 
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task { @MainActor in
+            Task {
                 defer { completionHandler() }
                 await HealthSyncCoordinator.shared.syncWorkouts()
             }
         }
 
         workoutObserverQuery = query
-        authorizationManager.healthStore.execute(query)
+        HealthAuthorizationManager.healthStore.execute(query)
     }
 
     private func startWeightObserverIfNeeded() {
@@ -64,14 +62,14 @@ final class HealthStoreUpdateCoordinator {
             }
 
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task { @MainActor in
+            Task {
                 defer { completionHandler() }
                 await HealthSyncCoordinator.shared.syncWeightEntries()
             }
         }
 
         weightObserverQuery = query
-        authorizationManager.healthStore.execute(query)
+        HealthAuthorizationManager.healthStore.execute(query)
     }
 
     private func startStepObserverIfNeeded() {
@@ -85,14 +83,14 @@ final class HealthStoreUpdateCoordinator {
             }
 
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task { @MainActor in
+            Task {
                 defer { completionHandler() }
                 await HealthDailyMetricsSync.shared.syncSteps()
             }
         }
 
         stepObserverQuery = query
-        authorizationManager.healthStore.execute(query)
+        HealthAuthorizationManager.healthStore.execute(query)
     }
 
     private func startWalkingRunningDistanceObserverIfNeeded() {
@@ -106,14 +104,14 @@ final class HealthStoreUpdateCoordinator {
             }
 
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task { @MainActor in
+            Task {
                 defer { completionHandler() }
                 await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
             }
         }
 
         walkingRunningDistanceObserverQuery = query
-        authorizationManager.healthStore.execute(query)
+        HealthAuthorizationManager.healthStore.execute(query)
     }
 
     private func startActiveEnergyObserverIfNeeded() {
@@ -127,14 +125,14 @@ final class HealthStoreUpdateCoordinator {
             }
 
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task { @MainActor in
+            Task {
                 defer { completionHandler() }
                 await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
             }
         }
 
         activeEnergyObserverQuery = query
-        authorizationManager.healthStore.execute(query)
+        HealthAuthorizationManager.healthStore.execute(query)
     }
 
     private func startRestingEnergyObserverIfNeeded() {
@@ -148,14 +146,14 @@ final class HealthStoreUpdateCoordinator {
             }
 
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task { @MainActor in
+            Task {
                 defer { completionHandler() }
                 await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
             }
         }
 
         restingEnergyObserverQuery = query
-        authorizationManager.healthStore.execute(query)
+        HealthAuthorizationManager.healthStore.execute(query)
     }
 
     func refreshBackgroundDeliveryRegistration() async {
@@ -164,60 +162,56 @@ final class HealthStoreUpdateCoordinator {
         isRefreshingBackgroundDelivery = true
         defer { isRefreshingBackgroundDelivery = false }
 
-        if authorizationManager.hasRequestedWorkoutAuthorization {
+        if HealthAuthorizationManager.hasRequestedWorkoutAuthorization {
             do {
-                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for workouts: \(error)") }
         }
 
-        if authorizationManager.hasRequestedBodyMassAuthorization {
+        if HealthAuthorizationManager.hasRequestedBodyMassAuthorization {
             do {
-                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWeightType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedWeightType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for body mass: \(error)") }
         }
 
-        if authorizationManager.hasRequestedStepCountAuthorization {
+        if HealthAuthorizationManager.hasRequestedStepCountAuthorization {
             do {
-                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedStepType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedStepType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for steps: \(error)") }
         }
 
-        if authorizationManager.hasRequestedWalkingRunningDistanceAuthorization {
+        if HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization {
             do {
-                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedWalkingRunningDistanceType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedWalkingRunningDistanceType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for walking/running distance: \(error)") }
         }
 
-        if authorizationManager.hasRequestedActiveEnergyBurnedAuthorization {
+        if HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization {
             do {
-                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedActiveEnergyType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedActiveEnergyType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for active energy: \(error)") }
         }
 
-        if authorizationManager.hasRequestedRestingEnergyBurnedAuthorization {
+        if HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization {
             do {
-                try await authorizationManager.healthStore.enableBackgroundDelivery(for: observedRestingEnergyType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedRestingEnergyType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for resting energy: \(error)") }
         }
     }
 
     func syncNow() async {
-        await syncNow(reason: "manual refresh")
-        await HealthExportCoordinator.shared.reconcilePendingExports()
-    }
-
-    private func syncNow(reason: String) async {
-        if let inFlightSyncTask {
-            await inFlightSyncTask.value
+        if let inFlightRefreshTask {
+            await inFlightRefreshTask.value
             return
         }
 
-        let task = Task { @MainActor in
+        let task = Task {
             await HealthSyncCoordinator.shared.syncAll()
+            await HealthExportCoordinator.shared.reconcilePendingExports()
         }
 
-        inFlightSyncTask = task
-        defer { inFlightSyncTask = nil }
+        inFlightRefreshTask = task
+        defer { inFlightRefreshTask = nil }
         await task.value
     }
 }

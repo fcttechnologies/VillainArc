@@ -91,9 +91,9 @@ extension EquipmentType {
             switch self {
             case .barbell, .smithMachine, .landmine, .ezBar:
                 return [5, 10, 15, 20, 25]
-            case .machine, .machineAssisted, .cableSingle, .cables, .rope:
+            case .machine, .machineAssisted, .rope:
                 return [5, 10, 15]
-            case .dumbbells, .dumbbellSingle:
+            case .dumbbells, .dumbbellSingle, .cableSingle, .cables:
                 return [2.5, 5, 10]
             case .kettlebell, .kettlebellSingle:
                 return [5, 10, 15]

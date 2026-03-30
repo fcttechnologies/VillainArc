@@ -5,6 +5,7 @@ This document explains the current Apple Health integration in VillainArc: how H
 ## Main Files
 
 - `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
+- `Data/Services/HealthKit/HealthMirrorSupport.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthPreferences.swift`
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
@@ -12,6 +13,8 @@ This document explains the current Apple Health integration in VillainArc: how H
 - `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
+- `Root/VillainArcApp.swift`
+- `Root/RootView.swift`
 - `Data/Models/Health/HealthWorkout.swift`
 - `Data/Models/Health/WeightEntry.swift`
 - `Data/Models/Health/HealthStepsDistance.swift`
@@ -76,10 +79,11 @@ It remains the record the app learns from and builds suggestions from.
 - duration
 - activity type
 - indoor/outdoor state when available
+- cached average heart rate
+- cached maximum heart rate
 - active energy burned
 - resting energy burned
 - total distance
-- source name
 - whether the workout still exists in HealthKit
 
 It is intentionally a summary/cache layer. It does not store route points, heart-rate samples, or other heavier detail data directly.
@@ -309,9 +313,20 @@ That order matters. Sync happens first so already-saved Health data can be relin
 
 #### Observer-Triggered Updates
 
-Observer callbacks also trigger `HealthStoreUpdateCoordinator`, but that path currently runs Health sync only. It does not automatically perform export reconciliation afterward.
+Observer callbacks run only their dedicated sync path:
+
+- workout observer -> `HealthSyncCoordinator.syncWorkouts()`
+- body-mass observer -> `HealthSyncCoordinator.syncWeightEntries()`
+- step observer -> `HealthDailyMetricsSync.syncSteps()`
+- walking/running distance observer -> `HealthDailyMetricsSync.syncWalkingRunningDistance()`
+- active-energy observer -> `HealthDailyMetricsSync.syncActiveEnergyBurned()`
+- resting-energy observer -> `HealthDailyMetricsSync.syncRestingEnergyBurned()`
+
+That observer path does not automatically perform export reconciliation afterward.
 
 ### Background Updates
+
+`HealthStoreUpdateCoordinator.installObserversIfNeeded()` is called from `VillainArcApp` through the app delegate during launch so the observer queries are recreated on every process launch, including HealthKit background relaunches.
 
 `HealthStoreUpdateCoordinator` registers:
 
@@ -322,7 +337,7 @@ Observer callbacks also trigger `HealthStoreUpdateCoordinator`, but that path cu
 - an `HKObserverQuery` for active energy burned
 - an `HKObserverQuery` for resting energy burned
 
-It also enables background delivery for each type once that type has crossed the request boundary.
+It also enables background delivery for each type once that type has crossed the request boundary. That registration is refreshed after onboarding reaches ready and from later settings-driven permission refreshes.
 
 ### How Sync Works
 
@@ -379,6 +394,31 @@ The daily-metrics sync pass is different:
 - deletion-driven refreshes can rebuild the already-synced coverage range for that metric because `HKDeletedObject` does not expose the deleted sample date
 
 This keeps the local Health tab caches compact: one row per refreshed day instead of one row per raw HealthKit sample.
+
+### Current Threading Model
+
+The lifecycle split is now cleaner, and the Health pipeline no longer routes its sync or reconciliation work back through the main context by default:
+
+- observer callbacks now trigger plain `Task { ... }` work instead of hopping through `@MainActor`
+- `HealthSyncCoordinator` is an actor and creates a fresh `ModelContext(SharedModelContainer.container)` for workout and body-mass sync work
+- `HealthDailyMetricsSync` is also an actor and creates a fresh `ModelContext(SharedModelContainer.container)` for daily metric sync work
+- `HealthExportCoordinator` is now also an actor and creates a fresh `ModelContext(SharedModelContainer.container)` for export and reconciliation work
+- those background contexts use explicit saves rather than relying on the shared main context
+
+The current architecture shape is:
+
+- keep observer installation and background-delivery registration where they are
+- keep the current actor-backed sync workers
+- keep export and reconciliation on the same background-context model
+- create fresh `ModelContext(SharedModelContainer.container)` instances for import and export work instead of always grabbing `mainContext`
+- keep per-category sync state and anchor updates serialized so background sync remains race-safe
+
+`syncNow()` now dedupes the full ready/manual refresh pipeline rather than only the sync half:
+
+1. Health data sync through `HealthSyncCoordinator`
+2. export/relink reconciliation through `HealthExportCoordinator`
+
+That means overlapping manual or ready-state refresh requests now await the same in-flight pipeline instead of rerunning reconciliation separately.
 
 ## Deletions From Apple Health
 
@@ -505,8 +545,8 @@ The detail screen always starts with cached or live summary data such as:
 - duration
 - calories
 - distance
-- source
 - activity type
+- cached or live average / maximum heart rate when available
 
 Then it conditionally adds richer sections when the live workout provides data, including:
 

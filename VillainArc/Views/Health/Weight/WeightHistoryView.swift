@@ -363,6 +363,7 @@ private struct WeightHistoryMainSection: View {
             }
         }
         .onChange(of: selectedRange) { selectedDate = nil }
+        .animation(.smooth, value: latestEntry?.weight)
         .task(id: cacheSeed) {
             prepareRangeCache()
         }
@@ -468,7 +469,9 @@ private struct WeightHistoryMainSection: View {
         let entrySnapshots = entrySnapshots
         let now = Date()
         let calendar = Calendar.autoupdatingCurrent
-        progressivelyRebuildRangeCache(existing: rangeCache, publish: { rangeCache = $0 }) { range in
+        progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
+            if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
+        }) { range in
             buildRangeData(for: range, samples: samples, entrySnapshots: entrySnapshots, now: now, calendar: calendar)
         }
     }

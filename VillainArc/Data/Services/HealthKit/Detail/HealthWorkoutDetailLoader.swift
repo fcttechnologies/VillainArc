@@ -158,7 +158,7 @@ struct HealthWorkoutSummaryStats: Equatable {
 }
 
 enum HealthWorkoutSummaryStatsLoader {
-    private static let healthStore = HealthAuthorizationManager.shared.healthStore
+    private static let healthStore = HealthAuthorizationManager.healthStore
 
     static func load(for workout: HealthWorkout) async -> HealthWorkoutSummaryStats {
         let cachedStats = HealthWorkoutSummaryStats(averageHeartRate: workout.averageHeartRateBPM, totalEnergyBurned: workout.totalEnergyBurned)
@@ -183,7 +183,7 @@ enum HealthWorkoutSummaryStatsLoader {
 @Observable final class HealthWorkoutDetailLoader {
     private static let chartMaxPoints = 180
     private let cachedWorkout: HealthWorkout
-    private let healthStore = HealthAuthorizationManager.shared.healthStore
+    private let healthStore = HealthAuthorizationManager.healthStore
     var summary: HealthWorkoutDetailSummary
     var heartRateSummary: HealthWorkoutHeartRateSummary
     var heartRatePoints: [HealthWorkoutHeartRatePoint] = []

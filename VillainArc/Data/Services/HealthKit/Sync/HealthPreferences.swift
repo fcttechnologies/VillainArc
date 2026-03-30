@@ -1,7 +1,7 @@
 import Foundation
 import HealthKit
 
-enum HealthSyncPreferences {
+nonisolated enum HealthSyncPreferences {
     private static let workoutAnchorKey = "health_workout_anchor"
     private static let weightEntryAnchorKey = "health_weight_entry_anchor"
     private static let stepCountAnchorKey = "health_step_count_anchor"
@@ -9,7 +9,7 @@ enum HealthSyncPreferences {
     private static let activeEnergyBurnedAnchorKey = "health_active_energy_burned_anchor"
     private static let restingEnergyBurnedAnchorKey = "health_resting_energy_burned_anchor"
 
-    private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
+    nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
 
     static var workoutAnchor: HKQueryAnchor? {
         get { anchor(forKey: workoutAnchorKey) }

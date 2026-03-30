@@ -110,8 +110,9 @@ struct HealthEnergySectionCard: View {
             }
             .padding()
             .glassEffect(.regular, in: .rect(cornerRadius: 12))
+            .tint(.primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .accessibilityIdentifier(AccessibilityIdentifiers.healthEnergySectionCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)

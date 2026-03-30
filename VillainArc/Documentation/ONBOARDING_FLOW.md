@@ -33,7 +33,7 @@ Startup is split across `VillainArcApp`, `RootView`, and `OnboardingManager`.
 - refreshes shortcut parameters
 - starts onboarding in `.task`
 - waits for `.ready` before calling `AppRouter.checkForUnfinishedData()`
-- starts Health observers and runs the first post-ready Health sync pass
+- refreshes Health background delivery registration and runs the first post-ready Health sync pass
 - presents `OnboardingView` as a non-dismissable sheet whenever onboarding is not yet complete
 
 That ordering is deliberate. Resume logic for unfinished workouts or new-plan drafts only runs after bootstrap and profile setup are valid.
@@ -193,7 +193,6 @@ VillainArc relies on HealthKit's request-status API rather than storing its own 
 
 When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 
-- `HealthStoreUpdateCoordinator.start()`
 - `HealthStoreUpdateCoordinator.refreshBackgroundDeliveryRegistration()`
 - `HealthStoreUpdateCoordinator.syncNow()`
 

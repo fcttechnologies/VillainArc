@@ -111,7 +111,7 @@ struct NewWeightEntryView: View {
         }
 
         Task {
-            await HealthExportCoordinator.shared.exportIfEligible(weightEntry: entry)
+            await HealthExportCoordinator.shared.exportIfEligible(weightEntryID: entry.id)
         }
     }
 }

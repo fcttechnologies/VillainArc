@@ -3,15 +3,15 @@ import Foundation
 
 enum SharedModelContainer {
 
-    static let appGroupID = "group.com.fcttechnologies.VillainArcCont"
-    static let sharedDefaults: UserDefaults = {
+    nonisolated static let appGroupID = "group.com.fcttechnologies.VillainArcCont"
+    nonisolated(unsafe) static let sharedDefaults: UserDefaults = {
         guard let defaults = UserDefaults(suiteName: appGroupID) else {
             fatalError("App Group defaults not found for \(appGroupID). Check App Groups capability + entitlements.")
         }
         return defaults
     }()
 
-    static let schema = Schema([
+    nonisolated static let schema = Schema([
         WorkoutSession.self,
         HealthWorkout.self,
         WeightEntry.self,
@@ -39,7 +39,7 @@ enum SharedModelContainer {
         SuggestionEvaluation.self
     ])
 
-    static let container: ModelContainer = {
+    nonisolated static let container: ModelContainer = {
         do {
             guard let url = FileManager.default
                 .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
