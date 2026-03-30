@@ -26,6 +26,7 @@ struct RootView: View {
                     HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                     await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                     await HealthStoreUpdateCoordinator.shared.syncNow()
+                    await NotificationCoordinator.shared.requestAuthorizationIfNeededAfterOnboarding()
                 }
             }
             .sheet(isPresented: onboardingBinding) {

@@ -11,6 +11,7 @@ nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
         var totalSets: Int?
         var weight: Double?
         var weightUnit: String?
+        var energyUnit: String?
         var reps: Int?
         var targetRPE: Int?
         var timerEndDate: Date?

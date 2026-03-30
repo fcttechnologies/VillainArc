@@ -42,6 +42,8 @@ struct HealthTabView: View {
                     WeightHistoryView()
                 case .stepsDistanceHistory:
                     StepsDistanceHistoryView()
+                case .stepsGoalHistory:
+                    StepsGoalHistoryView()
                 case .energyHistory:
                     HealthEnergyHistoryView()
                 case .allWeightEntriesList:

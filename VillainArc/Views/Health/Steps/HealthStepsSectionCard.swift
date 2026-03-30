@@ -6,9 +6,26 @@ struct HealthStepsSectionCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let router = AppRouter.shared
     @Query(HealthStepsDistance.summary, animation: .smooth) private var summaryEntries: [HealthStepsDistance]
+    @Query(StepsGoal.active, animation: .smooth) private var activeGoals: [StepsGoal]
 
     private var latestEntry: HealthStepsDistance? {
         summaryEntries.first
+    }
+
+    private var todayEntry: HealthStepsDistance? {
+        summaryEntries.first { Calendar.autoupdatingCurrent.isDateInToday($0.date) }
+    }
+
+    private var activeGoal: StepsGoal? {
+        activeGoals.first
+    }
+
+    private var activeGoalText: String? {
+        guard let activeGoal else { return nil }
+        if todayEntry?.goalCompleted == true {
+            return "Goal achieved"
+        }
+        return "Goal: \(compactStepsText(activeGoal.targetSteps))"
     }
 
     private var cardAccessibilityLabel: String {
@@ -41,19 +58,28 @@ struct HealthStepsSectionCard: View {
 
                 if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
-                        HStack(alignment: .lastTextBaseline, spacing: 2) {
-                            Text(latestEntry.stepCount, format: .number)
-                                .font(.largeTitle)
-                                .bold()
-                                .contentTransition(.numericText(value: Double(latestEntry.stepCount)))
+                        VStack(alignment: .leading, spacing: 0) {
+                            if let activeGoalText {
+                                Text(activeGoalText)
+                                    .font(.subheadline)
+                                    .lineLimit(1)
+                                    .foregroundStyle(.secondary)
+                            }
 
-                            Text(latestEntry.stepCount == 1 ? "Step" : "Steps")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                                .fontWeight(.semibold)
+                            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                                Text(latestEntry.stepCount, format: .number)
+                                    .font(.largeTitle)
+                                    .bold()
+                                    .contentTransition(.numericText(value: Double(latestEntry.stepCount)))
+
+                                Text(latestEntry.stepCount == 1 ? "Step" : "Steps")
+                                    .font(.title2)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .lineLimit(1)
                         .fontDesign(.rounded)
+                        .fontWeight(.semibold)
 
                         Spacer()
 

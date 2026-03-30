@@ -7,6 +7,7 @@ import SwiftData
     var id: UUID = UUID()
     var type: WeightGoalType = WeightGoalType.maintain
     var startedAt: Date = Date()
+    // When non-nil, endedAt is the exclusive upper bound for the goal's range.
     var endedAt: Date?
     var endReason: WeightGoalEndReason?
     var startWeight: Double = 0
@@ -52,6 +53,12 @@ extension WeightGoal {
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.endedAt, order: .reverse)])
         descriptor.fetchLimit = 1
         return descriptor
+    }
+
+    func contains(_ date: Date) -> Bool {
+        guard date >= startedAt else { return false }
+        guard let endedAt else { return true }
+        return date < endedAt
     }
 
     func reachesTarget(with weight: Double, toleranceKg: Double) -> Bool {

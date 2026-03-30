@@ -337,6 +337,14 @@ actor HealthDailyMetricsSync {
     private func upsertStepCount(for dayStart: Date, stepCount: Int, context: ModelContext) throws {
         let summary = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         summary.stepCount = max(0, stepCount)
+        let achievedTodayTransition = try StepsGoalEvaluator.reevaluateAchievement(for: summary, context: context)
+        if achievedTodayTransition {
+            let targetSteps = try context.fetch(StepsGoal.forDay(dayStart)).first?.targetSteps ?? summary.stepCount
+            let achievedStepCount = summary.stepCount
+            Task {
+                await NotificationCoordinator.shared.deliverStepsGoalCompletion(targetSteps: targetSteps, stepCount: achievedStepCount)
+            }
+        }
     }
 
     private func upsertWalkingRunningDistance(for dayStart: Date, distance: Double, context: ModelContext) throws {
@@ -356,7 +364,8 @@ actor HealthDailyMetricsSync {
 
     private func fetchOrCreateStepsDistance(for dayStart: Date, context: ModelContext) throws -> HealthStepsDistance {
         if let existing = try context.fetch(HealthStepsDistance.forDay(dayStart)).first { return existing }
-        let summary = HealthStepsDistance(date: dayStart)
+        let goalTargetSteps = try context.fetch(StepsGoal.forDay(dayStart)).first?.targetSteps
+        let summary = HealthStepsDistance(date: dayStart, goalTargetSteps: goalTargetSteps)
         context.insert(summary)
         return summary
     }

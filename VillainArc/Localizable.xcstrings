@@ -35,6 +35,9 @@
     "%@ is already the active exercise." : {
 
     },
+    "%@ steps" : {
+
+    },
     "%@ training is %@." : {
       "localizations" : {
         "en" : {
@@ -446,6 +449,9 @@
     "Back" : {
 
     },
+    "Background App Refresh is off, so Villain Arc can’t reliably deliver steps goal notifications while the app is closed." : {
+
+    },
     "Band" : {
 
     },
@@ -516,6 +522,15 @@
 
     },
     "Chest" : {
+
+    },
+    "Choose how Villain Arc delivers rest timer and steps goal notifications." : {
+
+    },
+    "Choose how weight, height, distance, and energy are displayed throughout the app." : {
+
+    },
+    "Choose whether Villain Arc notifies only when you hit your goal or reserves room for future coaching notifications too." : {
 
     },
     "Classic bodybuilding split" : {
@@ -604,9 +619,6 @@
 
     },
     "Continues setup without iCloud sync." : {
-
-    },
-    "Controls local rest timer completion notifications." : {
 
     },
     "Copy" : {
@@ -885,6 +897,12 @@
     "Enable iCloud in Settings" : {
 
     },
+    "Enable notifications in system settings to change this. Villain Arc can still show in-app toasts while you’re using the app." : {
+
+    },
+    "Enabled" : {
+
+    },
     "Ended %@" : {
 
     },
@@ -1011,10 +1029,16 @@
     "Generating suggestions..." : {
 
     },
+    "Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner." : {
+
+    },
     "Glutes" : {
 
     },
     "Go back" : {
+
+    },
+    "Goal Completions" : {
 
     },
     "Goal Target" : {
@@ -1299,6 +1323,9 @@
     "Missed One Day" : {
 
     },
+    "Mode" : {
+
+    },
     "Monday" : {
 
     },
@@ -1491,6 +1518,9 @@
     "No step data was recorded in the last year." : {
 
     },
+    "No Steps Goals" : {
+
+    },
     "No target set" : {
 
     },
@@ -1558,6 +1588,9 @@
 
     },
     "Notes" : {
+
+    },
+    "Notifications" : {
 
     },
     "Obliques" : {
@@ -1993,6 +2026,9 @@
     "Rest timer is already running." : {
 
     },
+    "Rest Timer Notifications" : {
+
+    },
     "Rest timer paused." : {
 
     },
@@ -2199,9 +2235,6 @@
 
     },
     "Selects this workout plan." : {
-
-    },
-    "Send Notifications" : {
 
     },
     "Sends a local notification when rest timer finishes." : {
@@ -2546,6 +2579,12 @@
     "Steps" : {
 
     },
+    "Steps Goal" : {
+
+    },
+    "Steps Goals" : {
+
+    },
     "Steps history chart" : {
 
     },
@@ -2639,6 +2678,9 @@
     "Target RPE: %lld" : {
 
     },
+    "Target Steps" : {
+
+    },
     "Target Weight" : {
 
     },
@@ -2700,6 +2742,9 @@
 
     },
     "Today is your rest day" : {
+
+    },
+    "Today's current total is %@ steps." : {
 
     },
     "Toggle Exercise Favorite" : {
@@ -3161,6 +3206,9 @@
 
     },
     "Your created workout plans will appear here." : {
+
+    },
+    "Your saved and previous steps goals will appear here." : {
 
     },
     "Your saved and previous weight goals will appear here." : {

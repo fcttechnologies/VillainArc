@@ -96,7 +96,7 @@ struct NewWeightEntryView: View {
 
         let entry = WeightEntry(date: entryDate, weight: weightUnit.toKg(parsedWeight))
         let completionGoal = activeGoal
-        let shouldPresentCompletion = completionGoal.map { entryDate >= $0.startedAt && $0.reachesTarget(with: entry.weight, toleranceKg: goalAchievementToleranceKg) } == true
+        let shouldPresentCompletion = completionGoal.map { $0.contains(entryDate) && $0.reachesTarget(with: entry.weight, toleranceKg: goalAchievementToleranceKg) } == true
 
         context.insert(entry)
         saveContext(context: context)

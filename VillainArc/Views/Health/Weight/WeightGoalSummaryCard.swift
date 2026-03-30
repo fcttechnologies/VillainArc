@@ -261,7 +261,7 @@ struct WeightGoalProgressChartModel {
     let maintainBand: ClosedRange<Double>?
     
     init?(goal: WeightGoal, entries: [WeightEntry], now: Date, calendar: Calendar = .autoupdatingCurrent) {
-        let goalEntries = entries.filter { $0.date >= goal.startedAt && $0.date <= now }.sorted { $0.date < $1.date }
+        let goalEntries = entries.filter { goal.contains($0.date) && $0.date <= now }.sorted { $0.date < $1.date }
         let historyPoints = Self.dailyAveragedPoints(from: goalEntries, calendar: calendar)
         let lowerBound = calendar.startOfDay(for: goal.startedAt)
         let effectiveEndDate = goal.endedAt ?? now

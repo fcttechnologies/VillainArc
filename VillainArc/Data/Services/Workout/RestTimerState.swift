@@ -1,11 +1,8 @@
-import AudioToolbox
 import Foundation
 import Observation
-import UIKit
 
 @Observable final class RestTimerState {
     static let shared = RestTimerState()
-    private static let completionSoundID: SystemSoundID = 1005
     private static let maximumRestSeconds = 10 * 60
 
     private enum StorageKey {
@@ -44,7 +41,7 @@ import UIKit
                 pausedRemainingSeconds = 0
                 scheduleStop()
             } else {
-                stopInternal(playAlert: false)
+                stopInternal(cancelNotification: true)
             }
         } else {
             endDate = nil
@@ -61,7 +58,7 @@ import UIKit
     func start(seconds: Int, startedFromSetID: UUID? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
-            stopInternal(playAlert: false)
+            stopInternal(cancelNotification: true)
             return
         }
         endDate = Date.now.addingTimeInterval(TimeInterval(clamped))
@@ -79,7 +76,7 @@ import UIKit
         let remaining = max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
 
         if remaining == 0 {
-            stopInternal(playAlert: false)
+            stopInternal(cancelNotification: true)
             return
         }
         pausedRemainingSeconds = remaining
@@ -88,7 +85,7 @@ import UIKit
         persist()
         stopTask?.cancel()
         stopTask = nil
-        cancelNotification()
+        cancelNotificationRequest()
         WorkoutActivityManager.update()
     }
 
@@ -102,9 +99,9 @@ import UIKit
         WorkoutActivityManager.update()
     }
 
-    func stop() { stopInternal(playAlert: false) }
+    func stop() { stopInternal(cancelNotification: true) }
 
-    private func stopInternal(playAlert: Bool) {
+    private func stopInternal(cancelNotification: Bool) {
         endDate = nil
         pausedRemainingSeconds = 0
         isPaused = false
@@ -113,9 +110,10 @@ import UIKit
         persist()
         stopTask?.cancel()
         stopTask = nil
-        cancelNotification()
+        if cancelNotification {
+            cancelNotificationRequest()
+        }
         WorkoutActivityManager.update()
-        if playAlert { playCompletionAlertIfActive() }
     }
 
     func adjust(by deltaSeconds: Int) {
@@ -126,7 +124,7 @@ import UIKit
             let now = Date.now
             let adjustedEndDate = endDate.addingTimeInterval(TimeInterval(deltaSeconds))
             if adjustedEndDate <= now {
-                stopInternal(playAlert: false)
+                stopInternal(cancelNotification: true)
                 return
             }
 
@@ -138,7 +136,7 @@ import UIKit
         } else if isPaused {
             let adjustedRemaining = pausedRemainingSeconds + deltaSeconds
             if adjustedRemaining <= 0 {
-                stopInternal(playAlert: false)
+                stopInternal(cancelNotification: true)
                 return
             }
 
@@ -171,10 +169,11 @@ import UIKit
     }
     private func stopIfStillScheduled(_ scheduledEndDate: Date) {
         if endDate == scheduledEndDate {
-            let now = Date.now
-            let isOnTime = now <= scheduledEndDate.addingTimeInterval(1)
-            stopInternal(playAlert: isOnTime)
+            stopInternal(cancelNotification: false)
             WorkoutActivityManager.update()
+            Task {
+                await NotificationCoordinator.shared.deliverRestTimerCompletionIfNeeded()
+            }
         }
     }
     private func persist() {
@@ -196,11 +195,14 @@ import UIKit
 
     private func scheduleNotification() {
         guard let endDate else { return }
-        let duration = startedSeconds
-        Task { await RestTimerNotifications.schedule(endDate: endDate, durationSeconds: duration) }
+        Task {
+            await NotificationCoordinator.shared.scheduleRestTimer(endDate: endDate)
+        }
     }
 
-    private func cancelNotification() { Task { await RestTimerNotifications.cancel() } }
-
-    private func playCompletionAlertIfActive() { AudioServicesPlayAlertSound(Self.completionSoundID) }
+    private func cancelNotificationRequest() {
+        Task {
+            NotificationCoordinator.shared.cancelRestTimer()
+        }
+    }
 }

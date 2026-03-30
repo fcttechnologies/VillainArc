@@ -169,52 +169,29 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
     let attributes: WorkoutActivityAttributes
     let state: WorkoutActivityAttributes.ContentState
 
+    private var visibleTopItemCount: Int {
+        var count = 0
+        if state.liveHeartRateBPM != nil { count += 1 }
+        if state.liveActiveEnergyBurned != nil { count += 1 }
+        if state.isTimerActive { count += 1 }
+        return count
+    }
+
     var body: some View {
         Group {
-            if state.liveHeartRateBPM != nil || state.liveActiveEnergyBurned != nil {
+            if visibleTopItemCount > 1 {
                 HStack {
                     if let liveHeartRateBPM = state.liveHeartRateBPM {
                         WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", number: Double(Int(liveHeartRateBPM.rounded())), tint: .red)
-                        Spacer()
+                        if state.liveActiveEnergyBurned != nil || state.isTimerActive { Spacer() }
                     }
 
                     if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
-                        WorkoutLiveActivityExpandedMetricView(symbolName: "flame.fill", number: Double(Int(liveActiveEnergyBurned.rounded())), unitText: "cal", tint: .orange)
-                        Spacer()
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "flame.fill", number: displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: state.energyUnit), unitText: displayedLiveEnergyUnitText(for: state.energyUnit), tint: .orange)
+                        if state.isTimerActive { Spacer() }
                     }
 
-                    if state.isTimerRunning, let endDate = state.timerEndDate {
-                        HStack(spacing: 4) {
-                            Image(systemName: "timer")
-                                .font(.title2)
-                                .accessibilityHidden(true)
-                            Text(timerInterval: Date.now...endDate, countsDown: true)
-                                .font(.title)
-                                .bold()
-                                .lineLimit(1)
-                                .frame(maxWidth: 65)
-                        }
-                    } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
-                        Button(intent: LiveActivityResumeRestTimerIntent()) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "pause.fill")
-                                    .font(.title)
-                                Text(formatSeconds(remaining))
-                                    .font(.title)
-                                    .bold()
-                                    .monospacedDigit()
-                            }
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .foregroundStyle(.yellow)
-                            .fontDesign(.rounded)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
-                        .accessibilityValue(formatSeconds(remaining))
-                    } else {
-                        Spacer()
-                    }
+                    topRowTimerView
                 }
                 .fontDesign(.rounded)
                 .fontWeight(.semibold)
@@ -234,32 +211,51 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
 
                     Spacer()
 
-                    if state.isTimerRunning, let endDate = state.timerEndDate {
-                        Text(timerInterval: Date.now...endDate, countsDown: true)
-                            .font(.title)
-                            .bold()
-                            .lineLimit(1)
-                            .frame(maxWidth: 65)
-                    } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
-                        Button(intent: LiveActivityResumeRestTimerIntent()) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "pause.fill")
-                                    .font(.title3)
-                                Text(formatSeconds(remaining))
-                                    .font(.title)
-                                    .bold()
-                            }
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .foregroundStyle(.yellow)
-                            .fontDesign(.rounded)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
-                        .accessibilityValue(formatSeconds(remaining))
+                    if let liveHeartRateBPM = state.liveHeartRateBPM {
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "heart.fill", number: Double(Int(liveHeartRateBPM.rounded())), tint: .red)
+                    } else if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
+                        WorkoutLiveActivityExpandedMetricView(symbolName: "flame.fill", number: displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: state.energyUnit), unitText: displayedLiveEnergyUnitText(for: state.energyUnit), tint: .orange)
+                    } else {
+                        topRowTimerView
                     }
                 }
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var topRowTimerView: some View {
+        if state.isTimerRunning, let endDate = state.timerEndDate {
+            HStack(spacing: 4) {
+                Image(systemName: "timer")
+                    .font(.title2)
+                    .accessibilityHidden(true)
+                Text(timerInterval: Date.now...endDate, countsDown: true)
+                    .font(.title)
+                    .bold()
+                    .lineLimit(1)
+                    .frame(maxWidth: 65)
+            }
+        } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
+            Button(intent: LiveActivityResumeRestTimerIntent()) {
+                HStack(spacing: 4) {
+                    Image(systemName: "pause.fill")
+                        .font(.title)
+                    Text(formatSeconds(remaining))
+                        .font(.title)
+                        .bold()
+                        .monospacedDigit()
+                }
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .foregroundStyle(.yellow)
+                .fontDesign(.rounded)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+            .accessibilityValue(formatSeconds(remaining))
         }
     }
 }
@@ -309,7 +305,7 @@ private struct WorkoutLiveActivityIslandLeadingMetricView: View {
             if let liveHeartRateBPM = state.liveHeartRateBPM {
                 WorkoutLiveActivityIslandMetricView(symbolName: "heart.fill", number: Double(Int(liveHeartRateBPM.rounded())), tint: .red)
             } else if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
-                WorkoutLiveActivityIslandMetricView(symbolName: "flame.fill", number: Double(Int(liveActiveEnergyBurned.rounded())), tint: .orange)
+                WorkoutLiveActivityIslandMetricView(symbolName: "flame.fill", number: displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: state.energyUnit), tint: .orange)
             } else {
                 EmptyView()
             }
@@ -343,6 +339,24 @@ private func formatSeconds(_ seconds: Int) -> String {
     let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
     return String(format: "%02d:%02d", minutes, remainingSeconds)
+}
+
+private func displayedLiveEnergyValue(for kilocalories: Double, unit: String?) -> Double {
+    switch unit {
+    case "kJ":
+        return Double(Int((kilocalories * 4.184).rounded()))
+    default:
+        return Double(Int(kilocalories.rounded()))
+    }
+}
+
+private func displayedLiveEnergyUnitText(for unit: String?) -> String {
+    switch unit {
+    case "kJ":
+        return "kJ"
+    default:
+        return "kcal"
+    }
 }
 
 private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> String {

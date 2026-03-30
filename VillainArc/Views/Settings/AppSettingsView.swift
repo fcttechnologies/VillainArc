@@ -1,7 +1,10 @@
 import SwiftUI
 import SwiftData
+import UIKit
+import UserNotifications
 
 struct AppSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -13,17 +16,36 @@ struct AppSettingsView: View {
     @State private var showHealthAccessInstructions = false
 
     var body: some View {
-        Group {
-            if let settings = appSettings.first {
-                settingsForm(settings)
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+        NavigationStack {
+            Group {
+                if let settings = appSettings.first {
+                    AppSettingsFormView(
+                        settings: settings,
+                        healthAuthorizationState: healthAuthorizationState,
+                        healthAuthorizationAction: healthAuthorizationAction,
+                        isRefreshingHealthStatus: isRefreshingHealthStatus,
+                        isHandlingHealthAction: isHandlingHealthAction,
+                        healthAccessHint: healthAccessHint,
+                        onHealthAuthorizationAction: {
+                            await handleHealthAuthorizationAction()
+                        }
+                    )
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
-        }
-        .listSectionSpacing(20)
-        .navBar(title: "Settings") {
-            CloseButton()
+            .listSectionSpacing(20)
+            .navigationTitle("Settings")
+            .toolbarTitleDisplayMode(.inlineLarge)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Close", systemImage: "xmark", role: .close) {
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
         }
         .task {
             await refreshHealthAuthorizationState()
@@ -44,100 +66,6 @@ struct AppSettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions.")
-        }
-    }
-
-    private func settingsForm(_ settings: AppSettings) -> some View {
-        @Bindable var settings = settings
-
-        return Form {
-            Section {
-                Toggle("Retain for Improved Accuracy", isOn: $settings.retainPerformancesForLearning)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
-                    .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
-            } header: {
-                Text("Workout History")
-            } footer: {
-                Text("When this is on, deleting a workout keeps its performances so suggestions have more data to work with. When it is off, it permanently removes the session and the suggestion data tied to it.")
-            }
-
-            Section {
-                LabeledContent("Status", value: healthAuthorizationState.statusText)
-
-                if healthAuthorizationAction != .unavailable {
-                    Button(healthAuthorizationAction.buttonTitle, systemImage: healthAuthorizationAction.systemImage) {
-                        Task {
-                            await handleHealthAuthorizationAction()
-                        }
-                    }
-                    .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
-                    .accessibilityHint(healthAccessHint)
-                }
-
-                Toggle("Keep Removed Data", isOn: $settings.keepRemovedHealthData)
-            } header: {
-                Text("Apple Health")
-            } footer: {
-                Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
-            }
-            
-            Section {
-                Picker("Weight", selection: $settings.weightUnit) {
-                    ForEach(WeightUnit.allCases, id: \.self) { unit in
-                        Text(unit.rawValue)
-                            .tag(unit)
-                    }
-                }
-
-                Picker("Height", selection: $settings.heightUnit) {
-                    ForEach(HeightUnit.allCases, id: \.self) { unit in
-                        Text(unit == .imperial ? "ft/in" : unit.rawValue)
-                            .tag(unit)
-                    }
-                }
-
-                Picker("Distance", selection: $settings.distanceUnit) {
-                    ForEach(DistanceUnit.allCases, id: \.self) { unit in
-                        Text(unit.rawValue)
-                            .tag(unit)
-                    }
-                }
-
-                Picker("Energy", selection: $settings.energyUnit) {
-                    ForEach(EnergyUnit.allCases, id: \.self) { unit in
-                        Text(unit.unitLabel)
-                            .tag(unit)
-                    }
-                }
-            } header: {
-                Text("Units")
-            } footer: {
-                Text("These units control how weight, height, distance, and energy are displayed throughout the app.")
-            }
-        }
-        .onChange(of: settings.retainPerformancesForLearning) {
-            saveContext(context: context)
-            guard !settings.retainPerformancesForLearning else { return }
-            WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
-        }
-        .onChange(of: settings.keepRemovedHealthData) {
-            saveContext(context: context)
-            guard !settings.keepRemovedHealthData else { return }
-            Task {
-                await HealthSyncCoordinator.shared.applyRemovedHealthDataRetentionSetting()
-            }
-        }
-        .onChange(of: settings.weightUnit) {
-            saveContext(context: context)
-        }
-        .onChange(of: settings.heightUnit) {
-            saveContext(context: context)
-        }
-        .onChange(of: settings.distanceUnit) {
-            saveContext(context: context)
-        }
-        .onChange(of: settings.energyUnit) {
-            saveContext(context: context)
         }
     }
 
@@ -190,4 +118,289 @@ struct AppSettingsView: View {
 #Preview {
     AppSettingsView()
         .sampleDataContainer()
+}
+
+private struct AppSettingsFormView: View {
+    @Environment(\.modelContext) private var context
+    @Bindable var settings: AppSettings
+
+    let healthAuthorizationState: HealthAuthorizationState
+    let healthAuthorizationAction: HealthAuthorizationAction
+    let isRefreshingHealthStatus: Bool
+    let isHandlingHealthAction: Bool
+    let healthAccessHint: String
+    let onHealthAuthorizationAction: () async -> Void
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Retain for Improved Accuracy", isOn: $settings.retainPerformancesForLearning)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
+            } header: {
+                Text("Workout History")
+            } footer: {
+                Text("When this is on, deleting a workout keeps its performances so suggestions have more data to work with. When it is off, it permanently removes the session and the suggestion data tied to it.")
+            }
+
+            Section {
+                LabeledContent("Status", value: healthAuthorizationState.statusText)
+
+                if healthAuthorizationAction != .unavailable {
+                    Button(healthAuthorizationAction.buttonTitle, systemImage: healthAuthorizationAction.systemImage) {
+                        Task {
+                            await onHealthAuthorizationAction()
+                        }
+                    }
+                    .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
+                    .accessibilityHint(healthAccessHint)
+                }
+
+                Toggle("Keep Removed Data", isOn: $settings.keepRemovedHealthData)
+            } header: {
+                Text("Apple Health")
+            } footer: {
+                Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
+            }
+
+            Section {
+                NavigationLink {
+                    NotificationSettingsView(settings: settings)
+                } label: {
+                    Label("Notifications", systemImage: "bell.badge")
+                }
+            } footer: {
+                Text("Choose how Villain Arc delivers rest timer and steps goal notifications.")
+            }
+
+            Section {
+                NavigationLink {
+                    UnitSettingsView(settings: settings)
+                } label: {
+                    Label("Units", systemImage: "ruler")
+                }
+            } footer: {
+                Text("Choose how weight, height, distance, and energy are displayed throughout the app.")
+            }
+        }
+        .scrollDisabled(true)
+        .onChange(of: settings.retainPerformancesForLearning) {
+            saveContext(context: context)
+            guard !settings.retainPerformancesForLearning else { return }
+            WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
+        }
+        .onChange(of: settings.keepRemovedHealthData) {
+            saveContext(context: context)
+            guard !settings.keepRemovedHealthData else { return }
+            Task {
+                await HealthSyncCoordinator.shared.applyRemovedHealthDataRetentionSetting()
+            }
+        }
+    }
+}
+
+private struct NotificationSettingsView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
+    @Bindable var settings: AppSettings
+
+    @State private var notificationAuthorizationStatus: UNAuthorizationStatus = .notDetermined
+    @State private var isHandlingNotificationAction = false
+    @State private var backgroundRefreshStatus: UIBackgroundRefreshStatus = .available
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Status", value: notificationStatusText)
+
+                Button(notificationActionTitle, systemImage: notificationActionSystemImage) {
+                    Task {
+                        await handleNotificationAuthorizationAction()
+                    }
+                }
+                .disabled(isHandlingNotificationAction)
+            }
+
+            Section {
+                Toggle("Enabled", isOn: $settings.restTimerNotificationsEnabled)
+                    .disabled(!notificationsAreAllowedBySystem)
+            } header: {
+                Text("Rest Timer")
+            } footer: {
+                Text("Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner.")
+            }
+
+            Section {
+                Picker("Mode", selection: $settings.stepsNotificationMode) {
+                    ForEach(StepsEventNotificationMode.allCases, id: \.self) { mode in
+                        Text(mode.title)
+                            .tag(mode)
+                    }
+                }
+                .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+            } header: {
+                Text("Goal Completions")
+            } footer: {
+                if !notificationsAreAllowedBySystem {
+                    Text("Enable notifications in system settings to change this. Villain Arc can still show in-app toasts while you’re using the app.")
+                } else if backgroundRefreshStatus != .available {
+                    Text("Background App Refresh is off, so Villain Arc can’t reliably deliver steps goal notifications while the app is closed.")
+                } else {
+                    Text("Choose whether Villain Arc notifies only when you hit your goal or reserves room for future coaching notifications too.")
+                }
+            }
+        }
+        .navigationTitle("Notifications")
+        .toolbarTitleDisplayMode(.inline)
+        .task {
+            await refreshNotificationAuthorizationState()
+        }
+        .onChange(of: scenePhase, initial: false) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                await refreshNotificationAuthorizationState()
+            }
+        }
+        .onChange(of: settings.restTimerNotificationsEnabled) {
+            saveContext(context: context)
+            let restTimer = RestTimerState.shared
+            if settings.restTimerNotificationsEnabled, let endDate = restTimer.endDate, restTimer.isRunning {
+                Task {
+                    await NotificationCoordinator.shared.scheduleRestTimer(endDate: endDate)
+                }
+            } else {
+                Task {
+                    NotificationCoordinator.shared.cancelRestTimer()
+                }
+            }
+        }
+        .onChange(of: settings.stepsNotificationMode) {
+            saveContext(context: context)
+        }
+    }
+
+    private var notificationStatusText: String {
+        switch notificationAuthorizationStatus {
+        case .notDetermined:
+            return "Not Requested"
+        case .denied:
+            return "Denied"
+        case .authorized:
+            return "Allowed"
+        case .provisional:
+            return "Allowed Quietly"
+        case .ephemeral:
+            return "Temporary"
+        @unknown default:
+            return "Unknown"
+        }
+    }
+
+    private var notificationsAreAllowedBySystem: Bool {
+        notificationAuthorizationStatus.allowsLocalDelivery
+    }
+
+    private var notificationActionTitle: String {
+        switch notificationAuthorizationStatus {
+        case .notDetermined:
+            return "Enable Notifications"
+        case .denied, .authorized, .provisional, .ephemeral:
+            return "Open Settings"
+        @unknown default:
+            return "Open Settings"
+        }
+    }
+
+    private var notificationActionSystemImage: String {
+        switch notificationAuthorizationStatus {
+        case .notDetermined:
+            return "bell.badge"
+        case .denied, .authorized, .provisional, .ephemeral:
+            return "gearshape"
+        @unknown default:
+            return "gearshape"
+        }
+    }
+
+    private func refreshNotificationAuthorizationState() async {
+        notificationAuthorizationStatus = await NotificationCoordinator.shared.authorizationStatus()
+        backgroundRefreshStatus = UIApplication.shared.backgroundRefreshStatus
+    }
+
+    private func handleNotificationAuthorizationAction() async {
+        guard !isHandlingNotificationAction else { return }
+        isHandlingNotificationAction = true
+        defer { isHandlingNotificationAction = false }
+
+        switch notificationAuthorizationStatus {
+        case .notDetermined:
+            await NotificationCoordinator.shared.requestAuthorizationIfNeededAfterOnboarding()
+        case .denied, .authorized, .provisional, .ephemeral:
+            openAppSettings()
+        @unknown default:
+            openAppSettings()
+        }
+
+        await refreshNotificationAuthorizationState()
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+}
+
+private struct UnitSettingsView: View {
+    @Environment(\.modelContext) private var context
+    @Bindable var settings: AppSettings
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Weight", selection: $settings.weightUnit) {
+                    ForEach(WeightUnit.allCases, id: \.self) { unit in
+                        Text(unit.rawValue)
+                            .tag(unit)
+                    }
+                }
+
+                Picker("Height", selection: $settings.heightUnit) {
+                    ForEach(HeightUnit.allCases, id: \.self) { unit in
+                        Text(unit == .imperial ? "ft/in" : unit.rawValue)
+                            .tag(unit)
+                    }
+                }
+
+                Picker("Distance", selection: $settings.distanceUnit) {
+                    ForEach(DistanceUnit.allCases, id: \.self) { unit in
+                        Text(unit.rawValue)
+                            .tag(unit)
+                    }
+                }
+
+                Picker("Energy", selection: $settings.energyUnit) {
+                    ForEach(EnergyUnit.allCases, id: \.self) { unit in
+                        Text(unit.unitLabel)
+                            .tag(unit)
+                    }
+                }
+            } footer: {
+                Text("These units control how weight, height, distance, and energy are displayed throughout the app.")
+            }
+        }
+        .navigationTitle("Units")
+        .toolbarTitleDisplayMode(.inline)
+        .onChange(of: settings.weightUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.heightUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.distanceUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.energyUnit) {
+            saveContext(context: context)
+        }
+    }
 }

@@ -110,6 +110,7 @@
 				Data/Models/Enums/Exercise/Muscle.swift,
 				Data/Models/Enums/Exercise/MuscleGroups.swift,
 				Data/Models/Enums/Exercise/RepRangeMode.swift,
+				Data/Models/Enums/Health/StepsEventNotificationMode.swift,
 				Data/Models/Enums/Health/WeightGoalEndReason.swift,
 				Data/Models/Enums/Health/WeightGoalType.swift,
 				Data/Models/Enums/Sessions/MoodLevel.swift,
@@ -141,6 +142,7 @@
 				Data/Models/Health/HealthStepsDistance.swift,
 				Data/Models/Health/HealthSyncState.swift,
 				Data/Models/Health/HealthWorkout.swift,
+				Data/Models/Health/StepsGoal.swift,
 				Data/Models/Health/WeightEntry.swift,
 				Data/Models/Health/WeightGoal.swift,
 				Data/Models/Plans/ExercisePrescription.swift,
@@ -164,6 +166,7 @@
 				Data/Services/AI/Shared/FoundationModelPrewarmer.swift,
 				Data/Services/App/AppRouter.swift,
 				Data/Services/App/DataManager.swift,
+				Data/Services/App/NotificationCoordinator.swift,
 				Data/Services/App/SetupGuard.swift,
 				Data/Services/App/SpotlightIndexer.swift,
 				Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift,
@@ -173,7 +176,6 @@
 				Data/SharedModelContainer.swift,
 				Helpers/ExerciseSearch.swift,
 				Helpers/Haptics.swift,
-				Helpers/RestTimerNotifications.swift,
 				Helpers/TextNormalization.swift,
 				Helpers/TimeFormatting.swift,
 				Helpers/WeightFormatting.swift,
@@ -192,6 +194,7 @@
 				Intents/WorkoutSplit/OpenWorkoutSplitIntent.swift,
 				Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift,
 				Intents/WorkoutSplit/WorkoutSplitEntity.swift,
+				Views/Components/Overlays/ToastManager.swift,
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
 		};

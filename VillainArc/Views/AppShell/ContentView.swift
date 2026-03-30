@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var router = AppRouter.shared
+    @State private var toastManager = ToastManager.shared
     
     var body: some View {
         TabView(selection: $router.tabSelection) {
@@ -23,6 +25,16 @@ struct ContentView: View {
         }
         .fullScreenCover(item: $router.activeWeightGoalCompletion) {
             WeightGoalCompletionView(route: $0)
+        }
+        .background {
+            ToastOverlaySceneInstaller()
+                .allowsHitTesting(false)
+        }
+        .task {
+            toastManager.canPresentToasts = scenePhase == .active
+        }
+        .onChange(of: scenePhase, initial: true) { _, newPhase in
+            toastManager.canPresentToasts = newPhase == .active
         }
     }
 }

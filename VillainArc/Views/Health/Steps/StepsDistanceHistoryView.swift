@@ -3,16 +3,42 @@ import SwiftData
 import Charts
 
 struct StepsDistanceHistoryView: View {
+    private let router = AppRouter.shared
+
     @Query(HealthStepsDistance.history, animation: .smooth) private var entries: [HealthStepsDistance]
+    @Query(StepsGoal.active) private var activeGoals: [StepsGoal]
+    @Query(StepsGoal.history) private var goals: [StepsGoal]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @State private var showNewStepsGoalSheet = false
 
     private var distanceUnit: DistanceUnit {
         appSettings.first?.distanceUnit ?? .systemDefault
     }
 
+    private var activeGoal: StepsGoal? {
+        activeGoals.first
+    }
+
+    private var todayEntry: HealthStepsDistance? {
+        entries.first { Calendar.autoupdatingCurrent.isDateInToday($0.date) }
+    }
+
+    private var hasGoalHistory: Bool {
+        !goals.filter { $0.endedOnDay != nil }.isEmpty
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                StepsGoalSummaryCard(activeGoal: activeGoal, todayEntry: todayEntry, hasGoalHistory: hasGoalHistory) {
+                    Haptics.selection()
+                    if activeGoal != nil || hasGoalHistory {
+                        router.navigate(to: .stepsGoalHistory)
+                    } else {
+                        showNewStepsGoalSheet = true
+                    }
+                }
+
                 StepsDistanceMainChartSection(entries: entries, distanceUnit: distanceUnit)
 
                 StepsDistanceWeekdayChartSection(entries: entries)
@@ -23,6 +49,11 @@ struct StepsDistanceHistoryView: View {
         }
         .navigationTitle("Steps")
         .toolbarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showNewStepsGoalSheet) {
+            NewStepsGoalView()
+                .presentationDetents([.fraction(0.35)])
+                .presentationBackground(Color(.systemBackground))
+        }
     }
 }
 

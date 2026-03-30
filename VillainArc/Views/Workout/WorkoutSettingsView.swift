@@ -5,7 +5,6 @@ struct WorkoutSettingsView: View {
     @Environment(\.modelContext) private var context
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var workout: WorkoutSession
-    private let restTimer = RestTimerState.shared
 
     var body: some View {
         Group {
@@ -53,16 +52,6 @@ struct WorkoutSettingsView: View {
             }
 
             Section {
-                Toggle("Send Notifications", isOn: $settings.restTimerNotificationsEnabled)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsNotificationsToggle)
-                    .accessibilityHint(AccessibilityText.workoutSettingsNotificationsHint)
-            } header: {
-                Text("Rest Timer")
-            } footer: {
-                Text("Controls local rest timer completion notifications.")
-            }
-
-            Section {
                 Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
@@ -77,6 +66,12 @@ struct WorkoutSettingsView: View {
                 Text("Live Activity")
             } footer: {
                 Text("Turn off live activities completely or restart the current one if it was dismissed accidentally.")
+            }
+
+            Section {
+                Toggle("Rest Timer Notifications", isOn: $settings.restTimerNotificationsEnabled)
+            } footer: {
+                Text("Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner.")
             }
         }
         .onChange(of: settings.autoStartRestTimer) {
@@ -101,13 +96,14 @@ struct WorkoutSettingsView: View {
         }
         .onChange(of: settings.restTimerNotificationsEnabled) {
             saveContext(context: context)
+            let restTimer = RestTimerState.shared
             if settings.restTimerNotificationsEnabled, let endDate = restTimer.endDate, restTimer.isRunning {
                 Task {
-                    await RestTimerNotifications.schedule(endDate: endDate, durationSeconds: restTimer.startedSeconds)
+                    await NotificationCoordinator.shared.scheduleRestTimer(endDate: endDate)
                 }
             } else {
                 Task {
-                    await RestTimerNotifications.cancel()
+                    NotificationCoordinator.shared.cancelRestTimer()
                 }
             }
         }
