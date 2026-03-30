@@ -32,6 +32,7 @@ struct AppSettingsView: View {
             guard newPhase == .active else { return }
             Task {
                 await refreshHealthAuthorizationState()
+                HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                 await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                 await HealthStoreUpdateCoordinator.shared.syncNow()
             }
@@ -168,6 +169,7 @@ struct AppSettingsView: View {
         switch healthAuthorizationAction {
         case .requestAccess:
             _ = await HealthAuthorizationManager.requestAuthorization()
+            HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
             await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
             await HealthStoreUpdateCoordinator.shared.syncNow()
         case .openSettings, .manageInSettings:

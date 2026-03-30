@@ -23,6 +23,7 @@ struct RootView: View {
                 guard newState == .ready else { return }
                 AppRouter.shared.checkForUnfinishedData()
                 Task {
+                    HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                     await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                     await HealthStoreUpdateCoordinator.shared.syncNow()
                 }

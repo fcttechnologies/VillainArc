@@ -41,6 +41,10 @@ enum OnboardingState: Equatable {
     private var onboardingAttemptID = UUID()
 
     func startOnboarding() async {
+        // Start monitoring immediately on first bootstrap so we don't miss an
+        // import-complete event before the flow reaches the explicit wait.
+        CloudKitImportMonitor.shared.start()
+        
         let attemptID = UUID()
         onboardingAttemptID = attemptID
 
@@ -48,10 +52,6 @@ enum OnboardingState: Equatable {
             await handleReturningLaunch()
             return
         }
-
-        // Start monitoring immediately on first bootstrap so we don't miss an
-        // import-complete event before the flow reaches the explicit wait.
-        CloudKitImportMonitor.shared.start()
 
         state = .checking
 
@@ -149,6 +149,7 @@ enum OnboardingState: Equatable {
 
     func continueWithoutiCloud() async {
         // User chose to continue without iCloud
+        CloudKitImportMonitor.shared.stop()
         state = .seeding
 
         do {
@@ -205,13 +206,13 @@ enum OnboardingState: Equatable {
         }
 
         if profile?.heightCm == nil {
-            let heightType = HKQuantityType(.height)
+            let heightType = HealthKitCatalog.heightType
             let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
             let sample: HKQuantitySample? = await withCheckedContinuation { continuation in
                 let query = HKSampleQuery(sampleType: heightType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, _ in continuation.resume(returning: samples?.first as? HKQuantitySample) }
                 healthStore.execute(query)
             }
-            if let sample { prefetchedHeightCm = sample.quantity.doubleValue(for: .meterUnit(with: .centi)) }
+            if let sample { prefetchedHeightCm = sample.quantity.doubleValue(for: HealthKitCatalog.centimeterUnit) }
         }
     }
 
@@ -236,6 +237,7 @@ enum OnboardingState: Equatable {
     }
 
     private func transitionToReady() {
+        CloudKitImportMonitor.shared.stop()
         networkRetryTask?.cancel()
         networkRetryTask = nil
         networkMonitor.stop()

@@ -249,13 +249,13 @@ private struct StepsDistanceMainChartSection: View {
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
-        .animation(.smooth, value: latestEntry?.stepCount)
+        .animation(reduceMotion ? nil : .smooth, value: latestEntry?.stepCount)
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
             let calendar = Calendar.autoupdatingCurrent
             let now = Date()
             progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
-                if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
+                if rangeCache.isEmpty || reduceMotion { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
             }) { range in
                 let layout = TimeSeriesChartLayout(rangeFilter: range, samples: stepSamples, now: now, calendar: calendar, aggregation: .average)
                 let distanceLayout = TimeSeriesChartLayout(rangeFilter: range, samples: distanceSamples, now: now, calendar: calendar, aggregation: .average)

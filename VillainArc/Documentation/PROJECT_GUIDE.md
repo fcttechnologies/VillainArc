@@ -35,8 +35,9 @@ The launch path is:
 3. `OnboardingManager` decides whether the app is doing first bootstrap or a returning launch.
 4. Only after onboarding reaches `.ready` does `RootView`:
    - ask `AppRouter` to resume unfinished work
+   - reinstall any missing Health observer queries
    - refresh Health background delivery registration
-   - run the first full Health refresh pass
+   - run the full Health refresh and export-reconciliation pass
 
 That ordering matters. VillainArc does not resume persisted incomplete workouts or plans before setup is in a valid state.
 
@@ -80,7 +81,7 @@ For any launch that reaches the standalone Health screen, onboarding currently b
 
 Once the app is ready, the post-ready Health pass:
 
-- starts workout, body-mass, daily steps and distance, and daily energy observers
+- reinstalls any workout, body-mass, daily steps and distance, and daily energy observers that are currently missing
 - refreshes background delivery registration
 - syncs Health data into local mirrors and daily aggregate caches
 - reconciles pending local workout and weight exports

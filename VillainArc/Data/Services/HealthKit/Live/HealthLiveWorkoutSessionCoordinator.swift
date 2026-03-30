@@ -57,10 +57,9 @@ import SwiftData
 
     func finishIfRunning(for workout: WorkoutSession, context: ModelContext) async {
         if workout.healthWorkout == nil, let savedWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: workout.id) {
-            do {
-                try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context)
-                saveContext(context: context)
-            } catch { print("Failed to relink saved Health workout for \(workout.id): \(error)") }
+            await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedSessionID: workout.id)
+            refreshLinkedHealthWorkout(for: workout, healthWorkoutUUID: savedWorkout.uuid, context: context)
+            print("Linked existing Apple Health workout \(savedWorkout.uuid) to live session \(workout.id)")
             return
         }
 
@@ -90,8 +89,9 @@ import SwiftData
                     }
                 }
 
-                try HealthWorkoutLinker.upsertHealthWorkout(for: savedWorkout, linkedTo: workout, context: context)
-                saveContext(context: context)
+                await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedSessionID: workout.id)
+                refreshLinkedHealthWorkout(for: workout, healthWorkoutUUID: savedWorkout.uuid, context: context)
+                print("Saved live workout session \(workout.id) to Apple Health as \(savedWorkout.uuid)")
             } else {
                 print("HealthKit finished live workout for \(workout.id), but the workout sample was unavailable.")
             }
@@ -133,7 +133,7 @@ import SwiftData
         }
 
         attachLiveObjects(session: recoveredSession, builder: recoveredBuilder, workout: workout, configuration: configuration)
-        updateLiveStatistics(from: recoveredBuilder, collectedTypes: Set<HKSampleType>([HKQuantityType(.heartRate), HKQuantityType(.activeEnergyBurned), HKQuantityType(.basalEnergyBurned)]))
+        updateLiveStatistics(from: recoveredBuilder, collectedTypes: Set<HKSampleType>([HealthKitCatalog.heartRateType, HealthKitCatalog.activeEnergyBurnedType, HealthKitCatalog.restingEnergyBurnedType]))
         return true
     }
 
@@ -159,27 +159,26 @@ import SwiftData
     }
 
     private func updateLiveStatistics(from workoutBuilder: HKLiveWorkoutBuilder, collectedTypes: Set<HKSampleType>) {
-        let heartRateType = HKQuantityType(.heartRate)
-        let activeEnergyType = HKQuantityType(.activeEnergyBurned)
-        let restingEnergyType = HKQuantityType(.basalEnergyBurned)
+        let heartRateType = HealthKitCatalog.heartRateType
+        let activeEnergyType = HealthKitCatalog.activeEnergyBurnedType
+        let restingEnergyType = HealthKitCatalog.restingEnergyBurnedType
         let previousHeartRate = latestHeartRate
         let previousActiveEnergyBurned = activeEnergyBurned
         var didChangeDisplayedMetrics = false
 
         if collectedTypes.contains(heartRateType) {
-            let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
-            let latestCollectedHeartRate = workoutBuilder.statistics(for: heartRateType)?.mostRecentQuantity()?.doubleValue(for: heartRateUnit)
+            let latestCollectedHeartRate = workoutBuilder.statistics(for: heartRateType)?.mostRecentQuantity()?.doubleValue(for: HealthKitCatalog.bpmUnit)
             didChangeDisplayedMetrics = didChangeDisplayedMetrics || displayedMetricChanged(from: previousHeartRate, to: latestCollectedHeartRate)
             latestHeartRate = latestCollectedHeartRate
         }
 
         if collectedTypes.contains(activeEnergyType) {
-            let collectedActiveEnergyBurned = workoutBuilder.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            let collectedActiveEnergyBurned = workoutBuilder.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit)
             didChangeDisplayedMetrics = didChangeDisplayedMetrics || displayedMetricChanged(from: previousActiveEnergyBurned, to: collectedActiveEnergyBurned)
             activeEnergyBurned = collectedActiveEnergyBurned
         }
 
-        if collectedTypes.contains(restingEnergyType) { restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie()) }
+        if collectedTypes.contains(restingEnergyType) { restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit) }
 
         if didChangeDisplayedMetrics, activeWorkoutSessionID != nil { WorkoutActivityManager.update() }
     }
@@ -203,6 +202,15 @@ import SwiftData
     private func roundedDisplayMetric(_ value: Double?) -> Int? {
         guard let value else { return nil }
         return Int(value.rounded())
+    }
+
+    private func refreshLinkedHealthWorkout(for workout: WorkoutSession, healthWorkoutUUID: UUID, context: ModelContext) {
+        guard let mirroredWorkout = try? context.fetch(HealthWorkout.byHealthWorkoutUUID(healthWorkoutUUID)).first else { return }
+        if workout.healthWorkout?.healthWorkoutUUID != mirroredWorkout.healthWorkoutUUID {
+            workout.healthWorkout = mirroredWorkout
+        }
+        workout.hasBeenExportedToHealth = true
+        saveContext(context: context)
     }
 }
 

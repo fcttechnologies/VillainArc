@@ -263,13 +263,13 @@ private struct HealthEnergyMainChartSection: View {
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
-        .animation(.smooth, value: latestEntry?.totalEnergyBurned)
+        .animation(reduceMotion ? nil : .smooth, value: latestEntry?.totalEnergyBurned)
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
             let calendar = Calendar.autoupdatingCurrent
             let now = Date()
             progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
-                if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
+                if rangeCache.isEmpty || reduceMotion { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
             }) { range in
                 let totalLayout = TimeSeriesChartLayout(rangeFilter: range, samples: totalEnergySamples, now: now, calendar: calendar, aggregation: .average)
                 let activeLayout = TimeSeriesChartLayout(rangeFilter: range, samples: activeEnergySamples, now: now, calendar: calendar, aggregation: .average)

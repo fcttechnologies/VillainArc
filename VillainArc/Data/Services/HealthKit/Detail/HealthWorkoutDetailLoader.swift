@@ -17,21 +17,17 @@ struct HealthWorkoutDetailSummary: Equatable {
     let totalDistance: Double?
 
     init(workout: HKWorkout) {
-        let activeEnergyType = HKQuantityType(.activeEnergyBurned)
-        let basalEnergyType = HKQuantityType(.basalEnergyBurned)
-        let heartRateType = HKQuantityType(.heartRate)
-        let bpmUnit = HKUnit.count().unitDivided(by: .minute())
-        let heartRateStats = workout.statistics(for: heartRateType)
+        let heartRateStats = workout.statistics(for: HealthKitCatalog.heartRateType)
         activityType = workout.workoutActivityType
         isIndoorWorkout = workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
-        averageHeartRateBPM = heartRateStats?.averageQuantity()?.doubleValue(for: bpmUnit)
-        maximumHeartRateBPM = heartRateStats?.maximumQuantity()?.doubleValue(for: bpmUnit)
-        activeEnergyBurned = workout.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
-        restingEnergyBurned = workout.statistics(for: basalEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
-        totalDistance = workout.totalDistance?.doubleValue(for: .meter())
+        averageHeartRateBPM = heartRateStats?.averageQuantity()?.doubleValue(for: HealthKitCatalog.bpmUnit)
+        maximumHeartRateBPM = heartRateStats?.maximumQuantity()?.doubleValue(for: HealthKitCatalog.bpmUnit)
+        activeEnergyBurned = workout.statistics(for: HealthKitCatalog.activeEnergyBurnedType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit)
+        restingEnergyBurned = workout.statistics(for: HealthKitCatalog.restingEnergyBurnedType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit)
+        totalDistance = workout.totalDistance?.doubleValue(for: HealthKitCatalog.meterUnit)
     }
 
     init(workout: HealthWorkout) {
@@ -286,12 +282,10 @@ enum HealthWorkoutSummaryStatsLoader {
         return try await descriptor.result(for: healthStore).first
     }
     private func loadHeartRate(for workout: HKWorkout) async throws -> ([HealthWorkoutHeartRatePoint], [HealthWorkoutHeartRateSample]) {
-        let heartRateType = HKQuantityType(.heartRate)
         let workoutPredicate = HKQuery.predicateForObjects(from: workout)
-        let bpmUnit = HKUnit.count().unitDivided(by: .minute())
-        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: heartRateType, predicate: workoutPredicate)], sortDescriptors: [SortDescriptor(\.startDate, order: .forward)], limit: HKObjectQueryNoLimit)
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.heartRateType, predicate: workoutPredicate)], sortDescriptors: [SortDescriptor(\.startDate, order: .forward)], limit: HKObjectQueryNoLimit)
         let samples = try await descriptor.result(for: healthStore)
-        let heartRateSamples = samples.map { sample in HealthWorkoutHeartRateSample(startDate: sample.startDate, endDate: sample.endDate, bpm: sample.quantity.doubleValue(for: bpmUnit)) }.filter { $0.bpm > 0 }.sorted { $0.representativeDate < $1.representativeDate }
+        let heartRateSamples = samples.map { sample in HealthWorkoutHeartRateSample(startDate: sample.startDate, endDate: sample.endDate, bpm: sample.quantity.doubleValue(for: HealthKitCatalog.bpmUnit)) }.filter { $0.bpm > 0 }.sorted { $0.representativeDate < $1.representativeDate }
         let points = heartRateSamples.map { sample in HealthWorkoutHeartRatePoint(date: sample.representativeDate, bpm: sample.bpm) }
         return (downsampledHeartRatePoints(from: points, maxPoints: Self.chartMaxPoints), heartRateSamples)
     }
@@ -301,7 +295,7 @@ enum HealthWorkoutSummaryStatsLoader {
         let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: distanceType, predicate: workoutPredicate)], sortDescriptors: [SortDescriptor(\.startDate, order: .forward)], limit: HKObjectQueryNoLimit)
         return try await descriptor.result(for: healthStore)
             .compactMap { sample in
-                let distanceMeters = sample.quantity.doubleValue(for: .meter())
+                let distanceMeters = sample.quantity.doubleValue(for: HealthKitCatalog.meterUnit)
                 guard distanceMeters > 0 else { return nil }
                 let endDate = sample.endDate > sample.startDate ? sample.endDate : sample.startDate
                 return HealthWorkoutDistanceSample(startDate: sample.startDate, endDate: endDate, distanceMeters: distanceMeters)
@@ -326,21 +320,19 @@ enum HealthWorkoutSummaryStatsLoader {
     }
     private func loadMetrics(for workout: HKWorkout) -> [HealthWorkoutDetailMetric] {
         var items: [HealthWorkoutDetailMetric] = []
-        let flightsClimbedType = HKQuantityType(.flightsClimbed)
-        let swimmingStrokeCountType = HKQuantityType(.swimmingStrokeCount)
-        if let flights = workout.statistics(for: flightsClimbedType)?.sumQuantity()?.doubleValue(for: .count()), flights > 0 {
+        if let flights = workout.statistics(for: HealthKitCatalog.flightsClimbedType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.countUnit), flights > 0 {
             items.append(.init(title: "Flights Climbed", value: flights, valueStyle: .integer))
         }
-        if let strokes = workout.statistics(for: swimmingStrokeCountType)?.sumQuantity()?.doubleValue(for: .count()), strokes > 0 {
+        if let strokes = workout.statistics(for: HealthKitCatalog.swimmingStrokeCountType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.countUnit), strokes > 0 {
             items.append(.init(title: "Swim Strokes", value: strokes, valueStyle: .integer))
         }
-        appendAverageMetric(title: "Respiratory Rate", type: .respiratoryRate, unit: .count().unitDivided(by: .minute()), style: .breathsPerMinute, from: workout, to: &items)
+        appendAverageMetric(title: "Respiratory Rate", type: .respiratoryRate, unit: HealthKitCatalog.bpmUnit, style: .breathsPerMinute, from: workout, to: &items)
         appendAverageMetric(title: "Running Power", type: .runningPower, unit: .watt(), style: .watts, from: workout, to: &items)
         appendAverageMetric(title: "Cycling Power", type: .cyclingPower, unit: .watt(), style: .watts, from: workout, to: &items)
-        appendAverageMetric(title: "Cycling Cadence", type: .cyclingCadence, unit: .count().unitDivided(by: .minute()), style: .cadencePerMinute, from: workout, to: &items)
-        appendAverageMetric(title: "Stride Length", type: .runningStrideLength, unit: .meter(), style: .centimeters, from: workout, to: &items)
+        appendAverageMetric(title: "Cycling Cadence", type: .cyclingCadence, unit: HealthKitCatalog.bpmUnit, style: .cadencePerMinute, from: workout, to: &items)
+        appendAverageMetric(title: "Stride Length", type: .runningStrideLength, unit: HealthKitCatalog.meterUnit, style: .centimeters, from: workout, to: &items)
         appendAverageMetric(title: "Ground Contact", type: .runningGroundContactTime, unit: .secondUnit(with: .milli), style: .milliseconds, from: workout, to: &items)
-        appendAverageMetric(title: "Vertical Oscillation", type: .runningVerticalOscillation, unit: .meter(), style: .centimeters, from: workout, to: &items)
+        appendAverageMetric(title: "Vertical Oscillation", type: .runningVerticalOscillation, unit: HealthKitCatalog.meterUnit, style: .centimeters, from: workout, to: &items)
         return items
     }
     private func appendAverageMetric(title: String, type: HKQuantityTypeIdentifier, unit: HKUnit, style: HealthWorkoutDetailMetric.ValueStyle, from workout: HKWorkout, to items: inout [HealthWorkoutDetailMetric]) {
@@ -349,9 +341,8 @@ enum HealthWorkoutSummaryStatsLoader {
         items.append(.init(title: title, value: value, valueStyle: style))
     }
     private func makeActivitySummaries(from workoutActivities: [HKWorkoutActivity]) -> [HealthWorkoutActivitySummary] {
-        let activeEnergyType = HKQuantityType(.activeEnergyBurned)
         return workoutActivities.map { activity in
-            let energyBurned = activity.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: .kilocalorie())
+            let energyBurned = activity.statistics(for: HealthKitCatalog.activeEnergyBurnedType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit)
             return HealthWorkoutActivitySummary(id: activity.uuid, title: activity.workoutConfiguration.activityType.displayName, duration: activity.duration, energyBurned: energyBurned)
         }
     }
@@ -377,13 +368,13 @@ enum HealthWorkoutSummaryStatsLoader {
     }
     private func distanceType(for activityType: HKWorkoutActivityType) -> HKQuantityType? {
         switch activityType {
-        case .walking, .running, .hiking: return HKQuantityType(.distanceWalkingRunning)
-        case .wheelchairWalkPace, .wheelchairRunPace: return HKQuantityType(.distanceWheelchair)
-        case .cycling: return HKQuantityType(.distanceCycling)
-        case .swimming: return HKQuantityType(.distanceSwimming)
-        case .rowing: return HKQuantityType(.distanceRowing)
-        case .paddleSports: return HKQuantityType(.distancePaddleSports)
-        case .crossCountrySkiing: return HKQuantityType(.distanceCrossCountrySkiing)
+        case .walking, .running, .hiking: return HealthKitCatalog.walkingRunningDistanceType
+        case .wheelchairWalkPace, .wheelchairRunPace: return HealthKitCatalog.distanceWheelchairType
+        case .cycling: return HealthKitCatalog.distanceCyclingType
+        case .swimming: return HealthKitCatalog.distanceSwimmingType
+        case .rowing: return HealthKitCatalog.distanceRowingType
+        case .paddleSports: return HealthKitCatalog.distancePaddleSportsType
+        case .crossCountrySkiing: return HealthKitCatalog.distanceCrossCountrySkiingType
         default: return nil
         }
     }

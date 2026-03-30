@@ -2,13 +2,27 @@ import Foundation
 import HealthKit
 
 final class HealthStoreUpdateCoordinator {
+    private enum ObserverKind: Sendable {
+        case workout
+        case weight
+        case step
+        case walkingRunningDistance
+        case activeEnergy
+        case restingEnergy
+
+        var logLabel: String {
+            switch self {
+            case .workout: return "workout"
+            case .weight: return "weight"
+            case .step: return "step"
+            case .walkingRunningDistance: return "walking/running distance"
+            case .activeEnergy: return "active energy"
+            case .restingEnergy: return "resting energy"
+            }
+        }
+    }
+
     static let shared = HealthStoreUpdateCoordinator()
-    private let observedWorkoutType = HKObjectType.workoutType()
-    private let observedWeightType = HKQuantityType(.bodyMass)
-    private let observedStepType = HKQuantityType(.stepCount)
-    private let observedWalkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
-    private let observedActiveEnergyType = HKQuantityType(.activeEnergyBurned)
-    private let observedRestingEnergyType = HKQuantityType(.basalEnergyBurned)
 
     private var workoutObserverQuery: HKObserverQuery?
     private var weightObserverQuery: HKObserverQuery?
@@ -23,137 +37,245 @@ final class HealthStoreUpdateCoordinator {
 
     func installObserversIfNeeded() {
         guard HealthAuthorizationManager.isHealthDataAvailable else { return }
-        startWorkoutObserverIfNeeded()
-        startWeightObserverIfNeeded()
-        startStepObserverIfNeeded()
-        startWalkingRunningDistanceObserverIfNeeded()
-        startActiveEnergyObserverIfNeeded()
-        startRestingEnergyObserverIfNeeded()
+        let initializedObservers = [
+            startWorkoutObserverIfNeeded() ? ObserverKind.workout.logLabel : nil,
+            startWeightObserverIfNeeded() ? ObserverKind.weight.logLabel : nil,
+            startStepObserverIfNeeded() ? ObserverKind.step.logLabel : nil,
+            startWalkingRunningDistanceObserverIfNeeded() ? ObserverKind.walkingRunningDistance.logLabel : nil,
+            startActiveEnergyObserverIfNeeded() ? ObserverKind.activeEnergy.logLabel : nil,
+            startRestingEnergyObserverIfNeeded() ? ObserverKind.restingEnergy.logLabel : nil
+        ].compactMap(\.self)
+
+        guard !initializedObservers.isEmpty else { return }
+        print("Registered Health observer queries: \(initializedObservers.joined(separator: ", ")).")
     }
 
-    private func startWorkoutObserverIfNeeded() {
-        guard workoutObserverQuery == nil else { return }
-        let query = HKObserverQuery(sampleType: observedWorkoutType, predicate: nil) { _, completionHandler, error in
-            guard error == nil else {
-                print("Health workout observer received an error: \(error!.localizedDescription)")
-                completionHandler()
+    @discardableResult
+    private func startWorkoutObserverIfNeeded() -> Bool {
+        guard workoutObserverQuery == nil else { return false }
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.workoutType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthSyncCoordinator.shared.syncWorkouts()
+                }
                 return
             }
 
+            print("Health workout observer failed: \(error.localizedDescription)")
+
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task {
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
                 defer { completionHandler() }
-                await HealthSyncCoordinator.shared.syncWorkouts()
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.workout, failedQueryID: failedQueryID)
+                }
             }
         }
 
         workoutObserverQuery = query
         HealthAuthorizationManager.healthStore.execute(query)
+        return true
     }
 
-    private func startWeightObserverIfNeeded() {
-        guard weightObserverQuery == nil else { return }
+    @discardableResult
+    private func startWeightObserverIfNeeded() -> Bool {
+        guard weightObserverQuery == nil else { return false }
 
-        let query = HKObserverQuery(sampleType: observedWeightType, predicate: nil) { _, completionHandler, error in
-            guard error == nil else {
-                print("Health weight observer received an error: \(error!.localizedDescription)")
-                completionHandler()
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.bodyMassType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthSyncCoordinator.shared.syncWeightEntries()
+                }
                 return
             }
 
+            print("Health weight observer failed: \(error.localizedDescription)")
+
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task {
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
                 defer { completionHandler() }
-                await HealthSyncCoordinator.shared.syncWeightEntries()
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.weight, failedQueryID: failedQueryID)
+                }
             }
         }
 
         weightObserverQuery = query
         HealthAuthorizationManager.healthStore.execute(query)
+        return true
     }
 
-    private func startStepObserverIfNeeded() {
-        guard stepObserverQuery == nil else { return }
+    @discardableResult
+    private func startStepObserverIfNeeded() -> Bool {
+        guard stepObserverQuery == nil else { return false }
 
-        let query = HKObserverQuery(sampleType: observedStepType, predicate: nil) { _, completionHandler, error in
-            guard error == nil else {
-                print("Health step observer received an error: \(error!.localizedDescription)")
-                completionHandler()
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.stepCountType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncSteps()
+                }
                 return
             }
 
+            print("Health step observer failed: \(error.localizedDescription)")
+
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task {
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
                 defer { completionHandler() }
-                await HealthDailyMetricsSync.shared.syncSteps()
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.step, failedQueryID: failedQueryID)
+                }
             }
         }
 
         stepObserverQuery = query
         HealthAuthorizationManager.healthStore.execute(query)
+        return true
     }
 
-    private func startWalkingRunningDistanceObserverIfNeeded() {
-        guard walkingRunningDistanceObserverQuery == nil else { return }
+    @discardableResult
+    private func startWalkingRunningDistanceObserverIfNeeded() -> Bool {
+        guard walkingRunningDistanceObserverQuery == nil else { return false }
 
-        let query = HKObserverQuery(sampleType: observedWalkingRunningDistanceType, predicate: nil) { _, completionHandler, error in
-            guard error == nil else {
-                print("Health walking/running distance observer received an error: \(error!.localizedDescription)")
-                completionHandler()
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.walkingRunningDistanceType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
+                }
                 return
             }
 
+            print("Health walking/running distance observer failed: \(error.localizedDescription)")
+
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task {
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
                 defer { completionHandler() }
-                await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.walkingRunningDistance, failedQueryID: failedQueryID)
+                }
             }
         }
 
         walkingRunningDistanceObserverQuery = query
         HealthAuthorizationManager.healthStore.execute(query)
+        return true
     }
 
-    private func startActiveEnergyObserverIfNeeded() {
-        guard activeEnergyObserverQuery == nil else { return }
+    @discardableResult
+    private func startActiveEnergyObserverIfNeeded() -> Bool {
+        guard activeEnergyObserverQuery == nil else { return false }
 
-        let query = HKObserverQuery(sampleType: observedActiveEnergyType, predicate: nil) { _, completionHandler, error in
-            guard error == nil else {
-                print("Health active energy observer received an error: \(error!.localizedDescription)")
-                completionHandler()
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.activeEnergyBurnedType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
+                }
                 return
             }
 
+            print("Health active energy observer failed: \(error.localizedDescription)")
+
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task {
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
                 defer { completionHandler() }
-                await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.activeEnergy, failedQueryID: failedQueryID)
+                }
             }
         }
 
         activeEnergyObserverQuery = query
         HealthAuthorizationManager.healthStore.execute(query)
+        return true
     }
 
-    private func startRestingEnergyObserverIfNeeded() {
-        guard restingEnergyObserverQuery == nil else { return }
+    @discardableResult
+    private func startRestingEnergyObserverIfNeeded() -> Bool {
+        guard restingEnergyObserverQuery == nil else { return false }
 
-        let query = HKObserverQuery(sampleType: observedRestingEnergyType, predicate: nil) { _, completionHandler, error in
-            guard error == nil else {
-                print("Health resting energy observer received an error: \(error!.localizedDescription)")
-                completionHandler()
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.restingEnergyBurnedType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
+                }
                 return
             }
 
+            print("Health resting energy observer failed: \(error.localizedDescription)")
+
             nonisolated(unsafe) let completionHandler = completionHandler
-            Task {
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
                 defer { completionHandler() }
-                await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.restingEnergy, failedQueryID: failedQueryID)
+                }
             }
         }
 
         restingEnergyObserverQuery = query
         HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    nonisolated private static func shouldReinstallObserver(after error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == HKErrorDomain,
+              let code = HKError.Code(rawValue: nsError.code)
+        else { return false }
+
+        switch code {
+        case .errorAuthorizationNotDetermined, .errorAuthorizationDenied:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func clearObserverIfMatching(_ kind: ObserverKind, failedQueryID: ObjectIdentifier) {
+        switch kind {
+        case .workout:
+            clearObserverIfMatching(&workoutObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .weight:
+            clearObserverIfMatching(&weightObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .step:
+            clearObserverIfMatching(&stepObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .walkingRunningDistance:
+            clearObserverIfMatching(&walkingRunningDistanceObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .activeEnergy:
+            clearObserverIfMatching(&activeEnergyObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .restingEnergy:
+            clearObserverIfMatching(&restingEnergyObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        }
+    }
+
+    private func clearObserverIfMatching(_ storedQuery: inout HKObserverQuery?, kind _: ObserverKind, failedQueryID: ObjectIdentifier) {
+        guard let existingQuery = storedQuery, ObjectIdentifier(existingQuery) == failedQueryID else { return }
+        HealthAuthorizationManager.healthStore.stop(existingQuery)
+        storedQuery = nil
     }
 
     func refreshBackgroundDeliveryRegistration() async {
@@ -164,37 +286,37 @@ final class HealthStoreUpdateCoordinator {
 
         if HealthAuthorizationManager.hasRequestedWorkoutAuthorization {
             do {
-                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedWorkoutType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.workoutType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for workouts: \(error)") }
         }
 
         if HealthAuthorizationManager.hasRequestedBodyMassAuthorization {
             do {
-                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedWeightType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.bodyMassType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for body mass: \(error)") }
         }
 
         if HealthAuthorizationManager.hasRequestedStepCountAuthorization {
             do {
-                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedStepType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.stepCountType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for steps: \(error)") }
         }
 
         if HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization {
             do {
-                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedWalkingRunningDistanceType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.walkingRunningDistanceType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for walking/running distance: \(error)") }
         }
 
         if HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization {
             do {
-                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedActiveEnergyType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.activeEnergyBurnedType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for active energy: \(error)") }
         }
 
         if HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization {
             do {
-                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: observedRestingEnergyType, frequency: .immediate)
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.restingEnergyBurnedType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for resting energy: \(error)") }
         }
     }

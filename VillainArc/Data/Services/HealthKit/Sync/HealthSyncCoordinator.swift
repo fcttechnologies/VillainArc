@@ -4,10 +4,11 @@ import SwiftData
 
 actor HealthSyncCoordinator {
     static let shared = HealthSyncCoordinator()
-    private let bodyMassType = HKQuantityType(.bodyMass)
 
     private var isSyncingWorkouts = false
     private var isSyncingWeightEntries = false
+    private var needsAnotherWorkoutSync = false
+    private var needsAnotherWeightEntriesSync = false
 
     private init() {}
 
@@ -19,58 +20,89 @@ actor HealthSyncCoordinator {
 
     func syncWorkouts() async {
         guard HealthAuthorizationManager.hasRequestedWorkoutAuthorization else { return }
-        guard !isSyncingWorkouts else { return }
-
-        let context = makeBackgroundContext()
-        guard SetupGuard.isReady(context: context) else {
-            print("Skipping Health workout sync because app setup is incomplete.")
+        if isSyncingWorkouts {
+            needsAnotherWorkoutSync = true
             return
         }
 
-        isSyncingWorkouts = true
-        defer { isSyncingWorkouts = false }
+        while true {
+            isSyncingWorkouts = true
+            needsAnotherWorkoutSync = false
 
-        let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
-        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.workout()], anchor: HealthSyncPreferences.workoutAnchor)
+            let context = makeBackgroundContext()
+            guard SetupGuard.isReady(context: context) else {
+                isSyncingWorkouts = false
+                return
+            }
 
-        do {
-            let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+            let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
+            let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.workout()], anchor: HealthSyncPreferences.workoutAnchor)
 
-            for workout in result.addedSamples { try upsertHealthWorkout(for: workout, context: context) }
+            do {
+                let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+                let shouldAdvanceAnchor = await shouldAdvanceWorkoutAnchor(for: result)
 
-            for deletedObject in result.deletedObjects { try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
+                let linkedSessionIDs = Dictionary(uniqueKeysWithValues: result.addedSamples.compactMap { workout in
+                    HealthMetadataKeys.workoutSessionID(from: workout).map { (workout.uuid, $0) }
+                })
+                await HealthWorkoutMirrorImporter.shared.importWorkouts(result.addedSamples, linkedSessionIDsByWorkout: linkedSessionIDs)
 
-            try context.save()
-            HealthSyncPreferences.workoutAnchor = result.newAnchor
-        } catch { print("Failed to sync Health workouts: \(error)") }
+                for deletedObject in result.deletedObjects { try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
+
+                try context.save()
+                if shouldAdvanceAnchor {
+                    HealthSyncPreferences.workoutAnchor = result.newAnchor
+                }
+                logWorkoutSyncIfNeeded(result: result)
+            } catch {
+                print("Failed to sync Health workouts: \(error)")
+            }
+
+            isSyncingWorkouts = false
+            guard needsAnotherWorkoutSync else { return }
+        }
     }
 
     func syncWeightEntries() async {
         guard HealthAuthorizationManager.hasRequestedBodyMassAuthorization else { return }
-        guard !isSyncingWeightEntries else { return }
-
-        let context = makeBackgroundContext()
-        guard SetupGuard.isReady(context: context) else {
-            print("Skipping Health weight sync because app setup is incomplete.")
+        if isSyncingWeightEntries {
+            needsAnotherWeightEntriesSync = true
             return
         }
 
-        isSyncingWeightEntries = true
-        defer { isSyncingWeightEntries = false }
+        while true {
+            isSyncingWeightEntries = true
+            needsAnotherWeightEntriesSync = false
 
-        let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
-        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: bodyMassType)], anchor: HealthSyncPreferences.weightEntryAnchor)
+            let context = makeBackgroundContext()
+            guard SetupGuard.isReady(context: context) else {
+                isSyncingWeightEntries = false
+                return
+            }
 
-        do {
-            let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+            let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
+            let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.bodyMassType)], anchor: HealthSyncPreferences.weightEntryAnchor)
 
-            for sample in result.addedSamples { try upsertWeightEntry(for: sample, context: context) }
+            do {
+                let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+                let shouldAdvanceAnchor = await shouldAdvanceWeightAnchor(for: result)
 
-            for deletedObject in result.deletedObjects { try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
+                for sample in result.addedSamples { try upsertWeightEntry(for: sample, context: context) }
 
-            try context.save()
-            HealthSyncPreferences.weightEntryAnchor = result.newAnchor
-        } catch { print("Failed to sync Health weight entries: \(error)") }
+                for deletedObject in result.deletedObjects { try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
+
+                try context.save()
+                if shouldAdvanceAnchor {
+                    HealthSyncPreferences.weightEntryAnchor = result.newAnchor
+                }
+                logWeightSyncIfNeeded(result: result)
+            } catch {
+                print("Failed to sync Health weight entries: \(error)")
+            }
+
+            isSyncingWeightEntries = false
+            guard needsAnotherWeightEntriesSync else { return }
+        }
     }
 
     func applyRemovedHealthDataRetentionSetting() async {
@@ -90,13 +122,29 @@ actor HealthSyncCoordinator {
             guard unavailableWorkouts.isEmpty == false || unavailableWeightEntries.isEmpty == false else { return }
 
             try context.save()
-            print("Removed \(unavailableWorkouts.count) retained Apple Health workouts and \(unavailableWeightEntries.count) retained Apple Health weight entries after disabling retention.")
         } catch { print("Failed to apply removed Apple Health data retention setting: \(error)") }
     }
 
-    private func upsertHealthWorkout(for workout: HKWorkout, context: ModelContext) throws {
-        let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: workout, context: context)
-        _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
+    private func logWorkoutSyncIfNeeded(result: HKAnchoredObjectQueryDescriptor<HKWorkout>.Result) {
+        guard !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty else { return }
+        print("Processed Apple Health workout changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
+    }
+
+    private func logWeightSyncIfNeeded(result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result) {
+        guard !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty else { return }
+        print("Processed Apple Health weight changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
+    }
+
+    private func shouldAdvanceWorkoutAnchor(for result: HKAnchoredObjectQueryDescriptor<HKWorkout>.Result) async -> Bool {
+        if !result.deletedObjects.isEmpty { return true }
+        if result.addedSamples.contains(where: { HealthMetadataKeys.workoutSessionID(from: $0) == nil }) { return true }
+        return await HealthReadProbe.hasReadableWorkoutSampleBeyondKnownLocalCount()
+    }
+
+    private func shouldAdvanceWeightAnchor(for result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result) async -> Bool {
+        if !result.deletedObjects.isEmpty { return true }
+        if result.addedSamples.contains(where: { HealthMetadataKeys.weightEntryID(from: $0) == nil }) { return true }
+        return await HealthReadProbe.hasReadableBodyMassSampleBeyondKnownLocalCount()
     }
 
     private func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws { _ = try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context) }
@@ -121,11 +169,6 @@ actor HealthSyncCoordinator {
         }
     }
 
-    private func fetchLinkedWorkoutSession(for workout: HKWorkout, context: ModelContext) throws -> WorkoutSession? {
-        guard let workoutSessionID = HealthMetadataKeys.workoutSessionID(from: workout) else { return nil }
-        return try context.fetch(WorkoutSession.byID(workoutSessionID)).first
-    }
-
     private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool {
         (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true
     }
@@ -145,16 +188,13 @@ extension HealthWorkout {
 }
 
 nonisolated enum HealthWeightEntryLinker {
-    private static let bodyMassType = HKQuantityType(.bodyMass)
-    private static let weightUnit = HKUnit.gramUnit(with: .kilo)
-
     static func samplePredicate(for entryID: UUID) -> NSPredicate {
         HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.weightEntryID, operatorType: .equalTo, value: entryID.uuidString)
     }
 
     @discardableResult static func upsertWeightEntry(for sample: HKQuantitySample, context: ModelContext) throws -> WeightEntry {
         let existing = try fetchExistingEntry(for: sample, context: context)
-        let weight = sample.quantity.doubleValue(for: weightUnit)
+        let weight = sample.quantity.doubleValue(for: HealthKitCatalog.kilogramUnit)
         let isAppOwnedEntry = HealthMetadataKeys.weightEntryID(from: sample) != nil
 
         if let existing {

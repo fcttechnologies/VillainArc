@@ -5,9 +5,6 @@ import SwiftData
 @Model final class HealthWorkout {
     #Index<HealthWorkout>([\.healthWorkoutUUID])
 
-    private static let activeEnergyType = HKQuantityType(.activeEnergyBurned)
-    private static let restingEnergyType = HKQuantityType(.basalEnergyBurned)
-
     var healthWorkoutUUID: UUID = UUID()
     var workoutSession: WorkoutSession?
     var startDate: Date = Date()
@@ -43,8 +40,8 @@ import SwiftData
         let heartRateStats = Self.heartRateStats(for: workout)
         averageHeartRateBPM = heartRateStats.average
         maximumHeartRateBPM = heartRateStats.maximum
-        activeEnergyBurned = Self.energyBurned(for: Self.activeEnergyType, in: workout)
-        restingEnergyBurned = Self.energyBurned(for: Self.restingEnergyType, in: workout)
+        activeEnergyBurned = Self.energyBurned(for: HealthKitCatalog.activeEnergyBurnedType, in: workout)
+        restingEnergyBurned = Self.energyBurned(for: HealthKitCatalog.restingEnergyBurnedType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         isAvailableInHealthKit = true
     }
@@ -58,8 +55,8 @@ import SwiftData
         let heartRateStats = Self.heartRateStats(for: workout)
         averageHeartRateBPM = heartRateStats.average
         maximumHeartRateBPM = heartRateStats.maximum
-        activeEnergyBurned = Self.energyBurned(for: Self.activeEnergyType, in: workout)
-        restingEnergyBurned = Self.energyBurned(for: Self.restingEnergyType, in: workout)
+        activeEnergyBurned = Self.energyBurned(for: HealthKitCatalog.activeEnergyBurnedType, in: workout)
+        restingEnergyBurned = Self.energyBurned(for: HealthKitCatalog.restingEnergyBurnedType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         isAvailableInHealthKit = true
     }
@@ -69,12 +66,10 @@ import SwiftData
     }
 
     private static func heartRateStats(for workout: HKWorkout) -> (average: Double?, maximum: Double?) {
-        let heartRateType = HKQuantityType(.heartRate)
-        let bpmUnit = HKUnit.count().unitDivided(by: .minute())
-        let statistics = workout.statistics(for: heartRateType)
+        let statistics = workout.statistics(for: HealthKitCatalog.heartRateType)
         return (
-            statistics?.averageQuantity()?.doubleValue(for: bpmUnit),
-            statistics?.maximumQuantity()?.doubleValue(for: bpmUnit)
+            statistics?.averageQuantity()?.doubleValue(for: HealthKitCatalog.bpmUnit),
+            statistics?.maximumQuantity()?.doubleValue(for: HealthKitCatalog.bpmUnit)
         )
     }
 }

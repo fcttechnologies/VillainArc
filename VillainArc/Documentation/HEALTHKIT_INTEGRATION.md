@@ -5,6 +5,7 @@ This document explains the current Apple Health integration in VillainArc: how H
 ## Main Files
 
 - `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
+- `Data/Models/Health/HealthKitCatalog.swift`
 - `Data/Services/HealthKit/HealthMirrorSupport.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthPreferences.swift`
@@ -198,6 +199,7 @@ So the integration itself remains optional, but the current returning-user promp
 When the settings screen becomes active again, VillainArc:
 
 - refreshes authorization state
+- reinstalls any missing Health observers
 - refreshes background delivery registration
 - runs a Health sync pass
 
@@ -339,6 +341,8 @@ That observer path does not automatically perform export reconciliation afterwar
 
 It also enables background delivery for each type once that type has crossed the request boundary. That registration is refreshed after onboarding reaches ready and from later settings-driven permission refreshes.
 
+If an observer callback fails with `.errorAuthorizationNotDetermined` or `.errorAuthorizationDenied`, VillainArc clears the stored observer reference for that type. That lets a later ready or settings refresh recreate the observer cleanly instead of keeping a failed query around forever.
+
 ### How Sync Works
 
 VillainArc uses separate Health sync paths for:
@@ -358,6 +362,26 @@ The anchors are stored in shared defaults:
 
 Daily-metric synced coverage is stored separately in SwiftData through `HealthSyncState`, which lets reinstall or CloudKit-imported cache data preserve the known coverage range even though HealthKit anchors remain device-local.
 
+### Anchor Advancement Guard
+
+VillainArc no longer treats every empty anchored query result as proof that it is safe to move a HealthKit anchor forward.
+
+The rule is:
+
+- if an anchored query returns added samples or deleted objects, the app advances the anchor immediately
+- if an anchored query is empty, the app runs a small read probe before deciding whether the anchor should move
+- if the probe also cannot prove that the type is readable, the app leaves both the anchor and the synced range unchanged
+
+That protects the app from silently advancing anchors during ambiguous periods such as "the user tapped through the Health prompt but did not actually grant readable access yet."
+
+The probes differ by data type:
+
+- daily quantity metrics use a one-sample `HKSampleQueryDescriptor` probe
+- workouts use a `known local mirrored workout count + 1` probe
+- body mass uses a `known local exported weight count + 1` probe
+
+For workouts and body mass, the count-based probe matters because HealthKit can still return app-owned samples even when broader read access is unavailable. Seeing more rows than the app could have created locally is the signal that reads are actually broader than "just our own data."
+
 That gives the app this behavior:
 
 - first sync with no anchor: backfill all matching workouts, body-mass samples, and raw samples for the daily metric categories
@@ -365,7 +389,7 @@ That gives the app this behavior:
 
 The workout sync pass:
 
-- upserts returned `HKWorkout`s into `HealthWorkout`
+- imports returned `HKWorkout`s through the shared `HealthWorkoutMirrorImporter`
 - links rows back to `WorkoutSession` when workout metadata contains the saved local session ID
 - updates existing rows when found
 - inserts new rows when missing
@@ -384,11 +408,14 @@ That is what lets the Health tab show weight history even when the data originat
 The daily-metrics sync pass is different:
 
 - anchored queries are used as change detectors for step count, walking/running distance, active energy, and resting energy
+- steps and walking/running distance are coalesced into one movement-sync family
+- active and resting energy are coalesced into one energy-sync family
 - changed samples are collapsed into affected calendar days
 - the app then reruns daily cumulative statistics queries for the affected date range
 - `HealthStepsDistance` rows are updated only for steps/distance fields
 - `HealthEnergy` rows are updated only for active/resting energy fields
 - `HealthSyncState` stores the known synced coverage range for each daily metric category
+- when a metric pass gets an ambiguous empty result, the app does not advance that metric's anchor or synced range
 - zero-value daily aggregate rows are retained once a day is part of a refreshed range
 - coverage expands only when changed sample days or deletion-driven rebuilds require a wider refresh; the cache does not automatically materialize every day through today
 - deletion-driven refreshes can rebuild the already-synced coverage range for that metric because `HKDeletedObject` does not expose the deleted sample date
@@ -412,6 +439,7 @@ The current architecture shape is:
 - keep export and reconciliation on the same background-context model
 - create fresh `ModelContext(SharedModelContainer.container)` instances for import and export work instead of always grabbing `mainContext`
 - keep per-category sync state and anchor updates serialized so background sync remains race-safe
+- route mirrored Health workout writes through one shared importer actor so live workout completion, observer sync, and export repair do not each mutate `HealthWorkout` independently
 
 `syncNow()` now dedupes the full ready/manual refresh pipeline rather than only the sync half:
 

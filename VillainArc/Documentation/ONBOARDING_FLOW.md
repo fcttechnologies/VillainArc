@@ -24,6 +24,7 @@ Startup is split across `VillainArcApp`, `RootView`, and `OnboardingManager`.
 
 - installs the shared model container
 - forwards Spotlight and Siri handoffs into `AppRouter.shared`
+- recreates Health observer queries on every process launch through the app delegate
 - does not start onboarding itself
 
 ### `RootView`
@@ -33,7 +34,8 @@ Startup is split across `VillainArcApp`, `RootView`, and `OnboardingManager`.
 - refreshes shortcut parameters
 - starts onboarding in `.task`
 - waits for `.ready` before calling `AppRouter.checkForUnfinishedData()`
-- refreshes Health background delivery registration and runs the first post-ready Health sync pass
+- reinstalls any missing Health observer queries after onboarding reaches `.ready`
+- refreshes Health background delivery registration and runs the full post-ready Health refresh plus export-reconciliation pass
 - presents `OnboardingView` as a non-dismissable sheet whenever onboarding is not yet complete
 
 That ordering is deliberate. Resume logic for unfinished workouts or new-plan drafts only runs after bootstrap and profile setup are valid.
@@ -56,7 +58,7 @@ The order is:
 1. check connectivity
 2. check iCloud sign-in state
 3. check CloudKit availability
-4. start `CloudKitImportMonitor` and wait for import completion
+4. prepare `CloudKitImportMonitor` and wait for import completion
 5. seed the bundled exercise catalog through `DataManager.seedExercisesForOnboarding()`
 6. reindex Spotlight
 7. ensure `AppSettings`
@@ -193,6 +195,7 @@ VillainArc relies on HealthKit's request-status API rather than storing its own 
 
 When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 
+- `HealthStoreUpdateCoordinator.installObserversIfNeeded()`
 - `HealthStoreUpdateCoordinator.refreshBackgroundDeliveryRegistration()`
 - `HealthStoreUpdateCoordinator.syncNow()`
 
@@ -202,6 +205,8 @@ When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 2. export/relink reconciliation through `HealthExportCoordinator`
 
 This is how VillainArc backfills Health mirrors, daily Health aggregate caches, and repairs older workouts or weight entries that still need links/exports.
+
+That `installObserversIfNeeded()` call matters because observer queries are also created earlier at process launch. If a pre-authorization observer callback fails with an authorization-related HealthKit error, VillainArc clears that stored observer reference so the post-ready path can recreate it instead of leaving a dead query in memory.
 
 ## What Catalog Sync Actually Does
 
@@ -248,6 +253,7 @@ Details:
 - the first-bootstrap import wait fails after 60 seconds
 - the no-network state starts a retry loop that restarts onboarding when connectivity returns
 - `OnboardingView` also retries when the app becomes active again for iCloud / CloudKit related blocking states
+- the CloudKit import monitor cancels its notification observation task once the current bootstrap wait finishes, and onboarding stops it explicitly when the user continues without iCloud or when setup reaches `.ready`
 
 ## Reinstall Behavior
 

@@ -38,8 +38,6 @@ nonisolated enum HealthWorkoutLinker {
 }
 
 nonisolated enum HealthMirrorQueries {
-    private static let bodyMassType = HKQuantityType(.bodyMass)
-
     static func findSavedWorkout(for sessionID: UUID) async throws -> HKWorkout? {
         let descriptor = HKSampleQueryDescriptor(predicates: [.workout(HealthWorkoutLinker.workoutPredicate(for: sessionID))], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
         return try await descriptor.result(for: HealthAuthorizationManager.healthStore).first
@@ -47,7 +45,7 @@ nonisolated enum HealthMirrorQueries {
 
     static func findSavedWeightSample(for entryID: UUID) async throws -> HKQuantitySample? {
         let predicate = HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.weightEntryID, operatorType: .equalTo, value: entryID.uuidString)
-        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: bodyMassType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.bodyMassType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
         return try await descriptor.result(for: HealthAuthorizationManager.healthStore).first
     }
 }
@@ -61,14 +59,72 @@ nonisolated enum HealthWorkoutEffortSampleBuilder {
         guard duration > 0 else { return nil }
 
         let sampleStartDate = session.startedAt.addingTimeInterval(min(1, max(0.001, duration / 2)))
-        let quantity = HKQuantity(unit: .appleEffortScore(), doubleValue: mappedEffortScore)
+        let quantity = HKQuantity(unit: HealthKitCatalog.appleEffortScoreUnit, doubleValue: mappedEffortScore)
 
-        return HKQuantitySample(type: HKQuantityType(.workoutEffortScore), quantity: quantity, start: sampleStartDate, end: endDate)
+        return HKQuantitySample(type: HealthKitCatalog.workoutEffortScoreType, quantity: quantity, start: sampleStartDate, end: endDate)
     }
 
     private static func mappedWorkoutEffortScore(for session: WorkoutSession) -> Double {
         let effort = max(0, min(session.postEffort, 10))
         guard effort > 0 else { return 0 }
         return Double(effort)
+    }
+}
+
+actor HealthWorkoutMirrorImporter {
+    static let shared = HealthWorkoutMirrorImporter()
+
+    private var inFlightWorkoutImports: Set<UUID> = []
+
+    private init() {}
+
+    func importWorkout(_ workout: HKWorkout, linkedSessionID: UUID?) {
+        guard beginImport(for: workout.uuid) else { return }
+        defer { endImport(for: workout.uuid) }
+
+        let context = ModelContext(SharedModelContainer.container)
+        context.autosaveEnabled = false
+
+        do {
+            let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: linkedSessionID, context: context)
+            _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
+            try context.save()
+        } catch {
+            print("Failed to import mirrored Health workout \(workout.uuid): \(error)")
+        }
+    }
+
+    func importWorkouts(_ workouts: [HKWorkout], linkedSessionIDsByWorkout: [UUID: UUID]) {
+        let eligible = workouts.filter { beginImport(for: $0.uuid) }
+        guard !eligible.isEmpty else { return }
+        defer { eligible.forEach { endImport(for: $0.uuid) } }
+
+        let context = ModelContext(SharedModelContainer.container)
+        context.autosaveEnabled = false
+
+        do {
+            for workout in eligible {
+                let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: linkedSessionIDsByWorkout[workout.uuid], context: context)
+                _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
+            }
+            try context.save()
+        } catch {
+            print("Failed to batch import \(eligible.count) mirrored Health workouts: \(error)")
+        }
+    }
+
+    private func fetchLinkedWorkoutSession(for workoutSessionID: UUID?, context: ModelContext) throws -> WorkoutSession? {
+        guard let workoutSessionID else { return nil }
+        return try context.fetch(WorkoutSession.byID(workoutSessionID)).first
+    }
+
+    private func beginImport(for healthWorkoutUUID: UUID) -> Bool {
+        guard !inFlightWorkoutImports.contains(healthWorkoutUUID) else { return false }
+        inFlightWorkoutImports.insert(healthWorkoutUUID)
+        return true
+    }
+
+    private func endImport(for healthWorkoutUUID: UUID) {
+        inFlightWorkoutImports.remove(healthWorkoutUUID)
     }
 }

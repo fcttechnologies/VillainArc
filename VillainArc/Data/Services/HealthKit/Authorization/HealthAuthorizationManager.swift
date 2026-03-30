@@ -46,14 +46,6 @@ nonisolated enum HealthAuthorizationAction: Equatable {
 nonisolated enum HealthAuthorizationManager {
     static let healthStore = HKHealthStore()
 
-    private static let workoutType = HKObjectType.workoutType()
-    private static let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
-    private static let activeEnergyType = HKQuantityType(.activeEnergyBurned)
-    private static let restingEnergyType = HKQuantityType(.basalEnergyBurned)
-    private static let bodyMassType = HKQuantityType(.bodyMass)
-    private static let stepCountType = HKQuantityType(.stepCount)
-    private static let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
-
     static var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
     static var currentAuthorizationState: HealthAuthorizationState {
@@ -70,57 +62,57 @@ nonisolated enum HealthAuthorizationManager {
 
     static var canWriteWorkouts: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: workoutType) == .sharingAuthorized
+        return healthStore.authorizationStatus(for: HealthKitCatalog.workoutType) == .sharingAuthorized
     }
 
     static var canWriteWorkoutEffortScore: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: workoutEffortScoreType) == .sharingAuthorized
+        return healthStore.authorizationStatus(for: HealthKitCatalog.workoutEffortScoreType) == .sharingAuthorized
     }
 
     static var canWriteActiveEnergyBurned: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: activeEnergyType) == .sharingAuthorized
+        return healthStore.authorizationStatus(for: HealthKitCatalog.activeEnergyBurnedType) == .sharingAuthorized
     }
 
     static var canWriteRestingEnergyBurned: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: restingEnergyType) == .sharingAuthorized
+        return healthStore.authorizationStatus(for: HealthKitCatalog.restingEnergyBurnedType) == .sharingAuthorized
     }
 
     static var canWriteBodyMass: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: bodyMassType) == .sharingAuthorized
+        return healthStore.authorizationStatus(for: HealthKitCatalog.bodyMassType) == .sharingAuthorized
     }
 
     static var hasRequestedWorkoutAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: workoutType) != .notDetermined
+        return healthStore.authorizationStatus(for: HealthKitCatalog.workoutType) != .notDetermined
     }
 
     static var hasRequestedBodyMassAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: bodyMassType) != .notDetermined
+        return healthStore.authorizationStatus(for: HealthKitCatalog.bodyMassType) != .notDetermined
     }
 
     static var hasRequestedStepCountAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: stepCountType) != .notDetermined
+        return healthStore.authorizationStatus(for: HealthKitCatalog.stepCountType) != .notDetermined
     }
 
     static var hasRequestedWalkingRunningDistanceAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: walkingRunningDistanceType) != .notDetermined
+        return healthStore.authorizationStatus(for: HealthKitCatalog.walkingRunningDistanceType) != .notDetermined
     }
 
     static var hasRequestedActiveEnergyBurnedAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: activeEnergyType) != .notDetermined
+        return healthStore.authorizationStatus(for: HealthKitCatalog.activeEnergyBurnedType) != .notDetermined
     }
 
     static var hasRequestedRestingEnergyBurnedAuthorization: Bool {
         guard isHealthDataAvailable else { return false }
-        return healthStore.authorizationStatus(for: restingEnergyType) != .notDetermined
+        return healthStore.authorizationStatus(for: HealthKitCatalog.restingEnergyBurnedType) != .notDetermined
     }
 
     static func authorizationAction() async -> HealthAuthorizationAction {
@@ -162,48 +154,48 @@ nonisolated enum HealthAuthorizationManager {
 
     private static var healthShareTypes: Set<HKSampleType> {
         [
-            workoutType,
-            workoutEffortScoreType,
-            activeEnergyType,
-            restingEnergyType,
-            bodyMassType
+            HealthKitCatalog.workoutType,
+            HealthKitCatalog.workoutEffortScoreType,
+            HealthKitCatalog.activeEnergyBurnedType,
+            HealthKitCatalog.restingEnergyBurnedType,
+            HealthKitCatalog.bodyMassType
         ]
     }
 
     private static var healthReadTypes: Set<HKObjectType> {
         [
-            workoutType,
-            HKSeriesType.workoutRoute(),
-            HKCharacteristicType(.dateOfBirth),
-            HKCharacteristicType(.biologicalSex),
-            stepCountType,
-            HKQuantityType(.heartRate),
-            activeEnergyType,
-            restingEnergyType,
-            HKQuantityType(.respiratoryRate),
-            HKQuantityType(.flightsClimbed),
-            HKQuantityType(.height),
-            bodyMassType,
-            walkingRunningDistanceType,
-            HKQuantityType(.distanceCycling),
-            HKQuantityType(.distanceSwimming),
-            HKQuantityType(.distanceWheelchair),
-            HKQuantityType(.distanceRowing),
-            HKQuantityType(.distancePaddleSports),
-            HKQuantityType(.distanceCrossCountrySkiing),
-            HKQuantityType(.distanceDownhillSnowSports),
-            HKQuantityType(.swimmingStrokeCount),
-            HKQuantityType(.runningSpeed),
-            HKQuantityType(.runningPower),
-            HKQuantityType(.runningStrideLength),
-            HKQuantityType(.runningGroundContactTime),
-            HKQuantityType(.runningVerticalOscillation),
-            HKQuantityType(.cyclingCadence),
-            HKQuantityType(.cyclingPower),
-            HKQuantityType(.cyclingSpeed),
-            HKQuantityType(.physicalEffort),
-            workoutEffortScoreType,
-            HKQuantityType(.estimatedWorkoutEffortScore)
+            HealthKitCatalog.workoutType,
+            HealthKitCatalog.workoutRoute,
+            HealthKitCatalog.dateOfBirthCharacteristic,
+            HealthKitCatalog.biologicalSexCharacteristic,
+            HealthKitCatalog.stepCountType,
+            HealthKitCatalog.heartRateType,
+            HealthKitCatalog.activeEnergyBurnedType,
+            HealthKitCatalog.restingEnergyBurnedType,
+            HealthKitCatalog.respiratoryRateType,
+            HealthKitCatalog.flightsClimbedType,
+            HealthKitCatalog.heightType,
+            HealthKitCatalog.bodyMassType,
+            HealthKitCatalog.walkingRunningDistanceType,
+            HealthKitCatalog.distanceCyclingType,
+            HealthKitCatalog.distanceSwimmingType,
+            HealthKitCatalog.distanceWheelchairType,
+            HealthKitCatalog.distanceRowingType,
+            HealthKitCatalog.distancePaddleSportsType,
+            HealthKitCatalog.distanceCrossCountrySkiingType,
+            HealthKitCatalog.distanceDownhillSnowSportsType,
+            HealthKitCatalog.swimmingStrokeCountType,
+            HealthKitCatalog.runningSpeedType,
+            HealthKitCatalog.runningPowerType,
+            HealthKitCatalog.runningStrideLengthType,
+            HealthKitCatalog.runningGroundContactTimeType,
+            HealthKitCatalog.runningVerticalOscillationType,
+            HealthKitCatalog.cyclingCadenceType,
+            HealthKitCatalog.cyclingPowerType,
+            HealthKitCatalog.cyclingSpeedType,
+            HealthKitCatalog.physicalEffortType,
+            HealthKitCatalog.workoutEffortScoreType,
+            HealthKitCatalog.estimatedWorkoutEffortScoreType
         ]
     }
 }

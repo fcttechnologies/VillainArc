@@ -269,7 +269,7 @@ The live-session rules are:
 - pending suggestion review does not start Health collection
 - the HealthKit session ends when local logging ends and the workout moves to `.summary`
 - canceling the workout discards the in-flight Health workout
-- if HealthKit returns the saved workout, VillainArc links it to a local `HealthWorkout` immediately
+- if HealthKit returns the saved workout, VillainArc forwards it through the shared mirrored-workout importer and then links it back to the local `HealthWorkout`
 
 The Health workout currently uses:
 

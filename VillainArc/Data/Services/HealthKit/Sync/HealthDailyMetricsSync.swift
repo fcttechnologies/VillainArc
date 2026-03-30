@@ -10,41 +10,121 @@ actor HealthDailyMetricsSync {
     private struct MetricSyncResult {
         let newAnchor: HKQueryAnchor
         let newSyncedRange: ClosedRange<Date>?
+        let refreshedRange: ClosedRange<Date>?
+        let shouldAdvanceSyncState: Bool
     }
 
     static let shared = HealthDailyMetricsSync()
 
-    private let stepCountType = HKQuantityType(.stepCount)
-    private let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
-    private let activeEnergyBurnedType = HKQuantityType(.activeEnergyBurned)
-    private let restingEnergyBurnedType = HKQuantityType(.basalEnergyBurned)
-    private let stepsUnit = HKUnit.count()
-    private let distanceUnit = HKUnit.meter()
-    private let energyUnit = HKUnit.kilocalorie()
     private let calendar = Calendar.autoupdatingCurrent
 
-    private var isSyncingSteps = false
-    private var isSyncingWalkingRunningDistance = false
-    private var isSyncingActiveEnergy = false
-    private var isSyncingRestingEnergy = false
+    private var isSyncingMovementMetrics = false
+    private var isSyncingEnergyMetrics = false
+    private var needsAnotherMovementMetricsSync = false
+    private var needsAnotherEnergyMetricsSync = false
+    private var pendingStepSync = false
+    private var pendingWalkingRunningDistanceSync = false
+    private var pendingActiveEnergySync = false
+    private var pendingRestingEnergySync = false
 
     private init() {}
 
     func syncAll() async {
-        await syncSteps()
-        await syncWalkingRunningDistance()
-        await syncActiveEnergyBurned()
-        await syncRestingEnergyBurned()
+        await syncMovementMetrics()
+        await syncEnergyMetrics()
     }
 
     func syncSteps() async {
         guard HealthAuthorizationManager.isHealthDataAvailable else { return }
         guard HealthAuthorizationManager.hasRequestedStepCountAuthorization else { return }
-        guard !isSyncingSteps else { return }
+        pendingStepSync = true
+        await syncMovementMetricsIfNeeded()
+    }
 
-        isSyncingSteps = true
-        defer { isSyncingSteps = false }
+    func syncWalkingRunningDistance() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization else { return }
+        pendingWalkingRunningDistanceSync = true
+        await syncMovementMetricsIfNeeded()
+    }
 
+    func syncActiveEnergyBurned() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization else { return }
+        pendingActiveEnergySync = true
+        await syncEnergyMetricsIfNeeded()
+    }
+
+    func syncRestingEnergyBurned() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization else { return }
+        pendingRestingEnergySync = true
+        await syncEnergyMetricsIfNeeded()
+    }
+
+    private func syncMovementMetrics() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        if HealthAuthorizationManager.hasRequestedStepCountAuthorization { pendingStepSync = true }
+        if HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization { pendingWalkingRunningDistanceSync = true }
+        await syncMovementMetricsIfNeeded()
+    }
+
+    private func syncEnergyMetrics() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        if HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization { pendingActiveEnergySync = true }
+        if HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization { pendingRestingEnergySync = true }
+        await syncEnergyMetricsIfNeeded()
+    }
+
+    private func syncMovementMetricsIfNeeded() async {
+        if isSyncingMovementMetrics {
+            needsAnotherMovementMetricsSync = true
+            return
+        }
+
+        while true {
+            isSyncingMovementMetrics = true
+            needsAnotherMovementMetricsSync = false
+
+            let shouldSyncSteps = pendingStepSync
+            let shouldSyncDistance = pendingWalkingRunningDistanceSync
+            pendingStepSync = false
+            pendingWalkingRunningDistanceSync = false
+
+            if shouldSyncSteps { await syncStepsPass() }
+            if shouldSyncDistance { await syncWalkingRunningDistancePass() }
+
+            isSyncingMovementMetrics = false
+            guard !needsAnotherMovementMetricsSync else { continue }
+            return
+        }
+    }
+
+    private func syncEnergyMetricsIfNeeded() async {
+        if isSyncingEnergyMetrics {
+            needsAnotherEnergyMetricsSync = true
+            return
+        }
+
+        while true {
+            isSyncingEnergyMetrics = true
+            needsAnotherEnergyMetricsSync = false
+
+            let shouldSyncActiveEnergy = pendingActiveEnergySync
+            let shouldSyncRestingEnergy = pendingRestingEnergySync
+            pendingActiveEnergySync = false
+            pendingRestingEnergySync = false
+
+            if shouldSyncActiveEnergy { await syncActiveEnergyPass() }
+            if shouldSyncRestingEnergy { await syncRestingEnergyPass() }
+
+            isSyncingEnergyMetrics = false
+            guard !needsAnotherEnergyMetricsSync else { continue }
+            return
+        }
+    }
+
+    private func syncStepsPass() async {
         let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.stepCountSyncedRange
@@ -52,23 +132,19 @@ actor HealthDailyMetricsSync {
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.stepCountAnchor
 
         do {
-            let result = try await syncMetric(type: stepCountType, unit: stepsUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { Int($0.rounded()) }, applyValue: { try self.upsertStepCount(for: $0, stepCount: $1, context: $2) })
-            HealthSyncPreferences.stepCountAnchor = result.newAnchor
-            syncState.stepCountSyncedRange = result.newSyncedRange
-            try context.save()
+            let result = try await syncMetric(type: HealthKitCatalog.stepCountType, unit: HealthKitCatalog.countUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { Int($0.rounded()) }, applyValue: { try self.upsertStepCount(for: $0, stepCount: $1, context: $2) })
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.stepCountAnchor = result.newAnchor
+                syncState.stepCountSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "steps", refreshedRange: result.refreshedRange)
         } catch {
             print("Failed to sync Health steps: \(error)")
         }
     }
 
-    func syncWalkingRunningDistance() async {
-        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
-        guard HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization else { return }
-        guard !isSyncingWalkingRunningDistance else { return }
-
-        isSyncingWalkingRunningDistance = true
-        defer { isSyncingWalkingRunningDistance = false }
-
+    private func syncWalkingRunningDistancePass() async {
         let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.walkingRunningDistanceSyncedRange
@@ -76,23 +152,19 @@ actor HealthDailyMetricsSync {
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.walkingRunningDistanceAnchor
 
         do {
-            let result = try await syncMetric(type: walkingRunningDistanceType, unit: distanceUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertWalkingRunningDistance(for: $0, distance: $1, context: $2) })
-            HealthSyncPreferences.walkingRunningDistanceAnchor = result.newAnchor
-            syncState.walkingRunningDistanceSyncedRange = result.newSyncedRange
-            try context.save()
+            let result = try await syncMetric(type: HealthKitCatalog.walkingRunningDistanceType, unit: HealthKitCatalog.meterUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertWalkingRunningDistance(for: $0, distance: $1, context: $2) })
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.walkingRunningDistanceAnchor = result.newAnchor
+                syncState.walkingRunningDistanceSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "walking/running distance", refreshedRange: result.refreshedRange)
         } catch {
             print("Failed to sync Health walking/running distance: \(error)")
         }
     }
 
-    func syncActiveEnergyBurned() async {
-        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
-        guard HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization else { return }
-        guard !isSyncingActiveEnergy else { return }
-
-        isSyncingActiveEnergy = true
-        defer { isSyncingActiveEnergy = false }
-
+    private func syncActiveEnergyPass() async {
         let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.activeEnergyBurnedSyncedRange
@@ -100,23 +172,19 @@ actor HealthDailyMetricsSync {
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.activeEnergyBurnedAnchor
 
         do {
-            let result = try await syncMetric(type: activeEnergyBurnedType, unit: energyUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertActiveEnergyBurned(for: $0, activeEnergyBurned: $1, context: $2) })
-            HealthSyncPreferences.activeEnergyBurnedAnchor = result.newAnchor
-            syncState.activeEnergyBurnedSyncedRange = result.newSyncedRange
-            try context.save()
+            let result = try await syncMetric(type: HealthKitCatalog.activeEnergyBurnedType, unit: HealthKitCatalog.kilocalorieUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertActiveEnergyBurned(for: $0, activeEnergyBurned: $1, context: $2) })
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.activeEnergyBurnedAnchor = result.newAnchor
+                syncState.activeEnergyBurnedSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "active energy", refreshedRange: result.refreshedRange)
         } catch {
             print("Failed to sync Health active energy: \(error)")
         }
     }
 
-    func syncRestingEnergyBurned() async {
-        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
-        guard HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization else { return }
-        guard !isSyncingRestingEnergy else { return }
-
-        isSyncingRestingEnergy = true
-        defer { isSyncingRestingEnergy = false }
-
+    private func syncRestingEnergyPass() async {
         let context = makeBackgroundContext()
         guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
         let syncedRange = syncState.restingEnergyBurnedSyncedRange
@@ -124,10 +192,13 @@ actor HealthDailyMetricsSync {
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.restingEnergyBurnedAnchor
 
         do {
-            let result = try await syncMetric(type: restingEnergyBurnedType, unit: energyUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertRestingEnergyBurned(for: $0, restingEnergyBurned: $1, context: $2) })
-            HealthSyncPreferences.restingEnergyBurnedAnchor = result.newAnchor
-            syncState.restingEnergyBurnedSyncedRange = result.newSyncedRange
-            try context.save()
+            let result = try await syncMetric(type: HealthKitCatalog.restingEnergyBurnedType, unit: HealthKitCatalog.kilocalorieUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { $0 }, applyValue: { try self.upsertRestingEnergyBurned(for: $0, restingEnergyBurned: $1, context: $2) })
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.restingEnergyBurnedAnchor = result.newAnchor
+                syncState.restingEnergyBurnedSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "resting energy", refreshedRange: result.refreshedRange)
         } catch {
             print("Failed to sync Health resting energy: \(error)")
         }
@@ -200,14 +271,35 @@ actor HealthDailyMetricsSync {
 
     private func syncMetric<Value>(type: HKQuantityType, unit: HKUnit, anchor: HKQueryAnchor?, syncedRange: ClosedRange<Date>?, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> Void) async throws -> MetricSyncResult {
         let result = try await anchoredResult(for: type, anchor: anchor)
+        let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: type, result: result)
         let refreshRange = refreshRange(addedDays: Set(result.addedSamples.map(dayStart(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
 
         if let refreshRange {
+            // Keep the row mutation and save phase await-free so each metric pass applies its
+            // day updates atomically once the actor resumes from HealthKit.
             try await refreshMetricRange(dayRange: refreshRange, type: type, unit: unit, context: context, mapValue: mapValue, applyValue: applyValue)
             try context.save()
         }
 
-        return MetricSyncResult(newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange)
+        return MetricSyncResult(newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange, refreshedRange: refreshRange, shouldAdvanceSyncState: shouldAdvanceSyncState)
+    }
+
+    private func shouldAdvanceSyncState(for type: HKQuantityType, result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result) async -> Bool {
+        if !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty { return true }
+        return await HealthReadProbe.hasReadableQuantitySample(for: type)
+    }
+
+    private func logMetricSyncIfNeeded(named metricName: String, refreshedRange: ClosedRange<Date>?) {
+        guard let refreshedRange else { return }
+        print("Synced Apple Health \(metricName) for \(formattedDayRange(refreshedRange)).")
+    }
+
+    private func formattedDayRange(_ dayRange: ClosedRange<Date>) -> String {
+        let start = calendar.startOfDay(for: dayRange.lowerBound)
+        let end = calendar.startOfDay(for: dayRange.upperBound)
+        let startText = start.formatted(date: .abbreviated, time: .omitted)
+        let endText = end.formatted(date: .abbreviated, time: .omitted)
+        return start == end ? startText : "\(startText) to \(endText)"
     }
 
     private func refreshMetricRange<Value>(dayRange: ClosedRange<Date>, type: HKQuantityType, unit: HKUnit, context: ModelContext, mapValue: @escaping (Double) -> Value, applyValue: @escaping (Date, Value, ModelContext) throws -> Void) async throws {

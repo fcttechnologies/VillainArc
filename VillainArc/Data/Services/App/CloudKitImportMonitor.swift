@@ -37,6 +37,13 @@ final class CloudKitImportMonitor {
         if case .failed = status { status = .waiting }
     }
 
+    func stop(resetStatus: CloudKitImportStatus = .idle) {
+        observationTask?.cancel()
+        observationTask = nil
+        waiters.removeAll()
+        status = resetStatus
+    }
+
     func waitForImportCompletion() async -> CloudKitImportStatus {
         prepareForBootstrapWait()
 
@@ -72,5 +79,7 @@ final class CloudKitImportMonitor {
         waiters.removeAll()
 
         for waiter in pendingWaiters { waiter.resume(returning: status) }
+        observationTask?.cancel()
+        observationTask = nil
     }
 }

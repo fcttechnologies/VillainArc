@@ -23,7 +23,7 @@ This file is the structure map for the app. Use it to understand the major layer
 
 - Launch coordinator for the foreground app.
 - Starts `OnboardingManager`, deletes abandoned plan-editing copies, refreshes shortcut parameters, and only resumes persisted unfinished work after onboarding reaches `.ready`.
-- Starts the Health observer pipeline plus the first post-ready sync pass when onboarding finishes.
+- After onboarding reaches `.ready`, asks `AppRouter` to resume unfinished work, reinstalls any missing Health observers, refreshes Health background delivery, and runs the full Health sync-plus-export reconciliation pass.
 - Presents `Views/Onboarding/OnboardingView.swift` as the blocking setup sheet.
 
 ### `Views/AppShell/ContentView.swift`
@@ -84,6 +84,7 @@ This file is the structure map for the app. Use it to understand the major layer
 
 - Watches `NSPersistentCloudKitContainer` import events during first bootstrap.
 - Lets onboarding wait for import completion before seeding the bundled exercise catalog.
+- Cancels its notification observation task once the current bootstrap wait finishes and is also stopped explicitly when onboarding skips iCloud or transitions to ready.
 
 ### `Data/Services/App/DataManager.swift`
 
@@ -198,6 +199,11 @@ This file is the structure map for the app. Use it to understand the major layer
 
 - Local mirror/cache of an Apple Health workout summary.
 - Stores Health workout identity, linked `WorkoutSession` when available, cached summary values, source name, and Health availability state.
+
+### `Data/Models/Health/HealthKitCatalog.swift`
+
+- Shared HealthKit type and unit catalog.
+- Centralizes the HealthKit object types, quantity types, characteristic types, and units used across authorization, sync, export, detail loading, and model helpers.
 
 ### `Data/Models/Health/WeightEntry.swift`
 
@@ -344,17 +350,19 @@ This file is the structure map for the app. Use it to understand the major layer
 - `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
   - Health availability, status, request boundary, and metadata helpers.
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
-  - Observer registration, background delivery registration, and serialized Health sync entrypoint for workouts, body mass, steps, distance, and energy.
+  - Observer registration, observer recovery after authorization-related failures, background delivery registration, and deduped ready/manual Health refresh entrypoint.
 - `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
-  - Top-level Health sync orchestration for workouts, body mass, and daily aggregate metrics.
+  - Top-level Health sync orchestration for workouts, body mass, and daily aggregate metrics, including rerun-on-burst behavior and guarded anchor advancement for workouts and weight.
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
-  - Per-metric anchored sync plus daily-statistics rebuild for steps, walking/running distance, active energy, and resting energy.
+  - Movement-family and energy-family anchored sync plus daily-statistics rebuild for steps, walking/running distance, active energy, and resting energy, with guarded anchor and synced-range advancement.
+- `Data/Services/HealthKit/HealthMirrorSupport.swift`
+  - Shared Health metadata keys, HealthKit lookup helpers, and the single-owner mirrored `HealthWorkout` importer used by live workout completion, observer sync, and export repair.
 - `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
   - Reconciliation-aware export/repair path for completed workouts and weight entries.
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
   - On-demand richer Health workout detail loading.
 - `Data/Services/HealthKit/Sync/HealthPreferences.swift`
-  - Shared-defaults storage for Health sync anchors and synced coverage ranges.
+  - Shared-defaults storage for Health sync anchors plus lightweight read-probe helpers used to avoid advancing anchors on ambiguous empty reads.
 
 ### Spotlight and App Intents
 

@@ -1,5 +1,6 @@
 import Foundation
 import HealthKit
+import SwiftData
 
 nonisolated enum HealthSyncPreferences {
     private static let workoutAnchorKey = "health_workout_anchor"
@@ -55,5 +56,45 @@ nonisolated enum HealthSyncPreferences {
         guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else { return }
 
         defaults.set(data, forKey: key)
+    }
+}
+
+nonisolated enum HealthReadProbe {
+    static func hasReadableWorkoutSampleBeyondKnownLocalCount() async -> Bool {
+        let localContext = ModelContext(SharedModelContainer.container)
+        let knownLocalWorkoutCount = ((try? localContext.fetch(HealthWorkout.linkedToLocalSession)) ?? []).count
+        let descriptor = HKSampleQueryDescriptor(predicates: [.workout()], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: knownLocalWorkoutCount + 1)
+
+        guard let workouts = try? await descriptor.result(for: HealthAuthorizationManager.healthStore) else { return false }
+        return workouts.count > knownLocalWorkoutCount
+    }
+
+    static func hasReadableBodyMassSampleBeyondKnownLocalCount() async -> Bool {
+        let localContext = ModelContext(SharedModelContainer.container)
+        let knownLocalWeightCount = ((try? localContext.fetch(WeightEntry.exportedToHealth)) ?? []).count
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.bodyMassType)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: knownLocalWeightCount + 1)
+
+        guard let samples = try? await descriptor.result(for: HealthAuthorizationManager.healthStore) else { return false }
+        return samples.count > knownLocalWeightCount
+    }
+
+    static func hasReadableQuantitySample(for type: HKQuantityType) async -> Bool {
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: type)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
+
+        return (try? await descriptor.result(for: HealthAuthorizationManager.healthStore).isEmpty == false) ?? false
+    }
+}
+
+extension HealthWorkout {
+    fileprivate static var linkedToLocalSession: FetchDescriptor<HealthWorkout> {
+        let predicate = #Predicate<HealthWorkout> { $0.workoutSession != nil }
+        return FetchDescriptor(predicate: predicate)
+    }
+}
+
+extension WeightEntry {
+    fileprivate static var exportedToHealth: FetchDescriptor<WeightEntry> {
+        let predicate = #Predicate<WeightEntry> { $0.hasBeenExportedToHealth && $0.healthSampleUUID != nil }
+        return FetchDescriptor(predicate: predicate)
     }
 }
