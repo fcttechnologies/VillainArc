@@ -25,12 +25,24 @@ final class ToastManager {
             let compactTargetSteps = targetSteps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
             return Toast(title: "Steps goal reached", message: "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) step target.", systemImage: "figure.walk", tint: .red, haptic: .success)
         }
+
+        static func stepsEvent(_ event: StepsEventNotification) -> Toast {
+            let systemImage: String = switch event.milestone {
+            case .goal:
+                "target"
+            case .doubleGoal, .tripleGoal:
+                "figure.walk"
+            case nil:
+                "rosette"
+            }
+
+            return Toast(title: event.title, message: event.body, systemImage: systemImage, tint: .red, haptic: .success)
+        }
     }
 
     static let shared = ToastManager()
 
     var currentToast: Toast?
-    var canPresentToasts = false
     private var dismissTask: Task<Void, Never>?
 
     func show(_ toast: Toast, duration: Duration = .seconds(3)) {
@@ -81,12 +93,12 @@ struct ToastOverlayView: View {
     let toast: ToastManager.Toast
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: toast.systemImage)
                 .font(.title2)
                 .foregroundStyle(toast.tint)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(toast.title)
                     .font(.title3)
                     .fontWeight(.bold)
@@ -101,8 +113,8 @@ struct ToastOverlayView: View {
 
             Spacer()
         }
-        .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
+        .padding(12)
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
         .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
     }
@@ -148,14 +160,12 @@ struct GlobalToastHost: View {
     @State private var manager = ToastManager.shared
 
     var body: some View {
-        VStack {
+        ZStack(alignment: .top) {
             if let toast = manager.currentToast {
                 ToastOverlayView(toast: toast)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                .padding(.horizontal, 8)
+                .padding(.top, 2)
             }
-
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .allowsHitTesting(false)

@@ -200,6 +200,11 @@ private struct SleepHistoryMainSection: View {
         guard let currentRangeData, let selectedDate else { return nil }
         return selectedTimeSeriesPoint(in: currentRangeData.layout.points, for: selectedDate)
     }
+
+    private var selectedWindowBar: SleepWindowBucket? {
+        guard let currentRangeData, let selectedPoint else { return nil }
+        return currentRangeData.windowBars.first { $0.point.id == selectedPoint.id }
+    }
     
     private var displayedWakeDay: Date? {
         if let selectedWakeDay, selectedRange == .day { return selectedWakeDay }
@@ -287,25 +292,26 @@ private struct SleepHistoryMainSection: View {
         return latestEntry?.timeAsleep
     }
 
-    private var displayedDateText: String {
+    private var headerSubtitleText: String {
         if let selectedDayInterval {
             let wakeDayText = displayedEntry.map { formattedSleepWakeDay($0.wakeDay) } ?? formattedRecentDay(selectedDayInterval.endDate)
-            return "\(wakeDayText) • \(selectedDayInterval.stage.title) • \(formattedSleepTimingText(start: selectedDayInterval.startDate, end: selectedDayInterval.endDate))"
+            let timingText = formattedSleepTimingText(start: selectedDayInterval.startDate, end: selectedDayInterval.endDate)
+            return "\(wakeDayText) • \(selectedDayInterval.stage.title) • \(timingText)"
         }
 
         if let selectedPoint {
             let label = timeSeriesBucketLabelText(for: selectedPoint, bucketStyle: currentRangeData?.layout.bucketStyle ?? .day)
-            return selectedPoint.sampleCount > 1 ? "\(label) • Average" : label
+            if let selectedNonDayEntry = selectedNonDayEntries.first, selectedPoint.sampleCount == 1 {
+                return "\(label) • \(formattedSleepTimingText(for: selectedNonDayEntry))"
+            }
+            if let selectedWindowBar {
+                return "\(label) • \(formattedSleepOffsetTimingText(startOffsetMinutes: selectedWindowBar.startOffsetMinutes, endOffsetMinutes: selectedWindowBar.endOffsetMinutes))"
+            }
+            return label
         }
 
         guard let latestEntry else { return "No sleep data in this range" }
-        if !latestEntry.isAvailableInHealthKit {
-            return "\(formattedSleepWakeDay(latestEntry.wakeDay)) • Removed from Apple Health"
-        }
-
-        return selectedRange == .day
-        ? "\(formattedSleepWakeDay(latestEntry.wakeDay)) • \(formattedSleepTimingText(for: latestEntry))"
-        : formattedSleepWakeDay(latestEntry.wakeDay)
+        return "\(formattedSleepWakeDay(latestEntry.wakeDay)) • \(formattedSleepTimingText(for: latestEntry))"
     }
     
     private var visibleRangeText: String? {
@@ -349,11 +355,11 @@ private struct SleepHistoryMainSection: View {
     
     private var chartAccessibilityValue: String {
         if let selectedDayInterval {
-            return "\(displayedDateText), \(formattedSleepDurationAccessibilityText(selectedDayInterval.duration))"
+            return "\(headerSubtitleText), \(formattedSleepDurationAccessibilityText(selectedDayInterval.duration))"
         }
         
         guard let headerDuration else { return "No sleep data available." }
-        return "\(displayedDateText), \(formattedSleepDurationAccessibilityText(headerDuration)) asleep"
+        return "\(headerSubtitleText), \(formattedSleepDurationAccessibilityText(headerDuration)) asleep"
     }
 
     private var selectedChartDate: Date? {
@@ -366,10 +372,13 @@ private struct SleepHistoryMainSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(displayedDateText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fontWeight(.semibold)
+                Text(headerSubtitleText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
                 if let headerDuration {
                     SleepDurationValueView(duration: headerDuration)
                 } else {
@@ -382,11 +391,7 @@ private struct SleepHistoryMainSection: View {
             chartView
 
             VStack(spacing: 3) {
-                if selectedRange == .day {
-                    sleepStageStatsRow(dayStageStats)
-                } else {
-                    sleepStageStatsRow(nonDayStageStats)
-                }
+                sleepStageStatsRow(selectedRange == .day ? dayStageStats : nonDayStageStats)
                 
                 if selectedRange != .day {
                     HStack(alignment: .bottom) {
@@ -677,6 +682,10 @@ private struct SleepHistoryMainSection: View {
         let referenceDay = Calendar.autoupdatingCurrent.startOfDay(for: .now)
         let date = referenceDay.addingTimeInterval(offsetMinutes * 60)
         return date.formatted(date: .omitted, time: .shortened)
+    }
+
+    private func formattedSleepOffsetTimingText(startOffsetMinutes: Double, endOffsetMinutes: Double) -> String {
+        "\(formattedSleepOffsetLabel(startOffsetMinutes)) - \(formattedSleepOffsetLabel(endOffsetMinutes))"
     }
     
     private func averageDuration(in entries: [HealthSleepNight], for keyPath: KeyPath<HealthSleepNight, TimeInterval>) -> TimeInterval? {

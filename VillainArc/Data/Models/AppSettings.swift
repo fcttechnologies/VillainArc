@@ -10,7 +10,7 @@ import SwiftData
     var keepRemovedHealthData: Bool = true
     var liveActivitiesEnabled: Bool = true
     var restTimerNotificationsEnabled: Bool = true
-    var stepsNotificationMode: StepsEventNotificationMode = StepsEventNotificationMode.goalOnly
+    var stepsNotificationMode: StepsEventNotificationMode = StepsEventNotificationMode.coaching
     var weightUnit: WeightUnit = WeightUnit.systemDefault
     var heightUnit: HeightUnit = HeightUnit.systemDefault
     var distanceUnit: DistanceUnit = DistanceUnit.systemDefault

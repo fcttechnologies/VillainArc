@@ -5,12 +5,15 @@ import UserNotifications
 nonisolated enum NotificationType: String {
     case restTimerComplete
     case stepsGoalComplete
+    case stepsEvent
 }
 
 nonisolated enum NotificationUserInfoKey {
     static let type = "notificationType"
     static let targetSteps = "targetSteps"
     static let stepCount = "stepCount"
+    static let stepsMilestone = "stepsMilestone"
+    static let includesNewBest = "stepsIncludesNewBest"
 }
 
 final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate {
@@ -76,37 +79,42 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func deliverStepsGoalCompletion(targetSteps: Int, stepCount: Int) async {
+        await deliverStepsEvent(StepsEventNotification(stepCount: stepCount, targetSteps: targetSteps, milestone: .goal, includesNewBest: false, includesGoalCompletion: true))
+    }
+
+    nonisolated static func deliverStepsEvent(_ event: StepsEventNotification) async {
         let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
 
-        guard settings.stepsNotificationMode != .off, status.allowsLocalDelivery else {
-            await shared.presentToastIfPossible(.stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount))
+        await shared.presentToastIfPossible(.stepsEvent(event))
+
+        guard let localEvent = event.localNotificationVersion(for: settings.stepsNotificationMode), status.allowsLocalDelivery else {
             return
         }
 
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: ["stepsGoalComplete"])
-        center.removeDeliveredNotifications(withIdentifiers: ["stepsGoalComplete"])
-        let compactStepCount = compactStepsText(stepCount)
-        let compactTargetSteps = compactStepsText(targetSteps)
+        center.removePendingNotificationRequests(withIdentifiers: ["stepsGoalComplete", "stepsEvent"])
+        center.removeDeliveredNotifications(withIdentifiers: ["stepsGoalComplete", "stepsEvent"])
 
         let content = UNMutableNotificationContent()
-        content.title = "Steps Goal Reached"
-        content.body = "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) daily step goal."
+        content.title = localEvent.title
+        content.body = localEvent.body
         content.sound = .default
         content.threadIdentifier = "healthGoals"
         content.userInfo = [
-            NotificationUserInfoKey.type: NotificationType.stepsGoalComplete.rawValue,
-            NotificationUserInfoKey.targetSteps: targetSteps,
-            NotificationUserInfoKey.stepCount: stepCount
+            NotificationUserInfoKey.type: NotificationType.stepsEvent.rawValue,
+            NotificationUserInfoKey.targetSteps: localEvent.targetSteps as Any,
+            NotificationUserInfoKey.stepCount: localEvent.stepCount,
+            NotificationUserInfoKey.stepsMilestone: localEvent.milestone?.rawValue as Any,
+            NotificationUserInfoKey.includesNewBest: localEvent.includesNewBest
         ]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: "stepsGoalComplete", content: content, trigger: trigger)
+        let request = UNNotificationRequest(identifier: "stepsEvent", content: content, trigger: trigger)
         do {
             try await center.add(request)
         } catch {
-            print("Failed to schedule steps goal notification: \(error)")
+            print("Failed to schedule steps event notification: \(error)")
         }
     }
 
@@ -138,13 +146,8 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         return AppSettingsSnapshot(settings: try? context.fetch(AppSettings.single).first)
     }
 
-    nonisolated private static func compactStepsText(_ steps: Int) -> String {
-        steps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
-    }
-
     nonisolated private func presentToastIfPossible(_ toast: ToastManager.Toast) async {
         await MainActor.run {
-            guard ToastManager.shared.canPresentToasts else { return }
             ToastManager.shared.show(toast)
         }
     }
@@ -161,6 +164,8 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             let targetSteps = userInfo[NotificationUserInfoKey.targetSteps] as? Int ?? 0
             let stepCount = userInfo[NotificationUserInfoKey.stepCount] as? Int ?? 0
             return .stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount)
+        case .stepsEvent:
+            return nil
         }
     }
 }

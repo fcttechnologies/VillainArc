@@ -12,6 +12,10 @@ import SwiftData
     var restingEnergyBurnedSyncedRangeEnd: Date?
     var sleepWakeDaySyncedRangeStart: Date?
     var sleepWakeDaySyncedRangeEnd: Date?
+    var doubleGoalLastTriggeredDay: Date?
+    var tripleGoalLastTriggeredDay: Date?
+    var bestDailyStepsKnown: Int?
+    var newHighStepsLastTriggeredDay: Date?
 
     init() {}
 

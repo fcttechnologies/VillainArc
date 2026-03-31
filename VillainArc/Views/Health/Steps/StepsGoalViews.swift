@@ -135,6 +135,7 @@ struct StepsGoalHistoryView: View {
         context.delete(goal)
         if wasActive {
             try? StepsGoalEvaluator.reevaluateAchievement(forDay: .now, context: context, trigger: .goalChange)
+            try? StepsCoachingEvaluator.reconcileTodayForGoalChange(context: context)
         }
         saveContext(context: context)
     }
@@ -296,6 +297,7 @@ struct NewStepsGoalView: View {
         let goal = StepsGoal(startedOnDay: todayStart, targetSteps: parsedTargetSteps)
         context.insert(goal)
         try? StepsGoalEvaluator.reevaluateAchievement(forDay: todayStart, context: context, trigger: .goalChange)
+        try? StepsCoachingEvaluator.reconcileTodayForGoalChange(context: context)
         saveContext(context: context)
         Haptics.selection()
         dismiss()

@@ -76,6 +76,7 @@ struct HealthEnergySectionCard: View {
                                 Text("Active")
                                     .foregroundStyle(.secondary)
                                     .font(.subheadline)
+                                    .fontWeight(.semibold)
                             }
                             
                             HStack(alignment: .lastTextBaseline, spacing: 2) {

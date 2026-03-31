@@ -7,11 +7,6 @@ actor HealthDailyMetricsSync {
         var value: [Date: Value] = [:]
     }
 
-    private struct StepsGoalCompletionNotification: Sendable {
-        let targetSteps: Int
-        let achievedStepCount: Int
-    }
-
     private struct MetricSyncResult {
         let newAnchor: HKQueryAnchor
         let newSyncedRange: ClosedRange<Date>?
@@ -135,17 +130,17 @@ actor HealthDailyMetricsSync {
         let syncedRange = syncState.stepCountSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.stepCountAnchor
-        let notificationsBox = TotalsByDayBox<StepsGoalCompletionNotification>()
+        let notificationsBox = TotalsByDayBox<StepsEventNotification>()
 
         do {
-            let result = try await syncMetric(type: HealthKitCatalog.stepCountType, unit: HealthKitCatalog.countUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { Int($0.rounded()) }, applyValue: { try self.upsertStepCount(for: $0, stepCount: $1, context: $2, notificationsBox: notificationsBox) })
+            let result = try await syncStepCount(anchor: anchor, syncedRange: syncedRange, context: context, syncState: syncState, notificationsBox: notificationsBox, usesInitialImport: usesInitialImport)
             if result.shouldAdvanceSyncState {
                 HealthSyncPreferences.stepCountAnchor = result.newAnchor
                 syncState.stepCountSyncedRange = result.newSyncedRange
                 try context.save()
             }
             for notification in notificationsBox.value.values {
-                await NotificationCoordinator.deliverStepsGoalCompletion(targetSteps: notification.targetSteps, stepCount: notification.achievedStepCount)
+                await NotificationCoordinator.deliverStepsEvent(notification)
             }
             logMetricSyncIfNeeded(named: "steps", refreshedRange: result.refreshedRange)
         } catch {
@@ -343,16 +338,6 @@ actor HealthDailyMetricsSync {
         return totalsByDay.value
     }
 
-    private func upsertStepCount(for dayStart: Date, stepCount: Int, context: ModelContext, notificationsBox: TotalsByDayBox<StepsGoalCompletionNotification>) throws {
-        let summary = try fetchOrCreateStepsDistance(for: dayStart, context: context)
-        summary.stepCount = max(0, stepCount)
-        let achievedTodayTransition = try StepsGoalEvaluator.reevaluateAchievement(for: summary, context: context)
-        if achievedTodayTransition {
-            let targetSteps = try context.fetch(StepsGoal.forDay(dayStart)).first?.targetSteps ?? summary.stepCount
-            notificationsBox.value[dayStart] = StepsGoalCompletionNotification(targetSteps: targetSteps, achievedStepCount: summary.stepCount)
-        }
-    }
-
     private func upsertWalkingRunningDistance(for dayStart: Date, distance: Double, context: ModelContext) throws {
         let summary = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         summary.distance = max(0, distance)
@@ -381,6 +366,59 @@ actor HealthDailyMetricsSync {
         let energy = HealthEnergy(date: dayStart)
         context.insert(energy)
         return energy
+    }
+
+    private func syncStepCount(anchor: HKQueryAnchor?, syncedRange: ClosedRange<Date>?, context: ModelContext, syncState: HealthSyncState, notificationsBox: TotalsByDayBox<StepsEventNotification>, usesInitialImport: Bool) async throws -> MetricSyncResult {
+        let result = try await anchoredResult(for: HealthKitCatalog.stepCountType, anchor: anchor)
+        let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: HealthKitCatalog.stepCountType, result: result)
+        let dayRange = refreshRange(addedDays: Set(result.addedSamples.map(dayStart(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
+        let shouldRecomputeBestDailyStepsKnown = usesInitialImport || !result.deletedObjects.isEmpty || syncState.bestDailyStepsKnown == nil
+
+        if let dayRange {
+            try await refreshStepCountRange(dayRange: dayRange, context: context, syncState: syncState, notificationsBox: notificationsBox, recomputeBestDailyStepsKnown: shouldRecomputeBestDailyStepsKnown)
+            try context.save()
+        } else if shouldRecomputeBestDailyStepsKnown {
+            syncState.bestDailyStepsKnown = try StepsCoachingEvaluator.historicalBestDailySteps(excluding: .now, context: context)
+            try context.save()
+        }
+
+        return MetricSyncResult(newAnchor: result.newAnchor, newSyncedRange: dayRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange, refreshedRange: dayRange, shouldAdvanceSyncState: shouldAdvanceSyncState)
+    }
+
+    private func refreshStepCountRange(dayRange: ClosedRange<Date>, context: ModelContext, syncState: HealthSyncState, notificationsBox: TotalsByDayBox<StepsEventNotification>, recomputeBestDailyStepsKnown: Bool) async throws {
+        let lowerDayStart = calendar.startOfDay(for: dayRange.lowerBound)
+        let upperDayStart = calendar.startOfDay(for: dayRange.upperBound)
+        let upperDayExclusive = calendar.date(byAdding: .day, value: 1, to: upperDayStart) ?? upperDayStart
+        let valuesByDay = try await dailyTotalsByDay(for: HealthKitCatalog.stepCountType, unit: HealthKitCatalog.countUnit, rangeStart: lowerDayStart, rangeEndExclusive: upperDayExclusive, mapValue: { Int($0.rounded()) })
+
+        let today = calendar.startOfDay(for: .now)
+        var currentDay = lowerDayStart
+        var todaySummary: HealthStepsDistance?
+        var goalJustAchievedToday = false
+
+        while currentDay < upperDayExclusive {
+            let summary = try fetchOrCreateStepsDistance(for: currentDay, context: context)
+            summary.stepCount = max(0, valuesByDay[currentDay] ?? 0)
+            let goalJustAchieved = try StepsGoalEvaluator.reevaluateAchievement(for: summary, context: context)
+            if calendar.isDate(currentDay, inSameDayAs: today) {
+                todaySummary = summary
+                goalJustAchievedToday = goalJustAchieved
+            }
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
+            currentDay = nextDay
+        }
+
+        if recomputeBestDailyStepsKnown {
+            syncState.bestDailyStepsKnown = try StepsCoachingEvaluator.historicalBestDailySteps(excluding: today, context: context)
+        } else if let refreshedHistoricalBest = valuesByDay.filter({ !calendar.isDate($0.key, inSameDayAs: today) }).map(\.value).max() {
+            syncState.bestDailyStepsKnown = max(syncState.bestDailyStepsKnown ?? 0, refreshedHistoricalBest)
+        }
+
+        guard dayRange.contains(today) else { return }
+
+        if let event = try StepsCoachingEvaluator.reconcileToday(summary: todaySummary, syncState: syncState, context: context, goalJustAchieved: goalJustAchievedToday, trigger: .syncUpdate) {
+            notificationsBox.value[today] = event
+        }
     }
 
     private func makeBackgroundContext() -> ModelContext {
