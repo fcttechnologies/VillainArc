@@ -62,7 +62,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         let request = UNNotificationRequest(identifier: "restTimerComplete", content: content, trigger: trigger)
 
-        try? await center.add(request)
+        do {
+            try await center.add(request)
+        } catch {
+            print("Failed to schedule rest timer notification: \(error)")
+        }
     }
 
     nonisolated static func cancelRestTimer() {
@@ -99,7 +103,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: "stepsGoalComplete", content: content, trigger: trigger)
-        try? await center.add(request)
+        do {
+            try await center.add(request)
+        } catch {
+            print("Failed to schedule steps goal notification: \(error)")
+        }
     }
 
     nonisolated static func deliverRestTimerCompletionIfNeeded() async {

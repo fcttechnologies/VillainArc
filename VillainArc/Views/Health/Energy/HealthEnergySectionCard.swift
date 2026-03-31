@@ -74,24 +74,25 @@ struct HealthEnergySectionCard: View {
                                 
                                 Text("Active")
                                     .foregroundStyle(.secondary)
+                                    .font(.subheadline)
                             }
-                            .font(.subheadline)
                             
                             HStack(alignment: .lastTextBaseline, spacing: 2) {
                                 let totalEnergy = energyUnit.fromKilocalories(latestEntry.totalEnergyBurned)
 
                                 Text(Int(totalEnergy.rounded()), format: .number)
                                     .font(.largeTitle)
+                                    .bold()
                                     .contentTransition(.numericText(value: totalEnergy))
                                 
                                 Text("Total")
                                     .font(.title2)
                                     .foregroundStyle(.secondary)
+                                    .fontWeight(.semibold)
                             }
                             .lineLimit(1)
                         }
                         .fontDesign(.rounded)
-                        .fontWeight(.semibold)
                         
                         Spacer()
                         

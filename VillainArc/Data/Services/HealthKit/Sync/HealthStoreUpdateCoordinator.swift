@@ -9,6 +9,7 @@ final class HealthStoreUpdateCoordinator {
         case walkingRunningDistance
         case activeEnergy
         case restingEnergy
+        case sleep
 
         var logLabel: String {
             switch self {
@@ -18,6 +19,7 @@ final class HealthStoreUpdateCoordinator {
             case .walkingRunningDistance: return "walking/running distance"
             case .activeEnergy: return "active energy"
             case .restingEnergy: return "resting energy"
+            case .sleep: return "sleep"
             }
         }
     }
@@ -30,6 +32,7 @@ final class HealthStoreUpdateCoordinator {
     private var walkingRunningDistanceObserverQuery: HKObserverQuery?
     private var activeEnergyObserverQuery: HKObserverQuery?
     private var restingEnergyObserverQuery: HKObserverQuery?
+    private var sleepObserverQuery: HKObserverQuery?
     private var isRefreshingBackgroundDelivery = false
     private var inFlightRefreshTask: Task<Void, Never>?
 
@@ -43,7 +46,8 @@ final class HealthStoreUpdateCoordinator {
             startStepObserverIfNeeded() ? ObserverKind.step.logLabel : nil,
             startWalkingRunningDistanceObserverIfNeeded() ? ObserverKind.walkingRunningDistance.logLabel : nil,
             startActiveEnergyObserverIfNeeded() ? ObserverKind.activeEnergy.logLabel : nil,
-            startRestingEnergyObserverIfNeeded() ? ObserverKind.restingEnergy.logLabel : nil
+            startRestingEnergyObserverIfNeeded() ? ObserverKind.restingEnergy.logLabel : nil,
+            startSleepObserverIfNeeded() ? ObserverKind.sleep.logLabel : nil
         ].compactMap(\.self)
 
         guard !initializedObservers.isEmpty else { return }
@@ -241,6 +245,38 @@ final class HealthStoreUpdateCoordinator {
         return true
     }
 
+    @discardableResult
+    private func startSleepObserverIfNeeded() -> Bool {
+        guard sleepObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.sleepAnalysisType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthSleepSync.shared.syncSleepNights()
+                }
+                return
+            }
+
+            print("Health sleep observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.sleep, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        sleepObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
     nonisolated private static func shouldReinstallObserver(after error: Error) -> Bool {
         let nsError = error as NSError
         guard nsError.domain == HKErrorDomain,
@@ -269,6 +305,8 @@ final class HealthStoreUpdateCoordinator {
             clearObserverIfMatching(&activeEnergyObserverQuery, kind: kind, failedQueryID: failedQueryID)
         case .restingEnergy:
             clearObserverIfMatching(&restingEnergyObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .sleep:
+            clearObserverIfMatching(&sleepObserverQuery, kind: kind, failedQueryID: failedQueryID)
         }
     }
 
@@ -318,6 +356,12 @@ final class HealthStoreUpdateCoordinator {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.restingEnergyBurnedType, frequency: .immediate)
             } catch { print("Failed to enable HealthKit background delivery for resting energy: \(error)") }
+        }
+
+        if HealthAuthorizationManager.hasRequestedSleepAnalysisAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.sleepAnalysisType, frequency: .immediate)
+            } catch { print("Failed to enable HealthKit background delivery for sleep analysis: \(error)") }
         }
     }
 

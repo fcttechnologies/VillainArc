@@ -9,6 +9,7 @@ nonisolated enum HealthSyncPreferences {
     private static let walkingRunningDistanceAnchorKey = "health_walking_running_distance_anchor"
     private static let activeEnergyBurnedAnchorKey = "health_active_energy_burned_anchor"
     private static let restingEnergyBurnedAnchorKey = "health_resting_energy_burned_anchor"
+    private static let sleepAnalysisAnchorKey = "health_sleep_analysis_anchor"
 
     nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
 
@@ -40,6 +41,11 @@ nonisolated enum HealthSyncPreferences {
     static var restingEnergyBurnedAnchor: HKQueryAnchor? {
         get { anchor(forKey: restingEnergyBurnedAnchorKey) }
         set { setAnchor(newValue, forKey: restingEnergyBurnedAnchorKey) }
+    }
+
+    static var sleepAnalysisAnchor: HKQueryAnchor? {
+        get { anchor(forKey: sleepAnalysisAnchorKey) }
+        set { setAnchor(newValue, forKey: sleepAnalysisAnchorKey) }
     }
 
     private static func anchor(forKey key: String) -> HKQueryAnchor? {
@@ -80,6 +86,12 @@ nonisolated enum HealthReadProbe {
 
     static func hasReadableQuantitySample(for type: HKQuantityType) async -> Bool {
         let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: type)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
+
+        return (try? await descriptor.result(for: HealthAuthorizationManager.healthStore).isEmpty == false) ?? false
+    }
+
+    static func hasReadableCategorySample(for type: HKCategoryType) async -> Bool {
+        let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: type)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
 
         return (try? await descriptor.result(for: HealthAuthorizationManager.healthStore).isEmpty == false) ?? false
     }

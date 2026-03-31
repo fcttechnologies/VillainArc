@@ -1,5 +1,7 @@
 # Training Context Roadmap
 
+This is a forward-looking roadmap, not a description of current shipping behavior. Use the other documents in this folder for the current app architecture and runtime flows.
+
 This document is the working roadmap for the next layer of VillainArc's training intelligence. The goal is to add more context to workouts, suggestions, split behavior, and later session adaptation without losing the clean boundaries the app already has.
 
 This roadmap is intentionally phased. We want to ship each piece one by one without losing sight of the long-term system.
@@ -11,6 +13,7 @@ VillainArc already has strong output signals:
 - workout performance
 - completed sessions
 - weight history and goals
+- sleep
 - steps and energy
 - suggestion generation
 - suggestion outcome evaluation
@@ -22,7 +25,7 @@ The next major improvements should focus on explaining why performance changed a
 The current system already has several good boundaries:
 
 - `WorkoutSession` is the app-owned source of truth for what happened in a workout.
-- `HealthWorkout`, `WeightEntry`, `HealthStepsDistance`, and `HealthEnergy` are Health integration layers and caches.
+- `HealthWorkout`, `WeightEntry`, `HealthSleepNight`, `HealthStepsDistance`, and `HealthEnergy` are Health integration layers and caches.
 - `WeightGoal` already demonstrates a clean date-ranged historical model with one active goal at a time.
 - `SuggestionEvent` is a persisted coaching event with its own decision and later outcome lifecycle.
 - `PreWorkoutContext` is session-scoped context, not global user state.
@@ -39,81 +42,9 @@ We want to extend the system in a way that respects those boundaries instead of 
 - Only snapshot context when it is actually used for reasoning, so historical interpretation does not drift later.
 - Treat the absence of a non-normal condition as the default "training normally" state.
 
-## Phase 1: Sleep Sync
+Sleep sync now exists in the Health integration layer. Use `Documentation/HEALTHKIT_INTEGRATION.md` for the current sleep model and sync behavior. The roadmap below starts with the next layer to build on top of that foundation.
 
-Sleep is the next HealthKit integration to add.
-
-Why sleep comes first:
-
-- it is passive
-- it is high signal
-- it can improve coaching without heavy user input
-- it complements condition and readiness work later
-
-Recommended design:
-
-- use a hybrid approach:
-  - persist a lightweight nightly sleep summary in SwiftData
-  - load raw stage and interval detail on demand when the user opens sleep detail
-- do not store every raw HealthKit sleep sample in SwiftData
-- anchor each night to the wake date, not a simple midnight calendar day
-- rebuild whole affected nights when sleep samples change rather than trying to patch tiny fragments in place
-
-Recommended persisted model:
-
-- `HealthSleepNight`
-- one row per wake date
-- enough summary data to power cards, charts, and future coaching context without persisting raw stage intervals
-
-Recommended summary fields:
-
-- `wakeDate`
-- `sleepStart`
-- `sleepEnd`
-- `timeAsleep`
-- `timeInBed`
-- `awakeWhileInBed`
-- `remDuration`
-- `coreDuration`
-- `deepDuration`
-- `napDuration`
-- `hasStageBreakdown`
-- `sourceName`
-- `isAvailableInHealthKit`
-
-Derived values can stay computed:
-
-- sleep efficiency
-- bedtime and wake time display values
-- stage percentages
-- restorative sleep totals
-- primary sleep versus naps
-
-Recommended sync approach:
-
-- add sleep authorization using `sleepAnalysis`
-- create a dedicated `HealthSleepSync` service instead of forcing sleep into the existing daily metrics sync
-- use HealthKit sleep-analysis changes as the trigger, then rebuild affected wake dates from raw samples
-- track sleep sync state and coverage similarly to the other Health cache models
-
-Recommended grouping behavior:
-
-- identify one primary overnight sleep block for each wake date
-- accumulate sleep stages for that primary block when stage data is available
-- roll additional sleep on the same wake date into `napDuration`
-- if only older-style sleep data exists, still populate `timeAsleep` and `timeInBed` and mark `hasStageBreakdown = false`
-
-Recommended detail behavior:
-
-- add a `HealthSleepDetailLoader`
-- start from the cached `HealthSleepNight` summary for fast list and card rendering
-- fetch raw stage and interval detail only when the user opens a sleep detail view
-- build the timeline, stage segments, awakenings, and nap breakdown dynamically at that point
-- this should mirror the pattern used by the Health workout detail loader: cache summaries first, load richer detail only when needed
-
-Sleep will later become one of the contextual inputs for suggestions, outcome interpretation, and session adaptation.
-
-## Phase 2: Training Condition Periods
+## Phase 1: Training Condition Periods
 
 This is the main new cross-session context model.
 
@@ -189,7 +120,7 @@ Recommendation:
 - do not remove it just because `TrainingConditionPeriod` is added
 - if we ever rename it, `SessionStartContext` would be a better name than removing the concept
 
-## Phase 3: Split Scheduling Resolver
+## Phase 2: Split Scheduling Resolver
 
 Condition periods should improve split behavior, but they should not be shoved directly into `WorkoutSplit`.
 
@@ -218,7 +149,7 @@ Desired split behavior:
 - home UI should communicate pause state clearly
 - intents and navigation should use the same resolved behavior
 
-## Phase 4: Session Adjustment / Session Override System
+## Phase 3: Session Adjustment / Session Override System
 
 Once the app understands condition periods, the next major system is temporary workout adaptation.
 
@@ -301,19 +232,17 @@ Likely future additions:
   - examples: `strength`, `hypertrophy`, `maintain`, `cut`, `returnFromInjury`, `deload`
 - `DailyReadinessEntry`
   - examples: soreness, stress, fatigue
-- more Health daily caches
-  - sleep
+- more Health context caches
   - resting heart rate
   - HRV
 
 ## Recommended Working Order
 
-1. Add sleep sync.
-2. Add `TrainingConditionPeriod`.
-3. Add a split/context resolver layer.
-4. Add session adjustments / session overrides.
-5. Start feeding context into suggestion generation and outcome resolution.
-6. Later add training phase and readiness models if needed.
+1. Add `TrainingConditionPeriod`.
+2. Add a split/context resolver layer.
+3. Add session adjustments / session overrides.
+4. Start feeding context into suggestion generation and outcome resolution.
+5. Later add training phase and readiness models if needed.
 
 ## Final Product Direction
 

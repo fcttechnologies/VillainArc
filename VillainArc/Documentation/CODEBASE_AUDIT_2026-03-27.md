@@ -1,5 +1,7 @@
 # VillainArc Codebase Audit
 
+This is a dated audit snapshot from 2026-03-27. It is a historical planning artifact, not the current architecture guide. For current behavior, read `PROJECT_GUIDE.md` and the flow documents in this folder.
+
 Date: 2026-03-27
 
 This audit captures verified issues and improvement opportunities across documentation, accessibility, localization, and modularity. It is written as a planning artifact, not as a changelog.

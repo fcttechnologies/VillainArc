@@ -1,6 +1,6 @@
 # Exercise History Flow
 
-This document explains the exercise-history side of the app: when VillainArc rebuilds cached exercise analytics, how that cache powers exercise-facing screens, and where the app still reads raw performed data directly.
+This document explains how VillainArc maintains cached exercise analytics and how that cache is used across the app.
 
 ## Main Files
 
@@ -17,118 +17,99 @@ This document explains the exercise-history side of the app: when VillainArc reb
 
 ## Core Idea
 
-VillainArc separates two kinds of exercise data:
+VillainArc separates:
 
 - raw workout data in `ExercisePerformance` and `SetPerformance`
-- cached analytics in `ExerciseHistory`
+- cached per-exercise analytics in `ExerciseHistory`
 
 `ExerciseHistory` is the read-optimized layer used for:
 
 - completed-workout recency
 - totals and PR-style aggregates
-- progression chart points
+- chart points
 - exercise Spotlight eligibility
 
-It is not updated live while the user is logging sets. It is rebuilt at workout completion and deletion transition points.
+It is rebuilt at transition points. It is not updated live while the user is still logging sets.
 
-## When Histories Update
+## When Histories Rebuild
 
-### Completion Path
+### Completed Workout Finalization
 
 The main rebuild point is `WorkoutSummaryView.finishSummary()`.
 
-The sequence is:
+That flow:
 
-1. defer still-pending current-session suggestions
-2. clear active-only prescription links if needed
-3. call `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(...)`
-4. mark the workout `.done`
-5. save, Spotlight-index, and dismiss
+1. finalizes current-session suggestion state
+2. cleans up active-only prescription links
+3. calls `ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(...)`
+4. marks the workout `.done`
+5. saves and dismisses
 
-So the rule is:
+Important detail:
 
-- exercise history updates when summary is finalized
-- not while the user is still logging the workout
+- the rebuild includes the current summary workout even before the workout is marked `.done`
 
-### Deletion Path
+That lets the cache reflect the just-finished workout immediately.
+
+### Workout Deletion / Hiding
 
 Completed workout deletion flows through `WorkoutDeletionCoordinator`.
 
-When a completed workout is deleted, the app:
+That path:
 
 - removes the workout from Spotlight
-- either hides it (`isHidden = true`) or hard-deletes it based on `AppSettings.retainPerformancesForLearning`
+- hides or deletes the workout depending on retention settings
 - deletes related suggestion-learning artifacts when hard-deleting
-- collects the affected exercise `catalogID`s
-- rebuilds histories for those affected exercises through `updateHistoriesForDeletedCatalogIDs(...)`
+- collects affected exercise `catalogID`s
+- rebuilds or removes `ExerciseHistory` rows for those exercises
 
-If the user later disables `Retain for Improved Accuracy`, previously hidden workouts are purged through the same deletion pipeline.
-
-### Manual Repair Path
-
-`ExerciseHistoryUpdater.updateHistory(for:)` still exists as a focused repair helper, but there is currently no dedicated "Refresh History" action exposed in `ExerciseDetailView`.
+If the user later disables `Retain for Improved Accuracy`, the app purges previously hidden workouts through the same deletion pipeline.
 
 ## What `ExerciseHistoryUpdater` Does
 
-`ExerciseHistoryUpdater` is a batch rebuild pipeline.
+For completed workouts, the updater:
 
-### For Completed Workouts
-
-`updateHistoriesForCompletedWorkout(_ session, context:)`:
-
-- collects the workout's `catalogID`s
-- batch-fetches completed performances for those exercises
-- explicitly includes the current workout even though it is still in `.summary`
-- batch-fetches existing `ExerciseHistory` rows
-- batch-fetches matching catalog `Exercise` rows
+- collects affected exercise `catalogID`s
+- batch-fetches matching completed performances
+- batch-fetches existing history rows
+- batch-fetches matching catalog exercises
 - rebuilds each affected history from scratch
-- reindexes those exercises in Spotlight
+- updates Spotlight for those exercises
 
-The "include the current summary workout" behavior matters. History needs to see the just-finished session before the workout is marked `.done`.
+For deleted/hidden workouts, the updater:
 
-### For Deleted or Hidden Workouts
+- assumes the target workout is already hidden or deleted
+- fetches remaining completed performances
+- recalculates surviving histories
+- deletes history rows that no longer have completed data
+- updates Spotlight accordingly
 
-`updateHistoriesForDeletedCatalogIDs(...)`:
-
-- assumes the workout has already been hidden or deleted
-- fetches the remaining completed performances for the affected exercises
-- recalculates histories that still have data
-- deletes histories that no longer have any completed performances
-- removes or updates exercise Spotlight entries accordingly
-
-## The `ExerciseHistory` Model
+## The `ExerciseHistory` Cache
 
 `ExerciseHistory` stores one row per exercise `catalogID`.
 
 The cache includes:
 
 - `lastCompletedAt`
-- `totalSessions`
-- `totalCompletedSets`
-- `totalCompletedReps`
-- `cumulativeVolume`
-- `latestEstimated1RM`
-- `bestEstimated1RM`
-- `bestWeight`
-- `bestVolume`
-- `bestReps`
+- total sessions
+- total sets and reps
+- cumulative volume
+- latest and best estimated 1RM
+- best weight
+- best volume
+- best reps
 - `progressionPoints`
 
-The key method is `recalculate(using performances:)`.
+The cache is recalculated from scratch from completed performances. That avoids drift from trying to incrementally patch derived stats.
 
-It:
+Important detail:
 
-- resets to empty if no performances exist
-- groups performances by workout session
-- collapses multiple same-exercise entries from one workout into one session summary
-- recalculates totals and PR values from scratch
-- stores progression points for all completed sessions
-
-That grouping behavior matters because one workout can contain more than one `ExercisePerformance` for the same `catalogID`.
+- one workout can contain multiple `ExercisePerformance` rows for the same exercise
+- the cache groups those by workout so session-level totals stay correct
 
 ## `ProgressionPoint`
 
-`ProgressionPoint` is the chart point model used by `ExerciseDetailView`.
+`ProgressionPoint` is the chart-point model used by `ExerciseDetailView`.
 
 Each point stores:
 
@@ -138,118 +119,68 @@ Each point stores:
 - volume
 - estimated 1RM
 
-Charts read these cached points directly rather than rebuilding series from raw performances on every view load.
+The detail charts read these cached points directly instead of rebuilding chart series from raw performed data on every view load.
 
-## Exercise Surfaces
+## User-Facing Surfaces
 
-### Home Section
+### Home Recent Exercises
 
-`RecentExercisesSectionView` is the home recent-exercises card.
+`RecentExercisesSectionView` uses:
 
-It is driven by:
-
-- `ExerciseHistory.recentCompleted(limit: 3)`
+- `ExerciseHistory`
 - `ExerciseHistoryOrdering`
-- fetched catalog `Exercise` rows for those recent history IDs
+- matching catalog `Exercise` rows
 
-It does not use picker recency such as `Exercise.lastAddedAt`.
+This surface is based on completed-workout recency, not picker recency.
 
 ### Exercises List
 
 `ExercisesListView` combines:
 
-- all catalog `Exercise` rows
-- recent `ExerciseHistory` rows
-- `ExerciseHistoryOrdering`
-- search helpers
+- catalog identity and search metadata from `Exercise`
+- completed-workout recency from `ExerciseHistory`
 
-Important behavior:
-
-- default ordering is based on completed-workout recency from `ExerciseHistory`
-- search still runs against catalog/search metadata from `Exercise`
-- favorites are stored on `Exercise`
-
-So the list is a blend of:
-
-- catalog identity and searchability from `Exercise`
-- workout-based recency from `ExerciseHistory`
+That is why favorites, search, and workout-based recency can all coexist in one list.
 
 ### Exercise Detail
 
-`ExerciseDetailView` is the cached analytics screen for one exercise.
+`ExerciseDetailView` is the cached analytics screen.
 
 It reads:
 
-- `Exercise.withCatalogID(...)`
-- `ExerciseHistory.forCatalogID(...)`
+- the catalog exercise
+- its `ExerciseHistory` row
 
-It uses the cached history for:
+It uses the cache for:
 
-- total sessions
-- total sets and reps
-- cumulative volume
-- best reps
-- best weight
-- latest estimated 1RM
-- best volume
-- progression chart data
-
-The chart UI switches between cached metric series such as:
-
-- estimated 1RM
-- top weight
-- total volume
-- total reps
-
-It does not query raw performances for its main stat cards or chart series.
+- stat cards
+- progression chart series
+- PR-style aggregates
 
 ### Exercise History View
 
 `ExerciseHistoryView` is the raw-performance drill-down.
 
-It queries matching completed `ExercisePerformance` rows and renders literal performed set data such as:
+It queries completed `ExercisePerformance` rows directly and shows literal performed set data.
 
-- set type
-- reps
-- load
-- effective rest
-- visible RPE
-- notes
-
-So the split is intentional:
+That split is intentional:
 
 - `ExerciseDetailView` = cached analytics
-- `ExerciseHistoryView` = raw historical performances
+- `ExerciseHistoryView` = raw historical data
 
 ## PR Detection
 
-`WorkoutSummaryView` calculates PRs against the previous cached history before the rebuild happens.
+`WorkoutSummaryView` checks PRs against the previous cached history before rebuilding the cache.
 
-That is why PR detection still works correctly:
+That order matters. If the app rebuilt history first, the just-finished workout would be compared against itself.
 
-- compare the just-finished workout to the old cache first
-- then rebuild the cache during final summary save
+## Spotlight Eligibility
 
-If the app rebuilt history first, the workout would be comparing against itself.
-
-## Spotlight and Eligibility
-
-Exercise Spotlight indexing is history-backed, not catalog-backed.
+Exercise Spotlight indexing is history-backed.
 
 That means:
 
-- when an exercise has completed history, it can be indexed
-- when its last completed performance disappears, the `ExerciseHistory` row is deleted and Spotlight removes the exercise
+- an exercise can be indexed when it has completed history
+- if its last completed performance disappears, the history row is removed and Spotlight eligibility disappears with it
 
-The catalog `Exercise` row still exists. Only its history-backed Spotlight eligibility changes.
-
-## Recency Rules
-
-VillainArc uses two different recency concepts:
-
-- `Exercise.lastAddedAt`
-  - picker/add-replace recency
-- `ExerciseHistory.lastCompletedAt`
-  - completed-workout recency
-
-User-facing ordering in the home card and exercises list uses completed-workout recency through `ExerciseHistory`.
+The catalog `Exercise` row still exists; only the history-backed indexing changes.

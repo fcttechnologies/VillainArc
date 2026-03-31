@@ -1,222 +1,70 @@
 # HealthKit Integration
 
-This document explains the current Apple Health integration in VillainArc: how Health access is requested over time, how workout and body-mass data are exported and synced, how daily step/distance and energy aggregates are mirrored, how the Health tab gets its data, how Health workouts appear in history, how workout detail loads richer metrics, and what happens when Health data disappears from Apple Health.
+This document explains VillainArc’s Apple Health integration: what the app reads and writes, how sync works, how local Health caches are modeled, how Health-backed goals and notifications fit in, and where the platform boundaries still matter.
 
 ## Main Files
 
 - `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
 - `Data/Models/Health/HealthKitCatalog.swift`
+- `Data/Models/Health/HealthSleepNight.swift`
 - `Data/Services/HealthKit/HealthMirrorSupport.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthPreferences.swift`
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
+- `Data/Services/HealthKit/Sync/HealthSleepSync.swift`
+- `Data/Services/HealthKit/Sync/StepsGoalEvaluator.swift`
 - `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
+- `Data/Services/App/NotificationCoordinator.swift`
 - `Root/VillainArcApp.swift`
 - `Root/RootView.swift`
-- `Data/Models/Health/HealthWorkout.swift`
-- `Data/Models/Health/WeightEntry.swift`
-- `Data/Models/Health/HealthStepsDistance.swift`
-- `Data/Models/Health/HealthEnergy.swift`
-- `Data/Models/Health/HealthSyncState.swift`
-- `Data/Models/Health/WeightGoal.swift`
-- `Data/Models/Sessions/WorkoutSession.swift`
-- `Views/Tabs/Health/HealthTabView.swift`
-- `Views/Health/Weight/WeightHistoryView.swift`
-- `Views/Health/Steps/StepsDistanceHistoryView.swift`
-- `Views/Health/Energy/HealthEnergyHistoryView.swift`
-- `Views/Health/PeriodComparisonHighlightCard.swift`
-- `Helpers/Health/TimeSeriesCharting.swift`
-- `Helpers/Health/WeekdayAverages.swift`
-- `Helpers/Health/PeriodComparisonHighlights.swift`
-- `Views/Workout/History/WorkoutsListView.swift`
-- `Views/Workout/HealthWorkoutDetailView.swift`
-- `Views/Settings/AppSettingsView.swift`
 
-## Core Idea
+## Core Model Split
 
-VillainArc treats Apple Health as an integration layer, not the main source of truth for the app.
+VillainArc treats Apple Health as an integration layer, not the app’s main source of truth.
 
-The current split is:
+### App-Owned Models
 
-- workouts use an app-owned `WorkoutSession` plus a mirrored `HealthWorkout`
-- body mass uses a single local `WeightEntry` row that can be created locally, imported from Apple Health, or linked to both
-- daily steps and walking/running distance use `HealthStepsDistance` as a per-day aggregate cache
-- daily active and resting energy use `HealthEnergy` as a per-day aggregate cache
-- weight goals are local VillainArc state through `WeightGoal`, not Apple Health data
+- `WorkoutSession`
+  - the app’s real workout record
+- `WeightEntry`
+  - the app’s local weight history record, optionally linked to HealthKit
+- `WeightGoal`
+  - local weight-goal history
+- `StepsGoal`
+  - local steps-goal history
 
-That means:
+### Health Mirror / Cache Models
 
-- VillainArc-specific workout behavior stays on `WorkoutSession`
-- Apple Health workout identity and cached summary data stay on `HealthWorkout`
-- body-mass samples use `WeightEntry` as the local persistence layer for both app-entered and Health-synced weight history
-- daily step, distance, and energy reads are mirrored as per-day aggregate caches instead of raw HealthKit samples
-- richer workout Health details are loaded on demand instead of being copied into SwiftData
+- `HealthWorkout`
+  - mirrored Apple Health workout summary
+- `HealthSleepNight`
+  - one-row-per-wake-day sleep summary cache
+- `HealthStepsDistance`
+  - per-day steps and walking/running distance cache
+- `HealthEnergy`
+  - per-day active/resting energy cache
+- `HealthSyncState`
+  - synced-coverage record for the daily metric caches
 
-## Health Records
-
-### `WorkoutSession`
-
-`WorkoutSession` owns:
-
-- exercises and sets
-- notes and title
-- plan links
-- suggestion history
-- pre and post workout context
-- hidden state for app-side deletion
-
-It remains the record the app learns from and builds suggestions from.
-
-### `HealthWorkout`
-
-`HealthWorkout` is the persisted Apple Health workout mirror. It stores:
-
-- the HealthKit workout UUID
-- an optional linked `WorkoutSession`
-- start and end time
-- duration
-- activity type
-- indoor/outdoor state when available
-- cached average heart rate
-- cached maximum heart rate
-- active energy burned
-- resting energy burned
-- total distance
-- whether the workout still exists in HealthKit
-
-It is intentionally a summary/cache layer. It does not store route points, heart-rate samples, or other heavier detail data directly.
-
-### `WeightEntry`
-
-`WeightEntry` is the local body-mass record. It stores:
-
-- the measurement date
-- weight in kilograms
-- whether the entry has been exported to Apple Health
-- the linked Apple Health sample UUID when available
-- whether the linked sample still exists in HealthKit
-
-This model serves three cases:
-
-- a purely local entry that has not been exported yet
-- a locally created entry that has been linked to Apple Health
-- a Health-only body-mass sample imported into the app
-
-That is why body-mass sync does not use a separate mirror model the way workouts do.
-
-### `WeightGoal`
-
-`WeightGoal` is local app state used by the Health tab. It stores:
-
-- a stable local goal ID
-- goal type such as cut, bulk, or maintain
-- start and optional end date
-- target weight
-- optional target date
-- optional target pace per week
-- end reason when an active goal is replaced or finished
-
-Goals are used for chart filtering, goal summaries, goal history, and the local goal-completion flow. They are not used for HealthKit syncing.
-
-### `HealthStepsDistance`
-
-`HealthStepsDistance` is the local per-day steps and walking/running distance cache. It stores:
-
-- the start of the calendar day
-- total step count for that day
-- total walking/running distance in meters for that day
-
-This model is not a raw HealthKit sample mirror. It is a daily aggregate cache used by the Health tab cards and steps history surfaces.
-
-### `HealthEnergy`
-
-`HealthEnergy` is the local per-day energy cache. It stores:
-
-- the start of the calendar day
-- active energy burned
-- resting energy burned
-
-Total energy is derived from those two fields rather than stored separately.
-
-### `HealthSyncState`
-
-`HealthSyncState` is the singleton local-plus-CloudKit synced-coverage record for daily metric caches. It stores:
-
-- the synced date range for step count
-- the synced date range for walking/running distance
-- the synced date range for active energy burned
-- the synced date range for resting energy burned
-
-This model is separate from `HealthPreferences` because HealthKit anchors remain device-local, while synced coverage needs to survive reinstall and CloudKit import.
-
-## Health Permission Flow
-
-Health permission is optional from a product perspective and is not required to use the rest of the app.
-
-VillainArc can offer Apple Health access:
-
-- during new-user onboarding
-- after setup for returning users when the current type set still needs a request
-- later from settings
-
-### When the Prompt Appears
-
-VillainArc uses `authorizationAction()` to decide whether to offer Health access.
-
-`authorizationAction()` calls `healthStore.statusForAuthorizationRequest(toShare:read:)`:
-
-- `.shouldRequest` -> return `.requestAccess`
-- `.unnecessary` or `.unknown` -> route to a settings-oriented action instead
-
-This means:
-
-- if the user already crossed the system dialog boundary for the current type set, VillainArc does not need its own prompt-version flag
-- if new read or write types are added later, HealthKit can return `.shouldRequest` again and the prompt can surface automatically
-
-### New-User Onboarding Step
-
-During new-user onboarding, the Health step is embedded inside the profile flow and can be skipped. If the user connects, VillainArc also tries to prefill birthday, gender, and height for confirmation.
-
-### Returning-User Standalone Prompt
-
-For a returning user with an otherwise complete setup, onboarding can transition into the standalone Health-permission screen.
-
-Current behavior is important:
-
-- the standalone screen shows a connect button only
-- the app does not transition from that state to `.ready` until the user taps Connect
-- after the request call returns, VillainArc transitions to ready regardless of whether access was granted or denied
-
-So the integration itself remains optional, but the current returning-user prompt is a blocking launch step until the user taps through it once.
-
-### Settings Path
-
-`AppSettingsView` is the manual access-management path after onboarding.
-
-When the settings screen becomes active again, VillainArc:
-
-- refreshes authorization state
-- reinstalls any missing Health observers
-- refreshes background delivery registration
-- runs a Health sync pass
+That split keeps HealthKit from owning the app’s training logic while still letting the app reuse Health data everywhere it makes sense.
 
 ## What the App Requests
 
-VillainArc writes:
+### Writes
 
 - workouts
-- workout effort scores
+- workout effort score
 - active energy burned
 - resting energy burned
 - body mass
 
-VillainArc reads:
+### Reads
 
-- workouts
-- workout routes
+- workouts and workout routes
+- sleep analysis
 - date of birth
 - biological sex
 - height
@@ -228,375 +76,261 @@ VillainArc reads:
 - resting energy burned
 - respiratory rate
 - flights climbed
-- common distance metrics
-- swim stroke count
-- running metrics
-- cycling metrics
-- HealthKit effort-related workout metrics
+- additional workout-related quantity types used in the workout-detail loader
 
-The important design rules are:
+## Permission Flow
 
-- `HealthWorkout` stays small
-- `WeightEntry` stays a lightweight local history record
-- daily steps, distance, and energy stay in one-row-per-day aggregate caches
-- richer workout reads exist to support detail screens, not to keep inflating the persisted mirror
+VillainArc can request Health access:
 
-## Live Workout Flow
+- during new-user onboarding
+- during a returning-user standalone Health prompt if the current type set still needs a request
+- later from Settings
 
-VillainArc starts Apple Health workout collection while a local workout is actively being logged.
+The app relies on HealthKit’s authorization-request status instead of keeping its own “already prompted” flag.
 
-The main sequence is:
+Important nuance:
 
-1. a `WorkoutSession` enters `.active`
-2. if workout write authorization exists, `HealthLiveWorkoutSessionCoordinator` starts or recovers an `HKWorkoutSession` and `HKLiveWorkoutBuilder`
-3. the builder saves metadata including the local `WorkoutSession.id`
-4. HealthKit can collect live heart rate and energy-related workout data during the session
-5. when the local workout leaves active logging and moves to `.summary`, the coordinator stops the HealthKit session, ends collection, and finishes the workout
-6. if HealthKit returns the saved `HKWorkout`, the app inserts or updates a linked `HealthWorkout` immediately
+- write authorization state is directly visible through `authorizationStatus(for:)`
+- read availability is less explicit, so sync logic uses conservative anchor-advance rules rather than assuming every empty query result means reads are fully available
 
-So the primary workout Health path is:
+## Observer and Background Delivery Design
 
-- live during the `.active` workout phase
-- finalized when active logging ends, not when summary is dismissed
-- linked through metadata plus the saved workout UUID
-- able to recover an already-running Health session after app resume
+### Observer Installation
 
-## Workout Export and Reconciliation
+Observers are installed from the app delegate on process launch through `HealthStoreUpdateCoordinator.installObserversIfNeeded()`.
 
-The old post-completion export path still exists, but it is now mainly a repair path.
+That means:
 
-That fallback is used when:
+- observers are recreated on normal launches
+- observers are recreated on HealthKit background relaunches
 
-- a completed app workout still has `hasBeenExportedToHealth == false`
-- no matching Apple Health workout can be found by the stored `WorkoutSession.id` metadata
+### Observer Recovery
 
-So workout export is now:
+If an observer callback fails with HealthKit authorization-state errors such as:
 
-- reconciliation-aware
-- metadata-linked
-- mainly a repair path for older workouts, authorization changes, or failures near the end of live collection
+- `errorAuthorizationNotDetermined`
+- `errorAuthorizationDenied`
 
-The workout reconciliation pass:
+the app clears the stored observer reference for that type. A later ready/settings pass can then reinstall it.
 
-- looks for an already-saved Apple Health workout whose metadata contains the local `WorkoutSession.id`
-- relinks that Health workout back to the local session when found
-- falls back to the older export path only when no matching HealthKit workout exists
+### Background Delivery
 
-## Weight Export and Reconciliation
+Background delivery is enabled for Health types after the relevant request boundary has been crossed.
 
-`HealthExportCoordinator` also owns the body-mass export path for `WeightEntry`.
+The app refreshes background delivery registration:
 
-The reconciliation-oriented weight export sequence is:
+- after onboarding reaches ready
+- when returning from Health settings flows
 
-1. find entries that still need an Apple Health link or export
-2. first query Apple Health for an existing body-mass sample whose metadata contains the local `WeightEntry.id`
-3. if found, relink the local row instead of creating a duplicate
-4. otherwise save a new `.bodyMass` sample
-5. upsert the local `WeightEntry` with the linked sample UUID and availability state
+### Platform Boundary
 
-The reconciliation path is intentionally conservative. Direct export helpers are slightly looser, so the reconciliation pass is the safest way to think about normal body-mass syncing behavior.
+Observer-driven background sync is best-effort. It can be prompt, delayed, or skipped depending on system conditions. That is why the app also has a strong foreground recovery path via the ready/settings sync pass.
 
-## Sync Flow
+## Live Workout Path
 
-VillainArc mirrors both Apple Health workouts and Apple Health body-mass samples into local SwiftData.
+During a live workout, `HealthLiveWorkoutSessionCoordinator` can start or recover:
 
-### When Sync Runs
+- an `HKWorkoutSession`
+- an `HKLiveWorkoutBuilder`
 
-There are two different entry patterns:
+That live path:
 
-#### Ready / Manual / Settings Refresh
+- starts when the local workout is actively logging
+- stores the local `WorkoutSession.id` in Health metadata
+- ends when local logging moves to summary
+- tries to link the finished `HKWorkout` back into the local `HealthWorkout` mirror immediately
+
+This keeps the Apple Health workout closely tied to the app’s live workout runtime.
+
+## Export and Reconciliation
+
+### Workouts
+
+Workout export is mostly a repair path now.
+
+The normal order is:
+
+1. sync Health workouts first
+2. try to relink a matching Health workout by metadata
+3. only fall back to exporting a new one if no matching Health workout exists
+
+That minimizes duplicates and keeps the app aligned with the live-workout path.
+
+### Weight Entries
+
+Weight export follows the same idea:
+
+1. look for an existing Health sample linked by the local `WeightEntry.id`
+2. relink if found
+3. only save a new `.bodyMass` sample when needed
+
+## Health Sync Flow
 
 `HealthStoreUpdateCoordinator.syncNow()` runs:
 
-1. `HealthSyncCoordinator.shared.syncAll()` to mirror Health data first
-2. `HealthExportCoordinator.shared.reconcilePendingExports()` to repair local workout and weight exports afterward
+1. `HealthSyncCoordinator.syncAll()`
+2. `HealthExportCoordinator.reconcilePendingExports()`
 
-That order matters. Sync happens first so already-saved Health data can be relinked before fallback export tries to create anything.
+That order matters. Sync happens first so already-saved Health data can relink before fallback export tries to create anything.
 
-#### Observer-Triggered Updates
+### Workout and Weight Sync
 
-Observer callbacks run only their dedicated sync path:
+`HealthSyncCoordinator` owns:
 
-- workout observer -> `HealthSyncCoordinator.syncWorkouts()`
-- body-mass observer -> `HealthSyncCoordinator.syncWeightEntries()`
-- step observer -> `HealthDailyMetricsSync.syncSteps()`
-- walking/running distance observer -> `HealthDailyMetricsSync.syncWalkingRunningDistance()`
-- active-energy observer -> `HealthDailyMetricsSync.syncActiveEnergyBurned()`
-- resting-energy observer -> `HealthDailyMetricsSync.syncRestingEnergyBurned()`
+- workout sync
+- weight sync
+- top-level sequencing of sleep and daily-metric sync passes
 
-That observer path does not automatically perform export reconciliation afterward.
+Those paths:
 
-### Background Updates
+- use anchored queries
+- write through background `ModelContext`s
+- use rerun-on-burst behavior instead of dropping overlapping observer callbacks
+- only advance anchors when the query result or an allowed foreground probe provides enough evidence that reads are truly progressing
 
-`HealthStoreUpdateCoordinator.installObserversIfNeeded()` is called from `VillainArcApp` through the app delegate during launch so the observer queries are recreated on every process launch, including HealthKit background relaunches.
+### Daily Metric Sync
 
-`HealthStoreUpdateCoordinator` registers:
+`HealthDailyMetricsSync` owns:
 
-- an `HKObserverQuery` for workouts
-- an `HKObserverQuery` for body mass
-- an `HKObserverQuery` for step count
-- an `HKObserverQuery` for walking/running distance
-- an `HKObserverQuery` for active energy burned
-- an `HKObserverQuery` for resting energy burned
+- steps
+- walking/running distance
+- active energy
+- resting energy
 
-It also enables background delivery for each type once that type has crossed the request boundary. That registration is refreshed after onboarding reaches ready and from later settings-driven permission refreshes.
+The daily-metric design is:
 
-If an observer callback fails with `.errorAuthorizationNotDetermined` or `.errorAuthorizationDenied`, VillainArc clears the stored observer reference for that type. That lets a later ready or settings refresh recreate the observer cleanly instead of keeping a failed query around forever.
+- anchored queries act as change detectors
+- the changed samples are collapsed into affected days
+- the app reruns daily cumulative statistics queries for the affected range
+- one per-day cache row is updated per day, not one row per raw sample
 
-### How Sync Works
+The metrics are coalesced into two sync families:
 
-VillainArc uses separate Health sync paths for:
+- movement: steps + walking/running distance
+- energy: active + resting energy
 
-- workouts
-- body mass
-- daily aggregate metrics
+That reduces redundant work when related Health types update together.
 
-The anchors are stored in shared defaults:
+### Sleep Sync
 
-- `HealthSyncPreferences.workoutAnchor`
-- `HealthSyncPreferences.weightEntryAnchor`
-- `HealthSyncPreferences.stepCountAnchor`
-- `HealthSyncPreferences.walkingRunningDistanceAnchor`
-- `HealthSyncPreferences.activeEnergyBurnedAnchor`
-- `HealthSyncPreferences.restingEnergyBurnedAnchor`
+`HealthSleepSync` owns:
 
-Daily-metric synced coverage is stored separately in SwiftData through `HealthSyncState`, which lets reinstall or CloudKit-imported cache data preserve the known coverage range even though HealthKit anchors remain device-local.
+- sleep-analysis change detection
+- wake-day summary rebuilds
+- sleep anchor advancement
+- synced wake-day coverage
 
-### Anchor Advancement Guard
+The sleep design is:
 
-VillainArc no longer treats every empty anchored query result as proof that it is safe to move a HealthKit anchor forward.
+- one cached `HealthSleepNight` row per wake day
+- each row stores the overnight window, asleep/in-bed/awake totals, stage totals, nap total, and current availability in HealthKit
+- anchored queries detect additions and deletions on `sleepAnalysis`
+- changed samples collapse into affected wake days
+- the affected wake-day range is rebuilt from raw category samples
+- the primary overnight block is selected per wake day and other same-day sleep becomes `napDuration`
+- raw stage and interval detail stays in HealthKit for later detail loading
 
-The rule is:
+## Anchor Advancement Guard
 
-- if an anchored query returns added samples or deleted objects, the app advances the anchor immediately
-- if an anchored query is empty, the app runs a small read probe before deciding whether the anchor should move
-- if the probe also cannot prove that the type is readable, the app leaves both the anchor and the synced range unchanged
+The app does not blindly advance HealthKit anchors when a result is ambiguous.
 
-That protects the app from silently advancing anchors during ambiguous periods such as "the user tapped through the Health prompt but did not actually grant readable access yet."
+The current rule is:
 
-The probes differ by data type:
+- daily quantity metrics and sleep:
+  - additions or deletions advance the anchor
+  - empty results can use a lightweight one-sample probe
+- workouts and body mass:
+  - clearly external additions advance the anchor immediately
+  - deletions advance only when the local mirrored record proves the deleted sample was externally sourced
+  - empty results and app-owned-only changes stay ambiguous on observer-driven syncs
+  - the heavier workout/body-mass read probe runs only on the full foreground/manual sync path
 
-- daily quantity metrics use a one-sample `HKSampleQueryDescriptor` probe
-- workouts use a `known local mirrored workout count + 1` probe
-- body mass uses a `known local exported weight count + 1` probe
+This protects against moving anchors forward while Health reads may still be limited to VillainArc-written data only.
 
-For workouts and body mass, the count-based probe matters because HealthKit can still return app-owned samples even when broader read access is unavailable. Seeing more rows than the app could have created locally is the signal that reads are actually broader than "just our own data."
+## Health Goals and Notifications
 
-That gives the app this behavior:
+### Weight Goals
 
-- first sync with no anchor: backfill all matching workouts, body-mass samples, and raw samples for the daily metric categories
-- later syncs: only fetch changes since the last successful sync for each category
+`WeightGoal` is purely local app state.
 
-The workout sync pass:
+The app keeps one active weight goal at a time through app logic by ending/replacing the previous active goal when a new one is created. Goal completion can present a dedicated full-screen route through `AppRouter`.
 
-- imports returned `HKWorkout`s through the shared `HealthWorkoutMirrorImporter`
-- links rows back to `WorkoutSession` when workout metadata contains the saved local session ID
-- updates existing rows when found
-- inserts new rows when missing
+### Steps Goals
 
-The weight sync pass:
+`StepsGoal` is also purely local app state.
 
-- upserts returned `.bodyMass` samples into `WeightEntry`
-- first tries to match by Health sample UUID
-- otherwise tries to match by `WeightEntry.id` stored in Health metadata
-- marks app-owned entries only when the VillainArc weight-entry metadata key is present
-- keeps Health-imported samples non-exported while still linking them by Health UUID
-- inserts new local `WeightEntry` rows for Health-only samples when no local row exists
+Important conventions:
 
-That is what lets the Health tab show weight history even when the data originated in Apple Health instead of in VillainArc.
+- it is date-ranged by whole calendar day
+- the app keeps one active steps goal at a time through app logic
+- replacing a same-day goal deletes the same-day active goal and inserts the new one
+- replacing an older active goal ends it on the previous day and inserts the new goal for today
 
-The daily-metrics sync pass is different:
+`HealthStepsDistance` stores:
 
-- anchored queries are used as change detectors for step count, walking/running distance, active energy, and resting energy
-- steps and walking/running distance are coalesced into one movement-sync family
-- active and resting energy are coalesced into one energy-sync family
-- changed samples are collapsed into affected calendar days
-- the app then reruns daily cumulative statistics queries for the affected date range
-- `HealthStepsDistance` rows are updated only for steps/distance fields
-- `HealthEnergy` rows are updated only for active/resting energy fields
-- `HealthSyncState` stores the known synced coverage range for each daily metric category
-- when a metric pass gets an ambiguous empty result, the app does not advance that metric's anchor or synced range
-- zero-value daily aggregate rows are retained once a day is part of a refreshed range
-- coverage expands only when changed sample days or deletion-driven rebuilds require a wider refresh; the cache does not automatically materialize every day through today
-- deletion-driven refreshes can rebuild the already-synced coverage range for that metric because `HKDeletedObject` does not expose the deleted sample date
+- today’s step count
+- today’s goal target
+- whether the goal has been completed for that day
 
-This keeps the local Health tab caches compact: one row per refreshed day instead of one row per raw HealthKit sample.
+`StepsGoalEvaluator` updates those fields whenever:
 
-### Current Threading Model
+- daily step sync changes the day’s total
+- the current steps goal is changed
 
-The lifecycle split is now cleaner, and the Health pipeline no longer routes its sync or reconciliation work back through the main context by default:
+### Notification Behavior
 
-- observer callbacks now trigger plain `Task { ... }` work instead of hopping through `@MainActor`
-- `HealthSyncCoordinator` is an actor and creates a fresh `ModelContext(SharedModelContainer.container)` for workout and body-mass sync work
-- `HealthDailyMetricsSync` is also an actor and creates a fresh `ModelContext(SharedModelContainer.container)` for daily metric sync work
-- `HealthExportCoordinator` is now also an actor and creates a fresh `ModelContext(SharedModelContainer.container)` for export and reconciliation work
-- those background contexts use explicit saves rather than relying on the shared main context
+Steps-goal notifications are local notifications scheduled through `NotificationCoordinator`.
 
-The current architecture shape is:
+The behavior is:
 
-- keep observer installation and background-delivery registration where they are
-- keep the current actor-backed sync workers
-- keep export and reconciliation on the same background-context model
-- create fresh `ModelContext(SharedModelContainer.container)` instances for import and export work instead of always grabbing `mainContext`
-- keep per-category sync state and anchor updates serialized so background sync remains race-safe
-- route mirrored Health workout writes through one shared importer actor so live workout completion, observer sync, and export repair do not each mutate `HealthWorkout` independently
+- if notification delivery is allowed and the app observes the goal transition in time, schedule a local notification
+- if the app is active when the notification arrives, the notification delegate shows a toast instead of a system banner
+- if notifications are unavailable or disabled for that mode, fall back to a toast only when the app is active
 
-`syncNow()` now dedupes the full ready/manual refresh pipeline rather than only the sync half:
+Rest timer notifications use the same coordinator and the same foreground-toast behavior.
 
-1. Health data sync through `HealthSyncCoordinator`
-2. export/relink reconciliation through `HealthExportCoordinator`
+Important limitation:
 
-That means overlapping manual or ready-state refresh requests now await the same in-flight pipeline instead of rerunning reconciliation separately.
+- goal-completion notifications depend on the app actually getting a Health update in time
+- if the Health observer wake is delayed until foreground, the notification will also be delayed until foreground
 
-## Deletions From Apple Health
+## Removed Data and Retention
 
-When Apple Health deletes a workout or body-mass sample, VillainArc handles it in two stages:
+When Apple Health deletes a workout, body-mass sample, or all backing samples for a cached sleep night, the app can either:
 
-1. sync marks the linked local row unavailable in HealthKit or deletes it immediately
-2. the app retention setting decides whether the local copy should remain
+- retain the local record but mark it unavailable in HealthKit
+- or delete it from local storage
 
-That keeps the decision separate:
+That is controlled by `AppSettings.keepRemovedHealthData`.
 
-- HealthKit says the source data disappeared
-- the app decides whether VillainArc should retain the local mirror/cache
+## History and Detail Surfaces
 
-### Retention Setting Behavior
+### Sleep Summary
 
-VillainArc has a single retention setting for removed Apple Health data:
+The Health tab’s sleep surface is summary-first.
 
-- `AppSettings.keepRemovedHealthData`
+That means:
 
-When it is on:
+- the section card reads cached `HealthSleepNight` rows only
+- the card does not run a raw HealthKit detail query on open
+- retained-but-no-longer-available nights can stay visible in cached summary form
+- detailed sleep stages, awake fragments, naps, and sleeping heart-rate range are still a later detail surface
 
-- removed `HealthWorkout` rows stay in the local mirror
-- removed linked `WeightEntry` rows stay in local history
-- `isAvailableInHealthKit` becomes `false`
+### Workout History
 
-When it is off:
-
-- workouts removed from Apple Health are deleted from the local mirror
-- linked weight entries whose Health samples were removed are deleted from local storage
-- already-retained unavailable rows are cleaned up when the setting is turned off
-
-## Merged Workout History
-
-Workout history is now a merged list, not a `WorkoutSession`-only list.
-
-`WorkoutsListView` combines:
+`WorkoutsListView` merges:
 
 - visible completed `WorkoutSession`s
 - mirrored `HealthWorkout`s
 
-The merge rule is:
+It only shows a `HealthWorkout` row when that Health workout is not already represented by a visible linked `WorkoutSession`.
 
-- always show visible app workouts
-- only show a `HealthWorkout` row when it is not already represented by a visible linked `WorkoutSession`
+### Health Workout Detail
 
-That prevents duplicates for exported VillainArc workouts while still letting imported or retained Apple Health workouts appear in the same history surface.
+`HealthWorkoutDetailLoader` starts from the cached `HealthWorkout` summary and then tries to load richer live HealthKit detail on demand.
 
-## Health Tab
+That means:
 
-The Health tab now combines weight, steps, energy, and Apple Health workout history.
-
-### Tab Root
-
-`HealthTabView` shows:
-
-- `WeightSectionCard`
-- `HealthStepsSectionCard`
-- `HealthEnergySectionCard`
-
-Those cards summarize:
-
-- the latest recorded weight plus a recent sparkline
-- today's steps plus a recent steps bar chart
-- today's total and active energy plus a recent stacked energy bar chart
-
-### Weight History
-
-`WeightHistoryView` expands that into:
-
-- charted weight history
-- cached range filters for `W / M / 6M / Y / All`
-- active goal summary
-- app-level goal completion presentation when a new weight entry qualifies or a user manually completes a goal
-- links to all entries and goal history
-
-`StepsDistanceHistoryView` expands the steps card into:
-
-- grouped steps history using the shared time-series layout
-- monthly and yearly comparison highlight cards based on current-period versus prior-period daily averages
-- distance summary for the currently displayed or selected span
-- cached range filters for `W / M / 6M / Y / All`
-- aggregate metadata such as average, high, and total values for the visible span
-
-`HealthEnergyHistoryView` expands the energy card into:
-
-- grouped total-energy history with active-energy overlays
-- monthly and yearly comparison highlight cards based on current-period versus prior-period daily averages
-- cached range filters for `W / M / 6M / Y / All`
-- aggregate metadata such as average total and average active energy for the visible span
-
-### Weight Goals
-
-`WeightGoal` powers:
-
-- the active goal summary in weight history
-- reusable goal mini charts in the active card and goal history
-- the goal history list
-- the full-screen goal completion flow
-
-Creating a new goal automatically ends the previous active goal with a replacement end reason.
-
-## Health Workout Detail Flow
-
-Health workout detail is loaded on demand.
-
-The app does not keep expanding `HealthWorkout` just to support richer workout screens.
-
-### Loader Behavior
-
-The detail loader starts from the cached `HealthWorkout`, then decides whether it can load live HealthKit details.
-
-The sequence is:
-
-1. use the cached `HealthWorkout` summary as the baseline
-2. if the row is already marked unavailable in HealthKit, stay in cached-summary mode
-3. otherwise fetch the real `HKWorkout` by the stored HealthKit UUID
-4. if that workout still exists, load richer HealthKit data from it
-5. if it no longer exists, fall back to cached summary only
-
-### What the Detail Screen Can Show
-
-The detail screen always starts with cached or live summary data such as:
-
-- duration
-- calories
-- distance
-- activity type
-- cached or live average / maximum heart rate when available
-
-Then it conditionally adds richer sections when the live workout provides data, including:
-
-- effort summary
-- heart-rate stats and chart
-- heart-rate zones
-- route map
-- split summaries when distance data supports them
-- per-activity breakdowns
-- other metric cards that can be derived from HealthKit statistics
-
-The key rule is:
-
-- the detail screen is modular
-- if a metric is missing, that section simply does not appear
-
-## Cached-Only Workout Detail Behavior
-
-If a `HealthWorkout` is retained locally but no longer exists in Apple Health:
-
-- the detail screen still opens
-- cached summary values still render
-- richer live Health sections do not render
-
-That is how retained removed workouts stay useful without pretending the live Health workout still exists.
+- the cached summary is always the fast baseline
+- route/heart-rate/split detail is loaded only when the user opens workout detail
+- retained-but-no-longer-available Health workouts still have a useful cached-only detail mode

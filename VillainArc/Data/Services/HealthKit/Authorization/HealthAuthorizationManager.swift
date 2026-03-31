@@ -115,6 +115,11 @@ nonisolated enum HealthAuthorizationManager {
         return healthStore.authorizationStatus(for: HealthKitCatalog.restingEnergyBurnedType) != .notDetermined
     }
 
+    static var hasRequestedSleepAnalysisAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.sleepAnalysisType) != .notDetermined
+    }
+
     static func authorizationAction() async -> HealthAuthorizationAction {
         let state = currentAuthorizationState
         guard state != .unavailable else { return .unavailable }
@@ -168,6 +173,7 @@ nonisolated enum HealthAuthorizationManager {
             HealthKitCatalog.workoutRoute,
             HealthKitCatalog.dateOfBirthCharacteristic,
             HealthKitCatalog.biologicalSexCharacteristic,
+            HealthKitCatalog.sleepAnalysisType,
             HealthKitCatalog.stepCountType,
             HealthKitCatalog.heartRateType,
             HealthKitCatalog.activeEnergyBurnedType,

@@ -26,6 +26,9 @@
         }
       }
     },
+    "%@ asleep" : {
+
+    },
     "%@ beats per minute" : {
 
     },
@@ -423,6 +426,9 @@
 
     },
     "Arnold Split" : {
+
+    },
+    "Asleep" : {
 
     },
     "Assistance" : {
@@ -1187,6 +1193,9 @@
     "Latest entry %@" : {
 
     },
+    "Latest sleep summary %@" : {
+
+    },
     "Latest steps entry %@. %@ steps. Recent entries chart." : {
       "localizations" : {
         "en" : {
@@ -1898,6 +1907,9 @@
     "Rear Delt" : {
 
     },
+    "Recent entries chart" : {
+
+    },
     "Recent workout" : {
 
     },
@@ -2414,6 +2426,9 @@
     "Shows your current Apple Health workout stats." : {
 
     },
+    "Shows your latest synced sleep summary." : {
+
+    },
     "Shows your most recent completed workout." : {
 
     },
@@ -2445,6 +2460,12 @@
 
     },
     "Skips recording effort and continues to summary." : {
+
+    },
+    "Sleep" : {
+
+    },
+    "Sleep. Update Apple Health permissions so your sleep summaries appear here." : {
 
     },
     "Smith Machine" : {
@@ -2726,6 +2747,9 @@
     "Time" : {
 
     },
+    "Time Asleep" : {
+
+    },
     "Timer duration" : {
 
     },
@@ -2898,6 +2922,9 @@
 
     },
     "Waiting for Apple Health data." : {
+
+    },
+    "Wake Day" : {
 
     },
     "Want to update rest timer to reflect the new set rest time?" : {

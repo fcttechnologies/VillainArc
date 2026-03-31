@@ -5,6 +5,7 @@ nonisolated enum HealthKitCatalog {
     static let workoutRoute = HKSeriesType.workoutRoute()
     static let dateOfBirthCharacteristic = HKCharacteristicType(.dateOfBirth)
     static let biologicalSexCharacteristic = HKCharacteristicType(.biologicalSex)
+    static let sleepAnalysisType = HKCategoryType(.sleepAnalysis)
 
     static let workoutEffortScoreType = HKQuantityType(.workoutEffortScore)
     static let estimatedWorkoutEffortScoreType = HKQuantityType(.estimatedWorkoutEffortScore)

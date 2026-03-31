@@ -1,107 +1,41 @@
 # VillainArc Project Guide
 
-This file is the high-level product walkthrough for the app. It explains what the major product areas are and how they fit together. For the file-level structure map, read `Documentation/ARCHITECTURE.md`.
+This is the product-level overview for VillainArc. Read this first to understand what the app is, how the main areas fit together, and which conventions show up everywhere else in the codebase. Then read the specific flow docs for the area you want to work on.
+
+Use these docs in this order:
+
+1. `Documentation/PROJECT_GUIDE.md`
+2. `Documentation/ARCHITECTURE.md`
+3. the specific flow docs for the feature you want to change
 
 ## What VillainArc Is
 
-VillainArc is a SwiftUI + SwiftData strength-training app centered around:
+VillainArc is a SwiftUI + SwiftData strength-training app built around:
 
-- first-run setup and optional cloud sync
+- resumable workout logging
 - reusable workout plans
 - weekly or rotating workout splits
-- live workout logging
 - plan suggestions and later outcome evaluation
 - cached exercise analytics
-- Apple Health integration for workouts, body mass, daily steps and distance, and daily energy
-- Shortcuts, Spotlight, widgets, and Live Activities built on the same app state
+- Apple Health integration for workouts, weight, sleep, daily steps, daily distance, and daily energy
+- Shortcuts, Spotlight, widgets, and Live Activities that reuse the same app state
 
 The main product areas are:
 
 - onboarding and readiness
 - home navigation and active-flow routing
 - workout sessions
-- workout plans
+- workout plans and plan editing
 - workout splits
 - suggestions and outcomes
 - exercise analytics
-- health history and goals
+- health history, goals, and notifications
 
-## Launch and Readiness
+## App-Wide Conventions
 
-The launch path is:
+These rules are important because they shape most of the codebase.
 
-1. `VillainArcApp` installs the shared model container and forwards Spotlight/Siri handoffs.
-2. `RootView` starts `OnboardingManager`, cleans up abandoned plan-edit copies, and refreshes shortcut parameters.
-3. `OnboardingManager` decides whether the app is doing first bootstrap or a returning launch.
-4. Only after onboarding reaches `.ready` does `RootView`:
-   - ask `AppRouter` to resume unfinished work
-   - reinstall any missing Health observer queries
-   - refresh Health background delivery registration
-   - run the full Health refresh and export-reconciliation pass
-
-That ordering matters. VillainArc does not resume persisted incomplete workouts or plans before setup is in a valid state.
-
-### First Bootstrap
-
-On the first launch, VillainArc takes the full setup path:
-
-- check connectivity
-- check iCloud sign-in state
-- check CloudKit availability
-- wait for CloudKit import completion
-- seed or sync the bundled exercise catalog
-- reindex Spotlight
-- ensure `AppSettings` and `UserProfile` exist
-- route into profile onboarding, where new users always see the Apple Health step right after the name step
-- let the user either connect Apple Health there or choose `Not Now`, which postpones the request until after the required profile fields are done
-
-The wait-before-seed rule prevents duplicate built-in exercises if older cloud data is still importing.
-
-### Returning Launch
-
-Once the catalog bootstrap marker exists, launch takes the faster path:
-
-- ensure `AppSettings`
-- ensure `UserProfile`
-- route into missing profile steps if needed
-- otherwise sync the bundled catalog only if its version changed
-- if the current Health type set still needs a request, transition into the standalone Health-permission screen
-- otherwise transition directly to `.ready`
-
-### Optional Apple Health Step
-
-Apple Health is not required for the app's long-term use, but the current launch flow does treat the standalone Health-permission prompt as part of readiness for any launch where the current type set still has not crossed the request boundary. VillainArc can offer Health access:
-
-- during onboarding for new users
-- after setup for returning users when the current type set still needs a prompt
-- later from Settings
-
-For new users, the onboarding Health step is built into the profile flow. Choosing `Not Now` only postpones the request; after the required profile fields are complete, onboarding still transitions into the standalone Health screen because the current type set has not been requested yet.
-For any launch that reaches the standalone Health screen, onboarding currently blocks the launch flow until the user taps `Connect to Apple Health` once, after which onboarding moves to `.ready` whether permission was granted or denied.
-
-Once the app is ready, the post-ready Health pass:
-
-- reinstalls any workout, body-mass, daily steps and distance, and daily energy observers that are currently missing
-- refreshes background delivery registration
-- syncs Health data into local mirrors and daily aggregate caches
-- reconciles pending local workout and weight exports
-
-## Foreground Navigation
-
-`ContentView` is the top-level foreground shell. It owns:
-
-- the `TabView`
-- the full-screen workout flow
-- the full-screen plan flow
-
-The per-tab navigation stacks live inside:
-
-- `HomeTabView`
-- `HealthTabView`
-
-`AppRouter` is the shared navigation and active-flow coordinator used by UI flows, intents, Spotlight, and Live Activities.
-
-### The Single Active Flow Rule
+### One Active Authoring Flow
 
 VillainArc allows only one active workout-or-plan flow at a time.
 
@@ -112,290 +46,195 @@ Starting a new workout or plan is blocked when any of these exist:
 - a persisted incomplete `WorkoutSession`
 - a persisted incomplete `WorkoutPlan`
 
-That keeps in-app actions, intents, and resume behavior aligned.
+This keeps UI flows, intents, Spotlight entry points, and resume behavior aligned.
 
-## Home Tab
+### Persist Real Drafts, Not Temporary State
 
-The home tab is the main dashboard for everyday app use.
+Incomplete workouts and new-plan drafts are persisted SwiftData records, not temporary view-only state.
 
-Its major sections are:
+That is why:
 
-- `WorkoutSplitSectionView`: today's split status and today's plan entry
-- `RecentWorkoutSectionView`: latest completed workout and workout-history entry
-- `RecentWorkoutPlanSectionView`: latest completed plan and all-plans entry
-- `RecentExercisesSectionView`: recent completed exercises from `ExerciseHistory`
+- unfinished workout sessions can resume
+- unfinished new-plan creation can resume
+- edit copies of existing plans can be cleaned up safely on launch
 
-The bottom-bar plus menu exposes the two main creation entry points:
+### Store Canonical Values, Present User Units
 
-- start an empty workout
-- create a workout plan
+Persisted load values are stored canonically in kilograms.
 
-The settings button lives in the home tab, not in the app root.
+The app converts to the user’s preferred display unit when editing or presenting data and converts back to canonical values before save. This keeps calculations and merges stable even when the user changes unit preferences later.
 
-## Workout Sessions
+The same general rule applies to Health caches:
 
-Workout sessions are the live logging side of the app.
+- distance is stored canonically in meters
+- energy and step values are stored as raw numeric totals for the day
 
-Normal entry paths are:
+### Goals Are Date-Ranged and Historical
 
-- start an empty workout from the home tab
-- start a workout from a plan
-- start today's workout from the active split
-- shortcut / intent / Siri entrypoints that route into the same logic
+Health goals are historical records, not mutable singleton flags.
 
-All of them go through `AppRouter`.
+Current goal patterns are:
 
-### Session States
+- `WeightGoal` uses start/end timestamps and allows only one active goal at a time through app logic
+- `StepsGoal` uses start/end calendar days and also keeps one active goal at a time through app logic
 
-The workout lifecycle is:
+Replacing a goal does not mutate the old goal into the new goal. The app ends or deletes the old active record and inserts a new one. That preserves history and keeps charts and summaries date-correct.
+
+### Singletons Are Explicit Models
+
+VillainArc keeps true singleton-style records in SwiftData:
+
+- `AppSettings`
+- `UserProfile`
+- `HealthSyncState`
+
+Startup code ensures they exist before the app treats launch as ready.
+
+### Apple Health Is an Integration Layer
+
+Apple Health is not the app’s primary source of truth.
+
+The split is:
+
+- `WorkoutSession` remains the app-owned training record
+- `HealthWorkout` is a local Apple Health mirror/cache
+- `WeightEntry` is the app’s local weight history model, which can also link to Apple Health samples
+- `HealthSleepNight` is a per-wake-day Apple Health sleep summary cache
+- `HealthStepsDistance` and `HealthEnergy` are per-day Health caches
+- `WeightGoal` and `StepsGoal` are local app models
+
+This keeps the app’s own domain logic independent from HealthKit while still letting Health data enrich the app.
+
+### Background Sync Is Opportunistic
+
+VillainArc installs Health observers and enables Health background delivery where available, but background updates are still best-effort. The app always needs a good foreground recovery path.
+
+That is why the ready/settings flow also:
+
+- reinstalls any missing observers
+- refreshes Health background delivery registration
+- runs a full Health sync and export reconciliation pass
+
+## Launch and Readiness
+
+The high-level launch path is:
+
+1. `VillainArcApp` installs the shared model container and forwards Spotlight/Siri handoffs.
+2. The app delegate reinstalls Health observers on process launch.
+3. `RootView` starts `OnboardingManager`, cleans up abandoned plan-edit copies, and refreshes shortcut parameters.
+4. `OnboardingManager` decides whether this is first bootstrap or a returning launch.
+5. Only after onboarding reaches `.ready` does `RootView`:
+   - ask `AppRouter` to resume unfinished work
+   - reinstall any missing Health observers
+   - refresh Health background delivery registration
+   - run the full Health sync plus export-reconciliation pass
+   - request local-notification permission if it has not been requested yet
+
+That ordering matters. VillainArc does not resume unfinished work before setup is valid.
+
+## First Bootstrap
+
+On the first launch, VillainArc takes the full setup path:
+
+- check connectivity
+- check iCloud sign-in state
+- check CloudKit availability
+- wait for CloudKit import completion
+- seed or sync the bundled exercise catalog
+- reindex Spotlight
+- ensure singleton records exist
+- route into profile onboarding
+
+The wait-before-seed rule prevents duplicate built-in exercises if older cloud data is still importing.
+
+## Returning Launch
+
+Once the exercise-catalog bootstrap marker exists, launch is faster:
+
+- ensure singleton records exist
+- route into missing profile steps if needed
+- sync the bundled exercise catalog only if its version changed
+- decide whether Health permissions still need to be requested
+- otherwise transition directly to `.ready`
+
+## Main Product Areas
+
+### Workout Sessions
+
+Workout sessions are the live logging flow. They move through:
 
 `pending -> active -> summary -> done`
 
-- `pending`: plan workout blocked on deferred/pending suggestions
-- `active`: live logging
-- `summary`: logging finished, summary screen still active
-- `done`: finalized completed record
+- `pending` is the pre-workout suggestion gate for plan-backed sessions
+- `active` is live logging
+- `summary` is the finished-but-not-finalized stage
+- `done` is the stable completed record
 
-`WorkoutSessionContainer` routes the UI by state.
+See:
 
-### Working Out
+- `Documentation/SESSION_LIFECYCLE_FLOW.md`
+- `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
 
-`WorkoutView` is the active logging surface. It owns:
+### Workout Plans
 
-- exercise paging
-- add/edit exercise actions
-- rest timer sheet
-- pre-workout context sheet
-- workout settings sheet
-- finish and cancel
-- live Apple Health sheet
+Workout plans are reusable prescriptions. New plans are persisted drafts. Existing completed plans are never edited in place; the app uses copy-merge editing.
 
-Shared runtime services during active logging are:
+See:
 
-- `RestTimerState`
-- `WorkoutActivityManager`
-- `HealthLiveWorkoutSessionCoordinator`
+- `Documentation/PLAN_EDITING_FLOW.md`
 
-### Finishing a Workout
+### Workout Splits
 
-Finish is split across two phases.
+Splits answer “what should I do today?” and can point to plans. The app supports weekly and rotation scheduling. Home surfaces use split state to show today’s plan or rest status.
 
-Phase 1 happens in `WorkoutView`:
+### Suggestions and Outcomes
 
-- resolve unfinished sets
-- optionally capture post-workout effort
-- prune empty work
-- move the session to `.summary`
-- convert set weights back to canonical kg
-- stop the live Health workout session
-- stop the rest timer
-- end the Live Activity
+Suggestions are persisted coaching events attached to plan structure. Users review them in summary, at the deferred pre-workout gate, or from the plan suggestions sheet. Outcomes are resolved later from future workouts.
 
-Phase 2 happens in `WorkoutSummaryView`:
+See:
 
-- show summary stats and notes
-- detect PRs
-- resolve older suggestion outcomes
-- generate new suggestions when the workout is plan-backed
-- optionally save the workout as a plan
-- rebuild `ExerciseHistory`
-- mark the session `.done`
-- Spotlight-index the finished workout
+- `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
 
-### Save As Plan
+### Exercise Analytics
 
-There are two different "save as plan" paths:
+Exercise analytics are cache-backed. `ExerciseHistory` stores derived per-exercise aggregates and progression points, while raw completed performances still back the detailed history drill-down.
 
-- from `WorkoutSummaryView`, a completed freeform workout can become a completed plan immediately
-- from completed workout detail, `AppRouter.createWorkoutPlan(from:)` opens an editable draft plan
+See:
 
-## Workout Plans
+- `Documentation/EXERCISE_HISTORY_FLOW.md`
 
-Workout plans are the reusable prescription layer of the app.
+### Health History and Goals
 
-Main surfaces:
+The Health tab combines:
 
-- `WorkoutPlanView`: create/edit flow
-- `WorkoutPlanDetailView`: read-only detail, favorite/start/edit/delete, suggestion-sheet entry
-- `WorkoutPlansListView`: all completed plans
-- `WorkoutPlanPickerView`: plan assignment for split days
+- a latest sleep summary card backed by cached nightly sleep
+- weight history and weight goals
+- daily steps and distance history plus steps goals
+- daily energy history
+- Apple Health workout history
 
-### Plan Creation
+Notification behavior is part of that surface:
 
-Plans can be created from:
+- rest timer completions
+- steps-goal completions when the app can observe the Health update in time
 
-- the home tab
-- a completed workout
-- split-day assignment flows
+See:
 
-New plans are persisted drafts, not temporary view state. That is why unfinished new-plan creation can resume later.
+- `Documentation/HEALTHKIT_INTEGRATION.md`
 
-### Editing Existing Plans
+## Where To Read Next
 
-Editing a completed plan always uses copy-merge:
+If you are changing:
 
-1. `AppRouter.editWorkoutPlan(_:)` creates a persisted editing copy.
-2. The copy is converted into the user's display weight unit.
-3. `WorkoutPlanView` edits the copy directly.
-4. Saving converts the copy back to canonical kg and merges it into the original plan.
-5. Canceling deletes the copy and leaves the original untouched.
-
-This gives the app one place to clean up unresolved suggestion state invalidated by manual edits.
-
-## Workout Splits
-
-Splits are the scheduling layer that answers "what should I do today?"
-
-The split system includes:
-
-- split creation in `SplitBuilderView`
-- split management in `WorkoutSplitView`
-- per-day editing in `WorkoutSplitDayView`
-- optional plan assignment through `WorkoutPlanPickerView`
-- today's split and today's plan surfaced on the home tab
-
-`WorkoutSplit` itself owns the scheduling logic:
-
-- weekly mode with missed-day recovery
-- rotation mode with current-position tracking
-- today's day resolution
-- today's plan resolution
-
-The same state also feeds intents, Spotlight, and widget surfaces.
-
-## Suggestions and Outcomes
-
-The suggestion system is the plan-feedback loop:
-
-- what the plan asked for
-- what happened in the workout
-- how the plan should change next
-
-### Before a Plan Workout
-
-If a plan still has pending or deferred suggestions:
-
-- `AppRouter.startWorkoutSession(from:)` creates the workout in `.pending`
-- `DeferredSuggestionsView` blocks active logging
-- accepting a suggestion mutates the plan and hydrates the already-created pending workout copy
-
-### After a Plan Workout
-
-`WorkoutSummaryView` handles plan-backed summary work in this order:
-
-1. resolve older pending outcomes
-2. generate new suggestions for the current workout
-3. show the new suggestions for accept / reject / defer
-
-Any current-session suggestion still left as `pending` becomes `deferred` when summary is finished.
-
-### Later Outcome Resolution
-
-Outcomes are multi-session, not single-session. `OutcomeResolver` can accumulate more than one `SuggestionEvaluation` before finalizing a result such as:
-
-- `good`
-- `tooAggressive`
-- `tooEasy`
-- `insufficient`
-- `ignored`
-
-### Plan-Level Suggestion Sheet
-
-`WorkoutPlanDetailView` can open `WorkoutPlanSuggestionsSheet`, which serves as the plan's suggestion-management surface:
-
-- `To Review`: pending or deferred suggestions
-- `Awaiting Outcome`: accepted suggestions whose outcomes are still unresolved
-
-For deeper suggestion behavior, read `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`.
-
-## Exercise Analytics
-
-VillainArc separates raw performed work from cached analytics.
-
-- Raw workout data lives in `ExercisePerformance` and `SetPerformance`.
-- Cached analytics live in `ExerciseHistory`.
-
-The cache powers:
-
-- recent exercise ordering on the home tab
-- exercise ordering in the exercise browser
-- stat cards in exercise detail
-- progression charts
-- exercise Spotlight eligibility
-
-`ExerciseHistoryUpdater` rebuilds the cache:
-
-- when a workout is finalized in summary
-- when completed workouts are hidden or deleted
-
-The intended split is:
-
-- `ExerciseDetailView` = cached analytics
-- `ExerciseHistoryView` = raw completed-performance drill-down
-
-## Health Tab and Apple Health
-
-The Health tab is the app's health-history surface.
-
-Current user-facing areas are:
-
-- weight summary on the tab root
-- steps summary on the tab root
-- energy summary on the tab root
-- detailed weight history with multiple time ranges
-- detailed steps history with multiple time ranges
-- detailed energy history with multiple time ranges
-- monthly and yearly comparison highlights for steps and energy history
-- active weight-goal summary and goal history
-- full-screen weight-goal completion flow for achieved or manually-ended goals
-- add-weight-entry flow
-- merged workout history that can include Apple Health workouts
-- on-demand Health workout detail
-
-Under the hood, VillainArc treats Apple Health as an integration layer:
-
-- `WorkoutSession` remains the app-owned workout source of truth
-- `HealthWorkout` is a local mirror/cache of Health workouts
-- `WeightEntry` is the single local body-mass record used for both app-created and Health-imported data
-- `HealthStepsDistance` is the per-day Apple Health cache for steps and walking/running distance
-- `HealthEnergy` is the per-day Apple Health cache for active and resting energy
-- `HealthSyncState` is the singleton synced-coverage record for daily metric caches
-- `WeightGoal` is local goal-tracking state for the Health tab
-
-The health surfaces also share a reusable time-series charting layer:
-
-- fixed `W / M / 6M / Y / All` ranges for weight history
-- fixed `W / M / 6M / Y / All` ranges for steps and energy history
-- adaptive grouping for long-range charts
-- reusable monthly and yearly comparison highlight cards for steps and energy
-- reusable goal mini charts in both the active goal card and goal history
-- app-level goal completion presentation triggered either from goal history or after a qualifying weight entry
-
-For the full design, read `Documentation/HEALTHKIT_INTEGRATION.md`.
-
-## Spotlight, Shortcuts, Widgets, and Live Activities
-
-These are not separate product areas; they reuse the same app state.
-
-### Spotlight
-
-`SpotlightIndexer` indexes:
-
-- completed workouts
-- completed plans
-- exercises that have completed history
-- workout splits
-
-The app re-enters from Spotlight through `AppRouter`.
-
-### App Intents and Shortcuts
-
-Intent entrypoints live under `Intents/` and generally reuse:
-
-- `SetupGuard`
-- `AppRouter`
-- the same models and services the UI uses
-
-### Widgets and Live Activities
-
-Widgets and the workout Live Activity project the active workout and timer state outside the app, but they still act on the same shared models and runtime services rather than creating a separate state layer.
+- launch, bootstrap, or readiness behavior:
+  - `Documentation/ONBOARDING_FLOW.md`
+- Health syncing, observers, or Health-backed UI:
+  - `Documentation/HEALTHKIT_INTEGRATION.md`
+- workout logging, finish flow, or resume behavior:
+  - `Documentation/SESSION_LIFECYCLE_FLOW.md`
+- plan authoring or edit-copy behavior:
+  - `Documentation/PLAN_EDITING_FLOW.md`
+- suggestions or outcome evaluation:
+  - `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
+- cached exercise analytics:
+  - `Documentation/EXERCISE_HISTORY_FLOW.md`

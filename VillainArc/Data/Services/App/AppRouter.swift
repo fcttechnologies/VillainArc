@@ -3,6 +3,8 @@ import SwiftData
 import SwiftUI
 
 @Observable final class AppRouter {
+    private static let selectedTabDefaultsKey = "selected_tab"
+
     struct WeightGoalCompletionRoute: Identifiable, Hashable {
         enum Trigger: String, Hashable {
             case achievedByEntry
@@ -29,7 +31,9 @@ import SwiftUI
     var showPreWorkoutContextFromIntent = false
     var showCancelWorkoutFromIntent = false
     var showFinishWorkoutFromIntent = false
-    var tabSelection: Tabs = .home
+    var tabSelection: Tabs = .home {
+        didSet { persistTabSelection(tabSelection) }
+    }
     enum Destination: Hashable {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
@@ -51,7 +55,7 @@ import SwiftUI
 
     var homeTabPath = NavigationPath()
     var healthTabPath = NavigationPath()
-    private init() {}
+    private init() { tabSelection = restoredTabSelection() }
     private var context: ModelContext { SharedModelContainer.container.mainContext }
 
     private func weightUnit() -> WeightUnit { (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs }
@@ -72,6 +76,18 @@ import SwiftUI
     }
 
     private func incompleteWorkoutSession() -> WorkoutSession? { try? context.fetch(WorkoutSession.incomplete).first }
+
+    private func restoredTabSelection() -> Tabs {
+        guard let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
+              let storedTab = Tabs(rawValue: storedRawValue)
+        else {
+            return .home
+        }
+
+        return storedTab
+    }
+
+    private func persistTabSelection(_ tab: Tabs) { SharedModelContainer.sharedDefaults.set(tab.rawValue, forKey: Self.selectedTabDefaultsKey) }
 
     func cancelWorkoutSession(_ workoutSession: WorkoutSession) {
         RestTimerState.shared.stop()

@@ -10,6 +10,8 @@ import SwiftData
     var activeEnergyBurnedSyncedRangeEnd: Date?
     var restingEnergyBurnedSyncedRangeStart: Date?
     var restingEnergyBurnedSyncedRangeEnd: Date?
+    var sleepWakeDaySyncedRangeStart: Date?
+    var sleepWakeDaySyncedRangeEnd: Date?
 
     init() {}
 
@@ -42,6 +44,14 @@ import SwiftData
         set {
             restingEnergyBurnedSyncedRangeStart = newValue?.lowerBound
             restingEnergyBurnedSyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var sleepWakeDaySyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: sleepWakeDaySyncedRangeStart, end: sleepWakeDaySyncedRangeEnd) }
+        set {
+            sleepWakeDaySyncedRangeStart = newValue?.lowerBound
+            sleepWakeDaySyncedRangeEnd = newValue?.upperBound
         }
     }
 

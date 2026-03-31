@@ -1,6 +1,6 @@
 import Foundation
 
-enum Tabs: Hashable {
+enum Tabs: String, Hashable {
     case home
     case health
 

@@ -1,6 +1,6 @@
 # Workout Session Lifecycle
 
-This document explains how workout sessions move through the app: where they start, how conflicting flows are blocked, how unfinished work resumes, what happens during live logging, and what changes when a session reaches summary.
+This document explains how workouts are created, resumed, logged, finalized, and canceled in VillainArc. It covers both empty workouts and plan-backed workouts.
 
 ## Main Files
 
@@ -12,77 +12,80 @@ This document explains how workout sessions move through the app: where they sta
 - `Views/Workout/WorkoutView.swift`
 - `Views/Workout/WorkoutSummaryView.swift`
 - `Views/Suggestions/DeferredSuggestionsView.swift`
-- `Views/Suggestions/SuggestionReviewView.swift`
 - `Data/Services/Workout/RestTimerState.swift`
 - `Data/LiveActivity/WorkoutActivityManager.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
 
 ## Session Model
 
-`WorkoutSession` is the root record for an in-progress or completed workout. It owns:
+`WorkoutSession` is the root workout record. It stores:
 
-- workout metadata such as title, notes, start/end dates, and hidden state
-- lifecycle state through `status`
+- workout metadata
+- lifecycle status
 - optional source `WorkoutPlan`
 - optional `PreWorkoutContext`
-- child `ExercisePerformance` rows and their `SetPerformance` rows
-- `activeExercise` for pager focus and Live Activity state
-- `postEffort`
-- suggestion events created from that workout
+- performed exercises and sets
+- active exercise focus
+- post-workout effort
+- suggestion events generated from that workout
 - optional linked `HealthWorkout`
 
-Plan-based sessions are created with `WorkoutSession(from: plan)`. Empty workouts use the default initializer.
+Plan-based sessions are created from `WorkoutPlan`. Empty workouts use a brand-new `WorkoutSession()`.
 
 ## Session States
 
-Sessions move through four states:
+Workouts move through:
 
 `pending -> active -> summary -> done`
 
-- `pending`: blocked on unresolved plan suggestions before logging starts
-- `active`: the user is logging the workout
-- `summary`: logging is finished and the summary screen is active
-- `done`: the summary has been finalized and the workout is now a stable completed record
+- `pending`
+  - plan-backed workout blocked on unresolved suggestions
+- `active`
+  - user is logging the workout
+- `summary`
+  - logging is finished, but the workout is not yet finalized
+- `done`
+  - workout is the stable completed record
 
-`WorkoutSessionContainer` is the UI router for those states:
+`WorkoutSessionContainer` routes the UI by this status.
 
-- `.pending` -> `DeferredSuggestionsView`
-- `.active` -> `WorkoutView`
-- `.summary` and `.done` -> `WorkoutSummaryView`
-
-## Where Sessions Start
+## Session Creation
 
 ### Empty Workout
 
-Normal entry points:
+Entry points:
 
-- the home plus menu
+- home plus menu
 - `StartWorkoutIntent`
-- Siri / shortcut routes that forward into workout start
+- Siri/shortcut routes
 
-All of them end up in `AppRouter.startWorkoutSession()`, which:
+All route into `AppRouter.startWorkoutSession()`.
 
-- checks that no other active flow exists
-- creates a new `WorkoutSession()`
-- inserts and saves it
+That method:
+
+- blocks if any other workout/plan flow is active
+- creates a persisted `WorkoutSession`
+- saves it
 - presents it through `activeWorkoutSession`
 
 ### Workout From a Plan
 
-Normal entry points:
+Entry points:
 
 - `WorkoutPlanDetailView`
 - `StartWorkoutWithPlanIntent`
 - `StartTodaysWorkoutIntent`
 
-Those route into `AppRouter.startWorkoutSession(from:)`, which:
+All route into `AppRouter.startWorkoutSession(from:)`.
 
-- checks that no other active flow exists
-- creates `WorkoutSession(from: plan)`
-- converts the live session copy from canonical kg into the current display unit
-- checks whether the source plan still has pending or deferred suggestion events
-- starts the session in `.pending` if unresolved suggestion work exists, otherwise `.active`
-- inserts, saves, and presents the session
+That method:
+
+- blocks if any other workout/plan flow is active
+- creates a persisted `WorkoutSession(from: plan)`
+- converts set weights from canonical kg into the user’s display unit
+- checks the source plan for pending or deferred suggestions
+- starts the session in `.pending` or `.active`
+- saves and presents it
 
 ## Resume Behavior
 
@@ -93,216 +96,144 @@ Resume order is:
 1. incomplete `WorkoutSession`
 2. resumable incomplete `WorkoutPlan`
 
-The key detail is what "incomplete" means:
+Important rule:
 
-- `WorkoutSession.incomplete` is any session whose `status != .done`
-- so the app can resume `.pending`, `.active`, or `.summary`
+- any `WorkoutSession` whose status is not `.done` is resumable
+- editing copies of plans are never resumed
 
-Editing copies of plans are never resumed. `RootView` deletes them during launch cleanup.
+Launch cleanup deletes abandoned editing copies before resume runs.
 
-## The Pending Suggestion Gate
+## Pending Suggestion Gate
 
-Plan-based sessions can stop in `DeferredSuggestionsView` before active logging begins.
+Plan-backed sessions can start in `.pending` when the source plan still has unresolved suggestions.
 
-That happens when the source plan still has suggestion events whose decision is:
+`DeferredSuggestionsView` blocks entry to active logging until those suggestions are resolved.
 
-- `pending`
-- `deferred`
+Available actions:
 
-Available actions in `DeferredSuggestionsView`:
-
-- accept one change
-- reject one change
+- accept one
+- reject one
 - accept all
 - skip all
 
-Important detail:
+Important behavior:
 
-- accepting a suggestion mutates the live plan and hydrates the already-created pending session copy through `hydratePendingSessionCopy(...)`
-- rejecting a suggestion only changes decision state
-- `Skip All` is not a neutral pause action; it marks remaining pending/deferred suggestions as `rejected` and then lets the workout proceed
+- accept mutates the live plan and hydrates the already-created pending session copy
+- reject only changes suggestion decision state
+- skip all marks remaining pending/deferred suggestions as rejected and lets the workout proceed
 
-The workout only transitions to `.active` once there are no pending or deferred events left.
+The workout only moves to `.active` once the pending/deferred set is empty.
 
-## Active Workout Phase
+## Active Logging
 
-`WorkoutView` is the main active-workout screen. It owns:
+`WorkoutView` is the main logging screen. It owns:
 
-- the exercise pager
+- exercise paging
 - add/edit exercise flows
 - finish and cancel
-- rest timer sheet
-- workout settings sheet
-- pre-workout context sheet
 - title and notes editing
-- intent/live-activity driven sheet presentation
-- the live Apple Health stats sheet when workout write access exists
+- pre-workout context
+- workout settings
+- rest timer
+- live Apple Health sheet
+- intent/live-activity-driven sheet presentation
 
-Main collaborators are:
+Main collaborators:
 
-- `ExerciseView`
-- `ExerciseSetRowView`
 - `RestTimerState`
 - `WorkoutActivityManager`
-- `PreWorkoutContextView`
-- `WorkoutSettingsView`
+- `HealthLiveWorkoutSessionCoordinator`
 
-Important runtime behavior:
+Important runtime rules:
 
-- `activeExercise` tracks which exercise is in focus
-- set completion updates the set row plus active runtime state
-- the pre-workout sheet auto-opens only when the related app setting is enabled and the feeling is still `.notSet`
-- the rest timer is shared app-wide through `RestTimerState`
-- the Live Activity mirrors the active incomplete workout
+- `activeExercise` tracks pager focus
+- rest timer state is shared app-wide
+- pre-workout context prompting is settings-driven
+- live activities mirror the active incomplete workout
 
-Plan-based sessions also keep historical matching context for later suggestion work:
+## Finishing a Workout
 
-- `ExercisePerformance.originalTargetSnapshot`
-- `SetPerformance.originalTargetSetID`
+Finish is intentionally split into two phases.
 
-Those let later flows keep matching logical targets even after plan edits or set reindexing.
+### Phase 1: Leave Active Logging
 
-## Finishing Active Logging
+`WorkoutView.finishWorkout(...)`:
 
-The finish UI starts in `WorkoutView`, but the model cleanup lives in `WorkoutSession.finish(...)`.
+- checks unfinished sets
+- lets the user resolve incomplete or empty set state
+- optionally captures post-workout effort
+- calls `WorkoutSession.finish(...)`
+- converts set weights back to canonical kg
+- saves the workout
+- ends the live Health workout session if running
+- stops the rest timer
+- ends the Live Activity
 
-Before a workout can leave the active phase, VillainArc checks `unfinishedSetSummary`, which separates:
+`WorkoutSession.finish(...)` itself:
 
-- empty sets: no reps and no weight
-- logged-but-incomplete sets: data entered, not marked complete
-
-Depending on the situation, the user can:
-
-- mark logged sets complete
-- delete unfinished sets
-- delete only empty sets
-- finish directly when nothing is unfinished
-
-If the chosen cleanup path still leaves a real workout to save, `WorkoutView` can ask for post-workout effort before moving on. That prompt is controlled by `AppSettings.promptForPostWorkoutEffort`.
-
-Pre-workout context prompting is also controlled by settings. If the user never records a feeling, the context remains optional and `.notSet`.
-
-### What `WorkoutSession.finish(...)` Does
-
-`WorkoutSession.finish(...)`:
-
-- applies the chosen unfinished-set cleanup
+- applies unfinished-set cleanup
 - prunes empty exercises
-- deletes the whole workout if every exercise is removed
-- syncs exercise dates to the latest completed set where possible
+- deletes the whole workout if it becomes empty
+- updates exercise dates where needed
 - sets `status = .summary`
 - sets `endedAt`
 - clears `activeExercise`
 
 If every exercise is pruned, the workout never reaches summary.
 
-## The Two Summary Stages
+### Phase 2: Finalize Summary
 
-Summary work is intentionally split across two moments.
-
-### Stage 1: Leaving Active Logging
-
-After finish cleanup and any effort prompt, `WorkoutView.finishWorkout(...)`:
-
-- runs `WorkoutSession.finish(...)`
-- converts set weights back to canonical kg
-- saves the workout
-- ends the live Apple Health workout session if one is running
-- stops the rest timer
-- ends the Live Activity
-
-At that point the session is already in `.summary`, but it is not yet finalized as a completed history record.
-
-### Stage 2: Finalizing Summary
-
-`WorkoutSummaryView` is the final orchestration point. It handles:
+`WorkoutSummaryView` handles:
 
 - summary stats and notes
-- display of already-captured post-workout effort
 - PR detection
-- older suggestion outcome resolution
-- new suggestion generation
-- current-session suggestion review
+- outcome resolution for older suggestions
+- generation of new suggestions
+- review of current-session suggestions
 - save-as-plan
+- historical prescription-link cleanup
 - `ExerciseHistory` rebuild
 
-For plan-backed sessions, suggestion work runs in this order:
+The true completion point is `finishSummary()`. That method:
 
-1. `OutcomeResolver.resolveOutcomes(...)`
-2. `SuggestionGenerator.generateSuggestions(...)`
-
-The current workout only generates suggestions if it does not already have generated `SuggestionEvent`s.
-
-## Historical Link Cleanup
-
-Plan-backed historical records should stop relying on live plan links once summary work is complete.
-
-`WorkoutSummaryView` calls `cleanupHistoricalPrescriptionLinksIfNeeded()`:
-
-- after suggestion generation finishes
-- again during final summary save as a defensive cleanup
-
-That means active-only prescription links may be cleared before the user taps Done, not only at the last save moment.
-
-## What Final Save Means
-
-The true completion point is `WorkoutSummaryView.finishSummary()`. It:
-
-- converts still-`pending` current-session suggestions to `deferred`
-- clears active-only prescription links for historical use
+- converts any still-pending current-session suggestions to `deferred`
+- cleans up active-only prescription links
 - rebuilds `ExerciseHistory`
-- sets `workout.status = .done`
+- marks the workout `.done`
 - saves
 - Spotlight-indexes the completed workout
-- dismisses the full-screen flow
+- dismisses the flow
 
-That is the point where the workout becomes the stable completed record used by history-driven surfaces.
+## Save As Plan
+
+There are two different “save as plan” flows:
+
+- from `WorkoutSummaryView`
+  - convert the finished workout into a completed plan immediately
+- from completed workout detail
+  - `AppRouter.createWorkoutPlan(from:)` opens an editable plan draft
+
+Those flows are related, but not the same feature.
 
 ## Apple Health During Workout Runtime
 
-VillainArc uses a live Apple Health workout session during the local `.active` phase whenever workout write authorization exists.
+If workout write authorization exists, `HealthLiveWorkoutSessionCoordinator` can start and recover a live Health workout session during the local `.active` phase.
 
-The live-session rules are:
+Rules:
 
-- the HealthKit session starts when the local workout is active
-- if the app resumes an already-active workout, the coordinator first tries to recover the existing HealthKit session
-- pending suggestion review does not start Health collection
-- the HealthKit session ends when local logging ends and the workout moves to `.summary`
+- Health collection starts only for active logging, not for the pending suggestion gate
+- the Health workout ends when local logging moves to `.summary`
 - canceling the workout discards the in-flight Health workout
-- if HealthKit returns the saved workout, VillainArc forwards it through the shared mirrored-workout importer and then links it back to the local `HealthWorkout`
+- if a saved `HKWorkout` comes back, the app imports it through the shared Health workout mirror path
 
-The Health workout currently uses:
+## Canceling a Workout
 
-- activity type `traditionalStrengthTraining`
-- indoor workout metadata
-- a custom metadata key carrying the local `WorkoutSession.id`
-- optional workout effort score linking when that write permission exists
+Canceling an incomplete workout:
 
-## Save As Workout Plan
+- stops the rest timer
+- discards any in-flight Health workout session
+- ends the Live Activity
+- deletes the `WorkoutSession`
+- dismisses the flow
 
-`WorkoutSummaryView` can convert a finished workout into a plan.
-
-For a freeform workout, that path:
-
-- creates `WorkoutPlan(from: workout, completed: true)`
-- inserts it
-- backfills `ExercisePerformance.originalTargetSnapshot` from the performed workout
-- links `workout.workoutPlan` to the new plan
-- saves and Spotlight-indexes the plan
-- reruns suggestion generation because the workout is now plan-backed
-
-This is different from the completed-workout detail path, which opens an editable draft plan instead.
-
-## Canceling a Session
-
-Canceling removes the incomplete session entirely.
-
-Cleanup includes:
-
-- stop the rest timer
-- discard any in-flight Apple Health workout session
-- end the Live Activity
-- delete the `WorkoutSession`
-- dismiss the full-screen flow
-
-Canceled sessions never reach summary, never rebuild `ExerciseHistory`, and never become completed workout records.
+Canceled sessions never reach summary and never become completed history records.
