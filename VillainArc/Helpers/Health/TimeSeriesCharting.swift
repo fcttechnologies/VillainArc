@@ -82,6 +82,13 @@ struct TimeSeriesChartLayout: Sendable {
     
     init(rangeFilter: TimeSeriesRangeFilter, samples: [TimeSeriesSample], now: Date, calendar: Calendar, aggregation: TimeSeriesAggregationStrategy = .average) {
         switch rangeFilter {
+        case .day:
+            let domain = rangeFilter.domain(now: now, calendar: calendar, dates: samples.map(\.date))
+            self.currentDomain = domain
+            self.points = Self.dayBucketPoints(from: samples, in: domain, calendar: calendar, aggregation: aggregation)
+            self.bucketStyle = .day
+            self.axisDates = []
+            self.axisLabelStyle = .monthDay
         case .week:
             let domain = rangeFilter.domain(now: now, calendar: calendar, dates: samples.map(\.date))
             self.currentDomain = domain

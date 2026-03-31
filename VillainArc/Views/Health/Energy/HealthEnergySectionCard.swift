@@ -40,6 +40,7 @@ struct HealthEnergySectionCard: View {
     
     var body: some View {
         Button {
+            Haptics.selection()
             router.navigate(to: .energyHistory)
         } label: {
             VStack(alignment: .leading, spacing: 10) {

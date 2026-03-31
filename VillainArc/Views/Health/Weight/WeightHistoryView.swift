@@ -317,11 +317,11 @@ private struct WeightHistoryMainSection: View {
                         VStack(spacing: 5) {
                             HStack {
                                 if let averageWeightKg = currentRangeData.averageWeightKg {
-                                    metadataWeightValue(title: "Avg", weightKg: averageWeightKg)
+                                    HealthHistoryMetadataValue(title: "Avg", text: "\(formattedWeightValue(averageWeightKg, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)", animationValue: weightUnit.fromKg(averageWeightKg))
                                 }
                                 Spacer()
                                 if let lowWeightKg = currentRangeData.lowWeightKg {
-                                    metadataWeightValue(title: "Low", weightKg: lowWeightKg)
+                                    HealthHistoryMetadataValue(title: "Low", text: "\(formattedWeightValue(lowWeightKg, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)", animationValue: weightUnit.fromKg(lowWeightKg))
                                 }
                             }
                             
@@ -333,7 +333,7 @@ private struct WeightHistoryMainSection: View {
                                     .fontWeight(.semibold)
                                 Spacer()
                                 if let highWeightKg = currentRangeData.highWeightKg {
-                                    metadataWeightValue(title: "High", weightKg: highWeightKg)
+                                    HealthHistoryMetadataValue(title: "High", text: "\(formattedWeightValue(highWeightKg, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)", animationValue: weightUnit.fromKg(highWeightKg))
                                 }
                             }
                         }
@@ -344,7 +344,7 @@ private struct WeightHistoryMainSection: View {
                 }
 
                 Picker("Range", selection: $selectedRange) {
-                    ForEach(TimeSeriesRangeFilter.allCases) { range in
+                    ForEach(TimeSeriesRangeFilter.nonDayCases) { range in
                         Text(range.rawValue).tag(range)
                     }
                 }
@@ -391,23 +391,6 @@ private struct WeightHistoryMainSection: View {
         let delta = weightUnit.fromKg(data.changeKg ?? 0)
         let sign = delta > 0 ? "+" : ""
         return "\(sign)\(delta.formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.rawValue)"
-    }
-
-    @ViewBuilder
-    private func metadataWeightValue(title: String, weightKg: Double) -> some View {
-        let displayedWeight = weightUnit.fromKg(weightKg)
-        HStack(spacing: 4) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("\(displayedWeight, format: .number.precision(.fractionLength(0...1))) \(weightUnit.rawValue)")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .fontDesign(.rounded)
-                .contentTransition(.numericText(value: displayedWeight))
-        }
-        .animation(reduceMotion ? nil : .smooth, value: displayedWeight)
-        .accessibilityElement(children: .combine)
     }
 
     private func trendText(for data: CachedRangeData) -> String? {

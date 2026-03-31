@@ -35,6 +35,7 @@ enum AccessibilityIdentifiers {
     static let healthNewWeightGoalStartDatePicker = "healthNewWeightGoalStartDatePicker"
     static let healthWeightSectionCard = "healthWeightSectionCard"
     static let healthSleepSectionCard = "healthSleepSectionCard"
+    static let healthSleepHistoryChart = "healthSleepHistoryChart"
     static let healthWeightHistoryChart = "healthWeightHistoryChart"
     static let healthStepsSectionCard = "healthStepsSectionCard"
     static let healthEnergySectionCard = "healthEnergySectionCard"
@@ -498,10 +499,12 @@ enum AccessibilityText {
     static let healthStepsSectionHint = localized("Opens detailed steps history.")
     static let healthEnergySectionHint = localized("Opens detailed energy history.")
     static let healthWeightHistoryChartLabel = localized("Weight history chart")
+    static let healthSleepHistoryChartLabel = localized("Sleep history chart")
     static let healthStepsHistoryChartLabel = localized("Steps history chart")
     static let healthEnergyHistoryChartLabel = localized("Energy history chart")
     static let healthStepsWeekdayChartLabel = localized("Weekday average steps chart")
     static let healthEnergyWeekdayChartLabel = localized("Weekday average active energy chart")
+    static let healthSleepWeekdayChartLabel = localized("Weekday average sleep chart")
     static let healthWeightSectionEmptyValue = localized("Weight. No weight entries yet.")
     static let healthSleepSectionEmptyValue = localized("Sleep. Update Apple Health permissions so your sleep summaries appear here.")
     static let healthWeightGoalSummaryEmptyValue = localized("No active goal")
@@ -514,11 +517,14 @@ enum AccessibilityText {
     static let healthStepsHistoryEmptyTitle = localized("No Step Data")
     static let healthEnergyHistoryEmptyTitle = localized("No Energy Data")
     static let healthWeightHistoryEmptyTitle = localized("No Weight Entries")
+    static let healthSleepHistoryEmptyTitle = localized("No Sleep Data")
 
     static func healthWeightHistoryChartValue(dateText: String, weightText: String) -> String { localized("\(dateText), \(weightText)") }
 
     static func healthWeightHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
+        case .day:
+            return localized("No weight entries were recorded today.")
         case .week:
             return localized("No weight entries were recorded in the last 7 days.")
         case .month:
@@ -545,12 +551,31 @@ enum AccessibilityText {
         return parts.joined(separator: ". ") + "."
     }
 
+    static func healthSleepHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
+        switch range {
+        case .day:
+            return localized("No sleep data was recorded for this day.")
+        case .week:
+            return localized("No sleep data was recorded in the last 7 days.")
+        case .month:
+            return localized("No sleep data was recorded in the last month.")
+        case .sixMonths:
+            return localized("No sleep data was recorded in the last 6 months.")
+        case .year:
+            return localized("No sleep data was recorded in the last year.")
+        case .all:
+            return localized("No sleep data has been recorded yet.")
+        }
+    }
+
     static func healthStepsSectionValue(dateText: String, stepCount: Int) -> String {
         localized("Latest steps entry \(dateText). \(stepCount.formatted(.number)) steps. Recent entries chart.")
     }
 
     static func healthStepsHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
+        case .day:
+            return localized("No step data was recorded today.")
         case .week:
             return localized("No step data was recorded in the last 7 days.")
         case .month:
@@ -570,6 +595,8 @@ enum AccessibilityText {
 
     static func healthEnergyHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
+        case .day:
+            return localized("No energy data was recorded today.")
         case .week:
             return localized("No energy data was recorded in the last 7 days.")
         case .month:
@@ -617,6 +644,7 @@ enum AccessibilityText {
 
     static func healthEnergyHistoryChartValue(dateText: String, totalText: String, activeText: String) -> String { localized("\(dateText), \(totalText), \(activeText)") }
     static func healthEnergyWeekdayChartValue(summaryText: String) -> String { localized("\(summaryText)") }
+    static func healthSleepWeekdayChartValue(summaryText: String) -> String { localized("\(summaryText)") }
 
     static func muscleDistributionChartValue(rows: [String]) -> String { localized("\(rows.joined(separator: ", "))") }
 

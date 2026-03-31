@@ -13,7 +13,7 @@ struct PeriodComparisonHighlight: Sendable {
     let trend: PeriodComparisonTrend
 }
 
-func makePeriodComparisonHighlight<Entry>(entries: [Entry], kind: PeriodComparisonKind, now: Date = .now, calendar: Calendar = .autoupdatingCurrent, date: (Entry) -> Date, value: (Entry) -> Double) -> PeriodComparisonHighlight? {
+func makePeriodComparisonHighlight<Entry>(entries: [Entry], kind: PeriodComparisonKind, now: Date = .now, calendar: Calendar = .autoupdatingCurrent, date: (Entry) -> Date, value: (Entry) -> Double, flatThreshold: Double = 0) -> PeriodComparisonHighlight? {
     let normalizedEntries = entries.map { (day: calendar.startOfDay(for: date($0)), value: value($0)) }.sorted { $0.day < $1.day }
     switch kind {
     case .month:
@@ -25,7 +25,7 @@ func makePeriodComparisonHighlight<Entry>(entries: [Entry], kind: PeriodComparis
         let previousEnd = previousMonthInterval.chartUpperBound
         let currentAverage = averageDailyValue(entriesByDay: Dictionary(uniqueKeysWithValues: currentEntries.map { ($0.day, $0.value) }), range: currentStart...latestCurrentDay, calendar: calendar)
         let previousAverage = averageDailyValue(entriesByDay: Dictionary(uniqueKeysWithValues: normalizedEntries.filter { previousMonthInterval.contains($0.day) }.map { ($0.day, $0.value) }), range: previousStart...previousEnd, calendar: calendar)
-        return PeriodComparisonHighlight(kind: kind, currentLabel: currentStart.formatted(.dateTime.month(.wide)), previousLabel: previousStart.formatted(.dateTime.month(.wide)), currentAverage: currentAverage, previousAverage: previousAverage, trend: comparisonTrend(current: currentAverage, previous: previousAverage))
+        return PeriodComparisonHighlight(kind: kind, currentLabel: currentStart.formatted(.dateTime.month(.wide)), previousLabel: previousStart.formatted(.dateTime.month(.wide)), currentAverage: currentAverage, previousAverage: previousAverage, trend: comparisonTrend(current: currentAverage, previous: previousAverage, flatThreshold: flatThreshold))
     case .year:
         let currentYear = calendar.component(.year, from: now)
         let previousYear = currentYear - 1
@@ -36,8 +36,14 @@ func makePeriodComparisonHighlight<Entry>(entries: [Entry], kind: PeriodComparis
         let previousEnd = calendar.endOfYear(for: previousStart)
         let currentAverage = averageDailyValue(entriesByDay: Dictionary(uniqueKeysWithValues: currentEntries.map { ($0.day, $0.value) }), range: currentStart...latestCurrentDay, calendar: calendar)
         let previousAverage = averageDailyValue(entriesByDay: Dictionary(uniqueKeysWithValues: normalizedEntries.filter { calendar.component(.year, from: $0.day) == previousYear }.map { ($0.day, $0.value) }), range: previousStart...previousEnd, calendar: calendar)
-        return PeriodComparisonHighlight(kind: kind, currentLabel: currentStart.formatted(.dateTime.year()), previousLabel: previousStart.formatted(.dateTime.year()), currentAverage: currentAverage, previousAverage: previousAverage, trend: comparisonTrend(current: currentAverage, previous: previousAverage))
+        return PeriodComparisonHighlight(kind: kind, currentLabel: currentStart.formatted(.dateTime.year()), previousLabel: previousStart.formatted(.dateTime.year()), currentAverage: currentAverage, previousAverage: previousAverage, trend: comparisonTrend(current: currentAverage, previous: previousAverage, flatThreshold: flatThreshold))
     }
+}
+
+func yearComparisonLeadIn(now: Date = .now, calendar: Calendar = .autoupdatingCurrent) -> String {
+    let dayOfYear = calendar.ordinality(of: .day, in: .year, for: now) ?? 1
+    let dayCount = calendar.range(of: .day, in: .year, for: now)?.count ?? 365
+    return Double(dayOfYear) < (Double(dayCount) / 2) ? "So far this year" : "This year"
 }
 
 private func averageDailyValue(entriesByDay: [Date: Double], range: ClosedRange<Date>, calendar: Calendar) -> Double {
@@ -47,7 +53,8 @@ private func averageDailyValue(entriesByDay: [Date: Double], range: ClosedRange<
     return entriesByDay.reduce(0) { $0 + $1.value } / Double(dayCount)
 }
 
-private func comparisonTrend(current: Double, previous: Double) -> PeriodComparisonTrend {
+private func comparisonTrend(current: Double, previous: Double, flatThreshold: Double) -> PeriodComparisonTrend {
+    if abs(current - previous) <= max(flatThreshold, 0) { return .flat }
     if current > previous { return .up }
     if current < previous { return .down }
     return .flat

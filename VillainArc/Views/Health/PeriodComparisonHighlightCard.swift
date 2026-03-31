@@ -9,13 +9,26 @@ struct PeriodComparisonHighlightCard: View {
     let previousLabel: String
     let unitText: String
     let tint: Color
+    let valueText: (Double) -> String
+    let accessibilityValueText: (Double) -> String
+
+    init(summary: Text, accessibilitySummary: String, currentValue: Double, previousValue: Double, currentLabel: String, previousLabel: String, unitText: String, tint: Color, valueText: @escaping (Double) -> String = { Int($0.rounded()).formatted(.number) }, accessibilityValueText: ((Double) -> String)? = nil) {
+        self.summary = summary
+        self.accessibilitySummary = accessibilitySummary
+        self.currentValue = currentValue
+        self.previousValue = previousValue
+        self.currentLabel = currentLabel
+        self.previousLabel = previousLabel
+        self.unitText = unitText
+        self.tint = tint
+        self.valueText = valueText
+        self.accessibilityValueText = accessibilityValueText ?? { "\(Int($0.rounded()).formatted(.number)) \(unitText)" }
+    }
 
     private var maxValue: Double { max(currentValue, previousValue, 1) }
 
     private var accessibilityValue: String {
-        let currentText = Int(currentValue.rounded()).formatted(.number)
-        let previousText = Int(previousValue.rounded()).formatted(.number)
-        return "\(accessibilitySummary) \(currentLabel): \(currentText) \(unitText). \(previousLabel): \(previousText) \(unitText)."
+        "\(accessibilitySummary) \(currentLabel): \(accessibilityValueText(currentValue)). \(previousLabel): \(accessibilityValueText(previousValue))."
     }
 
     var body: some View {
@@ -24,8 +37,8 @@ struct PeriodComparisonHighlightCard: View {
                 .font(.title3)
                 .fontWeight(.semibold)
             Divider()
-            ComparisonBarRow(value: currentValue, label: currentLabel, unitText: unitText, maxValue: maxValue, fillStyle: AnyShapeStyle(tint.gradient), valueTextStyle: AnyShapeStyle(.primary), labelTextStyle: AnyShapeStyle(.white))
-            ComparisonBarRow(value: previousValue, label: previousLabel, unitText: unitText, maxValue: maxValue, fillStyle: AnyShapeStyle(Color.secondary.opacity(0.18)), valueTextStyle: AnyShapeStyle(.primary), labelTextStyle: AnyShapeStyle(.primary))
+            ComparisonBarRow(value: currentValue, label: currentLabel, unitText: unitText, maxValue: maxValue, fillStyle: AnyShapeStyle(tint.gradient), valueTextStyle: AnyShapeStyle(.primary), labelTextStyle: AnyShapeStyle(.white), valueText: valueText)
+            ComparisonBarRow(value: previousValue, label: previousLabel, unitText: unitText, maxValue: maxValue, fillStyle: AnyShapeStyle(Color.secondary.opacity(0.18)), valueTextStyle: AnyShapeStyle(.primary), labelTextStyle: AnyShapeStyle(.primary), valueText: valueText)
         }
         .padding()
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
@@ -45,21 +58,24 @@ private struct ComparisonBarRow: View {
     let fillStyle: AnyShapeStyle
     let valueTextStyle: AnyShapeStyle
     let labelTextStyle: AnyShapeStyle
+    let valueText: (Double) -> String
 
     private var widthRatio: CGFloat { CGFloat(min(max(value / maxValue, 0), 1)) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(alignment: .lastTextBaseline, spacing: 3) {
-                Text(Int(value.rounded()), format: .number)
+                Text(valueText(value))
                     .font(.title)
                     .bold()
                     .fontDesign(.rounded)
                     .contentTransition(.numericText(value: value))
-                Text(unitText)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .fontWeight(.semibold)
+                if !unitText.isEmpty {
+                    Text(unitText)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
+                }
             }
 
             GeometryReader { proxy in

@@ -1,6 +1,7 @@
 import Foundation
 
 enum TimeSeriesRangeFilter: String, CaseIterable, Identifiable, Sendable {
+    case day = "D"
     case week = "W"
     case month = "M"
     case sixMonths = "6M"
@@ -8,6 +9,7 @@ enum TimeSeriesRangeFilter: String, CaseIterable, Identifiable, Sendable {
     case all = "All"
 
     static let buildOrder: [TimeSeriesRangeFilter] = [.month, .week, .sixMonths, .year, .all]
+    static let nonDayCases: [TimeSeriesRangeFilter] = allCases.filter { $0 != .day }
 
     var id: String { rawValue }
 
@@ -16,6 +18,8 @@ enum TimeSeriesRangeFilter: String, CaseIterable, Identifiable, Sendable {
         let endOfToday = calendar.endOfDay(for: now)
 
         switch self {
+        case .day:
+            return startOfToday...endOfToday
         case .week:
             let lowerBound = calendar.date(byAdding: .day, value: -6, to: startOfToday) ?? startOfToday
             return lowerBound...endOfToday

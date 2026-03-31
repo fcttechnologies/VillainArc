@@ -4,14 +4,10 @@ import SwiftUI
 
 struct HealthSleepSectionCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let router = AppRouter.shared
     @Query(HealthSleepNight.summary, animation: .smooth) private var summaryEntries: [HealthSleepNight]
 
-    private var visibleEntries: [HealthSleepNight] {
-        let availableEntries = summaryEntries.filter(\.isAvailableInHealthKit)
-        return availableEntries.isEmpty ? summaryEntries : availableEntries
-    }
-
-    private var latestEntry: HealthSleepNight? { visibleEntries.first }
+    private var latestEntry: HealthSleepNight? { summaryEntries.first }
 
     private var cardAccessibilityLabel: String {
         guard let latestEntry else { return AccessibilityText.healthSleepSectionEmptyValue }
@@ -19,125 +15,75 @@ struct HealthSleepSectionCard: View {
         return AccessibilityText.healthSleepSectionValue(
             dateText: formattedSleepWakeDay(latestEntry.wakeDay),
             sleepText: formattedSleepDurationAccessibilityText(latestEntry.timeAsleep),
-            timingText: sleepTimingText(for: latestEntry),
-            secondaryText: secondarySummaryText(for: latestEntry)
+            timingText: formattedSleepTimingText(for: latestEntry),
+            secondaryText: nil
         )
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 3) {
-                Image(systemName: "bed.double.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(.indigo.gradient)
-                    .accessibilityHidden(true)
-                Text("Sleep")
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.indigo.gradient)
-
-                Spacer()
-
-                if let latestEntry {
-                    Text(formattedSleepWakeDay(latestEntry.wakeDay))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            if let latestEntry {
-                HStack(alignment: .bottom, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(sleepTimingText(for: latestEntry))
+        Button {
+            Haptics.selection()
+            router.navigate(to: .sleepHistory)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 12) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "bed.double.fill")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-
-                        HStack(alignment: .lastTextBaseline, spacing: 3) {
-                            Text(formattedSleepDurationText(latestEntry.timeAsleep))
-                                .font(.largeTitle)
-                                .bold()
-                                .contentTransition(.numericText(value: latestEntry.timeAsleep))
-
-                            Text("Asleep")
-                                .font(.title3)
-                                .foregroundStyle(.secondary)
-                        }
-                        .lineLimit(1)
-
-                        if let secondarySummary {
-                            Text(secondarySummary)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
+                            .foregroundStyle(.indigo.gradient)
+                            .accessibilityHidden(true)
+                        Text("Sleep")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.indigo.gradient)
                     }
-                    .fontDesign(.rounded)
-                    .fontWeight(.semibold)
 
                     Spacer()
 
-                    if visibleEntries.count > 1 {
-                        HealthSleepSparkBarChart(entries: visibleEntries)
-                            .frame(width: 160, height: 80)
-                            .accessibilityHidden(true)
+                    if let latestEntry {
+                        Text(formattedSleepWakeDay(latestEntry.wakeDay))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
-                .animation(reduceMotion ? nil : .smooth, value: latestEntry.timeAsleep)
-            } else {
-                Text(AccessibilityText.healthHistoryNoHealthDataDescription)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .fontWeight(.semibold)
+
+                if let latestEntry {
+                    HStack(alignment: .bottom, spacing: 0) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            SleepDurationValueView(duration: latestEntry.timeAsleep)
+                            Text(formattedSleepTimingText(for: latestEntry))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .fontDesign(.rounded)
+                                .fontWeight(.semibold)
+                        }
+
+                        Spacer()
+
+                        if summaryEntries.count > 1 {
+                            HealthSleepSparkBarChart(entries: summaryEntries)
+                                .frame(width: 160, height: 80)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .animation(reduceMotion ? nil : .smooth, value: latestEntry.timeAsleep)
+                } else {
+                    Text(AccessibilityText.healthHistoryNoHealthDataDescription)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .fontWeight(.semibold)
+                }
             }
+            .padding()
+            .glassEffect(.regular, in: .rect(cornerRadius: 12))
+            .tint(.primary)
         }
-        .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 12))
+        .buttonStyle(.borderless)
         .accessibilityIdentifier(AccessibilityIdentifiers.healthSleepSectionCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)
-    }
-
-    private var secondarySummary: String? {
-        guard let latestEntry else { return nil }
-        return secondarySummaryText(for: latestEntry)
-    }
-
-    private func secondarySummaryText(for entry: HealthSleepNight) -> String? {
-        if !entry.isAvailableInHealthKit {
-            return "Removed from Apple Health"
-        }
-
-        if entry.hasStageBreakdown {
-            var parts: [String] = []
-            if entry.deepDuration > 0 {
-                parts.append("Deep \(formattedSleepDurationText(entry.deepDuration))")
-            }
-            if entry.remDuration > 0 {
-                parts.append("REM \(formattedSleepDurationText(entry.remDuration))")
-            }
-            if !parts.isEmpty {
-                return parts.joined(separator: " • ")
-            }
-        }
-
-        var parts: [String] = []
-        if entry.awakeDuration > 0 {
-            parts.append("Awake \(formattedSleepDurationText(entry.awakeDuration))")
-        }
-        if entry.timeInBed > 0 {
-            parts.append("In Bed \(formattedSleepDurationText(entry.timeInBed))")
-        }
-        return parts.isEmpty ? nil : parts.joined(separator: " • ")
-    }
-
-    private func sleepTimingText(for entry: HealthSleepNight) -> String {
-        guard let sleepStart = entry.sleepStart, let sleepEnd = entry.sleepEnd else {
-            return "No overnight sleep window"
-        }
-        return "\(sleepStart.formatted(date: .omitted, time: .shortened)) - \(sleepEnd.formatted(date: .omitted, time: .shortened))"
+        .accessibilityHint(AccessibilityText.healthSleepSectionHint)
     }
 }
 
@@ -152,17 +98,9 @@ private struct HealthSleepSparkBarChart: View {
 
     var body: some View {
         Chart(entries, id: \.wakeDay) { entry in
-            BarMark(
-                x: .value("Wake Day", HealthSleepNight.displayDate(forWakeDay: entry.wakeDay), unit: .day),
-                y: .value("Time Asleep", entry.timeAsleep),
-                width: .ratio(0.92)
-            )
-            .foregroundStyle(
-                entry.wakeDay == latestWakeDay
-                ? AnyShapeStyle(Color.indigo.gradient)
-                : AnyShapeStyle(Color.indigo.opacity(0.3).gradient)
-            )
-            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
+            BarMark(x: .value("Wake Day", HealthSleepNight.displayDate(forWakeDay: entry.wakeDay), unit: .day), y: .value("Time Asleep", entry.timeAsleep), width: .ratio(0.92))
+                .foregroundStyle(entry.wakeDay == latestWakeDay ? AnyShapeStyle(Color.indigo.gradient) : AnyShapeStyle(Color.indigo.opacity(0.3).gradient))
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
         }
         .chartYScale(domain: yDomain)
         .chartXAxis(.hidden)
@@ -171,7 +109,7 @@ private struct HealthSleepSparkBarChart: View {
     }
 }
 
-private func formattedSleepDurationText(_ duration: TimeInterval) -> String {
+func formattedSleepDurationText(_ duration: TimeInterval) -> String {
     let totalMinutes = Int((duration / 60).rounded())
     let hours = totalMinutes / 60
     let minutes = totalMinutes % 60
@@ -187,7 +125,7 @@ private func formattedSleepDurationText(_ duration: TimeInterval) -> String {
     return "\(minutes)m"
 }
 
-private func formattedSleepDurationAccessibilityText(_ duration: TimeInterval) -> String {
+func formattedSleepDurationAccessibilityText(_ duration: TimeInterval) -> String {
     let totalMinutes = Int((duration / 60).rounded())
     let hours = totalMinutes / 60
     let minutes = totalMinutes % 60
@@ -202,4 +140,44 @@ private func formattedSleepDurationAccessibilityText(_ duration: TimeInterval) -
     return parts.joined(separator: " ")
 }
 
-private func formattedSleepWakeDay(_ wakeDay: Date) -> String { formattedRecentDay(HealthSleepNight.displayDate(forWakeDay: wakeDay)) }
+func formattedSleepWakeDay(_ wakeDay: Date) -> String { formattedRecentDay(HealthSleepNight.displayDate(forWakeDay: wakeDay)) }
+
+func formattedSleepTimingText(start: Date?, end: Date?) -> String {
+    guard let start, let end else { return "No overnight sleep window" }
+    return "\(start.formatted(date: .omitted, time: .shortened)) - \(end.formatted(date: .omitted, time: .shortened))"
+}
+
+func formattedSleepTimingText(for entry: HealthSleepNight) -> String { formattedSleepTimingText(start: entry.sleepStart, end: entry.sleepEnd) }
+
+struct SleepDurationValueView: View {
+    let duration: TimeInterval
+
+    private var hours: Int { Int((duration / 3_600).rounded(.down)) }
+    private var minutes: Int { max(0, Int((duration / 60).rounded()) - (hours * 60)) }
+
+    var body: some View {
+        HStack(alignment: .lastTextBaseline, spacing: 0) {
+            if hours > 0 {
+                HStack(alignment: .lastTextBaseline, spacing: 0) {
+                    Text(hours, format: .number)
+                        .font(.largeTitle)
+                    Text("hr")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
+                }
+                .padding(.trailing, 2)
+            }
+            HStack(alignment: .lastTextBaseline, spacing: 0) {
+                Text(minutes, format: .number)
+                    .font(.largeTitle)
+                Text("min")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .fontWeight(.semibold)
+            }
+        }
+        .bold()
+        .fontDesign(.rounded)
+    }
+}

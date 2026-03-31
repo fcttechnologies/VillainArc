@@ -144,6 +144,66 @@
         }
       }
     },
+    "%@, you're burning %@ amount of energy a day as you did last year." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, you're burning %2$@ amount of energy a day as you did last year."
+          }
+        }
+      }
+    },
+    "%@, you're burning %@ energy a day than you did last year." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, you're burning %2$@ energy a day than you did last year."
+          }
+        }
+      }
+    },
+    "%@, you're sleeping %@ amount each night as you did last year." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, you're sleeping %2$@ amount each night as you did last year."
+          }
+        }
+      }
+    },
+    "%@, you're sleeping %@ each night than you did last year." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, you're sleeping %2$@ each night than you did last year."
+          }
+        }
+      }
+    },
+    "%@, you're taking %@ number of steps a day as you did last year." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, you're taking %2$@ number of steps a day as you did last year."
+          }
+        }
+      }
+    },
+    "%@, you're taking %@ steps a day than you did last year." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, you're taking %2$@ steps a day than you did last year."
+          }
+        }
+      }
+    },
     "%@: %@" : {
       "localizations" : {
         "en" : {
@@ -428,9 +488,6 @@
     "Arnold Split" : {
 
     },
-    "Asleep" : {
-
-    },
     "Assistance" : {
 
     },
@@ -477,6 +534,9 @@
 
     },
     "Brachialis" : {
+
+    },
+    "Bucket" : {
 
     },
     "Cable (Double)" : {
@@ -909,6 +969,9 @@
     "Enabled" : {
 
     },
+    "End" : {
+
+    },
     "Ended %@" : {
 
     },
@@ -1112,6 +1175,9 @@
 
     },
     "How many days per week?" : {
+
+    },
+    "hr" : {
 
     },
     "iCloud Disabled" : {
@@ -1326,6 +1392,9 @@
     "Mid Traps" : {
 
     },
+    "min" : {
+
+    },
     "Missed a Day" : {
 
     },
@@ -1443,6 +1512,9 @@
     "No energy data was recorded in the last year." : {
 
     },
+    "No energy data was recorded today." : {
+
+    },
     "No Exercise History" : {
 
     },
@@ -1500,6 +1572,27 @@
     "No running rest timer to pause." : {
 
     },
+    "No Sleep Data" : {
+
+    },
+    "No sleep data has been recorded yet." : {
+
+    },
+    "No sleep data was recorded for this day." : {
+
+    },
+    "No sleep data was recorded in the last 6 months." : {
+
+    },
+    "No sleep data was recorded in the last 7 days." : {
+
+    },
+    "No sleep data was recorded in the last month." : {
+
+    },
+    "No sleep data was recorded in the last year." : {
+
+    },
     "No Split Day Configured" : {
 
     },
@@ -1525,6 +1618,9 @@
 
     },
     "No step data was recorded in the last year." : {
+
+    },
+    "No step data was recorded today." : {
 
     },
     "No Steps Goals" : {
@@ -1555,6 +1651,9 @@
 
     },
     "No weight entries were recorded in the last year." : {
+
+    },
+    "No weight entries were recorded today." : {
 
     },
     "No Weight Goals" : {
@@ -1609,58 +1708,6 @@
 
     },
     "Okay" : {
-
-    },
-    "On average, you burn %@ %@ on %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "On average, you burn %1$@ %2$@ on %3$@."
-          }
-        }
-      }
-    },
-    "On average, you burn the most calories on %@. %@ %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "On average, you burn the most calories on %1$@. %2$@ %3$@."
-          }
-        }
-      }
-    },
-    "On average, you walk %@ steps on %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "On average, you walk %1$@ steps on %2$@."
-          }
-        }
-      }
-    },
-    "On average, you walk the most on %@. %@ steps." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "On average, you walk the most on %1$@. %2$@ steps."
-          }
-        }
-      }
-    },
-    "On average, you're burning %@ amount of energy this month as you did last month." : {
-
-    },
-    "On average, you're burning %@ energy this month than you did last month." : {
-
-    },
-    "On average, you're walking %@ this month as you did last month." : {
-
-    },
-    "On average, you're walking %@ this month than you did last month." : {
 
     },
     "On schedule" : {
@@ -2465,22 +2512,13 @@
     "Sleep" : {
 
     },
+    "Sleep history chart" : {
+
+    },
     "Sleep. Update Apple Health permissions so your sleep summaries appear here." : {
 
     },
     "Smith Machine" : {
-
-    },
-    "So far this year, you're burning %@ amount of energy a day as you did last year." : {
-
-    },
-    "So far this year, you're burning %@ energy a day than you did last year." : {
-
-    },
-    "So far this year, you're taking %@ number of steps a day as you did last year." : {
-
-    },
-    "So far this year, you're taking %@ steps a day than you did last year." : {
 
     },
     "Sort" : {
@@ -2505,6 +2543,9 @@
 
     },
     "Splits" : {
+
+    },
+    "Stage" : {
 
     },
     "Start" : {
@@ -2732,6 +2773,9 @@
     "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing." : {
 
     },
+    "This sleep night is no longer available in Apple Health. VillainArc is showing the last synced summary." : {
+
+    },
     "This suggestion is based on previous times you logged this exercise or your usual rep goal." : {
 
     },
@@ -2942,6 +2986,9 @@
     "Weekday average active energy chart" : {
 
     },
+    "Weekday average sleep chart" : {
+
+    },
     "Weekday average steps chart" : {
 
     },
@@ -2949,6 +2996,12 @@
 
     },
     "Weekday energy averages are unavailable" : {
+
+    },
+    "Weekday sleep averages are unavailable" : {
+
+    },
+    "Weekday sleep averages need at least 2 nights for every weekday" : {
 
     },
     "Weekday step averages are unavailable" : {
@@ -3167,6 +3220,26 @@
     "You are hitting: %@." : {
 
     },
+    "You burn %@ %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You burn %1$@ %2$@ on %3$@."
+          }
+        }
+      }
+    },
+    "You burn the most calories on %@. %@ %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You burn the most calories on %1$@. %2$@ %3$@."
+          }
+        }
+      }
+    },
     "You don't have a completed workout plan yet." : {
 
     },
@@ -3229,7 +3302,65 @@
     "You need to launch and finish setting up the app before you can use this feature." : {
 
     },
+    "You sleep %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You sleep %1$@ on %2$@."
+          }
+        }
+      }
+    },
+    "You sleep the most on %@. %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You sleep the most on %1$@. %2$@."
+          }
+        }
+      }
+    },
+    "You walk %@ steps on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You walk %1$@ steps on %2$@."
+          }
+        }
+      }
+    },
+    "You walk the most on %@. %@ steps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You walk the most on %1$@. %2$@ steps."
+          }
+        }
+      }
+    },
     "You're already working out. Resume it first or cancel it." : {
+
+    },
+    "You're burning %@ amount of energy this month as you did last month." : {
+
+    },
+    "You're burning %@ energy this month than you did last month." : {
+
+    },
+    "You're getting %@ amount of sleep this month as you did last month." : {
+
+    },
+    "You're getting %@ sleep this month than you did last month." : {
+
+    },
+    "You're walking %@ this month as you did last month." : {
+
+    },
+    "You're walking %@ this month than you did last month." : {
 
     },
     "Your created workout plans will appear here." : {

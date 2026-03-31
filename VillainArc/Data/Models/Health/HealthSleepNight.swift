@@ -25,13 +25,9 @@ import SwiftData
         return calendar
     }()
 
-    init(wakeDay: Date, timeZone: TimeZone = .autoupdatingCurrent) {
-        self.wakeDay = Self.wakeDayKey(for: wakeDay, in: timeZone)
-    }
+    init(wakeDay: Date, timeZone: TimeZone = .autoupdatingCurrent) { self.wakeDay = Self.wakeDayKey(for: wakeDay, in: timeZone) }
 
-    init(storedWakeDayKey: Date) {
-        self.wakeDay = storedWakeDayKey
-    }
+    init(storedWakeDayKey: Date) { self.wakeDay = storedWakeDayKey }
 
     var awakeInBedDuration: TimeInterval { max(timeInBed - timeAsleep, 0) }
 

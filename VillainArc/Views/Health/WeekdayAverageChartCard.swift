@@ -15,6 +15,16 @@ struct WeekdayAverageChart: View {
     let tint: Color
     @Binding var selectedWeekday: Weekday?
     let accessibilityLabel: String
+    let yAxisValueLabel: (Double) -> String
+
+    init(presentation: WeekdayAverageChartPresentation, points: [WeekdayAveragePoint], tint: Color, selectedWeekday: Binding<Weekday?>, accessibilityLabel: String, yAxisValueLabel: @escaping (Double) -> String = { $0.formatted(.number.notation(.compactName).precision(.fractionLength(0))) }) {
+        self.presentation = presentation
+        self.points = points
+        self.tint = tint
+        _selectedWeekday = selectedWeekday
+        self.accessibilityLabel = accessibilityLabel
+        self.yAxisValueLabel = yAxisValueLabel
+    }
 
     private var emphasizedWeekday: Weekday? {
         selectedWeekday ?? points.filter { $0.sampleCount > 0 }.max(by: { $0.averageValue < $1.averageValue })?.weekday
@@ -33,7 +43,7 @@ struct WeekdayAverageChart: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 10) {
             if presentation.isAvailable {
                 presentation.headline
                     .font(.title3)
@@ -64,7 +74,7 @@ struct WeekdayAverageChart: View {
                     AxisGridLine()
                     AxisValueLabel {
                         if let doubleValue = value.as(Double.self) {
-                            Text(doubleValue.formatted(.number.notation(.compactName).precision(.fractionLength(0))))
+                            Text(yAxisValueLabel(doubleValue))
                         }
                     }
                 }

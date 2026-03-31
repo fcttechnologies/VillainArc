@@ -36,6 +36,7 @@ struct WeightSectionCard: View {
 
     var body: some View {
         Button {
+            Haptics.selection()
             router.navigate(to: .weightHistory)
         } label: {
             VStack(alignment: .leading, spacing: 10) {
@@ -72,7 +73,7 @@ struct WeightSectionCard: View {
                                 Text(formattedWeightValue(latestEntry.weight, unit: weightUnit, fractionDigits: 0...1))
                                     .font(.largeTitle)
                                     .bold()
-                                    .contentTransition(.numericText(value: latestEntry.weight))
+                                    .contentTransition(.numericText(value: weightUnit.fromKg(latestEntry.weight)))
                                     .foregroundStyle(.primary)
                                 
                                 Text(weightUnit.rawValue)
@@ -92,7 +93,7 @@ struct WeightSectionCard: View {
                                 .accessibilityHidden(true)
                         }
                     }
-                    .animation(reduceMotion ? nil : .smooth, value: latestEntry.weight)
+                    .animation(reduceMotion ? nil : .smooth, value: weightUnit.fromKg(latestEntry.weight))
                 } else {
                     Text("Your weight data will show up here once you add or sync body weight entries")
                         .font(.subheadline)

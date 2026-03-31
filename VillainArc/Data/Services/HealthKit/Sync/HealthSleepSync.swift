@@ -61,20 +61,11 @@ actor HealthSleepSync {
             do {
                 let result = try await anchoredResult(anchor: anchor)
                 let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: result)
-                let refreshedRange = refreshRange(
-                    addedWakeDays: Set(result.addedSamples.map(wakeDay(for:))),
-                    syncedRange: syncedRange,
-                    hasDeletions: !result.deletedObjects.isEmpty
-                )
+                let refreshedRange = refreshRange(addedWakeDays: Set(result.addedSamples.map(wakeDay(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
 
                 if let refreshedRange {
                     let samplesByWakeDay = try await sleepSamplesByWakeDay(for: refreshedRange)
-                    try rebuildWakeDays(
-                        in: refreshedRange,
-                        samplesByWakeDay: samplesByWakeDay,
-                        retainRemovedHealthData: retainRemovedHealthData,
-                        context: context
-                    )
+                    try rebuildWakeDays(in: refreshedRange, samplesByWakeDay: samplesByWakeDay, retainRemovedHealthData: retainRemovedHealthData, context: context)
                     try context.save()
                 }
 
@@ -242,9 +233,7 @@ actor HealthSleepSync {
             awakeIntervals
         }
 
-        let blocks = mergedIntervals(basisIntervals, gapTolerance: mergeGapTolerance).map { interval in
-            SleepBlock(interval: interval, asleepDuration: totalDuration(of: asleepIntervals, clippedTo: interval), inBedDuration: inBedIntervals.isEmpty ? interval.duration : totalDuration(of: inBedIntervals, clippedTo: interval))
-        }
+        let blocks = mergedIntervals(basisIntervals, gapTolerance: mergeGapTolerance).map { SleepBlock(interval: $0, asleepDuration: totalDuration(of: asleepIntervals, clippedTo: $0), inBedDuration: inBedIntervals.isEmpty ? $0.duration : totalDuration(of: inBedIntervals, clippedTo: $0)) }
 
         guard let primaryBlock = selectPrimaryBlock(from: blocks) else { return nil }
 

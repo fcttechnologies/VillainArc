@@ -239,10 +239,10 @@ private struct HealthEnergyMainChartSection: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 5) {
                                 if let averageActiveEnergy = currentRangeData.averageActiveEnergy {
-                                    metadataEnergyValue(title: "Avg Active", energy: averageActiveEnergy)
+                                    HealthHistoryMetadataValue(title: "Avg Active", text: Int(averageActiveEnergy.rounded()).formatted(.number), animationValue: averageActiveEnergy)
                                 }
                                 if let averageTotalEnergy = currentRangeData.averageTotalEnergy {
-                                    metadataEnergyValue(title: "Avg Total", energy: averageTotalEnergy)
+                                    HealthHistoryMetadataValue(title: "Avg Total", text: Int(averageTotalEnergy.rounded()).formatted(.number), animationValue: averageTotalEnergy)
                                 }
                             }
                         }
@@ -254,7 +254,7 @@ private struct HealthEnergyMainChartSection: View {
             }
             
             Picker("Range", selection: $selectedRange.animation(reduceMotion ? nil : .easeInOut)) {
-                ForEach(TimeSeriesRangeFilter.allCases) { range in
+                ForEach(TimeSeriesRangeFilter.nonDayCases) { range in
                     Text(range.rawValue).tag(range)
                 }
             }
@@ -300,21 +300,6 @@ private struct HealthEnergyMainChartSection: View {
         }
     }
 
-    @ViewBuilder
-    private func metadataEnergyValue(title: String, energy: Double) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text(Int(energy.rounded()), format: .number)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .fontDesign(.rounded)
-                .contentTransition(.numericText(value: energy))
-        }
-        .animation(reduceMotion ? nil : .smooth, value: energy)
-        .accessibilityElement(children: .combine)
-    }
 }
 
 private struct HealthEnergyWeekdayChartSection: View {
@@ -366,11 +351,11 @@ private struct HealthEnergyWeekdayChartSection: View {
         let valueText = Text(caloriesText).foregroundStyle(tint)
         let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
-            let summaryText = String(localized: "On average, you burn \(caloriesText) \(energyUnit.unitLabel) on \(weekdayText).")
-            return WeekdayAverageChartPresentation(headline: Text("On average, you burn \(valueText) \(energyUnit.unitLabel) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            let summaryText = String(localized: "You burn \(caloriesText) \(energyUnit.unitLabel) on \(weekdayText).")
+            return WeekdayAverageChartPresentation(headline: Text("You burn \(valueText) \(energyUnit.unitLabel) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
         }
-        let summaryText = String(localized: "On average, you burn the most calories on \(weekdayText). \(caloriesText) \(energyUnit.unitLabel).")
-        return WeekdayAverageChartPresentation(headline: Text("On average, you burn the most calories on \(weekdayText). \(valueText) \(energyUnit.unitLabel)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        let summaryText = String(localized: "You burn the most calories on \(weekdayText). \(caloriesText) \(energyUnit.unitLabel).")
+        return WeekdayAverageChartPresentation(headline: Text("You burn the most calories on \(weekdayText). \(valueText) \(energyUnit.unitLabel)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
     }
 
     var body: some View {
@@ -392,9 +377,9 @@ private struct HealthEnergyPeriodHighlightsSection: View {
 
     private let tint = Color.orange
 
-    private var monthlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .month, date: \.date, value: \.activeEnergyBurned) }
+    private var monthlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .month, date: \.date, value: \.activeEnergyBurned, flatThreshold: 50) }
 
-    private var yearlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .year, date: \.date, value: \.activeEnergyBurned) }
+    private var yearlyHighlight: PeriodComparisonHighlight? { makePeriodComparisonHighlight(entries: entries, kind: .year, date: \.date, value: \.activeEnergyBurned, flatThreshold: 50) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -408,36 +393,38 @@ private struct HealthEnergyPeriodHighlightsSection: View {
     }
 
     private func energySummaryText(for highlight: PeriodComparisonHighlight) -> Text {
+        let yearLeadIn = yearComparisonLeadIn()
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return Text("On average, you're burning \(Text("more").foregroundStyle(tint)) energy this month than you did last month.")
+            return Text("You're burning \(Text("more").foregroundStyle(tint)) energy this month than you did last month.")
         case (.month, .down):
-            return Text("On average, you're burning \(Text("less").foregroundStyle(tint)) energy this month than you did last month.")
+            return Text("You're burning \(Text("less").foregroundStyle(tint)) energy this month than you did last month.")
         case (.month, .flat):
-            return Text("On average, you're burning \(Text("about the same").foregroundStyle(tint)) amount of energy this month as you did last month.")
+            return Text("You're burning \(Text("about the same").foregroundStyle(tint)) amount of energy this month as you did last month.")
         case (.year, .up):
-            return Text("So far this year, you're burning \(Text("more").foregroundStyle(tint)) energy a day than you did last year.")
+            return Text("\(yearLeadIn), you're burning \(Text("more").foregroundStyle(tint)) energy a day than you did last year.")
         case (.year, .down):
-            return Text("So far this year, you're burning \(Text("less").foregroundStyle(tint)) energy a day than you did last year.")
+            return Text("\(yearLeadIn), you're burning \(Text("less").foregroundStyle(tint)) energy a day than you did last year.")
         case (.year, .flat):
-            return Text("So far this year, you're burning \(Text("about the same").foregroundStyle(tint)) amount of energy a day as you did last year.")
+            return Text("\(yearLeadIn), you're burning \(Text("about the same").foregroundStyle(tint)) amount of energy a day as you did last year.")
         }
     }
 
     private func energySummary(for highlight: PeriodComparisonHighlight) -> String {
+        let yearLeadIn = yearComparisonLeadIn()
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return "On average, you're burning more energy this month than you did last month."
+            return "You're burning more energy this month than you did last month."
         case (.month, .down):
-            return "On average, you're burning less energy this month than you did last month."
+            return "You're burning less energy this month than you did last month."
         case (.month, .flat):
-            return "On average, you're burning about the same amount of energy this month as you did last month."
+            return "You're burning about the same amount of energy this month as you did last month."
         case (.year, .up):
-            return "So far this year, you're burning more energy a day than you did last year."
+            return "\(yearLeadIn), you're burning more energy a day than you did last year."
         case (.year, .down):
-            return "So far this year, you're burning less energy a day than you did last year."
+            return "\(yearLeadIn), you're burning less energy a day than you did last year."
         case (.year, .flat):
-            return "So far this year, you're burning about the same amount of energy a day as you did last year."
+            return "\(yearLeadIn), you're burning about the same amount of energy a day as you did last year."
         }
     }
 }

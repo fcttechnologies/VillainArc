@@ -35,6 +35,7 @@ struct HealthStepsSectionCard: View {
 
     var body: some View {
         Button {
+            Haptics.selection()
             router.navigate(to: .stepsDistanceHistory)
         } label: {
             VStack(alignment: .leading, spacing: 10) {
