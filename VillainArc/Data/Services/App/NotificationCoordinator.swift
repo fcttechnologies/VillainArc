@@ -2,44 +2,40 @@ import Foundation
 import SwiftData
 import UserNotifications
 
+nonisolated enum NotificationType: String {
+    case restTimerComplete
+    case stepsGoalComplete
+}
+
+nonisolated enum NotificationUserInfoKey {
+    static let type = "notificationType"
+    static let targetSteps = "targetSteps"
+    static let stepCount = "stepCount"
+}
+
 final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationCoordinator()
-
-    private enum NotificationType: String {
-        case restTimerComplete
-        case stepsGoalComplete
-    }
-
-    private enum UserInfoKey {
-        static let type = "notificationType"
-        static let targetSteps = "targetSteps"
-        static let stepCount = "stepCount"
-    }
-
-    private let center = UNUserNotificationCenter.current()
-    private let restTimerNotificationID = "restTimerComplete"
-    private let stepsGoalNotificationID = "stepsGoalComplete"
 
     private override init() {
         super.init()
     }
 
     func installDelegate() {
-        center.delegate = self
+        UNUserNotificationCenter.current().delegate = self
     }
 
-    func authorizationStatus() async -> UNAuthorizationStatus {
-        let settings = await center.notificationSettings()
+    nonisolated static func authorizationStatus() async -> UNAuthorizationStatus {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
         return settings.authorizationStatus
     }
 
-    func requestAuthorizationIfNeededAfterOnboarding() async {
+    nonisolated static func requestAuthorizationIfNeededAfterOnboarding() async {
         let status = await authorizationStatus()
         guard status == .notDetermined else { return }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
-    func scheduleRestTimer(endDate: Date) async {
+    nonisolated static func scheduleRestTimer(endDate: Date) async {
         let settings = currentAppSettingsSnapshot()
         guard settings.restTimerNotificationsEnabled else {
             cancelRestTimer()
@@ -52,6 +48,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             return
         }
 
+        let center = UNUserNotificationCenter.current()
         cancelRestTimer()
 
         let content = UNMutableNotificationContent()
@@ -59,54 +56,58 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         content.body = "Time to lift again."
         content.sound = .default
         content.threadIdentifier = "restTimer"
-        content.userInfo = [UserInfoKey.type: NotificationType.restTimerComplete.rawValue]
+        content.userInfo = [NotificationUserInfoKey.type: NotificationType.restTimerComplete.rawValue]
 
-        let interval = max(0.1, endDate.timeIntervalSinceNow)
+        let interval = max(1, endDate.timeIntervalSinceNow)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        let request = UNNotificationRequest(identifier: restTimerNotificationID, content: content, trigger: trigger)
+        let request = UNNotificationRequest(identifier: "restTimerComplete", content: content, trigger: trigger)
 
         try? await center.add(request)
     }
 
-    func cancelRestTimer() {
-        center.removePendingNotificationRequests(withIdentifiers: [restTimerNotificationID])
-        center.removeDeliveredNotifications(withIdentifiers: [restTimerNotificationID])
+    nonisolated static func cancelRestTimer() {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["restTimerComplete"])
+        center.removeDeliveredNotifications(withIdentifiers: ["restTimerComplete"])
     }
 
-    func deliverStepsGoalCompletion(targetSteps: Int, stepCount: Int) async {
+    nonisolated static func deliverStepsGoalCompletion(targetSteps: Int, stepCount: Int) async {
         let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
 
         guard settings.stepsNotificationMode != .off, status.allowsLocalDelivery else {
-            await presentToastIfPossible(.stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount))
+            await shared.presentToastIfPossible(.stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount))
             return
         }
 
-        center.removePendingNotificationRequests(withIdentifiers: [stepsGoalNotificationID])
-        center.removeDeliveredNotifications(withIdentifiers: [stepsGoalNotificationID])
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["stepsGoalComplete"])
+        center.removeDeliveredNotifications(withIdentifiers: ["stepsGoalComplete"])
+        let compactStepCount = compactStepsText(stepCount)
+        let compactTargetSteps = compactStepsText(targetSteps)
 
         let content = UNMutableNotificationContent()
-        content.title = "Steps goal reached"
-        content.body = "You hit \(stepCount.formatted(.number)) steps and cleared your \(targetSteps.formatted(.number)) step target."
+        content.title = "Steps Goal Reached"
+        content.body = "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) daily step goal."
         content.sound = .default
         content.threadIdentifier = "healthGoals"
         content.userInfo = [
-            UserInfoKey.type: NotificationType.stepsGoalComplete.rawValue,
-            UserInfoKey.targetSteps: targetSteps,
-            UserInfoKey.stepCount: stepCount
+            NotificationUserInfoKey.type: NotificationType.stepsGoalComplete.rawValue,
+            NotificationUserInfoKey.targetSteps: targetSteps,
+            NotificationUserInfoKey.stepCount: stepCount
         ]
 
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
-        let request = UNNotificationRequest(identifier: stepsGoalNotificationID, content: content, trigger: trigger)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: "stepsGoalComplete", content: content, trigger: trigger)
         try? await center.add(request)
     }
 
-    func deliverRestTimerCompletionIfNeeded() async {
+    nonisolated static func deliverRestTimerCompletionIfNeeded() async {
         let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
 
         guard settings.restTimerNotificationsEnabled, status.allowsLocalDelivery else {
-            await presentToastIfPossible(.restTimerComplete)
+            await shared.presentToastIfPossible(.restTimerComplete)
             return
         }
     }
@@ -123,12 +124,17 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         center.removeDeliveredNotifications(withIdentifiers: [response.notification.request.identifier])
     }
 
-    private func currentAppSettingsSnapshot() -> AppSettingsSnapshot {
-        let context = SharedModelContainer.container.mainContext
+    nonisolated private static func currentAppSettingsSnapshot() -> AppSettingsSnapshot {
+        let context = ModelContext(SharedModelContainer.container)
+        context.autosaveEnabled = false
         return AppSettingsSnapshot(settings: try? context.fetch(AppSettings.single).first)
     }
 
-    private func presentToastIfPossible(_ toast: ToastManager.Toast) async {
+    nonisolated private static func compactStepsText(_ steps: Int) -> String {
+        steps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
+    }
+
+    nonisolated private func presentToastIfPossible(_ toast: ToastManager.Toast) async {
         await MainActor.run {
             guard ToastManager.shared.canPresentToasts else { return }
             ToastManager.shared.show(toast)
@@ -136,7 +142,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     private func toast(for userInfo: [AnyHashable: Any]) -> ToastManager.Toast? {
-        guard let rawValue = userInfo[UserInfoKey.type] as? String, let type = NotificationType(rawValue: rawValue) else {
+        guard let rawValue = userInfo[NotificationUserInfoKey.type] as? String, let type = NotificationType(rawValue: rawValue) else {
             return nil
         }
 
@@ -144,14 +150,14 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         case .restTimerComplete:
             return .restTimerComplete
         case .stepsGoalComplete:
-            let targetSteps = userInfo[UserInfoKey.targetSteps] as? Int ?? 0
-            let stepCount = userInfo[UserInfoKey.stepCount] as? Int ?? 0
+            let targetSteps = userInfo[NotificationUserInfoKey.targetSteps] as? Int ?? 0
+            let stepCount = userInfo[NotificationUserInfoKey.stepCount] as? Int ?? 0
             return .stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount)
         }
     }
 }
 
-extension UNAuthorizationStatus {
+nonisolated extension UNAuthorizationStatus {
     var allowsLocalDelivery: Bool {
         switch self {
         case .authorized, .provisional, .ephemeral:

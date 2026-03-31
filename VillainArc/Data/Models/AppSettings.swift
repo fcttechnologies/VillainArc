@@ -34,7 +34,7 @@ struct AppSettingsSnapshot {
     let distanceUnit: DistanceUnit
     let energyUnit: EnergyUnit
 
-    init(settings: AppSettings?) {
+    nonisolated init(settings: AppSettings?) {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
         autoCompleteSetAfterRPE = settings?.autoCompleteSetAfterRPE ?? false
         promptForPreWorkoutContext = settings?.promptForPreWorkoutContext ?? true

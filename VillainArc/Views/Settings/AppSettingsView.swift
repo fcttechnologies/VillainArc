@@ -249,6 +249,7 @@ private struct NotificationSettingsView: View {
                     Text("Choose whether Villain Arc notifies only when you hit your goal or reserves room for future coaching notifications too.")
                 }
             }
+
         }
         .navigationTitle("Notifications")
         .toolbarTitleDisplayMode(.inline)
@@ -266,11 +267,11 @@ private struct NotificationSettingsView: View {
             let restTimer = RestTimerState.shared
             if settings.restTimerNotificationsEnabled, let endDate = restTimer.endDate, restTimer.isRunning {
                 Task {
-                    await NotificationCoordinator.shared.scheduleRestTimer(endDate: endDate)
+                    await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
                 }
             } else {
                 Task {
-                    NotificationCoordinator.shared.cancelRestTimer()
+                    NotificationCoordinator.cancelRestTimer()
                 }
             }
         }
@@ -323,7 +324,7 @@ private struct NotificationSettingsView: View {
     }
 
     private func refreshNotificationAuthorizationState() async {
-        notificationAuthorizationStatus = await NotificationCoordinator.shared.authorizationStatus()
+        notificationAuthorizationStatus = await NotificationCoordinator.authorizationStatus()
         backgroundRefreshStatus = UIApplication.shared.backgroundRefreshStatus
     }
 
@@ -334,7 +335,7 @@ private struct NotificationSettingsView: View {
 
         switch notificationAuthorizationStatus {
         case .notDetermined:
-            await NotificationCoordinator.shared.requestAuthorizationIfNeededAfterOnboarding()
+            await NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()
         case .denied, .authorized, .provisional, .ephemeral:
             openAppSettings()
         @unknown default:

@@ -99,11 +99,11 @@ struct WorkoutSettingsView: View {
             let restTimer = RestTimerState.shared
             if settings.restTimerNotificationsEnabled, let endDate = restTimer.endDate, restTimer.isRunning {
                 Task {
-                    await NotificationCoordinator.shared.scheduleRestTimer(endDate: endDate)
+                    await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
                 }
             } else {
                 Task {
-                    NotificationCoordinator.shared.cancelRestTimer()
+                    NotificationCoordinator.cancelRestTimer()
                 }
             }
         }

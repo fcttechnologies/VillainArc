@@ -7,6 +7,11 @@ actor HealthDailyMetricsSync {
         var value: [Date: Value] = [:]
     }
 
+    private struct StepsGoalCompletionNotification: Sendable {
+        let targetSteps: Int
+        let achievedStepCount: Int
+    }
+
     private struct MetricSyncResult {
         let newAnchor: HKQueryAnchor
         let newSyncedRange: ClosedRange<Date>?
@@ -130,13 +135,17 @@ actor HealthDailyMetricsSync {
         let syncedRange = syncState.stepCountSyncedRange
         let usesInitialImport = syncedRange == nil
         let anchor = usesInitialImport ? nil : HealthSyncPreferences.stepCountAnchor
+        let notificationsBox = TotalsByDayBox<StepsGoalCompletionNotification>()
 
         do {
-            let result = try await syncMetric(type: HealthKitCatalog.stepCountType, unit: HealthKitCatalog.countUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { Int($0.rounded()) }, applyValue: { try self.upsertStepCount(for: $0, stepCount: $1, context: $2) })
+            let result = try await syncMetric(type: HealthKitCatalog.stepCountType, unit: HealthKitCatalog.countUnit, anchor: anchor, syncedRange: syncedRange, context: context, mapValue: { Int($0.rounded()) }, applyValue: { try self.upsertStepCount(for: $0, stepCount: $1, context: $2, notificationsBox: notificationsBox) })
             if result.shouldAdvanceSyncState {
                 HealthSyncPreferences.stepCountAnchor = result.newAnchor
                 syncState.stepCountSyncedRange = result.newSyncedRange
                 try context.save()
+            }
+            for notification in notificationsBox.value.values {
+                await NotificationCoordinator.deliverStepsGoalCompletion(targetSteps: notification.targetSteps, stepCount: notification.achievedStepCount)
             }
             logMetricSyncIfNeeded(named: "steps", refreshedRange: result.refreshedRange)
         } catch {
@@ -334,16 +343,13 @@ actor HealthDailyMetricsSync {
         return totalsByDay.value
     }
 
-    private func upsertStepCount(for dayStart: Date, stepCount: Int, context: ModelContext) throws {
+    private func upsertStepCount(for dayStart: Date, stepCount: Int, context: ModelContext, notificationsBox: TotalsByDayBox<StepsGoalCompletionNotification>) throws {
         let summary = try fetchOrCreateStepsDistance(for: dayStart, context: context)
         summary.stepCount = max(0, stepCount)
         let achievedTodayTransition = try StepsGoalEvaluator.reevaluateAchievement(for: summary, context: context)
         if achievedTodayTransition {
             let targetSteps = try context.fetch(StepsGoal.forDay(dayStart)).first?.targetSteps ?? summary.stepCount
-            let achievedStepCount = summary.stepCount
-            Task {
-                await NotificationCoordinator.shared.deliverStepsGoalCompletion(targetSteps: targetSteps, stepCount: achievedStepCount)
-            }
+            notificationsBox.value[dayStart] = StepsGoalCompletionNotification(targetSteps: targetSteps, achievedStepCount: summary.stepCount)
         }
     }
 

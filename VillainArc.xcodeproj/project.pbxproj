@@ -872,7 +872,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArc/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc reads your workouts, body weight, heart rate, routes, and related workout metrics so it can show richer Health details inside the app.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc saves your completed workouts and body weight entries to Apple Health so your training history stays connected.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -916,7 +919,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArc/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc reads your workouts, body weight, heart rate, routes, and related workout metrics so it can show richer Health details inside the app.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc saves your completed workouts and body weight entries to Apple Health so your training history stays connected.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

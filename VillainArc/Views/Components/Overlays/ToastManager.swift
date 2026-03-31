@@ -18,10 +18,12 @@ final class ToastManager {
         let tint: Color
         let haptic: HapticStyle?
 
-        static let restTimerComplete = Toast(title: "Rest complete", message: "Time to lift again.", systemImage: "bell.badge", tint: .orange, haptic: .success)
+        static let restTimerComplete = Toast(title: "Rest complete", message: "Time to lift again.", systemImage: "timer", tint: .orange, haptic: .success)
 
         static func stepsGoalComplete(targetSteps: Int, stepCount: Int) -> Toast {
-            Toast(title: "Steps goal reached", message: "You hit \(stepCount.formatted(.number)) steps and cleared your \(targetSteps.formatted(.number)) step target.", systemImage: "figure.walk", tint: .red, haptic: .success)
+            let compactStepCount = stepCount.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
+            let compactTargetSteps = targetSteps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
+            return Toast(title: "Steps goal reached", message: "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) step target.", systemImage: "figure.walk", tint: .red, haptic: .success)
         }
     }
 

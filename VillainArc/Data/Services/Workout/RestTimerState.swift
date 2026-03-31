@@ -172,7 +172,7 @@ import Observation
             stopInternal(cancelNotification: false)
             WorkoutActivityManager.update()
             Task {
-                await NotificationCoordinator.shared.deliverRestTimerCompletionIfNeeded()
+                await NotificationCoordinator.deliverRestTimerCompletionIfNeeded()
             }
         }
     }
@@ -196,13 +196,13 @@ import Observation
     private func scheduleNotification() {
         guard let endDate else { return }
         Task {
-            await NotificationCoordinator.shared.scheduleRestTimer(endDate: endDate)
+            await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
         }
     }
 
     private func cancelNotificationRequest() {
         Task {
-            NotificationCoordinator.shared.cancelRestTimer()
+            NotificationCoordinator.cancelRestTimer()
         }
     }
 }
