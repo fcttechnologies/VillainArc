@@ -240,6 +240,7 @@ private struct WeightHistoryMainSection: View {
                     }
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .fontWeight(.semibold)
                     
                     HStack(alignment: .bottom) {
                         Group {

@@ -370,10 +370,6 @@ private struct SleepHistoryMainSection: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fontWeight(.semibold)
-                    .fontDesign(.rounded)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                
                 if let headerDuration {
                     SleepDurationValueView(duration: headerDuration)
                 } else {

@@ -172,6 +172,7 @@ private struct StepsDistanceMainChartSection: View {
                 }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .fontWeight(.semibold)
 
                 HStack(alignment: .bottom) {
                     Group {
