@@ -143,7 +143,7 @@ When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 This does three jobs:
 
 - recreate missing Health observers after the launch path
-- backfill Health mirrors, nightly sleep summaries, and daily caches
+- backfill Health mirrors, sleep nights and sleep blocks, and daily caches
 - reconcile older workout and weight exports
 
 The observer reinstall matters because observer queries are also created earlier at process launch. If an earlier observer failed due to Health authorization state, the ready-time path can recreate it cleanly.

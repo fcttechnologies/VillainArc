@@ -246,7 +246,7 @@ private struct NotificationSettingsView: View {
                 } else if backgroundRefreshStatus != .available {
                     Text("Background App Refresh is off, so Villain Arc can’t reliably deliver steps goal notifications while the app is closed.")
                 } else {
-                    Text("Choose whether Villain Arc notifies only when you hit your goal or reserves room for future coaching notifications too.")
+                    Text("Choose whether Villain Arc schedules local notifications only for goal completions or also for coaching milestones like double goal, triple goal, and new step records. In-app toasts can still appear while you’re using the app.")
                 }
             }
 

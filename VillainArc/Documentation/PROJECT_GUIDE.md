@@ -99,7 +99,8 @@ The split is:
 - `WorkoutSession` remains the app-owned training record
 - `HealthWorkout` is a local Apple Health mirror/cache
 - `WeightEntry` is the app’s local weight history model, which can also link to Apple Health samples
-- `HealthSleepNight` is a per-wake-day Apple Health sleep summary cache
+- `HealthSleepNight` is a per-wake-day Apple Health sleep rollup cache
+- `HealthSleepBlock` is the persisted per-block sleep detail layer for naps and same-day secondary sleep blocks
 - `HealthStepsDistance` and `HealthEnergy` are per-day Health caches
 - `WeightGoal` and `StepsGoal` are local app models
 
@@ -208,15 +209,16 @@ See:
 The Health tab combines:
 
 - a latest sleep summary card backed by cached nightly sleep
-- weight history and weight goals
-- daily steps and distance history plus steps goals
-- daily energy history
+- a dedicated sleep history screen with a day stage view, cached week/month block charts, grouped broader-range charts, weekday averages, and sleep highlights
+- weight history with intraday day view plus weight goals
+- daily steps and distance history with intraday day view plus steps goals
+- daily energy history with intraday day view
 - Apple Health workout history
 
 Notification behavior is part of that surface:
 
 - rest timer completions
-- steps-goal completions when the app can observe the Health update in time
+- steps goal and coaching events, including double goal, triple goal, and new-best milestones when the app can observe the Health update in time
 
 See:
 

@@ -71,6 +71,7 @@ private struct StepsDistanceMainChartSection: View {
     @State private var selectedRange: TimeSeriesRangeFilter = .month
     @State private var selectedDate: Date?
     @State private var rangeCache: [TimeSeriesRangeFilter: StepsDistanceCachedRangeData] = [:]
+    @State private var intradayLoader = HealthIntradayMetricsLoader()
 
     let entries: [HealthStepsDistance]
     let distanceUnit: DistanceUnit
@@ -96,7 +97,9 @@ private struct StepsDistanceMainChartSection: View {
     }
 
     private var currentRangeData: StepsDistanceCachedRangeData? {
-        rangeCache[selectedRange]
+        guard let cachedData = rangeCache[selectedRange] else { return nil }
+        guard selectedRange == .day, let latestEntry else { return cachedData }
+        return Calendar.autoupdatingCurrent.isDate(cachedData.layout.currentDomain.lowerBound, inSameDayAs: latestEntry.date) ? cachedData : nil
     }
 
     private var cacheKey: Int {
@@ -266,13 +269,24 @@ private struct StepsDistanceMainChartSection: View {
                         }
                     }
                 }
+                if selectedRange == .day, let movementLoadErrorMessage = intradayLoader.movementLoadErrorMessage {
+                    Text(movementLoadErrorMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             } else {
-                ProgressView("Updating chart")
-                    .frame(maxWidth: .infinity, minHeight: 260)
+                Group {
+                    if selectedRange == .day, !intradayLoader.isLoadingMovementDay {
+                        emptyStateView()
+                    } else {
+                        ProgressView("Updating chart")
+                            .frame(maxWidth: .infinity, minHeight: 260)
+                    }
+                }
             }
 
             Picker("Range", selection: $selectedRange.animation(reduceMotion ? nil : .easeInOut)) {
-                ForEach(TimeSeriesRangeFilter.nonDayCases) { range in
+                ForEach(TimeSeriesRangeFilter.allCases) { range in
                     Text(range.rawValue).tag(range)
                 }
             }
@@ -285,7 +299,8 @@ private struct StepsDistanceMainChartSection: View {
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
             let calendar = Calendar.autoupdatingCurrent
-            let now = Date()
+            let now = latestEntry?.date ?? Date()
+            async let prefetchedDay: Void = prefetchLatestDayIfNeeded()
             progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
                 if rangeCache.isEmpty || reduceMotion { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
             }) { range in
@@ -300,6 +315,7 @@ private struct StepsDistanceMainChartSection: View {
                 let highSteps = visibleEntries.map(\.stepCount).max().map(Double.init)
                 return StepsDistanceCachedRangeData(layout: layout, distanceLayout: distanceLayout, yDomain: yDomain, totalSteps: pointValues.isEmpty ? nil : totalSteps, averageSteps: averageSteps, highSteps: highSteps)
             }
+            await prefetchedDay
         }
     }
 
@@ -317,6 +333,35 @@ private struct StepsDistanceMainChartSection: View {
             } description: {
                 Text(AccessibilityText.healthHistoryNoHealthDataDescription)
             }
+        }
+    }
+
+    private func publishDayRangeCache(for day: Date, movement: HealthMovementDaySamples) {
+        let calendar = Calendar.autoupdatingCurrent
+        let layout = TimeSeriesChartLayout(rangeFilter: .day, samples: movement.stepSamples, now: day, calendar: calendar, aggregation: .sum)
+        let distanceLayout = TimeSeriesChartLayout(rangeFilter: .day, samples: movement.distanceSamples, now: day, calendar: calendar, aggregation: .sum)
+        let pointValues = layout.points.map(\.value)
+        let totalSteps = pointValues.isEmpty ? nil : pointValues.reduce(0, +)
+        let yDomain = 0...(max(pointValues.max() ?? 0, 1) * 1.15)
+        let averageSteps = pointValues.isEmpty ? nil : pointValues.reduce(0, +) / Double(pointValues.count)
+        let highSteps = pointValues.max()
+        let dayData = StepsDistanceCachedRangeData(layout: layout, distanceLayout: distanceLayout, yDomain: yDomain, totalSteps: totalSteps, averageSteps: averageSteps, highSteps: highSteps)
+        if reduceMotion {
+            rangeCache[.day] = dayData
+        } else {
+            withAnimation(.smooth) { rangeCache[.day] = dayData }
+        }
+    }
+
+    private func prefetchLatestDayIfNeeded() async {
+        guard let latestEntry else { return }
+        let dayStart = Calendar.autoupdatingCurrent.startOfDay(for: latestEntry.date)
+        if let movement = intradayLoader.movementByDay[dayStart] {
+            publishDayRangeCache(for: dayStart, movement: movement)
+        }
+        await intradayLoader.loadMovementDayIfNeeded(day: dayStart)
+        if let movement = intradayLoader.movementByDay[dayStart] {
+            publishDayRangeCache(for: dayStart, movement: movement)
         }
     }
 

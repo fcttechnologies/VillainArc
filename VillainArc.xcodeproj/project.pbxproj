@@ -139,6 +139,7 @@
 				Data/Models/Exercise/RestTimeDefaults.swift,
 				Data/Models/Health/HealthEnergy.swift,
 				Data/Models/Health/HealthKitCatalog.swift,
+				Data/Models/Health/HealthSleepBlock.swift,
 				Data/Models/Health/HealthSleepNight.swift,
 				Data/Models/Health/HealthStepsDistance.swift,
 				Data/Models/Health/HealthSyncState.swift,

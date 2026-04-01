@@ -202,6 +202,7 @@ private struct WeightHistoryMainSection: View {
     }
     
     private var summaryStats: [SummaryStat] {
+        guard selectedRange != .day else { return [] }
         guard let currentRangeData, currentRangeData.entryCount > 0 else { return [] }
         var stats = [SummaryStat(id: "change", title: "Change", text: changeText(for: currentRangeData))]
         if let trendText = trendText(for: currentRangeData) {
@@ -345,7 +346,7 @@ private struct WeightHistoryMainSection: View {
                 }
 
                 Picker("Range", selection: $selectedRange) {
-                    ForEach(TimeSeriesRangeFilter.nonDayCases) { range in
+                    ForEach(TimeSeriesRangeFilter.allCases) { range in
                         Text(range.rawValue).tag(range)
                     }
                 }
@@ -453,7 +454,7 @@ private struct WeightHistoryMainSection: View {
         let entrySnapshots = entrySnapshots
         let now = Date()
         let calendar = Calendar.autoupdatingCurrent
-        progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
+        progressivelyRebuildRangeCache(existing: rangeCache, buildOrder: [.month, .week, .day, .sixMonths, .year, .all], publish: { newCache in
             if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
         }) { range in
             buildRangeData(for: range, samples: samples, entrySnapshots: entrySnapshots, now: now, calendar: calendar)

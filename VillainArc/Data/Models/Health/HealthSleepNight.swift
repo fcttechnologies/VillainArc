@@ -5,8 +5,11 @@ import SwiftData
     #Index<HealthSleepNight>([\.wakeDay])
 
     var wakeDay: Date = Date()
+    @Relationship(deleteRule: .cascade, inverse: \HealthSleepBlock.night) var blocks: [HealthSleepBlock]? = [HealthSleepBlock]()
     var sleepStart: Date?
     var sleepEnd: Date?
+    var allSleepStart: Date?
+    var allSleepEnd: Date?
     var timeAsleep: TimeInterval = 0
     var timeInBed: TimeInterval = 0
     var awakeDuration: TimeInterval = 0
@@ -15,7 +18,6 @@ import SwiftData
     var deepDuration: TimeInterval = 0
     var asleepUnspecifiedDuration: TimeInterval = 0
     var napDuration: TimeInterval = 0
-    var hasStageBreakdown: Bool = false
     var isAvailableInHealthKit: Bool = true
 
     private static let wakeDayStorageTimeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
@@ -30,6 +32,14 @@ import SwiftData
     init(storedWakeDayKey: Date) { self.wakeDay = storedWakeDayKey }
 
     var awakeInBedDuration: TimeInterval { max(timeInBed - timeAsleep, 0) }
+    var hasStageBreakdown: Bool { awakeDuration > 0 || remDuration > 0 || coreDuration > 0 || deepDuration > 0 || asleepUnspecifiedDuration > 0 }
+    var sortedBlocks: [HealthSleepBlock] {
+        (blocks ?? []).sorted {
+            if $0.startDate == $1.startDate { return $0.endDate < $1.endDate }
+            return $0.startDate < $1.startDate
+        }
+    }
+    var primaryBlock: HealthSleepBlock? { sortedBlocks.first { $0.isPrimary } }
 
     var displayWakeDay: Date { Self.displayDate(forWakeDay: wakeDay) }
 

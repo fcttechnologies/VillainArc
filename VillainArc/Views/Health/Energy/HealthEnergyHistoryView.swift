@@ -48,6 +48,7 @@ private struct HealthEnergyMainChartSection: View {
     @State private var selectedRange: TimeSeriesRangeFilter = .month
     @State private var selectedDate: Date?
     @State private var rangeCache: [TimeSeriesRangeFilter: HealthEnergyCachedRangeData] = [:]
+    @State private var intradayLoader = HealthIntradayMetricsLoader()
 
     let entries: [HealthEnergy]
     let energyUnit: EnergyUnit
@@ -85,7 +86,9 @@ private struct HealthEnergyMainChartSection: View {
     }
 
     private var currentRangeData: HealthEnergyCachedRangeData? {
-        rangeCache[selectedRange]
+        guard let cachedData = rangeCache[selectedRange] else { return nil }
+        guard selectedRange == .day, let latestEntry else { return cachedData }
+        return Calendar.autoupdatingCurrent.isDate(cachedData.layout.currentDomain.lowerBound, inSameDayAs: latestEntry.date) ? cachedData : nil
     }
 
     private var cacheKey: Int {
@@ -249,13 +252,24 @@ private struct HealthEnergyMainChartSection: View {
                         }
                     }
                 }
+                if selectedRange == .day, let energyLoadErrorMessage = intradayLoader.energyLoadErrorMessage {
+                    Text(energyLoadErrorMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             } else {
-                ProgressView("Updating chart")
-                    .frame(maxWidth: .infinity, minHeight: 260)
+                Group {
+                    if selectedRange == .day, !intradayLoader.isLoadingEnergyDay {
+                        emptyStateView()
+                    } else {
+                        ProgressView("Updating chart")
+                            .frame(maxWidth: .infinity, minHeight: 260)
+                    }
+                }
             }
             
             Picker("Range", selection: $selectedRange.animation(reduceMotion ? nil : .easeInOut)) {
-                ForEach(TimeSeriesRangeFilter.nonDayCases) { range in
+                ForEach(TimeSeriesRangeFilter.allCases) { range in
                     Text(range.rawValue).tag(range)
                 }
             }
@@ -268,7 +282,8 @@ private struct HealthEnergyMainChartSection: View {
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
             let calendar = Calendar.autoupdatingCurrent
-            let now = Date()
+            let now = latestEntry?.date ?? Date()
+            async let prefetchedDay: Void = prefetchLatestDayIfNeeded()
             progressivelyRebuildRangeCache(existing: rangeCache, publish: { newCache in
                 if rangeCache.isEmpty || reduceMotion { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
             }) { range in
@@ -281,6 +296,7 @@ private struct HealthEnergyMainChartSection: View {
                 let averageActiveEnergy = visibleEntries.isEmpty ? nil : energyUnit.fromKilocalories(visibleEntries.reduce(0) { $0 + $1.activeEnergyBurned } / Double(visibleEntries.count))
                 return HealthEnergyCachedRangeData(layout: totalLayout, chartSegments: chartSegments, yDomain: yDomain, averageTotalEnergy: averageTotalEnergy, averageActiveEnergy: averageActiveEnergy)
             }
+            await prefetchedDay
         }
     }
 
@@ -298,6 +314,34 @@ private struct HealthEnergyMainChartSection: View {
             } description: {
                 Text(AccessibilityText.healthHistoryNoHealthDataDescription)
             }
+        }
+    }
+
+    private func publishDayRangeCache(for day: Date, energyDay: HealthEnergyDaySamples) {
+        let calendar = Calendar.autoupdatingCurrent
+        let totalLayout = TimeSeriesChartLayout(rangeFilter: .day, samples: energyDay.totalSamples, now: day, calendar: calendar, aggregation: .sum)
+        let activeLayout = TimeSeriesChartLayout(rangeFilter: .day, samples: energyDay.activeSamples, now: day, calendar: calendar, aggregation: .sum)
+        let chartSegments = bucketedEnergyChartSegments(totalPoints: totalLayout.points, activePoints: activeLayout.points)
+        let yDomain = 0...(max(totalLayout.points.map(\.value).max() ?? 0, 1) * 1.15)
+        let averageTotalEnergy = totalLayout.points.isEmpty ? nil : totalLayout.points.reduce(0) { $0 + $1.value } / Double(totalLayout.points.count)
+        let averageActiveEnergy = activeLayout.points.isEmpty ? nil : activeLayout.points.reduce(0) { $0 + $1.value } / Double(activeLayout.points.count)
+        let dayData = HealthEnergyCachedRangeData(layout: totalLayout, chartSegments: chartSegments, yDomain: yDomain, averageTotalEnergy: averageTotalEnergy, averageActiveEnergy: averageActiveEnergy)
+        if reduceMotion {
+            rangeCache[.day] = dayData
+        } else {
+            withAnimation(.smooth) { rangeCache[.day] = dayData }
+        }
+    }
+
+    private func prefetchLatestDayIfNeeded() async {
+        guard let latestEntry else { return }
+        let dayStart = Calendar.autoupdatingCurrent.startOfDay(for: latestEntry.date)
+        if let energyDay = intradayLoader.energyByDay[dayStart] {
+            publishDayRangeCache(for: dayStart, energyDay: energyDay)
+        }
+        await intradayLoader.loadEnergyDayIfNeeded(day: dayStart)
+        if let energyDay = intradayLoader.energyByDay[dayStart] {
+            publishDayRangeCache(for: dayStart, energyDay: energyDay)
         }
     }
 

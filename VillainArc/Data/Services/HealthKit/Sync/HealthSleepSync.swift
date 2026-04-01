@@ -3,15 +3,23 @@ import HealthKit
 import SwiftData
 
 actor HealthSleepSync {
-    private struct SleepBlock {
+    private struct ReconstructedSleepBlock {
         let interval: DateInterval
+        let wakeDay: Date
         let asleepDuration: TimeInterval
         let inBedDuration: TimeInterval
+        let awakeDuration: TimeInterval
+        let remDuration: TimeInterval
+        let coreDuration: TimeInterval
+        let deepDuration: TimeInterval
+        let asleepUnspecifiedDuration: TimeInterval
     }
 
     private struct SleepNightSummary {
         let sleepStart: Date
         let sleepEnd: Date
+        let allSleepStart: Date
+        let allSleepEnd: Date
         let timeAsleep: TimeInterval
         let timeInBed: TimeInterval
         let awakeDuration: TimeInterval
@@ -20,12 +28,12 @@ actor HealthSleepSync {
         let deepDuration: TimeInterval
         let asleepUnspecifiedDuration: TimeInterval
         let napDuration: TimeInterval
-        let hasStageBreakdown: Bool
+        let blocks: [ReconstructedSleepBlock]
     }
 
     static let shared = HealthSleepSync()
 
-    private let mergeGapTolerance: TimeInterval = 45 * 60
+    private let mergeGapTolerance: TimeInterval = 60 * 60
 
     private var isSyncingSleepNights = false
     private var needsAnotherSleepNightSync = false
@@ -61,11 +69,12 @@ actor HealthSleepSync {
             do {
                 let result = try await anchoredResult(anchor: anchor)
                 let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: result)
-                let refreshedRange = refreshRange(addedWakeDays: Set(result.addedSamples.map(wakeDay(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
+                let refreshedRange = refreshRange(addedSamples: result.addedSamples, syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
 
                 if let refreshedRange {
-                    let samplesByWakeDay = try await sleepSamplesByWakeDay(for: refreshedRange)
-                    try rebuildWakeDays(in: refreshedRange, samplesByWakeDay: samplesByWakeDay, retainRemovedHealthData: retainRemovedHealthData, context: context)
+                    let samples = try await sleepSamples(inWakeDayRange: refreshedRange)
+                    let summariesByWakeDay = summarizeNights(from: samples, in: refreshedRange)
+                    try rebuildWakeDays(in: refreshedRange, summariesByWakeDay: summariesByWakeDay, retainRemovedHealthData: retainRemovedHealthData, context: context)
                     try context.save()
                 }
 
@@ -97,8 +106,8 @@ actor HealthSleepSync {
         return await HealthReadProbe.hasReadableCategorySample(for: HealthKitCatalog.sleepAnalysisType)
     }
 
-    private func refreshRange(addedWakeDays: Set<Date>, syncedRange: ClosedRange<Date>?, hasDeletions: Bool) -> ClosedRange<Date>? {
-        let changedRange = dateRange(from: addedWakeDays)
+    private func refreshRange(addedSamples: [HKCategorySample], syncedRange: ClosedRange<Date>?, hasDeletions: Bool) -> ClosedRange<Date>? {
+        let changedRange = approximateWakeDayRange(for: addedSamples)
 
         if hasDeletions {
             return mergedRange(syncedRange, changedRange)
@@ -130,6 +139,31 @@ actor HealthSleepSync {
         return earliest...latest
     }
 
+    private func approximateWakeDayRange(for samples: [HKCategorySample]) -> ClosedRange<Date>? {
+        let candidateWakeDays = samples.flatMap { sample -> [Date] in
+            let timeZone = timeZone(for: sample) ?? .autoupdatingCurrent
+            return [
+                HealthSleepNight.wakeDayKey(for: sample.startDate, in: timeZone),
+                HealthSleepNight.wakeDayKey(for: sample.endDate, in: timeZone)
+            ]
+        }
+
+        guard let changedRange = dateRange(from: Set(candidateWakeDays)) else { return nil }
+        return paddedWakeDayRange(changedRange, days: 1)
+    }
+
+    private func paddedWakeDayRange(_ range: ClosedRange<Date>, days: Int) -> ClosedRange<Date> {
+        var lowerBound = range.lowerBound
+        var upperBound = range.upperBound
+
+        for _ in 0..<max(days, 0) {
+            lowerBound = HealthSleepNight.previousWakeDay(before: lowerBound)
+            upperBound = HealthSleepNight.nextWakeDay(after: upperBound)
+        }
+
+        return lowerBound...upperBound
+    }
+
     private func mergedRange(_ lhs: ClosedRange<Date>?, _ rhs: ClosedRange<Date>?) -> ClosedRange<Date>? {
         switch (lhs, rhs) {
         case let (.some(lhs), .some(rhs)):
@@ -143,32 +177,24 @@ actor HealthSleepSync {
         }
     }
 
-    private func sleepSamplesByWakeDay(for wakeDayRange: ClosedRange<Date>) async throws -> [Date: [HKCategorySample]] {
-        let queryRange = sampleEndDateQueryRange(for: wakeDayRange)
-        let predicate = HKQuery.predicateForSamples(withStart: queryRange.lowerBound, end: queryRange.upperBound, options: .strictEndDate)
-        let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: HealthKitCatalog.sleepAnalysisType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.endDate), SortDescriptor(\.startDate)])
-        let samples = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
-
-        let filteredSamples = samples.filter { sample in
-            let wakeDay = wakeDay(for: sample)
-            return wakeDay >= wakeDayRange.lowerBound && wakeDay <= wakeDayRange.upperBound
-        }
-
-        return Dictionary(grouping: filteredSamples, by: wakeDay(for:))
+    private func sleepSamples(inWakeDayRange wakeDayRange: ClosedRange<Date>) async throws -> [HKCategorySample] {
+        let queryRange = overlappingSampleQueryRange(for: wakeDayRange)
+        let predicate = HKQuery.predicateForSamples(withStart: queryRange.lowerBound, end: queryRange.upperBound)
+        let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: HealthKitCatalog.sleepAnalysisType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.startDate), SortDescriptor(\.endDate)])
+        return try await descriptor.result(for: HealthAuthorizationManager.healthStore)
     }
 
-    private func sampleEndDateQueryRange(for wakeDayRange: ClosedRange<Date>) -> Range<Date> {
+    private func overlappingSampleQueryRange(for wakeDayRange: ClosedRange<Date>) -> Range<Date> {
         let start = HealthSleepNight.previousWakeDay(before: wakeDayRange.lowerBound)
-        let upperBoundPlusTwoDays = HealthSleepNight.nextWakeDay(after: HealthSleepNight.nextWakeDay(after: wakeDayRange.upperBound))
-        return start..<upperBoundPlusTwoDays
+        let endExclusive = HealthSleepNight.nextWakeDay(after: wakeDayRange.upperBound)
+        return start..<endExclusive
     }
 
-    private func rebuildWakeDays(in wakeDayRange: ClosedRange<Date>, samplesByWakeDay: [Date: [HKCategorySample]], retainRemovedHealthData: Bool, context: ModelContext) throws {
+    private func rebuildWakeDays(in wakeDayRange: ClosedRange<Date>, summariesByWakeDay: [Date: SleepNightSummary], retainRemovedHealthData: Bool, context: ModelContext) throws {
         var wakeDay = wakeDayRange.lowerBound
 
         while wakeDay <= wakeDayRange.upperBound {
-            let samples = samplesByWakeDay[wakeDay] ?? []
-            try rebuildWakeDay(wakeDay, samples: samples, retainRemovedHealthData: retainRemovedHealthData, context: context)
+            try rebuildWakeDay(wakeDay, summary: summariesByWakeDay[wakeDay], retainRemovedHealthData: retainRemovedHealthData, context: context)
 
             let nextWakeDay = HealthSleepNight.nextWakeDay(after: wakeDay)
             guard nextWakeDay > wakeDay else { break }
@@ -176,21 +202,10 @@ actor HealthSleepSync {
         }
     }
 
-    private func rebuildWakeDay(_ wakeDay: Date, samples: [HKCategorySample], retainRemovedHealthData: Bool, context: ModelContext) throws {
+    private func rebuildWakeDay(_ wakeDay: Date, summary: SleepNightSummary?, retainRemovedHealthData: Bool, context: ModelContext) throws {
         let existing = try context.fetch(HealthSleepNight.forStoredWakeDayKey(wakeDay)).first
 
-        guard !samples.isEmpty else {
-            if let existing {
-                if retainRemovedHealthData {
-                    existing.isAvailableInHealthKit = false
-                } else {
-                    context.delete(existing)
-                }
-            }
-            return
-        }
-
-        guard let summary = summarizeNight(from: samples) else {
+        guard let summary else {
             if let existing {
                 if retainRemovedHealthData {
                     existing.isAvailableInHealthKit = false
@@ -205,6 +220,8 @@ actor HealthSleepSync {
         night.wakeDay = wakeDay
         night.sleepStart = summary.sleepStart
         night.sleepEnd = summary.sleepEnd
+        night.allSleepStart = summary.allSleepStart
+        night.allSleepEnd = summary.allSleepEnd
         night.timeAsleep = summary.timeAsleep
         night.timeInBed = summary.timeInBed
         night.awakeDuration = summary.awakeDuration
@@ -213,15 +230,16 @@ actor HealthSleepSync {
         night.deepDuration = summary.deepDuration
         night.asleepUnspecifiedDuration = summary.asleepUnspecifiedDuration
         night.napDuration = summary.napDuration
-        night.hasStageBreakdown = summary.hasStageBreakdown
         night.isAvailableInHealthKit = true
 
         if existing == nil {
             context.insert(night)
         }
+
+        replaceBlocks(for: night, with: summary.blocks, context: context)
     }
 
-    private func summarizeNight(from samples: [HKCategorySample]) -> SleepNightSummary? {
+    private func summarizeNights(from samples: [HKCategorySample], in wakeDayRange: ClosedRange<Date>) -> [Date: SleepNightSummary] {
         let inBedIntervals = intervals(for: .inBed, in: samples)
         let awakeIntervals = intervals(for: .awake, in: samples)
         let asleepIntervals = allAsleepIntervals(in: samples)
@@ -233,32 +251,33 @@ actor HealthSleepSync {
             awakeIntervals
         }
 
-        let blocks = mergedIntervals(basisIntervals, gapTolerance: mergeGapTolerance).map { SleepBlock(interval: $0, asleepDuration: totalDuration(of: asleepIntervals, clippedTo: $0), inBedDuration: inBedIntervals.isEmpty ? $0.duration : totalDuration(of: inBedIntervals, clippedTo: $0)) }
+        let remIntervals = intervals(for: .asleepREM, in: samples)
+        let coreIntervals = intervals(for: .asleepCore, in: samples)
+        let deepIntervals = intervals(for: .asleepDeep, in: samples)
+        let unspecifiedIntervals = unspecifiedSleepIntervals(in: samples)
+        let blocks = mergedIntervals(basisIntervals, gapTolerance: mergeGapTolerance).map { ReconstructedSleepBlock(interval: $0, wakeDay: wakeDay(for: $0, from: samples), asleepDuration: totalDuration(of: asleepIntervals, clippedTo: $0), inBedDuration: inBedIntervals.isEmpty ? $0.duration : totalDuration(of: inBedIntervals, clippedTo: $0), awakeDuration: totalDuration(of: awakeIntervals, clippedTo: $0), remDuration: totalDuration(of: remIntervals, clippedTo: $0), coreDuration: totalDuration(of: coreIntervals, clippedTo: $0), deepDuration: totalDuration(of: deepIntervals, clippedTo: $0), asleepUnspecifiedDuration: totalDuration(of: unspecifiedIntervals, clippedTo: $0)) }
 
-        guard let primaryBlock = selectPrimaryBlock(from: blocks) else { return nil }
-
-        let timeAsleep = totalDuration(of: asleepIntervals, clippedTo: primaryBlock.interval)
-        let timeInBed = inBedIntervals.isEmpty ? primaryBlock.interval.duration : totalDuration(of: inBedIntervals, clippedTo: primaryBlock.interval)
-        let awakeDuration = totalDuration(of: awakeIntervals, clippedTo: primaryBlock.interval)
-        let remDuration = totalDuration(of: intervals(for: .asleepREM, in: samples), clippedTo: primaryBlock.interval)
-        let coreDuration = totalDuration(of: intervals(for: .asleepCore, in: samples), clippedTo: primaryBlock.interval)
-        let deepDuration = totalDuration(of: intervals(for: .asleepDeep, in: samples), clippedTo: primaryBlock.interval)
-        let asleepUnspecifiedDuration = totalDuration(of: unspecifiedSleepIntervals(in: samples), clippedTo: primaryBlock.interval)
-        let napDuration = max(0, blocks.filter { $0.interval != primaryBlock.interval }.reduce(0) { $0 + $1.asleepDuration })
-        let hasStageBreakdown = samples.contains { sample in
-            guard interval(sample).intersects(primaryBlock.interval), let value = sleepValue(for: sample) else { return false }
-            switch value {
-            case .awake, .asleepCore, .asleepDeep, .asleepREM, .asleepUnspecified:
-                return true
-            default:
-                return false
-            }
-        }
-
-        return SleepNightSummary(sleepStart: primaryBlock.interval.start, sleepEnd: primaryBlock.interval.end, timeAsleep: max(0, timeAsleep), timeInBed: max(0, timeInBed), awakeDuration: max(0, awakeDuration), remDuration: max(0, remDuration), coreDuration: max(0, coreDuration), deepDuration: max(0, deepDuration), asleepUnspecifiedDuration: max(0, asleepUnspecifiedDuration), napDuration: napDuration, hasStageBreakdown: hasStageBreakdown)
+        return Dictionary(grouping: blocks.filter { $0.wakeDay >= wakeDayRange.lowerBound && $0.wakeDay <= wakeDayRange.upperBound }, by: \.wakeDay)
+            .compactMapValues { summarizeNight(blocks: $0) }
     }
 
-    private func selectPrimaryBlock(from blocks: [SleepBlock]) -> SleepBlock? {
+    private func summarizeNight(blocks: [ReconstructedSleepBlock]) -> SleepNightSummary? {
+        guard let primaryBlock = selectPrimaryBlock(from: blocks) else { return nil }
+        guard let allSleepStart = blocks.map(\.interval.start).min(), let allSleepEnd = blocks.map(\.interval.end).max() else { return nil }
+
+        let totalTimeAsleep = blocks.reduce(0) { $0 + $1.asleepDuration }
+        let totalTimeInBed = blocks.reduce(0) { $0 + $1.inBedDuration }
+        let totalAwakeDuration = blocks.reduce(0) { $0 + $1.awakeDuration }
+        let totalRemDuration = blocks.reduce(0) { $0 + $1.remDuration }
+        let totalCoreDuration = blocks.reduce(0) { $0 + $1.coreDuration }
+        let totalDeepDuration = blocks.reduce(0) { $0 + $1.deepDuration }
+        let totalAsleepUnspecifiedDuration = blocks.reduce(0) { $0 + $1.asleepUnspecifiedDuration }
+        let napDuration = max(0, totalTimeAsleep - primaryBlock.asleepDuration)
+
+        return SleepNightSummary(sleepStart: primaryBlock.interval.start, sleepEnd: primaryBlock.interval.end, allSleepStart: allSleepStart, allSleepEnd: allSleepEnd, timeAsleep: max(0, totalTimeAsleep), timeInBed: max(0, totalTimeInBed), awakeDuration: max(0, totalAwakeDuration), remDuration: max(0, totalRemDuration), coreDuration: max(0, totalCoreDuration), deepDuration: max(0, totalDeepDuration), asleepUnspecifiedDuration: max(0, totalAsleepUnspecifiedDuration), napDuration: napDuration, blocks: blocks)
+    }
+
+    private func selectPrimaryBlock(from blocks: [ReconstructedSleepBlock]) -> ReconstructedSleepBlock? {
         blocks.max { lhs, rhs in
             if lhs.asleepDuration != rhs.asleepDuration {
                 return lhs.asleepDuration < rhs.asleepDuration
@@ -339,7 +358,21 @@ actor HealthSleepSync {
 
     private func sleepValue(for sample: HKCategorySample) -> HKCategoryValueSleepAnalysis? { HKCategoryValueSleepAnalysis(rawValue: sample.value) }
 
-    private func wakeDay(for sample: HKCategorySample) -> Date { HealthSleepNight.wakeDayKey(for: sample.endDate, in: timeZone(for: sample) ?? .autoupdatingCurrent) }
+    private func wakeDay(for interval: DateInterval, from samples: [HKCategorySample]) -> Date {
+        let blockTimeZone = timeZone(forBlockInterval: interval, from: samples) ?? .autoupdatingCurrent
+        return HealthSleepNight.wakeDayKey(for: interval.end, in: blockTimeZone)
+    }
+
+    private func timeZone(forBlockInterval blockInterval: DateInterval, from samples: [HKCategorySample]) -> TimeZone? {
+        samples
+            .filter { interval($0).intersects(blockInterval) }
+            .sorted { lhs, rhs in
+                if lhs.endDate == rhs.endDate { return lhs.startDate > rhs.startDate }
+                return lhs.endDate > rhs.endDate
+            }
+            .compactMap(timeZone(for:))
+            .first
+    }
 
     private func timeZone(for sample: HKCategorySample) -> TimeZone? {
         if let identifier = sample.metadata?[HKMetadataKeyTimeZone] as? String {
@@ -371,6 +404,35 @@ actor HealthSleepSync {
     private func wakeDayLogText(_ wakeDay: Date) -> String { HealthSleepNight.displayDate(forWakeDay: wakeDay).formatted(.dateTime.month(.abbreviated).day().year()) }
 
     private func currentKeepRemovedHealthDataSetting(context: ModelContext) -> Bool { (try? context.fetch(AppSettings.single).first?.keepRemovedHealthData) ?? true }
+
+    private func replaceBlocks(for night: HealthSleepNight, with blocks: [ReconstructedSleepBlock], context: ModelContext) {
+        for block in Array(night.blocks ?? []) {
+            context.delete(block)
+        }
+
+        night.blocks = blocks
+            .sorted {
+                if $0.interval.start == $1.interval.start { return $0.interval.end < $1.interval.end }
+                return $0.interval.start < $1.interval.start
+            }
+            .map { block in
+                let persistedBlock = HealthSleepBlock(
+                    startDate: block.interval.start,
+                    endDate: block.interval.end,
+                    isPrimary: block.interval.start == night.sleepStart && block.interval.end == night.sleepEnd,
+                    timeAsleep: max(0, block.asleepDuration),
+                    timeInBed: max(0, block.inBedDuration),
+                    awakeDuration: max(0, block.awakeDuration),
+                    remDuration: max(0, block.remDuration),
+                    coreDuration: max(0, block.coreDuration),
+                    deepDuration: max(0, block.deepDuration),
+                    asleepUnspecifiedDuration: max(0, block.asleepUnspecifiedDuration),
+                    night: night
+                )
+                context.insert(persistedBlock)
+                return persistedBlock
+            }
+    }
 
     private func makeBackgroundContext() -> ModelContext {
         let context = ModelContext(SharedModelContainer.container)

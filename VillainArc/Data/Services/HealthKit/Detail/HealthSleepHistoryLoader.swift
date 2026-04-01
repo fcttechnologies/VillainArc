@@ -39,6 +39,7 @@ struct HealthSleepStageInterval: Identifiable, Hashable, Sendable {
 
 @Observable final class HealthSleepHistoryLoader {
     private let healthStore = HealthAuthorizationManager.healthStore
+    private let queryPadding: TimeInterval = 60 * 60
 
     private(set) var intervalsByWakeDay: [Date: [HealthSleepStageInterval]] = [:]
     private(set) var loadedDayWakeDays: Set<Date> = []
@@ -48,32 +49,32 @@ struct HealthSleepStageInterval: Identifiable, Hashable, Sendable {
 
     private var hasStartedInitialLoad = false
 
-    func loadInitialIfNeeded(latestWakeDay: Date?) async {
+    func loadInitialIfNeeded(latestNight: HealthSleepNight?) async {
         guard !hasStartedInitialLoad else { return }
-        guard let latestWakeDay else { return }
+        guard let latestNight else { return }
 
         hasStartedInitialLoad = true
 
-        await loadDayIfNeeded(wakeDay: latestWakeDay)
+        await loadDayIfNeeded(night: latestNight)
     }
 
-    func loadDayIfNeeded(wakeDay: Date) async {
+    func loadDayIfNeeded(night: HealthSleepNight) async {
         guard HealthAuthorizationManager.isHealthDataAvailable else { return }
         guard HealthAuthorizationManager.hasRequestedSleepAnalysisAuthorization else { return }
-        guard !hasLoadedIntervals(for: wakeDay) else { return }
+        guard !hasLoadedIntervals(for: night.wakeDay) else { return }
         guard !isLoadingDay else { return }
 
         isLoadingDay = true
         defer { isLoadingDay = false }
 
-        await loadIntervals(for: wakeDay) {
-            self.loadedDayWakeDays.insert(wakeDay)
+        await loadIntervals(for: night) {
+            self.loadedDayWakeDays.insert(night.wakeDay)
         }
     }
 
-    private func loadIntervals(for wakeDay: Date, onSuccess: () -> Void) async {
+    private func loadIntervals(for night: HealthSleepNight, onSuccess: () -> Void) async {
         do {
-            intervalsByWakeDay[wakeDay] = try await stageIntervals(for: wakeDay)
+            intervalsByWakeDay[night.wakeDay] = try await stageIntervals(for: night)
             loadErrorMessage = nil
             onSuccess()
         } catch {
@@ -82,24 +83,27 @@ struct HealthSleepStageInterval: Identifiable, Hashable, Sendable {
         }
     }
 
-    private func stageIntervals(for wakeDay: Date) async throws -> [HealthSleepStageInterval] {
-        let queryRange = sampleEndDateQueryRange(for: wakeDay)
-        let predicate = HKQuery.predicateForSamples(withStart: queryRange.lowerBound, end: queryRange.upperBound, options: .strictEndDate)
+    private func stageIntervals(for night: HealthSleepNight) async throws -> [HealthSleepStageInterval] {
+        let blockIntervals = persistedBlockIntervals(for: night)
+        guard let queryRange = sampleQueryRange(for: night, blockIntervals: blockIntervals) else { return [] }
+
+        let predicate = HKQuery.predicateForSamples(withStart: queryRange.lowerBound, end: queryRange.upperBound)
         let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: HealthKitCatalog.sleepAnalysisType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.endDate), SortDescriptor(\.startDate)])
         let samples = try await descriptor.result(for: healthStore)
 
-        return samples.compactMap(stageInterval(from:))
-            .filter { $0.wakeDay == wakeDay }
+        return samples.compactMap { stageInterval(from: $0, wakeDay: night.wakeDay, blockIntervals: blockIntervals) }
             .sorted {
                 if $0.startDate == $1.startDate { return $0.endDate < $1.endDate }
                 return $0.startDate < $1.startDate
             }
     }
 
-    private func stageInterval(from sample: HKCategorySample) -> HealthSleepStageInterval? {
+    private func stageInterval(from sample: HKCategorySample, wakeDay: Date, blockIntervals: [DateInterval]) -> HealthSleepStageInterval? {
         guard let stage = stage(for: sample) else { return nil }
+        let sampleInterval = DateInterval(start: sample.startDate, end: sample.endDate)
+        guard blockIntervals.contains(where: { $0.intersects(sampleInterval) }) else { return nil }
         let timeZone = timeZone(for: sample)
-        return HealthSleepStageInterval(wakeDay: HealthSleepNight.wakeDayKey(for: sample.endDate, in: timeZone ?? .autoupdatingCurrent), startDate: sample.startDate, endDate: sample.endDate, stage: stage, timeZoneIdentifier: timeZone?.identifier, isApproximate: false)
+        return HealthSleepStageInterval(wakeDay: wakeDay, startDate: sample.startDate, endDate: sample.endDate, stage: stage, timeZoneIdentifier: timeZone?.identifier, isApproximate: false)
     }
 
     private func stage(for sample: HKCategorySample) -> HealthSleepStage? {
@@ -134,11 +138,30 @@ struct HealthSleepStageInterval: Identifiable, Hashable, Sendable {
         return nil
     }
 
-    private func sampleEndDateQueryRange(for wakeDay: Date) -> Range<Date> {
-        let start = HealthSleepNight.previousWakeDay(before: wakeDay)
-        let end = HealthSleepNight.nextWakeDay(after: HealthSleepNight.nextWakeDay(after: wakeDay))
-        return start..<end
+    private func hasLoadedIntervals(for wakeDay: Date) -> Bool { loadedDayWakeDays.contains(wakeDay) }
+
+    private func persistedBlockIntervals(for night: HealthSleepNight) -> [DateInterval] {
+        let intervals = night.sortedBlocks.map { DateInterval(start: $0.startDate, end: $0.endDate) }
+        if !intervals.isEmpty { return intervals }
+        if let allSleepStart = night.allSleepStart, let allSleepEnd = night.allSleepEnd, allSleepEnd > allSleepStart {
+            return [DateInterval(start: allSleepStart, end: allSleepEnd)]
+        }
+        if let sleepStart = night.sleepStart, let sleepEnd = night.sleepEnd, sleepEnd > sleepStart {
+            return [DateInterval(start: sleepStart, end: sleepEnd)]
+        }
+        return []
     }
 
-    private func hasLoadedIntervals(for wakeDay: Date) -> Bool { loadedDayWakeDays.contains(wakeDay) }
+    private func sampleQueryRange(for night: HealthSleepNight, blockIntervals: [DateInterval]) -> Range<Date>? {
+        if let earliestStart = blockIntervals.map(\.start).min(), let latestEnd = blockIntervals.map(\.end).max() {
+            return earliestStart.addingTimeInterval(-queryPadding)..<latestEnd.addingTimeInterval(queryPadding)
+        }
+        if let allSleepStart = night.allSleepStart, let allSleepEnd = night.allSleepEnd, allSleepEnd > allSleepStart {
+            return allSleepStart.addingTimeInterval(-queryPadding)..<allSleepEnd.addingTimeInterval(queryPadding)
+        }
+        if let sleepStart = night.sleepStart, let sleepEnd = night.sleepEnd, sleepEnd > sleepStart {
+            return sleepStart.addingTimeInterval(-queryPadding)..<sleepEnd.addingTimeInterval(queryPadding)
+        }
+        return nil
+    }
 }

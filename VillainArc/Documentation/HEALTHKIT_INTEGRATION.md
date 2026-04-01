@@ -6,6 +6,7 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 
 - `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
 - `Data/Models/Health/HealthKitCatalog.swift`
+- `Data/Models/Health/HealthSleepBlock.swift`
 - `Data/Models/Health/HealthSleepNight.swift`
 - `Data/Services/HealthKit/HealthMirrorSupport.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
@@ -13,11 +14,16 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
 - `Data/Services/HealthKit/Sync/HealthSleepSync.swift`
 - `Data/Services/HealthKit/Sync/StepsGoalEvaluator.swift`
+- `Data/Services/HealthKit/Sync/StepsCoachingEvaluator.swift`
+- `Data/Services/HealthKit/Detail/HealthIntradayMetricsLoader.swift`
+- `Data/Services/HealthKit/Detail/HealthSleepHistoryLoader.swift`
 - `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
 - `Data/Services/App/NotificationCoordinator.swift`
+- `Views/Components/Overlays/ToastManager.swift`
+- `Views/Health/Sleep/SleepHistoryView.swift`
 - `Root/VillainArcApp.swift`
 - `Root/RootView.swift`
 
@@ -40,14 +46,16 @@ VillainArc treats Apple Health as an integration layer, not the app’s main sou
 
 - `HealthWorkout`
   - mirrored Apple Health workout summary
+- `HealthSleepBlock`
+  - persisted per-block sleep detail cache for a wake day
 - `HealthSleepNight`
-  - one-row-per-wake-day sleep summary cache
+  - one-row-per-wake-day sleep rollup cache backed by persisted sleep blocks
 - `HealthStepsDistance`
   - per-day steps and walking/running distance cache
 - `HealthEnergy`
   - per-day active/resting energy cache
 - `HealthSyncState`
-  - synced-coverage record for the daily metric caches
+  - synced-coverage record for the daily metric caches plus steps-coaching dedupe state
 
 That split keeps HealthKit from owning the app’s training logic while still letting the app reuse Health data everywhere it makes sense.
 
@@ -203,6 +211,8 @@ The daily-metric design is:
 - the changed samples are collapsed into affected days
 - the app reruns daily cumulative statistics queries for the affected range
 - one per-day cache row is updated per day, not one row per raw sample
+- intraday detail for steps, distance, and energy is not persisted as a second cache model
+- instead, the history views can load same-day hourly detail on demand through `HealthIntradayMetricsLoader`
 
 The metrics are coalesced into two sync families:
 
@@ -223,12 +233,17 @@ That reduces redundant work when related Health types update together.
 The sleep design is:
 
 - one cached `HealthSleepNight` row per wake day
-- each row stores the overnight window, asleep/in-bed/awake totals, stage totals, nap total, and current availability in HealthKit
+- one persisted `HealthSleepBlock` row per reconstructed block for that wake day
+- `HealthSleepNight` stores the primary overnight window, the all-block span, rolled-up asleep/in-bed/awake totals, stage totals, nap total, and current availability in HealthKit
 - anchored queries detect additions and deletions on `sleepAnalysis`
-- changed samples collapse into affected wake days
-- the affected wake-day range is rebuilt from raw category samples
-- the primary overnight block is selected per wake day and other same-day sleep becomes `napDuration`
-- raw stage and interval detail stays in HealthKit for later detail loading
+- the anchored result is only a change detector
+- added or edited samples rebuild a padded wake-day range
+- the rebuild fetches overlapping raw sleep samples for that range
+- merged sleep blocks are reconstructed first, then assigned to wake day by the block end date using HealthKit timezone metadata when available
+- the primary overnight block is selected per wake day, but the stored night totals now roll up across all same-day sleep blocks
+- non-primary same-day sleep becomes `napDuration`
+- deletions still rebuild the broader known synced range because deleted objects do not carry the old sample timestamps
+- raw per-stage intervals still stay in HealthKit for on-demand stage detail loading
 
 ## Anchor Advancement Guard
 
@@ -279,20 +294,46 @@ Important conventions:
 
 ### Notification Behavior
 
-Steps-goal notifications are local notifications scheduled through `NotificationCoordinator`.
+Steps goal and coaching events are resolved from the daily step-sync path and delivered through `NotificationCoordinator`.
 
 The behavior is:
 
-- if notification delivery is allowed and the app observes the goal transition in time, schedule a local notification
-- if the app is active when the notification arrives, the notification delegate shows a toast instead of a system banner
-- if notifications are unavailable or disabled for that mode, fall back to a toast only when the app is active
+- the app always attempts to show an in-app toast for a resolved steps event
+- local notification scheduling is gated by `AppSettings.stepsNotificationMode`
+- `.off`
+  - no local steps notification is scheduled
+- `.goalOnly`
+  - only the real goal-complete transition can schedule a local notification
+  - `2x`, `3x`, and `new best` state is still tracked silently
+- `.coaching`
+  - local notifications can use the richer coaching events:
+    - goal complete
+    - double goal
+    - triple goal
+    - new best
+    - combined milestone plus new best
+
+The steps-coaching dedupe state lives in `HealthSyncState`:
+
+- `doubleGoalLastTriggeredDay`
+- `tripleGoalLastTriggeredDay`
+- `bestDailyStepsKnown`
+- `newHighStepsLastTriggeredDay`
+
+Important rules:
+
+- the app updates those fields regardless of notification mode
+- `3x` also stamps the `2x` day so the lower milestone cannot fire later
+- if a sync pass detects both a goal milestone and a new best, one combined event is produced
+- goal changes silently reconcile today’s coaching state without scheduling a notification
+- initial step import, deletion rebuilds, and nil recovery recompute the historical best daily steps while excluding today
 
 Rest timer notifications use the same coordinator and the same foreground-toast behavior.
 
 Important limitation:
 
-- goal-completion notifications depend on the app actually getting a Health update in time
-- if the Health observer wake is delayed until foreground, the notification will also be delayed until foreground
+- steps notifications still depend on the app actually receiving the Health update in time
+- if the Health observer wake is delayed until foreground, the event is also delayed until foreground
 
 ## Removed Data and Retention
 
@@ -305,16 +346,59 @@ That is controlled by `AppSettings.keepRemovedHealthData`.
 
 ## History and Detail Surfaces
 
-### Sleep Summary
+### Sleep Summary and History
 
-The Health tab’s sleep surface is summary-first.
+The sleep surface stays summary-first at the card level.
 
 That means:
 
 - the section card reads cached `HealthSleepNight` rows only
 - the card does not run a raw HealthKit detail query on open
 - retained-but-no-longer-available nights can stay visible in cached summary form
-- detailed sleep stages, awake fragments, naps, and sleeping heart-rate range are still a later detail surface
+
+The dedicated `SleepHistoryView` now splits into two detail modes:
+
+- `day`
+  - loads live HealthKit stage intervals for the selected wake day through `HealthSleepHistoryLoader`
+  - renders the stage timeline from raw HealthKit intervals
+- `week` and `month`
+  - use cached `HealthSleepNight` plus persisted `HealthSleepBlock` data
+  - render one cached block bar per stored sleep block so naps and other same-day sleep remain visually separate
+- `6M`, `year`, and `all`
+  - stay summary-backed from `HealthSleepNight`
+  - render grouped windows and rolled-up totals instead of block-level detail
+
+The sleep history surface also now includes:
+
+- weekday average sleep chart
+- monthly and yearly sleep highlights
+
+Current boundary:
+
+- raw stage intervals are still not persisted locally
+- the history day view loads them from HealthKit on demand
+- persisted sleep blocks provide the local fallback/detail layer when raw stages are unavailable
+- broader grouped sleep history remains cache-backed from nightly rollups
+
+### Weight, Steps, and Energy Day Views
+
+The non-sleep history views now expose a `day` range too.
+
+- weight:
+  - day detail is fully local
+  - hourly points are derived from persisted `WeightEntry` rows
+- steps and distance:
+  - broader ranges still read from cached `HealthStepsDistance`
+  - `day` uses `HealthIntradayMetricsLoader` to query hourly Apple Health movement totals for the selected/latest day
+- energy:
+  - broader ranges still read from cached `HealthEnergy`
+  - `day` uses `HealthIntradayMetricsLoader` to query hourly active and resting energy totals for the selected/latest day
+
+Important boundary:
+
+- only the `day` views for steps/distance and energy use live intraday HealthKit reads
+- broader ranges stay cache-backed
+- the intraday loader warms the latest day during the same history-view cache build so the `day` range is usually already ready or partially ready when selected
 
 ### Workout History
 

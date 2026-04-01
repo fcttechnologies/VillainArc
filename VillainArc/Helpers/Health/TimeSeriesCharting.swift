@@ -45,12 +45,14 @@ struct TimeSeriesBucketedPoint: Identifiable, Equatable, Sendable {
 }
 
 enum TimeSeriesBucketStyle: Sendable {
+    case hour
     case day
     case week
     case month(monthsPerBucket: Int)
 }
 
 enum TimeSeriesAxisLabelStyle: Sendable {
+    case hour
     case weekdayShort
     case monthDay
     case monthAbbreviated
@@ -85,10 +87,10 @@ struct TimeSeriesChartLayout: Sendable {
         case .day:
             let domain = rangeFilter.domain(now: now, calendar: calendar, dates: samples.map(\.date))
             self.currentDomain = domain
-            self.points = Self.dayBucketPoints(from: samples, in: domain, calendar: calendar, aggregation: aggregation)
-            self.bucketStyle = .day
-            self.axisDates = []
-            self.axisLabelStyle = .monthDay
+            self.points = Self.hourBucketPoints(from: samples, in: domain, calendar: calendar, aggregation: aggregation)
+            self.bucketStyle = .hour
+            self.axisDates = hourBoundaryDates(in: domain, stepHours: 4, calendar: calendar)
+            self.axisLabelStyle = .hour
         case .week:
             let domain = rangeFilter.domain(now: now, calendar: calendar, dates: samples.map(\.date))
             self.currentDomain = domain
@@ -191,6 +193,20 @@ struct TimeSeriesChartLayout: Sendable {
         }
         .sorted { $0.date < $1.date }
     }
+
+    private static func hourBucketPoints(from samples: [TimeSeriesSample], in domain: ClosedRange<Date>, calendar: Calendar, aggregation: TimeSeriesAggregationStrategy) -> [TimeSeriesBucketedPoint] {
+        let buckets = Dictionary(grouping: samples.filter { domain.contains($0.date) }) {
+            calendar.dateInterval(of: .hour, for: $0.date)?.start ?? $0.date
+        }
+        return buckets.compactMap { hourStart, bucketSamples in
+            guard !bucketSamples.isEmpty else { return nil }
+            let hourInterval = calendar.dateInterval(of: .hour, for: hourStart) ?? DateInterval(start: hourStart, end: hourStart.addingTimeInterval(3_600))
+            let hourEnd = hourInterval.chartUpperBound
+            let value = aggregate(bucketSamples, using: aggregation)
+            return TimeSeriesBucketedPoint(id: stableTimeSeriesSampleID(namespace: 0x4255434B48525500, date: hourStart), date: midpointDate(start: hourStart, end: hourEnd), value: value, startDate: hourStart, endDate: hourEnd, sampleCount: bucketSamples.count)
+        }
+        .sorted { $0.date < $1.date }
+    }
     
     private static func weekBucketPoints(from samples: [TimeSeriesSample], in domain: ClosedRange<Date>, calendar: Calendar, aggregation: TimeSeriesAggregationStrategy) -> [TimeSeriesBucketedPoint] {
         let buckets = Dictionary(grouping: samples.filter { domain.contains($0.date) }) { sample in
@@ -262,6 +278,18 @@ func dayBoundaryDates(in domain: ClosedRange<Date>, calendar: Calendar) -> [Date
     return dates
 }
 
+func hourBoundaryDates(in domain: ClosedRange<Date>, stepHours: Int, calendar: Calendar) -> [Date] {
+    let firstHourStart = calendar.dateInterval(of: .hour, for: domain.lowerBound)?.start ?? domain.lowerBound
+    var dates: [Date] = []
+    var current = firstHourStart
+    while current <= domain.upperBound {
+        if domain.contains(current) { dates.append(current) }
+        guard let next = calendar.date(byAdding: .hour, value: max(stepHours, 1), to: current) else { break }
+        current = next
+    }
+    return dates
+}
+
 func weekStartDates(in domain: ClosedRange<Date>, calendar: Calendar) -> [Date] {
     let firstWeekStart = calendar.dateInterval(of: .weekOfYear, for: domain.lowerBound)?.start ?? calendar.startOfDay(for: domain.lowerBound)
     var dates: [Date] = []
@@ -320,6 +348,8 @@ func anchoredValueAtDomainStart(domainStart: Date, previousDate: Date, previousV
 
 func timeSeriesAxisLabelText(for date: Date, style: TimeSeriesAxisLabelStyle) -> String {
     switch style {
+    case .hour:
+        return date.formatted(.dateTime.hour())
     case .weekdayShort:
         return date.formatted(.dateTime.weekday(.abbreviated))
     case .monthDay:
@@ -335,6 +365,8 @@ func timeSeriesAxisLabelText(for date: Date, style: TimeSeriesAxisLabelStyle) ->
 
 func timeSeriesBucketLabelText(for point: TimeSeriesBucketedPoint, bucketStyle: TimeSeriesBucketStyle) -> String {
     switch bucketStyle {
+    case .hour:
+        return formattedRecentDayAndTime(point.startDate)
     case .day:
         return formattedRecentDay(point.startDate)
     case .week:
@@ -357,6 +389,8 @@ func selectedTimeSeriesPoint(in points: [TimeSeriesBucketedPoint], for date: Dat
 
 func chartCalendarComponent(for bucketStyle: TimeSeriesBucketStyle) -> Calendar.Component {
     switch bucketStyle {
+    case .hour:
+        return .hour
     case .day:
         return .day
     case .week:

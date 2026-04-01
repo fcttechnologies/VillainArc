@@ -596,7 +596,7 @@
     "Choose how weight, height, distance, and energy are displayed throughout the app." : {
 
     },
-    "Choose whether Villain Arc notifies only when you hit your goal or reserves room for future coaching notifications too." : {
+    "Choose whether Villain Arc schedules local notifications only for goal completions or also for coaching milestones like double goal, triple goal, and new step records. In-app toasts can still appear while you’re using the app." : {
 
     },
     "Classic bodybuilding split" : {
@@ -1500,6 +1500,9 @@
     "No energy data has been recorded yet." : {
 
     },
+    "No energy data was recorded for this day." : {
+
+    },
     "No energy data was recorded in the last 6 months." : {
 
     },
@@ -1510,9 +1513,6 @@
 
     },
     "No energy data was recorded in the last year." : {
-
-    },
-    "No energy data was recorded today." : {
 
     },
     "No Exercise History" : {
@@ -1608,6 +1608,9 @@
     "No step data has been recorded yet." : {
 
     },
+    "No step data was recorded for this day." : {
+
+    },
     "No step data was recorded in the last 6 months." : {
 
     },
@@ -1618,9 +1621,6 @@
 
     },
     "No step data was recorded in the last year." : {
-
-    },
-    "No step data was recorded today." : {
 
     },
     "No Steps Goals" : {
@@ -1641,6 +1641,9 @@
     "No weight entries have been recorded yet." : {
 
     },
+    "No weight entries were recorded for this day." : {
+
+    },
     "No weight entries were recorded in the last 6 months." : {
 
     },
@@ -1651,9 +1654,6 @@
 
     },
     "No weight entries were recorded in the last year." : {
-
-    },
-    "No weight entries were recorded today." : {
 
     },
     "No Weight Goals" : {

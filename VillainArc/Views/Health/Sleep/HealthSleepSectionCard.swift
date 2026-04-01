@@ -12,12 +12,7 @@ struct HealthSleepSectionCard: View {
     private var cardAccessibilityLabel: String {
         guard let latestEntry else { return AccessibilityText.healthSleepSectionEmptyValue }
 
-        return AccessibilityText.healthSleepSectionValue(
-            dateText: formattedSleepWakeDay(latestEntry.wakeDay),
-            sleepText: formattedSleepDurationAccessibilityText(latestEntry.timeAsleep),
-            timingText: formattedSleepTimingText(for: latestEntry),
-            secondaryText: nil
-        )
+        return AccessibilityText.healthSleepSectionValue(dateText: formattedSleepWakeDay(latestEntry.wakeDay), sleepText: formattedSleepDurationAccessibilityText(latestEntry.timeAsleep), timingText: nil, secondaryText: nil)
     }
 
     var body: some View {
@@ -49,14 +44,7 @@ struct HealthSleepSectionCard: View {
 
                 if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            SleepDurationValueView(duration: latestEntry.timeAsleep)
-                            Text(formattedSleepTimingText(for: latestEntry))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .fontDesign(.rounded)
-                                .fontWeight(.semibold)
-                        }
+                        SleepDurationValueView(duration: latestEntry.timeAsleep)
 
                         Spacer()
 
@@ -146,8 +134,6 @@ func formattedSleepTimingText(start: Date?, end: Date?) -> String {
     guard let start, let end else { return "No overnight sleep window" }
     return "\(start.formatted(date: .omitted, time: .shortened)) - \(end.formatted(date: .omitted, time: .shortened))"
 }
-
-func formattedSleepTimingText(for entry: HealthSleepNight) -> String { formattedSleepTimingText(start: entry.sleepStart, end: entry.sleepEnd) }
 
 struct SleepDurationValueView: View {
     let duration: TimeInterval

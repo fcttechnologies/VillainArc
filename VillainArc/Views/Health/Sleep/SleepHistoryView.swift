@@ -13,12 +13,11 @@ private struct SleepHistoryCachedRangeData {
 }
 
 private struct SleepWindowBucket: Identifiable {
+    let id: String
     let point: TimeSeriesBucketedPoint
     let startOffsetMinutes: Double
     let endOffsetMinutes: Double
     let isFullyUnavailable: Bool
-    
-    var id: UUID { point.id }
 }
 
 struct SleepHistoryView: View {
@@ -201,11 +200,6 @@ private struct SleepHistoryMainSection: View {
         return selectedTimeSeriesPoint(in: currentRangeData.layout.points, for: selectedDate)
     }
 
-    private var selectedWindowBar: SleepWindowBucket? {
-        guard let currentRangeData, let selectedPoint else { return nil }
-        return currentRangeData.windowBars.first { $0.point.id == selectedPoint.id }
-    }
-    
     private var displayedWakeDay: Date? {
         if let selectedWakeDay, selectedRange == .day { return selectedWakeDay }
         return latestEntry?.wakeDay
@@ -258,6 +252,8 @@ private struct SleepHistoryMainSection: View {
             hasher.combine(entry.wakeDay)
             hasher.combine(entry.sleepStart)
             hasher.combine(entry.sleepEnd)
+            hasher.combine(entry.allSleepStart)
+            hasher.combine(entry.allSleepEnd)
             hasher.combine(entry.timeAsleep.bitPattern)
             hasher.combine(entry.timeInBed.bitPattern)
             hasher.combine(entry.awakeDuration.bitPattern)
@@ -268,6 +264,19 @@ private struct SleepHistoryMainSection: View {
             hasher.combine(entry.napDuration.bitPattern)
             hasher.combine(entry.hasStageBreakdown)
             hasher.combine(entry.isAvailableInHealthKit)
+            hasher.combine(entry.blocks?.count ?? 0)
+            for block in entry.sortedBlocks {
+                hasher.combine(block.startDate)
+                hasher.combine(block.endDate)
+                hasher.combine(block.isPrimary)
+                hasher.combine(block.timeAsleep.bitPattern)
+                hasher.combine(block.timeInBed.bitPattern)
+                hasher.combine(block.awakeDuration.bitPattern)
+                hasher.combine(block.remDuration.bitPattern)
+                hasher.combine(block.coreDuration.bitPattern)
+                hasher.combine(block.deepDuration.bitPattern)
+                hasher.combine(block.asleepUnspecifiedDuration.bitPattern)
+            }
         }
         return hasher.finalize()
     }
@@ -275,6 +284,8 @@ private struct SleepHistoryMainSection: View {
     private var initialLoadKey: Int {
         var hasher = Hasher()
         hasher.combine(latestEntry?.wakeDay)
+        hasher.combine(latestEntry?.allSleepStart)
+        hasher.combine(latestEntry?.allSleepEnd)
         return hasher.finalize()
     }
     
@@ -301,17 +312,11 @@ private struct SleepHistoryMainSection: View {
 
         if let selectedPoint {
             let label = timeSeriesBucketLabelText(for: selectedPoint, bucketStyle: currentRangeData?.layout.bucketStyle ?? .day)
-            if let selectedNonDayEntry = selectedNonDayEntries.first, selectedPoint.sampleCount == 1 {
-                return "\(label) • \(formattedSleepTimingText(for: selectedNonDayEntry))"
-            }
-            if let selectedWindowBar {
-                return "\(label) • \(formattedSleepOffsetTimingText(startOffsetMinutes: selectedWindowBar.startOffsetMinutes, endOffsetMinutes: selectedWindowBar.endOffsetMinutes))"
-            }
             return label
         }
 
         guard let latestEntry else { return "No sleep data in this range" }
-        return "\(formattedSleepWakeDay(latestEntry.wakeDay)) • \(formattedSleepTimingText(for: latestEntry))"
+        return formattedSleepWakeDay(latestEntry.wakeDay)
     }
     
     private var visibleRangeText: String? {
@@ -326,8 +331,8 @@ private struct SleepHistoryMainSection: View {
             return start...calendar.endOfDay(for: .now)
         }
         
-        let startCandidates = dayIntervals.map(\.startDate) + [displayedEntry.sleepStart].compactMap(\.self)
-        let endCandidates = dayIntervals.map(\.endDate) + [displayedEntry.sleepEnd].compactMap(\.self)
+        let startCandidates = dayIntervals.map(\.startDate) + [displayedEntry.allSleepStart ?? displayedEntry.sleepStart].compactMap(\.self)
+        let endCandidates = dayIntervals.map(\.endDate) + [displayedEntry.allSleepEnd ?? displayedEntry.sleepEnd].compactMap(\.self)
         
         guard let earliestStart = startCandidates.min(), let latestEnd = endCandidates.max() else {
             let start = calendar.startOfDay(for: displayedEntry.displayWakeDay)
@@ -441,11 +446,11 @@ private struct SleepHistoryMainSection: View {
             prepareRangeCache()
         }
         .task(id: initialLoadKey) {
-            await loader.loadInitialIfNeeded(latestWakeDay: latestEntry?.wakeDay)
+            await loader.loadInitialIfNeeded(latestNight: latestEntry)
         }
         .task(id: visibleLoadKey) {
-            if selectedRange == .day, let selectedWakeDay {
-                await loader.loadDayIfNeeded(wakeDay: selectedWakeDay)
+            if selectedRange == .day, let displayedEntry {
+                await loader.loadDayIfNeeded(night: displayedEntry)
             }
         }
         .onAppear {
@@ -598,7 +603,7 @@ private struct SleepHistoryMainSection: View {
             builder: { range in
                 let layout = TimeSeriesChartLayout(rangeFilter: range, samples: timeAsleepSamples, now: anchorDate, calendar: calendar, aggregation: .average)
                 let visibleEntries = entries.filter { layout.currentDomain.contains($0.displayWakeDay) }
-                let windowBars = makeWindowBars(for: layout.points, visibleEntries: visibleEntries)
+                let windowBars = makeWindowBars(for: range, points: layout.points, visibleEntries: visibleEntries)
                 
                 return SleepHistoryCachedRangeData(
                     layout: layout,
@@ -618,13 +623,18 @@ private struct SleepHistoryMainSection: View {
         if !loadedIntervals.isEmpty {
             return loadedIntervals
         }
-        guard let fallbackInterval = fallbackInterval(for: entry) else { return [] }
-        return [fallbackInterval]
+        return fallbackIntervals(for: entry)
     }
     
-    private func fallbackInterval(for entry: HealthSleepNight) -> HealthSleepStageInterval? {
-        guard let sleepStart = entry.sleepStart, let sleepEnd = entry.sleepEnd, sleepEnd > sleepStart else { return nil }
-        return HealthSleepStageInterval(wakeDay: entry.wakeDay, startDate: sleepStart, endDate: sleepEnd, stage: .asleep, timeZoneIdentifier: nil, isApproximate: true)
+    private func fallbackIntervals(for entry: HealthSleepNight) -> [HealthSleepStageInterval] {
+        let blockIntervals = entry.sortedBlocks.map {
+            HealthSleepStageInterval(wakeDay: entry.wakeDay, startDate: $0.startDate, endDate: $0.endDate, stage: .asleep, timeZoneIdentifier: nil, isApproximate: true)
+        }
+
+        if !blockIntervals.isEmpty { return blockIntervals }
+
+        guard let sleepStart = entry.allSleepStart ?? entry.sleepStart, let sleepEnd = entry.allSleepEnd ?? entry.sleepEnd, sleepEnd > sleepStart else { return [] }
+        return [HealthSleepStageInterval(wakeDay: entry.wakeDay, startDate: sleepStart, endDate: sleepEnd, stage: .asleep, timeZoneIdentifier: nil, isApproximate: true)]
     }
     
     private func selectedInterval(in intervals: [HealthSleepStageInterval], for date: Date) -> HealthSleepStageInterval? {
@@ -637,8 +647,12 @@ private struct SleepHistoryMainSection: View {
         }
     }
     
-    private func makeWindowBars(for points: [TimeSeriesBucketedPoint], visibleEntries: [HealthSleepNight]) -> [SleepWindowBucket] {
-        points.compactMap { point in
+    private func makeWindowBars(for range: TimeSeriesRangeFilter, points: [TimeSeriesBucketedPoint], visibleEntries: [HealthSleepNight]) -> [SleepWindowBucket] {
+        if range == .week || range == .month {
+            return makeDetailedWindowBars(for: points, visibleEntries: visibleEntries)
+        }
+
+        return points.compactMap { point in
             let bucketEntries = visibleEntries.filter { entry in
                 let displayWakeDay = entry.displayWakeDay
                 return displayWakeDay >= point.startDate && displayWakeDay <= point.endDate
@@ -651,12 +665,39 @@ private struct SleepHistoryMainSection: View {
             let averageEnd = windows.reduce(0) { $0 + $1.endOffsetMinutes } / Double(windows.count)
             let isFullyUnavailable = !bucketEntries.isEmpty && bucketEntries.allSatisfy { !$0.isAvailableInHealthKit }
             
-            return SleepWindowBucket(point: point, startOffsetMinutes: averageStart, endOffsetMinutes: averageEnd, isFullyUnavailable: isFullyUnavailable)
+            return SleepWindowBucket(id: "\(point.id.uuidString)-average", point: point, startOffsetMinutes: averageStart, endOffsetMinutes: averageEnd, isFullyUnavailable: isFullyUnavailable)
+        }
+    }
+
+    private func makeDetailedWindowBars(for points: [TimeSeriesBucketedPoint], visibleEntries: [HealthSleepNight]) -> [SleepWindowBucket] {
+        return points.flatMap { point in
+            let bucketEntries = visibleEntries.filter {
+                let displayWakeDay = $0.displayWakeDay
+                return displayWakeDay >= point.startDate && displayWakeDay <= point.endDate
+            }
+            let bars = bucketEntries.flatMap { makeDetailedWindowBars(for: $0, point: point) }
+            if !bars.isEmpty { return bars }
+            return makeFallbackWindowBars(for: point, entries: bucketEntries)
+        }
+    }
+
+    private func makeDetailedWindowBars(for entry: HealthSleepNight, point: TimeSeriesBucketedPoint) -> [SleepWindowBucket] {
+        let isUnavailable = !entry.isAvailableInHealthKit
+        return entry.sortedBlocks.enumerated().compactMap { index, block in
+            guard block.endDate > block.startDate else { return nil }
+            return SleepWindowBucket(id: "\(point.id.uuidString)-\(entry.wakeDay.timeIntervalSinceReferenceDate)-\(index)", point: point, startOffsetMinutes: sleepOffsetMinutes(for: block.startDate, wakeDay: entry.displayWakeDay), endOffsetMinutes: sleepOffsetMinutes(for: block.endDate, wakeDay: entry.displayWakeDay), isFullyUnavailable: isUnavailable)
+        }
+    }
+
+    private func makeFallbackWindowBars(for point: TimeSeriesBucketedPoint, entries: [HealthSleepNight]) -> [SleepWindowBucket] {
+        entries.compactMap { entry in
+            guard let window = sleepWindow(for: entry) else { return nil }
+            return SleepWindowBucket(id: "\(point.id.uuidString)-\(entry.wakeDay.timeIntervalSinceReferenceDate)-fallback", point: point, startOffsetMinutes: window.startOffsetMinutes, endOffsetMinutes: window.endOffsetMinutes, isFullyUnavailable: !entry.isAvailableInHealthKit)
         }
     }
     
     private func sleepWindow(for entry: HealthSleepNight) -> (startOffsetMinutes: Double, endOffsetMinutes: Double)? {
-        guard let sleepStart = entry.sleepStart, let sleepEnd = entry.sleepEnd, sleepEnd > sleepStart else { return nil }
+        guard let sleepStart = entry.allSleepStart ?? entry.sleepStart, let sleepEnd = entry.allSleepEnd ?? entry.sleepEnd, sleepEnd > sleepStart else { return nil }
         return (startOffsetMinutes: sleepOffsetMinutes(for: sleepStart, wakeDay: entry.displayWakeDay), endOffsetMinutes: sleepOffsetMinutes(for: sleepEnd, wakeDay: entry.displayWakeDay))
     }
     
@@ -684,10 +725,6 @@ private struct SleepHistoryMainSection: View {
         return date.formatted(date: .omitted, time: .shortened)
     }
 
-    private func formattedSleepOffsetTimingText(startOffsetMinutes: Double, endOffsetMinutes: Double) -> String {
-        "\(formattedSleepOffsetLabel(startOffsetMinutes)) - \(formattedSleepOffsetLabel(endOffsetMinutes))"
-    }
-    
     private func averageDuration(in entries: [HealthSleepNight], for keyPath: KeyPath<HealthSleepNight, TimeInterval>) -> TimeInterval? {
         guard !entries.isEmpty else { return nil }
         return entries.reduce(0) { $0 + $1[keyPath: keyPath] } / Double(entries.count)

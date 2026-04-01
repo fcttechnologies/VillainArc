@@ -524,7 +524,7 @@ enum AccessibilityText {
     static func healthWeightHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
         case .day:
-            return localized("No weight entries were recorded today.")
+            return localized("No weight entries were recorded for this day.")
         case .week:
             return localized("No weight entries were recorded in the last 7 days.")
         case .month:
@@ -544,8 +544,9 @@ enum AccessibilityText {
         return parts.joined(separator: ". ") + "."
     }
 
-    static func healthSleepSectionValue(dateText: String, sleepText: String, timingText: String, secondaryText: String?) -> String {
-        var parts = [localized("Sleep"), localized("Latest sleep summary \(dateText)"), localized("\(sleepText) asleep"), timingText]
+    static func healthSleepSectionValue(dateText: String, sleepText: String, timingText: String?, secondaryText: String?) -> String {
+        var parts = [localized("Sleep"), localized("Latest sleep summary \(dateText)"), localized("\(sleepText) asleep")]
+        if let timingText { parts.append(timingText) }
         if let secondaryText { parts.append(secondaryText) }
         parts.append(localized("Recent entries chart"))
         return parts.joined(separator: ". ") + "."
@@ -575,7 +576,7 @@ enum AccessibilityText {
     static func healthStepsHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
         case .day:
-            return localized("No step data was recorded today.")
+            return localized("No step data was recorded for this day.")
         case .week:
             return localized("No step data was recorded in the last 7 days.")
         case .month:
@@ -596,7 +597,7 @@ enum AccessibilityText {
     static func healthEnergyHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {
         case .day:
-            return localized("No energy data was recorded today.")
+            return localized("No energy data was recorded for this day.")
         case .week:
             return localized("No energy data was recorded in the last 7 days.")
         case .month:

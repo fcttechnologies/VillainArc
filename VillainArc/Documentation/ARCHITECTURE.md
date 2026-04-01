@@ -136,8 +136,10 @@ These are created by startup/system-state code and treated as singleton-style re
   - Apple Health workout mirror/cache
 - `Data/Models/Health/WeightEntry.swift`
   - local weight history record with optional Apple Health linkage
+- `Data/Models/Health/HealthSleepBlock.swift`
+  - persisted per-block sleep detail row linked to a wake-day night
 - `Data/Models/Health/HealthSleepNight.swift`
-  - one-row-per-wake-day Apple Health sleep summary cache
+  - one-row-per-wake-day Apple Health sleep rollup cache
 - `Data/Models/Health/HealthStepsDistance.swift`
   - per-day steps and distance cache
 - `Data/Models/Health/HealthEnergy.swift`
@@ -204,13 +206,15 @@ These are created by startup/system-state code and treated as singleton-style re
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
   - daily steps/distance/energy sync orchestration
 - `Data/Services/HealthKit/Sync/HealthSleepSync.swift`
-  - nightly sleep-summary sync orchestration
+  - sleep block reconstruction and nightly sleep-rollup sync orchestration
 - `Data/Services/HealthKit/Sync/StepsGoalEvaluator.swift`
   - steps-goal completion logic tied to daily step updates
 - `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
   - workout and weight export/reconciliation
 - `Data/Services/HealthKit/HealthMirrorSupport.swift`
   - Health metadata keys, HealthKit lookup helpers, and workout mirror import helpers
+- `Data/Services/HealthKit/Detail/HealthIntradayMetricsLoader.swift`
+  - on-demand hourly HealthKit detail for steps/distance and energy day views
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
   - on-demand richer workout detail loading
 
