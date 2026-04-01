@@ -1,6 +1,6 @@
 # Training Context Roadmap
 
-This is a forward-looking roadmap, not a description of current shipping behavior. Use the other documents in this folder for the current app architecture and runtime flows.
+This is a forward-looking roadmap for what comes after the first condition-model integration. Use the other documents in this folder for the current app architecture and runtime flows.
 
 This document is the working roadmap for the next layer of VillainArc's training intelligence. The goal is to add more context to workouts, suggestions, split behavior, and later session adaptation without losing the clean boundaries the app already has.
 
@@ -42,25 +42,40 @@ We want to extend the system in a way that respects those boundaries instead of 
 - Only snapshot context when it is actually used for reasoning, so historical interpretation does not drift later.
 - Treat the absence of a non-normal condition as the default "training normally" state.
 
-Sleep sync now exists in the Health integration layer. Use `Documentation/HEALTHKIT_INTEGRATION.md` for the current sleep model and sync behavior. The roadmap below starts with the next layer to build on top of that foundation.
+Sleep sync now exists in the Health integration layer. `TrainingConditionPeriod` also now exists as an app-owned model with a Health-tab status surface, editor, and history. Use `Documentation/HEALTHKIT_INTEGRATION.md`, `Documentation/PROJECT_GUIDE.md`, and `Documentation/ARCHITECTURE.md` for the current implementation details. The roadmap below starts with the next layer to build on top of that foundation.
 
-## Phase 1: Training Condition Periods
+## Phase 1 Status: Complete
 
-This is the main new cross-session context model.
+The first condition-model integration is now in place.
 
-Recommended model shape:
+Current shipped shape:
 
 - `TrainingConditionPeriod`
 - fields:
-  - `id`
   - `kind`
   - `trainingImpact`
-  - `startedAt`
-  - `endedAt`
-  - `createdAt`
-  - optional injury `scope`
+  - `startDate`
+  - `endDate`
+  - optional affected muscles for injury/recovery cases
+- only one active non-normal condition at a time through app logic
+- no persisted fake `normal` row
+- top-of-Health status surface plus editor and history
 
-Recommended condition kinds for the first version:
+Important behavior already implemented:
+
+- ending a condition returns the user to the default "training normally" state
+- replacing with a different kind ends the previous active period and starts a new one
+- editing the same active kind updates the existing period in place
+- an `endDate` remains active through the end of that day in the UI, while being stored as an exclusive upper bound internally
+
+With that integration done, the remaining core product work is:
+
+- connect condition periods to workout split resolution
+- later add session adjustments / session overrides
+
+## Why This Model Exists
+
+Recommended condition kinds for the first version were:
 
 - `sick`
 - `injured`
@@ -68,13 +83,13 @@ Recommended condition kinds for the first version:
 - `traveling`
 - `onBreak`
 
-Recommended impact values:
+Recommended impact values were:
 
 - `contextOnly`
 - `trainModified`
 - `pauseTraining`
 
-Important rules:
+Important rules that still matter:
 
 - only one active non-normal condition at a time
 - active periods must never overlap
@@ -94,7 +109,7 @@ Why this model should exist:
 
 Injury scope should be included in the first version if possible.
 
-The simplest version is probably:
+The current first version is:
 
 - affected muscles
 
@@ -120,7 +135,7 @@ Recommendation:
 - do not remove it just because `TrainingConditionPeriod` is added
 - if we ever rename it, `SessionStartContext` would be a better name than removing the concept
 
-## Phase 2: Split Scheduling Resolver
+## Next Phase: Split Scheduling Resolver
 
 Condition periods should improve split behavior, but they should not be shoved directly into `WorkoutSplit`.
 
@@ -149,7 +164,7 @@ Desired split behavior:
 - home UI should communicate pause state clearly
 - intents and navigation should use the same resolved behavior
 
-## Phase 3: Session Adjustment / Session Override System
+## Later Phase: Session Adjustment / Session Override System
 
 Once the app understands condition periods, the next major system is temporary workout adaptation.
 
@@ -238,11 +253,10 @@ Likely future additions:
 
 ## Recommended Working Order
 
-1. Add `TrainingConditionPeriod`.
-2. Add a split/context resolver layer.
-3. Add session adjustments / session overrides.
-4. Start feeding context into suggestion generation and outcome resolution.
-5. Later add training phase and readiness models if needed.
+1. Add a split/context resolver layer on top of `TrainingConditionPeriod`.
+2. Add session adjustments / session overrides.
+3. Start feeding context into suggestion generation and outcome resolution.
+4. Later add training phase and readiness models if needed.
 
 ## Final Product Direction
 

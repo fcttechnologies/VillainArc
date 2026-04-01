@@ -130,6 +130,15 @@ These are created by startup/system-state code and treated as singleton-style re
 - `Data/Models/WorkoutSplit/WorkoutSplitDay.swift`
   - one split day
 
+### Training Context Models
+
+- `Data/Models/Training/TrainingConditionPeriod.swift`
+  - timestamp-ranged cross-session condition history
+- `Data/Models/Enums/Training/TrainingConditionKind.swift`
+  - supported non-normal condition kinds and presentation metadata
+- `Data/Models/Enums/Training/TrainingImpact.swift`
+  - condition impact level such as context-only, adjusted training, or paused training
+
 ### Health Models
 
 - `Data/Models/Health/HealthWorkout.swift`
@@ -185,6 +194,17 @@ These are created by startup/system-state code and treated as singleton-style re
   - rebuilds `ExerciseHistory`
 - `Data/Services/Workout/WorkoutDeletionCoordinator.swift`
   - deletion path that also repairs history and suggestion-learning data
+
+### Training Context
+
+- `Data/Services/Training/TrainingConditionStore.swift`
+  - create, replace, update, and end logic for condition periods
+- `Views/Health/Training/TrainingConditionSectionCard.swift`
+  - top-of-Health current status surface
+- `Views/Health/Training/TrainingConditionEditorView.swift`
+  - full-sheet condition editor for active status, impact, end date, and optional injury/recovery muscles
+- `Views/Health/Training/TrainingConditionHistoryView.swift`
+  - historical condition list and active-period management screen
 
 ### Notifications and Toasts
 

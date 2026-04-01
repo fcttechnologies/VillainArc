@@ -27,6 +27,7 @@ The main product areas are:
 - workout sessions
 - workout plans and plan editing
 - workout splits
+- training condition status and history
 - suggestions and outcomes
 - exercise analytics
 - health history, goals, and notifications
@@ -79,6 +80,19 @@ Current goal patterns are:
 - `StepsGoal` uses start/end calendar days and also keeps one active goal at a time through app logic
 
 Replacing a goal does not mutate the old goal into the new goal. The app ends or deletes the old active record and inserts a new one. That preserves history and keeps charts and summaries date-correct.
+
+### Training Condition Is Historical Context
+
+Training condition is also stored as historical truth, not as a mutable singleton flag.
+
+The current pattern is:
+
+- `TrainingConditionPeriod` uses `startDate` and optional `endDate`
+- only one active non-normal condition exists at a time through app logic
+- ending a condition returns the user to the default "training normally" state without inserting a fake `normal` row
+- replacing a condition ends the previous active period and creates a new one only when the kind actually changes
+
+This keeps later split resolution, session adjustment, and suggestion reasoning grounded in real timestamps instead of whichever condition happens to be active today.
 
 ### Singletons Are Explicit Models
 
@@ -208,6 +222,7 @@ See:
 
 The Health tab combines:
 
+- a top training condition status row with an editor sheet and condition history
 - a latest sleep summary card backed by cached nightly sleep
 - a dedicated sleep history screen with a day stage view, cached week/month block charts, grouped broader-range charts, weekday averages, and sleep highlights
 - weight history with intraday day view plus weight goals

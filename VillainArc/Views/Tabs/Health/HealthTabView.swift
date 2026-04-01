@@ -8,6 +8,7 @@ struct HealthTabView: View {
         NavigationStack(path: $router.healthTabPath) {
             ScrollView {
                 VStack(spacing: 16) {
+                    TrainingConditionSectionCard()
                     WeightSectionCard()
                     HealthSleepSectionCard()
                     HealthStepsSectionCard()
@@ -39,6 +40,8 @@ struct HealthTabView: View {
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
+                case .trainingConditionHistory:
+                    TrainingConditionHistoryView()
                 case .weightHistory:
                     WeightHistoryView()
                 case .sleepHistory:

@@ -214,6 +214,16 @@
         }
       }
     },
+    "%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
     "%@/wk" : {
 
     },
@@ -338,10 +348,16 @@
     "Activities" : {
 
     },
+    "Activity Status" : {
+
+    },
     "Add ${exercise}" : {
 
     },
     "Add ${exercises}" : {
+
+    },
+    "Add a condition when illness, injury, travel, recovery, or time off changes how you should train." : {
 
     },
     "Add day" : {
@@ -366,6 +382,9 @@
 
     },
     "Add to favorites" : {
+
+    },
+    "Add training condition" : {
 
     },
     "Add weight entry" : {
@@ -407,6 +426,9 @@
     "Adds exercises to the workout session or workout plan." : {
 
     },
+    "Adds or replaces a training condition." : {
+
+    },
     "Adds this exercise to your selection." : {
 
     },
@@ -420,6 +442,9 @@
 
     },
     "Advanced muscles" : {
+
+    },
+    "Affected Muscles" : {
 
     },
     "After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it will also start the timer." : {
@@ -667,6 +692,9 @@
       }
     },
     "Completes the next incomplete set in your workout session." : {
+
+    },
+    "Condition" : {
 
     },
     "Confirm" : {
@@ -972,10 +1000,19 @@
     "End" : {
 
     },
+    "End Day" : {
+
+    },
+    "Ended" : {
+
+    },
     "Ended %@" : {
 
     },
     "Ended Date" : {
+
+    },
+    "Ended or replaced conditions will appear here." : {
 
     },
     "Energy" : {
@@ -1214,6 +1251,9 @@
 
     },
     "Keep Sets" : {
+
+    },
+    "Keep status" : {
 
     },
     "Keep weekends free?" : {
@@ -1486,6 +1526,9 @@
 
     },
     "No completed workouts to delete." : {
+
+    },
+    "No Condition History" : {
 
     },
     "No current workout session or workout plan found." : {
@@ -2230,6 +2273,9 @@
     "Saves the selected effort and continues to summary." : {
 
     },
+    "Saves this training condition." : {
+
+    },
     "Saves this workout as a reusable plan." : {
 
     },
@@ -2284,6 +2330,9 @@
     "Selects a workout plan for this day." : {
 
     },
+    "Selects the muscles affected by this condition." : {
+
+    },
     "Selects the target muscles for this day." : {
 
     },
@@ -2321,6 +2370,9 @@
 
     },
     "Set Custom Start Date" : {
+
+    },
+    "Set end date" : {
 
     },
     "Set Inactive" : {
@@ -2857,10 +2909,19 @@
     "Train your entire body each session" : {
 
     },
+    "Training condition" : {
+
+    },
+    "Training condition. Training normally." : {
+
+    },
     "Training Day" : {
 
     },
     "Training Days" : {
+
+    },
+    "Training Normally" : {
 
     },
     "Training Summary" : {
@@ -2911,6 +2972,9 @@
     "Update Rest Timer?" : {
 
     },
+    "Updates your current training condition." : {
+
+    },
     "Updates your pre-workout energy." : {
 
     },
@@ -2942,6 +3006,9 @@
 
     },
     "View Exercise History" : {
+
+    },
+    "View History" : {
 
     },
     "View Last Used Exercise" : {

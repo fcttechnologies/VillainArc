@@ -38,6 +38,7 @@ import SwiftUI
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
         case healthWorkoutDetail(HealthWorkout)
+        case trainingConditionHistory
         case weightHistory
         case sleepHistory
         case stepsDistanceHistory
@@ -100,7 +101,7 @@ import SwiftUI
     }
     func navigate(to destination: Destination) {
         switch destination {
-        case .weightHistory, .sleepHistory, .stepsDistanceHistory, .stepsGoalHistory, .energyHistory, .allWeightEntriesList, .weightGoalHistory:
+        case .trainingConditionHistory, .weightHistory, .sleepHistory, .stepsDistanceHistory, .stepsGoalHistory, .energyHistory, .allWeightEntriesList, .weightGoalHistory:
             tabSelection = .health
             healthTabPath.append(destination)
         default:

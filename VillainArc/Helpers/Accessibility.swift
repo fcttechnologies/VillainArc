@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum AccessibilityIdentifiers {
     // MARK: - ContentView
@@ -34,6 +35,7 @@ enum AccessibilityIdentifiers {
     static let healthNewWeightGoalCustomStartDateToggle = "healthNewWeightGoalCustomStartDateToggle"
     static let healthNewWeightGoalStartDatePicker = "healthNewWeightGoalStartDatePicker"
     static let healthWeightSectionCard = "healthWeightSectionCard"
+    static let healthTrainingConditionSectionCard = "healthTrainingConditionSectionCard"
     static let healthSleepSectionCard = "healthSleepSectionCard"
     static let healthSleepHistoryChart = "healthSleepHistoryChart"
     static let healthWeightHistoryChart = "healthWeightHistoryChart"
@@ -41,7 +43,17 @@ enum AccessibilityIdentifiers {
     static let healthEnergySectionCard = "healthEnergySectionCard"
     static let healthStepsHistoryChart = "healthStepsHistoryChart"
     static let healthEnergyHistoryChart = "healthEnergyHistoryChart"
+    static let healthTrainingConditionHistoryAddButton = "healthTrainingConditionHistoryAddButton"
+    static let healthTrainingConditionSaveButton = "healthTrainingConditionSaveButton"
+    static let healthTrainingConditionKindPicker = "healthTrainingConditionKindPicker"
+    static let healthTrainingConditionImpactPicker = "healthTrainingConditionImpactPicker"
+    static let healthTrainingConditionStartDatePicker = "healthTrainingConditionStartDatePicker"
+    static let healthTrainingConditionEndDateToggle = "healthTrainingConditionEndDateToggle"
+    static let healthTrainingConditionEndDatePicker = "healthTrainingConditionEndDatePicker"
+    static let healthTrainingConditionAffectedMusclesButton = "healthTrainingConditionAffectedMusclesButton"
     static let muscleDistributionChart = "muscleDistributionChart"
+
+    static func healthTrainingConditionRow(_ period: TrainingConditionPeriod) -> String { "healthTrainingConditionRow-\(period.persistentModelID)" }
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }
 
@@ -495,9 +507,14 @@ enum AccessibilityText {
     static let healthWeightEntriesEditHint = localized("Enters edit mode.")
     static let healthWeightEntriesDoneEditingHint = localized("Exits edit mode.")
     static let healthWeightSectionHint = localized("Opens detailed weight history.")
+    static let healthTrainingConditionSectionHint = localized("Updates your current training condition.")
     static let healthSleepSectionHint = localized("Shows your latest synced sleep summary.")
     static let healthStepsSectionHint = localized("Opens detailed steps history.")
     static let healthEnergySectionHint = localized("Opens detailed energy history.")
+    static let healthTrainingConditionHistoryAddLabel = localized("Add training condition")
+    static let healthTrainingConditionHistoryAddHint = localized("Adds or replaces a training condition.")
+    static let healthTrainingConditionSaveHint = localized("Saves this training condition.")
+    static let healthTrainingConditionAffectedMusclesHint = localized("Selects the muscles affected by this condition.")
     static let healthWeightHistoryChartLabel = localized("Weight history chart")
     static let healthSleepHistoryChartLabel = localized("Sleep history chart")
     static let healthStepsHistoryChartLabel = localized("Steps history chart")
@@ -506,6 +523,7 @@ enum AccessibilityText {
     static let healthEnergyWeekdayChartLabel = localized("Weekday average active energy chart")
     static let healthSleepWeekdayChartLabel = localized("Weekday average sleep chart")
     static let healthWeightSectionEmptyValue = localized("Weight. No weight entries yet.")
+    static let healthTrainingConditionSectionEmptyValue = localized("Training condition. Training normally.")
     static let healthSleepSectionEmptyValue = localized("Sleep. Update Apple Health permissions so your sleep summaries appear here.")
     static let healthWeightGoalSummaryEmptyValue = localized("No active goal")
     static let healthStepsSectionEmptyValue = localized("Steps. Update Apple Health permissions so your health metrics appear here.")
@@ -541,6 +559,12 @@ enum AccessibilityText {
     static func healthWeightSectionValue(dateText: String, weightText: String, goalText: String?) -> String {
         var parts = [localized("Weight"), localized("Latest entry \(dateText)"), localized("Latest weight \(weightText)")]
         if let goalText { parts.append(goalText) }
+        return parts.joined(separator: ". ") + "."
+    }
+
+    static func healthTrainingConditionSectionValue(titleText: String, subtitleText: String?) -> String {
+        var parts = [localized("Training condition"), titleText]
+        if let subtitleText { parts.append(subtitleText) }
         return parts.joined(separator: ". ") + "."
     }
 
