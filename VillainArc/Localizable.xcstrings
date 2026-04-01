@@ -38,6 +38,9 @@
     "%@ is already the active exercise." : {
 
     },
+    "%@ out of 10" : {
+
+    },
     "%@ steps" : {
 
     },
@@ -282,10 +285,20 @@
         }
       }
     },
-    "%lld/10" : {
-
+    "%lld/10. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/10. %2$@"
+          }
+        }
+      }
     },
     "^[%lld set](inflect: true)" : {
+
+    },
+    "1" : {
 
     },
     "1 day behind" : {
@@ -310,6 +323,9 @@
 
     },
     "1 suggestion to review" : {
+
+    },
+    "10" : {
 
     },
     "A repeating cycle not tied to calendar days" : {
@@ -950,6 +966,12 @@
 
     },
     "Done Editing" : {
+
+    },
+    "Drag or tap the dial to rate the overall effort." : {
+
+    },
+    "Drag to Rate" : {
 
     },
     "Drop Set" : {
@@ -1641,6 +1663,9 @@
 
     },
     "No current workout session to cancel." : {
+
+    },
+    "No effort selected" : {
 
     },
     "No Energy Data" : {
@@ -3441,7 +3466,7 @@
     "Workout effort" : {
 
     },
-    "Workout Effort" : {
+    "Workout Effort Dial" : {
 
     },
     "Workout finish canceled." : {
@@ -3705,6 +3730,9 @@
           }
         }
       }
+    },
+    "Your effort score and description will appear here." : {
+
     },
     "Your latest logged weight was %@ on %@." : {
       "localizations" : {

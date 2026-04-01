@@ -23,11 +23,6 @@ struct WorkoutDetailView: View {
     }
     private var hasPreWorkoutDrink: Bool { preWorkoutContext?.tookPreWorkout == true }
 
-    private var postWorkoutEffortText: String? {
-        guard (1...10).contains(workout.postEffort) else { return nil }
-        return "\(workout.postEffort)/10 • \(workoutEffortDescription(workout.postEffort))"
-    }
-
     private var preWorkoutToolbarIdentifier: String? {
         if hasPreWorkoutFeeling { return AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton }
         if hasPreWorkoutDrink { return AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton }
@@ -95,16 +90,6 @@ struct WorkoutDetailView: View {
                     .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
                 }
             }
-            ToolbarSpacer(.flexible, placement: .bottomBar)
-            if postWorkoutEffortText != nil {
-                ToolbarItem(placement: .bottomBar) {
-                    effortRingLabel
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailEffortDisplay)
-                        .accessibilityLabel(AccessibilityText.workoutDetailEffortLabel)
-                        .accessibilityValue(postWorkoutEffortText ?? "")
-                }
-            }
         }
         .sheet(isPresented: $showPreWorkoutContextSheet) {
             NavigationStack {
@@ -165,10 +150,6 @@ struct WorkoutDetailView: View {
         Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
     }
 
-    private var effortRingLabel: some View {
-        WorkoutEffortRingView(score: Double(workout.postEffort), displayText: "\(workout.postEffort)")
-    }
-
     private var preWorkoutAccessibilityValue: String {
         var parts: [String] = []
 
@@ -226,8 +207,20 @@ private struct WorkoutLinkedHealthDetailSection: View {
         return items
     }
 
+    private var effortCardModel: WorkoutEffortCardModel? {
+        guard let summary = loader.effortSummary else { return nil }
+
+        switch summary.source {
+        case .actualScore, .estimatedScore:
+            let roundedScore = max(1, min(Int(summary.value.rounded()), 10))
+            return .init(title: workoutEffortTitle(roundedScore), description: workoutEffortDescription(roundedScore), valueText: summary.value.formatted(.number.precision(.fractionLength(0...1))), score: summary.value, caption: summary.source == .estimatedScore ? "Estimated from Apple Health" : nil)
+        case .physicalEffort:
+            return .init(title: "Physical Effort", description: "Average estimated physical effort was \(summary.value.formatted(.number.precision(.fractionLength(0...1)))) METs.", valueText: summary.value.formatted(.number.precision(.fractionLength(0...1))), score: nil, caption: "From Apple Health")
+        }
+    }
+
     var body: some View {
-        HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: workoutSummaryItems)
+        HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: workoutSummaryItems, effortCardModel: effortCardModel)
         .task(id: workout.healthWorkout?.healthWorkoutUUID) {
             await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
         }
@@ -269,6 +262,11 @@ private struct WorkoutSessionDetailContent: View {
         return items
     }
 
+    private var effortCardModel: WorkoutEffortCardModel? {
+        guard (1...10).contains(workout.postEffort) else { return nil }
+        return .init(title: workoutEffortTitle(workout.postEffort), description: workoutEffortDescription(workout.postEffort), valueText: "\(workout.postEffort)", score: Double(workout.postEffort), caption: nil)
+    }
+
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 20) {
             if workout.healthWorkout == nil { workoutSection }
@@ -294,6 +292,14 @@ private struct WorkoutSessionDetailContent: View {
                 ForEach(summaryItems, id: \.title) { item in
                     SummaryStatCard(title: item.title, text: item.value)
                 }
+            }
+
+            if let effortCardModel {
+                WorkoutEffortCardView(model: effortCardModel)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailEffortDisplay)
+                    .accessibilityLabel(AccessibilityText.workoutDetailEffortLabel)
+                    .accessibilityValue("\(workout.postEffort)/10. \(workoutEffortDescription(workout.postEffort))")
             }
         }
     }

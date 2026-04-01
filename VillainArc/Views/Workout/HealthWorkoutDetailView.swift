@@ -31,62 +31,29 @@ struct HealthWorkoutDetailView: View {
         return max(120, Double(220 - age))
     }
 
-    private var effortSummary: HealthWorkoutEffortSummary? { loader.effortSummary }
-
     var body: some View {
         ScrollView {
-            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: [])
+            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: [], effortCardModel: effortCardModel)
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
         .navigationTitle(loader.summary.activityTypeDisplayName)
         .navigationSubtitle(Text(formattedDateRange(start: loader.summary.startDate, end: loader.summary.endDate, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
-        .toolbar {
-            if let effortSummary {
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    effortRingLabel(for: effortSummary)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutDetailEffortDisplay)
-                        .accessibilityLabel(AccessibilityText.healthWorkoutDetailEffortLabel)
-                        .accessibilityValue(effortAccessibilityValue(for: effortSummary))
-                }
-            }
-        }
         .task(id: workout.healthWorkoutUUID) {
             await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
         }
     }
 
-    private func effortRingLabel(for summary: HealthWorkoutEffortSummary) -> some View {
+    private var effortCardModel: WorkoutEffortCardModel? {
+        guard let summary = loader.effortSummary else { return nil }
+
         switch summary.source {
         case .actualScore, .estimatedScore:
-            WorkoutEffortRingView(score: summary.value, displayText: formattedEffortBadgeText(summary))
+            let roundedScore = max(1, min(Int(summary.value.rounded()), 10))
+            return .init(title: workoutEffortTitle(roundedScore), description: workoutEffortDescription(roundedScore), valueText: summary.value.formatted(.number.precision(.fractionLength(0...1))), score: summary.value, caption: summary.source == .estimatedScore ? "Estimated from Apple Health" : nil)
         case .physicalEffort:
-            WorkoutEffortRingView(displayText: formattedEffortBadgeText(summary))
-        }
-    }
-
-    private func formattedEffortBadgeText(_ summary: HealthWorkoutEffortSummary) -> String {
-        switch summary.source {
-        case .actualScore:
-            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
-        case .estimatedScore:
-            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
-        case .physicalEffort:
-            return summary.value.formatted(.number.precision(.fractionLength(0...1)))
-        }
-    }
-
-    private func effortAccessibilityValue(for summary: HealthWorkoutEffortSummary) -> String {
-        switch summary.source {
-        case .actualScore:
-            return "\(formattedEffortBadgeText(summary)) out of 10"
-        case .estimatedScore:
-            return "Estimated \(formattedEffortBadgeText(summary)) out of 10"
-        case .physicalEffort:
-            return "\(formattedEffortBadgeText(summary)) METs"
+            return .init(title: "Physical Effort", description: "Average estimated physical effort was \(summary.value.formatted(.number.precision(.fractionLength(0...1)))) METs.", valueText: summary.value.formatted(.number.precision(.fractionLength(0...1))), score: nil, caption: "From Apple Health")
         }
     }
 
@@ -98,6 +65,7 @@ struct HealthWorkoutDetailContent: View {
     let energyUnit: EnergyUnit
     let estimatedMaxHeartRate: Double?
     let extraSummaryItems: [SummaryStatItem]
+    let effortCardModel: WorkoutEffortCardModel?
 
     private var summaryGridColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)]
@@ -212,6 +180,14 @@ struct HealthWorkoutDetailContent: View {
                 }
             }
 
+            if let effortCardModel {
+                WorkoutEffortCardView(model: effortCardModel)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutDetailEffortDisplay)
+                    .accessibilityLabel(AccessibilityText.healthWorkoutDetailEffortLabel)
+                    .accessibilityValue(healthEffortAccessibilityValue)
+            }
+
             if loader.isUsingCachedSummaryOnly {
                 Text("This workout is no longer available in Apple Health. VillainArc is showing the last synced summary.")
                     .font(.subheadline)
@@ -221,6 +197,18 @@ struct HealthWorkoutDetailContent: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var healthEffortAccessibilityValue: String {
+        guard let summary = loader.effortSummary else { return "" }
+        switch summary.source {
+        case .actualScore:
+            return "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) out of 10"
+        case .estimatedScore:
+            return "Estimated \(summary.value.formatted(.number.precision(.fractionLength(0...1)))) out of 10"
+        case .physicalEffort:
+            return "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) METs"
         }
     }
 

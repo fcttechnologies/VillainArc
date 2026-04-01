@@ -248,19 +248,7 @@ struct WorkoutSummaryView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Effort")
                 .font(.headline)
-            HStack(spacing: 12) {
-                Text("\(workout.postEffort)/10")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .glassEffect(.regular, in: Capsule())
-
-                Text(workoutEffortDescription(workout.postEffort))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fontWeight(.semibold)
-            }
+            WorkoutEffortCardView(model: .init(title: workoutEffortTitle(workout.postEffort), description: workoutEffortDescription(workout.postEffort), valueText: "\(workout.postEffort)", score: Double(workout.postEffort), caption: nil))
         }
     }
 
