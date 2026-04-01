@@ -390,6 +390,9 @@
     "Add weight entry" : {
 
     },
+    "Add Weight Entry" : {
+
+    },
     "Add weight goal" : {
 
     },
@@ -570,6 +573,9 @@
     "Cable (Single)" : {
 
     },
+    "Calories Burned" : {
+
+    },
     "Calves" : {
 
     },
@@ -745,6 +751,9 @@
     "Create Split" : {
 
     },
+    "Create Steps Goal" : {
+
+    },
     "Create workout plan" : {
 
     },
@@ -776,6 +785,9 @@
 
     },
     "Creates a weight goal or shows your goal history." : {
+
+    },
+    "Creates or replaces your current steps goal." : {
 
     },
     "Current" : {
@@ -1003,6 +1015,9 @@
     "End Day" : {
 
     },
+    "End Training Condition" : {
+
+    },
     "Ended" : {
 
     },
@@ -1013,6 +1028,12 @@
 
     },
     "Ended or replaced conditions will appear here." : {
+
+    },
+    "Ended your %@ status. You're back to training normally." : {
+
+    },
+    "Ends your current training condition and returns you to training normally." : {
 
     },
     "Energy" : {
@@ -1135,7 +1156,61 @@
     "Generating suggestions..." : {
 
     },
+    "Get ${metric}" : {
+
+    },
+    "Get ${metric} for ${date}" : {
+
+    },
+    "Get Active Calories" : {
+
+    },
+    "Get Calories Burned" : {
+
+    },
+    "Get Distance" : {
+
+    },
+    "Get Health Day Summary" : {
+
+    },
+    "Get Health Day Summary For Day" : {
+
+    },
+    "Get Health Metric" : {
+
+    },
+    "Get Health Metric For Day" : {
+
+    },
+    "Get Latest Weight" : {
+
+    },
+    "Get my health summary for ${date}" : {
+
+    },
     "Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner." : {
+
+    },
+    "Get Resting Calories" : {
+
+    },
+    "Get Sleep" : {
+
+    },
+    "Get Steps" : {
+
+    },
+    "Get Steps Goal Status" : {
+
+    },
+    "Get Training Condition" : {
+
+    },
+    "Get Weight" : {
+
+    },
+    "Get Weight Goal Status" : {
 
     },
     "Glutes" : {
@@ -1160,6 +1235,9 @@
 
     },
     "Hamstrings" : {
+
+    },
+    "Health Metric" : {
 
     },
     "Heart Rate" : {
@@ -1271,6 +1349,9 @@
     "Landmine" : {
 
     },
+    "Last Night's Sleep" : {
+
+    },
     "Last Workout Summary" : {
 
     },
@@ -1339,7 +1420,26 @@
     "Loading Apple Health details..." : {
 
     },
+    "Log ${weight}" : {
+
+    },
     "Log Weight" : {
+
+    },
+    "Logged %@." : {
+
+    },
+    "Logged %@. You also reached your %@ goal." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged %1$@. You also reached your %2$@ goal."
+          }
+        }
+      }
+    },
+    "Logs a new weight entry for right now." : {
 
     },
     "Long Head (Biceps)" : {
@@ -1804,6 +1904,9 @@
     "Open Today's Plan" : {
 
     },
+    "Open Training Condition History" : {
+
+    },
     "Open Villain Arc" : {
 
     },
@@ -1861,6 +1964,9 @@
     "Opens the rest timer for your active workout." : {
 
     },
+    "Opens the training condition editor." : {
+
+    },
     "Opens the workout plan for today." : {
 
     },
@@ -1879,7 +1985,31 @@
     "Opens your active workout." : {
 
     },
+    "Opens your calories burned history." : {
+
+    },
+    "Opens your complete list of weight entries." : {
+
+    },
     "Opens your exercises list." : {
+
+    },
+    "Opens your sleep history." : {
+
+    },
+    "Opens your steps and distance history." : {
+
+    },
+    "Opens your steps goal history." : {
+
+    },
+    "Opens your training condition history." : {
+
+    },
+    "Opens your weight goal history." : {
+
+    },
+    "Opens your weight history." : {
 
     },
     "Opens your workout history." : {
@@ -2381,6 +2511,9 @@
     "Set Logging" : {
 
     },
+    "Set my steps goal to ${targetSteps}" : {
+
+    },
     "Set one of your splits as active." : {
 
     },
@@ -2411,6 +2544,12 @@
     "Shoulders" : {
 
     },
+    "Show All Weight Entries" : {
+
+    },
+    "Show Calories Burned History" : {
+
+    },
     "Show Exercise History" : {
 
     },
@@ -2418,6 +2557,21 @@
 
     },
     "Show Live Activity" : {
+
+    },
+    "Show Sleep History" : {
+
+    },
+    "Show Steps Goal History" : {
+
+    },
+    "Show Steps History" : {
+
+    },
+    "Show Weight Goal History" : {
+
+    },
+    "Show Weight History" : {
 
     },
     "Show Workout History" : {
@@ -2735,6 +2889,12 @@
     "Suggestions" : {
 
     },
+    "Summarizes your health metrics for a specific day." : {
+
+    },
+    "Summarizes your health metrics for today." : {
+
+    },
     "Summary" : {
 
     },
@@ -2801,10 +2961,49 @@
     "Target: %lld" : {
 
     },
+    "Tells you a health metric for a specific day." : {
+
+    },
+    "Tells you a health metric for today." : {
+
+    },
     "Tells you about your last workout session." : {
 
     },
+    "Tells you how far you walked or ran today." : {
+
+    },
+    "Tells you how many calories you burned today." : {
+
+    },
+    "Tells you how much you slept for today." : {
+
+    },
+    "Tells you how your current steps goal is going today." : {
+
+    },
+    "Tells you how your current weight goal is going." : {
+
+    },
     "Tells you what you're training on a specific day." : {
+
+    },
+    "Tells you your active calories burned today." : {
+
+    },
+    "Tells you your current training condition." : {
+
+    },
+    "Tells you your latest logged weight for today." : {
+
+    },
+    "Tells you your latest logged weight." : {
+
+    },
+    "Tells you your resting calories burned today." : {
+
+    },
+    "Tells you your step count for today." : {
 
     },
     "Templates are just a starting point. You can adjust the split to fit your needs after you create it." : {
@@ -2864,7 +3063,22 @@
     "Today is your rest day" : {
 
     },
+    "Today you've burned %@ active." : {
+
+    },
+    "Today you've burned %@ resting." : {
+
+    },
+    "Today's Calories" : {
+
+    },
     "Today's current total is %@ steps." : {
+
+    },
+    "Today's Steps" : {
+
+    },
+    "Today's Summary" : {
 
     },
     "Toggle Exercise Favorite" : {
@@ -2970,6 +3184,9 @@
 
     },
     "Update Rest Timer?" : {
+
+    },
+    "Update Training Condition" : {
 
     },
     "Updates your current training condition." : {
@@ -3119,7 +3336,13 @@
     "What should happen to the existing sets?" : {
 
     },
+    "What should your steps goal be?" : {
+
+    },
     "What type of split do you want to create?" : {
+
+    },
+    "What weight would you like to log?" : {
 
     },
     "What's your gender?" : {
@@ -3313,13 +3536,28 @@
     "You don't have a workout plan assigned for today." : {
 
     },
+    "You don't have active calories data for today." : {
+
+    },
+    "You don't have an active steps goal." : {
+
+    },
+    "You don't have an active weight goal." : {
+
+    },
     "You don't have an active workout split." : {
+
+    },
+    "You don't have any weight entries yet." : {
 
     },
     "You don't have any workout plans yet." : {
 
     },
     "You don't have any workout splits yet." : {
+
+    },
+    "You don't have resting calories data for today." : {
 
     },
     "You have %@ and %@ with no data." : {
@@ -3409,6 +3647,9 @@
         }
       }
     },
+    "You're already training normally." : {
+
+    },
     "You're already working out. Resume it first or cancel it." : {
 
     },
@@ -3424,14 +3665,50 @@
     "You're getting %@ sleep this month than you did last month." : {
 
     },
+    "You're training normally." : {
+
+    },
     "You're walking %@ this month as you did last month." : {
 
     },
     "You're walking %@ this month than you did last month." : {
 
     },
+    "You've already hit your steps goal today with %@ steps against a goal of %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You've already hit your steps goal today with %1$@ steps against a goal of %2$@."
+          }
+        }
+      }
+    },
     "Your created workout plans will appear here." : {
 
+    },
+    "Your current training condition is %@." : {
+
+    },
+    "Your current weight goal is to %@ to %@, but you don't have any weight entries yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your current weight goal is to %1$@ to %2$@, but you don't have any weight entries yet."
+          }
+        }
+      }
+    },
+    "Your latest logged weight was %@ on %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your latest logged weight was %1$@ on %2$@."
+          }
+        }
+      }
     },
     "Your saved and previous steps goals will appear here." : {
 
@@ -3445,7 +3722,26 @@
     "Your split doesn't have any days set up yet." : {
 
     },
+    "Your steps goal is %@ steps. You're at %@ today, with %@ to go." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your steps goal is %1$@ steps. You're at %2$@ today, with %3$@ to go."
+          }
+        }
+      }
+    },
+    "Your steps goal is now %@ steps." : {
+
+    },
+    "Your steps goal needs to be more than 0." : {
+
+    },
     "Your weight data will show up here once you add or sync body weight entries" : {
+
+    },
+    "Your weight entry needs to be more than 0." : {
 
     },
     "Your workout data won't sync across devices or be backed up if you delete the app." : {

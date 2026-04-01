@@ -2,15 +2,15 @@ import Foundation
 import SwiftData
 
 enum TrainingConditionStore {
-    private static let calendar = Calendar.autoupdatingCurrent
+    nonisolated private static let calendar = Calendar.autoupdatingCurrent
 
-    static func exclusiveEndDate(forEndDay endDay: Date?) -> Date? {
+    nonisolated static func exclusiveEndDate(forEndDay endDay: Date?) -> Date? {
         guard let endDay else { return nil }
         let startOfEndDay = calendar.startOfDay(for: endDay)
         return calendar.date(byAdding: .day, value: 1, to: startOfEndDay) ?? startOfEndDay
     }
 
-    static func displayedEndDay(for endDate: Date?) -> Date? {
+    nonisolated static func displayedEndDay(for endDate: Date?) -> Date? {
         guard let endDate else { return nil }
         return endDate.addingTimeInterval(-1)
     }

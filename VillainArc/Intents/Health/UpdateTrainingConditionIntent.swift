@@ -1,0 +1,18 @@
+import AppIntents
+import SwiftData
+
+struct UpdateTrainingConditionIntent: AppIntent {
+    static let title: LocalizedStringResource = "Update Training Condition"
+    static let description = IntentDescription("Opens the training condition editor.")
+    static let supportedModes: IntentModes = .foreground(.dynamic)
+
+    @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        let context = SharedModelContainer.container.mainContext
+        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+
+        AppRouter.shared.popToRoot()
+        AppRouter.shared.tabSelection = .health
+        AppRouter.shared.showTrainingConditionEditorFromIntent = true
+        return .result(opensIntent: OpenAppIntent())
+    }
+}

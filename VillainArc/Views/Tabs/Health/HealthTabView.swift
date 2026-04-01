@@ -38,6 +38,12 @@ struct HealthTabView: View {
                     .presentationDetents([.fraction(0.5)])
                     .presentationBackground(Color(.systemBackground))
             }
+            .onAppear {
+                presentQuickActionDrivenSheetIfNeeded()
+            }
+            .onChange(of: router.showAddWeightEntryFromQuickAction) { _, _ in
+                presentQuickActionDrivenSheetIfNeeded()
+            }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .trainingConditionHistory:
@@ -61,6 +67,12 @@ struct HealthTabView: View {
                 }
             }
         }
+    }
+
+    private func presentQuickActionDrivenSheetIfNeeded() {
+        guard router.showAddWeightEntryFromQuickAction else { return }
+        router.showAddWeightEntryFromQuickAction = false
+        showAddWeightEntrySheet = true
     }
 }
 

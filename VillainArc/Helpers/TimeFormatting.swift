@@ -26,7 +26,7 @@ func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false
     return "\(dateText) • \(timeText)"
 }
 
-func formattedRecentDay(_ date: Date) -> String {
+nonisolated func formattedRecentDay(_ date: Date) -> String {
     let calendar = Calendar.autoupdatingCurrent
 
     if calendar.isDateInToday(date) || calendar.isDateInYesterday(date) {
@@ -42,7 +42,7 @@ func formattedRecentDay(_ date: Date) -> String {
     return formattedSingleDate(date)
 }
 
-func formattedRecentDayAndTime(_ date: Date) -> String { "\(formattedRecentDay(date)) • \(date.formatted(date: .omitted, time: .shortened))" }
+nonisolated func formattedRecentDayAndTime(_ date: Date) -> String { "\(formattedRecentDay(date)) • \(date.formatted(date: .omitted, time: .shortened))" }
 
 func formattedAbsoluteDateRange(start: Date, end: Date? = nil) -> String {
     guard let end = normalizedEndDate(start: start, end: end) else { return formattedSingleDate(start) }
@@ -73,7 +73,7 @@ func formattedAbsoluteDateRange(start: Date, end: Date? = nil) -> String {
     return formatter.string(from: start, to: end)
 }
 
-private func formattedRecentDateRangeText(start: Date, end: Date?) -> String {
+nonisolated private func formattedRecentDateRangeText(start: Date, end: Date?) -> String {
     guard let end else { return formattedRecentDay(start) }
 
     if Calendar.current.isDate(start, inSameDayAs: end) { return formattedRecentDay(start) }
@@ -89,9 +89,9 @@ private func formattedRecentDateRangeText(start: Date, end: Date?) -> String {
     return formatter.string(from: start, to: end)
 }
 
-private func formattedSingleDate(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated).day().year()) }
+nonisolated private func formattedSingleDate(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated).day().year()) }
 
-private func formattedTimeRangeText(start: Date, end: Date?) -> String {
+nonisolated private func formattedTimeRangeText(start: Date, end: Date?) -> String {
     guard let end else { return start.formatted(date: .omitted, time: .shortened) }
     let formatter = DateIntervalFormatter()
     formatter.locale = .autoupdatingCurrent
@@ -100,9 +100,9 @@ private func formattedTimeRangeText(start: Date, end: Date?) -> String {
     return formatter.string(from: start, to: end)
 }
 
-private func localizedDateRangeLabel(start: String, end: String) -> String { String(format: String(localized: "%1$@ - %2$@"), locale: .autoupdatingCurrent, start, end) }
+nonisolated private func localizedDateRangeLabel(start: String, end: String) -> String { String(format: String(localized: "%1$@ - %2$@"), locale: .autoupdatingCurrent, start, end) }
 
-private func normalizedEndDate(start: Date, end: Date?) -> Date? {
+nonisolated private func normalizedEndDate(start: Date, end: Date?) -> Date? {
     guard let end else { return nil }
     return end <= start ? nil : end
 }

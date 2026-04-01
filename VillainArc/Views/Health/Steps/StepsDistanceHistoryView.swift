@@ -34,6 +34,7 @@ struct StepsDistanceHistoryView: View {
                     Haptics.selection()
                     if activeGoal != nil || hasGoalHistory {
                         router.navigate(to: .stepsGoalHistory)
+                        Task { await IntentDonations.donateShowStepsGoalHistory() }
                     } else {
                         showNewStepsGoalSheet = true
                     }

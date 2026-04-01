@@ -6,19 +6,19 @@ enum DistanceUnit: String, CaseIterable, Codable {
 
     nonisolated static var systemDefault: DistanceUnit { Locale.current.measurementSystem == .us ? .mi : .km }
 
-    func fromMeters(_ meters: Double) -> Double {
+    nonisolated func fromMeters(_ meters: Double) -> Double {
         switch self {
         case .km: return meters / 1_000
         case .mi: return meters / 1_609.344
         }
     }
 
-    func toMeters(_ value: Double) -> Double {
+    nonisolated func toMeters(_ value: Double) -> Double {
         switch self {
         case .km: return value * 1_000
         case .mi: return value * 1_609.344
         }
     }
 
-    func display(_ meters: Double, fractionDigits: ClosedRange<Int> = 0...2) -> String { "\(fromMeters(meters).formatted(.number.precision(.fractionLength(fractionDigits)))) \(rawValue)" }
+    nonisolated func display(_ meters: Double, fractionDigits: ClosedRange<Int> = 0...2) -> String { "\(fromMeters(meters).formatted(.number.precision(.fractionLength(fractionDigits)))) \(rawValue)" }
 }

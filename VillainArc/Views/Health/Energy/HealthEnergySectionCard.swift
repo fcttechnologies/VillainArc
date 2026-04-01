@@ -42,6 +42,7 @@ struct HealthEnergySectionCard: View {
         Button {
             Haptics.selection()
             router.navigate(to: .energyHistory)
+            Task { await IntentDonations.donateShowCaloriesBurnedHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 3) {

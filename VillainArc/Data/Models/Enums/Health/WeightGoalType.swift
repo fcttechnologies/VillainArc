@@ -5,7 +5,7 @@ enum WeightGoalType: String, Codable, CaseIterable {
     case bulk
     case maintain
 
-    var title: String {
+    nonisolated var title: String {
         switch self {
         case .cut: return "Cut"
         case .bulk: return "Bulk"

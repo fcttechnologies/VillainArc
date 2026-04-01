@@ -37,6 +37,7 @@ struct WeightHistoryView: View {
                     Haptics.selection()
                     if activeGoal != nil || hasGoalHistory {
                         router.navigate(to: .weightGoalHistory)
+                        Task { await IntentDonations.donateShowWeightGoalHistory() }
                     } else {
                         showNewWeightGoalSheet = true
                     }
@@ -49,6 +50,7 @@ struct WeightHistoryView: View {
                 Button {
                     Haptics.selection()
                     router.navigate(to: .allWeightEntriesList)
+                    Task { await IntentDonations.donateShowAllWeightEntries() }
                 } label: {
                     Text("View All Entries")
                         .fontWeight(.semibold)

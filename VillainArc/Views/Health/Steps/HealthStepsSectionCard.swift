@@ -37,6 +37,7 @@ struct HealthStepsSectionCard: View {
         Button {
             Haptics.selection()
             router.navigate(to: .stepsDistanceHistory)
+            Task { await IntentDonations.donateShowStepsHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 3) {

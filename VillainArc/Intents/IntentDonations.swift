@@ -35,6 +35,13 @@ enum IntentDonations {
 
     static func donateDeleteAllWorkouts() async { _ = try? await DeleteAllWorkoutsIntent().donate() }
     static func donateShowWorkoutHistory() async { _ = try? await ShowWorkoutHistoryIntent().donate() }
+    static func donateShowWeightHistory() async { _ = try? await ShowWeightHistoryIntent().donate() }
+    static func donateShowAllWeightEntries() async { _ = try? await ShowAllWeightEntriesIntent().donate() }
+    static func donateShowWeightGoalHistory() async { _ = try? await ShowWeightGoalHistoryIntent().donate() }
+    static func donateShowStepsHistory() async { _ = try? await ShowStepsHistoryIntent().donate() }
+    static func donateShowStepsGoalHistory() async { _ = try? await ShowStepsGoalHistoryIntent().donate() }
+    static func donateShowSleepHistory() async { _ = try? await ShowSleepHistoryIntent().donate() }
+    static func donateShowCaloriesBurnedHistory() async { _ = try? await ShowCaloriesBurnedHistoryIntent().donate() }
 
     static func donateShowWorkoutPlans() async { _ = try? await ShowWorkoutPlansIntent().donate() }
 

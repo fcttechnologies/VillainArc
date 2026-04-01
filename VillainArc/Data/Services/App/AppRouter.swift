@@ -1,6 +1,16 @@
 import CoreSpotlight
 import SwiftData
 import SwiftUI
+import UIKit
+
+enum HomeQuickAction: String {
+    case addWeightEntry = "com.villainarc.quickaction.addWeightEntry"
+    case startTodaysWorkout = "com.villainarc.quickaction.startTodaysWorkout"
+
+    init?(shortcutItem: UIApplicationShortcutItem) {
+        self.init(rawValue: shortcutItem.type)
+    }
+}
 
 @Observable final class AppRouter {
     private static let selectedTabDefaultsKey = "selected_tab"
@@ -23,12 +33,15 @@ import SwiftUI
     var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     var activeWorkoutPlanOriginal: WorkoutPlan?
+    var pendingHomeQuickAction: HomeQuickAction?
     var showAddExerciseFromLiveActivity = false
+    var showAddWeightEntryFromQuickAction = false
     var showSplitBuilderFromIntent = false
     var showWorkoutSplitListFromIntent = false
     var showWorkoutSettingsFromIntent = false
     var showRestTimerFromIntent = false
     var showPreWorkoutContextFromIntent = false
+    var showTrainingConditionEditorFromIntent = false
     var showCancelWorkoutFromIntent = false
     var showFinishWorkoutFromIntent = false
     var tabSelection: Tabs = .home {
@@ -118,6 +131,95 @@ import SwiftUI
     func presentWeightGoalCompletion(for goal: WeightGoal, trigger: WeightGoalCompletionRoute.Trigger, triggeringEntry: WeightEntry? = nil, referenceDate: Date? = nil) {
         tabSelection = .health
         activeWeightGoalCompletion = WeightGoalCompletionRoute(goalID: goal.id, triggeringEntryID: triggeringEntry?.id, trigger: trigger, referenceDate: referenceDate ?? triggeringEntry?.date ?? .now)
+    }
+
+    func receiveHomeQuickAction(_ action: HomeQuickAction) {
+        pendingHomeQuickAction = action
+        handlePendingHomeQuickActionIfPossible()
+    }
+
+    func handlePendingHomeQuickActionIfPossible() {
+        guard let action = pendingHomeQuickAction else { return }
+        guard isReadyForIntentActions() else { return }
+
+        if hasActiveFlow() {
+            pendingHomeQuickAction = nil
+            handleBlockedHomeQuickAction()
+            return
+        }
+
+        pendingHomeQuickAction = nil
+
+        switch action {
+        case .addWeightEntry:
+            homeTabPath = NavigationPath()
+            healthTabPath = NavigationPath()
+            tabSelection = .health
+            showAddWeightEntryFromQuickAction = true
+
+        case .startTodaysWorkout:
+            handleStartTodaysWorkoutQuickAction()
+        }
+    }
+
+    private func handleBlockedHomeQuickAction() {
+        if let activeWorkoutSession {
+            self.activeWorkoutSession = activeWorkoutSession
+            showQuickActionToast(title: "Workout In Progress", message: "Finish or cancel your current workout first.")
+            return
+        }
+
+        if let unfinishedWorkoutSession = incompleteWorkoutSession() {
+            resumeWorkoutSession(unfinishedWorkoutSession)
+            showQuickActionToast(title: "Workout In Progress", message: "Finish or cancel your current workout first.")
+            return
+        }
+
+        if let activeWorkoutPlan {
+            self.activeWorkoutPlan = activeWorkoutPlan
+            showQuickActionToast(title: "Plan In Progress", message: "Finish or discard your current plan first.")
+            return
+        }
+
+        if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.resumableIncomplete).first {
+            resumeWorkoutPlanCreation(unfinishedWorkoutPlan)
+            showQuickActionToast(title: "Plan In Progress", message: "Finish or discard your current plan first.")
+        }
+    }
+
+    private func handleStartTodaysWorkoutQuickAction() {
+        guard let split = try? context.fetch(WorkoutSplit.active).first else {
+            showQuickActionToast(title: "No Active Split", message: "Set an active workout split to start today's workout.")
+            return
+        }
+
+        guard !(split.days?.isEmpty ?? true) else {
+            showQuickActionToast(title: "No Split Days", message: "Add days to your split before starting today's workout.")
+            return
+        }
+
+        split.refreshRotationIfNeeded(context: context)
+
+        guard let todaysDay = split.todaysSplitDay else {
+            showQuickActionToast(title: "No Workout Today", message: "Villain Arc couldn't determine today's workout.")
+            return
+        }
+
+        guard !todaysDay.isRestDay else {
+            showQuickActionToast(title: "Rest Day", message: "Today is a rest day. Enjoy the recovery.")
+            return
+        }
+
+        guard let workoutPlan = todaysDay.workoutPlan else {
+            showQuickActionToast(title: "No Workout Plan", message: "You don't have a workout plan assigned for today.")
+            return
+        }
+
+        startWorkoutSession(from: workoutPlan)
+    }
+
+    private func showQuickActionToast(title: String, message: String) {
+        ToastManager.shared.show(.init(title: title, message: message, systemImage: "exclamationmark.circle", tint: .orange, haptic: .warning))
     }
 
     func startWorkoutSession() {

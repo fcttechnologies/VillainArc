@@ -312,7 +312,7 @@ struct WeightGoalProgressChartModel {
     }
 }
 
-func weightGoalProgressText(goal: WeightGoal, currentWeight: Double, unit: WeightUnit) -> String {
+nonisolated func weightGoalProgressText(goal: WeightGoal, currentWeight: Double, unit: WeightUnit) -> String {
     let totalChangeNeeded = abs(goal.targetWeight - goal.startWeight)
     guard totalChangeNeeded > 0.05 else { return "At target" }
     let progress = min(max(abs(currentWeight - goal.startWeight), 0), totalChangeNeeded)

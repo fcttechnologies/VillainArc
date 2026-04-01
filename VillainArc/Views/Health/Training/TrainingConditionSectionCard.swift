@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct TrainingConditionSectionCard: View {
+    @State private var router = AppRouter.shared
     @Query(TrainingConditionPeriod.activeNow, animation: .smooth) private var activePeriods: [TrainingConditionPeriod]
     @State private var showEditor = false
 
@@ -65,10 +66,22 @@ struct TrainingConditionSectionCard: View {
         .sheet(isPresented: $showEditor) {
             TrainingConditionEditorView(activePeriod: activePeriod)
         }
+        .onAppear {
+            presentIntentDrivenSheetIfNeeded()
+        }
+        .onChange(of: router.showTrainingConditionEditorFromIntent) { _, _ in
+            presentIntentDrivenSheetIfNeeded()
+        }
         .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionSectionCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)
         .accessibilityHint(AccessibilityText.healthTrainingConditionSectionHint)
+    }
+
+    private func presentIntentDrivenSheetIfNeeded() {
+        guard router.showTrainingConditionEditorFromIntent else { return }
+        router.showTrainingConditionEditorFromIntent = false
+        showEditor = true
     }
 }
 

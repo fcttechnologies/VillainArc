@@ -22,6 +22,7 @@ struct RootView: View {
             .onChange(of: onboardingManager.state) { _, newState in
                 guard newState == .ready else { return }
                 AppRouter.shared.checkForUnfinishedData()
+                AppRouter.shared.handlePendingHomeQuickActionIfPossible()
                 Task {
                     HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                     await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()

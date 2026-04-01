@@ -5,7 +5,7 @@ enum TrainingImpact: String, Codable, CaseIterable, Sendable {
     case trainModified
     case pauseTraining
 
-    var title: String {
+    nonisolated var title: String {
         switch self {
         case .contextOnly:
             return "Context Only"
@@ -16,7 +16,7 @@ enum TrainingImpact: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    var shortTitle: String {
+    nonisolated var shortTitle: String {
         switch self {
         case .contextOnly:
             return "Context"

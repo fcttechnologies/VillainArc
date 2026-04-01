@@ -19,6 +19,7 @@ struct HealthSleepSectionCard: View {
         Button {
             Haptics.selection()
             router.navigate(to: .sleepHistory)
+            Task { await IntentDonations.donateShowSleepHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 12) {
@@ -97,7 +98,7 @@ private struct HealthSleepSparkBarChart: View {
     }
 }
 
-func formattedSleepDurationText(_ duration: TimeInterval) -> String {
+nonisolated func formattedSleepDurationText(_ duration: TimeInterval) -> String {
     let totalMinutes = Int((duration / 60).rounded())
     let hours = totalMinutes / 60
     let minutes = totalMinutes % 60
@@ -113,7 +114,7 @@ func formattedSleepDurationText(_ duration: TimeInterval) -> String {
     return "\(minutes)m"
 }
 
-func formattedSleepDurationAccessibilityText(_ duration: TimeInterval) -> String {
+nonisolated func formattedSleepDurationAccessibilityText(_ duration: TimeInterval) -> String {
     let totalMinutes = Int((duration / 60).rounded())
     let hours = totalMinutes / 60
     let minutes = totalMinutes % 60

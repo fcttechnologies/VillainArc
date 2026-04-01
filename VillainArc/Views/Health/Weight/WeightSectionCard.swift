@@ -38,6 +38,7 @@ struct WeightSectionCard: View {
         Button {
             Haptics.selection()
             router.navigate(to: .weightHistory)
+            Task { await IntentDonations.donateShowWeightHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 12) {

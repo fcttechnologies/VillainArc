@@ -8,7 +8,7 @@ enum TrainingConditionKind: String, Codable, CaseIterable, Sendable {
     case traveling
     case onBreak
 
-    var title: String {
+    nonisolated var title: String {
         switch self {
         case .sick:
             return "Sick"
@@ -23,7 +23,7 @@ enum TrainingConditionKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    var systemImage: String {
+    nonisolated var systemImage: String {
         switch self {
         case .sick:
             return "cross.case.fill"
@@ -38,7 +38,7 @@ enum TrainingConditionKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    var tint: Color {
+    nonisolated var tint: Color {
         switch self {
         case .sick:
             return .green
@@ -53,5 +53,5 @@ enum TrainingConditionKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    var usesAffectedMuscles: Bool { self == .injured || self == .recovering }
+    nonisolated var usesAffectedMuscles: Bool { self == .injured || self == .recovering }
 }
