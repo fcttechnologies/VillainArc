@@ -13,6 +13,7 @@ import SwiftData
     var isCustom: Bool = false
     var searchTokens: [String] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
+    var suggestionsEnabled: Bool = true
     var preferredWeightChange: Double?
 
     var displayMuscle: String { musclesTargeted.first?.displayName ?? String(localized: "Unknown Muscle") }

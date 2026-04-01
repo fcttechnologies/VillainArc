@@ -64,7 +64,7 @@ import SwiftUI
     }
 }
 
-enum WorkoutFinishAction {
+enum WorkoutFinishAction: Hashable {
     case markLoggedComplete
     case deleteUnfinished
     case deleteEmpty
@@ -222,6 +222,15 @@ extension WorkoutSession {
     func activeExerciseAndSet() -> (exercise: ExercisePerformance, set: SetPerformance)? {
         for exercise in sortedExercises { if let set = exercise.sortedSets.first(where: { !$0.complete }) { return (exercise, set) } }
         return nil
+    }
+
+    func latestCompletedSet() -> SetPerformance? {
+        sortedExercises
+            .flatMap(\.sortedSets)
+            .filter(\.complete)
+            .max {
+                ($0.completedAt ?? .distantPast) < ($1.completedAt ?? .distantPast)
+            }
     }
 
     func isFinalIncompleteSet(_ candidate: SetPerformance) -> Bool {

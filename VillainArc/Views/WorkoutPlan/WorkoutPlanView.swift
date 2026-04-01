@@ -309,6 +309,7 @@ private struct WorkoutPlanExerciseView: View {
     @State private var showRestTimeEditor = false
     @State private var showReplaceExerciseSheet = false
     @State private var showExerciseHistorySheet = false
+    @State private var progressionStepExercise: Exercise?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -404,6 +405,11 @@ private struct WorkoutPlanExerciseView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .contextMenu {
             Button {
+                openProgressionStepEditor()
+            } label: {
+                Label("Suggestion Settings", systemImage: "slider.horizontal.3")
+            }
+            Button {
                 Haptics.selection()
                 showReplaceExerciseSheet = true
             } label: {
@@ -442,12 +448,23 @@ private struct WorkoutPlanExerciseView: View {
             }
             .presentationDetents([.medium, .large])
         }
+        .sheet(isPresented: Binding(get: { progressionStepExercise != nil }, set: { if !$0 { progressionStepExercise = nil } })) {
+            if let progressionStepExercise {
+                ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
+            }
+        }
     }
 
     private func addSet() {
         Haptics.selection()
         exercise.addSet(restoringFrom: originalExercise)
         saveContext(context: context)
+    }
+
+    private func openProgressionStepEditor() {
+        guard let sourceExercise = try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first else { return }
+        progressionStepExercise = sourceExercise
+        Haptics.selection()
     }
 }
 

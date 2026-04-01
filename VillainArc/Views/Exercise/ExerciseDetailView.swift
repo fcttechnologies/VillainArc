@@ -60,7 +60,7 @@ struct ExerciseDetailView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
-    @State private var showProgressionStepEditor = false
+    @State private var showSuggestionSettingsSheet = false
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -247,15 +247,15 @@ struct ExerciseDetailView: View {
                 }
 
                 if let exercise {
-                    progressionStepSection(for: exercise)
+                    suggestionSettingsSection(for: exercise)
                 }
             }
             .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showProgressionStepEditor) {
+        .sheet(isPresented: $showSuggestionSettingsSheet) {
             if let exercise {
-                ProgressionStepEditorSheet(exercise: exercise)
+                ExerciseSuggestionSettingsSheet(exercise: exercise)
             }
         }
         .overlay {
@@ -318,13 +318,13 @@ struct ExerciseDetailView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailEmptyState)
     }
 
-    private func progressionStepSection(for exercise: Exercise) -> some View {
+    private func suggestionSettingsSection(for exercise: Exercise) -> some View {
         Button {
-            showProgressionStepEditor = true
+            showSuggestionSettingsSheet = true
         } label: {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("Progression Step (\(exercise.equipmentType.progressionStepValueText(preferredWeightChange: exercise.preferredWeightChange, unit: weightUnit)))")
+                    Text(suggestionSettingsTitle(for: exercise))
                         .font(.headline)
                         .foregroundStyle(.primary)
                     Spacer()
@@ -335,10 +335,10 @@ struct ExerciseDetailView: View {
                         .accessibilityHidden(true)
                 }
 
-                Text(exercise.equipmentType.progressionStepCardDescription)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.leading)
+                Text(suggestionSettingsDescription(for: exercise))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
@@ -346,8 +346,24 @@ struct ExerciseDetailView: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
-        .accessibilityIdentifier("exerciseDetailProgressionStepButton")
-        .accessibilityHint("Opens progression step settings.")
+        .accessibilityIdentifier("exerciseDetailSuggestionSettingsButton")
+        .accessibilityHint("Opens exercise suggestion settings.")
+    }
+
+    private func suggestionSettingsTitle(for exercise: Exercise) -> String {
+        if exercise.suggestionsEnabled {
+            return "Exercise Suggestions (\(exercise.equipmentType.progressionStepValueText(preferredWeightChange: exercise.preferredWeightChange, unit: weightUnit)))"
+        }
+
+        return "Exercise Suggestions (Off)"
+    }
+
+    private func suggestionSettingsDescription(for exercise: Exercise) -> String {
+        if exercise.suggestionsEnabled {
+            return exercise.equipmentType.progressionStepCardDescription
+        }
+
+        return "Villain Arc will not generate suggestions for this exercise until you turn them back on."
     }
 
     private func points(for metric: ChartMetric) -> [ExerciseMetricPoint] {

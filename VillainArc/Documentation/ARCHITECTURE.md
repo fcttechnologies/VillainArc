@@ -41,6 +41,8 @@ This file is the structure map for the app. It answers “where does this respon
 - owns home/health tab paths
 - owns the currently presented workout session and workout plan
 - owns the active weight-goal completion route
+- owns typed pending presentation state for router-driven health, split, and workout sheets/dialogs
+- receives Spotlight, Siri, intent, live-activity, and home-screen quick-action entry points
 - blocks new flows when any other workout/plan flow is already active
 
 ## Persistence and Shared State
@@ -120,7 +122,7 @@ These are created by startup/system-state code and treated as singleton-style re
 ### Exercise and Split Models
 
 - `Data/Models/Exercise/Exercise.swift`
-  - exercise catalog row
+  - exercise catalog row, including global suggestion settings and preferred progression step
 - `Data/Models/Exercise/ExerciseHistory.swift`
   - cached per-exercise analytics
 - `Data/Models/Exercise/ProgressionPoint.swift`
@@ -184,9 +186,11 @@ These are created by startup/system-state code and treated as singleton-style re
 - `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
+- `Data/Services/Suggestions/ExerciseSuggestionSettings.swift`
 - `Views/Suggestions/DeferredSuggestionsView.swift`
 - `Views/Suggestions/SuggestionReviewView.swift`
 - `Views/Suggestions/WorkoutPlanSuggestionsSheet.swift`
+- `Views/Exercise/ExerciseSuggestionSettingsSheet.swift`
 
 ### Exercise Analytics
 
@@ -242,6 +246,8 @@ These are created by startup/system-state code and treated as singleton-style re
 
 - `Data/Services/App/SpotlightIndexer.swift`
 - `Intents/**/*`
+
+Health-specific intents reuse Health-tab routes and caches, while workout- and split-related intents usually hand the app off through `AppRouter` presentation routes instead of bespoke modal state in each entry point.
 
 ### Widgets and Live Activities
 

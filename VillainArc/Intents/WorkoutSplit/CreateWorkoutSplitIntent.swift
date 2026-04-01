@@ -10,7 +10,7 @@ struct CreateWorkoutSplitIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
-        AppRouter.shared.showSplitBuilderFromIntent = true
+        AppRouter.shared.activeSplitSheet = .builder
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))
         return .result(opensIntent: OpenAppIntent())

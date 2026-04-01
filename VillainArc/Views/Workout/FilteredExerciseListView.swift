@@ -121,7 +121,7 @@ struct FilteredExerciseListView: View {
         .scrollDismissesKeyboard(.immediately)
         .sheet(isPresented: Binding(get: { progressionStepExercise != nil }, set: { if !$0 { progressionStepExercise = nil } })) {
             if let progressionStepExercise {
-                ProgressionStepEditorSheet(exercise: progressionStepExercise)
+                ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseList)
@@ -183,7 +183,7 @@ struct FilteredExerciseListView: View {
             progressionStepExercise = exercise
             Haptics.selection()
         } label: {
-            Label("Edit Progression Step", systemImage: "slider.horizontal.3")
+            Label("Suggestion Settings", systemImage: "slider.horizontal.3")
         }
     }
     

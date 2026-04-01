@@ -2,9 +2,7 @@ import UIKit
 
 final class HomeQuickActionSceneDelegate: NSObject, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let shortcutItem = connectionOptions.shortcutItem,
-              let action = HomeQuickAction(shortcutItem: shortcutItem)
-        else { return }
+        guard let shortcutItem = connectionOptions.shortcutItem, let action = HomeQuickAction(shortcutItem: shortcutItem) else { return }
 
         AppRouter.shared.receiveHomeQuickAction(action)
     }

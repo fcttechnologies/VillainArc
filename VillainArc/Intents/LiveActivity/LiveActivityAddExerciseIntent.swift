@@ -6,7 +6,7 @@ struct LiveActivityAddExerciseIntent: LiveActivityIntent {
     static let supportedModes: IntentModes = .foreground(.immediate)
 
     @MainActor func perform() async throws -> some IntentResult {
-        AppRouter.shared.showAddExerciseFromLiveActivity = true
+        AppRouter.shared.activeWorkoutSheet = .addExercise
         return .result()
     }
 }

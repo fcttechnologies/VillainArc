@@ -136,13 +136,14 @@ The workout only moves to `.active` once the pending/deferred set is empty.
 - workout settings
 - rest timer
 - live Apple Health sheet
-- intent/live-activity-driven sheet presentation
+- router-driven workout sheet and dialog presentation
 
 Main collaborators:
 
 - `RestTimerState`
 - `WorkoutActivityManager`
 - `HealthLiveWorkoutSessionCoordinator`
+- `AppRouter`
 
 Important runtime rules:
 
@@ -150,6 +151,7 @@ Important runtime rules:
 - rest timer state is shared app-wide
 - pre-workout context prompting is settings-driven
 - live activities mirror the active incomplete workout
+- router-driven workout sheets and dialogs are keyed off typed `AppRouter` presentation routes, not view-local intent booleans
 
 ## Finishing a Workout
 
@@ -168,6 +170,8 @@ Finish is intentionally split into two phases.
 - ends the live Health workout session if running
 - stops the rest timer
 - ends the Live Activity
+
+Foreground finish/cancel entry points from Siri or App Intents route into the same workout dialog/sheet flow through `AppRouter`, so the workout screen remains the single owner of the actual UI.
 
 `WorkoutSession.finish(...)` itself:
 

@@ -8,17 +8,9 @@ struct WorkoutView: View {
     @State private var router = AppRouter.shared
     
     @State private var showExerciseEditSheet = false
-    @State private var showAddExerciseSheet = false
-    @State private var showRestTimerSheet = false
     @State private var showLiveHealthSheet = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
-    @State private var showPreWorkoutSheet = false
-    @State private var showWorkoutSettingsSheet = false
-    @State private var showDeleteConfirmation = false
-    @State private var showSaveConfirmation = false
-    @State private var showEffortPrompt = false
-    @State private var pendingFinishAction: WorkoutFinishAction?
     @State private var pendingEffortSelection = 0
     @State private var autoAdvanceTargetIndex: Int?
     
@@ -49,7 +41,7 @@ struct WorkoutView: View {
                     showNotesEditorSheet = true
                 }
                 Button("Pre Workout Context", systemImage: "bolt.fill") {
-                    showPreWorkoutSheet = true
+                    router.activeWorkoutSheet = .preWorkoutContext
                     Task { await IntentDonations.donateOpenPreWorkoutContext() }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
@@ -59,7 +51,7 @@ struct WorkoutView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        showRestTimerSheet = true
+                        router.activeWorkoutSheet = .restTimer
                         Haptics.selection()
                         Task { await IntentDonations.donateOpenRestTimer() }
                     } label: {
@@ -89,8 +81,7 @@ struct WorkoutView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Button("Add Exercise", systemImage: "plus") {
                         Haptics.selection()
-                        prepareForAddExerciseSheet()
-                        showAddExerciseSheet = true
+                        router.activeWorkoutSheet = .addExercise
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutAddExerciseButton)
                     .accessibilityHint(AccessibilityText.workoutAddExerciseHint)
@@ -110,11 +101,14 @@ struct WorkoutView: View {
                         }
                 }
             }
-            .sheet(isPresented: $showAddExerciseSheet, onDismiss: handleAddExerciseSheetDismiss) {
+            .sheet(isPresented: addExerciseSheetBinding, onDismiss: handleAddExerciseSheetDismiss) {
                 AddExerciseView(workout: workout)
                     .interactiveDismissDisabled()
+                    .task {
+                        prepareForAddExerciseSheet()
+                    }
             }
-            .sheet(isPresented: $showRestTimerSheet) {
+            .sheet(isPresented: restTimerSheetBinding) {
                 RestTimerView(workout: workout, appSettingsSnapshot: appSettingsSnapshot)
                     .presentationDetents([.medium, .large])
                     .presentationBackground(Color(.systemBackground))
@@ -136,7 +130,7 @@ struct WorkoutView: View {
                         saveContext(context: context)
                     }
             }
-            .sheet(isPresented: $showPreWorkoutSheet) {
+            .sheet(isPresented: preWorkoutSheetBinding) {
                 PreWorkoutContextView(preWorkoutContext: workout.preWorkoutContext ?? PreWorkoutContext())
                     .presentationDetents([.fraction(0.4)])
                     .onDisappear {
@@ -157,50 +151,31 @@ struct WorkoutView: View {
                         WorkoutActivityManager.update(for: workout)
                     }
             }
-            .sheet(isPresented: $showWorkoutSettingsSheet) {
+            .sheet(isPresented: workoutSettingsSheetBinding) {
                 WorkoutSettingsView(workout: workout)
             }
-            .sheet(isPresented: $showEffortPrompt) {
+            .sheet(isPresented: effortPromptSheetBinding) {
                 WorkoutEffortPromptView(
                     selectedEffort: $pendingEffortSelection,
                     onClose: {
-                        showEffortPrompt = false
-                        pendingFinishAction = nil
+                        router.activeWorkoutSheet = nil
                         pendingEffortSelection = 0
                     },
                     onSkip: {
-                        commitEffortAndFinish(nil)
+                        if let action = activeEffortPromptAction {
+                            commitEffortAndFinish(nil, action: action)
+                        }
                     },
                     onConfirm: {
-                        commitEffortAndFinish(pendingEffortSelection)
+                        if let action = activeEffortPromptAction {
+                            commitEffortAndFinish(pendingEffortSelection, action: action)
+                        }
                     }
                 )
                 .interactiveDismissDisabled()
             }
             .onChange(of: workout.activeExercise?.id) {
                 scheduleSave(context: context)
-            }
-            .onChange(of: router.showAddExerciseFromLiveActivity) {
-                if router.showAddExerciseFromLiveActivity {
-                    router.showAddExerciseFromLiveActivity = false
-                    prepareForAddExerciseSheet()
-                    showAddExerciseSheet = true
-                }
-            }
-            .onChange(of: router.showRestTimerFromIntent) { _, _ in
-                presentIntentDrivenSheetsIfNeeded()
-            }
-            .onChange(of: router.showPreWorkoutContextFromIntent) { _, _ in
-                presentIntentDrivenSheetsIfNeeded()
-            }
-            .onChange(of: router.showWorkoutSettingsFromIntent) { _, _ in
-                presentIntentDrivenSheetsIfNeeded()
-            }
-            .onChange(of: router.showCancelWorkoutFromIntent) { _, _ in
-                presentIntentDrivenSheetsIfNeeded()
-            }
-            .onChange(of: router.showFinishWorkoutFromIntent) { _, _ in
-                presentIntentDrivenSheetsIfNeeded()
             }
             .userActivity("com.villainarc.workoutSession.active", element: workout) { session, activity in
                 activity.title = session.title
@@ -211,7 +186,7 @@ struct WorkoutView: View {
             }
             .task {
                 if shouldPromptForPreWorkoutContext, workout.preWorkoutContext?.feeling == .notSet {
-                    showPreWorkoutSheet = true
+                    router.activeWorkoutSheet = .preWorkoutContext
                 }
             }
             .onAppear {
@@ -219,7 +194,6 @@ struct WorkoutView: View {
                 Task {
                     await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
                 }
-                presentIntentDrivenSheetsIfNeeded()
             }
         }
     }
@@ -342,7 +316,7 @@ struct WorkoutView: View {
                 Menu("Workout Options", systemImage: "ellipsis") {
                     Button("Workout Settings", systemImage: "gear") {
                         Haptics.selection()
-                        showWorkoutSettingsSheet = true
+                        router.activeWorkoutSheet = .settings
                         Task { await IntentDonations.donateOpenWorkoutSettings() }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsButton)
@@ -360,7 +334,7 @@ struct WorkoutView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishButton)
                     .accessibilityHint(AccessibilityText.workoutFinishHint)
                     Button("Cancel Workout", systemImage: "xmark", role: .destructive) {
-                        showDeleteConfirmation = true
+                        router.activeWorkoutDialog = .cancel
                     }
                     .tint(.red)
                     .buttonStyle(.glassProminent)
@@ -372,7 +346,7 @@ struct WorkoutView: View {
                 .accessibilityHint(AccessibilityText.workoutOptionsMenuHint)
             }
         }
-        .confirmationDialog("Cancel Workout", isPresented: $showDeleteConfirmation) {
+        .confirmationDialog("Cancel Workout", isPresented: cancelWorkoutDialogBinding) {
             Button("Cancel Workout", role: .destructive) {
                 deleteWorkout()
             }
@@ -380,7 +354,7 @@ struct WorkoutView: View {
         } message: {
             Text("Are you sure you want to delete this workout?")
         }
-        .confirmationDialog("Finish Workout", isPresented: $showSaveConfirmation) {
+        .confirmationDialog("Finish Workout", isPresented: finishWorkoutDialogBinding) {
             let summary = unfinishedSetSummary
             switch summary.caseType {
             case .emptyAndLogged:
@@ -430,7 +404,7 @@ struct WorkoutView: View {
     }
 
     private func queueBeginFinishFlow(action: WorkoutFinishAction) {
-        showSaveConfirmation = false
+        router.activeWorkoutDialog = nil
         beginFinishFlow(action: action)
     }
 
@@ -438,7 +412,7 @@ struct WorkoutView: View {
         if unfinishedSetSummary.caseType == .none, shouldPromptForPostWorkoutEffort {
             beginFinishFlow(action: .finish)
         } else {
-            showSaveConfirmation = true
+            router.activeWorkoutDialog = .finish
         }
     }
 
@@ -453,17 +427,13 @@ struct WorkoutView: View {
             return
         }
 
-        pendingFinishAction = action
         pendingEffortSelection = 0
-        showEffortPrompt = true
+        router.activeWorkoutSheet = .effortPrompt(action)
     }
 
-    private func commitEffortAndFinish(_ effort: Int?) {
-        guard let action = pendingFinishAction else { return }
-
+    private func commitEffortAndFinish(_ effort: Int?, action: WorkoutFinishAction) {
         workout.postEffort = effort ?? 0
-        pendingFinishAction = nil
-        showEffortPrompt = false
+        router.activeWorkoutSheet = nil
         pendingEffortSelection = 0
         finishWorkout(action: action)
     }
@@ -498,6 +468,8 @@ struct WorkoutView: View {
     private func endWorkoutSession(shouldDismiss: Bool) {
         Haptics.selection()
         restTimer.stop()
+        router.activeWorkoutDialog = nil
+        router.activeWorkoutSheet = nil
         WorkoutActivityManager.end()
         if shouldDismiss {
             dismiss()
@@ -583,27 +555,91 @@ struct WorkoutView: View {
         return sets.allSatisfy { $0.complete }
     }
 
-    private func presentIntentDrivenSheetsIfNeeded() {
-        if router.showWorkoutSettingsFromIntent {
-            router.showWorkoutSettingsFromIntent = false
-            showWorkoutSettingsSheet = true
-        }
-        if router.showRestTimerFromIntent {
-            router.showRestTimerFromIntent = false
-            showRestTimerSheet = true
-        }
-        if router.showPreWorkoutContextFromIntent {
-            router.showPreWorkoutContextFromIntent = false
-            showPreWorkoutSheet = true
-        }
-        if router.showCancelWorkoutFromIntent {
-            router.showCancelWorkoutFromIntent = false
-            showDeleteConfirmation = true
-        }
-        if router.showFinishWorkoutFromIntent {
-            router.showFinishWorkoutFromIntent = false
-            handleFinishTapped()
-        }
+    private var addExerciseSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutSheet == .addExercise },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutSheet == .addExercise {
+                    router.activeWorkoutSheet = nil
+                }
+            }
+        )
+    }
+
+    private var restTimerSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutSheet == .restTimer },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutSheet == .restTimer {
+                    router.activeWorkoutSheet = nil
+                }
+            }
+        )
+    }
+
+    private var preWorkoutSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutSheet == .preWorkoutContext },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutSheet == .preWorkoutContext {
+                    router.activeWorkoutSheet = nil
+                }
+            }
+        )
+    }
+
+    private var workoutSettingsSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutSheet == .settings },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutSheet == .settings {
+                    router.activeWorkoutSheet = nil
+                }
+            }
+        )
+    }
+
+    private var effortPromptSheetBinding: Binding<Bool> {
+        Binding(
+            get: {
+                if case .effortPrompt = router.activeWorkoutSheet { return true }
+                return false
+            },
+            set: { isPresented in
+                if !isPresented {
+                    if case .effortPrompt = router.activeWorkoutSheet {
+                        router.activeWorkoutSheet = nil
+                    }
+                }
+            }
+        )
+    }
+
+    private var cancelWorkoutDialogBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutDialog == .cancel },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutDialog == .cancel {
+                    router.activeWorkoutDialog = nil
+                }
+            }
+        )
+    }
+
+    private var finishWorkoutDialogBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutDialog == .finish },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutDialog == .finish {
+                    router.activeWorkoutDialog = nil
+                }
+            }
+        )
+    }
+
+    private var activeEffortPromptAction: WorkoutFinishAction? {
+        guard case .effortPrompt(let action) = router.activeWorkoutSheet else { return nil }
+        return action
     }
 }
 

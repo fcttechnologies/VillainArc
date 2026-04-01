@@ -28,22 +28,76 @@ enum HomeQuickAction: String {
         let referenceDate: Date
     }
 
+    enum HealthSheet: String, Identifiable {
+        case addWeightEntry
+        case trainingConditionEditor
+
+        var id: String { rawValue }
+    }
+
+    enum SplitSheet: String, Identifiable {
+        case builder
+        case list
+
+        var id: String { rawValue }
+    }
+
+    enum WorkoutSheet: Hashable, Identifiable {
+        case addExercise
+        case restTimer
+        case preWorkoutContext
+        case settings
+        case effortPrompt(WorkoutFinishAction)
+
+        var id: String {
+            switch self {
+            case .addExercise:
+                return "addExercise"
+            case .restTimer:
+                return "restTimer"
+            case .preWorkoutContext:
+                return "preWorkoutContext"
+            case .settings:
+                return "settings"
+            case .effortPrompt(let action):
+                switch action {
+                case .markLoggedComplete:
+                    return "effortPrompt-markLoggedComplete"
+                case .deleteUnfinished:
+                    return "effortPrompt-deleteUnfinished"
+                case .deleteEmpty:
+                    return "effortPrompt-deleteEmpty"
+                case .finish:
+                    return "effortPrompt-finish"
+                }
+            }
+        }
+    }
+
+    enum WorkoutDialog: String, Identifiable {
+        case cancel
+        case finish
+
+        var id: String { rawValue }
+    }
+
     static let shared = AppRouter()
-    var activeWorkoutSession: WorkoutSession?
+    var activeWorkoutSession: WorkoutSession? {
+        didSet {
+            if activeWorkoutSession == nil {
+                activeWorkoutSheet = nil
+                activeWorkoutDialog = nil
+            }
+        }
+    }
     var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     var activeWorkoutPlanOriginal: WorkoutPlan?
     var pendingHomeQuickAction: HomeQuickAction?
-    var showAddExerciseFromLiveActivity = false
-    var showAddWeightEntryFromQuickAction = false
-    var showSplitBuilderFromIntent = false
-    var showWorkoutSplitListFromIntent = false
-    var showWorkoutSettingsFromIntent = false
-    var showRestTimerFromIntent = false
-    var showPreWorkoutContextFromIntent = false
-    var showTrainingConditionEditorFromIntent = false
-    var showCancelWorkoutFromIntent = false
-    var showFinishWorkoutFromIntent = false
+    var activeHealthSheet: HealthSheet?
+    var activeSplitSheet: SplitSheet?
+    var activeWorkoutSheet: WorkoutSheet?
+    var activeWorkoutDialog: WorkoutDialog?
     var tabSelection: Tabs = .home {
         didSet { persistTabSelection(tabSelection) }
     }
@@ -155,7 +209,7 @@ enum HomeQuickAction: String {
             homeTabPath = NavigationPath()
             healthTabPath = NavigationPath()
             tabSelection = .health
-            showAddWeightEntryFromQuickAction = true
+            activeHealthSheet = .addWeightEntry
 
         case .startTodaysWorkout:
             handleStartTodaysWorkoutQuickAction()
@@ -312,7 +366,7 @@ enum HomeQuickAction: String {
                 cancelWorkoutSession(workoutSession)
             } else {
                 activeWorkoutSession = workoutSession
-                showCancelWorkoutFromIntent = true
+                activeWorkoutDialog = .cancel
             }
         case .summary, .done: activeWorkoutSession = workoutSession
         }
@@ -321,13 +375,20 @@ enum HomeQuickAction: String {
     func handleSiriEndWorkout(_ userActivity: NSUserActivity) {
         guard isReadyForIntentActions() else { return }
         guard let workoutSession = incompleteWorkoutSession() else { return }
-
-        activeWorkoutSession = workoutSession
-
         guard workoutSession.statusValue == .active else { return }
         guard !(workoutSession.exercises?.isEmpty ?? true) else { return }
+        presentFinishWorkoutFlow(for: workoutSession)
+    }
 
-        showFinishWorkoutFromIntent = true
+    func presentFinishWorkoutFlow(for workoutSession: WorkoutSession) {
+        activeWorkoutSession = workoutSession
+        let shouldPromptForPostWorkoutEffort = (try? context.fetch(AppSettings.single).first)?.promptForPostWorkoutEffort ?? true
+
+        if shouldPromptForPostWorkoutEffort, workoutSession.unfinishedSetSummary.caseType == .none {
+            activeWorkoutSheet = .effortPrompt(.finish)
+        } else {
+            activeWorkoutDialog = .finish
+        }
     }
 
     func handleSpotlight(_ userActivity: NSUserActivity) {

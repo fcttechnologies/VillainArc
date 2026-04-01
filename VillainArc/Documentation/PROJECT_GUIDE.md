@@ -18,7 +18,7 @@ VillainArc is a SwiftUI + SwiftData strength-training app built around:
 - plan suggestions and later outcome evaluation
 - cached exercise analytics
 - Apple Health integration for workouts, weight, sleep, daily steps, daily distance, and daily energy
-- Shortcuts, Spotlight, widgets, and Live Activities that reuse the same app state
+- Shortcuts, home-screen quick actions, Spotlight, widgets, and Live Activities that reuse the same app state
 
 The main product areas are:
 
@@ -48,6 +48,11 @@ Starting a new workout or plan is blocked when any of these exist:
 - a persisted incomplete `WorkoutPlan`
 
 This keeps UI flows, intents, Spotlight entry points, and resume behavior aligned.
+
+Quick actions follow the same rule too:
+
+- `Start Today's Workout` only runs when no workout or plan flow is already active
+- `Add Weight Entry` routes into the Health tab and presents the same sheet the foreground UI uses
 
 ### Persist Real Drafts, Not Temporary State
 
@@ -206,6 +211,12 @@ Splits answer “what should I do today?” and can point to plans. The app supp
 
 Suggestions are persisted coaching events attached to plan structure. Users review them in summary, at the deferred pre-workout gate, or from the plan suggestions sheet. Outcomes are resolved later from future workouts.
 
+Exercise-level catalog settings can globally disable suggestion generation for a specific exercise. When that happens, VillainArc:
+
+- stops generating new suggestions for that exercise everywhere
+- hides progression-step tuning in the exercise suggestion settings sheet
+- deletes unresolved suggestion state for that exercise when the user saves the setting
+
 See:
 
 - `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
@@ -229,6 +240,12 @@ The Health tab combines:
 - daily steps and distance history with intraday day view plus steps goals
 - daily energy history with intraday day view
 - Apple Health workout history
+
+That surface is also reused by App Intents and quick actions:
+
+- read-only health intents answer from the same local caches and app-owned records the Health tab uses
+- foreground health intents route into the same navigation destinations and sheets as the Health tab UI
+- the home-screen `Add Weight Entry` quick action opens the Health add-weight sheet once the app is ready
 
 Notification behavior is part of that surface:
 

@@ -16,7 +16,7 @@ struct ManageWorkoutSplitsIntent: AppIntent {
 
         if let activeSplit = try? context.fetch(WorkoutSplit.active).first { activeSplit.refreshRotationIfNeeded(context: context) }
 
-        AppRouter.shared.showWorkoutSplitListFromIntent = true
+        AppRouter.shared.activeSplitSheet = .list
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))
         return .result(opensIntent: OpenAppIntent())

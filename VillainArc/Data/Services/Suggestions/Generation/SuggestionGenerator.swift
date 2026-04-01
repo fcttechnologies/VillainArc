@@ -5,11 +5,22 @@ struct SuggestionGenerator {
     static func generateSuggestions(for session: WorkoutSession, context: ModelContext) async -> [SuggestionEvent] {
         guard let plan = session.workoutPlan else { return [] }
 
+        let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
+        let catalogIDs = Array(Set(session.sortedExercises.map(\.catalogID)))
+        let exercises = (try? context.fetch(Exercise.withCatalogIDs(catalogIDs))) ?? []
+        let suggestionsEnabledByCatalogID = Dictionary(exercises.map { ($0.catalogID, $0.suggestionsEnabled) }, uniquingKeysWith: { _, second in second })
+        let preferredWeightChangeByCatalogID = Dictionary(exercises.map { ($0.catalogID, $0.preferredWeightChange) },
+            uniquingKeysWith: { first, second in
+                if let second, second > 0 { return second }
+                return first
+            })
+
         // Step 1: Gather data for AI inference (Main Actor)
         // We do this first to avoid accessing SwiftData objects on background threads.
         var aiRequests: [UUID: AIRequest] = [:]
         var historyByCatalogID: [String: [ExercisePerformance]] = [:]
         for exercisePerf in session.sortedExercises {
+            guard suggestionsEnabledByCatalogID[exercisePerf.catalogID] != false else { continue }
             guard exercisePerf.prescription != nil else { continue }
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }
             let resolvedTrainingStyle = MetricsCalculator.detectTrainingStyle(completeSets)
@@ -35,16 +46,8 @@ struct SuggestionGenerator {
         var allSuggestions: [SuggestionEventDraft] = []
         var resolvedTrainingStyleByPrescriptionID: [UUID: TrainingStyle] = [:]
 
-        let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
-        let catalogIDs = Array(Set(session.sortedExercises.map(\.catalogID)))
-        let exercises = (try? context.fetch(Exercise.withCatalogIDs(catalogIDs))) ?? []
-        let preferredWeightChangeByCatalogID = Dictionary(exercises.map { ($0.catalogID, $0.preferredWeightChange) },
-            uniquingKeysWith: { first, second in
-                if let second, second > 0 { return second }
-                return first
-            })
-
         for exercisePerf in session.sortedExercises {
+            guard suggestionsEnabledByCatalogID[exercisePerf.catalogID] != false else { continue }
             guard let prescription = exercisePerf.prescription else { continue }
             let performanceHistory = historyByCatalogID[exercisePerf.catalogID] ?? []
             let completeSets = exercisePerf.sortedSets.filter { $0.complete }

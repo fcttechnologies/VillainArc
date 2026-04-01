@@ -20,8 +20,6 @@ struct WorkoutSplitView: View {
     @State private var isSwapMode = false
     @State private var swapFirstDay: WorkoutSplitDay?
     @State private var swapSecondDay: WorkoutSplitDay?
-    @State private var showSplitBuilder = false
-    @State private var showSplitList = false
     @State private var splitListInitialPath: [WorkoutSplit] = []
 
     private let autoPresentBuilder: Bool
@@ -82,15 +80,15 @@ struct WorkoutSplitView: View {
                     }
             }
         }
-        .sheet(isPresented: $showSplitBuilder) {
+        .sheet(isPresented: splitBuilderBinding, onDismiss: { splitListInitialPath = [] }) {
             SplitBuilderView { newSplit in
                 if !newSplit.isActive {
                     splitListInitialPath = [newSplit]
-                    showSplitList = true
+                    router.activeSplitSheet = .list
                 }
             }
         }
-        .sheet(isPresented: $showSplitList, onDismiss: { splitListInitialPath = [] }) {
+        .sheet(isPresented: splitListBinding, onDismiss: { splitListInitialPath = [] }) {
             WorkoutSplitListView(initialPath: splitListInitialPath)
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -99,18 +97,10 @@ struct WorkoutSplitView: View {
                 selectedSplitDay = split.todaysSplitDay
             }
             if autoPresentBuilder && allSplits.isEmpty {
-                showSplitBuilder = true
+                router.activeSplitSheet = .builder
             }
-            presentSplitBuilderIfNeeded()
             refreshRotationIfNeeded()
-            presentSplitListIfNeeded()
             Task { await IntentDonations.donateTrainingSummary() }
-        }
-        .onChange(of: router.showSplitBuilderFromIntent) { _, _ in
-            presentSplitBuilderIfNeeded()
-        }
-        .onChange(of: router.showWorkoutSplitListFromIntent) { _, _ in
-            presentSplitListIfNeeded()
         }
         .onChange(of: currentSplit?.persistentModelID) { _, _ in
             selectedSplitDay = currentSplit?.todaysSplitDay
@@ -134,19 +124,6 @@ struct WorkoutSplitView: View {
             activity.contentAttributeSet = attributeSet
             activity.appEntityIdentifier = .init(for: entity)
         }
-    }
-
-    private func presentSplitBuilderIfNeeded() {
-        guard router.showSplitBuilderFromIntent else { return }
-        router.showSplitBuilderFromIntent = false
-        showSplitBuilder = true
-    }
-
-    private func presentSplitListIfNeeded() {
-        guard router.showWorkoutSplitListFromIntent else { return }
-        router.showWorkoutSplitListFromIntent = false
-        splitListInitialPath = []
-        showSplitList = true
     }
 
     // MARK: - Content
@@ -225,7 +202,7 @@ struct WorkoutSplitView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Button("Create New Split", systemImage: "plus") {
                         Haptics.selection()
-                        showSplitBuilder = true
+                        router.activeSplitSheet = .builder
                         Task { await IntentDonations.donateCreateWorkoutSplit() }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
@@ -250,7 +227,7 @@ struct WorkoutSplitView: View {
                 Button("All Splits", systemImage: "list.bullet") {
                     Haptics.selection()
                     splitListInitialPath = []
-                    showSplitList = true
+                    router.activeSplitSheet = .list
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
             }
@@ -343,6 +320,28 @@ struct WorkoutSplitView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitOptionsMenu)
         .accessibilityLabel(AccessibilityText.workoutSplitOptionsMenuLabel)
         .accessibilityHint(AccessibilityText.workoutSplitOptionsMenuHint)
+    }
+
+    private var splitBuilderBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeSplitSheet == .builder },
+            set: { isPresented in
+                if !isPresented, router.activeSplitSheet == .builder {
+                    router.activeSplitSheet = nil
+                }
+            }
+        )
+    }
+
+    private var splitListBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeSplitSheet == .list },
+            set: { isPresented in
+                if !isPresented, router.activeSplitSheet == .list {
+                    router.activeSplitSheet = nil
+                }
+            }
+        )
     }
 
     // MARK: - Weekly Header

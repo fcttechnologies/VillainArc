@@ -16,8 +16,7 @@ struct FinishWorkoutIntent: AppIntent {
         let shouldPromptForPostWorkoutEffort = (try? context.fetch(AppSettings.single).first)?.promptForPostWorkoutEffort ?? true
 
         if shouldPromptForPostWorkoutEffort {
-            AppRouter.shared.activeWorkoutSession = workoutSession
-            AppRouter.shared.showFinishWorkoutFromIntent = true
+            AppRouter.shared.presentFinishWorkoutFlow(for: workoutSession)
             return .result(opensIntent: OpenAppIntent())
         }
 

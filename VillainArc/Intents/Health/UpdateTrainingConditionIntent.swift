@@ -12,7 +12,7 @@ struct UpdateTrainingConditionIntent: AppIntent {
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.tabSelection = .health
-        AppRouter.shared.showTrainingConditionEditorFromIntent = true
+        AppRouter.shared.activeHealthSheet = .trainingConditionEditor
         return .result(opensIntent: OpenAppIntent())
     }
 }

@@ -10,7 +10,7 @@ struct OpenWorkoutSettingsIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
         guard let workout = try? context.fetch(WorkoutSession.incomplete).first, workout.statusValue == .active else { throw ActiveWorkoutIntentError.noActiveWorkout }
 
-        AppRouter.shared.showWorkoutSettingsFromIntent = true
+        AppRouter.shared.activeWorkoutSheet = .settings
         return .result(opensIntent: OpenAppIntent())
     }
 }

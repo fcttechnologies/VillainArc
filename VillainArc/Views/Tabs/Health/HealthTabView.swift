@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HealthTabView: View {
     @State private var router = AppRouter.shared
-    @State private var showAddWeightEntrySheet = false
     
     var body: some View {
         NavigationStack(path: $router.healthTabPath) {
@@ -19,7 +18,7 @@ struct HealthTabView: View {
             .navBar(title: "Health", includePadding: false) {
                 Button {
                     Haptics.selection()
-                    showAddWeightEntrySheet = true
+                    router.activeHealthSheet = .addWeightEntry
                 } label: {
                     Image(systemName: "plus")
                         .font(.title2)
@@ -33,16 +32,10 @@ struct HealthTabView: View {
                 .accessibilityHint(AccessibilityText.healthAddWeightEntryHint)
             }
             .scrollIndicators(.hidden)
-            .sheet(isPresented: $showAddWeightEntrySheet) {
+            .sheet(isPresented: addWeightEntrySheetBinding) {
                 NewWeightEntryView()
                     .presentationDetents([.fraction(0.5)])
                     .presentationBackground(Color(.systemBackground))
-            }
-            .onAppear {
-                presentQuickActionDrivenSheetIfNeeded()
-            }
-            .onChange(of: router.showAddWeightEntryFromQuickAction) { _, _ in
-                presentQuickActionDrivenSheetIfNeeded()
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
@@ -69,10 +62,15 @@ struct HealthTabView: View {
         }
     }
 
-    private func presentQuickActionDrivenSheetIfNeeded() {
-        guard router.showAddWeightEntryFromQuickAction else { return }
-        router.showAddWeightEntryFromQuickAction = false
-        showAddWeightEntrySheet = true
+    private var addWeightEntrySheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .addWeightEntry },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .addWeightEntry {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
     }
 }
 

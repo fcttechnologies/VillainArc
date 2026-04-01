@@ -10,7 +10,7 @@ struct OpenRestTimerIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
         guard let workout = try? context.fetch(WorkoutSession.incomplete).first, workout.statusValue == .active else { throw ActiveWorkoutIntentError.noActiveWorkout }
 
-        AppRouter.shared.showRestTimerFromIntent = true
+        AppRouter.shared.activeWorkoutSheet = .restTimer
         return .result(opensIntent: OpenAppIntent())
     }
 }

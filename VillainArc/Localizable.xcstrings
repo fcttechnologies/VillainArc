@@ -721,6 +721,9 @@
     "Continues setup without iCloud sync." : {
 
     },
+    "Control whether Villain Arc generates suggestions for this exercise. When suggestions are on, you can also customize the progression step used for load changes." : {
+
+    },
     "Copy" : {
 
     },
@@ -793,10 +796,10 @@
     "Current" : {
 
     },
-    "Current Setting" : {
+    "Current Progression Step" : {
 
     },
-    "Custom Step" : {
+    "Custom Progression Step" : {
 
     },
     "Date" : {
@@ -973,9 +976,6 @@
     "Edit Plan" : {
 
     },
-    "Edit Progression Step" : {
-
-    },
     "Edit Workout Plan" : {
 
     },
@@ -1069,6 +1069,9 @@
     "Exercise removed from favorites." : {
 
     },
+    "Exercise Suggestions" : {
+
+    },
     "Exercises" : {
 
     },
@@ -1151,6 +1154,9 @@
 
     },
     "Full Body" : {
+
+    },
+    "Generate Suggestions" : {
 
     },
     "Generating suggestions..." : {
@@ -1940,6 +1946,9 @@
     "Opens detailed weight history." : {
 
     },
+    "Opens exercise suggestion settings." : {
+
+    },
     "Opens iOS Settings to enable iCloud." : {
 
     },
@@ -1947,9 +1956,6 @@
 
     },
     "Opens progress and history for a specific exercise." : {
-
-    },
-    "Opens progression step settings." : {
 
     },
     "Opens set options." : {
@@ -2092,12 +2098,6 @@
 
     },
     "Progress Charts" : {
-
-    },
-    "Progression Step" : {
-
-    },
-    "Progression Step (%@)" : {
 
     },
     "Prompt For Post Workout Effort" : {
@@ -2413,6 +2413,9 @@
 
     },
     "Saves your selected gender and continues to the next profile step." : {
+
+    },
+    "Saving will remove any unresolved suggestion state for this exercise, including pending, deferred, and still-being-evaluated suggestions." : {
 
     },
     "Saving your profile and finishing setup..." : {
@@ -2880,6 +2883,9 @@
     "Suggested" : {
 
     },
+    "Suggestion Settings" : {
+
+    },
     "Suggestion State" : {
 
     },
@@ -2887,6 +2893,9 @@
 
     },
     "Suggestions" : {
+
+    },
+    "Suggestions are off for this exercise." : {
 
     },
     "Summarizes your health metrics for a specific day." : {
@@ -3150,6 +3159,9 @@
     "Turn off live activities completely or restart the current one if it was dismissed accidentally." : {
 
     },
+    "Turn this off to stop Villain Arc from generating suggestions for this exercise anywhere in the app." : {
+
+    },
     "Type" : {
 
     },
@@ -3181,9 +3193,6 @@
 
     },
     "Update Apple Health permissions so your health metrics appear here." : {
-
-    },
-    "Update Rest Timer?" : {
 
     },
     "Update Training Condition" : {
@@ -3253,9 +3262,6 @@
 
     },
     "Wake Day" : {
-
-    },
-    "Want to update rest timer to reflect the new set rest time?" : {
 
     },
     "Warm Up Set" : {

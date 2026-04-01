@@ -145,6 +145,27 @@ import Observation
             WorkoutActivityManager.update()
         }
     }
+
+    func syncStartedDuration(to seconds: Int) {
+        guard isActive else { return }
+
+        let clamped = min(max(0, seconds), Self.maximumRestSeconds)
+        if clamped == 0 {
+            stopInternal(cancelNotification: true)
+            return
+        }
+
+        let deltaSeconds = clamped - startedSeconds
+        if deltaSeconds != 0 {
+            adjust(by: deltaSeconds)
+            guard isActive else { return }
+        }
+
+        startedSeconds = clamped
+        persist()
+        WorkoutActivityManager.update()
+    }
+
     private func scheduleStop() {
         stopTask?.cancel()
         guard let endDate else { return }

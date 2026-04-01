@@ -14,9 +14,11 @@ This document explains how VillainArc creates plan suggestions, where users revi
 - `Data/Services/Suggestions/Generation/SuggestionGenerator.swift`
 - `Data/Services/Suggestions/Generation/RuleEngine.swift`
 - `Data/Services/Suggestions/Generation/SuggestionDeduplicator.swift`
+- `Data/Services/Suggestions/ExerciseSuggestionSettings.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
+- `Views/Exercise/ExerciseSuggestionSettingsSheet.swift`
 
 ## Core Model
 
@@ -34,6 +36,7 @@ Important modeling rules:
 - live prescription relationships are the source of truth for the current plan
 - copied target identities and snapshots are used for historical matching
 - `weightStepUsed` freezes weight-step tolerance for later outcome evaluation
+- the exercise catalog can globally disable suggestion generation for a specific `catalogID`
 
 ## Two State Machines
 
@@ -143,6 +146,7 @@ Generation combines:
 - the current workout’s completed sets
 - the live prescription
 - recent completed performances for the same exercise
+- exercise-catalog settings for that `catalogID`
 - frozen target snapshots when available
 - resolved training style
 
@@ -151,6 +155,7 @@ Important design details:
 - historical matching is UUID-based, not just set-index based
 - bodyweight vs externally-loaded behavior is handled explicitly
 - double-dumbbell and assisted-load semantics are handled explicitly
+- generation is skipped entirely when the source `Exercise` has suggestions disabled
 
 ### Training Style
 
@@ -184,6 +189,8 @@ Once drafts survive blocking and deduplication, the generator persists:
 - confidence
 - `requiredEvaluationCount`
 - `weightStepUsed` when relevant
+
+If generation is disabled for an exercise, no draft for that `catalogID` reaches this persistence step.
 
 ## Required Evaluation Count
 
@@ -245,3 +252,18 @@ Manual editing does not review suggestions. It establishes a new plan source of 
 If an unresolved suggestion no longer matches that source of truth, `WorkoutPlan+Editing.swift` deletes the stale event during edit-copy merge.
 
 That keeps coaching state aligned with the user’s explicit plan edits instead of trying to preserve outdated events.
+
+## Exercise-Level Suggestion Settings
+
+VillainArc also supports a global exercise-catalog setting through `ExerciseSuggestionSettingsSheet`.
+
+When the user saves suggestion generation as off for an exercise:
+
+- new suggestion generation is skipped for that `catalogID`
+- progression-step tuning is hidden in that settings sheet
+- unresolved suggestion events for matching plan exercises and sets are deleted
+
+The cleanup target is intentionally unresolved-only:
+
+- `outcome == .pending` events are deleted
+- already finalized historical outcomes remain intact

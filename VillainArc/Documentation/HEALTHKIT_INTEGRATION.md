@@ -24,6 +24,7 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Services/App/NotificationCoordinator.swift`
 - `Views/Components/Overlays/ToastManager.swift`
 - `Views/Health/Sleep/SleepHistoryView.swift`
+- `Intents/Health/*`
 - `Root/VillainArcApp.swift`
 - `Root/RootView.swift`
 
@@ -100,6 +101,25 @@ Important nuance:
 
 - write authorization state is directly visible through `authorizationStatus(for:)`
 - read availability is less explicit, so sync logic uses conservative anchor-advance rules rather than assuming every empty query result means reads are fully available
+
+## Health Intents and Quick Actions
+
+VillainArc exposes a health-specific App Intents layer that reuses the same local data model as the Health tab.
+
+The split is:
+
+- read-only health intents
+  - use fresh read-only `ModelContext`s
+  - answer from local app-owned records and Health mirror caches such as `WeightEntry`, `HealthSleepNight`, `HealthStepsDistance`, and `HealthEnergy`
+- foreground health intents
+  - route through `AppRouter`
+  - open the same Health destinations and sheets the foreground Health tab uses
+
+The home-screen `Add Weight Entry` quick action is handled the same way:
+
+- it waits until the app is ready
+- routes into the Health tab
+- presents the same add-weight sheet used by the tab UI
 
 ## Observer and Background Delivery Design
 
@@ -399,6 +419,8 @@ Important boundary:
 - only the `day` views for steps/distance and energy use live intraday HealthKit reads
 - broader ranges stay cache-backed
 - the intraday loader warms the latest day during the same history-view cache build so the `day` range is usually already ready or partially ready when selected
+
+Those same cache-backed rows are also what the read-only health intents summarize, so the Health tab and the spoken/shortcut answers stay aligned.
 
 ### Workout History
 

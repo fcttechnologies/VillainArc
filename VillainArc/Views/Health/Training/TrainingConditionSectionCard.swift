@@ -4,7 +4,6 @@ import SwiftData
 struct TrainingConditionSectionCard: View {
     @State private var router = AppRouter.shared
     @Query(TrainingConditionPeriod.activeNow, animation: .smooth) private var activePeriods: [TrainingConditionPeriod]
-    @State private var showEditor = false
 
     private var activePeriod: TrainingConditionPeriod? { activePeriods.first }
 
@@ -32,7 +31,7 @@ struct TrainingConditionSectionCard: View {
     var body: some View {
         Button {
             Haptics.selection()
-            showEditor = true
+            router.activeHealthSheet = .trainingConditionEditor
         } label: {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: activePeriod?.kind.systemImage ?? "figure.run")
@@ -63,14 +62,8 @@ struct TrainingConditionSectionCard: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
-        .sheet(isPresented: $showEditor) {
+        .sheet(isPresented: trainingConditionEditorBinding) {
             TrainingConditionEditorView(activePeriod: activePeriod)
-        }
-        .onAppear {
-            presentIntentDrivenSheetIfNeeded()
-        }
-        .onChange(of: router.showTrainingConditionEditorFromIntent) { _, _ in
-            presentIntentDrivenSheetIfNeeded()
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionSectionCard)
         .accessibilityElement(children: .ignore)
@@ -78,10 +71,15 @@ struct TrainingConditionSectionCard: View {
         .accessibilityHint(AccessibilityText.healthTrainingConditionSectionHint)
     }
 
-    private func presentIntentDrivenSheetIfNeeded() {
-        guard router.showTrainingConditionEditorFromIntent else { return }
-        router.showTrainingConditionEditorFromIntent = false
-        showEditor = true
+    private var trainingConditionEditorBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .trainingConditionEditor },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .trainingConditionEditor {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
     }
 }
 

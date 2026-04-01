@@ -2,6 +2,11 @@ import SwiftUI
 import SwiftData
 
 struct ExerciseView: View {
+    private enum RestTimerPromptAction {
+        case updateExistingTimer
+        case startNewTimer(setID: UUID)
+    }
+
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
     let appSettingsSnapshot: AppSettingsSnapshot
@@ -10,11 +15,12 @@ struct ExerciseView: View {
 
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
-    @State private var showRestTimeUpdateAlert = false
     @State private var showReplaceExerciseSheet = false
     @State private var showExerciseHistorySheet = false
-    @State private var restTimeUpdateDeltaSeconds = 0
+    @State private var progressionStepExercise: Exercise?
+    @State private var pendingRestTimerPromptAction: RestTimerPromptAction?
     @State private var restTimeUpdateSeconds = 0
+    @State private var restTimeSnapshotBySetID: [UUID: Int] = [:]
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
@@ -85,6 +91,7 @@ struct ExerciseView: View {
 
                             Button("Rest Times", systemImage: "timer") {
                                 Haptics.selection()
+                                captureRestTimeSnapshot()
                                 showRestTimeEditor = true
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimesButton(exercise))
@@ -105,6 +112,11 @@ struct ExerciseView: View {
                 .padding()
                 .glassEffect(.regular, in: .rect(cornerRadius: 16))
                 .contextMenu {
+                    Button {
+                        openProgressionStepEditor()
+                    } label: {
+                        Label("Suggestion Settings", systemImage: "slider.horizontal.3")
+                    }
                     Button {
                         Haptics.selection()
                         showReplaceExerciseSheet = true
@@ -182,17 +194,13 @@ struct ExerciseView: View {
                     dismissKeyboard()
                 }
             )
-            .alert("Update Rest Timer?", isPresented: $showRestTimeUpdateAlert) {
-                Button("Update") {
-                    Haptics.selection()
-                    restTimer.adjust(by: restTimeUpdateDeltaSeconds)
-                    if restTimer.isActive {
-                        restTimer.startedSeconds = restTimeUpdateSeconds
-                    }
+            .alert(restTimerPromptTitle, isPresented: restTimePromptBinding) {
+                Button(restTimerPromptConfirmLabel) {
+                    applyRestTimerPrompt()
                 }
                 Button("Keep Current", role: .cancel) {}
             } message: {
-                Text("Want to update rest timer to reflect the new set rest time?")
+                Text(restTimerPromptMessage)
             }
             .sheet(isPresented: $showRepRangeEditor) {
                 RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
@@ -219,6 +227,11 @@ struct ExerciseView: View {
                 }
                 .presentationDetents([.medium, .large])
             }
+            .sheet(isPresented: Binding(get: { progressionStepExercise != nil }, set: { if !$0 { progressionStepExercise = nil } })) {
+                if let progressionStepExercise {
+                    ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
+                }
+            }
             .task(id: exercise.catalogID) {
                 loadPreviousReferenceData()
             }
@@ -233,17 +246,29 @@ struct ExerciseView: View {
     }
 
     private func checkForRestTimeUpdate() {
+        defer { restTimeSnapshotBySetID = [:] }
         guard autoStartRestTimerEnabled else { return }
-        guard let startedFromSetID = restTimer.startedFromSetID else { return }
-        guard let matchingSet = exercise.sortedSets.first(where: { $0.id == startedFromSetID }) else { return }
+        if let startedFromSetID = restTimer.startedFromSetID,
+           let matchingSet = exercise.sortedSets.first(where: { $0.id == startedFromSetID }) {
+            let newRestSeconds = matchingSet.effectiveRestSeconds
+            guard newRestSeconds != restTimer.startedSeconds else { return }
+            restTimeUpdateSeconds = newRestSeconds
+            pendingRestTimerPromptAction = .updateExistingTimer
+            return
+        }
 
-        let newRestSeconds = matchingSet.effectiveRestSeconds
-        let originalSeconds = restTimer.startedSeconds
-        guard newRestSeconds != originalSeconds else { return }
+        guard !restTimer.isActive else { return }
+        guard let workout = exercise.workoutSession,
+              let latestCompletedSet = workout.latestCompletedSet(),
+              latestCompletedSet.exercise?.id == exercise.id,
+              let previousRestSeconds = restTimeSnapshotBySetID[latestCompletedSet.id]
+        else { return }
 
-        restTimeUpdateDeltaSeconds = newRestSeconds - originalSeconds
+        let newRestSeconds = latestCompletedSet.effectiveRestSeconds
+        guard previousRestSeconds == 0, newRestSeconds > 0 else { return }
+
         restTimeUpdateSeconds = newRestSeconds
-        showRestTimeUpdateAlert = true
+        pendingRestTimerPromptAction = .startNewTimer(setID: latestCompletedSet.id)
     }
 
     private func loadPreviousReferenceData() {
@@ -256,6 +281,77 @@ struct ExerciseView: View {
         previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
             (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, targetRPE: nil, actionLabel: "Use Previous"))
         })
+    }
+
+    private func openProgressionStepEditor() {
+        guard let sourceExercise = try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first else { return }
+        progressionStepExercise = sourceExercise
+        Haptics.selection()
+    }
+
+    private func captureRestTimeSnapshot() {
+        restTimeSnapshotBySetID = Dictionary(uniqueKeysWithValues: exercise.sortedSets.map { ($0.id, $0.effectiveRestSeconds) })
+    }
+
+    private func applyRestTimerPrompt() {
+        guard let pendingRestTimerPromptAction else { return }
+        Haptics.selection()
+
+        switch pendingRestTimerPromptAction {
+        case .updateExistingTimer:
+            restTimer.syncStartedDuration(to: restTimeUpdateSeconds)
+        case .startNewTimer(let setID):
+            restTimer.start(seconds: restTimeUpdateSeconds, startedFromSetID: setID)
+            RestTimeHistory.record(seconds: restTimeUpdateSeconds, context: context)
+            saveContext(context: context)
+            Task { await IntentDonations.donateStartRestTimer(seconds: restTimeUpdateSeconds) }
+        }
+
+        self.pendingRestTimerPromptAction = nil
+    }
+
+    private var restTimePromptBinding: Binding<Bool> {
+        Binding(
+            get: { pendingRestTimerPromptAction != nil },
+            set: { isPresented in
+                if !isPresented {
+                    pendingRestTimerPromptAction = nil
+                }
+            }
+        )
+    }
+
+    private var restTimerPromptTitle: String {
+        switch pendingRestTimerPromptAction {
+        case .updateExistingTimer:
+            return "Update Rest Timer?"
+        case .startNewTimer:
+            return "Start Rest Timer?"
+        case .none:
+            return ""
+        }
+    }
+
+    private var restTimerPromptConfirmLabel: String {
+        switch pendingRestTimerPromptAction {
+        case .updateExistingTimer:
+            return "Update"
+        case .startNewTimer:
+            return "Start"
+        case .none:
+            return "OK"
+        }
+    }
+
+    private var restTimerPromptMessage: String {
+        switch pendingRestTimerPromptAction {
+        case .updateExistingTimer:
+            return "Want to update rest timer to reflect the new set rest time?"
+        case .startNewTimer:
+            return "Want to start a rest timer for \(secondsToTime(restTimeUpdateSeconds)) to reflect the new set rest time?"
+        case .none:
+            return ""
+        }
     }
 }
 
