@@ -130,6 +130,20 @@ private struct HealthMetricWidgetEntry: TimelineEntry {
 }
 
 private struct HealthMetricWidgetProvider: TimelineProvider {
+    private enum LoadStyle {
+        case compact
+        case expanded
+
+        init(family: WidgetFamily) {
+            switch family {
+            case .systemMedium:
+                self = .expanded
+            default:
+                self = .compact
+            }
+        }
+    }
+
     let metric: HealthMetricWidgetKind
 
     func placeholder(in context: Context) -> HealthMetricWidgetEntry {
@@ -137,23 +151,22 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (HealthMetricWidgetEntry) -> Void) {
-        completion(loadEntry())
+        completion(loadEntry(for: context.family))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<HealthMetricWidgetEntry>) -> Void) {
-        let entry = loadEntry()
-        let refreshDate = Calendar.autoupdatingCurrent.date(byAdding: .minute, value: 15, to: .now) ?? .now.addingTimeInterval(900)
-        completion(Timeline(entries: [entry], policy: .after(refreshDate)))
+        let entry = loadEntry(for: context.family)
+        completion(Timeline(entries: [entry], policy: .never))
     }
 
-    private func loadEntry() -> HealthMetricWidgetEntry {
+    private func loadEntry(for family: WidgetFamily) -> HealthMetricWidgetEntry {
         let context = ModelContext(SharedModelContainer.container)
         let settings = AppSettingsSnapshot(settings: try? context.fetch(AppSettings.single).first)
+        let loadStyle = LoadStyle(family: family)
 
         switch metric {
         case .weight:
-            let summaryEntries = (try? context.fetch(WeightEntry.summary)) ?? []
-            let latestEntry = summaryEntries.first
+            let latestEntry = try? context.fetch(WeightEntry.latest).first
             let activeGoal = try? context.fetch(WeightGoal.active).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .weight, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
@@ -184,14 +197,11 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
                     valueText: formattedWeightValue(latestEntry.weight, unit: settings.weightUnit, fractionDigits: 0...1),
                     unitText: settings.weightUnit.rawValue
                 ),
-                chartContent: .weight(summaryEntries
-                    .map { HealthMetricWidgetValuePoint(date: $0.date, value: settings.weightUnit.fromKg($0.weight)) }
-                    .sorted { $0.date < $1.date })
+                chartContent: loadWeightChartContent(context: context, settings: settings, loadStyle: loadStyle)
             )
 
         case .sleep:
-            let summaryEntries = (try? context.fetch(HealthSleepNight.summary)) ?? []
-            let latestEntry = summaryEntries.first
+            let latestEntry = try? context.fetch(HealthSleepNight.history).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .sleep, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
             }
@@ -201,14 +211,11 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
                 metric: .sleep,
                 latestDateText: widgetFormattedSleepWakeDay(latestEntry.wakeDay),
                 content: .sleep(duration: latestEntry.timeAsleep),
-                chartContent: .sleep(summaryEntries
-                    .map { HealthMetricWidgetValuePoint(date: HealthSleepNight.displayDate(forWakeDay: $0.wakeDay), value: $0.timeAsleep) }
-                    .sorted { $0.date < $1.date })
+                chartContent: loadSleepChartContent(context: context, loadStyle: loadStyle)
             )
 
         case .steps:
-            let summaryEntries = (try? context.fetch(HealthStepsDistance.summary)) ?? []
-            let latestEntry = summaryEntries.first
+            let latestEntry = try? context.fetch(HealthStepsDistance.history).first
             let todayEntry = try? context.fetch(HealthStepsDistance.forDay(.now)).first
             let activeGoal = try? context.fetch(StepsGoal.active).first
             guard let latestEntry else {
@@ -235,14 +242,11 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
                 metric: .steps,
                 latestDateText: formattedRecentDay(latestEntry.date),
                 content: .steps(goalLabelText: goalLabelText, goalValueText: goalValueText, stepCount: latestEntry.stepCount),
-                chartContent: .steps(summaryEntries
-                    .map { HealthMetricWidgetValuePoint(date: $0.date, value: Double($0.stepCount)) }
-                    .sorted { $0.date < $1.date })
+                chartContent: loadStepsChartContent(context: context, loadStyle: loadStyle)
             )
 
         case .energy:
-            let summaryEntries = (try? context.fetch(HealthEnergy.summary)) ?? []
-            let latestEntry = summaryEntries.first
+            let latestEntry = try? context.fetch(HealthEnergy.history).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .energy, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
             }
@@ -255,21 +259,51 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
                 metric: .energy,
                 latestDateText: formattedRecentDay(latestEntry.date),
                 content: .energy(activeText: activeText, totalText: totalText),
-                chartContent: .energy(summaryEntries
-                    .flatMap { entry in
-                        let activeEnergy = settings.energyUnit.fromKilocalories(entry.activeEnergyBurned)
-                        let restingEnergy = settings.energyUnit.fromKilocalories(entry.restingEnergyBurned)
-                        var points: [HealthMetricWidgetEnergyPoint] = []
-                        if activeEnergy > 0 {
-                            points.append(.init(id: "\(entry.date.timeIntervalSinceReferenceDate)-active", date: entry.date, kind: .active, value: activeEnergy))
-                        }
-                        if restingEnergy > 0 {
-                            points.append(.init(id: "\(entry.date.timeIntervalSinceReferenceDate)-resting", date: entry.date, kind: .resting, value: restingEnergy))
-                        }
-                        return points
-                    })
+                chartContent: loadEnergyChartContent(context: context, settings: settings, loadStyle: loadStyle)
             )
         }
+    }
+
+    private func loadWeightChartContent(context: ModelContext, settings: AppSettingsSnapshot, loadStyle: LoadStyle) -> HealthMetricWidgetChartContent {
+        guard loadStyle == .expanded else { return .none }
+        let summaryEntries = (try? context.fetch(WeightEntry.summary)) ?? []
+        return .weight(summaryEntries
+            .map { HealthMetricWidgetValuePoint(date: $0.date, value: settings.weightUnit.fromKg($0.weight)) }
+            .sorted { $0.date < $1.date })
+    }
+
+    private func loadSleepChartContent(context: ModelContext, loadStyle: LoadStyle) -> HealthMetricWidgetChartContent {
+        guard loadStyle == .expanded else { return .none }
+        let summaryEntries = (try? context.fetch(HealthSleepNight.summary)) ?? []
+        return .sleep(summaryEntries
+            .map { HealthMetricWidgetValuePoint(date: HealthSleepNight.displayDate(forWakeDay: $0.wakeDay), value: $0.timeAsleep) }
+            .sorted { $0.date < $1.date })
+    }
+
+    private func loadStepsChartContent(context: ModelContext, loadStyle: LoadStyle) -> HealthMetricWidgetChartContent {
+        guard loadStyle == .expanded else { return .none }
+        let summaryEntries = (try? context.fetch(HealthStepsDistance.summary)) ?? []
+        return .steps(summaryEntries
+            .map { HealthMetricWidgetValuePoint(date: $0.date, value: Double($0.stepCount)) }
+            .sorted { $0.date < $1.date })
+    }
+
+    private func loadEnergyChartContent(context: ModelContext, settings: AppSettingsSnapshot, loadStyle: LoadStyle) -> HealthMetricWidgetChartContent {
+        guard loadStyle == .expanded else { return .none }
+        let summaryEntries = (try? context.fetch(HealthEnergy.summary)) ?? []
+        return .energy(summaryEntries
+            .flatMap { entry in
+                let activeEnergy = settings.energyUnit.fromKilocalories(entry.activeEnergyBurned)
+                let restingEnergy = settings.energyUnit.fromKilocalories(entry.restingEnergyBurned)
+                var points: [HealthMetricWidgetEnergyPoint] = []
+                if activeEnergy > 0 {
+                    points.append(.init(id: "\(entry.date.timeIntervalSinceReferenceDate)-active", date: entry.date, kind: .active, value: activeEnergy))
+                }
+                if restingEnergy > 0 {
+                    points.append(.init(id: "\(entry.date.timeIntervalSinceReferenceDate)-resting", date: entry.date, kind: .resting, value: restingEnergy))
+                }
+                return points
+            })
     }
 
     private func sampleEntry(for metric: HealthMetricWidgetKind) -> HealthMetricWidgetEntry {

@@ -85,6 +85,9 @@ actor HealthSleepSync {
                     } ?? syncedRange
                     try context.save()
                 }
+                if refreshedRange != nil {
+                    HealthMetricWidgetReloader.reloadSleep()
+                }
 
                 logSleepSyncIfNeeded(refreshedRange: refreshedRange)
             } catch {

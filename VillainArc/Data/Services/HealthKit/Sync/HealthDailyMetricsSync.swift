@@ -139,6 +139,9 @@ actor HealthDailyMetricsSync {
                 syncState.stepCountSyncedRange = result.newSyncedRange
                 try context.save()
             }
+            if result.refreshedRange != nil {
+                HealthMetricWidgetReloader.reloadSteps()
+            }
             for notification in notificationsBox.value.values {
                 await NotificationCoordinator.deliverStepsEvent(notification)
             }
@@ -182,6 +185,9 @@ actor HealthDailyMetricsSync {
                 syncState.activeEnergyBurnedSyncedRange = result.newSyncedRange
                 try context.save()
             }
+            if result.refreshedRange != nil {
+                HealthMetricWidgetReloader.reloadEnergy()
+            }
             logMetricSyncIfNeeded(named: "active energy", refreshedRange: result.refreshedRange)
         } catch {
             print("Failed to sync Health active energy: \(error)")
@@ -201,6 +207,9 @@ actor HealthDailyMetricsSync {
                 HealthSyncPreferences.restingEnergyBurnedAnchor = result.newAnchor
                 syncState.restingEnergyBurnedSyncedRange = result.newSyncedRange
                 try context.save()
+            }
+            if result.refreshedRange != nil {
+                HealthMetricWidgetReloader.reloadEnergy()
             }
             logMetricSyncIfNeeded(named: "resting energy", refreshedRange: result.refreshedRange)
         } catch {

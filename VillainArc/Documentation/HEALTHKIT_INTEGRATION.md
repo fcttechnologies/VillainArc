@@ -20,6 +20,8 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
+- `Data/Services/HealthKit/Sync/HealthMetricsBackgroundRefreshScheduler.swift`
+- `Data/Services/App/HealthMetricWidgetReloader.swift`
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
 - `Data/Services/App/NotificationCoordinator.swift`
 - `Views/Components/Overlays/ToastManager.swift`
@@ -150,9 +152,25 @@ The app refreshes background delivery registration:
 - after onboarding reaches ready
 - when returning from Health settings flows
 
+### Background App Refresh Fallback
+
+Observer-driven delivery still depends on Apple waking the app. To improve Health metric freshness, VillainArc also registers a `BGAppRefreshTask` and reschedules it from the ready path and Health settings flows.
+
+That fallback task:
+
+- reinstalls Health observers
+- runs `HealthSyncCoordinator.syncAll()`
+- reschedules the next refresh request
+
+The task is not a replacement for HealthKit background delivery. It is a second best-effort path that gives the app another chance to refresh daily metrics and sleep caches when observer wakes are delayed or sparse.
+
 ### Platform Boundary
 
-Observer-driven background sync is best-effort. It can be prompt, delayed, or skipped depending on system conditions. That is why the app also has a strong foreground recovery path via the ready/settings sync pass.
+Observer-driven background sync is best-effort. It can be prompt, delayed, or skipped depending on system conditions. That is why the app now has three recovery layers:
+
+- observer-driven background sync when Apple delivers the wake
+- periodic `BGAppRefreshTask` metric refresh as a fallback
+- strong foreground recovery via the ready/settings sync pass
 
 ## Live Workout Path
 
@@ -215,6 +233,7 @@ Those paths:
 - write through background `ModelContext`s
 - use rerun-on-burst behavior instead of dropping overlapping observer callbacks
 - only advance anchors when the query result or an allowed foreground probe provides enough evidence that reads are truly progressing
+- reload the weight widget only when a weight row actually changes or when local weight-goal state changes
 
 ### Daily Metric Sync
 
@@ -241,6 +260,12 @@ The metrics are coalesced into two sync families:
 
 That reduces redundant work when related Health types update together.
 
+Widget reload behavior now follows those persisted cache updates instead of an always-on timeline:
+
+- steps widget reloads when step summaries are actually refreshed or when a steps goal changes
+- energy widget reloads when active or resting energy summaries are actually refreshed
+- walking/running distance updates do not trigger a dedicated widget reload because there is no distance widget
+
 ### Sleep Sync
 
 `HealthSleepSync` owns:
@@ -264,6 +289,8 @@ The sleep design is:
 - non-primary same-day sleep becomes `napDuration`
 - deletions still rebuild the broader known synced range because deleted objects do not carry the old sample timestamps
 - raw per-stage intervals still stay in HealthKit for on-demand stage detail loading
+
+The sleep widget reload is tied to actual persisted sleep-night refreshes or local removal-retention changes, not to a periodic widget timeline.
 
 ## Anchor Advancement Guard
 
@@ -354,6 +381,34 @@ Important limitation:
 
 - steps notifications still depend on the app actually receiving the Health update in time
 - if the Health observer wake is delayed until foreground, the event is also delayed until foreground
+
+## Health Widgets
+
+The Health widgets are now event-driven instead of self-refreshing on a fixed timer.
+
+The current design is:
+
+- widget timelines use `.never`
+- the app explicitly reloads widget timelines when the underlying persisted model changes
+- `syncNow()` no longer ends with a blanket reload of every Health widget
+
+That means widget updates now track real data changes more closely:
+
+- weight widget:
+  - adding, deleting, or importing weight entries
+  - creating, replacing, deleting, or completing weight goals
+  - changing weight units
+- sleep widget:
+  - refreshed `HealthSleepNight` rows
+  - removing unavailable sleep nights when retention is off
+- steps widget:
+  - refreshed `HealthStepsDistance` summaries
+  - creating, replacing, or deleting steps goals
+- energy widget:
+  - refreshed `HealthEnergy` summaries
+  - changing energy units
+
+This avoids constant widget refresh churn while still keeping widgets aligned with the actual local cache rows and goal state they render.
 
 ## Removed Data and Retention
 

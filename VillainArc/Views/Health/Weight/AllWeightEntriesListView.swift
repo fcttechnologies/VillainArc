@@ -102,6 +102,7 @@ struct AllWeightEntriesListView: View {
         }
 
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
 
         if deletableEntries.count == entriesToDelete.count {
             isEditing = false
@@ -117,6 +118,7 @@ struct AllWeightEntriesListView: View {
         }
 
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
         isEditing = false
     }
 }

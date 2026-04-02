@@ -239,6 +239,7 @@ struct WeightGoalCompletionView: View {
         }
 
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
         Haptics.success()
         dismissFlow()
     }

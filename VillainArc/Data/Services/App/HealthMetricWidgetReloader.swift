@@ -1,25 +1,33 @@
 import WidgetKit
 
-enum HealthMetricWidgetReloader {
+nonisolated enum HealthMetricWidgetReloader {
     private static let weightKind = "HealthWeightWidget"
     private static let sleepKind = "HealthSleepWidget"
     private static let stepsKind = "HealthStepsWidget"
     private static let energyKind = "HealthEnergyWidget"
 
     static func reloadWeight() {
-        WidgetCenter.shared.reloadTimelines(ofKind: weightKind)
+        Task { @MainActor in
+            WidgetCenter.shared.reloadTimelines(ofKind: weightKind)
+        }
     }
 
     static func reloadSleep() {
-        WidgetCenter.shared.reloadTimelines(ofKind: sleepKind)
+        Task { @MainActor in
+            WidgetCenter.shared.reloadTimelines(ofKind: sleepKind)
+        }
     }
 
     static func reloadSteps() {
-        WidgetCenter.shared.reloadTimelines(ofKind: stepsKind)
+        Task { @MainActor in
+            WidgetCenter.shared.reloadTimelines(ofKind: stepsKind)
+        }
     }
 
     static func reloadEnergy() {
-        WidgetCenter.shared.reloadTimelines(ofKind: energyKind)
+        Task { @MainActor in
+            WidgetCenter.shared.reloadTimelines(ofKind: energyKind)
+        }
     }
 
     static func reloadAllHealthMetrics() {

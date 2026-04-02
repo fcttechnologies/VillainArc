@@ -57,6 +57,7 @@ struct AppSettingsView: View {
                 HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                 await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                 await HealthStoreUpdateCoordinator.shared.syncNow()
+                HealthMetricsBackgroundRefreshScheduler.shared.schedule()
             }
         }
         .alert("Manage Apple Health Access", isPresented: $showHealthAccessInstructions) {
@@ -100,6 +101,7 @@ struct AppSettingsView: View {
             HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
             await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
             await HealthStoreUpdateCoordinator.shared.syncNow()
+            HealthMetricsBackgroundRefreshScheduler.shared.schedule()
         case .openSettings, .manageInSettings:
             showHealthAccessInstructions = true
         case .unavailable:
@@ -393,6 +395,7 @@ private struct UnitSettingsView: View {
         .toolbarTitleDisplayMode(.inline)
         .onChange(of: settings.weightUnit) {
             saveContext(context: context)
+            HealthMetricWidgetReloader.reloadWeight()
         }
         .onChange(of: settings.heightUnit) {
             saveContext(context: context)
@@ -402,6 +405,7 @@ private struct UnitSettingsView: View {
         }
         .onChange(of: settings.energyUnit) {
             saveContext(context: context)
+            HealthMetricWidgetReloader.reloadEnergy()
         }
     }
 }
