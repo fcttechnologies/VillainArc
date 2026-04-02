@@ -94,6 +94,7 @@ enum HomeQuickAction: String {
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     var activeWorkoutPlanOriginal: WorkoutPlan?
     var pendingHomeQuickAction: HomeQuickAction?
+    var pendingWidgetDestination: Destination?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
     var activeWorkoutSheet: WorkoutSheet?
@@ -157,6 +158,45 @@ enum HomeQuickAction: String {
     }
 
     private func persistTabSelection(_ tab: Tabs) { SharedModelContainer.sharedDefaults.set(tab.rawValue, forKey: Self.selectedTabDefaultsKey) }
+
+    func handleIncomingURL(_ url: URL) {
+        guard let destination = destination(for: url) else { return }
+        pendingWidgetDestination = destination
+        handlePendingWidgetDestinationIfPossible()
+    }
+
+    func handlePendingWidgetDestinationIfPossible() {
+        guard let destination = pendingWidgetDestination else { return }
+        guard isReadyForIntentActions() else { return }
+
+        if hasActiveFlow() {
+            pendingWidgetDestination = nil
+            handleBlockedHomeQuickAction()
+            return
+        }
+
+        pendingWidgetDestination = nil
+        popToRoot()
+        navigate(to: destination)
+    }
+
+    private func destination(for url: URL) -> Destination? {
+        guard url.scheme?.localizedLowercase == "villainarc" else { return nil }
+        guard url.host?.localizedLowercase == "health" else { return nil }
+
+        switch url.path.localizedLowercase {
+        case "/weight-history":
+            return .weightHistory
+        case "/sleep-history":
+            return .sleepHistory
+        case "/steps-history":
+            return .stepsDistanceHistory
+        case "/energy-history":
+            return .energyHistory
+        default:
+            return nil
+        }
+    }
 
     func cancelWorkoutSession(_ workoutSession: WorkoutSession) {
         RestTimerState.shared.stop()

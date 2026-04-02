@@ -189,7 +189,16 @@ enum WorkoutEffortDialStyle {
     static let arcTrim = 0.75
     static let startAngle = 135.0
     static let sweepAngle = 270.0
-    static let baseTrackColor = Color.black.opacity(0.09)
+    static let baseTrackColor = Color(
+        uiColor: UIColor { traitCollection in
+            switch traitCollection.userInterfaceStyle {
+            case .dark:
+                return UIColor.white.withAlphaComponent(0.18)
+            default:
+                return UIColor.black.withAlphaComponent(0.09)
+            }
+        }
+    )
     static let gradient = AngularGradient(
         colors: [.blue, .cyan, .mint, .yellow, .orange, .red],
         center: .center,

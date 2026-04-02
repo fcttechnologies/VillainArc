@@ -71,6 +71,7 @@ struct WeightGoalHistoryView: View {
         Haptics.selection()
         context.delete(goal)
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
     }
 }
 

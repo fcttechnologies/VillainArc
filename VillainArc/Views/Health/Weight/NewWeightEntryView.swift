@@ -100,6 +100,7 @@ struct NewWeightEntryView: View {
 
         context.insert(entry)
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
         Haptics.selection()
         dismiss()
 

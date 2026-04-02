@@ -38,8 +38,8 @@ struct HealthSleepSectionCard: View {
                     if let latestEntry {
                         Text(formattedSleepWakeDay(latestEntry.wakeDay))
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
                     }
                 }
 

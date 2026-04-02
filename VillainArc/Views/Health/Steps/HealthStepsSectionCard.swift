@@ -53,19 +53,16 @@ struct HealthStepsSectionCard: View {
                     if let latestEntry {
                         Text(formattedRecentDay(latestEntry.date))
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
                     }
                 }
 
                 if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
                         VStack(alignment: .leading, spacing: 0) {
-                            if let activeGoalText {
-                                Text(activeGoalText)
-                                    .font(.subheadline)
-                                    .lineLimit(1)
-                                    .foregroundStyle(.secondary)
+                            if let activeGoal {
+                                stepsGoalLine(for: activeGoal)
                             }
 
                             HStack(alignment: .lastTextBaseline, spacing: 2) {
@@ -107,6 +104,25 @@ struct HealthStepsSectionCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)
         .accessibilityHint(AccessibilityText.healthStepsSectionHint)
+    }
+
+    @ViewBuilder
+    private func stepsGoalLine(for goal: StepsGoal) -> some View {
+        if todayEntry?.goalCompleted == true {
+            Text("Goal achieved")
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+        } else {
+            HStack(alignment: .lastTextBaseline, spacing: 3) {
+                Text("Goal:")
+                    .foregroundStyle(.secondary)
+                Text(compactStepsText(goal.targetSteps))
+                    .foregroundStyle(.primary)
+            }
+            .font(.subheadline)
+            .lineLimit(1)
+        }
     }
 }
 

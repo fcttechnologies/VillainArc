@@ -4,6 +4,15 @@
 <dict>
 	<key>CFBundleSpokenName</key>
 	<string>Villain Arc</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>villainarc</string>
+			</array>
+		</dict>
+	</array>
 	<key>INAlternativeAppNames</key>
 	<array>
 		<dict>
@@ -33,7 +42,7 @@
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Add Weight Entry</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>plus.circle</string>
+			<string>scalemass.fill</string>
 		</dict>
 	</array>
 	<key>UIBackgroundModes</key>

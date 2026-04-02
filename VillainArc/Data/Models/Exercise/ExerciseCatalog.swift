@@ -164,6 +164,7 @@ enum ExerciseCatalog {
         .init(id: "cable_lateral_raises", name: "Lateral Raises", musclesTargeted: [.shoulders, .sideDelt], equipmentType: .cables),
         .init(id: "cable_leaning_lateral_raise", name: "Leaning Lateral Raise", musclesTargeted: [.shoulders, .sideDelt], equipmentType: .cableSingle),
         .init(id: "cable_shoulder_press", name: "Shoulder Press", musclesTargeted: [.shoulders, .frontDelt, .sideDelt, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps], equipmentType: .cables),
+        .init(id: "cable_seated_shoulder_press", name: "Seated Shoulder Press", musclesTargeted: [.shoulders, .frontDelt, .sideDelt, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps], equipmentType: .cables),
         .init(id: "cable_reverse_fly", name: "Reverse Fly", musclesTargeted: [.shoulders, .rearDelt], equipmentType: .cables),
         .init(id: "cable_rope_face_pulls", name: "Face Pulls", musclesTargeted: [.shoulders, .rearDelt, .rotatorCuff, .back, .midTraps, .lowerTraps], equipmentType: .cableSingle),
         .init(id: "cable_rope_front_raise", name: "Rope Front Raise", musclesTargeted: [.shoulders, .frontDelt], equipmentType: .cableSingle),

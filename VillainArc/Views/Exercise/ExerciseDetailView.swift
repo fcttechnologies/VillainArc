@@ -60,7 +60,7 @@ struct ExerciseDetailView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
-    @State private var showSuggestionSettingsSheet = false
+    @State private var suggestionSettingsExercise: Exercise?
 
     init(catalogID: String) {
         self.catalogID = catalogID
@@ -253,10 +253,8 @@ struct ExerciseDetailView: View {
             .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showSuggestionSettingsSheet) {
-            if let exercise {
-                ExerciseSuggestionSettingsSheet(exercise: exercise)
-            }
+        .sheet(item: $suggestionSettingsExercise) { exercise in
+            ExerciseSuggestionSettingsSheet(exercise: exercise)
         }
         .overlay {
             if exercise == nil {
@@ -320,7 +318,7 @@ struct ExerciseDetailView: View {
 
     private func suggestionSettingsSection(for exercise: Exercise) -> some View {
         Button {
-            showSuggestionSettingsSheet = true
+            suggestionSettingsExercise = exercise
         } label: {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {

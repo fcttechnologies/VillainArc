@@ -32,6 +32,7 @@ struct AddWeightEntryIntent: AppIntent {
 
         context.insert(entry)
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
 
         await HealthExportCoordinator.shared.exportIfEligible(weightEntryID: entry.id)
 

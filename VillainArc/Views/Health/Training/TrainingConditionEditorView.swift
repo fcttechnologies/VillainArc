@@ -250,7 +250,7 @@ struct TrainingConditionEditorView: View {
 
                 Image(systemName: selectedKind == choice.kind ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(selectedKind == choice.kind ? .white : .secondary)
+                    .foregroundStyle(selectedKind == choice.kind ? .blue : .secondary)
             }
             .padding()
             .glassEffect(.regular, in: .rect(cornerRadius: 24))

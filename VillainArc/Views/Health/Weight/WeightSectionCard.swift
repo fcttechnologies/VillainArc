@@ -56,18 +56,16 @@ struct WeightSectionCard: View {
                     if let latestEntry {
                         Text(formattedRecentDay(latestEntry.date))
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
                     }
                 }
 
                 if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
                         VStack(alignment: .leading, spacing: 0) {
-                            if let activeGoalText {
-                                Text(activeGoalText)
-                                    .font(.subheadline)
-                                    .lineLimit(1)
+                            if let activeGoal {
+                                weightGoalLine(for: activeGoal)
                             }
 
                             HStack(alignment: .lastTextBaseline, spacing: 3) {
@@ -112,6 +110,25 @@ struct WeightSectionCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)
         .accessibilityHint(AccessibilityText.healthWeightSectionHint)
+    }
+
+    @ViewBuilder
+    private func weightGoalLine(for goal: WeightGoal) -> some View {
+        if goal.type == .maintain {
+            Text("Maintain")
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+        } else {
+            HStack(alignment: .lastTextBaseline, spacing: 3) {
+                Text("Goal:")
+                    .foregroundStyle(.secondary)
+                Text(formattedWeightText(goal.targetWeight, unit: weightUnit))
+                    .foregroundStyle(.primary)
+            }
+            .font(.subheadline)
+            .lineLimit(1)
+        }
     }
 }
 

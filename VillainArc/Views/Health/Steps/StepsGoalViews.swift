@@ -138,6 +138,7 @@ struct StepsGoalHistoryView: View {
             try? StepsCoachingEvaluator.reconcileTodayForGoalChange(context: context)
         }
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadSteps()
     }
 }
 
@@ -299,6 +300,7 @@ struct NewStepsGoalView: View {
         try? StepsGoalEvaluator.reevaluateAchievement(forDay: todayStart, context: context, trigger: .goalChange)
         try? StepsCoachingEvaluator.reconcileTodayForGoalChange(context: context)
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadSteps()
         Haptics.selection()
         dismiss()
     }

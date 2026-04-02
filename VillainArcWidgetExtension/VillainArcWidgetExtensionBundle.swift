@@ -3,7 +3,10 @@ import WidgetKit
 
 @main struct VillainArcWidgetExtensionBundle: WidgetBundle {
     var body: some Widget {
-        TodayLiftWidget()
+        HealthWeightWidget()
+        HealthSleepWidget()
+        HealthStepsWidget()
+        HealthEnergyWidget()
         WorkoutLiveActivity()
     }
 }

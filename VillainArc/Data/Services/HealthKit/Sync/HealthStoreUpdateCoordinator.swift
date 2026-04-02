@@ -379,5 +379,6 @@ final class HealthStoreUpdateCoordinator {
         inFlightRefreshTask = task
         defer { inFlightRefreshTask = nil }
         await task.value
+        HealthMetricWidgetReloader.reloadAllHealthMetrics()
     }
 }

@@ -1247,6 +1247,9 @@
     "Go back" : {
 
     },
+    "Goal achieved" : {
+
+    },
     "Goal Completions" : {
 
     },
@@ -1254,6 +1257,9 @@
 
     },
     "Goal Type" : {
+
+    },
+    "Goal:" : {
 
     },
     "Good" : {
@@ -1498,6 +1504,9 @@
 
     },
     "Machine Assisted" : {
+
+    },
+    "Maintain" : {
 
     },
     "Maintain Band End" : {

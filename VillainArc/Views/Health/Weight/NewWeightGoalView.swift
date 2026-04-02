@@ -313,6 +313,7 @@ struct NewWeightGoalView: View {
 
         context.insert(goal)
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadWeight()
         Haptics.selection()
         dismiss()
     }

@@ -58,8 +58,8 @@ struct HealthEnergySectionCard: View {
                     if let latestEntry {
                         Text(formattedRecentDay(latestEntry.date))
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
                     }
                 }
                 

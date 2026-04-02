@@ -36,6 +36,9 @@ struct VillainArcApp: App {
                 .onContinueUserActivity("com.villainarc.siri.endWorkout") { userActivity in
                     AppRouter.shared.handleSiriEndWorkout(userActivity)
                 }
+                .onOpenURL { url in
+                    AppRouter.shared.handleIncomingURL(url)
+                }
         }
         .modelContainer(SharedModelContainer.container)
     }

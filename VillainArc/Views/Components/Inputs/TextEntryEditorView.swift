@@ -29,6 +29,10 @@ struct TextEntryEditorView: View {
         .onAppear {
             isFocused = true
         }
+        .onChange(of: isFocused) { _, focused in
+            guard focused else { return }
+            selectAllFocusedText()
+        }
         .onDisappear {
             text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         }

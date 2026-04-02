@@ -119,10 +119,8 @@ struct FilteredExerciseListView: View {
             }
         }
         .scrollDismissesKeyboard(.immediately)
-        .sheet(isPresented: Binding(get: { progressionStepExercise != nil }, set: { if !$0 { progressionStepExercise = nil } })) {
-            if let progressionStepExercise {
-                ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
-            }
+        .sheet(item: $progressionStepExercise) { progressionStepExercise in
+            ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseList)
         .overlay {

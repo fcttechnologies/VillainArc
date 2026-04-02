@@ -38,6 +38,7 @@ struct CreateStepsGoalIntent: AppIntent {
         try? StepsGoalEvaluator.reevaluateAchievement(forDay: todayStart, context: context, trigger: .goalChange)
         try? StepsCoachingEvaluator.reconcileTodayForGoalChange(context: context)
         saveContext(context: context)
+        HealthMetricWidgetReloader.reloadSteps()
 
         return .result(dialog: "Your steps goal is now \(normalizedTarget.formatted(.number)) steps.")
     }

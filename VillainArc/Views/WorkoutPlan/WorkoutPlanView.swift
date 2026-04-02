@@ -430,7 +430,7 @@ private struct WorkoutPlanExerciseView: View {
         }
         .sheet(isPresented: $showRepRangeEditor) {
             RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.medium])
         }
         .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
@@ -448,10 +448,8 @@ private struct WorkoutPlanExerciseView: View {
             }
             .presentationDetents([.medium, .large])
         }
-        .sheet(isPresented: Binding(get: { progressionStepExercise != nil }, set: { if !$0 { progressionStepExercise = nil } })) {
-            if let progressionStepExercise {
-                ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
-            }
+        .sheet(item: $progressionStepExercise) { progressionStepExercise in
+            ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
         }
     }
 
