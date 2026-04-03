@@ -18,7 +18,7 @@ struct StepsGoalSummaryCard: View {
 
     private var subtitleText: String? {
         guard let activeGoal else { return nil }
-        guard let todayEntry else { return "Tracking today's progress." }
+        guard let todayEntry else { return nil }
         if todayEntry.goalCompleted { return "Achieved today" }
         let remainingSteps = max(activeGoal.targetSteps - todayEntry.stepCount, 0)
         return "\(remainingSteps.formatted(.number)) steps left today"
@@ -237,6 +237,25 @@ struct NewStepsGoalView: View {
         summaryEntries.first
     }
 
+    private var footerText: String? {
+        let calendar = Calendar.autoupdatingCurrent
+        let currentGoalText = activeGoals.first.map { "Current goal: \($0.targetSteps.formatted(.number)) steps." }
+
+        guard let latestEntry else {
+            return currentGoalText
+        }
+
+        let stepsText: String
+        if calendar.isDateInToday(latestEntry.date) {
+            stepsText = "Today's current total is \(latestEntry.stepCount.formatted(.number)) steps."
+        } else {
+            stepsText = "Latest total on \(formattedRecentDay(latestEntry.date)) was \(latestEntry.stepCount.formatted(.number)) steps."
+        }
+
+        guard let currentGoalText else { return stepsText }
+        return "\(stepsText) \(currentGoalText)"
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -251,8 +270,8 @@ struct NewStepsGoalView: View {
                             .fontWeight(.semibold)
                     }
                 } footer: {
-                    if let latestEntry {
-                        Text("Today's current total is \(latestEntry.stepCount.formatted(.number)) steps.")
+                    if let footerText {
+                        Text(footerText)
                     }
                 }
             }

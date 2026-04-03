@@ -18,7 +18,7 @@ final class ToastManager {
         let tint: Color
         let haptic: HapticStyle?
 
-        static let restTimerComplete = Toast(title: "Rest complete", message: "Time to lift again.", systemImage: "timer", tint: .orange, haptic: .success)
+        static let restTimerComplete = Toast(title: "Rest time done", message: "Time to lift again.", systemImage: "bell.badge.fill", tint: .orange, haptic: .success)
 
         static func stepsGoalComplete(targetSteps: Int, stepCount: Int) -> Toast {
             let compactStepCount = stepCount.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()

@@ -6,6 +6,10 @@ struct WorkoutSettingsView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var workout: WorkoutSession
 
+    private var systemLiveActivitiesAvailable: Bool {
+        WorkoutActivityManager.areActivitiesAvailable
+    }
+
     var body: some View {
         Group {
             if let settings = appSettings.first {
@@ -55,23 +59,25 @@ struct WorkoutSettingsView: View {
                 Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
-                Button("Restart Live Activity", systemImage: "arrow.clockwise") {
-                    Haptics.selection()
-                    WorkoutActivityManager.restart(workout: workout)
+
+                if settings.liveActivitiesEnabled && systemLiveActivitiesAvailable {
+                    Button("Restart Live Activity", systemImage: "arrow.clockwise") {
+                        Haptics.selection()
+                        WorkoutActivityManager.restart(workout: workout)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRestartLiveActivityButton)
+                    .accessibilityHint(AccessibilityText.workoutSettingsRestartLiveActivityHint)
                 }
-                .disabled(!settings.liveActivitiesEnabled)
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRestartLiveActivityButton)
-                .accessibilityHint(AccessibilityText.workoutSettingsRestartLiveActivityHint)
             } header: {
                 Text("Live Activity")
             } footer: {
-                Text("Turn off live activities completely or restart the current one if it was dismissed accidentally.")
-            }
+                Group {
+                    Text("Turn off live activities completely or restart the current one if it was dismissed accidentally.")
 
-            Section {
-                Toggle("Rest Timer Notifications", isOn: $settings.restTimerNotificationsEnabled)
-            } footer: {
-                Text("Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner.")
+                    if !systemLiveActivitiesAvailable {
+                        Text("Live Activities aren’t available on this device or are turned off in system settings. Villain Arc will fall back to in-app toasts and local notifications when possible.")
+                    }
+                }
             }
         }
         .onChange(of: settings.autoStartRestTimer) {
@@ -93,11 +99,9 @@ struct WorkoutSettingsView: View {
             } else {
                 WorkoutActivityManager.end()
             }
-        }
-        .onChange(of: settings.restTimerNotificationsEnabled) {
-            saveContext(context: context)
+
             let restTimer = RestTimerState.shared
-            if settings.restTimerNotificationsEnabled, let endDate = restTimer.endDate, restTimer.isRunning {
+            if let endDate = restTimer.endDate, restTimer.isRunning {
                 Task {
                     await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
                 }

@@ -170,7 +170,7 @@ private struct AppSettingsFormView: View {
                     Label("Notifications", systemImage: "bell.badge")
                 }
             } footer: {
-                Text("Choose how Villain Arc delivers rest timer and steps goal notifications.")
+                Text("Choose how Villain Arc handles steps goal notifications.")
             }
 
             Section {
@@ -222,15 +222,6 @@ private struct NotificationSettingsView: View {
             }
 
             Section {
-                Toggle("Enabled", isOn: $settings.restTimerNotificationsEnabled)
-                    .disabled(!notificationsAreAllowedBySystem)
-            } header: {
-                Text("Rest Timer")
-            } footer: {
-                Text("Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner.")
-            }
-
-            Section {
                 Picker("Mode", selection: $settings.stepsNotificationMode) {
                     ForEach(StepsEventNotificationMode.allCases, id: \.self) { mode in
                         Text(mode.title)
@@ -260,19 +251,6 @@ private struct NotificationSettingsView: View {
             guard newPhase == .active else { return }
             Task {
                 await refreshNotificationAuthorizationState()
-            }
-        }
-        .onChange(of: settings.restTimerNotificationsEnabled) {
-            saveContext(context: context)
-            let restTimer = RestTimerState.shared
-            if settings.restTimerNotificationsEnabled, let endDate = restTimer.endDate, restTimer.isRunning {
-                Task {
-                    await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
-                }
-            } else {
-                Task {
-                    NotificationCoordinator.cancelRestTimer()
-                }
             }
         }
         .onChange(of: settings.stepsNotificationMode) {

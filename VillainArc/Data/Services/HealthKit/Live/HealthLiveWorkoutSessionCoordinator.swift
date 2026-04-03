@@ -25,6 +25,12 @@ import SwiftData
         return activeEnergyBurned + restingEnergyBurned
     }
 
+    var isRunningLiveWorkoutCollection: Bool {
+        guard activeWorkoutSessionID != nil else { return false }
+        guard liveWorkoutSession != nil, liveWorkoutBuilder != nil else { return false }
+        return !isFinishingWorkout
+    }
+
     func ensureRunning(for workout: WorkoutSession) async {
         guard workout.statusValue == .active else { return }
         guard HealthAuthorizationManager.canWriteWorkouts else { return }
@@ -231,6 +237,11 @@ extension HealthLiveWorkoutSessionCoordinator: HKWorkoutSessionDelegate {
             stoppedStateContinuation?.resume()
             stoppedStateContinuation = nil
             clearLiveWorkoutState()
+            if let endDate = RestTimerState.shared.endDate, RestTimerState.shared.isRunning {
+                Task {
+                    await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
+                }
+            }
             print("Live Health workout session failed: \(error)")
         }
     }

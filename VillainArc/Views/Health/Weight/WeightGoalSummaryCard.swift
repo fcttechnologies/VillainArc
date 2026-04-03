@@ -22,51 +22,59 @@ struct WeightGoalSummaryCard: View {
         Button(action: action) {
             Group {
                 if let activeGoal {
-                    HStack(alignment: .center, spacing: 0) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 6) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
                                 Image(systemName: "target")
                                     .font(.subheadline)
                                 Text("Weight Goal")
+                                    .font(.subheadline)
                                     .fontWeight(.semibold)
                             }
                             .foregroundStyle(.secondary)
-                            
-                            Text(activeGoalTitle(activeGoal))
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .fontDesign(.rounded)
-                                .foregroundStyle(.primary)
-                            
-                            if let subtitleText {
-                                Text(subtitleText)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.secondary)
-                            }
-                            
+
+                            Spacer()
+
                             if let statusLine {
                                 Text(statusLine)
-                                    .font(.caption)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
                                     .foregroundStyle(statusLineColor)
                             }
-                            
-                            if let progressText {
-                                Text(progressText)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
                         }
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.secondary)
-                        .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        if let progressModel {
-                            WeightGoalProgressChart(model: progressModel, weightUnit: weightUnit)
-                                .frame(width: 160, height: 80)
-                                .accessibilityHidden(true)
+
+                        HStack(alignment: .bottom, spacing: 0) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(activeGoalTitle(activeGoal))
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .fontDesign(.rounded)
+                                    .foregroundStyle(.primary)
+
+                                if let subtitleText {
+                                    Text(subtitleText)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                if let progressText {
+                                    Text(progressText)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .fontDesign(.rounded)
+                            .foregroundStyle(.secondary)
+                            .fontWeight(.semibold)
+
+                            Spacer()
+
+                            if let progressModel {
+                                WeightGoalProgressChart(model: progressModel, weightUnit: weightUnit)
+                                    .frame(width: 160, height: 80)
+                                    .accessibilityHidden(true)
+                            }
                         }
                     }
                 } else {
@@ -316,7 +324,8 @@ nonisolated func weightGoalProgressText(goal: WeightGoal, currentWeight: Double,
     let totalChangeNeeded = abs(goal.targetWeight - goal.startWeight)
     guard totalChangeNeeded > 0.05 else { return "At target" }
     let progress = min(max(abs(currentWeight - goal.startWeight), 0), totalChangeNeeded)
-    return "\(formattedWeightText(progress, unit: unit)) / \(formattedWeightText(totalChangeNeeded, unit: unit))"
+    let progressValue = unit.fromKg(progress).formatted(.number.precision(.fractionLength(0...1)))
+    return "\(progressValue) / \(formattedWeightText(totalChangeNeeded, unit: unit, fractionDigits: 0...1))"
 }
 
 struct WeightGoalProgressChart: View {

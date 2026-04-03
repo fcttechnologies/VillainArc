@@ -101,7 +101,7 @@ import Observation
 
     func stop() { stopInternal(cancelNotification: true) }
 
-    private func stopInternal(cancelNotification: Bool) {
+    private func stopInternal(cancelNotification: Bool, updateLiveActivity: Bool = true) {
         endDate = nil
         pausedRemainingSeconds = 0
         isPaused = false
@@ -113,7 +113,9 @@ import Observation
         if cancelNotification {
             cancelNotificationRequest()
         }
-        WorkoutActivityManager.update()
+        if updateLiveActivity {
+            WorkoutActivityManager.update()
+        }
     }
 
     func adjust(by deltaSeconds: Int) {
@@ -190,10 +192,17 @@ import Observation
     }
     private func stopIfStillScheduled(_ scheduledEndDate: Date) {
         if endDate == scheduledEndDate {
-            stopInternal(cancelNotification: false)
-            WorkoutActivityManager.update()
-            Task {
-                await NotificationCoordinator.deliverRestTimerCompletionIfNeeded()
+            stopInternal(cancelNotification: false, updateLiveActivity: false)
+            if WorkoutActivityManager.canPresentRestTimerCompletionAlert {
+                NotificationCoordinator.cancelRestTimer()
+                Task {
+                    await NotificationCoordinator.presentRestTimerCompletionToastIfPossible()
+                }
+                WorkoutActivityManager.showRestTimerCompletionAlert()
+            } else {
+                Task {
+                    await NotificationCoordinator.deliverRestTimerCompletionIfNeeded()
+                }
             }
         }
     }

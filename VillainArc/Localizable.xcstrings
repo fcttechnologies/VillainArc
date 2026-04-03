@@ -637,7 +637,7 @@
     "Chest" : {
 
     },
-    "Choose how Villain Arc delivers rest timer and steps goal notifications." : {
+    "Choose how Villain Arc handles steps goal notifications." : {
 
     },
     "Choose how weight, height, distance, and energy are displayed throughout the app." : {
@@ -1028,9 +1028,6 @@
     "Enable notifications in system settings to change this. Villain Arc can still show in-app toasts while you’re using the app." : {
 
     },
-    "Enabled" : {
-
-    },
     "End" : {
 
     },
@@ -1215,9 +1212,6 @@
 
     },
     "Get my health summary for ${date}" : {
-
-    },
-    "Get notified when your rest timer finishes. While you’re using the app, Villain Arc shows a toast instead of a system banner." : {
 
     },
     "Get Resting Calories" : {
@@ -1440,6 +1434,9 @@
 
     },
     "less" : {
+
+    },
+    "Live Activities aren’t available on this device or are turned off in system settings. Villain Arc will fall back to in-app toasts and local notifications when possible." : {
 
     },
     "Live Activity" : {
@@ -2271,6 +2268,9 @@
     "Rest days are perfect for unwinding and recharging." : {
 
     },
+    "Rest time done" : {
+
+    },
     "Rest timer" : {
 
     },
@@ -2290,9 +2290,6 @@
 
     },
     "Rest timer is already running." : {
-
-    },
-    "Rest Timer Notifications" : {
 
     },
     "Rest timer paused." : {
@@ -2510,9 +2507,6 @@
 
     },
     "Selects this workout plan." : {
-
-    },
-    "Sends a local notification when rest timer finishes." : {
 
     },
     "Series" : {
@@ -3088,6 +3082,9 @@
     "Time Asleep" : {
 
     },
+    "Time to lift again." : {
+
+    },
     "Timer duration" : {
 
     },
@@ -3113,9 +3110,6 @@
 
     },
     "Today's Calories" : {
-
-    },
-    "Today's current total is %@ steps." : {
 
     },
     "Today's Steps" : {

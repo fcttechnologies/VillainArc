@@ -39,8 +39,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func scheduleRestTimer(endDate: Date) async {
-        let settings = currentAppSettingsSnapshot()
-        guard settings.restTimerNotificationsEnabled else {
+        let canPresentRestTimerCompletionAlert = await MainActor.run {
+            WorkoutActivityManager.canPresentRestTimerCompletionAlert
+        }
+
+        guard !canPresentRestTimerCompletionAlert else {
             cancelRestTimer()
             return
         }
@@ -55,7 +58,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         cancelRestTimer()
 
         let content = UNMutableNotificationContent()
-        content.title = "Rest complete"
+        content.title = "Rest time done"
         content.body = "Time to lift again."
         content.sound = .default
         content.threadIdentifier = "restTimer"
@@ -119,13 +122,21 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func deliverRestTimerCompletionIfNeeded() async {
-        let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
+        let canPresentRestTimerCompletionAlert = await MainActor.run {
+            WorkoutActivityManager.canPresentRestTimerCompletionAlert
+        }
 
-        guard settings.restTimerNotificationsEnabled, status.allowsLocalDelivery else {
+        guard !canPresentRestTimerCompletionAlert else { return }
+
+        guard status.allowsLocalDelivery else {
             await shared.presentToastIfPossible(.restTimerComplete)
             return
         }
+    }
+
+    nonisolated static func presentRestTimerCompletionToastIfPossible() async {
+        await shared.presentToastIfPossible(.restTimerComplete)
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {

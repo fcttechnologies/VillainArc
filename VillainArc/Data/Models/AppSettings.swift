@@ -9,7 +9,6 @@ import SwiftData
     var retainPerformancesForLearning: Bool = true
     var keepRemovedHealthData: Bool = true
     var liveActivitiesEnabled: Bool = true
-    var restTimerNotificationsEnabled: Bool = true
     var stepsNotificationMode: StepsEventNotificationMode = StepsEventNotificationMode.coaching
     var weightUnit: WeightUnit = WeightUnit.systemDefault
     var heightUnit: HeightUnit = HeightUnit.systemDefault
@@ -27,7 +26,6 @@ struct AppSettingsSnapshot {
     let retainPerformancesForLearning: Bool
     let keepRemovedHealthData: Bool
     let liveActivitiesEnabled: Bool
-    let restTimerNotificationsEnabled: Bool
     let stepsNotificationMode: StepsEventNotificationMode
     let weightUnit: WeightUnit
     let heightUnit: HeightUnit
@@ -42,8 +40,7 @@ struct AppSettingsSnapshot {
         retainPerformancesForLearning = settings?.retainPerformancesForLearning ?? true
         keepRemovedHealthData = settings?.keepRemovedHealthData ?? true
         liveActivitiesEnabled = settings?.liveActivitiesEnabled ?? true
-        restTimerNotificationsEnabled = settings?.restTimerNotificationsEnabled ?? true
-        stepsNotificationMode = settings?.stepsNotificationMode ?? .goalOnly
+        stepsNotificationMode = settings?.stepsNotificationMode ?? .coaching
         weightUnit = settings?.weightUnit ?? .systemDefault
         heightUnit = settings?.heightUnit ?? .systemDefault
         distanceUnit = settings?.distanceUnit ?? .systemDefault

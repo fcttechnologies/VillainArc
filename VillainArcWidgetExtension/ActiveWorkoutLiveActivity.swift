@@ -45,10 +45,18 @@ struct WorkoutLiveActivity: Widget {
                         .buttonStyle(.plain)
                         .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
                         .accessibilityValue(formatSeconds(remaining))
+                    } else {
+                        Text(context.attributes.startDate, style: .timer)
+                            .font(.title2)
+                            .bold()
+                            .lineLimit(1)
+                            .frame(maxWidth: 50)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    if let name = context.state.exerciseName {
+                    if let transientStatusText = context.state.transientStatusText {
+                        WorkoutLiveActivityTransientStatusView(text: transientStatusText)
+                    } else if let name = context.state.exerciseName {
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(name)
@@ -71,17 +79,21 @@ struct WorkoutLiveActivity: Widget {
                         .padding(.leading, 6)
                     } else if !context.state.hasExercises {
                         Button(intent: LiveActivityAddExerciseIntent()) {
-                            Text("Add an exercise to begin")
+                            Text("Tap to add an exercise")
                                 .fontWeight(.semibold)
                                 .fontDesign(.rounded)
+                                .font(.title2)
                         }
                         .buttonStyle(.plain)
-                        .padding(.leading)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 4)
                     } else {
                         Text("All sets complete")
-                            .padding(.leading)
                             .fontWeight(.semibold)
+                            .font(.title2)
                             .fontDesign(.rounded)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 4)
                     }
                 }
             } compactLeading: {
@@ -123,12 +135,14 @@ struct WorkoutLiveActivityExpandedView: View {
             WorkoutLiveActivityExpandedTopRow(attributes: attributes, state: state)
             
             Divider()
-            
-            if let exerciseName = state.exerciseName {
+
+            if let transientStatusText = state.transientStatusText {
+                WorkoutLiveActivityTransientStatusView(text: transientStatusText, isExpanded: true)
+            } else if let exerciseName = state.exerciseName {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(exerciseName)
-                            .font(.title3)
+                            .font(.title2)
                             .lineLimit(1)
                         Text(setDescription(state))
                             .foregroundStyle(.secondary)
@@ -148,16 +162,16 @@ struct WorkoutLiveActivityExpandedView: View {
                 }
             } else if !state.hasExercises {
                 Button(intent: LiveActivityAddExerciseIntent()) {
-                    Text("Add an exercise to begin")
+                    Text("Tap to add an exercise")
                         .fontDesign(.rounded)
-                        .font(.title3)
+                        .font(.title2)
                         .fontWeight(.semibold)
                 }
                 .buttonStyle(.plain)
             } else {
                 Text("All sets complete")
                     .fontDesign(.rounded)
-                    .font(.title3)
+                    .font(.title2)
                     .fontWeight(.semibold)
             }
         }
@@ -196,13 +210,13 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
                 .fontDesign(.rounded)
                 .fontWeight(.semibold)
             } else {
-                HStack(alignment: .top) {
+                HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(state.title)
                             .font(.title2)
                             .lineLimit(1)
                         Text(attributes.startDate, style: .date)
-                            .font(.subheadline)
+                            .font(.headline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -257,6 +271,28 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
             .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
             .accessibilityValue(formatSeconds(remaining))
         }
+    }
+}
+
+private struct WorkoutLiveActivityTransientStatusView: View {
+    let text: String
+    var isExpanded: Bool = false
+
+    var body: some View {
+        HStack(spacing: isExpanded ? 12 : 8) {
+            Image(systemName: "bell.badge.fill")
+                .font(isExpanded ? .title2 : .title3)
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+
+            Text(text)
+                .font(isExpanded ? .title : .title2)
+                .bold()
+        }
+        .fontDesign(.rounded)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, 4)
+        .accessibilityElement(children: .combine)
     }
 }
 

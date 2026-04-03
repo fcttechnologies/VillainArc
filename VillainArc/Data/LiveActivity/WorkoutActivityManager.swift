@@ -4,14 +4,20 @@ import ActivityKit
 
 enum WorkoutActivityManager {
     private static let liveMetricsUpdateInterval: TimeInterval = 30
+    private static let transientStatusDuration: TimeInterval = 4
     private static var lastDeliveredActivityID: String?
     private static var lastDeliveredState: WorkoutActivityAttributes.ContentState?
     private static var lastLiveMetricsActivityUpdateAt: Date?
     private static var pendingLiveMetricsUpdateTask: Task<Void, Never>?
+    private static var pendingTransientStatusResetTask: Task<Void, Never>?
 
     private static var liveActivitiesEnabled: Bool {
         let context = SharedModelContainer.container.mainContext
         return (try? context.fetch(AppSettings.single).first)?.liveActivitiesEnabled ?? true
+    }
+
+    static var areActivitiesAvailable: Bool {
+        ActivityAuthorizationInfo().areActivitiesEnabled
     }
 
     static func start(workout: WorkoutSession) {
@@ -19,7 +25,7 @@ enum WorkoutActivityManager {
             endAllActivities()
             return
         }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard areActivitiesAvailable else { return }
         endAllActivities()
         requestActivity(for: workout)
     }
@@ -38,6 +44,7 @@ enum WorkoutActivityManager {
             return
         }
         guard currentActivity != nil else { return }
+        guard !hasActiveTransientStatus else { return }
 
         let now = Date()
         let elapsedSinceLastUpdate = now.timeIntervalSince(lastLiveMetricsActivityUpdateAt ?? .distantPast)
@@ -61,6 +68,35 @@ enum WorkoutActivityManager {
 
     static func end() { endAllActivities() }
 
+    static func showRestTimerCompletionAlert(for workout: WorkoutSession? = nil) {
+        guard canPresentRestTimerCompletionAlert else { return }
+        guard let activity = currentActivity else { return }
+        guard let workout = resolveWorkout(for: workout) else {
+            endAllActivities()
+            return
+        }
+
+        pendingTransientStatusResetTask?.cancel()
+
+        var state = normalizedContentState(for: contentState(for: workout))
+        state.transientStatusText = "Rest time done"
+        recordDeliveredState(state, forActivityID: activity.id)
+
+        let alertConfiguration = AlertConfiguration(title: "Rest time done", body: "Time to lift again.", sound: .default)
+
+        let activityID = activity.id
+        Task {
+            await updateActivity(id: activityID, state: state, alertConfiguration: alertConfiguration)
+        }
+
+        pendingTransientStatusResetTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64((transientStatusDuration * 1_000_000_000).rounded()))
+            guard !Task.isCancelled else { return }
+            pendingTransientStatusResetTask = nil
+            performImmediateUpdate(for: workout, ignoringTransientStatus: true)
+        }
+    }
+
     static func restoreIfNeeded(workout: WorkoutSession) {
         guard liveActivitiesEnabled else {
             endAllActivities()
@@ -78,7 +114,7 @@ enum WorkoutActivityManager {
             endAllActivities()
             return
         }
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard areActivitiesAvailable else { return }
         Task {
             let activityIDs = Activity<WorkoutActivityAttributes>.activities.map(\.id)
             await endActivities(ids: activityIDs)
@@ -87,6 +123,12 @@ enum WorkoutActivityManager {
     }
 
     private static var currentActivity: Activity<WorkoutActivityAttributes>? { Activity<WorkoutActivityAttributes>.activities.first }
+    static var canPresentRestTimerCompletionAlert: Bool {
+        guard liveActivitiesEnabled else { return false }
+        guard areActivitiesAvailable else { return false }
+        guard currentActivity != nil else { return false }
+        return HealthLiveWorkoutSessionCoordinator.shared.isRunningLiveWorkoutCollection
+    }
 
     private static func endAllActivities() {
         resetTrackedActivityState()
@@ -114,21 +156,23 @@ enum WorkoutActivityManager {
         let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
         let energyUnit = (try? context.fetch(AppSettings.single))?.first?.energyUnit ?? .systemDefault
 
-        return .init(title: workout.title, exerciseName: activeInfo?.exercise.name, setNumber: activeInfo.map { $0.set.index + 1 }, totalSets: activeInfo?.exercise.sortedSets.count, weight: activeInfo?.set.weight, weightUnit: weightUnit.rawValue, energyUnit: energyUnit.rawValue, reps: activeInfo?.set.reps, targetRPE: activeInfo?.set.prescription?.visibleTargetRPE, timerEndDate: restTimer.isRunning ? restTimer.endDate : nil, timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil, timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil, hasExercises: !workout.exercises!.isEmpty, liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate, liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned)
+        return .init(title: workout.title, exerciseName: activeInfo?.exercise.name, transientStatusText: nil, setNumber: activeInfo.map { $0.set.index + 1 }, totalSets: activeInfo?.exercise.sortedSets.count, weight: activeInfo?.set.weight, weightUnit: weightUnit.rawValue, energyUnit: energyUnit.rawValue, reps: activeInfo?.set.reps, targetRPE: activeInfo?.set.prescription?.visibleTargetRPE, timerEndDate: restTimer.isRunning ? restTimer.endDate : nil, timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil, timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil, hasExercises: !workout.exercises!.isEmpty, liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate, liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned)
     }
 
-    private static func performImmediateUpdate(for workout: WorkoutSession?) {
-        guard let activity = currentActivity else { return }
+    private static var hasActiveTransientStatus: Bool {
+        pendingTransientStatusResetTask != nil || lastDeliveredState?.transientStatusText != nil
+    }
 
-        let resolvedWorkout: WorkoutSession?
-        if let workout {
-            resolvedWorkout = workout
-        } else {
-            let context = SharedModelContainer.container.mainContext
-            resolvedWorkout = try? context.fetch(WorkoutSession.incomplete).first
+    private static func performImmediateUpdate(for workout: WorkoutSession?, ignoringTransientStatus: Bool = false) {
+        guard let activity = currentActivity else { return }
+        guard ignoringTransientStatus || !hasActiveTransientStatus else { return }
+        let isResettingTransientStatus = ignoringTransientStatus && pendingTransientStatusResetTask == nil
+        if !isResettingTransientStatus {
+            pendingTransientStatusResetTask?.cancel()
+            pendingTransientStatusResetTask = nil
         }
 
-        guard let workout = resolvedWorkout else {
+        guard let workout = resolveWorkout(for: workout) else {
             endAllActivities()
             return
         }
@@ -171,6 +215,15 @@ enum WorkoutActivityManager {
         return lastDeliveredState != state
     }
 
+    private static func resolveWorkout(for workout: WorkoutSession?) -> WorkoutSession? {
+        if let workout {
+            return workout
+        }
+
+        let context = SharedModelContainer.container.mainContext
+        return try? context.fetch(WorkoutSession.incomplete).first
+    }
+
     private static func recordDeliveredState(_ state: WorkoutActivityAttributes.ContentState, forActivityID activityID: String) {
         lastDeliveredActivityID = activityID
         lastDeliveredState = state
@@ -182,14 +235,16 @@ enum WorkoutActivityManager {
     private static func resetTrackedActivityState() {
         pendingLiveMetricsUpdateTask?.cancel()
         pendingLiveMetricsUpdateTask = nil
+        pendingTransientStatusResetTask?.cancel()
+        pendingTransientStatusResetTask = nil
         lastDeliveredActivityID = nil
         lastDeliveredState = nil
         lastLiveMetricsActivityUpdateAt = nil
     }
 
-    nonisolated private static func updateActivity(id: String, state: WorkoutActivityAttributes.ContentState) async {
+    nonisolated private static func updateActivity(id: String, state: WorkoutActivityAttributes.ContentState, alertConfiguration: AlertConfiguration? = nil) async {
         guard let activity = Activity<WorkoutActivityAttributes>.activities.first(where: { $0.id == id }) else { return }
-        await activity.update(.init(state: state, staleDate: nil))
+        await activity.update(.init(state: state, staleDate: nil), alertConfiguration: alertConfiguration)
     }
 
     nonisolated private static func endActivities(ids: [String]) async {

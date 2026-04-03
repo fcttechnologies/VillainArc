@@ -7,6 +7,7 @@ nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
     struct ContentState: Codable, Hashable, Sendable {
         var title: String
         var exerciseName: String?
+        var transientStatusText: String?
         var setNumber: Int?
         var totalSets: Int?
         var weight: Double?
