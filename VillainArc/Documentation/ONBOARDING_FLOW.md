@@ -14,7 +14,6 @@ This document explains how VillainArc gets from process launch to a ready app st
 - `Data/Services/App/SetupGuard.swift`
 - `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
-- `Data/Services/HealthKit/Sync/HealthMetricsBackgroundRefreshScheduler.swift`
 
 ## Startup Entry
 
@@ -24,7 +23,6 @@ Startup is split across three pieces:
   - installs the shared model container
   - forwards Spotlight and Siri handoffs
   - reinstalls Health observers on process launch through the app delegate
-  - registers the Health metric background refresh task on process launch
 - `RootView`
   - starts onboarding
   - performs launch cleanup
@@ -140,7 +138,6 @@ When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 - `HealthStoreUpdateCoordinator.installObserversIfNeeded()`
 - `HealthStoreUpdateCoordinator.refreshBackgroundDeliveryRegistration()`
 - `HealthStoreUpdateCoordinator.syncNow()`
-- `HealthMetricsBackgroundRefreshScheduler.schedule()`
 - `NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()`
 
 This does three jobs:
@@ -148,11 +145,8 @@ This does three jobs:
 - recreate missing Health observers after the launch path
 - backfill Health mirrors, sleep nights and sleep blocks, and daily caches
 - reconcile older workout and weight exports
-- schedule a periodic background app refresh fallback for Health metric sync
 
 The observer reinstall matters because observer queries are also created earlier at process launch. If an earlier observer failed due to Health authorization state, the ready-time path can recreate it cleanly.
-
-The background refresh schedule is the fallback path for Health metrics when Apple does not wake the app through HealthKit observers as quickly or as often as desired. It does not replace observer-driven sync; it complements it with a best-effort periodic refresh pass.
 
 ## Failure and Retry States
 

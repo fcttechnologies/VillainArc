@@ -20,7 +20,6 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Services/HealthKit/Export/HealthExportCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthSyncCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthStoreUpdateCoordinator.swift`
-- `Data/Services/HealthKit/Sync/HealthMetricsBackgroundRefreshScheduler.swift`
 - `Data/Services/App/HealthMetricWidgetReloader.swift`
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
 - `Data/Services/App/NotificationCoordinator.swift`
@@ -152,25 +151,9 @@ The app refreshes background delivery registration:
 - after onboarding reaches ready
 - when returning from Health settings flows
 
-### Background App Refresh Fallback
-
-Observer-driven delivery still depends on Apple waking the app. To improve Health metric freshness, VillainArc also registers a `BGAppRefreshTask` and reschedules it from the ready path and Health settings flows.
-
-That fallback task:
-
-- reinstalls Health observers
-- runs `HealthSyncCoordinator.syncAll()`
-- reschedules the next refresh request
-
-The task is not a replacement for HealthKit background delivery. It is a second best-effort path that gives the app another chance to refresh daily metrics and sleep caches when observer wakes are delayed or sparse.
-
 ### Platform Boundary
 
-Observer-driven background sync is best-effort. It can be prompt, delayed, or skipped depending on system conditions. That is why the app now has three recovery layers:
-
-- observer-driven background sync when Apple delivers the wake
-- periodic `BGAppRefreshTask` metric refresh as a fallback
-- strong foreground recovery via the ready/settings sync pass
+Observer-driven background sync is best-effort. It can be prompt, delayed, or skipped depending on system conditions. That is why the app still needs a strong foreground recovery path via the ready/settings sync pass.
 
 ## Live Workout Path
 

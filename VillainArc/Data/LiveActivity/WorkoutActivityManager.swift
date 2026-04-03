@@ -3,6 +3,12 @@ import SwiftData
 import ActivityKit
 
 enum WorkoutActivityManager {
+    private static let liveMetricsUpdateInterval: TimeInterval = 30
+    private static var lastDeliveredActivityID: String?
+    private static var lastDeliveredState: WorkoutActivityAttributes.ContentState?
+    private static var lastLiveMetricsActivityUpdateAt: Date?
+    private static var pendingLiveMetricsUpdateTask: Task<Void, Never>?
+
     private static var liveActivitiesEnabled: Bool {
         let context = SharedModelContainer.container.mainContext
         return (try? context.fetch(AppSettings.single).first)?.liveActivitiesEnabled ?? true
@@ -23,24 +29,34 @@ enum WorkoutActivityManager {
             endAllActivities()
             return
         }
-        guard let activity = currentActivity else { return }
+        performImmediateUpdate(for: workout)
+    }
 
-        let resolvedWorkout: WorkoutSession?
-        if let workout {
-            resolvedWorkout = workout
-        } else {
-            let context = SharedModelContainer.container.mainContext
-            resolvedWorkout = try? context.fetch(WorkoutSession.incomplete).first
-        }
-
-        guard let workout = resolvedWorkout else {
+    static func updateLiveMetrics() {
+        guard liveActivitiesEnabled else {
             endAllActivities()
             return
         }
+        guard currentActivity != nil else { return }
 
-        let activityID = activity.id
-        let state = contentState(for: workout)
-        Task { await updateActivity(id: activityID, state: state) }
+        let now = Date()
+        let elapsedSinceLastUpdate = now.timeIntervalSince(lastLiveMetricsActivityUpdateAt ?? .distantPast)
+
+        guard elapsedSinceLastUpdate < liveMetricsUpdateInterval else {
+            performImmediateUpdate(for: nil)
+            return
+        }
+
+        guard pendingLiveMetricsUpdateTask == nil else { return }
+
+        let remainingDelay = liveMetricsUpdateInterval - elapsedSinceLastUpdate
+        let delayNanoseconds = UInt64((remainingDelay * 1_000_000_000).rounded())
+        pendingLiveMetricsUpdateTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+            guard !Task.isCancelled else { return }
+            pendingLiveMetricsUpdateTask = nil
+            performImmediateUpdate(for: nil)
+        }
     }
 
     static func end() { endAllActivities() }
@@ -73,15 +89,18 @@ enum WorkoutActivityManager {
     private static var currentActivity: Activity<WorkoutActivityAttributes>? { Activity<WorkoutActivityAttributes>.activities.first }
 
     private static func endAllActivities() {
+        resetTrackedActivityState()
         let activityIDs = Activity<WorkoutActivityAttributes>.activities.map(\.id)
         Task { await endActivities(ids: activityIDs) }
     }
 
     private static func requestActivity(for workout: WorkoutSession) {
+        resetTrackedActivityState()
         let attributes = WorkoutActivityAttributes(startDate: workout.startedAt)
-        let state = contentState(for: workout)
+        let state = normalizedContentState(for: contentState(for: workout))
         do {
-            _ = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil), pushType: nil)
+            let activity = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil), pushType: nil)
+            recordDeliveredState(state, forActivityID: activity.id)
         } catch {
             print("Failed to start Live Activity: \(error)")
         }
@@ -96,6 +115,76 @@ enum WorkoutActivityManager {
         let energyUnit = (try? context.fetch(AppSettings.single))?.first?.energyUnit ?? .systemDefault
 
         return .init(title: workout.title, exerciseName: activeInfo?.exercise.name, setNumber: activeInfo.map { $0.set.index + 1 }, totalSets: activeInfo?.exercise.sortedSets.count, weight: activeInfo?.set.weight, weightUnit: weightUnit.rawValue, energyUnit: energyUnit.rawValue, reps: activeInfo?.set.reps, targetRPE: activeInfo?.set.prescription?.visibleTargetRPE, timerEndDate: restTimer.isRunning ? restTimer.endDate : nil, timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil, timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil, hasExercises: !workout.exercises!.isEmpty, liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate, liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned)
+    }
+
+    private static func performImmediateUpdate(for workout: WorkoutSession?) {
+        guard let activity = currentActivity else { return }
+
+        let resolvedWorkout: WorkoutSession?
+        if let workout {
+            resolvedWorkout = workout
+        } else {
+            let context = SharedModelContainer.container.mainContext
+            resolvedWorkout = try? context.fetch(WorkoutSession.incomplete).first
+        }
+
+        guard let workout = resolvedWorkout else {
+            endAllActivities()
+            return
+        }
+
+        let state = normalizedContentState(for: contentState(for: workout))
+        guard shouldDeliver(state, toActivityID: activity.id) else { return }
+
+        pendingLiveMetricsUpdateTask?.cancel()
+        pendingLiveMetricsUpdateTask = nil
+        recordDeliveredState(state, forActivityID: activity.id)
+        let activityID = activity.id
+        Task { await updateActivity(id: activityID, state: state) }
+    }
+
+    private static func normalizedContentState(for state: WorkoutActivityAttributes.ContentState) -> WorkoutActivityAttributes.ContentState {
+        var normalizedState = state
+        normalizedState.liveHeartRateBPM = normalizedDisplayedHeartRate(state.liveHeartRateBPM)
+        normalizedState.liveActiveEnergyBurned = normalizedDisplayedActiveEnergy(state.liveActiveEnergyBurned, unit: state.energyUnit)
+        return normalizedState
+    }
+
+    private static func normalizedDisplayedHeartRate(_ value: Double?) -> Double? {
+        guard let value else { return nil }
+        return Double(Int(value.rounded()))
+    }
+
+    private static func normalizedDisplayedActiveEnergy(_ value: Double?, unit: String?) -> Double? {
+        guard let value else { return nil }
+
+        switch unit {
+        case "kJ":
+            return Double(Int((value * 4.184).rounded()))
+        default:
+            return Double(Int(value.rounded()))
+        }
+    }
+
+    private static func shouldDeliver(_ state: WorkoutActivityAttributes.ContentState, toActivityID activityID: String) -> Bool {
+        guard lastDeliveredActivityID == activityID else { return true }
+        return lastDeliveredState != state
+    }
+
+    private static func recordDeliveredState(_ state: WorkoutActivityAttributes.ContentState, forActivityID activityID: String) {
+        lastDeliveredActivityID = activityID
+        lastDeliveredState = state
+        if state.hasLiveMetrics {
+            lastLiveMetricsActivityUpdateAt = .now
+        }
+    }
+
+    private static func resetTrackedActivityState() {
+        pendingLiveMetricsUpdateTask?.cancel()
+        pendingLiveMetricsUpdateTask = nil
+        lastDeliveredActivityID = nil
+        lastDeliveredState = nil
+        lastLiveMetricsActivityUpdateAt = nil
     }
 
     nonisolated private static func updateActivity(id: String, state: WorkoutActivityAttributes.ContentState) async {

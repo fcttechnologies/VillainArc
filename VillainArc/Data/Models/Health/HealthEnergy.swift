@@ -22,6 +22,12 @@ import SwiftData
 extension HealthEnergy {
     static var history: FetchDescriptor<HealthEnergy> { FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)]) }
 
+    static var latest: FetchDescriptor<HealthEnergy> {
+        var descriptor = history
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
     static var summary: FetchDescriptor<HealthEnergy> {
         var descriptor = history
         descriptor.fetchLimit = 7

@@ -20,10 +20,6 @@
 			<string>VillainArc</string>
 		</dict>
 	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.villainarc.health-metrics-refresh</string>
-	</array>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>com.villainarc.siri.startWorkout</string>
@@ -51,7 +47,6 @@
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
 </dict>

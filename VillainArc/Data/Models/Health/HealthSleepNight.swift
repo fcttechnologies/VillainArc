@@ -78,6 +78,12 @@ import SwiftData
 extension HealthSleepNight {
     static var history: FetchDescriptor<HealthSleepNight> { FetchDescriptor(sortBy: [SortDescriptor(\.wakeDay, order: .reverse)]) }
 
+    static var latest: FetchDescriptor<HealthSleepNight> {
+        var descriptor = history
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
     static var summary: FetchDescriptor<HealthSleepNight> {
         var descriptor = history
         descriptor.fetchLimit = 7

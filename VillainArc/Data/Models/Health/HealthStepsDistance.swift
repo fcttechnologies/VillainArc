@@ -30,6 +30,12 @@ extension HealthStepsDistance {
         FetchDescriptor(sortBy: [SortDescriptor(\.date, order: .reverse)])
     }
 
+    static var latest: FetchDescriptor<HealthStepsDistance> {
+        var descriptor = history
+        descriptor.fetchLimit = 1
+        return descriptor
+    }
+
     static var summary: FetchDescriptor<HealthStepsDistance> {
         var descriptor = history
         descriptor.fetchLimit = 7

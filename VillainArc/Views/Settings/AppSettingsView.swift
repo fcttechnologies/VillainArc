@@ -57,7 +57,6 @@ struct AppSettingsView: View {
                 HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                 await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                 await HealthStoreUpdateCoordinator.shared.syncNow()
-                HealthMetricsBackgroundRefreshScheduler.shared.schedule()
             }
         }
         .alert("Manage Apple Health Access", isPresented: $showHealthAccessInstructions) {
@@ -101,7 +100,6 @@ struct AppSettingsView: View {
             HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
             await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
             await HealthStoreUpdateCoordinator.shared.syncNow()
-            HealthMetricsBackgroundRefreshScheduler.shared.schedule()
         case .openSettings, .manageInSettings:
             showHealthAccessInstructions = true
         case .unavailable:

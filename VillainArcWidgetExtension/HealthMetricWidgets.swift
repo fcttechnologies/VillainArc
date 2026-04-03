@@ -201,7 +201,7 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             )
 
         case .sleep:
-            let latestEntry = try? context.fetch(HealthSleepNight.history).first
+            let latestEntry = try? context.fetch(HealthSleepNight.latest).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .sleep, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
             }
@@ -215,7 +215,7 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             )
 
         case .steps:
-            let latestEntry = try? context.fetch(HealthStepsDistance.history).first
+            let latestEntry = try? context.fetch(HealthStepsDistance.latest).first
             let todayEntry = try? context.fetch(HealthStepsDistance.forDay(.now)).first
             let activeGoal = try? context.fetch(StepsGoal.active).first
             guard let latestEntry else {
@@ -246,7 +246,7 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             )
 
         case .energy:
-            let latestEntry = try? context.fetch(HealthEnergy.history).first
+            let latestEntry = try? context.fetch(HealthEnergy.latest).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .energy, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
             }

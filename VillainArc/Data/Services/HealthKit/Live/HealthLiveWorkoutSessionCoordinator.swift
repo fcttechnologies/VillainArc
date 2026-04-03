@@ -10,13 +10,11 @@ import SwiftData
     private(set) var latestHeartRate: Double?
     private(set) var activeEnergyBurned: Double?
     private(set) var restingEnergyBurned: Double?
-    private(set) var currentSessionState: HKWorkoutSessionState?
-    private(set) var lastErrorMessage: String?
 
-    private var liveWorkoutSession: HKWorkoutSession?
-    private var liveWorkoutBuilder: HKLiveWorkoutBuilder?
-    private var stoppedStateContinuation: CheckedContinuation<Void, Never>?
-    private var isFinishingWorkout = false
+    @ObservationIgnored private var liveWorkoutSession: HKWorkoutSession?
+    @ObservationIgnored private var liveWorkoutBuilder: HKLiveWorkoutBuilder?
+    @ObservationIgnored private var stoppedStateContinuation: CheckedContinuation<Void, Never>?
+    @ObservationIgnored private var isFinishingWorkout = false
 
     private override init() {
         super.init()
@@ -49,7 +47,6 @@ import SwiftData
             try await builder.beginCollection(at: workout.startedAt)
             try await builder.addMetadata(HealthAuthorizationManager.metadata(for: workout))
         } catch {
-            lastErrorMessage = "Unable to start Apple Health workout collection."
             clearLiveWorkoutState()
             print("Failed to start live Health workout session for \(workout.id): \(error)")
         }
@@ -96,7 +93,6 @@ import SwiftData
                 print("HealthKit finished live workout for \(workout.id), but the workout sample was unavailable.")
             }
         } catch {
-            lastErrorMessage = "Unable to finish Apple Health workout collection."
             print("Failed to finish live Health workout session for \(workout.id): \(error)")
         }
 
@@ -127,7 +123,6 @@ import SwiftData
         let recoveredSessionID = recoveredBuilder.metadata[HealthMetadataKeys.workoutSessionID] as? String
 
         if let recoveredSessionID, recoveredSessionID != workout.id.uuidString {
-            lastErrorMessage = "Recovered Apple Health workout did not match the active workout."
             print("Recovered Health workout session metadata mismatch. Expected \(workout.id.uuidString), got \(recoveredSessionID).")
             return false
         }
@@ -143,11 +138,9 @@ import SwiftData
         builder.dataSource = HKLiveWorkoutDataSource(healthStore: HealthAuthorizationManager.healthStore, workoutConfiguration: configuration)
 
         activeWorkoutSessionID = workout.id
-        currentSessionState = session.state
         latestHeartRate = nil
         activeEnergyBurned = nil
         restingEnergyBurned = nil
-        lastErrorMessage = nil
         liveWorkoutSession = session
         liveWorkoutBuilder = builder
     }
@@ -162,25 +155,34 @@ import SwiftData
         let heartRateType = HealthKitCatalog.heartRateType
         let activeEnergyType = HealthKitCatalog.activeEnergyBurnedType
         let restingEnergyType = HealthKitCatalog.restingEnergyBurnedType
-        let previousHeartRate = latestHeartRate
-        let previousActiveEnergyBurned = activeEnergyBurned
         var didChangeDisplayedMetrics = false
 
         if collectedTypes.contains(heartRateType) {
             let latestCollectedHeartRate = workoutBuilder.statistics(for: heartRateType)?.mostRecentQuantity()?.doubleValue(for: HealthKitCatalog.bpmUnit)
-            didChangeDisplayedMetrics = didChangeDisplayedMetrics || displayedMetricChanged(from: previousHeartRate, to: latestCollectedHeartRate)
-            latestHeartRate = latestCollectedHeartRate
+            if displayedMetricChanged(from: latestHeartRate, to: latestCollectedHeartRate) {
+                latestHeartRate = latestCollectedHeartRate
+                didChangeDisplayedMetrics = true
+            }
         }
 
         if collectedTypes.contains(activeEnergyType) {
             let collectedActiveEnergyBurned = workoutBuilder.statistics(for: activeEnergyType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit)
-            didChangeDisplayedMetrics = didChangeDisplayedMetrics || displayedMetricChanged(from: previousActiveEnergyBurned, to: collectedActiveEnergyBurned)
-            activeEnergyBurned = collectedActiveEnergyBurned
+            if displayedMetricChanged(from: activeEnergyBurned, to: collectedActiveEnergyBurned) {
+                activeEnergyBurned = collectedActiveEnergyBurned
+                didChangeDisplayedMetrics = true
+            }
         }
 
-        if collectedTypes.contains(restingEnergyType) { restingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit) }
+        if collectedTypes.contains(restingEnergyType) {
+            let collectedRestingEnergyBurned = workoutBuilder.statistics(for: restingEnergyType)?.sumQuantity()?.doubleValue(for: HealthKitCatalog.kilocalorieUnit)
+            if displayedMetricChanged(from: restingEnergyBurned, to: collectedRestingEnergyBurned) {
+                restingEnergyBurned = collectedRestingEnergyBurned
+            }
+        }
 
-        if didChangeDisplayedMetrics, activeWorkoutSessionID != nil { WorkoutActivityManager.update() }
+        if didChangeDisplayedMetrics, activeWorkoutSessionID != nil {
+            WorkoutActivityManager.updateLiveMetrics()
+        }
     }
 
     private func clearLiveWorkoutState() {
@@ -189,7 +191,6 @@ import SwiftData
         liveWorkoutSession = nil
         liveWorkoutBuilder = nil
         activeWorkoutSessionID = nil
-        currentSessionState = nil
         latestHeartRate = nil
         activeEnergyBurned = nil
         restingEnergyBurned = nil
@@ -217,8 +218,6 @@ import SwiftData
 extension HealthLiveWorkoutSessionCoordinator: HKWorkoutSessionDelegate {
     nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
         Task { @MainActor in
-            currentSessionState = toState
-
             if toState == .stopped || toState == .ended {
                 stoppedStateContinuation?.resume()
                 stoppedStateContinuation = nil
@@ -228,7 +227,6 @@ extension HealthLiveWorkoutSessionCoordinator: HKWorkoutSessionDelegate {
 
     nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: any Error) {
         Task { @MainActor in
-            lastErrorMessage = "Apple Health workout session failed."
             isFinishingWorkout = false
             stoppedStateContinuation?.resume()
             stoppedStateContinuation = nil
