@@ -3,12 +3,9 @@ import SwiftData
 import ActivityKit
 
 enum WorkoutActivityManager {
-    private static let liveMetricsUpdateInterval: TimeInterval = 30
     private static let transientStatusDuration: TimeInterval = 4
     private static var lastDeliveredActivityID: String?
     private static var lastDeliveredState: WorkoutActivityAttributes.ContentState?
-    private static var lastLiveMetricsActivityUpdateAt: Date?
-    private static var pendingLiveMetricsUpdateTask: Task<Void, Never>?
     private static var pendingTransientStatusResetTask: Task<Void, Never>?
 
     private static var liveActivitiesEnabled: Bool {
@@ -45,25 +42,7 @@ enum WorkoutActivityManager {
         }
         guard currentActivity != nil else { return }
         guard !hasActiveTransientStatus else { return }
-
-        let now = Date()
-        let elapsedSinceLastUpdate = now.timeIntervalSince(lastLiveMetricsActivityUpdateAt ?? .distantPast)
-
-        guard elapsedSinceLastUpdate < liveMetricsUpdateInterval else {
-            performImmediateUpdate(for: nil)
-            return
-        }
-
-        guard pendingLiveMetricsUpdateTask == nil else { return }
-
-        let remainingDelay = liveMetricsUpdateInterval - elapsedSinceLastUpdate
-        let delayNanoseconds = UInt64((remainingDelay * 1_000_000_000).rounded())
-        pendingLiveMetricsUpdateTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: delayNanoseconds)
-            guard !Task.isCancelled else { return }
-            pendingLiveMetricsUpdateTask = nil
-            performImmediateUpdate(for: nil)
-        }
+        performImmediateUpdate(for: nil)
     }
 
     static func end() { endAllActivities() }
@@ -180,8 +159,6 @@ enum WorkoutActivityManager {
         let state = normalizedContentState(for: contentState(for: workout))
         guard shouldDeliver(state, toActivityID: activity.id) else { return }
 
-        pendingLiveMetricsUpdateTask?.cancel()
-        pendingLiveMetricsUpdateTask = nil
         recordDeliveredState(state, forActivityID: activity.id)
         let activityID = activity.id
         Task { await updateActivity(id: activityID, state: state) }
@@ -227,19 +204,13 @@ enum WorkoutActivityManager {
     private static func recordDeliveredState(_ state: WorkoutActivityAttributes.ContentState, forActivityID activityID: String) {
         lastDeliveredActivityID = activityID
         lastDeliveredState = state
-        if state.hasLiveMetrics {
-            lastLiveMetricsActivityUpdateAt = .now
-        }
     }
 
     private static func resetTrackedActivityState() {
-        pendingLiveMetricsUpdateTask?.cancel()
-        pendingLiveMetricsUpdateTask = nil
         pendingTransientStatusResetTask?.cancel()
         pendingTransientStatusResetTask = nil
         lastDeliveredActivityID = nil
         lastDeliveredState = nil
-        lastLiveMetricsActivityUpdateAt = nil
     }
 
     nonisolated private static func updateActivity(id: String, state: WorkoutActivityAttributes.ContentState, alertConfiguration: AlertConfiguration? = nil) async {

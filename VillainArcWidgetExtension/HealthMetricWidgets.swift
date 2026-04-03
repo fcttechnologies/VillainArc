@@ -130,6 +130,8 @@ private struct HealthMetricWidgetEntry: TimelineEntry {
 }
 
 private struct HealthMetricWidgetProvider: TimelineProvider {
+    private static let refreshInterval: TimeInterval = 2 * 60 * 60
+
     private enum LoadStyle {
         case compact
         case expanded
@@ -156,7 +158,8 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<HealthMetricWidgetEntry>) -> Void) {
         let entry = loadEntry(for: context.family)
-        completion(Timeline(entries: [entry], policy: .never))
+        let nextRefresh = Date().addingTimeInterval(Self.refreshInterval)
+        completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
     }
 
     private func loadEntry(for family: WidgetFamily) -> HealthMetricWidgetEntry {

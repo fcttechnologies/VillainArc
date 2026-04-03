@@ -23,35 +23,36 @@ struct WorkoutLiveActivity: Widget {
                         .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
-                        Text(timerInterval: Date.now...endDate, countsDown: true)
-                            .font(.title2)
-                            .bold()
-                            .lineLimit(1)
-                            .frame(maxWidth: 50)
-                    } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
-                        Button(intent: LiveActivityResumeRestTimerIntent()) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "pause.fill")
-                                Text(formatSeconds(remaining))
-                                    .font(.title2)
-                                    .bold()
+                    Group {
+                        if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
+                            Text(timerInterval: Date.now...endDate, countsDown: true)
+                                .font(.title2)
+                                .bold()
+                                .frame(maxWidth: 55, alignment: .trailing)
+                                .lineLimit(1)
+                        } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
+                            Button(intent: LiveActivityResumeRestTimerIntent()) {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "pause.fill")
+                                    Text(formatSeconds(remaining))
+                                        .bold()
+                                        .font(.title2)
+                                }
+                                .foregroundStyle(.yellow)
                             }
-                            .foregroundStyle(.yellow)
-                            .fontDesign(.rounded)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .lineLimit(1)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                            .accessibilityValue(formatSeconds(remaining))
+                        } else {
+                            let time = Date.now.timeIntervalSince(context.attributes.startDate)
+                            Text(context.attributes.startDate, style: .timer)
+                                .font(.title2)
+                                .bold()
+                                .frame(maxWidth: time >= 600 ? (time >= 3600 ? 83 : 65) : 55, alignment: .trailing)
+                                .lineLimit(1)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
-                        .accessibilityValue(formatSeconds(remaining))
-                    } else {
-                        Text(context.attributes.startDate, style: .timer)
-                            .font(.title2)
-                            .bold()
-                            .lineLimit(1)
-                            .frame(maxWidth: 50)
                     }
+                    .fontDesign(.rounded)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     if let transientStatusText = context.state.transientStatusText {
@@ -86,38 +87,59 @@ struct WorkoutLiveActivity: Widget {
                         }
                         .buttonStyle(.plain)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 4)
                     } else {
                         Text("All sets complete")
                             .fontWeight(.semibold)
                             .font(.title2)
                             .fontDesign(.rounded)
                             .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.top, 4)
                     }
                 }
             } compactLeading: {
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .foregroundStyle(.green)
-            } compactTrailing: {
-                if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
-                    Text(timerInterval: Date.now...endDate, countsDown: true)
-                        .bold()
-                        .frame(maxWidth: 40)
-                } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
-                    HStack(spacing: 4) {
-                        Image(systemName: "pause.fill")
-                        Text(formatSeconds(remaining))
-                            .font(.title)
+                if let liveHeartRateBPM = context.state.liveHeartRateBPM {
+                    HStack(spacing: 2) {
+                        Image(systemName: "heart")
+                            .foregroundStyle(.red)
+                        Text(liveHeartRateBPM.rounded(), format: .number)
                             .bold()
+                            .font(.title2)
                     }
-                    .foregroundStyle(.yellow)
-                    .fontDesign(.rounded)
+                } else if let liveActiveEnergyBurned = context.state.liveActiveEnergyBurned {
+                    HStack(spacing: 2) {
+                        Image(systemName: "flame.fill")
+                            .foregroundStyle(.orange)
+                        Text(displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: context.state.energyUnit), format: .number.precision(.fractionLength(0)))
+                            .bold()
+                            .font(.title2)
+                    }
                 } else {
-                    Text(context.attributes.startDate, style: .timer)
-                        .bold()
-                        .frame(maxWidth: 55)
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .foregroundStyle(.green)
                 }
+            } compactTrailing: {
+                Group {
+                    if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
+                        Text(timerInterval: Date.now...endDate, countsDown: true)
+                            .frame(maxWidth: 35)
+                            .bold()
+                            .font(.title2)
+                    } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
+                        HStack(spacing: 2) {
+                            Image(systemName: "pause.fill")
+                            Text(formatSeconds(remaining))
+                                .bold()
+                                .font(.title2)
+                        }
+                        .foregroundStyle(.yellow)
+                    } else {
+                        let time = Date.now.timeIntervalSince(context.attributes.startDate)
+                        Text(context.attributes.startDate, style: .timer)
+                            .frame(maxWidth: time >= 600 ? (time >= 3600 ? 57 : 45) : 35, alignment: .trailing)
+                            .bold()
+                            .font(.title2)
+                    }
+                }
+                .fontDesign(.rounded)
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(.green)

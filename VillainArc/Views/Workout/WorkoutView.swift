@@ -22,7 +22,6 @@ struct WorkoutView: View {
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
     private var shouldPromptForPreWorkoutContext: Bool { appSettingsSnapshot.promptForPreWorkoutContext }
     private var shouldPromptForPostWorkoutEffort: Bool { appSettingsSnapshot.promptForPostWorkoutEffort }
-    private var showsLiveHealthButton: Bool { HealthAuthorizationManager.canWriteWorkouts }
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
@@ -63,19 +62,17 @@ struct WorkoutView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     workoutOptionsToolbarLabel
                 }
-                if showsLiveHealthButton {
-                    ToolbarItem(placement: .bottomBar) {
-                        Button {
-                            showLiveHealthSheet = true
-                            Haptics.selection()
-                        } label: {
-                            Image(systemName: "heart.text.square")
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthButton)
-                        .accessibilityLabel(AccessibilityText.workoutLiveHealthLabel)
-                        .accessibilityValue(WorkoutLiveStatsView.toolbarAccessibilityValue(for: workout.id))
-                        .accessibilityHint(AccessibilityText.workoutLiveHealthHint)
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        showLiveHealthSheet = true
+                        Haptics.selection()
+                    } label: {
+                        Image(systemName: "heart.text.square")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthButton)
+                    .accessibilityLabel(AccessibilityText.workoutLiveHealthLabel)
+                    .accessibilityValue(WorkoutLiveStatsView.toolbarAccessibilityValue(for: workout.id))
+                    .accessibilityHint(AccessibilityText.workoutLiveHealthHint)
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
