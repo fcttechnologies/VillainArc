@@ -122,8 +122,14 @@ struct WorkoutEffortInteractiveDial: View {
                 let diameter = min(proxy.size.width, proxy.size.height)
                 let radius = (diameter - lineWidth) / 2
                 let labelRadius = radius + lineWidth * 0.4
+                let markerDiameter = max(12, lineWidth * 0.42)
+                let markerRadius = radius - (lineWidth * 0.08) - (markerDiameter * 0.5)
 
                 ZStack {
+                    ForEach(1...10, id: \.self) { value in
+                        markerView(for: value, in: proxy.size, radius: markerRadius, diameter: markerDiameter)
+                    }
+
                     if showsScaleLabels {
                         let lowPoint = lowLabelPoint(in: proxy.size, radius: labelRadius)
                         let highPoint = highLabelPoint(in: proxy.size, radius: labelRadius)
@@ -167,8 +173,22 @@ struct WorkoutEffortInteractiveDial: View {
         }
     }
 
+    @ViewBuilder
+    private func markerView(for value: Int, in size: CGSize, radius: CGFloat, diameter: CGFloat) -> some View {
+        let point = WorkoutEffortDialStyle.point(for: value, radius: radius, in: size)
+
+        Circle()
+            .fill(WorkoutEffortDialStyle.inactiveMarkerColor)
+            .frame(width: diameter, height: diameter)
+            .position(point)
+    }
+
     private func updateSelection(for location: CGPoint) {
         let nextValue = WorkoutEffortDialStyle.value(for: location, in: CGSize(width: size, height: size))
+        updateSelection(to: nextValue)
+    }
+
+    private func updateSelection(to nextValue: Int) {
         guard selection != nextValue else { return }
         Haptics.selection()
         selection = nextValue
@@ -204,6 +224,16 @@ enum WorkoutEffortDialStyle {
         center: .center,
         startAngle: .degrees(startAngle),
         endAngle: .degrees(startAngle + sweepAngle)
+    )
+    static let inactiveMarkerColor = Color(
+        uiColor: UIColor { traitCollection in
+            switch traitCollection.userInterfaceStyle {
+            case .dark:
+                return UIColor.white.withAlphaComponent(0.10)
+            default:
+                return UIColor.black.withAlphaComponent(0.04)
+            }
+        }
     )
 
     static func progress(for score: Double) -> Double {

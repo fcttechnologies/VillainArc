@@ -71,6 +71,14 @@ private struct ExerciseHistoryPerformanceCard: View {
     let performance: ExercisePerformance
     let weightUnit: WeightUnit
 
+    private var exerciseNotes: String {
+        performance.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var workoutNotes: String {
+        performance.workoutSession?.notes.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
@@ -86,11 +94,22 @@ private struct ExerciseHistoryPerformanceCard: View {
                 }
                 .fontWeight(.semibold)
 
-                if !performance.notes.isEmpty {
-                    Text(performance.notes)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
+                if !exerciseNotes.isEmpty || !workoutNotes.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        if !exerciseNotes.isEmpty {
+                            Text(workoutNotes.isEmpty ? exerciseNotes : "Exercise notes: \(exerciseNotes)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+
+                        if !workoutNotes.isEmpty {
+                            Text("Workout notes: \(workoutNotes)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
                 }
             }
 

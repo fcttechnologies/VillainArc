@@ -6,6 +6,10 @@ struct WorkoutEffortPromptView: View {
     let onSkip: () -> Void
     let onConfirm: () -> Void
 
+    private var hasSelection: Bool {
+        (1...10).contains(selectedEffort)
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -23,7 +27,7 @@ struct WorkoutEffortPromptView: View {
                     WorkoutEffortInteractiveDial(selection: $selectedEffort, size: 280, lineWidth: 24, showsScaleLabels: true, markerAccessibilityIdentifier: AccessibilityIdentifiers.workoutFinishEffortCard, markerAccessibilityHint: AccessibilityText.workoutFinishEffortCardHint)
 
                     VStack(spacing: 4) {
-                        if (1...10).contains(selectedEffort) {
+                        if hasSelection {
                             Text("\(selectedEffort)")
                                 .font(.system(size: 64, weight: .bold, design: .rounded))
 
@@ -51,18 +55,17 @@ struct WorkoutEffortPromptView: View {
                 }
                 .frame(maxWidth: .infinity)
                 Spacer()
-                if (1...10).contains(selectedEffort) {
-                    Button{
-                        Haptics.selection()
-                        selectedEffort = 0
-                    } label: {
-                        Text("Clear")
+                if hasSelection {
+                    Button(action: onConfirm) {
+                        Text("Finish")
                             .fontWeight(.semibold)
                             .font(.title3)
                             .padding(.vertical, 4)
                     }
                     .buttonSizing(.flexible)
-                    .buttonStyle(.glass)
+                    .buttonStyle(.glassProminent)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortConfirmButton)
+                    .accessibilityHint(AccessibilityText.workoutFinishEffortConfirmHint)
                 }
 
             }
@@ -76,11 +79,12 @@ struct WorkoutEffortPromptView: View {
                         .accessibilityHint(AccessibilityText.workoutFinishEffortCloseHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    if (1...10).contains(selectedEffort) {
-                        Button("Confirm", action: onConfirm)
+                    if hasSelection {
+                        Button("Clear") {
+                            Haptics.selection()
+                            selectedEffort = 0
+                        }
                             .fontWeight(.semibold)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortConfirmButton)
-                            .accessibilityHint(AccessibilityText.workoutFinishEffortConfirmHint)
                     } else {
                         Button("Skip", action: onSkip)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortSkipButton)

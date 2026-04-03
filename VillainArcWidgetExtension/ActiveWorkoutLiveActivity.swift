@@ -11,11 +11,7 @@ private enum WorkoutLiveActivityAccessibilityText {
 struct WorkoutLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
-            WorkoutLiveActivityExpandedView(
-                attributes: context.attributes,
-                state: context.state
-            )
-            .activityBackgroundTint(.clear)
+            WorkoutLiveActivityExpandedView(attributes: context.attributes, state: context.state)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -98,9 +94,9 @@ struct WorkoutLiveActivity: Widget {
             } compactLeading: {
                 if let liveHeartRateBPM = context.state.liveHeartRateBPM {
                     HStack(spacing: 2) {
-                        Image(systemName: "heart")
+                        Image(systemName: "heart.fill")
                             .foregroundStyle(.red)
-                        Text(liveHeartRateBPM.rounded(), format: .number)
+                        Text(Int(liveHeartRateBPM.rounded()), format: .number)
                             .bold()
                             .font(.title2)
                     }
@@ -145,59 +141,124 @@ struct WorkoutLiveActivity: Widget {
                     .foregroundStyle(.green)
             }
         }
+        .supplementalActivityFamilies([.small])
     }
 }
 
 struct WorkoutLiveActivityExpandedView: View {
+    @Environment(\.activityFamily) private var activityFamily
     let attributes: WorkoutActivityAttributes
     let state: WorkoutActivityAttributes.ContentState
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            WorkoutLiveActivityExpandedTopRow(attributes: attributes, state: state)
-            
+        let isSmall = activityFamily == .small
+
+        VStack(alignment: .leading, spacing: isSmall ? 6 : 8) {
+            if activityFamily == .small {
+                WorkoutLiveActivitySmallTopRow(attributes: attributes, state: state)
+            } else {
+                WorkoutLiveActivityExpandedTopRow(attributes: attributes, state: state)
+            }
+
             Divider()
 
-            if let transientStatusText = state.transientStatusText {
-                WorkoutLiveActivityTransientStatusView(text: transientStatusText, isExpanded: true)
-            } else if let exerciseName = state.exerciseName {
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(exerciseName)
-                            .font(.title2)
-                            .lineLimit(1)
-                        Text(setDescription(state))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .font(.headline)
-                    }
-                    .fontDesign(.rounded)
-                    .fontWeight(.semibold)
-                    Spacer()
-                    Button(intent: LiveActivityCompleteSetIntent()) {
-                        Image(systemName: "checkmark")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityLabel(WorkoutLiveActivityAccessibilityText.completeSetLabel)
+            WorkoutLiveActivityExpandedBottomContent(state: state, isSmall: isSmall)
+        }
+        .padding(isSmall ? 8 : 16)
+        .activityBackgroundTint(isSmall ? .black : .clear)
+    }
+}
+
+private struct WorkoutLiveActivityExpandedBottomContent: View {
+    let state: WorkoutActivityAttributes.ContentState
+    let isSmall: Bool
+
+    var body: some View {
+        if let transientStatusText = state.transientStatusText {
+            WorkoutLiveActivityTransientStatusView(text: transientStatusText, isExpanded: !isSmall)
+        } else if let exerciseName = state.exerciseName {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: isSmall ? 1 : 2) {
+                    Text(exerciseName)
+                        .font(isSmall ? .caption : .title2)
+                        .lineLimit(1)
+                    Text(isSmall ? compactSetDescription(state) : setDescription(state))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .font(isSmall ? .caption2 : .headline)
                 }
-            } else if !state.hasExercises {
-                Button(intent: LiveActivityAddExerciseIntent()) {
-                    Text("Tap to add an exercise")
-                        .fontDesign(.rounded)
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+                Spacer()
+                Button(intent: LiveActivityCompleteSetIntent()) {
+                    Image(systemName: "checkmark")
+                        .font(isSmall ? .caption : .title2)
+                        .fontWeight(.bold)
                 }
-                .buttonStyle(.plain)
-            } else {
-                Text("All sets complete")
+                .buttonStyle(.borderedProminent)
+                .accessibilityLabel(WorkoutLiveActivityAccessibilityText.completeSetLabel)
+            }
+        } else if !state.hasExercises {
+            Button(intent: LiveActivityAddExerciseIntent()) {
+                Text("Tap to add an exercise")
                     .fontDesign(.rounded)
-                    .font(.title2)
+                    .font(isSmall ? .footnote : .title2)
                     .fontWeight(.semibold)
             }
+            .buttonStyle(.plain)
+        } else {
+            Text("All sets complete")
+                .fontDesign(.rounded)
+                .font(isSmall ? .footnote : .title2)
+                .fontWeight(.semibold)
         }
-        .padding()
+    }
+}
+
+private struct WorkoutLiveActivitySmallTopRow: View {
+    let attributes: WorkoutActivityAttributes
+    let state: WorkoutActivityAttributes.ContentState
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if let liveHeartRateBPM = state.liveHeartRateBPM {
+                WorkoutLiveActivityIslandMetricView(symbolName: "heart.fill", number: Double(Int(liveHeartRateBPM.rounded())), tint: .red, isSmall: true)
+                Spacer()
+            }
+
+            if let liveActiveEnergyBurned = state.liveActiveEnergyBurned {
+                WorkoutLiveActivityIslandMetricView(symbolName: "flame.fill", number: displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: state.energyUnit), tint: .orange, isSmall: true)
+            }
+
+            Spacer()
+            Group {
+                if state.isTimerRunning, let endDate = state.timerEndDate {
+                    HStack(spacing: 2) {
+                        Image(systemName: "timer")
+                        Text(timerInterval: Date.now...endDate, countsDown: true)
+                            .frame(maxWidth: 35, alignment: .trailing)
+                    }
+                } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
+                    HStack(spacing: 2) {
+                        Image(systemName: "pause.fill")
+                        Text(formatSeconds(remaining))
+                    }
+                    .foregroundStyle(.yellow)
+                } else {
+                    let time = Date.now.timeIntervalSince(attributes.startDate)
+                    HStack(spacing: 2) {
+                        Image(systemName: "clock")
+                        Text(attributes.startDate, style: .timer)
+                            .frame(maxWidth: time >= 600 ? (time >= 3600 ? 50 : 40) : 35, alignment: .trailing)
+                    }
+                }
+            }
+            .fontDesign(.rounded)
+            .fontWeight(.semibold)
+            .font(.caption2)
+
+        }
+        .lineLimit(1)
     }
 }
 
@@ -375,14 +436,16 @@ private struct WorkoutLiveActivityIslandMetricView: View {
     let symbolName: String
     let number: Double
     let tint: Color
+    var isSmall: Bool = false
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: isSmall ? 2 : 4) {
             Image(systemName: symbolName)
+                .font(isSmall ? .caption2 : nil)
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
             Text(number, format: .number.precision(.fractionLength(0)))
-                .font(.title2)
+                .font(isSmall ? .caption2 : .title2)
                 .monospacedDigit()
                 .contentTransition(.numericText(value: number))
         }
@@ -425,19 +488,49 @@ private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> 
     
     var parts: [String] = ["Set \(setNumber)/\(totalSets)"]
     
+    if let reps = state.reps, reps > 0 {
+        parts.append("\(reps) reps")
+    }
+
     if let weight = state.weight, weight > 0 {
         let unit = state.weightUnit ?? "lbs"
         let formatted = weight.formatted(.number.precision(.fractionLength(0...1)))
         parts.append("\(formatted) \(unit)")
     }
     
-    if let reps = state.reps, reps > 0 {
-        parts.append("\(reps) reps")
-    }
-    
     if let targetRPE = state.targetRPE {
         parts.append("RPE \(targetRPE)")
     }
     
+    return parts.joined(separator: " · ")
+}
+
+private func compactSetDescription(_ state: WorkoutActivityAttributes.ContentState) -> String {
+    var parts: [String] = []
+    let reps = state.reps.flatMap { $0 > 0 ? $0 : nil }
+    let weight = state.weight.flatMap { $0 > 0 ? $0 : nil }
+    let unit = state.weightUnit ?? "lbs"
+    let formattedWeight = weight?.formatted(.number.precision(.fractionLength(0...1)))
+
+    if let targetRPE = state.targetRPE,
+       let reps,
+       let formattedWeight {
+        parts.append("\(reps)x\(formattedWeight) \(unit)")
+        parts.append("RPE \(targetRPE)")
+        return parts.joined(separator: " · ")
+    }
+
+    if let reps {
+        parts.append("\(reps) reps")
+    }
+
+    if let formattedWeight {
+        parts.append("\(formattedWeight) \(unit)")
+    }
+
+    if let targetRPE = state.targetRPE {
+        parts.append("RPE \(targetRPE)")
+    }
+
     return parts.joined(separator: " · ")
 }
