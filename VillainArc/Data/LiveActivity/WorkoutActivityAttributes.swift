@@ -4,12 +4,23 @@ import ActivityKit
 nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
     var startDate: Date
 
+    enum DisplayMode: String, Codable, Hashable, Sendable {
+        case active
+        case summary
+    }
+
     struct ContentState: Codable, Hashable, Sendable {
+        var displayMode: DisplayMode
         var title: String
+        var endedAt: Date?
         var exerciseName: String?
         var transientStatusText: String?
         var setNumber: Int?
         var totalSets: Int?
+        var completedExerciseCount: Int?
+        var completedSetCount: Int?
+        var summaryPRCount: Int?
+        var summaryVolume: Double?
         var weight: Double?
         var weightUnit: String?
         var energyUnit: String?
@@ -21,6 +32,8 @@ nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
         var hasExercises: Bool
         var liveHeartRateBPM: Double?
         var liveActiveEnergyBurned: Double?
+        var averageHeartRateBPM: Double?
+        var totalEnergyBurned: Double?
 
         var isTimerRunning: Bool {
             guard let end = timerEndDate else { return false }
@@ -34,8 +47,15 @@ nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
 
         var isTimerActive: Bool { isTimerRunning || isTimerPaused }
 
+        var isSummaryMode: Bool { displayMode == .summary }
+
         var hasActiveSet: Bool { exerciseName != nil }
 
         var hasLiveMetrics: Bool { liveHeartRateBPM != nil || liveActiveEnergyBurned != nil }
+
+        var hasSummaryPRs: Bool {
+            guard let summaryPRCount else { return false }
+            return summaryPRCount > 0
+        }
     }
 }

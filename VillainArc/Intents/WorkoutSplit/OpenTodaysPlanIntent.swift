@@ -13,11 +13,11 @@ struct OpenTodaysPlanIntent: AppIntent {
         guard let split = try? context.fetch(WorkoutSplit.active).first else { throw OpenTodaysPlanError.noActiveSplit }
         guard !(split.days?.isEmpty ?? true) else { throw OpenTodaysPlanError.noDaysInSplit }
 
-        split.refreshRotationIfNeeded(context: context)
-
-        guard let todaysDay = split.todaysSplitDay else { throw OpenTodaysPlanError.noDayForToday }
+        let resolution = SplitScheduleResolver.resolve(split, context: context)
+        guard let todaysDay = resolution.splitDay else { throw OpenTodaysPlanError.noDayForToday }
+        guard !resolution.isPaused else { throw OpenTodaysPlanError.trainingIsPaused }
         guard !todaysDay.isRestDay else { throw OpenTodaysPlanError.todayIsRestDay }
-        guard let workoutPlan = todaysDay.workoutPlan else { throw OpenTodaysPlanError.noWorkoutPlanForToday }
+        guard let workoutPlan = resolution.workoutPlan else { throw OpenTodaysPlanError.noWorkoutPlanForToday }
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(workoutPlan, true))
@@ -29,6 +29,7 @@ enum OpenTodaysPlanError: Error, CustomLocalizedStringResourceConvertible {
     case noActiveSplit
     case noDaysInSplit
     case noDayForToday
+    case trainingIsPaused
     case todayIsRestDay
     case noWorkoutPlanForToday
 
@@ -37,6 +38,7 @@ enum OpenTodaysPlanError: Error, CustomLocalizedStringResourceConvertible {
         case .noActiveSplit: return "You don't have an active workout split."
         case .noDaysInSplit: return "Your split doesn't have any days set up yet."
         case .noDayForToday: return "Couldn't determine today's workout."
+        case .trainingIsPaused: return "Training is currently paused because of your active condition."
         case .todayIsRestDay: return "Today is a rest day! Enjoy your recovery."
         case .noWorkoutPlanForToday: return "You don't have a workout plan assigned for today."
         }

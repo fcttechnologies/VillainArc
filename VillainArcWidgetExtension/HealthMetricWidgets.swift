@@ -130,7 +130,7 @@ private struct HealthMetricWidgetEntry: TimelineEntry {
 }
 
 private struct HealthMetricWidgetProvider: TimelineProvider {
-    private static let refreshInterval: TimeInterval = 2 * 60 * 60
+    private static let refreshInterval: TimeInterval = 30 * 60
 
     private enum LoadStyle {
         case compact

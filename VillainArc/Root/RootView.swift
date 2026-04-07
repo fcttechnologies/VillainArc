@@ -28,6 +28,7 @@ struct RootView: View {
                     HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                     await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
                     await HealthStoreUpdateCoordinator.shared.syncNow()
+                    HealthMetricWidgetReloader.reloadAllHealthMetrics()
                     await NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()
                 }
             }

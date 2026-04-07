@@ -128,6 +128,15 @@ enum WorkoutActivityManager {
     }
 
     private static func contentState(for workout: WorkoutSession) -> WorkoutActivityAttributes.ContentState {
+        switch workout.statusValue {
+        case .summary:
+            summaryContentState(for: workout)
+        case .pending, .active, .done:
+            activeContentState(for: workout)
+        }
+    }
+
+    private static func activeContentState(for workout: WorkoutSession) -> WorkoutActivityAttributes.ContentState {
         let restTimer = RestTimerState.shared
         let activeInfo = workout.activeExerciseAndSet()
         let healthLiveWorkoutCoordinator = HealthLiveWorkoutSessionCoordinator.shared
@@ -135,7 +144,67 @@ enum WorkoutActivityManager {
         let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
         let energyUnit = (try? context.fetch(AppSettings.single))?.first?.energyUnit ?? .systemDefault
 
-        return .init(title: workout.title, exerciseName: activeInfo?.exercise.name, transientStatusText: nil, setNumber: activeInfo.map { $0.set.index + 1 }, totalSets: activeInfo?.exercise.sortedSets.count, weight: activeInfo?.set.weight, weightUnit: weightUnit.rawValue, energyUnit: energyUnit.rawValue, reps: activeInfo?.set.reps, targetRPE: activeInfo?.set.prescription?.visibleTargetRPE, timerEndDate: restTimer.isRunning ? restTimer.endDate : nil, timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil, timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil, hasExercises: !workout.exercises!.isEmpty, liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate, liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned)
+        return .init(
+            displayMode: .active,
+            title: workout.title,
+            endedAt: nil,
+            exerciseName: activeInfo?.exercise.name,
+            transientStatusText: nil,
+            setNumber: activeInfo.map { $0.set.index + 1 },
+            totalSets: activeInfo?.exercise.sortedSets.count,
+            completedExerciseCount: nil,
+            completedSetCount: nil,
+            summaryPRCount: nil,
+            summaryVolume: nil,
+            weight: activeInfo?.set.weight,
+            weightUnit: weightUnit.rawValue,
+            energyUnit: energyUnit.rawValue,
+            reps: activeInfo?.set.reps,
+            targetRPE: activeInfo?.set.prescription?.visibleTargetRPE,
+            timerEndDate: restTimer.isRunning ? restTimer.endDate : nil,
+            timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil,
+            timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil,
+            hasExercises: !(workout.exercises?.isEmpty ?? true),
+            liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate,
+            liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned,
+            averageHeartRateBPM: nil,
+            totalEnergyBurned: nil
+        )
+    }
+
+    private static func summaryContentState(for workout: WorkoutSession) -> WorkoutActivityAttributes.ContentState {
+        let context = SharedModelContainer.container.mainContext
+        let appSettings = (try? context.fetch(AppSettings.single))?.first
+        let weightUnit = appSettings?.weightUnit ?? .lbs
+        let energyUnit = appSettings?.energyUnit ?? .systemDefault
+        let liveCoordinator = HealthLiveWorkoutSessionCoordinator.shared
+
+        return .init(
+            displayMode: .summary,
+            title: workout.title,
+            endedAt: workout.endedAt,
+            exerciseName: nil,
+            transientStatusText: nil,
+            setNumber: nil,
+            totalSets: nil,
+            completedExerciseCount: workout.totalExercises,
+            completedSetCount: workout.totalSets,
+            summaryPRCount: summaryPRCount(for: workout, context: context),
+            summaryVolume: workout.totalVolume,
+            weight: nil,
+            weightUnit: weightUnit.rawValue,
+            energyUnit: energyUnit.rawValue,
+            reps: nil,
+            targetRPE: nil,
+            timerEndDate: nil,
+            timerPausedRemaining: nil,
+            timerStartedSeconds: nil,
+            hasExercises: !(workout.exercises?.isEmpty ?? true),
+            liveHeartRateBPM: nil,
+            liveActiveEnergyBurned: nil,
+            averageHeartRateBPM: workout.healthWorkout?.averageHeartRateBPM,
+            totalEnergyBurned: workout.healthWorkout?.totalEnergyBurned ?? liveCoordinator.totalEnergyBurned
+        )
     }
 
     private static var hasActiveTransientStatus: Bool {
@@ -168,6 +237,8 @@ enum WorkoutActivityManager {
         var normalizedState = state
         normalizedState.liveHeartRateBPM = normalizedDisplayedHeartRate(state.liveHeartRateBPM)
         normalizedState.liveActiveEnergyBurned = normalizedDisplayedActiveEnergy(state.liveActiveEnergyBurned, unit: state.energyUnit)
+        normalizedState.averageHeartRateBPM = normalizedDisplayedHeartRate(state.averageHeartRateBPM)
+        normalizedState.totalEnergyBurned = normalizedDisplayedEnergy(state.totalEnergyBurned)
         return normalizedState
     }
 
@@ -185,6 +256,11 @@ enum WorkoutActivityManager {
         default:
             return Double(Int(value.rounded()))
         }
+    }
+
+    private static func normalizedDisplayedEnergy(_ value: Double?) -> Double? {
+        guard let value else { return nil }
+        return Double(Int(value.rounded()))
     }
 
     private static func shouldDeliver(_ state: WorkoutActivityAttributes.ContentState, toActivityID activityID: String) -> Bool {
@@ -224,4 +300,84 @@ enum WorkoutActivityManager {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
     }
+
+    private static func summaryPRCount(for workout: WorkoutSession, context: ModelContext) -> Int {
+        let exercises = workout.sortedExercises
+        guard !exercises.isEmpty else { return 0 }
+
+        let catalogIDs = Set(exercises.map(\.catalogID))
+        let histories = (try? context.fetch(ExerciseHistory.forCatalogIDs(Array(catalogIDs)))) ?? []
+        let historyMap = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
+        let summaries = groupedPRSummaries(from: exercises)
+
+        return summaries.reduce(0) { count, summary in
+            count + prCount(for: summary, history: historyMap[summary.catalogID])
+        }
+    }
+
+    private static func groupedPRSummaries(from exercises: [ExercisePerformance]) -> [WorkoutSummaryExercisePRSummary] {
+        var orderedCatalogIDs: [String] = []
+        var groupedExercises: [String: [ExercisePerformance]] = [:]
+
+        for exercise in exercises {
+            if groupedExercises[exercise.catalogID] == nil {
+                orderedCatalogIDs.append(exercise.catalogID)
+            }
+            groupedExercises[exercise.catalogID, default: []].append(exercise)
+        }
+
+        return orderedCatalogIDs.compactMap { catalogID in
+            guard let grouped = groupedExercises[catalogID] else { return nil }
+
+            return WorkoutSummaryExercisePRSummary(
+                catalogID: catalogID,
+                bestEstimated1RM: grouped.compactMap(\.bestEstimated1RM).max(),
+                bestWeight: grouped.compactMap(\.bestWeight).max(),
+                bestReps: grouped.compactMap(\.bestReps).max(),
+                totalVolume: grouped.reduce(0) { $0 + $1.totalVolume }
+            )
+        }
+    }
+
+    private static func prCount(for summary: WorkoutSummaryExercisePRSummary, history: ExerciseHistory?) -> Int {
+        var count = 0
+
+        if let current1RM = summary.bestEstimated1RM {
+            let historical1RM = history?.bestEstimated1RM ?? 0
+            if historical1RM == 0 || current1RM > historical1RM {
+                count += 1
+            }
+        }
+
+        if let currentWeight = summary.bestWeight {
+            let historicalWeight = history?.bestWeight ?? 0
+            if historicalWeight == 0 || currentWeight > historicalWeight {
+                count += 1
+            }
+        }
+
+        if let currentReps = summary.bestReps {
+            let historicalReps = history?.bestReps ?? 0
+            if historicalReps == 0 || currentReps > historicalReps {
+                count += 1
+            }
+        }
+
+        if summary.totalVolume > 0 {
+            let historicalVolume = history?.bestVolume ?? 0
+            if historicalVolume == 0 || summary.totalVolume > historicalVolume {
+                count += 1
+            }
+        }
+
+        return count
+    }
+}
+
+private struct WorkoutSummaryExercisePRSummary {
+    let catalogID: String
+    let bestEstimated1RM: Double?
+    let bestWeight: Double?
+    let bestReps: Int?
+    let totalVolume: Double
 }

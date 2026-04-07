@@ -11,8 +11,7 @@ struct OpenWorkoutSplitIntent: AppIntent {
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
         guard let split = try? context.fetch(WorkoutSplit.active).first else { throw OpenWorkoutSplitError.noActiveSplit }
-
-        split.refreshRotationIfNeeded(context: context)
+        _ = SplitScheduleResolver.resolve(split, context: context)
 
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))

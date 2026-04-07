@@ -138,13 +138,15 @@ When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 - `HealthStoreUpdateCoordinator.installObserversIfNeeded()`
 - `HealthStoreUpdateCoordinator.refreshBackgroundDeliveryRegistration()`
 - `HealthStoreUpdateCoordinator.syncNow()`
+- `HealthMetricWidgetReloader.reloadAllHealthMetrics()`
 - `NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()`
 
-This does three jobs:
+This does four jobs:
 
 - recreate missing Health observers after the launch path
 - backfill Health mirrors, sleep nights and sleep blocks, and daily caches
 - reconcile older workout and weight exports
+- refresh all Health widgets after the manual sync pass
 
 The observer reinstall matters because observer queries are also created earlier at process launch. If an earlier observer failed due to Health authorization state, the ready-time path can recreate it cleanly.
 

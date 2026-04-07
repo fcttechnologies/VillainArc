@@ -44,7 +44,7 @@ struct WorkoutSplitView: View {
         self.autoPresentBuilder = autoPresentBuilder
         if let split {
             _overrideSplit = State(initialValue: split)
-            _selectedSplitDay = State(initialValue: split.todaysSplitDay)
+            _selectedSplitDay = State(initialValue: split.isActive ? nil : split.todaysSplitDay)
         }
     }
 
@@ -94,7 +94,7 @@ struct WorkoutSplitView: View {
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .onAppear {
             if selectedSplitDay == nil, let split = currentSplit {
-                selectedSplitDay = split.todaysSplitDay
+                selectedSplitDay = resolvedCurrentDay(for: split)
             }
             if autoPresentBuilder && allSplits.isEmpty {
                 router.activeSplitSheet = .builder
@@ -103,7 +103,7 @@ struct WorkoutSplitView: View {
             Task { await IntentDonations.donateTrainingSummary() }
         }
         .onChange(of: currentSplit?.persistentModelID) { _, _ in
-            selectedSplitDay = currentSplit?.todaysSplitDay
+            selectedSplitDay = currentSplit.flatMap(resolvedCurrentDay)
             isSwapMode = false
             swapFirstDay = nil
             swapSecondDay = nil
@@ -641,7 +641,17 @@ struct WorkoutSplitView: View {
 
     private func refreshRotationIfNeeded() {
         guard let split = currentSplit, split.isActive, split.mode == .rotation else { return }
-        split.refreshRotationIfNeeded(context: context)
+        _ = SplitScheduleResolver.resolve(split, context: context)
+        if selectedSplitDay == nil || selectedSplitDay?.split?.id != split.id {
+            selectedSplitDay = resolvedCurrentDay(for: split)
+        }
+    }
+
+    private func resolvedCurrentDay(for split: WorkoutSplit) -> WorkoutSplitDay? {
+        if split.isActive {
+            return SplitScheduleResolver.resolve(split, context: context).splitDay
+        }
+        return split.todaysSplitDay
     }
 
     private func deleteSplit() {

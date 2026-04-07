@@ -73,16 +73,22 @@ struct TrainingSummaryIntent: AppIntent {
 
         guard !(split.days?.isEmpty ?? true) else { return .result(dialog: "Your split doesn't have any days set up yet.") }
 
-        split.refreshRotationIfNeeded(context: context)
-
         let targetDate = day.date
-        guard let splitDay = split.splitDay(for: targetDate) else { return .result(dialog: "Couldn't determine your training day.") }
+        let resolution = SplitScheduleResolver.resolve(split, at: targetDate, context: context)
+        guard let splitDay = resolution.splitDay else { return .result(dialog: "Couldn't determine your training day.") }
 
         let dayLabel = day.label
 
+        if resolution.isPaused {
+            if let activeCondition = resolution.activeCondition {
+                return .result(dialog: "\(dayLabel) training is paused because you are \(activeCondition.kind.title.lowercased()).")
+            }
+            return .result(dialog: "\(dayLabel) training is paused.")
+        }
+
         if splitDay.isRestDay { return .result(dialog: "\(dayLabel) is a rest day.") }
 
-        guard let workoutPlan = splitDay.workoutPlan else {
+        guard let workoutPlan = resolution.workoutPlan else {
             let majorMuscles = splitDay.targetMuscles.filter(\.isMajor)
             let musclesSummary = ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName))
             if !musclesSummary.isEmpty { return .result(dialog: "You are hitting: \(musclesSummary).") }
@@ -92,6 +98,9 @@ struct TrainingSummaryIntent: AppIntent {
         }
 
         let summary = workoutPlan.spotlightSummary
+        if let contextNoteText = resolution.contextNoteText {
+            return .result(dialog: "\(dayLabel) training: \(summary). \(contextNoteText).")
+        }
         return .result(dialog: "\(dayLabel) training: \(summary).")
     }
 }

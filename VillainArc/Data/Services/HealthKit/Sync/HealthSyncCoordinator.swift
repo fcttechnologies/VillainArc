@@ -99,16 +99,12 @@ actor HealthSyncCoordinator {
             do {
                 let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
                 let shouldAdvanceAnchor = await shouldAdvanceWeightAnchor(for: result, allowsReadProbe: currentPassAllowsReadProbe, context: context)
-                let didReceiveWeightChanges = !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty
 
                 for sample in result.addedSamples { try upsertWeightEntry(for: sample, context: context) }
 
                 for deletedObject in result.deletedObjects { try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
 
                 try context.save()
-                if didReceiveWeightChanges {
-                    HealthMetricWidgetReloader.reloadWeight()
-                }
                 if shouldAdvanceAnchor {
                     HealthSyncPreferences.weightEntryAnchor = result.newAnchor
                 }
@@ -144,12 +140,6 @@ actor HealthSyncCoordinator {
             guard unavailableWorkouts.isEmpty == false || unavailableWeightEntries.isEmpty == false || unavailableSleepNights.isEmpty == false else { return }
 
             try context.save()
-            if unavailableWeightEntries.isEmpty == false {
-                HealthMetricWidgetReloader.reloadWeight()
-            }
-            if unavailableSleepNights.isEmpty == false {
-                HealthMetricWidgetReloader.reloadSleep()
-            }
         } catch { print("Failed to apply removed Apple Health data retention setting: \(error)") }
     }
 

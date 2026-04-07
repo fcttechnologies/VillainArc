@@ -292,10 +292,15 @@ enum HomeQuickAction: String {
             return
         }
 
-        split.refreshRotationIfNeeded(context: context)
+        let resolution = SplitScheduleResolver.resolve(split, context: context)
 
-        guard let todaysDay = split.todaysSplitDay else {
+        guard let todaysDay = resolution.splitDay else {
             showQuickActionToast(title: "No Workout Today", message: "Villain Arc couldn't determine today's workout.")
+            return
+        }
+
+        guard !resolution.isPaused else {
+            showQuickActionToast(title: "Training Paused", message: resolution.conditionStatusText ?? "Training is currently paused.")
             return
         }
 
@@ -304,7 +309,7 @@ enum HomeQuickAction: String {
             return
         }
 
-        guard let workoutPlan = todaysDay.workoutPlan else {
+        guard let workoutPlan = resolution.workoutPlan else {
             showQuickActionToast(title: "No Workout Plan", message: "You don't have a workout plan assigned for today.")
             return
         }

@@ -239,6 +239,7 @@ struct WorkoutSummaryView: View {
                             workout.title = "New Workout"
                         }
                         saveContext(context: context)
+                        WorkoutActivityManager.update(for: workout)
                     }
             }
         }
@@ -453,6 +454,7 @@ struct WorkoutSummaryView: View {
         ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
+        WorkoutActivityManager.end()
         SpotlightIndexer.index(workoutSession: workout)
         dismiss()
     }

@@ -13,132 +13,159 @@ struct WorkoutLiveActivity: Widget {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
             WorkoutLiveActivityExpandedView(attributes: context.attributes, state: context.state)
         } dynamicIsland: { context in
-            DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {
-                    WorkoutLiveActivityIslandLeadingMetricView(state: context.state)
-                        .padding(.leading, 6)
+            if context.state.isSummaryMode {
+                let slots = summaryCompactMetrics(attributes: context.attributes, state: context.state)
+
+                return DynamicIsland {
+                    DynamicIslandExpandedRegion(.leading) {
+                        WorkoutLiveActivitySummaryIslandMetricView(metric: slots.first)
+                            .padding(.leading, 6)
+                    }
+                    DynamicIslandExpandedRegion(.trailing) {
+                        WorkoutLiveActivitySummaryIslandMetricView(metric: slots.dropFirst().first, alignment: .trailing)
+                            .padding(.trailing, 6)
+                    }
+                    DynamicIslandExpandedRegion(.bottom) {
+                        WorkoutLiveActivitySummaryStatRow(state: context.state, isCompact: true)
+                            .padding(.horizontal, 6)
+                    }
+                } compactLeading: {
+                    WorkoutLiveActivitySummaryCompactMetricView(metric: slots.first)
+                } compactTrailing: {
+                    WorkoutLiveActivitySummaryCompactMetricView(metric: slots.dropFirst().first, alignment: .trailing)
+                } minimal: {
+                    Image(systemName: context.state.hasSummaryPRs ? "trophy.fill" : "checkmark.circle.fill")
+                        .foregroundStyle(context.state.hasSummaryPRs ? .yellow : .green)
+                        .accessibilityLabel(context.state.hasSummaryPRs ? "Workout completed with personal records" : "Workout completed")
                 }
-                DynamicIslandExpandedRegion(.trailing) {
+            } else {
+                return DynamicIsland {
+                    DynamicIslandExpandedRegion(.leading) {
+                        WorkoutLiveActivityIslandLeadingMetricView(state: context.state)
+                            .padding(.leading, 6)
+                    }
+                    DynamicIslandExpandedRegion(.trailing) {
+                        Group {
+                            if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
+                                Text(timerInterval: Date.now...endDate, countsDown: true)
+                                    .font(.title2)
+                                    .bold()
+                                    .frame(maxWidth: 55, alignment: .trailing)
+                                    .lineLimit(1)
+                            } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
+                                Button(intent: LiveActivityResumeRestTimerIntent()) {
+                                    HStack(spacing: 2) {
+                                        Image(systemName: "pause.fill")
+                                        Text(formatSeconds(remaining))
+                                            .bold()
+                                            .font(.title2)
+                                    }
+                                    .foregroundStyle(.yellow)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                                .accessibilityValue(formatSeconds(remaining))
+                            } else {
+                                let time = Date.now.timeIntervalSince(context.attributes.startDate)
+                                Text(context.attributes.startDate, style: .timer)
+                                    .font(.title2)
+                                    .bold()
+                                    .frame(maxWidth: time >= 600 ? (time >= 3600 ? 83 : 65) : 55, alignment: .trailing)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .fontDesign(.rounded)
+                    }
+                    DynamicIslandExpandedRegion(.bottom) {
+                        if let transientStatusText = context.state.transientStatusText {
+                            WorkoutLiveActivityTransientStatusView(text: transientStatusText)
+                        } else if let name = context.state.exerciseName {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(name)
+                                        .font(.title3)
+                                        .lineLimit(1)
+                                    Text(setDescription(context.state))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                .fontDesign(.rounded)
+                                .fontWeight(.semibold)
+                                Spacer()
+                                Button(intent: LiveActivityCompleteSetIntent()) {
+                                    Image(systemName: "checkmark")
+                                        .font(.body)
+                                        .fontWeight(.bold)
+                                }
+                                .accessibilityLabel(WorkoutLiveActivityAccessibilityText.completeSetLabel)
+                            }
+                            .padding(.leading, 6)
+                        } else if !context.state.hasExercises {
+                            Button(intent: LiveActivityAddExerciseIntent()) {
+                                Text("Tap to add an exercise")
+                                    .fontWeight(.semibold)
+                                    .fontDesign(.rounded)
+                                    .font(.title2)
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        } else {
+                            Text("All sets complete")
+                                .fontWeight(.semibold)
+                                .font(.title2)
+                                .fontDesign(.rounded)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                    }
+                } compactLeading: {
+                    if let liveHeartRateBPM = context.state.liveHeartRateBPM {
+                        HStack(spacing: 2) {
+                            Image(systemName: "heart.fill")
+                                .foregroundStyle(.red)
+                            Text(Int(liveHeartRateBPM.rounded()), format: .number)
+                                .bold()
+                                .font(.title2)
+                        }
+                    } else if let liveActiveEnergyBurned = context.state.liveActiveEnergyBurned {
+                        HStack(spacing: 2) {
+                            Image(systemName: "flame.fill")
+                                .foregroundStyle(.orange)
+                            Text(displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: context.state.energyUnit), format: .number.precision(.fractionLength(0)))
+                                .bold()
+                                .font(.title2)
+                        }
+                    } else {
+                        Image(systemName: "figure.strengthtraining.traditional")
+                            .foregroundStyle(.green)
+                    }
+                } compactTrailing: {
                     Group {
                         if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
                             Text(timerInterval: Date.now...endDate, countsDown: true)
-                                .font(.title2)
+                                .frame(maxWidth: 35)
                                 .bold()
-                                .frame(maxWidth: 55, alignment: .trailing)
-                                .lineLimit(1)
+                                .font(.title2)
                         } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
-                            Button(intent: LiveActivityResumeRestTimerIntent()) {
-                                HStack(spacing: 2) {
-                                    Image(systemName: "pause.fill")
-                                    Text(formatSeconds(remaining))
-                                        .bold()
-                                        .font(.title2)
-                                }
-                                .foregroundStyle(.yellow)
+                            HStack(spacing: 2) {
+                                Image(systemName: "pause.fill")
+                                Text(formatSeconds(remaining))
+                                    .bold()
+                                    .font(.title2)
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
-                            .accessibilityValue(formatSeconds(remaining))
+                            .foregroundStyle(.yellow)
                         } else {
                             let time = Date.now.timeIntervalSince(context.attributes.startDate)
                             Text(context.attributes.startDate, style: .timer)
-                                .font(.title2)
+                                .frame(maxWidth: time >= 600 ? (time >= 3600 ? 57 : 45) : 35, alignment: .trailing)
                                 .bold()
-                                .frame(maxWidth: time >= 600 ? (time >= 3600 ? 83 : 65) : 55, alignment: .trailing)
-                                .lineLimit(1)
+                                .font(.title2)
                         }
                     }
                     .fontDesign(.rounded)
-                }
-                DynamicIslandExpandedRegion(.bottom) {
-                    if let transientStatusText = context.state.transientStatusText {
-                        WorkoutLiveActivityTransientStatusView(text: transientStatusText)
-                    } else if let name = context.state.exerciseName {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(name)
-                                    .font(.title3)
-                                    .lineLimit(1)
-                                Text(setDescription(context.state))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                            .fontDesign(.rounded)
-                            .fontWeight(.semibold)
-                            Spacer()
-                            Button(intent: LiveActivityCompleteSetIntent()) {
-                                Image(systemName: "checkmark")
-                                    .font(.body)
-                                    .fontWeight(.bold)
-                            }
-                            .accessibilityLabel(WorkoutLiveActivityAccessibilityText.completeSetLabel)
-                        }
-                        .padding(.leading, 6)
-                    } else if !context.state.hasExercises {
-                        Button(intent: LiveActivityAddExerciseIntent()) {
-                            Text("Tap to add an exercise")
-                                .fontWeight(.semibold)
-                                .fontDesign(.rounded)
-                                .font(.title2)
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    } else {
-                        Text("All sets complete")
-                            .fontWeight(.semibold)
-                            .font(.title2)
-                            .fontDesign(.rounded)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                }
-            } compactLeading: {
-                if let liveHeartRateBPM = context.state.liveHeartRateBPM {
-                    HStack(spacing: 2) {
-                        Image(systemName: "heart.fill")
-                            .foregroundStyle(.red)
-                        Text(Int(liveHeartRateBPM.rounded()), format: .number)
-                            .bold()
-                            .font(.title2)
-                    }
-                } else if let liveActiveEnergyBurned = context.state.liveActiveEnergyBurned {
-                    HStack(spacing: 2) {
-                        Image(systemName: "flame.fill")
-                            .foregroundStyle(.orange)
-                        Text(displayedLiveEnergyValue(for: liveActiveEnergyBurned, unit: context.state.energyUnit), format: .number.precision(.fractionLength(0)))
-                            .bold()
-                            .font(.title2)
-                    }
-                } else {
+                } minimal: {
                     Image(systemName: "figure.strengthtraining.traditional")
                         .foregroundStyle(.green)
                 }
-            } compactTrailing: {
-                Group {
-                    if context.state.isTimerRunning, let endDate = context.state.timerEndDate {
-                        Text(timerInterval: Date.now...endDate, countsDown: true)
-                            .frame(maxWidth: 35)
-                            .bold()
-                            .font(.title2)
-                    } else if context.state.isTimerPaused, let remaining = context.state.timerPausedRemaining {
-                        HStack(spacing: 2) {
-                            Image(systemName: "pause.fill")
-                            Text(formatSeconds(remaining))
-                                .bold()
-                                .font(.title2)
-                        }
-                        .foregroundStyle(.yellow)
-                    } else {
-                        let time = Date.now.timeIntervalSince(context.attributes.startDate)
-                        Text(context.attributes.startDate, style: .timer)
-                            .frame(maxWidth: time >= 600 ? (time >= 3600 ? 57 : 45) : 35, alignment: .trailing)
-                            .bold()
-                            .font(.title2)
-                    }
-                }
-                .fontDesign(.rounded)
-            } minimal: {
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .foregroundStyle(.green)
             }
         }
         .supplementalActivityFamilies([.small])
@@ -154,18 +181,299 @@ struct WorkoutLiveActivityExpandedView: View {
         let isSmall = activityFamily == .small
 
         VStack(alignment: .leading, spacing: isSmall ? 6 : 8) {
-            if activityFamily == .small {
-                WorkoutLiveActivitySmallTopRow(attributes: attributes, state: state)
+            if state.isSummaryMode {
+                if activityFamily == .small {
+                    WorkoutLiveActivitySummarySmallTopRow(attributes: attributes, state: state)
+                } else {
+                    WorkoutLiveActivitySummaryTopRow(attributes: attributes, state: state)
+                }
+
+                Divider()
+
+                WorkoutLiveActivitySummaryBottomContent(state: state, isSmall: isSmall)
             } else {
-                WorkoutLiveActivityExpandedTopRow(attributes: attributes, state: state)
+                if activityFamily == .small {
+                    WorkoutLiveActivitySmallTopRow(attributes: attributes, state: state)
+                } else {
+                    WorkoutLiveActivityExpandedTopRow(attributes: attributes, state: state)
+                }
+
+                Divider()
+
+                WorkoutLiveActivityExpandedBottomContent(state: state, isSmall: isSmall)
             }
-
-            Divider()
-
-            WorkoutLiveActivityExpandedBottomContent(state: state, isSmall: isSmall)
         }
         .padding(isSmall ? 8 : 16)
         .activityBackgroundTint(isSmall ? .black : .clear)
+    }
+}
+
+private enum WorkoutLiveActivitySummaryMetric: Hashable {
+    case averageHeartRate(Double)
+    case totalEnergy(Double, String?)
+    case duration(Date, Date?)
+    case personalRecords(Int)
+    case completed
+}
+
+private struct WorkoutLiveActivitySummaryStatItem: Identifiable {
+    let id: String
+    let title: String
+    let value: String
+}
+
+private struct WorkoutLiveActivitySummaryTopRow: View {
+    let attributes: WorkoutActivityAttributes
+    let state: WorkoutActivityAttributes.ContentState
+
+    private var canShowMetricRow: Bool {
+        state.averageHeartRateBPM != nil && state.totalEnergyBurned != nil
+    }
+
+    var body: some View {
+        if canShowMetricRow {
+            HStack(spacing: 12) {
+                WorkoutLiveActivitySummaryTopMetricView(metric: .averageHeartRate(state.averageHeartRateBPM ?? 0))
+                Spacer(minLength: 0)
+                WorkoutLiveActivitySummaryTopMetricView(metric: .totalEnergy(state.totalEnergyBurned ?? 0, state.energyUnit))
+                Spacer(minLength: 0)
+                WorkoutLiveActivitySummaryTopMetricView(metric: .duration(attributes.startDate, state.endedAt))
+            }
+            .fontWeight(.semibold)
+        } else {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(state.title)
+                        .font(.title2)
+                        .lineLimit(1)
+                    Text(formattedWorkoutTimeRange(start: attributes.startDate, end: state.endedAt))
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+
+                Spacer()
+
+                WorkoutLiveActivitySummaryTopMetricView(metric: .duration(attributes.startDate, state.endedAt), unitVisibility: .always)
+            }
+        }
+    }
+}
+
+private struct WorkoutLiveActivitySummarySmallTopRow: View {
+    let attributes: WorkoutActivityAttributes
+    let state: WorkoutActivityAttributes.ContentState
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(summaryCompactMetrics(attributes: attributes, state: state).prefix(2).enumerated()), id: \.offset) { _, metric in
+                WorkoutLiveActivitySummaryCompactMetricView(metric: metric)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct WorkoutLiveActivitySummaryBottomContent: View {
+    let state: WorkoutActivityAttributes.ContentState
+    let isSmall: Bool
+
+    var body: some View {
+        WorkoutLiveActivitySummaryStatRow(state: state, isCompact: isSmall)
+    }
+}
+
+private struct WorkoutLiveActivitySummaryTopMetricView: View {
+    enum UnitVisibility {
+        case automatic
+        case always
+    }
+
+    let metric: WorkoutLiveActivitySummaryMetric
+    var unitVisibility: UnitVisibility = .automatic
+
+    var body: some View {
+        HStack(spacing: 4) {
+            metricIcon
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(metricValue)
+                    .font(.title3)
+                    .lineLimit(1)
+                    .monospacedDigit()
+
+                if let unitText = metricUnitText, unitVisibility == .always || !unitText.isEmpty {
+                    Text(unitText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .fontDesign(.rounded)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(metricAccessibilityLabel)
+    }
+
+    @ViewBuilder
+    private var metricIcon: some View {
+        switch metric {
+        case .averageHeartRate:
+            Image(systemName: "heart.fill")
+                .foregroundStyle(.red)
+        case .totalEnergy:
+            Image(systemName: "flame.fill")
+                .foregroundStyle(.orange)
+        case .duration:
+            Image(systemName: "clock.fill")
+                .foregroundStyle(.blue)
+        case .personalRecords:
+            Image(systemName: "trophy.fill")
+                .foregroundStyle(.yellow)
+        case .completed:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        }
+    }
+
+    private var metricValue: String {
+        switch metric {
+        case let .averageHeartRate(value):
+            "\(Int(value.rounded()))"
+        case let .totalEnergy(value, unit):
+            Int(displayedLiveEnergyValue(for: value, unit: unit).rounded()).formatted(.number)
+        case let .duration(startDate, endDate):
+            formattedWorkoutDuration(start: startDate, end: endDate)
+        case let .personalRecords(count):
+            "\(count)"
+        case .completed:
+            "Done"
+        }
+    }
+
+    private var metricUnitText: String? {
+        switch metric {
+        case .averageHeartRate:
+            "bpm"
+        case let .totalEnergy(_, unit):
+            displayedLiveEnergyUnitText(for: unit)
+        case .duration:
+            "Duration"
+        case .personalRecords:
+            "PRs"
+        case .completed:
+            nil
+        }
+    }
+
+    private var metricAccessibilityLabel: String {
+        switch metric {
+        case let .averageHeartRate(value):
+            "Average heart rate \(Int(value.rounded())) beats per minute"
+        case let .totalEnergy(value, unit):
+            "Total calories \(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded())) \(displayedLiveEnergyUnitText(for: unit))"
+        case let .duration(startDate, endDate):
+            "Duration \(formattedWorkoutDuration(start: startDate, end: endDate))"
+        case let .personalRecords(count):
+            "\(count) personal records"
+        case .completed:
+            "Workout completed"
+        }
+    }
+}
+
+private struct WorkoutLiveActivitySummaryCompactMetricView: View {
+    let metric: WorkoutLiveActivitySummaryMetric?
+    var alignment: Alignment = .leading
+
+    var body: some View {
+        if let metric {
+            HStack(spacing: 2) {
+                summaryMetricIcon(metric)
+                    .accessibilityHidden(true)
+
+                Text(summaryCompactMetricText(metric))
+                    .bold()
+                    .font(.title3)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: alignment)
+            .fontDesign(.rounded)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(summaryMetricAccessibilityLabel(metric))
+        }
+    }
+}
+
+private struct WorkoutLiveActivitySummaryIslandMetricView: View {
+    let metric: WorkoutLiveActivitySummaryMetric?
+    var alignment: Alignment = .leading
+
+    var body: some View {
+        if let metric {
+            HStack(spacing: 4) {
+                summaryMetricIcon(metric)
+                    .accessibilityHidden(true)
+
+                Text(summaryExpandedMetricText(metric))
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: alignment)
+            .fontDesign(.rounded)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(summaryMetricAccessibilityLabel(metric))
+        }
+    }
+}
+
+private struct WorkoutLiveActivitySummaryStatRow: View {
+    let state: WorkoutActivityAttributes.ContentState
+    let isCompact: Bool
+
+    private var statItems: [WorkoutLiveActivitySummaryStatItem] {
+        var items = [
+            WorkoutLiveActivitySummaryStatItem(id: "exercises", title: "Exercises", value: "\(state.completedExerciseCount ?? 0)"),
+            WorkoutLiveActivitySummaryStatItem(id: "sets", title: "Sets", value: "\(state.completedSetCount ?? 0)")
+        ]
+
+        if let prCount = state.summaryPRCount, prCount > 0 {
+            items.append(.init(id: "prs", title: "PRs", value: "\(prCount)"))
+        }
+
+        if let summaryVolume = state.summaryVolume {
+            items.append(.init(id: "volume", title: "Volume", value: formattedSummaryVolume(summaryVolume, unit: state.weightUnit)))
+        }
+
+        return items
+    }
+
+    var body: some View {
+        HStack(spacing: isCompact ? 8 : 10) {
+            ForEach(statItems) { item in
+                VStack(spacing: isCompact ? 2 : 4) {
+                    Text(item.title)
+                        .font(isCompact ? .caption2 : .caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Text(item.value)
+                        .font(isCompact ? .caption : .headline)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                .frame(maxWidth: .infinity)
+                .fontDesign(.rounded)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(item.title), \(item.value)")
+            }
+        }
     }
 }
 
@@ -478,6 +786,128 @@ private func displayedLiveEnergyUnitText(for unit: String?) -> String {
     default:
         return "kcal"
     }
+}
+
+private func summaryCompactMetrics(attributes: WorkoutActivityAttributes, state: WorkoutActivityAttributes.ContentState) -> [WorkoutLiveActivitySummaryMetric] {
+    var metrics: [WorkoutLiveActivitySummaryMetric] = []
+
+    if let averageHeartRateBPM = state.averageHeartRateBPM {
+        metrics.append(.averageHeartRate(averageHeartRateBPM))
+    }
+
+    if let totalEnergyBurned = state.totalEnergyBurned {
+        metrics.append(.totalEnergy(totalEnergyBurned, state.energyUnit))
+    }
+
+    metrics.append(.duration(attributes.startDate, state.endedAt))
+
+    if let prCount = state.summaryPRCount, prCount > 0 {
+        metrics.append(.personalRecords(prCount))
+    } else {
+        metrics.append(.completed)
+    }
+
+    return Array(metrics.prefix(2))
+}
+
+@ViewBuilder
+private func summaryMetricIcon(_ metric: WorkoutLiveActivitySummaryMetric) -> some View {
+    switch metric {
+    case .averageHeartRate:
+        Image(systemName: "heart.fill")
+            .foregroundStyle(.red)
+    case .totalEnergy:
+        Image(systemName: "flame.fill")
+            .foregroundStyle(.orange)
+    case .duration:
+        Image(systemName: "clock.fill")
+            .foregroundStyle(.blue)
+    case .personalRecords:
+        Image(systemName: "trophy.fill")
+            .foregroundStyle(.yellow)
+    case .completed:
+        Image(systemName: "checkmark.circle.fill")
+            .foregroundStyle(.green)
+    }
+}
+
+private func summaryCompactMetricText(_ metric: WorkoutLiveActivitySummaryMetric) -> String {
+    switch metric {
+    case let .averageHeartRate(value):
+        Int(value.rounded()).formatted(.number)
+    case let .totalEnergy(value, unit):
+        Int(displayedLiveEnergyValue(for: value, unit: unit).rounded()).formatted(.number)
+    case let .duration(startDate, endDate):
+        formattedWorkoutDuration(start: startDate, end: endDate)
+    case let .personalRecords(count):
+        "\(count)"
+    case .completed:
+        "Done"
+    }
+}
+
+private func summaryExpandedMetricText(_ metric: WorkoutLiveActivitySummaryMetric) -> String {
+    switch metric {
+    case let .averageHeartRate(value):
+        "\(Int(value.rounded())) bpm"
+    case let .totalEnergy(value, unit):
+        "\(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded()).formatted(.number)) \(displayedLiveEnergyUnitText(for: unit))"
+    case let .duration(startDate, endDate):
+        formattedWorkoutDuration(start: startDate, end: endDate)
+    case let .personalRecords(count):
+        "\(count) PRs"
+    case .completed:
+        "Done"
+    }
+}
+
+private func summaryMetricAccessibilityLabel(_ metric: WorkoutLiveActivitySummaryMetric) -> String {
+    switch metric {
+    case let .averageHeartRate(value):
+        "Average heart rate \(Int(value.rounded())) beats per minute"
+    case let .totalEnergy(value, unit):
+        "Total calories \(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded())) \(displayedLiveEnergyUnitText(for: unit))"
+    case let .duration(startDate, endDate):
+        "Duration \(formattedWorkoutDuration(start: startDate, end: endDate))"
+    case let .personalRecords(count):
+        "\(count) personal records"
+    case .completed:
+        "Workout completed"
+    }
+}
+
+private func formattedWorkoutDuration(start: Date, end: Date?) -> String {
+    let endDate = end ?? .now
+    let totalSeconds = max(0, Int(endDate.timeIntervalSince(start)))
+    let hours = totalSeconds / 3600
+    let minutes = (totalSeconds % 3600) / 60
+
+    if hours > 0 {
+        return "\(hours)h \(minutes)m"
+    }
+
+    return "\(minutes)m"
+}
+
+private func formattedWorkoutTimeRange(start: Date, end: Date?) -> String {
+    guard let end else {
+        return start.formatted(date: .omitted, time: .shortened)
+    }
+
+    return "\(start.formatted(date: .omitted, time: .shortened)) - \(end.formatted(date: .omitted, time: .shortened))"
+}
+
+private func formattedSummaryVolume(_ volumeInKilograms: Double, unit: String?) -> String {
+    let displayedVolume: Double
+    switch unit {
+    case "lbs":
+        displayedVolume = volumeInKilograms * 2.2046226218
+    default:
+        displayedVolume = volumeInKilograms
+    }
+
+    let formatted = displayedVolume.formatted(.number.precision(.fractionLength(0...1)))
+    return "\(formatted) \(unit ?? "kg")"
 }
 
 private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> String {

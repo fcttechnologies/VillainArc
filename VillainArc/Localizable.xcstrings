@@ -54,12 +54,35 @@
         }
       }
     },
+    "%@ training is paused because you are %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ training is paused because you are %2$@."
+          }
+        }
+      }
+    },
+    "%@ training is paused." : {
+
+    },
     "%@ training: %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ training: %2$@."
+          }
+        }
+      }
+    },
+    "%@ training: %@. %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ training: %2$@. %3$@."
           }
         }
       }
@@ -1062,9 +1085,6 @@
 
     },
     "Energy. Update Apple Health permissions so your health metrics appear here." : {
-
-    },
-    "Enjoy the day off." : {
 
     },
     "Enjoy your day off!" : {
@@ -2087,6 +2107,9 @@
 
     },
     "Paused" : {
+
+    },
+    "Paused until changed" : {
 
     },
     "Pauses the current rest timer." : {
@@ -3170,6 +3193,12 @@
 
     },
     "Training Days" : {
+
+    },
+    "Training is currently paused because of your active condition." : {
+
+    },
+    "Training is paused" : {
 
     },
     "Training Normally" : {

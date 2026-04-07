@@ -42,7 +42,7 @@ We want to extend the system in a way that respects those boundaries instead of 
 - Only snapshot context when it is actually used for reasoning, so historical interpretation does not drift later.
 - Treat the absence of a non-normal condition as the default "training normally" state.
 
-Sleep sync now exists in the Health integration layer. `TrainingConditionPeriod` also now exists as an app-owned model with a Health-tab status surface, editor, and history. Use `Documentation/HEALTHKIT_INTEGRATION.md`, `Documentation/PROJECT_GUIDE.md`, and `Documentation/ARCHITECTURE.md` for the current implementation details. The roadmap below starts with the next layer to build on top of that foundation.
+Sleep sync now exists in the Health integration layer. `TrainingConditionPeriod` also now exists as an app-owned model with a Health-tab status surface, editor, and history. The split/context resolver layer is also now in place on top of `WorkoutSplit` and `TrainingConditionPeriod`. Use `Documentation/HEALTHKIT_INTEGRATION.md`, `Documentation/PROJECT_GUIDE.md`, and `Documentation/ARCHITECTURE.md` for the current implementation details. The roadmap below now mainly describes the remaining session-override layer that builds on top of that foundation.
 
 ## Phase 1 Status: Complete
 
@@ -68,10 +68,28 @@ Important behavior already implemented:
 - editing the same active kind updates the existing period in place
 - an `endDate` remains active through the end of that day in the UI, while being stored as an exclusive upper bound internally
 
-With that integration done, the remaining core product work is:
+## Phase 2 Status: Complete
 
-- connect condition periods to workout split resolution
-- later add session adjustments / session overrides
+The split/context resolver layer is now also in place.
+
+Current shipped shape:
+
+- `SplitScheduleResolver`
+- `WorkoutSplit` remains the raw schedule model
+- active condition periods can now affect effective split resolution without being shoved directly into `WorkoutSplit`
+- paused conditions freeze effective split progression instead of letting rotation continue to advance blindly
+- home UI, quick actions, and workout-split intents now use the same resolved behavior
+
+Important behavior already implemented:
+
+- weekly mode now distinguishes a true split rest day from a condition-driven pause
+- rotation mode no longer auto-advances through paused periods
+- paused conditions block "today" actions that would otherwise open or start the scheduled workout
+- non-paused conditions can influence scheduling behavior without mutating the split itself
+
+With that integration done, the main remaining core product work is:
+
+- add session adjustments / session overrides
 
 ## Why This Model Exists
 
@@ -135,36 +153,7 @@ Recommendation:
 - do not remove it just because `TrainingConditionPeriod` is added
 - if we ever rename it, `SessionStartContext` would be a better name than removing the concept
 
-## Next Phase: Split Scheduling Resolver
-
-Condition periods should improve split behavior, but they should not be shoved directly into `WorkoutSplit`.
-
-Recommended approach:
-
-- keep `WorkoutSplit` as the raw schedule model
-- add a resolver layer such as `SplitScheduleResolver` or `TrainingContextResolver`
-
-This resolver should combine:
-
-- the active split
-- the current date
-- any active condition period
-
-The resolver should decide:
-
-- today's effective split day
-- whether the split is paused
-- whether rotation should advance
-- how the UI should describe the current state
-
-Desired split behavior:
-
-- weekly mode should distinguish "paused" from "missed"
-- rotation mode should not blindly advance during paused periods
-- home UI should communicate pause state clearly
-- intents and navigation should use the same resolved behavior
-
-## Later Phase: Session Adjustment / Session Override System
+## Remaining Phase: Session Adjustment / Session Override System
 
 Once the app understands condition periods, the next major system is temporary workout adaptation.
 
@@ -253,10 +242,9 @@ Likely future additions:
 
 ## Recommended Working Order
 
-1. Add a split/context resolver layer on top of `TrainingConditionPeriod`.
-2. Add session adjustments / session overrides.
-3. Start feeding context into suggestion generation and outcome resolution.
-4. Later add training phase and readiness models if needed.
+1. Add session adjustments / session overrides.
+2. Start feeding context into suggestion generation and outcome resolution.
+3. Later add training phase and readiness models if needed.
 
 ## Final Product Direction
 

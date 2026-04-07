@@ -442,16 +442,18 @@ struct WorkoutView: View {
         case .finished:
             workout.convertSetWeightsToKg(from: weightUnit)
             saveContext(context: context)
-            endWorkoutSession(shouldDismiss: false)
+            endWorkoutSession(shouldDismiss: false, endLiveActivity: false)
+            WorkoutActivityManager.update(for: workout)
             Task {
                 await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workout, context: context)
+                WorkoutActivityManager.update(for: workout)
                 await IntentDonations.donateFinishWorkout()
                 await IntentDonations.donateLastWorkoutSummary()
             }
         case .workoutDeleted:
             saveContext(context: context)
             HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
-            endWorkoutSession(shouldDismiss: true)
+            endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
         }
     }
     
@@ -459,15 +461,17 @@ struct WorkoutView: View {
         HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
         context.delete(workout)
         Task { await IntentDonations.donateCancelWorkout() }
-        endWorkoutSession(shouldDismiss: true)
+        endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
     }
 
-    private func endWorkoutSession(shouldDismiss: Bool) {
+    private func endWorkoutSession(shouldDismiss: Bool, endLiveActivity: Bool) {
         Haptics.selection()
         restTimer.stop()
         router.activeWorkoutDialog = nil
         router.activeWorkoutSheet = nil
-        WorkoutActivityManager.end()
+        if endLiveActivity {
+            WorkoutActivityManager.end()
+        }
         if shouldDismiss {
             dismiss()
         }

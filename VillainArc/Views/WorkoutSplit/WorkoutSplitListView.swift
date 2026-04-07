@@ -149,6 +149,12 @@ struct WorkoutSplitListView: View {
 
     private func subtitleText(for split: WorkoutSplit, isActive: Bool) -> String {
         if isActive {
+            let resolution = SplitScheduleResolver.resolve(split, context: context, syncProgress: false)
+            if resolution.isPaused {
+                return resolution.conditionStatusText ?? String(localized: "Paused until changed")
+            }
+
+            let base: String
             switch split.mode {
             case .weekly:
                 let offset = split.normalizedWeeklyOffset
@@ -162,12 +168,14 @@ struct WorkoutSplitListView: View {
                 default:
                     status = String(localized: "\(behindDays) days behind")
                 }
-                return String(localized: "Weekly · \(status)")
+                base = String(localized: "Weekly · \(status)")
             case .rotation:
                 let count = max(1, split.sortedDays.count)
-                let dayNumber = (split.todaysDayIndex ?? 0) + 1
-                return String(localized: "Rotation · Cycle Day \(dayNumber) of \(count)")
+                let dayNumber = (resolution.dayIndex ?? 0) + 1
+                base = String(localized: "Rotation · Cycle Day \(dayNumber) of \(count)")
             }
+
+            return base
         }
         switch split.mode {
         case .weekly:

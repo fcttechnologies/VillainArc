@@ -178,6 +178,8 @@
 				Data/Services/HealthKit/HealthMirrorSupport.swift,
 				Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift,
 				Data/Services/HealthKit/Sync/StepsCoachingEvaluator.swift,
+				Data/Services/Training/SplitScheduleResolver.swift,
+				Data/Services/Training/TrainingConditionStore.swift,
 				Data/Services/Workout/RestTimerState.swift,
 				Data/SharedModelContainer.swift,
 				Helpers/ExerciseSearch.swift,

@@ -29,7 +29,9 @@ struct WorkoutPlanDetailView: View {
     }
 
     private var isTodaysActiveSplitPlan: Bool {
-        guard let activeSplit = activeSplits.first, let todaysPlan = activeSplit.todaysSplitDay?.workoutPlan else { return false }
+        guard let activeSplit = activeSplits.first else { return false }
+        let resolution = SplitScheduleResolver.resolve(activeSplit, context: context, syncProgress: false)
+        guard !resolution.isPaused, let todaysPlan = resolution.workoutPlan else { return false }
         return todaysPlan.id == plan.id
     }
 

@@ -18,13 +18,24 @@ struct TrainingConditionHistoryView: View {
     private var endedPeriods: [TrainingConditionPeriod] { periods.filter { !$0.isActive() } }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+        List {
+            Section {
                 currentSection
-                historySection
+            } header: {
+                Text("Current")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
             }
-            .padding()
+
+            Section {
+                historySection
+            } header: {
+                Text("History")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .listStyle(.plain)
         .navigationTitle("Condition")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
@@ -50,49 +61,50 @@ struct TrainingConditionHistoryView: View {
 
     @ViewBuilder
     private var currentSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Current")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
-            if let activePeriod {
-                TrainingConditionHistoryRow(period: activePeriod, isActive: true, onEdit: {
-                    Haptics.selection()
-                    editorMode = .current
-                }, onEnd: {
-                    Haptics.selection()
-                    try? TrainingConditionStore.endActiveCondition(activePeriod, context: context)
-                })
-            } else {
-                ContentUnavailableView("Training Normally", systemImage: "figure.strengthtraining.traditional", description: Text("Add a condition when illness, injury, travel, recovery, or time off changes how you should train."))
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .glassEffect(.regular, in: .rect(cornerRadius: 18))
-            }
+        if let activePeriod {
+            TrainingConditionHistoryRow(period: activePeriod, isActive: true, onEdit: {
+                Haptics.selection()
+                editorMode = .current
+            }, onEnd: {
+                Haptics.selection()
+                try? TrainingConditionStore.endActiveCondition(activePeriod, context: context)
+            })
+            .listRowSeparator(.hidden)
+        } else {
+            ContentUnavailableView("Training Normally", systemImage: "figure.strengthtraining.traditional", description: Text("Add a condition when illness, injury, travel, recovery, or time off changes how you should train."))
+                .frame(maxWidth: .infinity)
+                .padding()
+                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                .listRowSeparator(.hidden)
         }
     }
 
     @ViewBuilder
     private var historySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("History")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
-            if endedPeriods.isEmpty {
-                ContentUnavailableView("No Condition History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90", description: Text("Ended or replaced conditions will appear here."))
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .glassEffect(.regular, in: .rect(cornerRadius: 18))
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(endedPeriods) { period in
-                        TrainingConditionHistoryRow(period: period, isActive: false)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionRow(period))
+        if endedPeriods.isEmpty {
+            ContentUnavailableView("No Condition History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90", description: Text("Ended or replaced conditions will appear here."))
+                .frame(maxWidth: .infinity)
+                .padding()
+                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                .listRowSeparator(.hidden)
+        } else {
+            ForEach(endedPeriods) { period in
+                TrainingConditionHistoryRow(period: period, isActive: false)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionRow(period))
+                    .listRowSeparator(.hidden)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            delete(period)
+                        }
                     }
-                }
             }
         }
+    }
+
+    private func delete(_ period: TrainingConditionPeriod) {
+        Haptics.selection()
+        context.delete(period)
+        saveContext(context: context)
     }
 }
 

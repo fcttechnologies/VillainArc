@@ -35,8 +35,10 @@ struct WorkoutSplitSectionView: View {
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitEmptyState)
         } else if let activeSplit {
-            if let day = activeSplit.todaysSplitDay {
-                activeSplitCard(split: activeSplit, day: day)
+            let resolution = SplitScheduleResolver.resolve(activeSplit, context: context, syncProgress: false)
+
+            if let day = resolution.splitDay {
+                activeSplitCard(resolution: resolution, day: day)
                     .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitActiveRow)
             } else {
                 splitUnavailableView(title: String(localized: "No Split Day Configured"), description: String(localized: "Add days to your split to get started.")) {
@@ -69,10 +71,11 @@ struct WorkoutSplitSectionView: View {
         .accessibilityHint(AccessibilityText.workoutSplitUnavailableHint)
     }
     
-    private func activeSplitCard(split: WorkoutSplit, day: WorkoutSplitDay) -> some View {
-        let isRestDay = day.isRestDay
-        let titleText = isRestDay ? String(localized: "Today is your rest day") : activeSplitTitle(for: day)
-        let subtitleText = isRestDay ? String(localized: "Enjoy the day off.") : activeSplitSubtitle(for: split)
+    private func activeSplitCard(resolution: SplitScheduleResolution, day: WorkoutSplitDay) -> some View {
+        let isPaused = resolution.isPaused
+        let isRestDay = resolution.isRestDay
+        let titleText = activeSplitTitle(for: resolution, day: day)
+        let subtitleText = activeSplitSubtitle(for: resolution)
         
         return ZStack(alignment: .trailing) {
             Button {
@@ -89,7 +92,7 @@ struct WorkoutSplitSectionView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    if !isRestDay, day.workoutPlan != nil {
+                    if !isPaused, !isRestDay, day.workoutPlan != nil {
                         Color.clear
                             .frame(width: 44, height: 44)
                             .accessibilityHidden(true)
@@ -105,7 +108,7 @@ struct WorkoutSplitSectionView: View {
             .accessibilityValue(subtitleText)
             .accessibilityHint(AccessibilityText.workoutSplitActiveRowHint)
             
-            if !isRestDay, let plan = day.workoutPlan {
+            if !isPaused, !isRestDay, let plan = resolution.workoutPlan {
                 Button {
                     appRouter.navigate(to: .workoutPlanDetail(plan, true))
                     Task { await IntentDonations.donateOpenTodaysPlan() }
@@ -122,18 +125,29 @@ struct WorkoutSplitSectionView: View {
         }
     }
     
-    private func activeSplitTitle(for day: WorkoutSplitDay) -> String {
+    private func activeSplitTitle(for resolution: SplitScheduleResolution, day: WorkoutSplitDay) -> String {
+        if resolution.isPaused {
+            return String(localized: "Training is paused")
+        }
+        if resolution.isRestDay {
+            return String(localized: "Today is your rest day")
+        }
+
         let name = day.name.trimmingCharacters(in: .whitespacesAndNewlines)
         return name.isEmpty ? String(localized: "Unnamed split day") : name
     }
     
-    private func activeSplitSubtitle(for split: WorkoutSplit) -> String {
-        switch split.mode {
+    private func activeSplitSubtitle(for resolution: SplitScheduleResolution) -> String {
+        if resolution.isPaused {
+            return resolution.conditionStatusText ?? String(localized: "Paused until changed")
+        }
+
+        switch resolution.split.mode {
         case .weekly:
-            return String(localized: "Weekly · \(weeklyScheduleStatus(for: split))")
+            return String(localized: "Weekly · \(weeklyScheduleStatus(for: resolution.split))")
         case .rotation:
-            let count = max(1, split.sortedDays.count)
-            let dayNumber = (split.todaysDayIndex ?? 0) + 1
+            let count = max(1, resolution.split.sortedDays.count)
+            let dayNumber = (resolution.dayIndex ?? 0) + 1
             return String(localized: "Rotation · Cycle Day \(dayNumber) of \(count)")
         }
     }
@@ -152,8 +166,8 @@ struct WorkoutSplitSectionView: View {
     }
     
     private func refreshRotationIfNeeded() {
-        guard let split = activeSplit, split.mode == .rotation else { return }
-        split.refreshRotationIfNeeded(context: context)
+        guard let split = activeSplit else { return }
+        _ = SplitScheduleResolver.resolve(split, context: context)
     }
 }
 

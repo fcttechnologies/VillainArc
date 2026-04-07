@@ -200,7 +200,14 @@ private func workoutSplitSummary(for split: WorkoutSplit, days: [WorkoutSplitFul
     let dayCount = days.count
     let base = split.mode.summaryLabel
     let dayText = "\(dayCount) \(dayCount == 1 ? "day" : "days")"
-    guard let currentDay = split.todaysSplitDay else {
+    let context = SharedModelContainer.container.mainContext
+    let resolution = SplitScheduleResolver.resolve(split, context: context, syncProgress: false)
+
+    if resolution.isPaused, let conditionStatusText = resolution.conditionStatusText {
+        return "\(base) • \(dayText) • \(conditionStatusText)"
+    }
+
+    guard let currentDay = resolution.splitDay else {
         return "\(base) • \(dayText)"
     }
 

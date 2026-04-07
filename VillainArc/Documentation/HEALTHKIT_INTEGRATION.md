@@ -199,6 +199,7 @@ Weight export follows the same idea:
 
 1. `HealthSyncCoordinator.syncAll()`
 2. `HealthExportCoordinator.reconcilePendingExports()`
+3. `HealthMetricWidgetReloader.reloadAllHealthMetrics()`
 
 That order matters. Sync happens first so already-saved Health data can relink before fallback export tries to create anything.
 
@@ -216,7 +217,7 @@ Those paths:
 - write through background `ModelContext`s
 - use rerun-on-burst behavior instead of dropping overlapping observer callbacks
 - only advance anchors when the query result or an allowed foreground probe provides enough evidence that reads are truly progressing
-- reload the weight widget only when a weight row actually changes or when local weight-goal state changes
+- keep observer/background sync focused on persisted data updates instead of widget reload dispatch
 
 ### Daily Metric Sync
 
@@ -243,11 +244,7 @@ The metrics are coalesced into two sync families:
 
 That reduces redundant work when related Health types update together.
 
-Widget reload behavior now follows those persisted cache updates instead of an always-on timeline:
-
-- steps widget reloads when step summaries are actually refreshed or when a steps goal changes
-- energy widget reloads when active or resting energy summaries are actually refreshed
-- walking/running distance updates do not trigger a dedicated widget reload because there is no distance widget
+Widget reload behavior for these metrics follows user-driven changes (like goal edits) and explicit full reloads after `syncNow()`. Walking/running distance still has no dedicated widget.
 
 ### Sleep Sync
 
@@ -273,7 +270,7 @@ The sleep design is:
 - deletions still rebuild the broader known synced range because deleted objects do not carry the old sample timestamps
 - raw per-stage intervals still stay in HealthKit for on-demand stage detail loading
 
-The sleep widget reload is tied to actual persisted sleep-night refreshes or local removal-retention changes, not to a periodic widget timeline.
+Sleep cache rebuilds run in background sync, and widget refresh now comes from the shared reload policy (manual `syncNow()` full reload plus timeline cadence), not from sleep sync directly dispatching widget reloads.
 
 ## Anchor Advancement Guard
 
@@ -367,31 +364,16 @@ Important limitation:
 
 ## Health Widgets
 
-The Health widgets are now event-driven instead of self-refreshing on a fixed timer.
+The Health widgets now use a hybrid refresh model.
 
 The current design is:
 
-- widget timelines use `.never`
-- the app explicitly reloads widget timelines when the underlying persisted model changes
-- `syncNow()` no longer ends with a blanket reload of every Health widget
+- widget timelines refresh every 30 minutes (`.after`)
+- user-driven edits still trigger targeted widget reloads (for example weight entry/goal changes, steps goal changes, and unit changes that affect widget rendering)
+- `syncNow()` ends with a blanket reload of every Health widget
+- observer/background sync paths focus on data persistence and do not directly dispatch widget reloads
 
-That means widget updates now track real data changes more closely:
-
-- weight widget:
-  - adding, deleting, or importing weight entries
-  - creating, replacing, deleting, or completing weight goals
-  - changing weight units
-- sleep widget:
-  - refreshed `HealthSleepNight` rows
-  - removing unavailable sleep nights when retention is off
-- steps widget:
-  - refreshed `HealthStepsDistance` summaries
-  - creating, replacing, or deleting steps goals
-- energy widget:
-  - refreshed `HealthEnergy` summaries
-  - changing energy units
-
-This avoids constant widget refresh churn while still keeping widgets aligned with the actual local cache rows and goal state they render.
+That means the widgets can update quickly on direct user edits, stay aligned after manual full sync, and still self-correct on timeline cadence if background observer timing is delayed.
 
 ## Removed Data and Retention
 
