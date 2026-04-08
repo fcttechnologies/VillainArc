@@ -255,7 +255,7 @@ private struct WeightHistoryMainSection: View {
                                         .foregroundStyle(.secondary)
                                 }
                             } else {
-                                Text("-")
+                                Text(verbatim: "-")
                             }
                         }
                         Spacer()

@@ -154,7 +154,7 @@ struct ExerciseView: View {
                         Spacer()
                         Text(shouldUseTargetReference ? "Target" : "Previous")
                         Spacer()
-                        Text(" ")
+                        Text(verbatim: " ")
                         Spacer()
                     }
                     .font(.title3)

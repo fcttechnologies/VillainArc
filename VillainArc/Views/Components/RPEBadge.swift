@@ -58,7 +58,7 @@ enum RPEValue {
             case .actual: return "Nothing in the tank"
             case .target: return "Maximum effort"
             }
-        default: return " "
+        default: return String()
         }
     }
 

@@ -176,7 +176,7 @@ private struct HealthEnergyMainChartSection: View {
                                     .foregroundStyle(.secondary)
                             }
                         } else {
-                            Text("-")
+                            Text(verbatim: "-")
                         }
                     }
                     .font(.largeTitle)

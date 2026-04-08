@@ -87,7 +87,7 @@ struct TrainingConditionEditorView: View {
                 .padding()
             }
             .navigationTitle("Activity Status")
-            .navigationSubtitle(subtitleText ?? "")
+            .navigationSubtitle(subtitleText ?? String())
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

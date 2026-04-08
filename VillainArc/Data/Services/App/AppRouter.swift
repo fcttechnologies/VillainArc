@@ -305,7 +305,7 @@ enum HomeQuickAction: String {
         }
 
         guard !todaysDay.isRestDay else {
-            showQuickActionToast(title: "Rest Day", message: "Today is a rest day. Enjoy the recovery.")
+            showQuickActionToast(title: "Rest Day", message: "Today is a rest day. Enjoy your recovery.")
             return
         }
 

@@ -484,7 +484,7 @@ private struct WorkoutPlanSetRowView: View {
     var body: some View {
         Group {
             Menu {
-                Picker("", selection: Binding(get: { set.type }, set: { newValue in
+                Picker(selection: Binding(get: { set.type }, set: { newValue in
                     let oldValue = set.type
                     set.type = newValue
                     if newValue != oldValue {
@@ -499,6 +499,8 @@ private struct WorkoutPlanSetRowView: View {
                         Text(type.displayName)
                             .tag(type)
                     }
+                } label: {
+                    EmptyView()
                 }
                 Divider()
                 if set.type != .warmup {

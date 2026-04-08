@@ -387,7 +387,7 @@ private struct SleepHistoryMainSection: View {
                 if let headerDuration {
                     SleepDurationValueView(duration: headerDuration)
                 } else {
-                    Text("-")
+                    Text(verbatim: "-")
                         .font(.largeTitle)
                         .bold()
                 }

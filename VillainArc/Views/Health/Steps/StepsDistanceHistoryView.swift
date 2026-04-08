@@ -188,7 +188,7 @@ private struct StepsDistanceMainChartSection: View {
                                     .foregroundStyle(.secondary)
                             }
                         } else {
-                            Text("-")
+                            Text(verbatim: "-")
                         }
                     }
                     .font(.largeTitle)
