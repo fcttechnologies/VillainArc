@@ -139,9 +139,24 @@ import SwiftData
 }
 
 extension WorkoutSplit {
+    static var entityProjectionProperties: [PartialKeyPath<WorkoutSplit>] {
+        [
+            \.id,
+            \.title,
+            \.mode,
+            \.isActive,
+            \.weeklySplitOffset,
+            \.rotationCurrentIndex,
+            \.rotationLastUpdatedDate
+        ]
+    }
+
     static func matchingTitle(_ string: String) -> FetchDescriptor<WorkoutSplit> {
         let predicate = #Predicate<WorkoutSplit> { $0.title.localizedStandardContains(string) }
-        return FetchDescriptor(predicate: predicate)
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.relationshipKeyPathsForPrefetching = [\.days]
+        descriptor.propertiesToFetch = entityProjectionProperties
+        return descriptor
     }
 
     static var active: FetchDescriptor<WorkoutSplit> {

@@ -97,12 +97,28 @@ extension WorkoutSplitEntity: Transferable {
 
 struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
     @MainActor
+    private func makeSplitDescriptor(
+        predicate: Predicate<WorkoutSplit>? = nil
+    ) -> FetchDescriptor<WorkoutSplit> {
+        var descriptor: FetchDescriptor<WorkoutSplit>
+        if let predicate {
+            descriptor = FetchDescriptor(predicate: predicate)
+        } else {
+            descriptor = FetchDescriptor()
+        }
+
+        descriptor.relationshipKeyPathsForPrefetching = [\.days]
+        descriptor.propertiesToFetch = WorkoutSplit.entityProjectionProperties
+        return descriptor
+    }
+
+    @MainActor
     func entities(for identifiers: [WorkoutSplitEntity.ID]) async throws -> [WorkoutSplitEntity] {
         guard !identifiers.isEmpty else { return [] }
         let context = SharedModelContainer.container.mainContext
         let ids = identifiers
         let predicate = #Predicate<WorkoutSplit> { ids.contains($0.id) }
-        let splits = (try? context.fetch(FetchDescriptor(predicate: predicate))) ?? []
+        let splits = (try? context.fetch(makeSplitDescriptor(predicate: predicate))) ?? []
         let byID = Dictionary(splits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return identifiers.compactMap { byID[$0] }.map(WorkoutSplitEntity.init)
     }
@@ -110,7 +126,7 @@ struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
     @MainActor
     func suggestedEntities() async throws -> [WorkoutSplitEntity] {
         let context = SharedModelContainer.container.mainContext
-        let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+        let splits = (try? context.fetch(makeSplitDescriptor())) ?? []
         return sortedWorkoutSplits(splits).map(WorkoutSplitEntity.init)
     }
 
@@ -119,7 +135,7 @@ struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
         let context = SharedModelContainer.container.mainContext
         guard !trimmed.isEmpty else {
-            let splits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+            let splits = (try? context.fetch(makeSplitDescriptor())) ?? []
             let orderedSplits = sortedWorkoutSplits(splits)
             return orderedSplits.map(WorkoutSplitEntity.init)
         }
@@ -130,7 +146,7 @@ struct WorkoutSplitEntityQuery: EntityQuery, EntityStringQuery {
             return orderedTitleMatches.map(WorkoutSplitEntity.init)
         }
 
-        let fallbackSplits = (try? context.fetch(FetchDescriptor<WorkoutSplit>())) ?? []
+        let fallbackSplits = (try? context.fetch(makeSplitDescriptor())) ?? []
         let orderedFallbackSplits = sortedWorkoutSplits(fallbackSplits)
 
         return orderedFallbackSplits

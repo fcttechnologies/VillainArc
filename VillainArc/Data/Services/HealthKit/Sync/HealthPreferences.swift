@@ -68,7 +68,7 @@ nonisolated enum HealthSyncPreferences {
 nonisolated enum HealthReadProbe {
     static func hasReadableWorkoutSampleBeyondKnownLocalCount() async -> Bool {
         let localContext = ModelContext(SharedModelContainer.container)
-        let knownLocalWorkoutCount = ((try? localContext.fetch(HealthWorkout.linkedToLocalSession)) ?? []).count
+        let knownLocalWorkoutCount = (try? localContext.fetchCount(HealthWorkout.linkedToLocalSession)) ?? 0
         let descriptor = HKSampleQueryDescriptor(predicates: [.workout()], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: knownLocalWorkoutCount + 1)
 
         guard let workouts = try? await descriptor.result(for: HealthAuthorizationManager.healthStore) else { return false }
@@ -77,7 +77,7 @@ nonisolated enum HealthReadProbe {
 
     static func hasReadableBodyMassSampleBeyondKnownLocalCount() async -> Bool {
         let localContext = ModelContext(SharedModelContainer.container)
-        let knownLocalWeightCount = ((try? localContext.fetch(WeightEntry.exportedToHealth)) ?? []).count
+        let knownLocalWeightCount = (try? localContext.fetchCount(WeightEntry.exportedToHealth)) ?? 0
         let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.bodyMassType)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: knownLocalWeightCount + 1)
 
         guard let samples = try? await descriptor.result(for: HealthAuthorizationManager.healthStore) else { return false }

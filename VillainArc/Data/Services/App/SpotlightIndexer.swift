@@ -55,7 +55,9 @@ enum SpotlightIndexer {
 
         // ExerciseHistory only exists when completed performances exist — it's the
         // single source of truth for exercise Spotlight eligibility.
-        let histories = (try? context.fetch(FetchDescriptor<ExerciseHistory>())) ?? []
+        var historyDescriptor = FetchDescriptor<ExerciseHistory>()
+        historyDescriptor.propertiesToFetch = [\.catalogID, \.lastCompletedAt]
+        let histories = (try? context.fetch(historyDescriptor)) ?? []
         let historyByCatalogID = Dictionary(uniqueKeysWithValues: histories.map { ($0.catalogID, $0) })
         let catalogIDs = histories.map(\.catalogID)
         let exercisesToIndex: [Exercise] = catalogIDs.isEmpty ? [] :
