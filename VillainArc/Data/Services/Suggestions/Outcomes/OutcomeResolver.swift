@@ -113,14 +113,17 @@ struct OutcomeResolver {
         var seen = Set<UUID>()
         var eligible: [SuggestionEvent] = []
 
-        func appendIfEligible(_ event: SuggestionEvent?) {
-            guard let event, event.outcome == .pending, event.createdAt < workout.startedAt, event.decision == .accepted || event.decision == .rejected else { return }
-            if seen.insert(event.id).inserted { eligible.append(event) }
-        }
-
         for prescription in prescriptions {
-            for event in prescription.suggestionEvents ?? [] { appendIfEligible(event) }
-            for set in prescription.sortedSets { for event in set.suggestionEvents ?? [] { appendIfEligible(event) } }
+            for event in prescription.suggestionEvents ?? [] {
+                guard event.outcome == .pending, event.createdAt < workout.startedAt, event.decision == .accepted || event.decision == .rejected else { continue }
+                if seen.insert(event.id).inserted { eligible.append(event) }
+            }
+            for set in prescription.sortedSets {
+                for event in set.suggestionEvents ?? [] {
+                    guard event.outcome == .pending, event.createdAt < workout.startedAt, event.decision == .accepted || event.decision == .rejected else { continue }
+                    if seen.insert(event.id).inserted { eligible.append(event) }
+                }
+            }
         }
 
         return eligible
