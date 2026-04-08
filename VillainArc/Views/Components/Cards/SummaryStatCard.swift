@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SummaryStatCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: String
     let text: String
     let date: Date?
@@ -81,7 +82,7 @@ struct SummaryStatCard: View {
                         Text(text)
                     }
                 }
-                .animation(.smooth(duration: 0.2), value: number)
+                .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: number)
             } else {
                 Text(text)
             }

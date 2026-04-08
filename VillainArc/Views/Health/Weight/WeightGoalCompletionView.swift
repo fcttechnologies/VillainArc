@@ -340,7 +340,7 @@ struct WeightGoalCompletionView: View {
         let spanDays = max(lastPoint.date.timeIntervalSince(firstPoint.date) / 86_400, 0)
         guard spanDays > 0 else { return nil }
         let pacePerWeek = abs(((lastPoint.value - firstPoint.value) / spanDays) * 7)
-        return "\(formattedWeightValue(pacePerWeek, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)/wk"
+        return formattedWeightPerWeekText(pacePerWeek, unit: weightUnit, fractionDigits: 0...1)
     }
 
     private var fastestPaceText: String? {
@@ -359,6 +359,6 @@ struct WeightGoalCompletionView: View {
         }
 
         guard let fastestPace = segments.max() else { return nil }
-        return "\(formattedWeightValue(fastestPace, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)/wk"
+        return formattedWeightPerWeekText(fastestPace, unit: weightUnit, fractionDigits: 0...1)
     }
 }

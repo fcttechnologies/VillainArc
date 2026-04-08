@@ -344,8 +344,8 @@ struct ExerciseDetailView: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
-        .accessibilityIdentifier("exerciseDetailSuggestionSettingsButton")
-        .accessibilityHint("Opens exercise suggestion settings.")
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailSuggestionSettingsButton)
+        .accessibilityHint(AccessibilityText.exerciseDetailSuggestionSettingsHint)
     }
 
     private func suggestionSettingsTitle(for exercise: Exercise) -> String {

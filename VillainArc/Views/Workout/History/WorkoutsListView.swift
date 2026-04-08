@@ -3,6 +3,7 @@ import SwiftData
 
 struct WorkoutsListView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(WorkoutSession.completedSession) private var workouts: [WorkoutSession]
     @Query(HealthWorkout.history) private var healthWorkouts: [HealthWorkout]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -40,14 +41,14 @@ struct WorkoutsListView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .deleteDisabled(item.session == nil)
-                    .accessibilityIdentifier(item.session.map { AccessibilityIdentifiers.workoutRow($0) } ?? "healthWorkoutRow")
+                    .accessibilityIdentifier(item.session.map { AccessibilityIdentifiers.workoutRow($0) } ?? AccessibilityIdentifiers.healthWorkoutRow)
                     .accessibilityHint(AccessibilityText.workoutRowHint)
             }
             .onDelete(perform: deleteWorkouts)
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutsList)
         .environment(\.editMode, editModeBinding)
-        .animation(.smooth, value: isEditing)
+        .animation(reduceMotion ? nil : .smooth, value: isEditing)
         .navigationTitle("Workouts")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)

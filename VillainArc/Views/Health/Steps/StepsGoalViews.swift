@@ -12,20 +12,20 @@ struct StepsGoalSummaryCard: View {
     let action: () -> Void
 
     private var titleText: String {
-        guard let activeGoal else { return "No active goal" }
-        return "\(compactStepsText(activeGoal.targetSteps)) steps"
+        guard let activeGoal else { return String(localized: "No active goal") }
+        return String(localized: "\(compactStepsText(activeGoal.targetSteps)) steps")
     }
 
     private var subtitleText: String? {
         guard let activeGoal else { return nil }
         guard let todayEntry else { return nil }
-        if todayEntry.goalCompleted { return "Achieved today" }
+        if todayEntry.goalCompleted { return String(localized: "Achieved today") }
         let remainingSteps = max(activeGoal.targetSteps - todayEntry.stepCount, 0)
-        return "\(remainingSteps.formatted(.number)) steps left today"
+        return String(localized: "\(remainingSteps.formatted(.number)) steps left today")
     }
 
     private var emptyStateText: String {
-        hasGoalHistory ? "Tap to view your goal history." : "Tap to create a steps goal."
+        hasGoalHistory ? String(localized: "Tap to view your goal history.") : String(localized: "Tap to create a steps goal.")
     }
 
     var body: some View {
@@ -158,7 +158,7 @@ private struct StepsGoalHistoryRow: View {
         if let endedOnDay = goal.endedOnDay {
             return "\(formattedRecentDay(goal.startedOnDay)) - \(formattedRecentDay(endedOnDay))"
         }
-        return "Started \(formattedRecentDay(goal.startedOnDay))"
+        return String(localized: "Started \(formattedRecentDay(goal.startedOnDay))")
     }
 
     var body: some View {
@@ -192,8 +192,8 @@ private struct StepsGoalHistoryRow: View {
             Divider()
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
-                SummaryStatCard(title: "Target", text: "\(goal.targetSteps.formatted(.number)) steps")
-                SummaryStatCard(title: "Achieved Days", text: achievedDays.formatted(.number))
+                SummaryStatCard(title: String(localized: "Target"), text: "\(goal.targetSteps.formatted(.number)) steps")
+                SummaryStatCard(title: String(localized: "Achieved Days"), text: achievedDays.formatted(.number))
             }
         }
         .padding(16)
@@ -201,7 +201,7 @@ private struct StepsGoalHistoryRow: View {
     }
 
     private var goalStatusBadgeTitle: String {
-        isActive ? "Active" : "Ended"
+        isActive ? String(localized: "Active") : String(localized: "Ended")
     }
 
     private var goalStatusBadgeColor: Color {
@@ -239,7 +239,7 @@ struct NewStepsGoalView: View {
 
     private var footerText: String? {
         let calendar = Calendar.autoupdatingCurrent
-        let currentGoalText = activeGoals.first.map { "Current goal: \($0.targetSteps.formatted(.number)) steps." }
+        let currentGoalText = activeGoals.first.map { String(localized: "Current goal: \($0.targetSteps.formatted(.number)) steps.") }
 
         guard let latestEntry else {
             return currentGoalText
@@ -247,9 +247,9 @@ struct NewStepsGoalView: View {
 
         let stepsText: String
         if calendar.isDateInToday(latestEntry.date) {
-            stepsText = "Today's current total is \(latestEntry.stepCount.formatted(.number)) steps."
+            stepsText = String(localized: "Today's current total is \(latestEntry.stepCount.formatted(.number)) steps.")
         } else {
-            stepsText = "Latest total on \(formattedRecentDay(latestEntry.date)) was \(latestEntry.stepCount.formatted(.number)) steps."
+            stepsText = String(localized: "Latest total on \(formattedRecentDay(latestEntry.date)) was \(latestEntry.stepCount.formatted(.number)) steps.")
         }
 
         guard let currentGoalText else { return stepsText }

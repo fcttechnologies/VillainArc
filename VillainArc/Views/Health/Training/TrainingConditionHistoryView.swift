@@ -116,7 +116,7 @@ private struct TrainingConditionHistoryRow: View {
 
     private var subtitleText: String {
         if isActive, let endDay = TrainingConditionStore.displayedEndDay(for: period.endDate) {
-            return "\(period.trainingImpact.title) • Ends \(formattedRecentDay(endDay))"
+            return String(localized: "\(period.trainingImpact.title) • Ends \(formattedRecentDay(endDay))")
         }
         return period.trainingImpact.title
     }
@@ -125,7 +125,7 @@ private struct TrainingConditionHistoryRow: View {
         if let endDay = TrainingConditionStore.displayedEndDay(for: period.endDate) {
             return formattedDateRange(start: period.startDate, end: endDay, includeTime: true)
         }
-        return "Started \(formattedRecentDayAndTime(period.startDate))"
+        return String(localized: "Started \(formattedRecentDayAndTime(period.startDate))")
     }
 
     var body: some View {
@@ -143,7 +143,7 @@ private struct TrainingConditionHistoryRow: View {
                             .fontWeight(.bold)
                             .fontDesign(.rounded)
 
-                        Text(isActive ? "Active" : "Ended")
+                        Text(isActive ? String(localized: "Active") : String(localized: "Ended"))
                             .font(.caption)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 8)
@@ -189,7 +189,7 @@ private struct TrainingConditionHistoryRow: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(period.kind.title)
-        .accessibilityValue("\(subtitleText). \(periodText)")
+        .accessibilityValue(AccessibilityText.healthTrainingConditionRowValue(subtitleText: subtitleText, periodText: periodText))
     }
 }
 

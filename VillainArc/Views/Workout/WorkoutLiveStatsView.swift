@@ -23,7 +23,7 @@ struct WorkoutLiveStatsView: View {
 
             LazyVGrid(columns: columns, spacing: 12) {
                 SummaryStatCard(title: "Duration", text: "", date: workout.startedAt)
-                SummaryStatCard(title: "Heart Rate", number: summary.heartRateValue, text: "bpm")
+                SummaryStatCard(title: "Heart Rate", number: summary.heartRateValue, text: heartRateUnitLabel())
                 SummaryStatCard(title: "Active Energy", number: summary.activeEnergyValue, text: energyUnit.unitLabel)
                 SummaryStatCard(title: "Total Energy", number: summary.totalEnergyValue, text: energyUnit.unitLabel)
             }
@@ -54,7 +54,7 @@ private extension WorkoutLiveStatsView {
 
             if let heartRate = coordinator.latestHeartRate {
                 let roundedValue = Int(heartRate.rounded())
-                let text = "\(roundedValue) bpm"
+                let text = formattedHeartRateText(Double(roundedValue), fractionDigits: 0...0)
                 heartRateToolbarText = text
                 heartRateValue = roundedValue
             } else {

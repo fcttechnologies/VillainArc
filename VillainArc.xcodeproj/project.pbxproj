@@ -95,6 +95,16 @@
 		FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Documentation/AI_USAGE.md,
+				Documentation/ARCHITECTURE.md,
+				Documentation/EXERCISE_HISTORY_FLOW.md,
+				Documentation/HEALTHKIT_INTEGRATION.md,
+				Documentation/ONBOARDING_FLOW.md,
+				Documentation/PLAN_EDITING_FLOW.md,
+				Documentation/PROJECT_GUIDE.md,
+				Documentation/SESSION_LIFECYCLE_FLOW.md,
+				Documentation/SUGGESTION_AND_OUTCOME_FLOW.md,
+				Documentation/TRAINING_CONTEXT_ROADMAP.md,
 				Info.plist,
 			);
 			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
@@ -183,10 +193,9 @@
 				Data/Services/Workout/RestTimerState.swift,
 				Data/SharedModelContainer.swift,
 				Helpers/ExerciseSearch.swift,
+				Helpers/FormattingHelpers.swift,
 				Helpers/Haptics.swift,
 				Helpers/TextNormalization.swift,
-				Helpers/TimeFormatting.swift,
-				Helpers/WeightFormatting.swift,
 				Intents/Exercise/ExerciseEntity.swift,
 				Intents/LiveActivity/LiveActivityAddExerciseIntent.swift,
 				Intents/LiveActivity/LiveActivityCompleteSetIntent.swift,
@@ -546,7 +555,7 @@
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArcTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -573,7 +582,7 @@
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArcTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;

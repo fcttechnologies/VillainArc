@@ -22,7 +22,7 @@ struct TextEntryEditorView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
                 .focused($isFocused)
-                .accessibilityIdentifier(accessibilityIdentifier ?? "textEntryEditorField")
+                .accessibilityIdentifier(accessibilityIdentifier ?? AccessibilityIdentifiers.textEntryEditorField)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(isTitle ? .words : .sentences)
         }

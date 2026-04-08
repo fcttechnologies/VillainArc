@@ -7,7 +7,7 @@
     " " : {
 
     },
-    " bpm" : {
+    " %@" : {
 
     },
     "-" : {
@@ -15,6 +15,16 @@
     },
     "%@" : {
 
+    },
+    "%@ / %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
     },
     "%@ %@" : {
       "localizations" : {
@@ -26,10 +36,23 @@
         }
       }
     },
+    "%@ • Ends %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ • Ends %2$@"
+          }
+        }
+      }
+    },
     "%@ asleep" : {
 
     },
     "%@ beats per minute" : {
+
+    },
+    "%@ Goal" : {
 
     },
     "%@ is a rest day." : {
@@ -43,6 +66,29 @@
     },
     "%@ steps" : {
 
+    },
+    "%@ steps left today" : {
+
+    },
+    "%@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "%@ Today, %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ Today, %2$@."
+          }
+        }
+      }
     },
     "%@ training is %@." : {
       "localizations" : {
@@ -190,6 +236,15 @@
         }
       }
     },
+    "%@, you're burning about the same amount of energy a day as you did last year." : {
+
+    },
+    "%@, you're burning less energy a day than you did last year." : {
+
+    },
+    "%@, you're burning more energy a day than you did last year." : {
+
+    },
     "%@, you're sleeping %@ amount each night as you did last year." : {
       "localizations" : {
         "en" : {
@@ -209,6 +264,15 @@
           }
         }
       }
+    },
+    "%@, you're sleeping about the same amount each night as you did last year." : {
+
+    },
+    "%@, you're sleeping less each night than you did last year." : {
+
+    },
+    "%@, you're sleeping more each night than you did last year." : {
+
     },
     "%@, you're taking %@ number of steps a day as you did last year." : {
       "localizations" : {
@@ -230,6 +294,15 @@
         }
       }
     },
+    "%@, you're taking about the same number of steps a day as you did last year." : {
+
+    },
+    "%@, you're taking fewer steps a day than you did last year." : {
+
+    },
+    "%@, you're taking more steps a day than you did last year." : {
+
+    },
     "%@: %@" : {
       "localizations" : {
         "en" : {
@@ -250,16 +323,20 @@
         }
       }
     },
-    "%@/wk" : {
-
+    "%@%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@ %3$@"
+          }
+        }
+      }
     },
     "%1$@ - %2$@" : {
 
     },
     "%lld" : {
-
-    },
-    "%lld bpm" : {
 
     },
     "%lld cm" : {
@@ -283,6 +360,9 @@
     "%lld logged sets" : {
 
     },
+    "%lld muscles" : {
+
+    },
     "%lld personal records" : {
 
     },
@@ -297,6 +377,16 @@
     },
     "%lld suggestions to review" : {
 
+    },
+    "%lld-%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld-%2$lld %3$@"
+          }
+        }
+      }
     },
     "%lld/%lld sets complete" : {
       "localizations" : {
@@ -318,6 +408,16 @@
         }
       }
     },
+    "%lld+ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld+ %2$@"
+          }
+        }
+      }
+    },
     "^[%lld set](inflect: true)" : {
 
     },
@@ -334,6 +434,9 @@
 
     },
     "1 logged set" : {
+
+    },
+    "1 muscle" : {
 
     },
     "1 personal record" : {
@@ -363,6 +466,9 @@
     "Abs" : {
 
     },
+    "Absolute maximum effort." : {
+
+    },
     "Accept" : {
 
     },
@@ -373,6 +479,12 @@
 
     },
     "Accepts this suggestion group." : {
+
+    },
+    "Achieved Days" : {
+
+    },
+    "Achieved today" : {
 
     },
     "Action" : {
@@ -492,7 +604,13 @@
     "After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it will also start the timer." : {
 
     },
+    "Ahead of Schedule" : {
+
+    },
     "AI suggestions" : {
+
+    },
+    "All Out" : {
 
     },
     "All sets complete" : {
@@ -558,6 +676,9 @@
     "Assistance" : {
 
     },
+    "At target" : {
+
+    },
     "Auto Complete After RPE" : {
 
     },
@@ -571,6 +692,18 @@
 
     },
     "Average" : {
+
+    },
+    "Average %@" : {
+
+    },
+    "Avg" : {
+
+    },
+    "Avg Active" : {
+
+    },
+    "Avg Total" : {
 
     },
     "Awaiting Outcome" : {
@@ -588,6 +721,9 @@
     "Barbell" : {
 
     },
+    "Behind Schedule" : {
+
+    },
     "Biceps" : {
 
     },
@@ -598,6 +734,9 @@
 
     },
     "Bodyweight" : {
+
+    },
+    "bpm" : {
 
     },
     "Brachialis" : {
@@ -637,6 +776,9 @@
 
     },
     "Cannot finish a workout with no exercises." : {
+
+    },
+    "Change" : {
 
     },
     "Change Title" : {
@@ -724,6 +866,9 @@
 
     },
     "Complete this exercise in a workout to start tracking progress and personal records." : {
+
+    },
+    "Completed" : {
 
     },
     "Completed set %lld of %@." : {
@@ -835,10 +980,22 @@
     "Current" : {
 
     },
+    "Current day" : {
+
+    },
+    "Current goal: %@ steps." : {
+
+    },
     "Current Progression Step" : {
 
     },
+    "Current: %@" : {
+
+    },
     "Custom Progression Step" : {
+
+    },
+    "D" : {
 
     },
     "Date" : {
@@ -991,6 +1148,9 @@
     "Done Editing" : {
 
     },
+    "Down" : {
+
+    },
     "Drag or tap the dial to rate the overall effort." : {
 
     },
@@ -1069,10 +1229,16 @@
     "Ended Date" : {
 
     },
+    "Ended Early" : {
+
+    },
     "Ended or replaced conditions will appear here." : {
 
     },
     "Ended your %@ status. You're back to training normally." : {
+
+    },
+    "Ends %@" : {
 
     },
     "Ends your current training condition and returns you to training normally." : {
@@ -1090,10 +1256,22 @@
     "Enjoy your day off!" : {
 
     },
+    "Enter a valid number." : {
+
+    },
+    "Enter a value greater than 0." : {
+
+    },
     "Enters edit mode." : {
 
     },
+    "Entries" : {
+
+    },
     "Est. 1RM" : {
+
+    },
+    "Estimated range" : {
 
     },
     "Exercise" : {
@@ -1130,6 +1308,9 @@
 
     },
     "Favorites" : {
+
+    },
+    "Feeling unwell and training may need to pause" : {
 
     },
     "Feet" : {
@@ -1180,8 +1361,21 @@
     "Finishes the current workout session." : {
 
     },
+    "Flat" : {
+
+    },
     "Focus on glutes, legs, and sculpting upper body" : {
 
+    },
+    "For %@, %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For %1$@, %2$@."
+          }
+        }
+      }
     },
     "Forearms" : {
 
@@ -1276,6 +1470,9 @@
     "Goal:" : {
 
     },
+    "Goal: %@" : {
+
+    },
     "Good" : {
 
     },
@@ -1283,6 +1480,12 @@
 
     },
     "Hamstrings" : {
+
+    },
+    "Hard" : {
+
+    },
+    "Hard effort, pushing your limits." : {
 
     },
     "Health Metric" : {
@@ -1308,6 +1511,12 @@
 
     },
     "Height (cm)" : {
+
+    },
+    "High" : {
+
+    },
+    "High %@" : {
 
     },
     "History" : {
@@ -1364,6 +1573,9 @@
     "Increase rest time by 15 seconds" : {
 
     },
+    "Injured" : {
+
+    },
     "Keep Active" : {
 
     },
@@ -1394,7 +1606,22 @@
     "Kettlebell (Single)" : {
 
     },
+    "kilocalories" : {
+
+    },
+    "kilograms" : {
+
+    },
+    "kilojoules" : {
+
+    },
+    "kilometers" : {
+
+    },
     "Landmine" : {
+
+    },
+    "Last night, you slept %@." : {
 
     },
     "Last Night's Sleep" : {
@@ -1441,6 +1668,16 @@
         }
       }
     },
+    "Latest total on %@ was %@ steps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Latest total on %1$@ was %2$@ steps."
+          }
+        }
+      }
+    },
     "Latest Weight" : {
 
     },
@@ -1454,6 +1691,12 @@
 
     },
     "less" : {
+
+    },
+    "Light" : {
+
+    },
+    "Light effort, could do much more." : {
 
     },
     "Live Activities aren’t available on this device or are turned off in system settings. Villain Arc will fall back to in-app toasts and local notifications when possible." : {
@@ -1472,6 +1715,9 @@
 
     },
     "Log ${weight}" : {
+
+    },
+    "Log at least 2 entries for every weekday to unlock averages." : {
 
     },
     "Log Weight" : {
@@ -1502,6 +1748,9 @@
     "Long-press for options." : {
 
     },
+    "Low" : {
+
+    },
     "Lower Abs" : {
 
     },
@@ -1526,10 +1775,16 @@
     "Maintain" : {
 
     },
+    "Maintain around %@" : {
+
+    },
     "Maintain Band End" : {
 
     },
     "Maintain Band Start" : {
+
+    },
+    "Maintain Goal" : {
 
     },
     "Maintain Lower" : {
@@ -1548,6 +1803,9 @@
 
     },
     "Manage Workout Splits" : {
+
+    },
+    "Managing an injury that can affect how you train" : {
 
     },
     "Mark as complete" : {
@@ -1586,6 +1844,9 @@
     "Mid Traps" : {
 
     },
+    "miles" : {
+
+    },
     "min" : {
 
     },
@@ -1596,6 +1857,12 @@
 
     },
     "Mode" : {
+
+    },
+    "Moderate" : {
+
+    },
+    "Moderate effort, comfortable pace." : {
 
     },
     "Monday" : {
@@ -1638,6 +1905,15 @@
 
     },
     "Names this split day." : {
+
+    },
+    "Near Max" : {
+
+    },
+    "Near maximal, barely completed." : {
+
+    },
+    "Need More Data" : {
 
     },
     "New Exercise" : {
@@ -1715,6 +1991,9 @@
     "No energy data was recorded in the last year." : {
 
     },
+    "No entries in this range" : {
+
+    },
     "No Exercise History" : {
 
     },
@@ -1775,7 +2054,13 @@
     "No Sleep Data" : {
 
     },
+    "No sleep data available." : {
+
+    },
     "No sleep data has been recorded yet." : {
+
+    },
+    "No sleep data in this range" : {
 
     },
     "No sleep data was recorded for this day." : {
@@ -1886,6 +2171,9 @@
     "No, train any day" : {
 
     },
+    "Not favorite" : {
+
+    },
     "Not Now" : {
 
     },
@@ -1910,7 +2198,63 @@
     "Okay" : {
 
     },
+    "On %@, you burned %@ total, including %@ active." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On %1$@, you burned %2$@ total, including %3$@ active."
+          }
+        }
+      }
+    },
+    "On %@, you covered %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On %1$@, you covered %2$@."
+          }
+        }
+      }
+    },
+    "On %@, you slept %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On %1$@, you slept %2$@."
+          }
+        }
+      }
+    },
+    "On %@, you took %@ steps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On %1$@, you took %2$@ steps."
+          }
+        }
+      }
+    },
+    "On %@, your latest weight was %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "On %1$@, your latest weight was %2$@."
+          }
+        }
+      }
+    },
+    "On A Break" : {
+
+    },
     "On schedule" : {
+
+    },
+    "On Track" : {
 
     },
     "One muscle group per day" : {
@@ -2078,6 +2422,9 @@
     "Opens your workout splits." : {
 
     },
+    "Optional" : {
+
+    },
     "Options" : {
 
     },
@@ -2136,6 +2483,9 @@
     "Post workout effort" : {
 
     },
+    "pounds" : {
+
+    },
     "Pre workout context" : {
 
     },
@@ -2149,6 +2499,9 @@
 
     },
     "Previous" : {
+
+    },
+    "Progress" : {
 
     },
     "Progress Charts" : {
@@ -2191,6 +2544,12 @@
 
     },
     "Recents" : {
+
+    },
+    "Recovering" : {
+
+    },
+    "Reference" : {
 
     },
     "Reject" : {
@@ -2236,6 +2595,9 @@
 
     },
     "Replace Rest Timer?" : {
+
+    },
+    "Replaced" : {
 
     },
     "Replaced %@ with %@, kept existing sets." : {
@@ -2357,6 +2719,9 @@
     "Retry" : {
 
     },
+    "Returning carefully after illness, injury, or hard fatigue" : {
+
+    },
     "Returns the weekly split to today." : {
 
     },
@@ -2448,6 +2813,9 @@
     "Saves and closes the workout summary." : {
 
     },
+    "Saves exercise suggestion settings." : {
+
+    },
     "Saves the new weight entry." : {
 
     },
@@ -2494,6 +2862,9 @@
 
     },
     "Select favorite exercises to see them here." : {
+
+    },
+    "Select muscles" : {
 
     },
     "Select Plan" : {
@@ -2754,6 +3125,9 @@
     "Shows your workout split settings." : {
 
     },
+    "Sick" : {
+
+    },
     "Side Delt" : {
 
     },
@@ -2862,6 +3236,9 @@
     "Starting Up" : {
 
     },
+    "Starting Weight" : {
+
+    },
     "Starts a new workout session." : {
 
     },
@@ -2904,6 +3281,9 @@
     "Steps Goal" : {
 
     },
+    "Steps goal reached" : {
+
+    },
     "Steps Goals" : {
 
     },
@@ -2911,6 +3291,9 @@
 
     },
     "Steps. Update Apple Health permissions so your health metrics appear here." : {
+
+    },
+    "steps/day" : {
 
     },
     "Still Syncing..." : {
@@ -2970,10 +3353,16 @@
     "Swipe right on an exercise to favorite it." : {
 
     },
+    "Sync at least 2 sleep nights for every weekday to unlock averages." : {
+
+    },
     "Syncing Your Data" : {
 
     },
     "System default" : {
+
+    },
+    "Taking intentional time away from training" : {
 
     },
     "Tap the %@ button to add exercises." : {
@@ -2983,6 +3372,15 @@
 
     },
     "Tap the %@ button to start your first workout." : {
+
+    },
+    "Tap to create a steps goal." : {
+
+    },
+    "Tap to create a weight goal." : {
+
+    },
+    "Tap to view your goal history." : {
 
     },
     "Target" : {
@@ -3001,6 +3399,9 @@
 
     },
     "Target Muscles" : {
+
+    },
+    "Target Pace" : {
 
     },
     "Target Rate Per Week" : {
@@ -3132,7 +3533,29 @@
     "Today you've burned %@ resting." : {
 
     },
+    "Today, %@." : {
+
+    },
+    "Today, you've burned %@ total, including %@ active." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Today, you've burned %1$@ total, including %2$@ active."
+          }
+        }
+      }
+    },
+    "Today, you've covered %@." : {
+
+    },
+    "Today, you've taken %@ steps." : {
+
+    },
     "Today's Calories" : {
+
+    },
+    "Today's current total is %@ steps." : {
 
     },
     "Today's Steps" : {
@@ -3204,7 +3627,16 @@
     "Training Normally" : {
 
     },
+    "Training normally without extra limitations" : {
+
+    },
     "Training Summary" : {
+
+    },
+    "Traveling" : {
+
+    },
+    "Trend" : {
 
     },
     "Triceps" : {
@@ -3231,6 +3663,16 @@
     "Unavailable" : {
 
     },
+    "Under %lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Under %1$lld %2$@"
+          }
+        }
+      }
+    },
     "Undo" : {
 
     },
@@ -3244,6 +3686,12 @@
 
     },
     "Unnamed split day" : {
+
+    },
+    "Until changed" : {
+
+    },
+    "Up" : {
 
     },
     "Update" : {
@@ -3283,6 +3731,12 @@
 
     },
     "Value" : {
+
+    },
+    "Very Easy" : {
+
+    },
+    "Very easy, minimal exertion." : {
 
     },
     "View All Entries" : {
@@ -3474,6 +3928,9 @@
     "WiFi Required" : {
 
     },
+    "Working around travel, vacation, or routine changes" : {
+
+    },
     "Working Set" : {
 
     },
@@ -3498,7 +3955,10 @@
     "Workout effort" : {
 
     },
-    "Workout Effort Dial" : {
+    "Workout Effort" : {
+
+    },
+    "Workout effort dial" : {
 
     },
     "Workout finish canceled." : {
@@ -3596,7 +4056,19 @@
         }
       }
     },
+    "you burned %@ total" : {
+
+    },
+    "you covered %@" : {
+
+    },
     "You don't have a completed workout plan yet." : {
+
+    },
+    "You don't have a weight entry for %@." : {
+
+    },
+    "You don't have a weight entry for today." : {
 
     },
     "You don't have a workout plan assigned for today." : {
@@ -3623,7 +4095,37 @@
     "You don't have any workout splits yet." : {
 
     },
+    "You don't have calories burned data for %@." : {
+
+    },
+    "You don't have calories burned data for today yet." : {
+
+    },
+    "You don't have distance data for %@." : {
+
+    },
+    "You don't have distance data for today yet." : {
+
+    },
+    "You don't have health data for %@ yet." : {
+
+    },
+    "You don't have health data for today yet." : {
+
+    },
     "You don't have resting calories data for today." : {
+
+    },
+    "You don't have sleep data for %@." : {
+
+    },
+    "You don't have sleep data from last night yet." : {
+
+    },
+    "You don't have steps data for %@." : {
+
+    },
+    "You don't have steps data for today yet." : {
 
     },
     "You have %@ and %@ with no data." : {
@@ -3670,6 +4172,16 @@
     "You haven't completed any exercises with tracked history yet." : {
 
     },
+    "You hit %@ steps and cleared your %@ step target." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You hit %1$@ steps and cleared your %2$@ step target."
+          }
+        }
+      }
+    },
     "You need to launch and finish setting up the app before you can use this feature." : {
 
     },
@@ -3692,6 +4204,12 @@
           }
         }
       }
+    },
+    "You slept %@." : {
+
+    },
+    "you took %@ steps" : {
+
     },
     "You walk %@ steps on %@." : {
       "localizations" : {
@@ -3725,10 +4243,28 @@
     "You're burning %@ energy this month than you did last month." : {
 
     },
+    "You're burning about the same amount of energy this month as you did last month." : {
+
+    },
+    "You're burning less energy this month than you did last month." : {
+
+    },
+    "You're burning more energy this month than you did last month." : {
+
+    },
     "You're getting %@ amount of sleep this month as you did last month." : {
 
     },
     "You're getting %@ sleep this month than you did last month." : {
+
+    },
+    "You're getting about the same amount of sleep this month as you did last month." : {
+
+    },
+    "You're getting less sleep this month than you did last month." : {
+
+    },
+    "You're getting more sleep this month than you did last month." : {
 
     },
     "You're training normally." : {
@@ -3740,6 +4276,15 @@
     "You're walking %@ this month than you did last month." : {
 
     },
+    "You're walking about the same this month as you did last month." : {
+
+    },
+    "You're walking less this month than you did last month." : {
+
+    },
+    "You're walking more this month than you did last month." : {
+
+    },
     "You've already hit your steps goal today with %@ steps against a goal of %@." : {
       "localizations" : {
         "en" : {
@@ -3749,6 +4294,15 @@
           }
         }
       }
+    },
+    "you've burned %@ total" : {
+
+    },
+    "you've covered %@" : {
+
+    },
+    "you've taken %@ steps" : {
+
     },
     "Your created workout plans will appear here." : {
 
@@ -3778,6 +4332,15 @@
           }
         }
       }
+    },
+    "your latest weight is %@" : {
+
+    },
+    "Your latest weight today is %@." : {
+
+    },
+    "your latest weight was %@" : {
+
     },
     "Your saved and previous steps goals will appear here." : {
 

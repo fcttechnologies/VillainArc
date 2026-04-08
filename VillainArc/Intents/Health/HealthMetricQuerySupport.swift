@@ -75,47 +75,47 @@ nonisolated func healthMetricDialog(for metric: HealthMetric, snapshot: HealthDa
     switch metric {
     case .weight:
         guard let weightKg = snapshot.weightKg else {
-            return isToday ? "You don't have a weight entry for today." : "You don't have a weight entry for \(dayText)."
+            return isToday ? String(localized: "You don't have a weight entry for today.") : String(localized: "You don't have a weight entry for \(dayText).")
         }
         return isToday
-            ? "Your latest weight today is \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit))."
-            : "On \(dayText), your latest weight was \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit))."
+            ? String(localized: "Your latest weight today is \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit)).")
+            : String(localized: "On \(dayText), your latest weight was \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit)).")
 
     case .sleep:
         guard let sleepDuration = snapshot.sleepDuration else {
-            return isToday ? "You don't have sleep data from last night yet." : "You don't have sleep data for \(dayText)."
+            return isToday ? String(localized: "You don't have sleep data from last night yet.") : String(localized: "You don't have sleep data for \(dayText).")
         }
         return isToday
-            ? "Last night, you slept \(formattedSleepDurationText(sleepDuration))."
-            : "On \(dayText), you slept \(formattedSleepDurationText(sleepDuration))."
+            ? String(localized: "Last night, you slept \(formattedSleepDurationText(sleepDuration)).")
+            : String(localized: "On \(dayText), you slept \(formattedSleepDurationText(sleepDuration)).")
 
     case .steps:
         guard let steps = snapshot.steps else {
-            return isToday ? "You don't have steps data for today yet." : "You don't have steps data for \(dayText)."
+            return isToday ? String(localized: "You don't have steps data for today yet.") : String(localized: "You don't have steps data for \(dayText).")
         }
         return isToday
-            ? "Today, you've taken \(steps.formatted(.number)) steps."
-            : "On \(dayText), you took \(steps.formatted(.number)) steps."
+            ? String(localized: "Today, you've taken \(steps.formatted(.number)) steps.")
+            : String(localized: "On \(dayText), you took \(steps.formatted(.number)) steps.")
 
     case .distance:
         guard let distanceMeters = snapshot.distanceMeters else {
-            return isToday ? "You don't have distance data for today yet." : "You don't have distance data for \(dayText)."
+            return isToday ? String(localized: "You don't have distance data for today yet.") : String(localized: "You don't have distance data for \(dayText).")
         }
         return isToday
-            ? "Today, you've covered \(snapshot.settings.distanceUnit.display(distanceMeters))."
-            : "On \(dayText), you covered \(snapshot.settings.distanceUnit.display(distanceMeters))."
+            ? String(localized: "Today, you've covered \(snapshot.settings.distanceUnit.display(distanceMeters)).")
+            : String(localized: "On \(dayText), you covered \(snapshot.settings.distanceUnit.display(distanceMeters)).")
 
     case .caloriesBurned:
         guard let totalEnergy = snapshot.totalEnergyKilocalories,
               let activeEnergy = snapshot.activeEnergyKilocalories
         else {
-            return isToday ? "You don't have calories burned data for today yet." : "You don't have calories burned data for \(dayText)."
+            return isToday ? String(localized: "You don't have calories burned data for today yet.") : String(localized: "You don't have calories burned data for \(dayText).")
         }
         let totalText = formattedEnergyText(totalEnergy, unit: snapshot.settings.energyUnit)
         let activeText = formattedEnergyText(activeEnergy, unit: snapshot.settings.energyUnit)
         return isToday
-            ? "Today, you've burned \(totalText) total, including \(activeText) active."
-            : "On \(dayText), you burned \(totalText) total, including \(activeText) active."
+            ? String(localized: "Today, you've burned \(totalText) total, including \(activeText) active.")
+            : String(localized: "On \(dayText), you burned \(totalText) total, including \(activeText) active.")
     }
 }
 
@@ -127,31 +127,31 @@ nonisolated func healthDaySummaryDialog(for snapshot: HealthDaySnapshot) -> Stri
 
     if let weightKg = snapshot.weightKg {
         let text = isToday
-            ? "your latest weight is \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit))"
-            : "your latest weight was \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit))"
+            ? String(localized: "your latest weight is \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit))")
+            : String(localized: "your latest weight was \(formattedWeightText(weightKg, unit: snapshot.settings.weightUnit))")
         todayParts.append(text)
     }
 
     if let sleepDuration = snapshot.sleepDuration {
         sleepPart = isToday
-            ? "Last night, you slept \(formattedSleepDurationText(sleepDuration))."
-            : "You slept \(formattedSleepDurationText(sleepDuration))."
+            ? String(localized: "Last night, you slept \(formattedSleepDurationText(sleepDuration)).")
+            : String(localized: "You slept \(formattedSleepDurationText(sleepDuration)).")
     }
 
     if let steps = snapshot.steps {
-        todayParts.append(isToday ? "you've taken \(steps.formatted(.number)) steps" : "you took \(steps.formatted(.number)) steps")
+        todayParts.append(isToday ? String(localized: "you've taken \(steps.formatted(.number)) steps") : String(localized: "you took \(steps.formatted(.number)) steps"))
     }
 
     if let distanceMeters = snapshot.distanceMeters {
-        todayParts.append(isToday ? "you've covered \(snapshot.settings.distanceUnit.display(distanceMeters))" : "you covered \(snapshot.settings.distanceUnit.display(distanceMeters))")
+        todayParts.append(isToday ? String(localized: "you've covered \(snapshot.settings.distanceUnit.display(distanceMeters))") : String(localized: "you covered \(snapshot.settings.distanceUnit.display(distanceMeters))"))
     }
 
     if let totalEnergy = snapshot.totalEnergyKilocalories {
-        todayParts.append(isToday ? "you've burned \(formattedEnergyText(totalEnergy, unit: snapshot.settings.energyUnit)) total" : "you burned \(formattedEnergyText(totalEnergy, unit: snapshot.settings.energyUnit)) total")
+        todayParts.append(isToday ? String(localized: "you've burned \(formattedEnergyText(totalEnergy, unit: snapshot.settings.energyUnit)) total") : String(localized: "you burned \(formattedEnergyText(totalEnergy, unit: snapshot.settings.energyUnit)) total"))
     }
 
     guard sleepPart != nil || !todayParts.isEmpty else {
-        return isToday ? "You don't have health data for today yet." : "You don't have health data for \(dayText) yet."
+        return isToday ? String(localized: "You don't have health data for today yet.") : String(localized: "You don't have health data for \(dayText) yet.")
     }
 
     let todaySummary = todayParts.isEmpty ? nil : ListFormatter.localizedString(byJoining: todayParts)
@@ -159,13 +159,13 @@ nonisolated func healthDaySummaryDialog(for snapshot: HealthDaySnapshot) -> Stri
     if isToday {
         switch (sleepPart, todaySummary) {
         case let (.some(sleepPart), .some(todaySummary)):
-            return "\(sleepPart) Today, \(todaySummary)."
+            return String(localized: "\(sleepPart) Today, \(todaySummary).")
         case let (.some(sleepPart), .none):
             return sleepPart
         case let (.none, .some(todaySummary)):
-            return "Today, \(todaySummary)."
+            return String(localized: "Today, \(todaySummary).")
         case (.none, .none):
-            return "You don't have health data for today yet."
+            return String(localized: "You don't have health data for today yet.")
         }
     }
 
@@ -176,5 +176,5 @@ nonisolated func healthDaySummaryDialog(for snapshot: HealthDaySnapshot) -> Stri
     if let todaySummary {
         parts.append(todaySummary)
     }
-    return "For \(dayText), \(ListFormatter.localizedString(byJoining: parts))."
+    return String(localized: "For \(dayText), \(ListFormatter.localizedString(byJoining: parts)).")
 }

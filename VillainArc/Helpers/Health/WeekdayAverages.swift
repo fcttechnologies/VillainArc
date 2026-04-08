@@ -47,7 +47,7 @@ enum Weekday: String, CaseIterable, Identifiable, Sendable {
     }
 
     func pluralLabel(calendar: Calendar = .autoupdatingCurrent) -> String {
-        "\(fullLabel(calendar: calendar))s"
+        fullLabel(calendar: calendar)
     }
 }
 

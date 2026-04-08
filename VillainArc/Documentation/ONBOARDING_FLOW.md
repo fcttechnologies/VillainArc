@@ -58,6 +58,10 @@ The critical rule is:
 
 That prevents duplicate built-in exercises when older cloud data is still arriving.
 
+Important implementation detail:
+
+- `CloudKitImportMonitor` starts at onboarding start on first bootstrap (before the explicit wait step) so the app does not miss an early import-complete event
+
 ## Continue Without iCloud
 
 If iCloud is disabled, VillainArc can continue without cloud sync.
@@ -67,6 +71,7 @@ That path still:
 - seeds the bundled exercise catalog locally
 - ensures singleton records
 - continues into profile onboarding
+- skips the first-bootstrap Spotlight reindex pass used by the iCloud-enabled bootstrap path
 
 The app becomes usable, but cloud recovery and cross-device sync are unavailable.
 

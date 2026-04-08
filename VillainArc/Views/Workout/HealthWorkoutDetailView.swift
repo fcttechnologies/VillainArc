@@ -94,7 +94,7 @@ struct HealthWorkoutDetailContent: View {
 
     private var distanceText: String {
         guard let totalDistance = loader.summary.totalDistance else { return "-" }
-        return distanceUnit.display(totalDistance)
+        return formattedDistanceText(totalDistance, unit: distanceUnit)
     }
 
     private var paceText: String? {
@@ -103,7 +103,7 @@ struct HealthWorkoutDetailContent: View {
             return nil
         }
 
-        return formattedPace(duration: loader.summary.activeDuration, distanceMeters: totalDistance, distanceUnit: distanceUnit)
+        return formattedPaceText(duration: loader.summary.activeDuration, distanceMeters: totalDistance, distanceUnit: distanceUnit)
     }
 
     private var summaryItems: [SummaryStatItem] {
@@ -126,8 +126,8 @@ struct HealthWorkoutDetailContent: View {
 
     private var chartAccessibilitySummary: String {
         let parts = [
-            loader.heartRateSummary.averageBPM.map { "Average \(Int($0.rounded())) bpm" },
-            loader.heartRateSummary.maximumBPM.map { "High \(Int($0.rounded())) bpm" }
+            loader.heartRateSummary.averageBPM.map { String(localized: "Average \(formattedHeartRateText($0))") },
+            loader.heartRateSummary.maximumBPM.map { String(localized: "High \(formattedHeartRateText($0))") }
         ]
             .compactMap(\.self)
 
@@ -323,46 +323,21 @@ struct HealthWorkoutDetailContent: View {
         secondsToTimeWithHours(Int(duration.rounded()))
     }
 
-    private func formattedPace(duration: TimeInterval, distanceMeters: Double, distanceUnit: DistanceUnit) -> String? {
-        guard duration > 0, distanceMeters > 0 else { return nil }
-
-        let unitDistance = distanceUnit.fromMeters(distanceMeters)
-        guard unitDistance > 0 else { return nil }
-
-        let secondsPerUnit = duration / unitDistance
-        let timeText = secondsPerUnit >= 3_600
-            ? secondsToTimeWithHours(Int(secondsPerUnit.rounded()))
-            : secondsToTime(Int(secondsPerUnit.rounded()))
-
-        return "\(timeText) /\(distanceUnit.rawValue)"
-    }
-
     private func formattedSplitLabel(_ split: HealthWorkoutSplitSummary) -> String {
-        let markerDistance = distanceUnit.fromMeters(split.markerDistanceMeters)
-        let distanceText = markerDistance.formatted(.number.precision(.fractionLength(0...2)))
-        return "\(distanceText) \(distanceUnit.rawValue)"
+        formattedDistanceText(split.markerDistanceMeters, unit: distanceUnit, fractionDigits: 0...2)
     }
 
     private func formattedSplitPace(_ split: HealthWorkoutSplitSummary) -> String? {
-        formattedPace(duration: split.duration, distanceMeters: split.segmentDistanceMeters, distanceUnit: distanceUnit)
+        formattedPaceText(duration: split.duration, distanceMeters: split.segmentDistanceMeters, distanceUnit: distanceUnit)
     }
 
     private func formattedSplitHeartRate(_ split: HealthWorkoutSplitSummary) -> String {
         guard let averageHeartRate = split.averageHeartRate else { return "-" }
-        return "\(Int(averageHeartRate.rounded()))"
+        return formattedHeartRateValue(averageHeartRate, fractionDigits: 0...0)
     }
 
     private func heartRateZoneRangeText(for zone: HealthWorkoutHeartRateZoneSummary) -> String {
-        switch (zone.lowerBoundBPM, zone.upperBoundBPM) {
-        case let (nil, upper?):
-            return "Under \(upper) bpm"
-        case let (lower?, nil):
-            return "\(lower)+ bpm"
-        case let (lower?, upper?):
-            return "\(lower)-\(upper) bpm"
-        case (nil, nil):
-            return "Estimated range"
-        }
+        formattedHeartRateRangeText(lower: zone.lowerBoundBPM, upper: zone.upperBoundBPM)
     }
 
     private func heartRateZoneColor(for zone: Int) -> Color {
@@ -482,7 +457,7 @@ private struct HealthWorkoutSplitRow: View {
             HStack(spacing: 0) {
                 Text(heartRateText)
                     .foregroundStyle(tint)
-                Text(" bpm")
+                Text(" \(heartRateUnitLabel())")
                     .foregroundStyle(.primary)
             }
             .fontWeight(.semibold)
@@ -579,9 +554,9 @@ private struct HealthWorkoutHeartRateChartCard: View {
     }
 
     private var primaryValue: String {
-        if let displayedPoint { return "\(Int(displayedPoint.bpm.rounded())) bpm" }
+        if let displayedPoint { return formattedHeartRateText(displayedPoint.bpm, fractionDigits: 0...0) }
         guard let averageBPM = summary.averageBPM else { return "-" }
-        return "\(Int(averageBPM.rounded())) bpm"
+        return formattedHeartRateText(averageBPM, fractionDigits: 0...0)
     }
 
     private var segments: [Segment] {
@@ -658,7 +633,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
             Text(title)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Text(value.map { "\(Int($0.rounded())) bpm" } ?? "-")
+            Text(formattedHeartRateText(value, fractionDigits: 0...0))
                 .font(.headline)
                 .fontWeight(.semibold)
         }

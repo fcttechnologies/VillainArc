@@ -46,15 +46,15 @@ enum TrainingDay: String, AppEnum {
 
     var label: String {
         switch self {
-        case .today: return "Today"
-        case .tomorrow: return "Tomorrow"
-        case .monday: return "Monday"
-        case .tuesday: return "Tuesday"
-        case .wednesday: return "Wednesday"
-        case .thursday: return "Thursday"
-        case .friday: return "Friday"
-        case .saturday: return "Saturday"
-        case .sunday: return "Sunday"
+        case .today: return String(localized: "Today")
+        case .tomorrow: return String(localized: "Tomorrow")
+        case .monday: return String(localized: "Monday")
+        case .tuesday: return String(localized: "Tuesday")
+        case .wednesday: return String(localized: "Wednesday")
+        case .thursday: return String(localized: "Thursday")
+        case .friday: return String(localized: "Friday")
+        case .saturday: return String(localized: "Saturday")
+        case .sunday: return String(localized: "Sunday")
         }
     }
 }
@@ -69,38 +69,38 @@ struct TrainingSummaryIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
         let context = SharedModelContainer.container.mainContext
-        guard let split = try? context.fetch(WorkoutSplit.active).first else { return .result(dialog: "You don't have an active workout split.") }
+        guard let split = try? context.fetch(WorkoutSplit.active).first else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "You don't have an active workout split."))) }
 
-        guard !(split.days?.isEmpty ?? true) else { return .result(dialog: "Your split doesn't have any days set up yet.") }
+        guard !(split.days?.isEmpty ?? true) else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "Your split doesn't have any days set up yet."))) }
 
         let targetDate = day.date
         let resolution = SplitScheduleResolver.resolve(split, at: targetDate, context: context)
-        guard let splitDay = resolution.splitDay else { return .result(dialog: "Couldn't determine your training day.") }
+        guard let splitDay = resolution.splitDay else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "Couldn't determine your training day."))) }
 
         let dayLabel = day.label
 
         if resolution.isPaused {
             if let activeCondition = resolution.activeCondition {
-                return .result(dialog: "\(dayLabel) training is paused because you are \(activeCondition.kind.title.lowercased()).")
+                return .result(dialog: IntentDialog(stringLiteral: String(localized: "\(dayLabel) training is paused because you are \(activeCondition.kind.title.lowercased()).")))
             }
-            return .result(dialog: "\(dayLabel) training is paused.")
+            return .result(dialog: IntentDialog(stringLiteral: String(localized: "\(dayLabel) training is paused.")))
         }
 
-        if splitDay.isRestDay { return .result(dialog: "\(dayLabel) is a rest day.") }
+        if splitDay.isRestDay { return .result(dialog: IntentDialog(stringLiteral: String(localized: "\(dayLabel) is a rest day."))) }
 
         guard let workoutPlan = resolution.workoutPlan else {
             let majorMuscles = splitDay.targetMuscles.filter(\.isMajor)
             let musclesSummary = ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName))
-            if !musclesSummary.isEmpty { return .result(dialog: "You are hitting: \(musclesSummary).") }
+            if !musclesSummary.isEmpty { return .result(dialog: IntentDialog(stringLiteral: String(localized: "You are hitting: \(musclesSummary)."))) }
 
-            let splitDayTitle = splitDay.name.isEmpty ? "Workout" : splitDay.name
-            return .result(dialog: "\(dayLabel) training is \(splitDayTitle).")
+            let splitDayTitle = splitDay.name.isEmpty ? String(localized: "Workout") : splitDay.name
+            return .result(dialog: IntentDialog(stringLiteral: String(localized: "\(dayLabel) training is \(splitDayTitle).")))
         }
 
         let summary = workoutPlan.spotlightSummary
         if let contextNoteText = resolution.contextNoteText {
-            return .result(dialog: "\(dayLabel) training: \(summary). \(contextNoteText).")
+            return .result(dialog: IntentDialog(stringLiteral: String(localized: "\(dayLabel) training: \(summary). \(contextNoteText).")))
         }
-        return .result(dialog: "\(dayLabel) training: \(summary).")
+        return .result(dialog: IntentDialog(stringLiteral: String(localized: "\(dayLabel) training: \(summary).")))
     }
 }

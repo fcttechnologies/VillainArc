@@ -28,8 +28,8 @@ enum EnergyUnit: String, CaseIterable, Codable, Hashable {
 
     nonisolated var accessibilityUnitLabel: String {
         switch self {
-        case .kcal: return "kilocalories"
-        case .kJ: return "kilojoules"
+        case .kcal: return String(localized: "kilocalories")
+        case .kJ: return String(localized: "kilojoules")
         }
     }
 }

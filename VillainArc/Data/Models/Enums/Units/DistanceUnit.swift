@@ -6,6 +6,19 @@ enum DistanceUnit: String, CaseIterable, Codable {
 
     nonisolated static var systemDefault: DistanceUnit { Locale.current.measurementSystem == .us ? .mi : .km }
 
+    nonisolated var unitLabel: String { rawValue }
+
+    nonisolated var paceUnitLabel: String { "/\(unitLabel)" }
+
+    nonisolated var accessibilityUnitLabel: String {
+        switch self {
+        case .km:
+            return String(localized: "kilometers")
+        case .mi:
+            return String(localized: "miles")
+        }
+    }
+
     nonisolated func fromMeters(_ meters: Double) -> Double {
         switch self {
         case .km: return meters / 1_000
@@ -20,5 +33,5 @@ enum DistanceUnit: String, CaseIterable, Codable {
         }
     }
 
-    nonisolated func display(_ meters: Double, fractionDigits: ClosedRange<Int> = 0...2) -> String { "\(fromMeters(meters).formatted(.number.precision(.fractionLength(fractionDigits)))) \(rawValue)" }
+    nonisolated func display(_ meters: Double, fractionDigits: ClosedRange<Int> = 0...2) -> String { "\(fromMeters(meters).formatted(.number.precision(.fractionLength(fractionDigits)))) \(unitLabel)" }
 }

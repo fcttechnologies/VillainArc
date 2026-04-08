@@ -132,7 +132,7 @@ private struct StepsDistanceMainChartSection: View {
             }
             return baseText
         }
-        guard let latestEntry else { return "No entries in this range" }
+        guard let latestEntry else { return String(localized: "No entries in this range") }
         return formattedRecentDay(latestEntry.date)
     }
 
@@ -248,11 +248,11 @@ private struct StepsDistanceMainChartSection: View {
                         if currentRangeData.averageSteps != nil || currentRangeData.highSteps != nil {
                             HStack {
                                 if let averageSteps = currentRangeData.averageSteps {
-                                    HealthHistoryMetadataValue(title: "Avg", text: Int(averageSteps.rounded()).formatted(.number), animationValue: averageSteps)
+                                    HealthHistoryMetadataValue(title: String(localized: "Avg"), text: Int(averageSteps.rounded()).formatted(.number), animationValue: averageSteps)
                                 }
                                 Spacer()
                                 if let highSteps = currentRangeData.highSteps {
-                                    HealthHistoryMetadataValue(title: "High", text: Int(highSteps.rounded()).formatted(.number), animationValue: highSteps)
+                                    HealthHistoryMetadataValue(title: String(localized: "High"), text: Int(highSteps.rounded()).formatted(.number), animationValue: highSteps)
                                 }
                             }
                         }
@@ -265,7 +265,7 @@ private struct StepsDistanceMainChartSection: View {
                                 .fontWeight(.semibold)
                             Spacer()
                             if let totalSteps = currentRangeData.totalSteps {
-                                HealthHistoryMetadataValue(title: "Total", text: Int(totalSteps.rounded()).formatted(.number), animationValue: totalSteps)
+                                HealthHistoryMetadataValue(title: String(localized: "Total"), text: Int(totalSteps.rounded()).formatted(.number), animationValue: totalSteps)
                             }
                         }
                     }
@@ -406,21 +406,21 @@ private struct StepsDistanceWeekdayChartSection: View {
     private var presentation: WeekdayAverageChartPresentation {
         guard isWeekdayChartAvailable else {
             let summaryText = String(localized: "Weekday averages need at least 2 entries for every weekday")
-            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
         }
         guard let displayedWeekdayPoint else {
             let summaryText = String(localized: "Weekday step averages are unavailable")
-            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
         }
         let stepsText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
         let valueText = Text(stepsText).foregroundStyle(tint)
         let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
             let summaryText = String(localized: "You walk \(stepsText) steps on \(weekdayText).")
-            return WeekdayAverageChartPresentation(headline: Text("You walk \(valueText) steps on \(weekdayText)."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text("You walk \(valueText) steps on \(weekdayText)."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
         }
         let summaryText = String(localized: "You walk the most on \(weekdayText). \(stepsText) steps.")
-        return WeekdayAverageChartPresentation(headline: Text("You walk the most on \(weekdayText). \(valueText) steps."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        return WeekdayAverageChartPresentation(headline: Text("You walk the most on \(weekdayText). \(valueText) steps."), accessibilityValue: AccessibilityText.healthStepsWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
     }
 
     var body: some View {
@@ -447,10 +447,10 @@ private struct StepsDistancePeriodHighlightsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             if let monthlyHighlight {
-                PeriodComparisonHighlightCard(summary: stepsSummaryText(for: monthlyHighlight), accessibilitySummary: stepsSummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: "steps/day", tint: tint)
+                PeriodComparisonHighlightCard(summary: stepsSummaryText(for: monthlyHighlight), accessibilitySummary: stepsSummary(for: monthlyHighlight), currentValue: monthlyHighlight.currentAverage, previousValue: monthlyHighlight.previousAverage, currentLabel: monthlyHighlight.currentLabel, previousLabel: monthlyHighlight.previousLabel, unitText: String(localized: "steps/day"), tint: tint)
             }
             if let yearlyHighlight {
-                PeriodComparisonHighlightCard(summary: stepsSummaryText(for: yearlyHighlight), accessibilitySummary: stepsSummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: "steps/day", tint: tint)
+                PeriodComparisonHighlightCard(summary: stepsSummaryText(for: yearlyHighlight), accessibilitySummary: stepsSummary(for: yearlyHighlight), currentValue: yearlyHighlight.currentAverage, previousValue: yearlyHighlight.previousAverage, currentLabel: yearlyHighlight.currentLabel, previousLabel: yearlyHighlight.previousLabel, unitText: String(localized: "steps/day"), tint: tint)
             }
         }
     }
@@ -477,17 +477,17 @@ private struct StepsDistancePeriodHighlightsSection: View {
         let yearLeadIn = yearComparisonLeadIn()
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return "You're walking more this month than you did last month."
+            return String(localized: "You're walking more this month than you did last month.")
         case (.month, .down):
-            return "You're walking less this month than you did last month."
+            return String(localized: "You're walking less this month than you did last month.")
         case (.month, .flat):
-            return "You're walking about the same this month as you did last month."
+            return String(localized: "You're walking about the same this month as you did last month.")
         case (.year, .up):
-            return "\(yearLeadIn), you're taking more steps a day than you did last year."
+            return String(localized: "\(yearLeadIn), you're taking more steps a day than you did last year.")
         case (.year, .down):
-            return "\(yearLeadIn), you're taking fewer steps a day than you did last year."
+            return String(localized: "\(yearLeadIn), you're taking fewer steps a day than you did last year.")
         case (.year, .flat):
-            return "\(yearLeadIn), you're taking about the same number of steps a day as you did last year."
+            return String(localized: "\(yearLeadIn), you're taking about the same number of steps a day as you did last year.")
         }
     }
 }

@@ -3,6 +3,7 @@ import SwiftData
 
 struct WorkoutSplitDayView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var splitDay: WorkoutSplitDay
     let mode: SplitMode
     @State private var showPlanPicker = false
@@ -56,7 +57,7 @@ struct WorkoutSplitDayView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayRestUnavailable)
             }
         }
-        .animation(.easeInOut, value: splitDay.isRestDay)
+        .animation(reduceMotion ? nil : .easeInOut, value: splitDay.isRestDay)
         .onChange(of: splitDay.isRestDay) {
             saveContext(context: context)
             reindexSplit()
@@ -109,9 +110,9 @@ struct WorkoutSplitDayView: View {
 
     private var targetMusclesSummary: String {
         if splitDay.targetMuscles.isEmpty {
-            return "Select muscles"
+            return AccessibilityText.workoutSplitTargetMusclesNoneValue
         }
-        return "\(splitDay.targetMuscles.count) muscles"
+        return AccessibilityText.workoutSplitTargetMusclesCountValue(splitDay.targetMuscles.count)
     }
     
     private func weekdayName(for weekday: Int) -> String {

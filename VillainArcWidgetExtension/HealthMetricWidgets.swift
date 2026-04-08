@@ -20,10 +20,10 @@ private enum HealthMetricWidgetKind {
 
     var title: String {
         switch self {
-        case .weight: "Weight"
-        case .sleep: "Sleep"
-        case .steps: "Steps"
-        case .energy: "Energy"
+        case .weight: String(localized: "Weight")
+        case .sleep: String(localized: "Sleep")
+        case .steps: String(localized: "Steps")
+        case .energy: String(localized: "Energy")
         }
     }
 
@@ -47,28 +47,28 @@ private enum HealthMetricWidgetKind {
 
     var displayName: String {
         switch self {
-        case .weight: "Weight"
-        case .sleep: "Sleep"
-        case .steps: "Steps"
-        case .energy: "Energy"
+        case .weight: String(localized: "Weight")
+        case .sleep: String(localized: "Sleep")
+        case .steps: String(localized: "Steps")
+        case .energy: String(localized: "Energy")
         }
     }
 
     var description: String {
         switch self {
-        case .weight: "Shows your latest weight and current goal."
-        case .sleep: "Shows your latest sleep duration."
-        case .steps: "Shows your latest steps entry and current goal."
-        case .energy: "Shows your latest active and total energy."
+        case .weight: String(localized: "Shows your latest weight and current goal.")
+        case .sleep: String(localized: "Shows your latest sleep duration.")
+        case .steps: String(localized: "Shows your latest steps entry and current goal.")
+        case .energy: String(localized: "Shows your latest active and total energy.")
         }
     }
 
     var emptyMessage: String {
         switch self {
-        case .weight: "Add or sync a weight entry to see it here."
-        case .sleep: "Sleep data will appear here after your next sync."
-        case .steps: "Steps data will appear here after your next sync."
-        case .energy: "Energy data will appear here after your next sync."
+        case .weight: String(localized: "Add or sync a weight entry to see it here.")
+        case .sleep: String(localized: "Sleep data will appear here after your next sync.")
+        case .steps: String(localized: "Steps data will appear here after your next sync.")
+        case .energy: String(localized: "Energy data will appear here after your next sync.")
         }
     }
 
@@ -180,9 +180,9 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             if let activeGoal {
                 if activeGoal.type == .maintain {
                     goalLabelText = nil
-                    goalValueText = "Maintain"
+                    goalValueText = String(localized: "Maintain")
                 } else {
-                    goalLabelText = "Goal:"
+                    goalLabelText = String(localized: "Goal:")
                     goalValueText = formattedWeightText(activeGoal.targetWeight, unit: settings.weightUnit)
                 }
             } else {
@@ -230,9 +230,9 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             if let activeGoal {
                 if todayEntry?.goalCompleted == true {
                     goalLabelText = nil
-                    goalValueText = "Goal achieved"
+                    goalValueText = String(localized: "Goal achieved")
                 } else {
-                    goalLabelText = "Goal:"
+                    goalLabelText = String(localized: "Goal:")
                     goalValueText = widgetCompactStepsText(activeGoal.targetSteps)
                 }
             } else {
@@ -315,15 +315,15 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             return .init(
                 date: .now,
                 metric: .weight,
-                latestDateText: "Today",
-                content: .weight(goalLabelText: "Goal:", goalValueText: "180 lb", valueText: "182.4", unitText: "lb"),
+                latestDateText: String(localized: "Today"),
+                content: .weight(goalLabelText: String(localized: "Goal:"), goalValueText: "180 lb", valueText: "182.4", unitText: "lb"),
                 chartContent: .weight(sampleValuePoints([180.6, 180.3, 181.1, 180.7, 181.4, 182.0, 182.4]))
             )
         case .sleep:
             return .init(
                 date: .now,
                 metric: .sleep,
-                latestDateText: "Today",
+                latestDateText: String(localized: "Today"),
                 content: .sleep(duration: 7 * 3_600 + 22 * 60),
                 chartContent: .sleep(sampleValuePoints([6.8 * 3_600, 7.1 * 3_600, 6.4 * 3_600, 7.6 * 3_600, 7.0 * 3_600, 6.9 * 3_600, 7.37 * 3_600]))
             )
@@ -331,15 +331,15 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             return .init(
                 date: .now,
                 metric: .steps,
-                latestDateText: "Today",
-                content: .steps(goalLabelText: "Goal:", goalValueText: "10k", stepCount: 8421),
+                latestDateText: String(localized: "Today"),
+                content: .steps(goalLabelText: String(localized: "Goal:"), goalValueText: "10k", stepCount: 8421),
                 chartContent: .steps(sampleValuePoints([6200, 9100, 10400, 7400, 11350, 9800, 8421]))
             )
         case .energy:
             return .init(
                 date: .now,
                 metric: .energy,
-                latestDateText: "Today",
+                latestDateText: String(localized: "Today"),
                 content: .energy(activeText: "620", totalText: "2,380"),
                 chartContent: .energy(sampleEnergyPoints(active: [540, 610, 720, 450, 810, 690, 620], resting: [1680, 1710, 1695, 1705, 1720, 1715, 1760]))
             )
@@ -560,7 +560,7 @@ private struct HealthMetricWidgetView: View {
                     .minimumScaleFactor(0.8)
 
                 if shouldShowStepsUnit(for: stepCount) {
-                    Text(stepCount == 1 ? "Step" : "Steps")
+                    Text(stepCount == 1 ? String(localized: "Step") : String(localized: "Steps"))
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
@@ -596,7 +596,7 @@ private struct HealthMetricWidgetView: View {
                     .bold()
                     .minimumScaleFactor(0.8)
 
-                Text("Active")
+                Text(String(localized: "Active"))
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
@@ -610,7 +610,7 @@ private struct HealthMetricWidgetView: View {
                     .bold()
                     .minimumScaleFactor(0.7)
 
-                Text("Total")
+                Text(String(localized: "Total"))
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
@@ -646,7 +646,7 @@ private struct HealthMetricWidgetSleepDurationView: View {
                     Text(hours, format: .number)
                         .font(.largeTitle)
                         .minimumScaleFactor(0.7)
-                    Text("hr")
+                    Text(String(localized: "hr"))
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
@@ -659,7 +659,7 @@ private struct HealthMetricWidgetSleepDurationView: View {
                 Text(minutes, format: .number)
                     .font(.largeTitle)
                     .minimumScaleFactor(0.7)
-                Text("min")
+                Text(String(localized: "min"))
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
@@ -693,22 +693,22 @@ private struct HealthMetricWidgetWeightChart: View {
     var body: some View {
         Chart {
             ForEach(points) { point in
-                LineMark(x: .value("Date", point.date), y: .value("Weight", point.value))
+                LineMark(x: .value(String(localized: "Date"), point.date), y: .value(String(localized: "Weight"), point.value))
                     .foregroundStyle(tint)
                     .lineStyle(.init(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
                     .interpolationMethod(.catmullRom)
             }
 
             if let latestDate, let latestPoint = points.last {
-                PointMark(x: .value("Latest Date", latestDate), y: .value("Latest Weight", latestPoint.value))
+                PointMark(x: .value(String(localized: "Latest Date"), latestDate), y: .value(String(localized: "Latest Weight"), latestPoint.value))
                     .foregroundStyle(tint.opacity(0.2))
                     .symbolSize(280)
 
-                PointMark(x: .value("Latest Date", latestDate), y: .value("Latest Weight", latestPoint.value))
+                PointMark(x: .value(String(localized: "Latest Date"), latestDate), y: .value(String(localized: "Latest Weight"), latestPoint.value))
                     .foregroundStyle(.white)
                     .symbolSize(120)
 
-                PointMark(x: .value("Latest Date", latestDate), y: .value("Latest Weight", latestPoint.value))
+                PointMark(x: .value(String(localized: "Latest Date"), latestDate), y: .value(String(localized: "Latest Weight"), latestPoint.value))
                     .foregroundStyle(tint)
                     .symbolSize(64)
             }
@@ -731,7 +731,7 @@ private struct HealthMetricWidgetSleepChart: View {
 
     var body: some View {
         Chart(points) { point in
-            BarMark(x: .value("Wake Day", point.date, unit: .day), y: .value("Time Asleep", point.value), width: .ratio(0.92))
+            BarMark(x: .value(String(localized: "Wake Day"), point.date, unit: .day), y: .value(String(localized: "Time Asleep"), point.value), width: .ratio(0.92))
                 .foregroundStyle(point.date == latestDate ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(tint.opacity(0.3).gradient))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
         }
@@ -754,7 +754,7 @@ private struct HealthMetricWidgetStepsChart: View {
 
     var body: some View {
         Chart(points) { point in
-            BarMark(x: .value("Date", point.date, unit: .day), y: .value("Steps", point.value), width: .ratio(0.92))
+            BarMark(x: .value(String(localized: "Date"), point.date, unit: .day), y: .value(String(localized: "Steps"), point.value), width: .ratio(0.92))
                 .foregroundStyle(point.date == latestDate ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(tint.opacity(0.3).gradient))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4))
         }
@@ -781,7 +781,7 @@ private struct HealthMetricWidgetEnergyChart: View {
 
     var body: some View {
         Chart(points) { point in
-            BarMark(x: .value("Date", point.date, unit: .day), y: .value(point.kind.rawValue.capitalized, point.value), width: .ratio(0.92))
+            BarMark(x: .value(String(localized: "Date"), point.date, unit: .day), y: .value(energyKindLabel(point.kind), point.value), width: .ratio(0.92))
                 .foregroundStyle(barStyle(for: point))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: point.kind == .active ? 1 : 4, topTrailingRadius: point.kind == .active ? 1 : 4))
         }
@@ -798,6 +798,15 @@ private struct HealthMetricWidgetEnergyChart: View {
             return isLatest ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(tint.opacity(0.35).gradient)
         case .resting:
             return isLatest ? AnyShapeStyle(tint.opacity(0.22).gradient) : AnyShapeStyle(tint.opacity(0.1).gradient)
+        }
+    }
+
+    private func energyKindLabel(_ kind: HealthMetricWidgetEnergyPoint.Kind) -> String {
+        switch kind {
+        case .active:
+            return String(localized: "Active")
+        case .resting:
+            return String(localized: "Resting")
         }
     }
 }

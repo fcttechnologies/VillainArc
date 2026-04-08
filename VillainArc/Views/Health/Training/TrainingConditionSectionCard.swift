@@ -8,17 +8,17 @@ struct TrainingConditionSectionCard: View {
     private var activePeriod: TrainingConditionPeriod? { activePeriods.first }
 
     private var titleText: String {
-        activePeriod?.kind.title ?? "Training Normally"
+        activePeriod?.kind.title ?? String(localized: "Training Normally")
     }
 
     private var subtitleText: String {
         if let activePeriod {
             if let endDay = TrainingConditionStore.displayedEndDay(for: activePeriod.endDate) {
-                return "Ends \(formattedRecentDay(endDay))"
+                return String(localized: "Ends \(formattedRecentDay(endDay))")
             }
-            return "Until changed"
+            return String(localized: "Until changed")
         }
-        return "Until changed"
+        return String(localized: "Until changed")
     }
 
     private var cardAccessibilityLabel: String {

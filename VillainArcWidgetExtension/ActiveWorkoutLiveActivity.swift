@@ -6,6 +6,15 @@ import AppIntents
 private enum WorkoutLiveActivityAccessibilityText {
     static let resumeRestTimerLabel = String(localized: "Resume rest timer")
     static let completeSetLabel = String(localized: "Complete next set")
+    static let completedWithPRsLabel = String(localized: "Workout completed with personal records")
+    static let completedLabel = String(localized: "Workout completed")
+    static let tapToAddExercise = String(localized: "Tap to add an exercise")
+    static let allSetsComplete = String(localized: "All sets complete")
+    static let exercisesTitle = String(localized: "Exercises")
+    static let setsTitle = String(localized: "Sets")
+    static let prsTitle = String(localized: "PRs")
+    static let volumeTitle = String(localized: "Volume")
+    static let done = String(localized: "Done")
 }
 
 struct WorkoutLiveActivity: Widget {
@@ -36,7 +45,7 @@ struct WorkoutLiveActivity: Widget {
                 } minimal: {
                     Image(systemName: context.state.hasSummaryPRs ? "trophy.fill" : "checkmark.circle.fill")
                         .foregroundStyle(context.state.hasSummaryPRs ? .yellow : .green)
-                        .accessibilityLabel(context.state.hasSummaryPRs ? "Workout completed with personal records" : "Workout completed")
+                        .accessibilityLabel(context.state.hasSummaryPRs ? WorkoutLiveActivityAccessibilityText.completedWithPRsLabel : WorkoutLiveActivityAccessibilityText.completedLabel)
                 }
             } else {
                 return DynamicIsland {
@@ -102,7 +111,7 @@ struct WorkoutLiveActivity: Widget {
                             .padding(.leading, 6)
                         } else if !context.state.hasExercises {
                             Button(intent: LiveActivityAddExerciseIntent()) {
-                                Text("Tap to add an exercise")
+                                Text(WorkoutLiveActivityAccessibilityText.tapToAddExercise)
                                     .fontWeight(.semibold)
                                     .fontDesign(.rounded)
                                     .font(.title2)
@@ -110,7 +119,7 @@ struct WorkoutLiveActivity: Widget {
                             .buttonStyle(.plain)
                             .frame(maxWidth: .infinity, alignment: .center)
                         } else {
-                            Text("All sets complete")
+                            Text(WorkoutLiveActivityAccessibilityText.allSetsComplete)
                                 .fontWeight(.semibold)
                                 .font(.title2)
                                 .fontDesign(.rounded)
@@ -350,20 +359,20 @@ private struct WorkoutLiveActivitySummaryTopMetricView: View {
         case let .personalRecords(count):
             "\(count)"
         case .completed:
-            "Done"
+            WorkoutLiveActivityAccessibilityText.done
         }
     }
 
     private var metricUnitText: String? {
         switch metric {
         case .averageHeartRate:
-            "bpm"
+            String(localized: "bpm")
         case let .totalEnergy(_, unit):
             displayedLiveEnergyUnitText(for: unit)
         case .duration:
-            "Duration"
+            String(localized: "Duration")
         case .personalRecords:
-            "PRs"
+            WorkoutLiveActivityAccessibilityText.prsTitle
         case .completed:
             nil
         }
@@ -372,15 +381,15 @@ private struct WorkoutLiveActivitySummaryTopMetricView: View {
     private var metricAccessibilityLabel: String {
         switch metric {
         case let .averageHeartRate(value):
-            "Average heart rate \(Int(value.rounded())) beats per minute"
+            String(localized: "Average heart rate \(Int(value.rounded())) beats per minute")
         case let .totalEnergy(value, unit):
-            "Total calories \(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded())) \(displayedLiveEnergyUnitText(for: unit))"
+            String(localized: "Total calories \(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded())) \(displayedLiveEnergyUnitText(for: unit))")
         case let .duration(startDate, endDate):
-            "Duration \(formattedWorkoutDuration(start: startDate, end: endDate))"
+            String(localized: "Duration \(formattedWorkoutDuration(start: startDate, end: endDate))")
         case let .personalRecords(count):
-            "\(count) personal records"
+            String(localized: "\(count) personal records")
         case .completed:
-            "Workout completed"
+            WorkoutLiveActivityAccessibilityText.completedLabel
         }
     }
 }
@@ -439,16 +448,16 @@ private struct WorkoutLiveActivitySummaryStatRow: View {
 
     private var statItems: [WorkoutLiveActivitySummaryStatItem] {
         var items = [
-            WorkoutLiveActivitySummaryStatItem(id: "exercises", title: "Exercises", value: "\(state.completedExerciseCount ?? 0)"),
-            WorkoutLiveActivitySummaryStatItem(id: "sets", title: "Sets", value: "\(state.completedSetCount ?? 0)")
+            WorkoutLiveActivitySummaryStatItem(id: "exercises", title: WorkoutLiveActivityAccessibilityText.exercisesTitle, value: "\(state.completedExerciseCount ?? 0)"),
+            WorkoutLiveActivitySummaryStatItem(id: "sets", title: WorkoutLiveActivityAccessibilityText.setsTitle, value: "\(state.completedSetCount ?? 0)")
         ]
 
         if let prCount = state.summaryPRCount, prCount > 0 {
-            items.append(.init(id: "prs", title: "PRs", value: "\(prCount)"))
+            items.append(.init(id: "prs", title: WorkoutLiveActivityAccessibilityText.prsTitle, value: "\(prCount)"))
         }
 
         if let summaryVolume = state.summaryVolume {
-            items.append(.init(id: "volume", title: "Volume", value: formattedSummaryVolume(summaryVolume, unit: state.weightUnit)))
+            items.append(.init(id: "volume", title: WorkoutLiveActivityAccessibilityText.volumeTitle, value: formattedSummaryVolume(summaryVolume, unit: state.weightUnit)))
         }
 
         return items
@@ -471,7 +480,7 @@ private struct WorkoutLiveActivitySummaryStatRow: View {
                 .frame(maxWidth: .infinity)
                 .fontDesign(.rounded)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(item.title), \(item.value)")
+                .accessibilityLabel(String(localized: "\(item.title), \(item.value)"))
             }
         }
     }
@@ -508,14 +517,14 @@ private struct WorkoutLiveActivityExpandedBottomContent: View {
             }
         } else if !state.hasExercises {
             Button(intent: LiveActivityAddExerciseIntent()) {
-                Text("Tap to add an exercise")
+                Text(WorkoutLiveActivityAccessibilityText.tapToAddExercise)
                     .fontDesign(.rounded)
                     .font(isSmall ? .footnote : .title2)
                     .fontWeight(.semibold)
             }
             .buttonStyle(.plain)
         } else {
-            Text("All sets complete")
+            Text(WorkoutLiveActivityAccessibilityText.allSetsComplete)
                 .fontDesign(.rounded)
                 .font(isSmall ? .footnote : .title2)
                 .fontWeight(.semibold)
@@ -842,37 +851,37 @@ private func summaryCompactMetricText(_ metric: WorkoutLiveActivitySummaryMetric
     case let .personalRecords(count):
         "\(count)"
     case .completed:
-        "Done"
+        WorkoutLiveActivityAccessibilityText.done
     }
 }
 
 private func summaryExpandedMetricText(_ metric: WorkoutLiveActivitySummaryMetric) -> String {
     switch metric {
     case let .averageHeartRate(value):
-        "\(Int(value.rounded())) bpm"
+        String(localized: "\(Int(value.rounded())) bpm")
     case let .totalEnergy(value, unit):
         "\(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded()).formatted(.number)) \(displayedLiveEnergyUnitText(for: unit))"
     case let .duration(startDate, endDate):
         formattedWorkoutDuration(start: startDate, end: endDate)
     case let .personalRecords(count):
-        "\(count) PRs"
+        String(localized: "\(count) PRs")
     case .completed:
-        "Done"
+        WorkoutLiveActivityAccessibilityText.done
     }
 }
 
 private func summaryMetricAccessibilityLabel(_ metric: WorkoutLiveActivitySummaryMetric) -> String {
     switch metric {
     case let .averageHeartRate(value):
-        "Average heart rate \(Int(value.rounded())) beats per minute"
+        String(localized: "Average heart rate \(Int(value.rounded())) beats per minute")
     case let .totalEnergy(value, unit):
-        "Total calories \(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded())) \(displayedLiveEnergyUnitText(for: unit))"
+        String(localized: "Total calories \(Int(displayedLiveEnergyValue(for: value, unit: unit).rounded())) \(displayedLiveEnergyUnitText(for: unit))")
     case let .duration(startDate, endDate):
-        "Duration \(formattedWorkoutDuration(start: startDate, end: endDate))"
+        String(localized: "Duration \(formattedWorkoutDuration(start: startDate, end: endDate))")
     case let .personalRecords(count):
-        "\(count) personal records"
+        String(localized: "\(count) personal records")
     case .completed:
-        "Workout completed"
+        WorkoutLiveActivityAccessibilityText.completedLabel
     }
 }
 
@@ -883,10 +892,10 @@ private func formattedWorkoutDuration(start: Date, end: Date?) -> String {
     let minutes = (totalSeconds % 3600) / 60
 
     if hours > 0 {
-        return "\(hours)h \(minutes)m"
+        return String(localized: "\(hours)h \(minutes)m")
     }
 
-    return "\(minutes)m"
+    return String(localized: "\(minutes)m")
 }
 
 private func formattedWorkoutTimeRange(start: Date, end: Date?) -> String {
@@ -916,10 +925,10 @@ private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> 
         return ""
     }
     
-    var parts: [String] = ["Set \(setNumber)/\(totalSets)"]
+    var parts: [String] = [String(localized: "Set \(setNumber)/\(totalSets)")]
     
     if let reps = state.reps, reps > 0 {
-        parts.append("\(reps) reps")
+        parts.append(String(localized: "\(reps) reps"))
     }
 
     if let weight = state.weight, weight > 0 {
@@ -929,7 +938,7 @@ private func setDescription(_ state: WorkoutActivityAttributes.ContentState) -> 
     }
     
     if let targetRPE = state.targetRPE {
-        parts.append("RPE \(targetRPE)")
+        parts.append(String(localized: "RPE \(targetRPE)"))
     }
     
     return parts.joined(separator: " · ")
@@ -946,12 +955,12 @@ private func compactSetDescription(_ state: WorkoutActivityAttributes.ContentSta
        let reps,
        let formattedWeight {
         parts.append("\(reps)x\(formattedWeight) \(unit)")
-        parts.append("RPE \(targetRPE)")
+        parts.append(String(localized: "RPE \(targetRPE)"))
         return parts.joined(separator: " · ")
     }
 
     if let reps {
-        parts.append("\(reps) reps")
+        parts.append(String(localized: "\(reps) reps"))
     }
 
     if let formattedWeight {
@@ -959,7 +968,7 @@ private func compactSetDescription(_ state: WorkoutActivityAttributes.ContentSta
     }
 
     if let targetRPE = state.targetRPE {
-        parts.append("RPE \(targetRPE)")
+        parts.append(String(localized: "RPE \(targetRPE)"))
     }
 
     return parts.joined(separator: " · ")

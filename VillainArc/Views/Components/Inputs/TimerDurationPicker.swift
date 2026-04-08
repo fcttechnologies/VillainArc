@@ -3,6 +3,7 @@ import UIKit
 
 struct TimerDurationPicker: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // Output in seconds (0...600, step 15)
     @Binding var seconds: Int
 
@@ -65,7 +66,7 @@ struct TimerDurationPicker: View {
             }
             .contentShape(Rectangle())
             .animation(
-                isDragging ? nil : .interpolatingSpring(stiffness: 120, damping: 20),
+                isDragging || reduceMotion ? nil : .interpolatingSpring(stiffness: 120, damping: 20),
                 value: seconds
             )
             .gesture(
@@ -77,7 +78,7 @@ struct TimerDurationPicker: View {
                             lastHapticIndex = currentIndex
                         }
 
-                        withAnimation(.interactiveSpring) {
+                        withAnimation(reduceMotion ? nil : .interactiveSpring) {
                             let rawOffset = gesture.translation.width
                             let offsetSteps = rawOffset / stepWidth  // in "tick indices"
 
@@ -116,7 +117,7 @@ struct TimerDurationPicker: View {
                         let finalIndex = Int(rawFinalIndex.rounded()).clamped(to: 0...(ticks.count - 1))
                         let finalSeconds = ticks[finalIndex]
 
-                        withAnimation(.interpolatingSpring(stiffness: 120, damping: 20)) {
+                        withAnimation(reduceMotion ? nil : .interpolatingSpring(stiffness: 120, damping: 20)) {
                             seconds = finalSeconds
                             dragOffset = 0
                             isDragging = false

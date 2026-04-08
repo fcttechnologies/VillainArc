@@ -110,15 +110,15 @@ struct WeightGoalSummaryCard: View {
     
     private func activeGoalTitle(_ goal: WeightGoal) -> String {
         if goal.type == .maintain {
-            return "Maintain around \(formattedWeightText(goal.targetWeight, unit: weightUnit))"
+            return String(localized: "Maintain around \(formattedWeightText(goal.targetWeight, unit: weightUnit))")
         }
         
-        return "\(goal.type.title) to \(formattedWeightText(goal.targetWeight, unit: weightUnit))"
+        return String(localized: "\(goal.type.title) to \(formattedWeightText(goal.targetWeight, unit: weightUnit))")
     }
     
     private var subtitleText: String? {
         guard let targetDate = activeGoal?.targetDate else { return nil }
-        return "Target \(formattedRecentDay(targetDate))"
+        return String(localized: "Target \(formattedRecentDay(targetDate))")
     }
     
     private var progressText: String? {
@@ -141,7 +141,7 @@ struct WeightGoalSummaryCard: View {
     }
     
     private var emptyStateText: String {
-        hasGoalHistory ? "Tap to view your goal history." : "Tap to create a weight goal."
+        hasGoalHistory ? String(localized: "Tap to view your goal history.") : String(localized: "Tap to create a weight goal.")
     }
 }
 
@@ -154,11 +154,11 @@ struct WeightGoalAnalysis {
         var title: String {
             switch self {
             case .onTrack:
-                return "On Track"
+                return String(localized: "On Track")
             case .aheadOfSchedule:
-                return "Ahead of Schedule"
+                return String(localized: "Ahead of Schedule")
             case .behindSchedule:
-                return "Behind Schedule"
+                return String(localized: "Behind Schedule")
             }
         }
         
@@ -322,10 +322,10 @@ struct WeightGoalProgressChartModel {
 
 nonisolated func weightGoalProgressText(goal: WeightGoal, currentWeight: Double, unit: WeightUnit) -> String {
     let totalChangeNeeded = abs(goal.targetWeight - goal.startWeight)
-    guard totalChangeNeeded > 0.05 else { return "At target" }
+    guard totalChangeNeeded > 0.05 else { return String(localized: "At target") }
     let progress = min(max(abs(currentWeight - goal.startWeight), 0), totalChangeNeeded)
     let progressValue = unit.fromKg(progress).formatted(.number.precision(.fractionLength(0...1)))
-    return "\(progressValue) / \(formattedWeightText(totalChangeNeeded, unit: unit, fractionDigits: 0...1))"
+    return String(localized: "\(progressValue) / \(formattedWeightText(totalChangeNeeded, unit: unit, fractionDigits: 0...1))")
 }
 
 struct WeightGoalProgressChart: View {

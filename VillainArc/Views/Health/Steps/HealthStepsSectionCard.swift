@@ -23,9 +23,9 @@ struct HealthStepsSectionCard: View {
     private var activeGoalText: String? {
         guard let activeGoal else { return nil }
         if todayEntry?.goalCompleted == true {
-            return "Goal achieved"
+            return String(localized: "Goal achieved")
         }
-        return "Goal: \(compactStepsText(activeGoal.targetSteps))"
+        return String(localized: "Goal: \(compactStepsText(activeGoal.targetSteps))")
     }
 
     private var cardAccessibilityLabel: String {

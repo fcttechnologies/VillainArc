@@ -299,7 +299,7 @@ private struct WorkoutSessionDetailContent: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailEffortDisplay)
                     .accessibilityLabel(AccessibilityText.workoutDetailEffortLabel)
-                    .accessibilityValue("\(workout.postEffort)/10. \(workoutEffortDescription(workout.postEffort))")
+                    .accessibilityValue(AccessibilityText.workoutDetailEffortValue(score: workout.postEffort, description: workoutEffortDescription(workout.postEffort)))
             }
         }
     }

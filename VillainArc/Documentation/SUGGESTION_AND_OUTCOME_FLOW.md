@@ -129,7 +129,7 @@ It currently separates suggestion state into:
 - `To Review`
   - pending or deferred user decisions
 - `Awaiting Outcome`
-  - accepted suggestions whose outcomes are still unresolved
+  - accepted or rejected suggestions whose outcomes are still unresolved
 
 This sheet does not generate anything new. It is a management view over suggestion state already attached to the plan.
 

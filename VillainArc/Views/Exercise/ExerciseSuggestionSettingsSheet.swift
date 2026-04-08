@@ -30,8 +30,8 @@ struct ExerciseSuggestionSettingsSheet: View {
     private var validationMessage: String? {
         guard suggestionsEnabled else { return nil }
         guard !trimmedValueText.isEmpty else { return nil }
-        guard let parsedValue else { return "Enter a valid number." }
-        guard parsedValue > 0 else { return "Enter a value greater than 0." }
+        guard let parsedValue else { return String(localized: "Enter a valid number.") }
+        guard parsedValue > 0 else { return String(localized: "Enter a value greater than 0.") }
         return nil
     }
 
@@ -98,7 +98,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                                     TextField("System default", text: $valueText)
                                         .keyboardType(.decimalPad)
                                         .focused($isValueFieldFocused)
-                                        .accessibilityIdentifier("exerciseProgressionStepValueField")
+                                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseProgressionStepValueField)
 
                                     Text(weightUnit.rawValue)
                                         .foregroundStyle(.secondary)
@@ -195,7 +195,8 @@ struct ExerciseSuggestionSettingsSheet: View {
                     }
                     .labelStyle(.iconOnly)
                     .disabled(!canSave)
-                    .accessibilityIdentifier("exerciseSuggestionSettingsSaveButton")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSuggestionSettingsSaveButton)
+                    .accessibilityHint(AccessibilityText.exerciseSuggestionSettingsSaveHint)
                 }
             }
             .onAppear {

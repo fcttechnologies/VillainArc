@@ -93,6 +93,7 @@ enum AccessibilityIdentifiers {
     static let workoutsDoneEditingButton = "workoutsDoneEditingButton"
     static let workoutsEditButton = "workoutsEditButton"
     static let workoutsEmptyState = "workoutsEmptyState"
+    static let healthWorkoutRow = "healthWorkoutRow"
 
     // MARK: - WorkoutPlansListView
     static let workoutPlansList = "workoutPlansList"
@@ -203,6 +204,9 @@ enum AccessibilityIdentifiers {
     static let exerciseDetailEmptyState = "exerciseDetailEmptyState"
     static let exerciseDetailScrollView = "exerciseDetailScrollView"
     static let exerciseDetailHistoryButton = "exerciseDetailHistoryButton"
+    static let exerciseDetailSuggestionSettingsButton = "exerciseDetailSuggestionSettingsButton"
+    static let exerciseProgressionStepValueField = "exerciseProgressionStepValueField"
+    static let exerciseSuggestionSettingsSaveButton = "exerciseSuggestionSettingsSaveButton"
 
     // MARK: - ExerciseHistoryView
     static let exerciseHistoryEmptyState = "exerciseHistoryEmptyState"
@@ -221,6 +225,7 @@ enum AccessibilityIdentifiers {
 
     // MARK: - Navbar
     static let navBarCloseButton = "navBarCloseButton"
+    static let textEntryEditorField = "textEntryEditorField"
 
     // MARK: - TimerDurationPicker
     static let timerDurationPicker = "timerDurationPicker"
@@ -722,6 +727,8 @@ enum AccessibilityText {
     static let healthWorkoutDetailEffortLabel = localized("Workout effort")
     static let workoutPreMoodHint = localized("Updates your pre-workout energy.")
     static let workoutDeleteEmptyLabel = localized("Delete Workout")
+    static func workoutDetailEffortValue(score: Int, description: String) -> String { localized("\(score)/10. \(description)") }
+    static let exerciseDetailSuggestionSettingsHint = localized("Opens exercise suggestion settings.")
 
     // MARK: - WorkoutPlanDetailView
     static let workoutPlanDetailSuggestionsLabel = localized("AI suggestions")
@@ -752,6 +759,7 @@ enum AccessibilityText {
 
     // MARK: - ExercisesListView
     static let exercisesListFavoritesToggleHint = localized("Filters to favorite exercises.")
+    static let exerciseSuggestionSettingsSaveHint = localized("Saves exercise suggestion settings.")
 
     // MARK: - WorkoutSplitView
     static let workoutSplitRowHint = localized("Shows split details.")
@@ -785,8 +793,10 @@ enum AccessibilityText {
     static let workoutSplitDeleteHint = localized("Deletes this split.")
 
     static func workoutSplitWeekdayCapsuleLabel(_ weekdayName: String) -> String { localized("Select \(weekdayName)") }
+    static func workoutSplitWeekdayCapsuleValue(isToday: Bool) -> String { isToday ? localized("Today") : "" }
 
     static func workoutSplitRotationCapsuleLabel(dayNumber: Int) -> String { localized("Day \(dayNumber)") }
+    static func workoutSplitRotationCapsuleValue(isCurrentDay: Bool) -> String { isCurrentDay ? localized("Current day") : "" }
 
     // MARK: - WorkoutSplitDayView
     static let workoutSplitRestDayToggleHint = localized("Marks this day as a rest day.")
@@ -794,8 +804,11 @@ enum AccessibilityText {
     static let workoutSplitDayPlanButtonHint = localized("Selects a workout plan for this day.")
     static let workoutSplitTargetMusclesLabel = localized("Target muscles")
     static let workoutSplitTargetMusclesHint = localized("Selects the target muscles for this day.")
+    static let workoutSplitTargetMusclesNoneValue = localized("Select muscles")
+    static func workoutSplitTargetMusclesCountValue(_ count: Int) -> String { count == 1 ? localized("1 muscle") : localized("\(count) muscles") }
 
     static func workoutSplitPlanButtonLabel(hasPlan: Bool) -> String { hasPlan ? localized("Change workout plan") : localized("Select workout plan") }
+    static func workoutSplitCapsuleValue(isCurrentDay: Bool) -> String { isCurrentDay ? localized("Current day") : "" }
 
     static func workoutRowLabel(for workout: WorkoutSession) -> String {
         let dateText = formattedRecentDay(workout.startedAt)
@@ -946,9 +959,10 @@ enum AccessibilityText {
     }
 
     // MARK: - WorkoutPlanCardView
-    static func workoutPlanCardValue(exerciseCount: Int, muscles: String) -> String {
+    static func workoutPlanCardValue(exerciseCount: Int, muscles: String, isFavorite: Bool) -> String {
         let exerciseText = exerciseCount == 1 ? localized("1 exercise") : localized("\(exerciseCount) exercises")
-        return localized("\(exerciseText), \(muscles)")
+        let favoriteText = isFavorite ? localized("Favorite") : localized("Not favorite")
+        return localized("\(exerciseText), \(muscles), \(favoriteText)")
     }
 
     // MARK: - Navbar
@@ -965,6 +979,10 @@ enum AccessibilityText {
     static let exerciseSetRepsLabel = localized("Reps")
     static let exerciseSetWeightLabel = localized("Weight")
     static let exerciseSetMenuHint = localized("Opens set options.")
+    static let exerciseSetReferenceLabel = localized("Reference")
+    static let exerciseSetTargetLabel = localized("Target")
+    static let exerciseSetReferenceActionHint = localized("Long-press for options.")
+    static let exerciseSetReferenceNoActionHint = localized("No quick-fill options.")
 
     // MARK: - AddExerciseView
     static let addExerciseCloseLabel = localized("Close")
@@ -1018,6 +1036,7 @@ enum AccessibilityText {
     // MARK: - HealthWorkoutDetailView
     static let healthWorkoutRouteMapLabel = localized("Workout route map")
     static let healthWorkoutHeartRateChartLabel = localized("Heart rate chart")
+    static let workoutEffortDialLabel = localized("Workout effort dial")
 
     static func healthWorkoutRouteMapValue(pointCount: Int) -> String { localized("Route plotted with \(pointCount) points.") }
 
@@ -1028,6 +1047,11 @@ enum AccessibilityText {
     static func healthWorkoutSplitValue(paceText: String, heartRateText: String) -> String {
         let heartRateValue = heartRateText == "-" ? localized("unavailable") : localized("\(heartRateText) beats per minute")
         return localized("Pace \(paceText), heart rate \(heartRateValue)")
+    }
+    
+    static func workoutEffortDialValue(score: Int?) -> String {
+        guard let score else { return localized("No effort selected") }
+        return localized("\(score.formatted(.number.precision(.fractionLength(0)))) out of 10")
     }
 
     // MARK: - WorkoutSettingsView
@@ -1057,5 +1081,6 @@ enum AccessibilityText {
     static func restTimerAdjustLabel(deltaSeconds: Int) -> String { deltaSeconds < 0 ? localized("Decrease rest time by 15 seconds") : localized("Increase rest time by 15 seconds") }
 
     static func restTimerRecentStartLabel(seconds: Int, secondsToTime: (Int) -> String) -> String { localized("Start a timer for \(secondsToTime(seconds))") }
+    static func healthTrainingConditionRowValue(subtitleText: String, periodText: String) -> String { localized("\(subtitleText). \(periodText)") }
 
 }

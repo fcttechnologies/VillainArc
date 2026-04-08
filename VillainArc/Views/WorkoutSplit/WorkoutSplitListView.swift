@@ -4,6 +4,7 @@ import SwiftData
 struct WorkoutSplitListView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var splits: [WorkoutSplit]
 
     @State private var path: [WorkoutSplit]
@@ -64,7 +65,7 @@ struct WorkoutSplitListView: View {
                                         splitRowContent(for: split, isActive: false)
                                     }
                                     Button("Set Active", systemImage: "checkmark.circle") {
-                                        withAnimation(.smooth) { setActive(split) }
+                                        withAnimation(reduceMotion ? nil : .smooth) { setActive(split) }
                                     }
                                     .buttonStyle(.glassProminent)
                                     .fontWeight(.semibold)
@@ -205,7 +206,7 @@ struct WorkoutSplitListView: View {
 
     private func setInactive(_ split: WorkoutSplit) {
         Haptics.selection()
-        withAnimation(.smooth) { split.isActive = false }
+        withAnimation(reduceMotion ? nil : .smooth) { split.isActive = false }
         saveContext(context: context)
         SpotlightIndexer.index(workoutSplit: split)
     }

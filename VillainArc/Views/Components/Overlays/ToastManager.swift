@@ -18,12 +18,12 @@ final class ToastManager {
         let tint: Color
         let haptic: HapticStyle?
 
-        static let restTimerComplete = Toast(title: "Rest time done", message: "Time to lift again.", systemImage: "bell.badge.fill", tint: .orange, haptic: .success)
+        static let restTimerComplete = Toast(title: String(localized: "Rest time done"), message: String(localized: "Time to lift again."), systemImage: "bell.badge.fill", tint: .orange, haptic: .success)
 
         static func stepsGoalComplete(targetSteps: Int, stepCount: Int) -> Toast {
             let compactStepCount = stepCount.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
             let compactTargetSteps = targetSteps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
-            return Toast(title: "Steps goal reached", message: "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) step target.", systemImage: "figure.walk", tint: .red, haptic: .success)
+            return Toast(title: String(localized: "Steps goal reached"), message: String(localized: "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) step target."), systemImage: "figure.walk", tint: .red, haptic: .success)
         }
 
         static func stepsEvent(_ event: StepsEventNotification) -> Toast {
@@ -48,9 +48,7 @@ final class ToastManager {
     func show(_ toast: Toast, duration: Duration = .seconds(3)) {
         dismissTask?.cancel()
         playHaptic(for: toast.haptic)
-        withAnimation(.smooth) {
-            currentToast = toast
-        }
+        currentToast = toast
 
         dismissTask = Task { [weak self] in
             do {
@@ -61,18 +59,14 @@ final class ToastManager {
 
             guard let self else { return }
             await MainActor.run {
-                withAnimation(.smooth) {
-                    self.currentToast = nil
-                }
+                self.currentToast = nil
             }
         }
     }
 
     func dismiss() {
         dismissTask?.cancel()
-        withAnimation(.smooth) {
-            currentToast = nil
-        }
+        currentToast = nil
     }
 
     private func playHaptic(for haptic: HapticStyle?) {
@@ -91,6 +85,7 @@ final class ToastManager {
 
 struct ToastOverlayView: View {
     let toast: ToastManager.Toast
+    let reduceMotion: Bool
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -116,7 +111,7 @@ struct ToastOverlayView: View {
         .padding(12)
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
-        .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+        .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
     }
 }
 
@@ -158,18 +153,19 @@ private final class PassthroughWindow: UIWindow {
 
 struct GlobalToastHost: View {
     @State private var manager = ToastManager.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack(alignment: .top) {
             if let toast = manager.currentToast {
-                ToastOverlayView(toast: toast)
+                ToastOverlayView(toast: toast, reduceMotion: reduceMotion)
                 .padding(.horizontal, 8)
                 .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .allowsHitTesting(false)
-        .animation(.snappy(duration: 0.32, extraBounce: 0), value: manager.currentToast)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.32, extraBounce: 0), value: manager.currentToast)
     }
 }
 

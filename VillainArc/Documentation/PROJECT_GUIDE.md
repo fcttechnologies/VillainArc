@@ -32,6 +32,15 @@ The main product areas are:
 - exercise analytics
 - health history, goals, and notifications
 
+## App Shell
+
+After onboarding is ready, `Views/AppShell/ContentView.swift` owns:
+
+- the root `TabView` (`Home`, `Health`)
+- full-screen workout flow
+- full-screen workout-plan flow
+- full-screen weight-goal-completion flow
+
 ## App-Wide Conventions
 
 These rules are important because they shape most of the codebase.
@@ -167,6 +176,10 @@ On the first launch, VillainArc takes the full setup path:
 
 The wait-before-seed rule prevents duplicate built-in exercises if older cloud data is still importing.
 
+Note:
+
+- if the user chooses `Continue Without iCloud`, the app still seeds locally and continues onboarding, but it does not perform the first-bootstrap Spotlight reindex pass in that path
+
 ## Returning Launch
 
 Once the exercise-catalog bootstrap marker exists, launch is faster:
@@ -239,7 +252,6 @@ The Health tab combines:
 - weight history with intraday day view plus weight goals
 - daily steps and distance history with intraday day view plus steps goals
 - daily energy history with intraday day view
-- Apple Health workout history
 
 That surface is also reused by App Intents and quick actions:
 
@@ -251,6 +263,11 @@ Notification behavior is part of that surface:
 
 - rest timer completions
 - steps goal and coaching events, including double goal, triple goal, and new-best milestones when the app can observe the Health update in time
+
+Home-tab navigation also includes workout-centric history/detail routes such as:
+
+- completed workout history (`WorkoutsListView`)
+- Apple Health workout detail (`HealthWorkoutDetailView`)
 
 See:
 

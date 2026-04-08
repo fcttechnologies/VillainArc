@@ -3,6 +3,7 @@ import SwiftData
 
 struct RestTimerView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let restTimer = RestTimerState.shared
     @Environment(\.modelContext) private var context
     @Query(RestTimeHistory.recents) private var recentTimes: [RestTimeHistory]
@@ -232,7 +233,7 @@ struct RestTimerView: View {
     private func adjustButton(deltaSeconds: Int) -> some View {
         Button {
             Haptics.selection()
-            withAnimation(.smooth) {
+            withAnimation(reduceMotion ? nil : .smooth) {
                 restTimer.adjust(by: deltaSeconds)
             }
         } label: {

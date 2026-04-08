@@ -78,21 +78,21 @@ private struct SleepWeekdayChartSection: View {
     private var presentation: WeekdayAverageChartPresentation {
         guard isWeekdayChartAvailable else {
             let summaryText = String(localized: "Weekday sleep averages need at least 2 nights for every weekday")
-            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Sync at least 2 sleep nights for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
         }
         guard let displayedWeekdayPoint else {
             let summaryText = String(localized: "Weekday sleep averages are unavailable")
-            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Sync at least 2 sleep nights for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
         }
         let sleepText = formattedSleepDurationAccessibilityText(displayedWeekdayPoint.averageValue)
         let valueText = Text(formattedSleepDurationText(displayedWeekdayPoint.averageValue)).foregroundStyle(tint)
         let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
             let summaryText = String(localized: "You sleep \(sleepText) on \(weekdayText).")
-            return WeekdayAverageChartPresentation(headline: Text("You sleep \(valueText) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Sync at least 2 sleep nights for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text("You sleep \(valueText) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
         }
         let summaryText = String(localized: "You sleep the most on \(weekdayText). \(sleepText).")
-        return WeekdayAverageChartPresentation(headline: Text("You sleep the most on \(weekdayText). \(valueText)."), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Sync at least 2 sleep nights for every weekday to unlock averages.")
+        return WeekdayAverageChartPresentation(headline: Text("You sleep the most on \(weekdayText). \(valueText)."), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
     }
 
     var body: some View {
@@ -153,17 +153,17 @@ private struct SleepPeriodHighlightsSection: View {
         let yearLeadIn = yearComparisonLeadIn()
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return "You're getting more sleep this month than you did last month."
+            return String(localized: "You're getting more sleep this month than you did last month.")
         case (.month, .down):
-            return "You're getting less sleep this month than you did last month."
+            return String(localized: "You're getting less sleep this month than you did last month.")
         case (.month, .flat):
-            return "You're getting about the same amount of sleep this month as you did last month."
+            return String(localized: "You're getting about the same amount of sleep this month as you did last month.")
         case (.year, .up):
-            return "\(yearLeadIn), you're sleeping more each night than you did last year."
+            return String(localized: "\(yearLeadIn), you're sleeping more each night than you did last year.")
         case (.year, .down):
-            return "\(yearLeadIn), you're sleeping less each night than you did last year."
+            return String(localized: "\(yearLeadIn), you're sleeping less each night than you did last year.")
         case (.year, .flat):
-            return "\(yearLeadIn), you're sleeping about the same amount each night as you did last year."
+            return String(localized: "\(yearLeadIn), you're sleeping about the same amount each night as you did last year.")
         }
     }
 }
@@ -315,7 +315,7 @@ private struct SleepHistoryMainSection: View {
             return label
         }
 
-        guard let latestEntry else { return "No sleep data in this range" }
+        guard let latestEntry else { return String(localized: "No sleep data in this range") }
         return formattedSleepWakeDay(latestEntry.wakeDay)
     }
     
@@ -362,8 +362,8 @@ private struct SleepHistoryMainSection: View {
         if let selectedDayInterval {
             return "\(headerSubtitleText), \(formattedSleepDurationAccessibilityText(selectedDayInterval.duration))"
         }
-        
-        guard let headerDuration else { return "No sleep data available." }
+
+        guard let headerDuration else { return String(localized: "No sleep data available.") }
         return "\(headerSubtitleText), \(formattedSleepDurationAccessibilityText(headerDuration)) asleep"
     }
 

@@ -124,7 +124,7 @@ private struct HealthEnergyMainChartSection: View {
             }
             return baseText
         }
-        guard let latestEntry else { return "No entries in this range" }
+        guard let latestEntry else { return String(localized: "No entries in this range") }
         return formattedRecentDay(latestEntry.date)
     }
     
@@ -243,10 +243,10 @@ private struct HealthEnergyMainChartSection: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 5) {
                                 if let averageActiveEnergy = currentRangeData.averageActiveEnergy {
-                                    HealthHistoryMetadataValue(title: "Avg Active", text: Int(averageActiveEnergy.rounded()).formatted(.number), animationValue: averageActiveEnergy)
+                                    HealthHistoryMetadataValue(title: String(localized: "Avg Active"), text: Int(averageActiveEnergy.rounded()).formatted(.number), animationValue: averageActiveEnergy)
                                 }
                                 if let averageTotalEnergy = currentRangeData.averageTotalEnergy {
-                                    HealthHistoryMetadataValue(title: "Avg Total", text: Int(averageTotalEnergy.rounded()).formatted(.number), animationValue: averageTotalEnergy)
+                                    HealthHistoryMetadataValue(title: String(localized: "Avg Total"), text: Int(averageTotalEnergy.rounded()).formatted(.number), animationValue: averageTotalEnergy)
                                 }
                             }
                         }
@@ -386,21 +386,21 @@ private struct HealthEnergyWeekdayChartSection: View {
     private var presentation: WeekdayAverageChartPresentation {
         guard isWeekdayChartAvailable else {
             let summaryText = String(localized: "Weekday averages need at least 2 entries for every weekday")
-            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
         }
         guard let displayedWeekdayPoint else {
             let summaryText = String(localized: "Weekday energy averages are unavailable")
-            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
         }
         let caloriesText = Int(displayedWeekdayPoint.averageValue.rounded()).formatted(.number)
         let valueText = Text(caloriesText).foregroundStyle(tint)
         let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
             let summaryText = String(localized: "You burn \(caloriesText) \(energyUnit.unitLabel) on \(weekdayText).")
-            return WeekdayAverageChartPresentation(headline: Text("You burn \(valueText) \(energyUnit.unitLabel) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+            return WeekdayAverageChartPresentation(headline: Text("You burn \(valueText) \(energyUnit.unitLabel) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
         }
         let summaryText = String(localized: "You burn the most calories on \(weekdayText). \(caloriesText) \(energyUnit.unitLabel).")
-        return WeekdayAverageChartPresentation(headline: Text("You burn the most calories on \(weekdayText). \(valueText) \(energyUnit.unitLabel)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: "Need More Data", unavailableMessage: "Log at least 2 entries for every weekday to unlock averages.")
+        return WeekdayAverageChartPresentation(headline: Text("You burn the most calories on \(weekdayText). \(valueText) \(energyUnit.unitLabel)."), accessibilityValue: AccessibilityText.healthEnergyWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Log at least 2 entries for every weekday to unlock averages."))
     }
 
     var body: some View {
@@ -459,17 +459,17 @@ private struct HealthEnergyPeriodHighlightsSection: View {
         let yearLeadIn = yearComparisonLeadIn()
         switch (highlight.kind, highlight.trend) {
         case (.month, .up):
-            return "You're burning more energy this month than you did last month."
+            return String(localized: "You're burning more energy this month than you did last month.")
         case (.month, .down):
-            return "You're burning less energy this month than you did last month."
+            return String(localized: "You're burning less energy this month than you did last month.")
         case (.month, .flat):
-            return "You're burning about the same amount of energy this month as you did last month."
+            return String(localized: "You're burning about the same amount of energy this month as you did last month.")
         case (.year, .up):
-            return "\(yearLeadIn), you're burning more energy a day than you did last year."
+            return String(localized: "\(yearLeadIn), you're burning more energy a day than you did last year.")
         case (.year, .down):
-            return "\(yearLeadIn), you're burning less energy a day than you did last year."
+            return String(localized: "\(yearLeadIn), you're burning less energy a day than you did last year.")
         case (.year, .flat):
-            return "\(yearLeadIn), you're burning about the same amount of energy a day as you did last year."
+            return String(localized: "\(yearLeadIn), you're burning about the same amount of energy a day as you did last year.")
         }
     }
 }

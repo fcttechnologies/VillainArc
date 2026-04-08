@@ -149,9 +149,9 @@ struct ExerciseSetRowView: View {
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetPreviousValue(exercise, set: set))
-                .accessibilityLabel(referenceData?.hasActionableValues == true ? (referenceData?.actionLabel ?? "Reference") : "Target")
+                .accessibilityLabel(referenceData?.hasActionableValues == true ? (referenceData?.actionLabel ?? AccessibilityText.exerciseSetReferenceLabel) : AccessibilityText.exerciseSetTargetLabel)
                 .accessibilityValue(referenceValueText)
-                .accessibilityHint(referenceData?.hasActionableValues == true ? "Long-press for options." : "No quick-fill options.")
+                .accessibilityHint(referenceData?.hasActionableValues == true ? AccessibilityText.exerciseSetReferenceActionHint : AccessibilityText.exerciseSetReferenceNoActionHint)
             Spacer()
             if set.complete {
                 Button {

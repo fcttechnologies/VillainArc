@@ -16,6 +16,7 @@ struct WorkoutView: View {
     
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
@@ -537,7 +538,7 @@ struct WorkoutView: View {
         defer { autoAdvanceTargetIndex = nil }
         let exercises = workout.sortedExercises
         if let target = autoAdvanceTargetIndex, target < exercises.count {
-            withAnimation(.smooth) {
+            withAnimation(reduceMotion ? nil : .smooth) {
                 workout.activeExercise = exercises[target]
             }
             WorkoutActivityManager.update(for: workout)

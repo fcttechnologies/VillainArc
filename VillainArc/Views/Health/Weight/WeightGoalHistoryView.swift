@@ -129,23 +129,23 @@ private struct WeightGoalHistoryRowView: View {
             Divider()
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
-                SummaryStatCard(title: "Starting Weight", text: formattedWeightText(goal.startWeight, unit: weightUnit))
-                SummaryStatCard(title: "Target Weight", text: formattedWeightText(goal.targetWeight, unit: weightUnit))
+                SummaryStatCard(title: String(localized: "Starting Weight"), text: formattedWeightText(goal.startWeight, unit: weightUnit))
+                SummaryStatCard(title: String(localized: "Target Weight"), text: formattedWeightText(goal.targetWeight, unit: weightUnit))
                 
                 if let latestGoalWeight {
-                    SummaryStatCard(title: "Progress", text: weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit))
+                    SummaryStatCard(title: String(localized: "Progress"), text: weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit))
                 }
 
                 if let targetDate = goal.targetDate {
-                    SummaryStatCard(title: "Target Date", text: formattedRecentDay(targetDate))
+                    SummaryStatCard(title: String(localized: "Target Date"), text: formattedRecentDay(targetDate))
                 }
 
                 if let targetRatePerWeek = goal.targetRatePerWeek, goal.type != .maintain {
-                    SummaryStatCard(title: "Target Pace", text: "\(formattedWeightValue(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)/wk")
+                    SummaryStatCard(title: String(localized: "Target Pace"), text: formattedWeightPerWeekText(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1))
                 }
 
                 if let endedAt = goal.endedAt {
-                    SummaryStatCard(title: "Ended", text: formattedRecentDay(endedAt))
+                    SummaryStatCard(title: String(localized: "Ended"), text: formattedRecentDay(endedAt))
                 }
             }
         }
@@ -158,24 +158,24 @@ private struct WeightGoalHistoryRowView: View {
 
     private var goalTitle: String {
         if goal.type == .maintain {
-            return "Maintain Goal"
+            return String(localized: "Maintain Goal")
         }
 
-        return "\(goal.type.title) Goal"
+        return String(localized: "\(goal.type.title) Goal")
     }
     
     private var goalStatusBadgeTitle: String {
-        if isActive { return "Active" }
+        if isActive { return String(localized: "Active") }
         
         switch goal.endReason {
         case .achieved:
-            return "Completed"
+            return String(localized: "Completed")
         case .manualOverride:
-            return "Ended Early"
+            return String(localized: "Ended Early")
         case .replaced:
-            return "Replaced"
+            return String(localized: "Replaced")
         case nil:
-            return "Ended"
+            return String(localized: "Ended")
         }
     }
     
@@ -199,7 +199,7 @@ private struct WeightGoalHistoryRowView: View {
             return "\(formattedRecentDay(goal.startedAt))- \(formattedRecentDay(endedAt))"
         }
 
-        return "Started \(formattedRecentDay(goal.startedAt))"
+        return String(localized: "Started \(formattedRecentDay(goal.startedAt))")
     }
 
     private var accessibilityValue: String {

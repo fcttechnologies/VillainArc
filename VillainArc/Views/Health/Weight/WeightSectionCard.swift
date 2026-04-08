@@ -24,9 +24,9 @@ struct WeightSectionCard: View {
     private var activeGoalText: String? {
         guard let activeGoal else { return nil }
         if activeGoal.type == .maintain {
-            return "Maintain"
+            return String(localized: "Maintain")
         }
-        return "Goal: \(formattedWeightText(activeGoal.targetWeight, unit: weightUnit))"
+        return String(localized: "Goal: \(formattedWeightText(activeGoal.targetWeight, unit: weightUnit))")
     }
 
     private var cardAccessibilityLabel: String {

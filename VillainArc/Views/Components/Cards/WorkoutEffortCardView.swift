@@ -158,8 +158,8 @@ struct WorkoutEffortInteractiveDial: View {
         )
         .accessibilityElement()
         .accessibilityIdentifier(markerAccessibilityIdentifier(1))
-        .accessibilityLabel("Workout Effort Dial")
-        .accessibilityValue(displayedScore.map { "\($0.formatted(.number.precision(.fractionLength(0)))) out of 10" } ?? "No effort selected")
+        .accessibilityLabel(AccessibilityText.workoutEffortDialLabel)
+        .accessibilityValue(AccessibilityText.workoutEffortDialValue(score: displayedScore.map { Int($0.rounded()) }))
         .accessibilityHint(markerAccessibilityHint)
         .accessibilityAdjustableAction { direction in
             switch direction {

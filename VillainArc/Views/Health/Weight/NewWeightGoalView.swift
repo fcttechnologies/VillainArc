@@ -90,8 +90,8 @@ struct NewWeightGoalView: View {
             }
         case .maintain:
             if abs(targetWeightKg - startWeightKg) > Self.maintainTargetDeltaKg {
-                let maxDeltaText = formattedWeightValue(Self.maintainTargetDeltaKg, unit: weightUnit, fractionDigits: 0...1)
-                return "Maintain goals need a target weight within \(maxDeltaText) \(weightUnit.rawValue) of your starting weight."
+                let maxDeltaText = formattedWeightText(Self.maintainTargetDeltaKg, unit: weightUnit, fractionDigits: 0...1)
+                return "Maintain goals need a target weight within \(maxDeltaText) of your starting weight."
             }
         }
 
@@ -129,8 +129,7 @@ struct NewWeightGoalView: View {
 
     private var estimatedTargetRateButtonTitle: String {
         guard let calculatedTargetRatePerWeek else { return "Use Estimate" }
-        let estimate = formattedWeightValue(calculatedTargetRatePerWeek, unit: weightUnit, fractionDigits: 0...2)
-        return "\(estimate) \(weightUnit.rawValue)/wk"
+        return formattedWeightPerWeekText(calculatedTargetRatePerWeek, unit: weightUnit, fractionDigits: 0...2)
     }
 
     var body: some View {
@@ -150,7 +149,7 @@ struct NewWeightGoalView: View {
 
                 Section {
                     HStack {
-                        TextField(weightUnit.rawValue, text: $startWeightText)
+                        TextField(weightUnit.unitLabel, text: $startWeightText)
                             .keyboardType(.decimalPad)
                             .focused($focusedField, equals: .startWeight)
                             .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalStartWeightField)
@@ -163,7 +162,7 @@ struct NewWeightGoalView: View {
                     .fontWeight(.semibold)
 
                     HStack {
-                        TextField(weightUnit.rawValue, text: $targetWeightText)
+                        TextField(weightUnit.unitLabel, text: $targetWeightText)
                             .keyboardType(.decimalPad)
                             .focused($focusedField, equals: .targetWeight)
                             .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalTargetWeightField)
@@ -220,7 +219,7 @@ struct NewWeightGoalView: View {
 
                             Spacer()
 
-                            Text("\(weightUnit.rawValue)/wk")
+                            Text(weightUnit.perWeekUnitLabel)
                                 .foregroundStyle(.secondary)
                         }
                         .fontWeight(.semibold)

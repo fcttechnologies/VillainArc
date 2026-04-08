@@ -39,12 +39,12 @@ struct TrainingConditionEditorView: View {
 
     private var choices: [TrainingConditionChoice] {
         [
-            TrainingConditionChoice(id: "active", kind: nil, title: "Active", subtitle: "Training normally without extra limitations", systemImage: "figure.run", tint: .mint),
-            TrainingConditionChoice(id: TrainingConditionKind.sick.rawValue, kind: .sick, title: "Sick", subtitle: "Feeling unwell and training may need to pause", systemImage: TrainingConditionKind.sick.systemImage, tint: TrainingConditionKind.sick.tint),
-            TrainingConditionChoice(id: TrainingConditionKind.injured.rawValue, kind: .injured, title: "Injured", subtitle: "Managing an injury that can affect how you train", systemImage: TrainingConditionKind.injured.systemImage, tint: TrainingConditionKind.injured.tint),
-            TrainingConditionChoice(id: TrainingConditionKind.recovering.rawValue, kind: .recovering, title: "Recovering", subtitle: "Returning carefully after illness, injury, or hard fatigue", systemImage: TrainingConditionKind.recovering.systemImage, tint: TrainingConditionKind.recovering.tint),
-            TrainingConditionChoice(id: TrainingConditionKind.traveling.rawValue, kind: .traveling, title: "Traveling", subtitle: "Working around travel, vacation, or routine changes", systemImage: TrainingConditionKind.traveling.systemImage, tint: TrainingConditionKind.traveling.tint),
-            TrainingConditionChoice(id: TrainingConditionKind.onBreak.rawValue, kind: .onBreak, title: "On A Break", subtitle: "Taking intentional time away from training", systemImage: TrainingConditionKind.onBreak.systemImage, tint: TrainingConditionKind.onBreak.tint)
+            TrainingConditionChoice(id: "active", kind: nil, title: String(localized: "Active"), subtitle: String(localized: "Training normally without extra limitations"), systemImage: "figure.run", tint: .mint),
+            TrainingConditionChoice(id: TrainingConditionKind.sick.rawValue, kind: .sick, title: String(localized: "Sick"), subtitle: String(localized: "Feeling unwell and training may need to pause"), systemImage: TrainingConditionKind.sick.systemImage, tint: TrainingConditionKind.sick.tint),
+            TrainingConditionChoice(id: TrainingConditionKind.injured.rawValue, kind: .injured, title: String(localized: "Injured"), subtitle: String(localized: "Managing an injury that can affect how you train"), systemImage: TrainingConditionKind.injured.systemImage, tint: TrainingConditionKind.injured.tint),
+            TrainingConditionChoice(id: TrainingConditionKind.recovering.rawValue, kind: .recovering, title: String(localized: "Recovering"), subtitle: String(localized: "Returning carefully after illness, injury, or hard fatigue"), systemImage: TrainingConditionKind.recovering.systemImage, tint: TrainingConditionKind.recovering.tint),
+            TrainingConditionChoice(id: TrainingConditionKind.traveling.rawValue, kind: .traveling, title: String(localized: "Traveling"), subtitle: String(localized: "Working around travel, vacation, or routine changes"), systemImage: TrainingConditionKind.traveling.systemImage, tint: TrainingConditionKind.traveling.tint),
+            TrainingConditionChoice(id: TrainingConditionKind.onBreak.rawValue, kind: .onBreak, title: String(localized: "On A Break"), subtitle: String(localized: "Taking intentional time away from training"), systemImage: TrainingConditionKind.onBreak.systemImage, tint: TrainingConditionKind.onBreak.tint)
         ]
     }
 
@@ -65,10 +65,10 @@ struct TrainingConditionEditorView: View {
 
     private var canConfigureImpacts: Bool { !availableImpacts.isEmpty }
     private var usesAffectedMuscles: Bool { selectedKind?.usesAffectedMuscles == true && selectedImpact == .trainModified }
-    private var affectedMusclesSummary: String { affectedMuscles.isEmpty ? "Optional" : affectedMuscles.sorted { $0.displayName < $1.displayName }.map(\.displayName).joined(separator: ", ") }
+    private var affectedMusclesSummary: String { affectedMuscles.isEmpty ? String(localized: "Optional") : affectedMuscles.sorted { $0.displayName < $1.displayName }.map(\.displayName).joined(separator: ", ") }
     private var canSave: Bool { !includeEndDate || selectedEndDay >= Calendar.autoupdatingCurrent.startOfDay(for: .now) }
     private var showsHistoryButton: Bool { !periods.isEmpty }
-    private var subtitleText: String? { activePeriod.map { "Current: \($0.kind.title)" } }
+    private var subtitleText: String? { activePeriod.map { String(localized: "Current: \($0.kind.title)") } }
 
     var body: some View {
         NavigationStack {

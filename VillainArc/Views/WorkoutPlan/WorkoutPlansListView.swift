@@ -3,6 +3,7 @@ import SwiftData
 
 struct WorkoutPlansListView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(WorkoutPlan.all) private var workoutPlans: [WorkoutPlan]
     
     @State private var showDeleteAllConfirmation = false
@@ -41,7 +42,7 @@ struct WorkoutPlansListView: View {
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansList)
         .environment(\.editMode, editModeBinding)
-        .animation(.smooth, value: isEditing)
+        .animation(reduceMotion ? nil : .smooth, value: isEditing)
         .navigationTitle("Workout Plans")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)

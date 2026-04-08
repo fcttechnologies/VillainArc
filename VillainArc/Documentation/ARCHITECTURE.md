@@ -74,6 +74,7 @@ These are created by startup/system-state code and treated as singleton-style re
 ### `Data/Services/App/CloudKitImportMonitor.swift`
 
 - watches persistent CloudKit import events during first bootstrap
+- starts early in first bootstrap so onboarding does not miss import completion before the explicit wait step
 - lets onboarding wait for import completion before exercise catalog seeding
 
 ### `Data/Services/App/DataManager.swift`

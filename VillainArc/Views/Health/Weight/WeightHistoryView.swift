@@ -164,7 +164,7 @@ private struct WeightHistoryMainSection: View {
     }
 
     private var headerDetailTitle: String? {
-        if let selectedPoint, selectedPoint.sampleCount > 1 { return "Entries" }
+        if let selectedPoint, selectedPoint.sampleCount > 1 { return String(localized: "Entries") }
         return nil
     }
 
@@ -183,7 +183,7 @@ private struct WeightHistoryMainSection: View {
             }
             return baseText
         }
-        guard let latestEntry else { return "No entries in this range" }
+        guard let latestEntry else { return String(localized: "No entries in this range") }
         return formattedRecentDayAndTime(latestEntry.date)
     }
 
@@ -199,16 +199,16 @@ private struct WeightHistoryMainSection: View {
     }
 
     private var chartAccessibilityValue: String {
-        let weightText = displayedWeightValue.map { "\(formattedWeightValue($0, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)" } ?? String(localized: "No weight data")
+        let weightText = displayedWeightValue.map { "\($0.formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.unitLabel)" } ?? String(localized: "No weight data")
         return AccessibilityText.healthWeightHistoryChartValue(dateText: displayedDateText, weightText: weightText)
     }
     
     private var summaryStats: [SummaryStat] {
         guard selectedRange != .day else { return [] }
         guard let currentRangeData, currentRangeData.entryCount > 0 else { return [] }
-        var stats = [SummaryStat(id: "change", title: "Change", text: changeText(for: currentRangeData))]
+        var stats = [SummaryStat(id: "change", title: String(localized: "Change"), text: changeText(for: currentRangeData))]
         if let trendText = trendText(for: currentRangeData) {
-            stats.append(SummaryStat(id: "trend", title: "Trend", text: trendText))
+            stats.append(SummaryStat(id: "trend", title: String(localized: "Trend"), text: trendText))
         }
         return stats
     }
@@ -250,7 +250,7 @@ private struct WeightHistoryMainSection: View {
                             if let displayedWeightValue {
                                 HStack(alignment: .lastTextBaseline, spacing: 4) {
                                     Text(displayedWeightValue, format: .number.precision(.fractionLength(0...1)))
-                                    Text(weightUnit.rawValue)
+                                    Text(weightUnit.unitLabel)
                                         .font(.title3)
                                         .foregroundStyle(.secondary)
                                 }
@@ -321,11 +321,11 @@ private struct WeightHistoryMainSection: View {
                         VStack(spacing: 5) {
                             HStack {
                                 if let averageWeightKg = currentRangeData.averageWeightKg {
-                                    HealthHistoryMetadataValue(title: "Avg", text: "\(formattedWeightValue(averageWeightKg, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)", animationValue: weightUnit.fromKg(averageWeightKg))
+                                    HealthHistoryMetadataValue(title: String(localized: "Avg"), text: formattedWeightText(averageWeightKg, unit: weightUnit, fractionDigits: 0...1), animationValue: weightUnit.fromKg(averageWeightKg))
                                 }
                                 Spacer()
                                 if let lowWeightKg = currentRangeData.lowWeightKg {
-                                    HealthHistoryMetadataValue(title: "Low", text: "\(formattedWeightValue(lowWeightKg, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)", animationValue: weightUnit.fromKg(lowWeightKg))
+                                    HealthHistoryMetadataValue(title: String(localized: "Low"), text: formattedWeightText(lowWeightKg, unit: weightUnit, fractionDigits: 0...1), animationValue: weightUnit.fromKg(lowWeightKg))
                                 }
                             }
                             
@@ -337,7 +337,7 @@ private struct WeightHistoryMainSection: View {
                                     .fontWeight(.semibold)
                                 Spacer()
                                 if let highWeightKg = currentRangeData.highWeightKg {
-                                    HealthHistoryMetadataValue(title: "High", text: "\(formattedWeightValue(highWeightKg, unit: weightUnit, fractionDigits: 0...1)) \(weightUnit.rawValue)", animationValue: weightUnit.fromKg(highWeightKg))
+                                    HealthHistoryMetadataValue(title: String(localized: "High"), text: formattedWeightText(highWeightKg, unit: weightUnit, fractionDigits: 0...1), animationValue: weightUnit.fromKg(highWeightKg))
                                 }
                             }
                         }
@@ -367,7 +367,7 @@ private struct WeightHistoryMainSection: View {
             }
         }
         .onChange(of: selectedRange) { selectedDate = nil }
-        .animation(.smooth, value: latestEntry?.weight)
+        .animation(reduceMotion ? nil : .smooth, value: latestEntry?.weight)
         .task(id: cacheSeed) {
             prepareRangeCache()
         }
@@ -394,15 +394,15 @@ private struct WeightHistoryMainSection: View {
     private func changeText(for data: CachedRangeData) -> String {
         let delta = weightUnit.fromKg(data.changeKg ?? 0)
         let sign = delta > 0 ? "+" : ""
-        return "\(sign)\(delta.formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.rawValue)"
+        return String(localized: "\(sign)\(delta.formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.unitLabel)")
     }
 
     private func trendText(for data: CachedRangeData) -> String? {
         guard let trendKgPerWeek = data.trendKgPerWeek else { return nil }
         let pacePerWeek = weightUnit.fromKg(trendKgPerWeek)
-        let direction = pacePerWeek > 0.05 ? "Up" : pacePerWeek < -0.05 ? "Down" : "Flat"
-        if direction == "Flat" { return "Flat" }
-        return "\(direction) \(abs(pacePerWeek).formatted(.number.precision(.fractionLength(0...1)))) \(weightUnit.rawValue)/wk"
+        let direction = pacePerWeek > 0.05 ? String(localized: "Up") : pacePerWeek < -0.05 ? String(localized: "Down") : String(localized: "Flat")
+        if direction == String(localized: "Flat") { return String(localized: "Flat") }
+        return String(localized: "\(direction) \(formattedWeightPerWeekText(abs(trendKgPerWeek), unit: weightUnit, fractionDigits: 0...1))")
     }
 
     private func shouldShowTargetLine(in data: CachedRangeData, targetWeightKg: Double) -> Bool {
@@ -457,7 +457,13 @@ private struct WeightHistoryMainSection: View {
         let now = Date()
         let calendar = Calendar.autoupdatingCurrent
         progressivelyRebuildRangeCache(existing: rangeCache, buildOrder: [.month, .week, .day, .sixMonths, .year, .all], publish: { newCache in
-            if rangeCache.isEmpty { rangeCache = newCache } else { withAnimation(.smooth) { rangeCache = newCache } }
+            if rangeCache.isEmpty {
+                rangeCache = newCache
+            } else if reduceMotion {
+                rangeCache = newCache
+            } else {
+                withAnimation(.smooth) { rangeCache = newCache }
+            }
         }) { range in
             buildRangeData(for: range, samples: samples, entrySnapshots: entrySnapshots, now: now, calendar: calendar)
         }
