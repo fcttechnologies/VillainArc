@@ -193,9 +193,8 @@ private struct TrainingConditionHistoryRow: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         TrainingConditionHistoryView()
-            .sampleDataContainer()
     }
 }

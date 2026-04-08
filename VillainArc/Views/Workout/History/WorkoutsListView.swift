@@ -130,9 +130,8 @@ struct WorkoutsListView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutsListView()
     }
-    .sampleDataContainer()
 }

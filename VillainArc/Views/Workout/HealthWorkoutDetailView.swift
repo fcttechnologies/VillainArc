@@ -189,7 +189,7 @@ struct HealthWorkoutDetailContent: View {
             }
 
             if loader.isUsingCachedSummaryOnly {
-                Text("This workout is no longer available in Apple Health. VillainArc is showing the last synced summary.")
+                Text("This workout is no longer available in Apple Health. Villain Arc is showing the last synced summary.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else if let loadErrorMessage = loader.loadErrorMessage {
@@ -204,11 +204,11 @@ struct HealthWorkoutDetailContent: View {
         guard let summary = loader.effortSummary else { return "" }
         switch summary.source {
         case .actualScore:
-            return "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) out of 10"
+            return String(localized: "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) out of 10")
         case .estimatedScore:
-            return "Estimated \(summary.value.formatted(.number.precision(.fractionLength(0...1)))) out of 10"
+            return String(localized: "Estimated \(summary.value.formatted(.number.precision(.fractionLength(0...1)))) out of 10")
         case .physicalEffort:
-            return "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) METs"
+            return String(localized: "\(summary.value.formatted(.number.precision(.fractionLength(0...1)))) METs")
         }
     }
 

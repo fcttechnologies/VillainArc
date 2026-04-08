@@ -100,7 +100,7 @@ enum OnboardingState: Equatable {
             guard attemptID == self.onboardingAttemptID else { return }
             guard state == .syncing || state == .syncingSlowNetwork else { return }
 
-            state = .error("VillainArc couldn't confirm that your iCloud data finished syncing. Please try again.")
+            state = .error("Villain Arc couldn't confirm that your iCloud data finished syncing. Please try again.")
         }
 
         let importStatus = await CloudKitImportMonitor.shared.waitForImportCompletion()
@@ -114,7 +114,7 @@ enum OnboardingState: Equatable {
             state = .error("Unable to finish syncing your iCloud data: \(message)")
             return
         case .idle, .waiting, .importing:
-            state = .error("VillainArc couldn't confirm that your iCloud data finished syncing. Please try again.")
+            state = .error("Villain Arc couldn't confirm that your iCloud data finished syncing. Please try again.")
             return
         }
 

@@ -74,10 +74,9 @@ struct RecentExercisesSectionView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataSuggestionGeneration) {
     NavigationStack {
         RecentExercisesSectionView()
             .padding()
     }
-    .sampleDataContainerSuggestionGeneration()
 }

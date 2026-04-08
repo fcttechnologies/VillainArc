@@ -53,9 +53,8 @@ struct WorkoutPlanCardView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutPlanCardView(workoutPlan: sampleCompletedPlan())
     }
-    .sampleDataContainer()
 }

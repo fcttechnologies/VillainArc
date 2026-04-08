@@ -86,7 +86,6 @@ struct PreWorkoutContextView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     PreWorkoutContextView(preWorkoutContext: sampleIncompleteSession().preWorkoutContext ?? PreWorkoutContext())
-        .sampleDataContainerIncomplete()
 }

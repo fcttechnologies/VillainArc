@@ -72,11 +72,11 @@ struct AppSettingsView: View {
     private var healthAccessHint: String {
         switch healthAuthorizationAction {
         case .requestAccess:
-            return "Requests Apple Health read and write access."
+            return String(localized: "Requests Apple Health read and write access.")
         case .openSettings:
-            return "Opens Settings so you can change Apple Health permissions."
+            return String(localized: "Opens Settings so you can change Apple Health permissions.")
         case .manageInSettings:
-            return "Opens Settings so you can review Apple Health access."
+            return String(localized: "Opens Settings so you can review Apple Health access.")
         case .unavailable:
             return ""
         }
@@ -115,9 +115,8 @@ struct AppSettingsView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     AppSettingsView()
-        .sampleDataContainer()
 }
 
 private struct AppSettingsFormView: View {
@@ -261,17 +260,17 @@ private struct NotificationSettingsView: View {
     private var notificationStatusText: String {
         switch notificationAuthorizationStatus {
         case .notDetermined:
-            return "Not Requested"
+            return String(localized: "Not Requested")
         case .denied:
-            return "Denied"
+            return String(localized: "Denied")
         case .authorized:
-            return "Allowed"
+            return String(localized: "Allowed")
         case .provisional:
-            return "Allowed Quietly"
+            return String(localized: "Allowed Quietly")
         case .ephemeral:
-            return "Temporary"
+            return String(localized: "Temporary")
         @unknown default:
-            return "Unknown"
+            return String(localized: "Unknown")
         }
     }
 
@@ -282,11 +281,11 @@ private struct NotificationSettingsView: View {
     private var notificationActionTitle: String {
         switch notificationAuthorizationStatus {
         case .notDetermined:
-            return "Enable Notifications"
+            return String(localized: "Enable Notifications")
         case .denied, .authorized, .provisional, .ephemeral:
-            return "Open Settings"
+            return String(localized: "Open Settings")
         @unknown default:
-            return "Open Settings"
+            return String(localized: "Open Settings")
         }
     }
 

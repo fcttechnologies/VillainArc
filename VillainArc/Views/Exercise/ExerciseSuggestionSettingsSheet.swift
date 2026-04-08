@@ -263,11 +263,10 @@ struct ExerciseSuggestionSettingsSheet: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         ExerciseSuggestionSettingsSheet(exercise: sampleExerciseForPreview())
     }
-    .sampleDataContainer()
 }
 
 private func sampleExerciseForPreview() -> Exercise {

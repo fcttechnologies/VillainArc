@@ -594,12 +594,10 @@ private struct WorkoutPlanSetRowView: View {
     }
 }
 
-#Preview("Creating") {
+#Preview("Creating", traits: .sampleDataIncomplete) {
     WorkoutPlanView(plan: sampleIncompletePlan())
-        .sampleDataContainerIncomplete()
 }
 
-#Preview("Editing") {
+#Preview("Editing", traits: .sampleData) {
     WorkoutPlanView(plan: sampleEditingPlan())
-        .sampleDataContainer()
 }

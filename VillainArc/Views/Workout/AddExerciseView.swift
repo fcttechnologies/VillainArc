@@ -32,7 +32,7 @@ struct AddExerciseView: View {
         NavigationStack {
             FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly, sortOption: exerciseSort)
                 .navigationTitle("Exercises")
-                .navigationSubtitle(Text("\(selectedExercises.count) Selected"))
+                .navigationSubtitle(Text("^[\(selectedExercises.count) selected exercise](inflect: true)"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -119,17 +119,17 @@ struct AddExerciseView: View {
     
     private var confirmationMessage: String {
         if workout != nil {
-            return "If you leave now, the selected exercises will not be added to your workout."
+            return String(localized: "If you leave now, the selected exercises will not be added to your workout.")
         } else {
-            return "If you leave now, the selected exercises will not be added to your plan."
+            return String(localized: "If you leave now, the selected exercises will not be added to your plan.")
         }
     }
     
     private var confirmationHint: String {
         if workout != nil {
-            return "Adds the selected exercises to your workout."
+            return String(localized: "Adds the selected exercises to your workout.")
         } else {
-            return "Adds the selected exercises to your plan."
+            return String(localized: "Adds the selected exercises to your plan.")
         }
     }
     
@@ -189,7 +189,6 @@ enum ExerciseSortOption: String, CaseIterable {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     AddExerciseView(workout: sampleIncompleteSession())
-        .sampleDataContainerIncomplete()
 }

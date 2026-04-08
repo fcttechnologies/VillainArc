@@ -441,9 +441,8 @@ private struct WorkoutDetailSetIndicator: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutDetailView(workout: sampleCompletedSession())
     }
-    .sampleDataContainer()
 }

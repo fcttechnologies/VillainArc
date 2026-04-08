@@ -150,9 +150,8 @@ private struct AllWeightEntriesRowView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         AllWeightEntriesListView()
     }
-    .sampleDataContainer()
 }

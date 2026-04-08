@@ -333,7 +333,6 @@ struct NewWeightGoalView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NewWeightGoalView(weightUnit: .lbs)
-        .sampleDataContainer()
 }

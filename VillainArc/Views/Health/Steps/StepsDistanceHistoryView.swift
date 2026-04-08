@@ -492,9 +492,8 @@ private struct StepsDistancePeriodHighlightsSection: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         StepsDistanceHistoryView()
-            .sampleDataContainer()
     }
 }

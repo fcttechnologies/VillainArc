@@ -1,19 +1,18 @@
 import SwiftData
 import SwiftUI
 
-class PreviewDataContainer {
-    var modelContainer: ModelContainer
+final class PreviewDataContainer {
+    let modelContainer: ModelContainer
 
     var context: ModelContext { modelContainer.mainContext }
 
     init(includeIncompleteData: Bool = false) {
-        let schema = Schema([
-            WorkoutSession.self, HealthWorkout.self, WeightEntry.self, PreWorkoutContext.self, ExercisePerformance.self, SetPerformance.self, Exercise.self, AppSettings.self, ExerciseHistory.self, ProgressionPoint.self, UserProfile.self, RepRangePolicy.self, RestTimeHistory.self, WorkoutPlan.self,
-            ExercisePrescription.self, SetPrescription.self, WorkoutSplit.self, WorkoutSplitDay.self, SuggestionEvent.self, PrescriptionChange.self, SuggestionEvaluation.self,
-        ])
-
         do {
-            modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])
+            let schema = SharedModelContainer.schema
+            modelContainer = try ModelContainer(
+                for: schema,
+                configurations: [.init(schema: schema, isStoredInMemoryOnly: true)]
+            )
 
             context.insert(AppSettings())
             syncExercises()
@@ -505,13 +504,42 @@ func sampleSuggestionGenerationSession() -> WorkoutSession {
     return fallback
 }
 
-// MARK: - View Modifiers
+// MARK: - Preview Traits
 
-extension View {
-    func sampleDataContainer() -> some View { self.modelContainer(sampleContainer.modelContainer) }
+private enum PreviewSampleDataContextFactory {
+    static func makeDefault() -> ModelContainer { sampleContainer.modelContainer }
+    static func makeIncomplete() -> ModelContainer { sampleContainerWithIncomplete.modelContainer }
+    static func makeSuggestions() -> ModelContainer { sampleContainerWithSuggestions.modelContainer }
+    static func makeSuggestionGeneration() -> ModelContainer { sampleContainerSuggestionGeneration.modelContainer }
+}
 
-    func sampleDataContainerIncomplete() -> some View { self.modelContainer(sampleContainerWithIncomplete.modelContainer) }
-    func sampleDataContainerSuggestions() -> some View { self.modelContainer(sampleContainerWithSuggestions.modelContainer) }
+private struct SampleDataPreviewModifier: PreviewModifier {
+    static func makeSharedContext() async throws -> ModelContainer { PreviewSampleDataContextFactory.makeDefault() }
 
-    func sampleDataContainerSuggestionGeneration() -> some View { self.modelContainer(sampleContainerSuggestionGeneration.modelContainer) }
+    func body(content: Content, context: ModelContainer) -> some View { content.modelContainer(context) }
+}
+
+private struct SampleDataIncompletePreviewModifier: PreviewModifier {
+    static func makeSharedContext() async throws -> ModelContainer { PreviewSampleDataContextFactory.makeIncomplete() }
+
+    func body(content: Content, context: ModelContainer) -> some View { content.modelContainer(context) }
+}
+
+private struct SampleDataSuggestionsPreviewModifier: PreviewModifier {
+    static func makeSharedContext() async throws -> ModelContainer { PreviewSampleDataContextFactory.makeSuggestions() }
+
+    func body(content: Content, context: ModelContainer) -> some View { content.modelContainer(context) }
+}
+
+private struct SampleDataSuggestionGenerationPreviewModifier: PreviewModifier {
+    static func makeSharedContext() async throws -> ModelContainer { PreviewSampleDataContextFactory.makeSuggestionGeneration() }
+
+    func body(content: Content, context: ModelContainer) -> some View { content.modelContainer(context) }
+}
+
+extension PreviewTrait where T == Preview.ViewTraits {
+    static var sampleData: Self { .modifier(SampleDataPreviewModifier()) }
+    static var sampleDataIncomplete: Self { .modifier(SampleDataIncompletePreviewModifier()) }
+    static var sampleDataSuggestions: Self { .modifier(SampleDataSuggestionsPreviewModifier()) }
+    static var sampleDataSuggestionGeneration: Self { .modifier(SampleDataSuggestionGenerationPreviewModifier()) }
 }

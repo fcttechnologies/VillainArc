@@ -131,7 +131,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     RestTimeEditorView(exercise: sampleIncompleteSession().sortedExercises.first!)
-        .sampleDataContainerIncomplete()
 }

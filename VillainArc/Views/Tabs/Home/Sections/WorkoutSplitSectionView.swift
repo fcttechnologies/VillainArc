@@ -171,12 +171,11 @@ struct WorkoutSplitSectionView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutSplitSectionView()
             .padding()
     }
-    .sampleDataContainer()
 }
 
 #Preview {

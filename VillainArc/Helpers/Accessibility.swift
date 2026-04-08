@@ -515,6 +515,8 @@ enum AccessibilityText {
     static let healthTrainingConditionSectionHint = localized("Updates your current training condition.")
     static let healthSleepSectionHint = localized("Shows your latest synced sleep summary.")
     static let healthStepsSectionHint = localized("Opens detailed steps history.")
+    static let healthStepsGoalHistoryAddLabel = localized("Add steps goal")
+    static let healthStepsGoalHistoryAddHint = localized("Creates a new steps goal.")
     static let healthEnergySectionHint = localized("Opens detailed energy history.")
     static let healthTrainingConditionHistoryAddLabel = localized("Add training condition")
     static let healthTrainingConditionHistoryAddHint = localized("Adds or replaces a training condition.")
@@ -921,6 +923,7 @@ enum AccessibilityText {
     static let workoutSummaryDoneLabel = localized("Done")
     static let workoutSummaryPRSectionLabel = localized("Personal Records")
     static let workoutSummaryPlanSavedLabel = localized("Saved as Workout Plan")
+    static let workoutSummaryEffortCardLabel = localized("Workout effort")
 
     static func workoutSummaryEffortLabel(value: Int) -> String { localized("Effort \(value)") }
 
@@ -929,6 +932,7 @@ enum AccessibilityText {
     static func workoutSummaryNotesValue(hasNotes: Bool, notes: String) -> String { hasNotes ? notes : localized("No notes added.") }
 
     static func workoutSummaryPRSectionValue(count: Int) -> String { count == 1 ? localized("1 personal record") : localized("\(count) personal records") }
+    static func workoutSummaryEffortCardValue(score: Int, description: String) -> String { localized("\(score)/10. \(description)") }
 
     static func workoutLiveHealthValue(heartRate: String, activeEnergy: String, totalEnergy: String) -> String { localized("Heart rate \(heartRate), active energy \(activeEnergy), total energy \(totalEnergy)") }
 

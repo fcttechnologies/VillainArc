@@ -114,7 +114,6 @@ struct WorkoutSettingsView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     WorkoutSettingsView(workout: sampleIncompleteSession())
-        .sampleDataContainerIncomplete()
 }

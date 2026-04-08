@@ -61,6 +61,9 @@
     "%@ is already the active exercise." : {
 
     },
+    "%@ METs" : {
+
+    },
     "%@ out of 10" : {
 
     },
@@ -339,6 +342,9 @@
     "%lld" : {
 
     },
+    "%lld bpm" : {
+
+    },
     "%lld cm" : {
 
     },
@@ -369,9 +375,6 @@
     "%lld reps" : {
 
     },
-    "%lld Selected" : {
-
-    },
     "%lld sets" : {
 
     },
@@ -384,6 +387,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld-%2$lld %3$@"
+          }
+        }
+      }
+    },
+    "%lld-%lld reps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld-%2$lld reps"
           }
         }
       }
@@ -418,7 +431,55 @@
         }
       }
     },
+    "%lldh %lldm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldh %2$lldm"
+          }
+        }
+      }
+    },
+    "%lldm" : {
+
+    },
+    "%lldx Upper, %lldx Lower" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldx Upper, %2$lldx Lower"
+          }
+        }
+      }
+    },
+    "^[%lld day](inflect: true)" : {
+
+    },
+    "^[%lld of %lld set](inflect: true) complete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "^[%1$lld of %2$lld set](inflect: true) complete"
+          }
+        }
+      }
+    },
+    "^[%lld rep](inflect: true)" : {
+
+    },
+    "^[%lld selected exercise](inflect: true)" : {
+
+    },
+    "^[%lld session](inflect: true) per week" : {
+
+    },
     "^[%lld set](inflect: true)" : {
+
+    },
+    "^[%lld time](inflect: true)" : {
 
     },
     "1" : {
@@ -449,6 +510,15 @@
 
     },
     "1 suggestion to review" : {
+
+    },
+    "2x Lower, 1x Upper" : {
+
+    },
+    "2x Lower, 2x Upper" : {
+
+    },
+    "3x Lower, 2x Upper" : {
 
     },
     "10" : {
@@ -532,6 +602,9 @@
     "Add sets first to change their rest times." : {
 
     },
+    "Add steps goal" : {
+
+    },
     "Add to favorites" : {
 
     },
@@ -583,6 +656,12 @@
     "Adds or replaces a training condition." : {
 
     },
+    "Adds the selected exercises to your plan." : {
+
+    },
+    "Adds the selected exercises to your workout." : {
+
+    },
     "Adds this exercise to your selection." : {
 
     },
@@ -623,6 +702,12 @@
 
     },
     "Allow 0:00" : {
+
+    },
+    "Allowed" : {
+
+    },
+    "Allowed Quietly" : {
 
     },
     "Alphabetical" : {
@@ -745,6 +830,9 @@
     "Bucket" : {
 
     },
+    "Bulk goal reached" : {
+
+    },
     "Cable (Double)" : {
 
     },
@@ -847,7 +935,19 @@
     "Complete Active Set" : {
 
     },
+    "Complete bulk goal?" : {
+
+    },
+    "Complete cut goal?" : {
+
+    },
     "Complete exercises in workouts to track progress here." : {
+
+    },
+    "Complete Goal" : {
+
+    },
+    "Complete maintain goal?" : {
 
     },
     "Complete set" : {
@@ -905,6 +1005,9 @@
     "Continues setup without iCloud sync." : {
 
     },
+    "Continuous rotation" : {
+
+    },
     "Control whether Villain Arc generates suggestions for this exercise. When suggestions are on, you can also customize the progression step used for load changes." : {
 
     },
@@ -953,6 +1056,9 @@
     "Creates a completed workout plan from a completed workout." : {
 
     },
+    "Creates a new steps goal." : {
+
+    },
     "Creates a new weight entry." : {
 
     },
@@ -995,6 +1101,9 @@
     "Custom Progression Step" : {
 
     },
+    "Cut goal reached" : {
+
+    },
     "D" : {
 
     },
@@ -1017,6 +1126,9 @@
 
     },
     "Delete \"%@\"? This action cannot be undone." : {
+
+    },
+    "Delete %@ goal?" : {
 
     },
     "Delete %@? This action cannot be undone." : {
@@ -1062,6 +1174,9 @@
 
     },
     "Delete Exercise" : {
+
+    },
+    "Delete Goal" : {
 
     },
     "Delete Plan" : {
@@ -1131,6 +1246,9 @@
 
     },
     "Deletes this workout." : {
+
+    },
+    "Denied" : {
 
     },
     "Discard selected exercises?" : {
@@ -1208,6 +1326,9 @@
     "Enable iCloud in Settings" : {
 
     },
+    "Enable Notifications" : {
+
+    },
     "Enable notifications in system settings to change this. Villain Arc can still show in-app toasts while you’re using the app." : {
 
     },
@@ -1269,6 +1390,9 @@
 
     },
     "Est. 1RM" : {
+
+    },
+    "Estimated %@ out of 10" : {
 
     },
     "Estimated range" : {
@@ -1350,6 +1474,9 @@
 
     },
     "Finish the workout before saving it as a plan." : {
+
+    },
+    "Finish this goal now. It will be saved as an ended early override if you haven’t actually hit the target." : {
 
     },
     "Finish Workout" : {
@@ -1473,6 +1600,9 @@
     "Goal: %@" : {
 
     },
+    "Goals started today can only be deleted so they don’t immediately move into history." : {
+
+    },
     "Good" : {
 
     },
@@ -1556,6 +1686,12 @@
 
     },
     "If the next set is a drop set, rest time is skipped." : {
+
+    },
+    "If you leave now, the selected exercises will not be added to your plan." : {
+
+    },
+    "If you leave now, the selected exercises will not be added to your workout." : {
 
     },
     "Imported from Apple Health" : {
@@ -1757,6 +1893,9 @@
     "Lower Back" : {
 
     },
+    "Lower body focus" : {
+
+    },
     "Lower Chest" : {
 
     },
@@ -1814,6 +1953,9 @@
     "Mark complete" : {
 
     },
+    "Mark Complete" : {
+
+    },
     "Mark incomplete" : {
 
     },
@@ -1827,6 +1969,12 @@
 
     },
     "Marks this day as a rest day." : {
+
+    },
+    "Max Reps: %lld" : {
+
+    },
+    "Max Weight: %@" : {
 
     },
     "Medial Head (Triceps)" : {
@@ -1914,6 +2062,9 @@
 
     },
     "Need More Data" : {
+
+    },
+    "New Estimated 1RM: %@" : {
 
     },
     "New Exercise" : {
@@ -2045,6 +2196,9 @@
     "No quick-fill options." : {
 
     },
+    "No rep goal is stored for this exercise." : {
+
+    },
     "No reps target" : {
 
     },
@@ -2174,7 +2328,13 @@
     "Not favorite" : {
 
     },
+    "Not logged yet" : {
+
+    },
     "Not Now" : {
+
+    },
+    "Not Requested" : {
 
     },
     "Not selected" : {
@@ -2257,6 +2417,9 @@
     "On Track" : {
 
     },
+    "One full cycle" : {
+
+    },
     "One muscle group per day" : {
 
     },
@@ -2297,6 +2460,9 @@
 
     },
     "Open Rest Timer" : {
+
+    },
+    "Open Settings" : {
 
     },
     "Open Settings Apps" : {
@@ -2357,6 +2523,12 @@
 
     },
     "Opens settings for your active workout." : {
+
+    },
+    "Opens Settings so you can change Apple Health permissions." : {
+
+    },
+    "Opens Settings so you can review Apple Health access." : {
 
     },
     "Opens the linked workout plan." : {
@@ -2471,6 +2643,12 @@
     "Personal Records" : {
 
     },
+    "Pick a rep range that matches your goal: strength usually sits around 1–3 reps, hypertrophy is often 8–12 reps, endurance is commonly 12–20+ reps." : {
+
+    },
+    "Pick one rep target that matches your goal: strength often uses a low target like 3 reps, hypertrophy is often around 10 reps, endurance is usually 15+ reps." : {
+
+    },
     "Pick two days to swap." : {
 
     },
@@ -2527,6 +2705,16 @@
     },
     "Range" : {
 
+    },
+    "Range %lld to %lld reps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Range %1$lld to %2$lld reps"
+          }
+        }
+      }
     },
     "Ready" : {
 
@@ -2633,6 +2821,9 @@
 
     },
     "Requests Apple Health read and write access for workouts." : {
+
+    },
+    "Requests Apple Health read and write access." : {
 
     },
     "Reset Offset" : {
@@ -2913,6 +3104,12 @@
 
     },
     "Set %lld" : {
+
+    },
+    "Set a rep range you want to aim for." : {
+
+    },
+    "Set a single rep goal you want to achieve for each set." : {
 
     },
     "Set A Target Date" : {
@@ -3209,6 +3406,9 @@
     "Start rest timer for ${duration}" : {
 
     },
+    "Start Rest Timer?" : {
+
+    },
     "Start Timer" : {
 
     },
@@ -3228,6 +3428,9 @@
 
     },
     "Started At" : {
+
+    },
+    "Started today" : {
 
     },
     "Starting" : {
@@ -3389,6 +3592,9 @@
     "Target %@" : {
 
     },
+    "Target %lld reps" : {
+
+    },
     "Target Date" : {
 
     },
@@ -3470,6 +3676,9 @@
     "Templates are just a starting point. You can adjust the split to fit your needs after you create it." : {
 
     },
+    "Temporary" : {
+
+    },
     "That exercise is no longer available." : {
 
     },
@@ -3482,10 +3691,13 @@
     "These units control how weight, height, distance, and energy are displayed throughout the app." : {
 
     },
-    "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing." : {
+    "This goal is no longer available." : {
 
     },
-    "This sleep night is no longer available in Apple Health. VillainArc is showing the last synced summary." : {
+    "This is taking longer than expected. Villain Arc will keep waiting for iCloud sync to finish before continuing." : {
+
+    },
+    "This sleep night is no longer available in Apple Health. Villain Arc is showing the last synced summary." : {
 
     },
     "This suggestion is based on previous times you logged this exercise or your usual rep goal." : {
@@ -3494,7 +3706,7 @@
     "This workout is already linked to a workout plan." : {
 
     },
-    "This workout is no longer available in Apple Health. VillainArc is showing the last synced summary." : {
+    "This workout is no longer available in Apple Health. Villain Arc is showing the last synced summary." : {
 
     },
     "Thursday" : {
@@ -3603,6 +3815,9 @@
     "Total" : {
 
     },
+    "Total Volume: %@" : {
+
+    },
     "Train your entire body each session" : {
 
     },
@@ -3651,6 +3866,9 @@
     "Turn this off to stop Villain Arc from generating suggestions for this exercise anywhere in the app." : {
 
     },
+    "Two full cycles" : {
+
+    },
     "Type" : {
 
     },
@@ -3682,6 +3900,9 @@
     "Units" : {
 
     },
+    "Unknown" : {
+
+    },
     "Unknown Muscle" : {
 
     },
@@ -3698,6 +3919,9 @@
 
     },
     "Update Apple Health permissions so your health metrics appear here." : {
+
+    },
+    "Update Rest Timer?" : {
 
     },
     "Update Training Condition" : {
@@ -3760,10 +3984,10 @@
     "Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer." : {
 
     },
-    "VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {
+    "Villain Arc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted." : {
 
     },
-    "VillainArc needs WiFi for first time setup to sync your workout data." : {
+    "Villain Arc needs WiFi for first time setup to sync your workout data." : {
 
     },
     "Volume" : {
@@ -3773,6 +3997,12 @@
 
     },
     "Wake Day" : {
+
+    },
+    "Want to start a rest timer for %@ to reflect the new set rest time?" : {
+
+    },
+    "Want to update rest timer to reflect the new set rest time?" : {
 
     },
     "Warm Up Set" : {
@@ -3827,6 +4057,9 @@
 
     },
     "Weight Goal" : {
+
+    },
+    "Weight goal reached" : {
 
     },
     "Weight Goals" : {
@@ -4015,6 +4248,9 @@
     "Workouts" : {
 
     },
+    "Wrap this maintain goal up and save its range to your history." : {
+
+    },
     "Wrapping Things Up" : {
 
     },
@@ -4181,6 +4417,29 @@
           }
         }
       }
+    },
+    "You logged %@ and cleared your target of %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You logged %1$@ and cleared your target of %2$@."
+          }
+        }
+      }
+    },
+    "You logged %@ and pushed past your target of %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You logged %1$@ and pushed past your target of %2$@."
+          }
+        }
+      }
+    },
+    "You logged %@ and wrapped up this goal." : {
+
     },
     "You need to launch and finish setting up the app before you can use this feature." : {
 

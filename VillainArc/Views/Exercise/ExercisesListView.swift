@@ -91,9 +91,8 @@ struct ExercisesListView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataSuggestionGeneration) {
     NavigationStack {
         ExercisesListView()
     }
-    .sampleDataContainerSuggestionGeneration()
 }

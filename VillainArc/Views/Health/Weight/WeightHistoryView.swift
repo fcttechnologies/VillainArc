@@ -470,9 +470,8 @@ private struct WeightHistoryMainSection: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WeightHistoryView()
     }
-    .sampleDataContainer()
 }

@@ -3,6 +3,28 @@ import Testing
 @testable import VillainArc
 
 @Suite(.serialized) struct FoundationModelIntegrationTests {
+    @Test(
+        "training style validation rejects confidence outside 0...1",
+        arguments: [-0.01, 1.01]
+    )
+    @MainActor
+    func trainingStyleValidation_rejectsOutOfRangeConfidence(confidence: Double) {
+        let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: confidence)
+        #expect(AITrainingStyleClassifier.validate(output) == nil)
+    }
+
+    @Test(
+        "training style validation accepts boundary confidence",
+        arguments: [0.0, 1.0]
+    )
+    @MainActor
+    func trainingStyleValidation_acceptsBoundaryConfidence(confidence: Double) {
+        let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: confidence)
+        let validated = AITrainingStyleClassifier.validate(output)
+        #expect(validated?.trainingStyleClassification == .ascending)
+        #expect(validated?.confidence == confidence)
+    }
+
     @Test @MainActor func trainingStyleValidation_acceptsBoundedConfidence() {
         let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: 0.7)
 
@@ -10,14 +32,6 @@ import Testing
 
         #expect(validated?.trainingStyleClassification == .ascending)
         #expect(validated?.confidence == 0.7)
-    }
-
-    @Test @MainActor func trainingStyleValidation_rejectsOutOfRangeConfidence() {
-        let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: 1.2)
-
-        let validated = AITrainingStyleClassifier.validate(output)
-
-        #expect(validated == nil)
     }
 
     @Test @MainActor func trainingStyleAcceptance_requiresConfidenceAbovePointFive() {
@@ -28,12 +42,30 @@ import Testing
         #expect(SuggestionGenerator.shouldUseAITrainingStyle(strong) == true)
     }
 
-    @Test @MainActor func outcomeValidation_rejectsOutOfRangeConfidence() {
-        let output = AIOutcomeInferenceOutput(outcome: .good, confidence: 1.1, reason: "Clear evidence.")
+    @Test(
+        "outcome validation rejects confidence outside 0...1",
+        arguments: [-0.01, 1.01]
+    )
+    @MainActor
+    func outcomeValidation_rejectsOutOfRangeConfidence(confidence: Double) {
+        let output = AIOutcomeInferenceOutput(outcome: .good, confidence: confidence, reason: "Clear evidence.")
 
         let validated = AIOutcomeInferrer.validate(output)
 
         #expect(validated == nil)
+    }
+
+    @Test(
+        "outcome validation accepts boundary confidence",
+        arguments: [0.0, 1.0]
+    )
+    @MainActor
+    func outcomeValidation_acceptsBoundaryConfidence(confidence: Double) {
+        let output = AIOutcomeInferenceOutput(outcome: .good, confidence: confidence, reason: "Clear evidence.")
+        let validated = AIOutcomeInferrer.validate(output)
+        #expect(validated?.outcome == .good)
+        #expect(validated?.confidence == confidence)
+        #expect(validated?.reason == "Clear evidence.")
     }
 
     @Test @MainActor func outcomeValidation_normalizesMultilineReason() {
@@ -60,6 +92,11 @@ import Testing
 
         #expect(validated?.confidence == 0.8)
         #expect(validated?.reason == "Strong adherence to the new target.")
+    }
+
+    @Test @MainActor func outcomeValidation_rejectsWhitespaceOnlyReason() {
+        let output = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: "   \n\t  ")
+        #expect(AIOutcomeInferrer.validate(output) == nil)
     }
 
     @Test @MainActor func aiPerformanceSnapshot_includesSetRPE() {

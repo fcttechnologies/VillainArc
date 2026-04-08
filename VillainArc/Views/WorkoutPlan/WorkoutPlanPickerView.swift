@@ -89,9 +89,8 @@ struct WorkoutPlanPickerView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutPlanPickerView(selectedPlan: .constant(sampleCompletedPlan()))
     }
-    .sampleDataContainer()
 }

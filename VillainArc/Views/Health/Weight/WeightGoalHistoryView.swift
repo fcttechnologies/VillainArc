@@ -207,9 +207,8 @@ private struct WeightGoalHistoryRowView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WeightGoalHistoryView()
     }
-    .sampleDataContainer()
 }

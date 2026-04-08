@@ -51,7 +51,6 @@ struct RootView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     RootView()
-        .sampleDataContainer()
 }

@@ -376,9 +376,8 @@ private struct WorkoutPlanDetailSetIndicator: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutPlanDetailView(plan: sampleCompletedPlan())
     }
-    .sampleDataContainer()
 }

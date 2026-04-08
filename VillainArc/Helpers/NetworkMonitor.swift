@@ -24,6 +24,7 @@ import Network
         await withCheckedContinuation { continuation in
             let monitor = NWPathMonitor()
             monitor.pathUpdateHandler = { path in
+                monitor.pathUpdateHandler = nil
                 monitor.cancel()
                 continuation.resume(returning: path.status == .satisfied)
             }

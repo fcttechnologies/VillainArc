@@ -40,8 +40,13 @@ final class CloudKitImportMonitor {
     func stop(resetStatus: CloudKitImportStatus = .idle) {
         observationTask?.cancel()
         observationTask = nil
-        waiters.removeAll()
         status = resetStatus
+
+        let pendingWaiters = waiters
+        waiters.removeAll()
+        for waiter in pendingWaiters {
+            waiter.resume(returning: resetStatus)
+        }
     }
 
     func waitForImportCompletion() async -> CloudKitImportStatus {

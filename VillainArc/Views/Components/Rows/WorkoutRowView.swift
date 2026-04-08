@@ -49,9 +49,8 @@ struct WorkoutRowView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutRowView(workout: sampleCompletedSession())
     }
-    .sampleDataContainer()
 }

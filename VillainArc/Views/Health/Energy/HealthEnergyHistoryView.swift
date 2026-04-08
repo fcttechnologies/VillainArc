@@ -474,9 +474,8 @@ private struct HealthEnergyPeriodHighlightsSection: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         HealthEnergyHistoryView()
-            .sampleDataContainer()
     }
 }

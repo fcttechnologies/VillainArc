@@ -344,7 +344,6 @@ struct TrainingConditionEditorView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     TrainingConditionEditorView(activePeriod: nil)
-        .sampleDataContainer()
 }

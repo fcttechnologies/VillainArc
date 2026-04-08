@@ -322,9 +322,9 @@ struct ExerciseView: View {
     private var restTimerPromptTitle: String {
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:
-            return "Update Rest Timer?"
+            return String(localized: "Update Rest Timer?")
         case .startNewTimer:
-            return "Start Rest Timer?"
+            return String(localized: "Start Rest Timer?")
         case .none:
             return ""
         }
@@ -333,30 +333,29 @@ struct ExerciseView: View {
     private var restTimerPromptConfirmLabel: String {
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:
-            return "Update"
+            return String(localized: "Update")
         case .startNewTimer:
-            return "Start"
+            return String(localized: "Start")
         case .none:
-            return "OK"
+            return String(localized: "OK")
         }
     }
 
     private var restTimerPromptMessage: String {
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:
-            return "Want to update rest timer to reflect the new set rest time?"
+            return String(localized: "Want to update rest timer to reflect the new set rest time?")
         case .startNewTimer:
-            return "Want to start a rest timer for \(secondsToTime(restTimeUpdateSeconds)) to reflect the new set rest time?"
+            return String(localized: "Want to start a rest timer for \(secondsToTime(restTimeUpdateSeconds)) to reflect the new set rest time?")
         case .none:
             return ""
         }
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     ExerciseView(
         exercise: sampleIncompleteSession().sortedExercises.first!,
         appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
     )
-        .sampleDataContainerIncomplete()
 }

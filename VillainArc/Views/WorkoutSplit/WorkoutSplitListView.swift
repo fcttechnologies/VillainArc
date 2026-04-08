@@ -229,7 +229,6 @@ struct WorkoutSplitListView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     WorkoutSplitListView()
-        .sampleDataContainer()
 }

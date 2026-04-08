@@ -74,9 +74,8 @@ struct HealthTabView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     HealthTabView()
-        .sampleDataContainer()
 }
 
 #Preview("No Data") {

@@ -83,7 +83,6 @@ struct TrainingConditionSectionCard: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     TrainingConditionSectionCard()
-        .sampleDataContainer()
 }

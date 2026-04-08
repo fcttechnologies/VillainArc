@@ -103,7 +103,6 @@ struct ReplaceExerciseView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     ReplaceExerciseView(currentCatalogID: "barbell_bench_press") { _, _ in }
-        .sampleDataContainerIncomplete()
 }

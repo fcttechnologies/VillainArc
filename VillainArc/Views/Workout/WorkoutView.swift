@@ -280,7 +280,7 @@ struct WorkoutView: View {
             return "All sets complete"
         }
         if completedSets > 0 {
-            return "\(completedSets)/\(totalSets) sets complete"
+            return "^[\(completedSets) of \(totalSets) set](inflect: true) complete"
         }
         return "^[\(totalSets) set](inflect: true)"
     }
@@ -645,12 +645,10 @@ struct WorkoutView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     WorkoutView(workout: sampleIncompleteSession())
-        .sampleDataContainerIncomplete()
 }
 
-#Preview("New Workout") {
+#Preview("New Workout", traits: .sampleData) {
     WorkoutView(workout: WorkoutSession())
-        .sampleDataContainer()
 }

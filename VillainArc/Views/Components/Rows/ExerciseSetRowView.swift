@@ -307,10 +307,9 @@ struct ExerciseSetRowView: View {
     
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     ExerciseView(
         exercise: sampleIncompleteSession().sortedExercises.first!,
         appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
     )
-    .sampleDataContainerIncomplete()
 }

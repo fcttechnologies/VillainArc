@@ -115,6 +115,8 @@ struct StepsGoalHistoryView: View {
                     Image(systemName: "plus")
                         .font(.title3)
                 }
+                .accessibilityLabel(AccessibilityText.healthStepsGoalHistoryAddLabel)
+                .accessibilityHint(AccessibilityText.healthStepsGoalHistoryAddHint)
             }
         }
         .sheet(isPresented: $showNewStepsGoalSheet) {
@@ -325,9 +327,8 @@ struct NewStepsGoalView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         StepsGoalHistoryView()
-            .sampleDataContainer()
     }
 }

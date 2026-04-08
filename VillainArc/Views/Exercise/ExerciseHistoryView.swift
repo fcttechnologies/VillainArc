@@ -168,16 +168,14 @@ private struct ExerciseHistorySetIndicator: View {
     }
 }
 
-#Preview("Exercise History") {
+#Preview("Exercise History", traits: .sampleDataSuggestionGeneration) {
     NavigationStack {
         ExerciseHistoryView(catalogID: "dumbbell_incline_bench_press")
     }
-    .sampleDataContainerSuggestionGeneration()
 }
 
-#Preview("Exercise History Empty") {
+#Preview("Exercise History Empty", traits: .sampleData) {
     NavigationStack {
         ExerciseHistoryView(catalogID: "barbell_bent_over_row")
     }
-    .sampleDataContainer()
 }

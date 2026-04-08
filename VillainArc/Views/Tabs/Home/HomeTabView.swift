@@ -104,7 +104,6 @@ struct HomeTabView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     HomeTabView()
-        .sampleDataContainer()
 }

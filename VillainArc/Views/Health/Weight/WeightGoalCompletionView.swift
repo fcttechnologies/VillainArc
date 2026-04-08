@@ -27,11 +27,11 @@ struct WeightGoalCompletionView: View {
         var buttonTitle: String {
             switch self {
             case .completeAchieved:
-                return "Complete Goal"
+                return String(localized: "Complete Goal")
             case .completeManualOverride:
-                return "Mark Complete"
+                return String(localized: "Mark Complete")
             case .deleteGoal:
-                return "Delete Goal"
+                return String(localized: "Delete Goal")
             }
         }
 
@@ -107,41 +107,41 @@ struct WeightGoalCompletionView: View {
     }
 
     private var titleText: String {
-        guard let goal else { return "Weight Goal" }
-        if isSameDayGoal { return "Delete \(goal.type.title.lowercased()) goal?" }
+        guard let goal else { return String(localized: "Weight Goal") }
+        if isSameDayGoal { return String(localized: "Delete \(goal.type.title.lowercased()) goal?") }
         switch route.trigger {
         case .achievedByEntry:
             switch goal.type {
             case .cut:
-                return "Cut goal reached"
+                return String(localized: "Cut goal reached")
             case .bulk:
-                return "Bulk goal reached"
+                return String(localized: "Bulk goal reached")
             case .maintain:
-                return "Weight goal reached"
+                return String(localized: "Weight goal reached")
             }
         case .manualCompletion:
             switch goal.type {
             case .maintain:
-                return "Complete maintain goal?"
+                return String(localized: "Complete maintain goal?")
             case .cut:
-                return "Complete cut goal?"
+                return String(localized: "Complete cut goal?")
             case .bulk:
-                return "Complete bulk goal?"
+                return String(localized: "Complete bulk goal?")
             }
         }
     }
 
     private var subtitleText: String {
-        guard let goal else { return "This goal is no longer available." }
-        if isSameDayGoal { return "Goals started today can only be deleted so they don’t immediately move into history." }
+        guard let goal else { return String(localized: "This goal is no longer available.") }
+        if isSameDayGoal { return String(localized: "Goals started today can only be deleted so they don’t immediately move into history.") }
         if route.trigger == .achievedByEntry, let triggeringEntry {
             return achievedSubtitle(for: goal, entry: triggeringEntry)
         }
         switch goal.type {
         case .maintain:
-            return "Wrap this maintain goal up and save its range to your history."
+            return String(localized: "Wrap this maintain goal up and save its range to your history.")
         case .cut, .bulk:
-            return "Finish this goal now. It will be saved as an ended early override if you haven’t actually hit the target."
+            return String(localized: "Finish this goal now. It will be saved as an ended early override if you haven’t actually hit the target.")
         }
     }
 
@@ -275,11 +275,11 @@ struct WeightGoalCompletionView: View {
     private func achievedSubtitle(for goal: WeightGoal, entry: WeightEntry) -> String {
         switch goal.type {
         case .cut:
-            return "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and cleared your target of \(formattedWeightText(goal.targetWeight, unit: weightUnit))."
+            return String(localized: "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and cleared your target of \(formattedWeightText(goal.targetWeight, unit: weightUnit)).")
         case .bulk:
-            return "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and pushed past your target of \(formattedWeightText(goal.targetWeight, unit: weightUnit))."
+            return String(localized: "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and pushed past your target of \(formattedWeightText(goal.targetWeight, unit: weightUnit)).")
         case .maintain:
-            return "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and wrapped up this goal."
+            return String(localized: "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and wrapped up this goal.")
         }
     }
 
@@ -329,9 +329,8 @@ struct WeightGoalCompletionView: View {
 
     private var durationText: String {
         let days = max(calendar.dateComponents([.day], from: calendar.startOfDay(for: goal?.startedAt ?? evaluationDate), to: calendar.startOfDay(for: evaluationDate)).day ?? 0, 0)
-        if days == 0 { return "Started today" }
-        if days == 1 { return "1 day" }
-        return "\(days) days"
+        if days == 0 { return String(localized: "Started today") }
+        return String(localized: "^[\(days) day](inflect: true)")
     }
 
     private var averagePaceText: String? {

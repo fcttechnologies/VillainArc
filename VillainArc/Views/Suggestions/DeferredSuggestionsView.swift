@@ -113,7 +113,6 @@ struct DeferredSuggestionsView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataSuggestions) {
     DeferredSuggestionsView(workout: sampleSessionWithSuggestions())
-        .sampleDataContainerSuggestions()
 }

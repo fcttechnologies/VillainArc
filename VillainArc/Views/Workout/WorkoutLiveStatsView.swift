@@ -85,7 +85,6 @@ private extension WorkoutLiveStatsView {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     WorkoutLiveStatsView(workout: sampleIncompleteSession())
-        .sampleDataContainer()
 }

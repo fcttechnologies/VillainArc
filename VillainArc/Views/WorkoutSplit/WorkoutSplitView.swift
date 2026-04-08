@@ -809,23 +809,20 @@ struct WorkoutSplitView: View {
     }
 }
 
-#Preview("Active Split") {
+#Preview("Active Split", traits: .sampleData) {
     NavigationStack {
         WorkoutSplitView()
     }
-    .sampleDataContainer()
 }
 
-#Preview("Weekly Split (Override)") {
+#Preview("Weekly Split (Override)", traits: .sampleData) {
     NavigationStack {
         WorkoutSplitView(split: sampleWeeklySplit())
     }
-    .sampleDataContainer()
 }
 
-#Preview("Rotation Split (Override)") {
+#Preview("Rotation Split (Override)", traits: .sampleData) {
     NavigationStack {
         WorkoutSplitView(split: sampleRotationSplit())
     }
-    .sampleDataContainer()
 }

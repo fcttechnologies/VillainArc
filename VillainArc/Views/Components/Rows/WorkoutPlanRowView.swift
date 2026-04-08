@@ -17,9 +17,8 @@ struct WorkoutPlanRowView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         WorkoutPlanRowView(workoutPlan: sampleCompletedPlan())
     }
-    .sampleDataContainer()
 }

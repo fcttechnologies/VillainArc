@@ -191,10 +191,14 @@ struct RestTimerView: View {
     private var timerDisplay: some View {
         if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
             VStack(spacing: 6) {
-                Text("\(Image(systemName: "bell")) \(endDate.formatted(date: .omitted, time: .shortened))")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                Label {
+                    Text(endDate, format: .dateTime.hour().minute())
+                } icon: {
+                    Image(systemName: "bell")
+                }
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
                 HStack(spacing: 12) {
                     adjustButton(deltaSeconds: -15)
@@ -325,10 +329,9 @@ struct RestTimerView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     RestTimerView(
         workout: sampleIncompleteSession(),
         appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
     )
-        .sampleDataContainer()
 }

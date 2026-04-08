@@ -68,13 +68,13 @@ struct ExerciseSummaryRow: View {
     }
     
     private var lastUsedText: String {
-        guard let lastUsed = history?.lastCompletedAt else { return "Not logged yet" }
+        guard let lastUsed = history?.lastCompletedAt else { return String(localized: "Not logged yet") }
         return formattedRecentDay(lastUsed)
     }
     
     private var sessionText: String? {
         guard let history, history.totalSessions > 0 else { return nil }
-        return "\(history.totalSessions) \(history.totalSessions == 1 ? "time" : "times")"
+        return String(localized: "^[\(history.totalSessions) time](inflect: true)")
     }
     
     private var recordText: String? {
@@ -83,7 +83,7 @@ struct ExerciseSummaryRow: View {
             return formattedWeightText(history.bestWeight, unit: weightUnit)
         }
         if history.bestReps > 0 {
-            return "\(history.bestReps) reps"
+            return String(localized: "^[\(history.bestReps) rep](inflect: true)")
         }
         return nil
     }

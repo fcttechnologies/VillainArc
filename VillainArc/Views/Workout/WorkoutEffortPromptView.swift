@@ -5,6 +5,7 @@ struct WorkoutEffortPromptView: View {
     let onClose: () -> Void
     let onSkip: () -> Void
     let onConfirm: () -> Void
+    @ScaledMetric(relativeTo: .largeTitle) private var selectedScoreFontSize: CGFloat = 64
 
     private var hasSelection: Bool {
         (1...10).contains(selectedEffort)
@@ -29,7 +30,8 @@ struct WorkoutEffortPromptView: View {
                     VStack(spacing: 4) {
                         if hasSelection {
                             Text("\(selectedEffort)")
-                                .font(.system(size: 64, weight: .bold, design: .rounded))
+                                .font(.system(size: selectedScoreFontSize, weight: .bold, design: .rounded))
+                                .minimumScaleFactor(0.7)
 
                             Text(workoutEffortTitle(selectedEffort))
                                 .font(.title3)

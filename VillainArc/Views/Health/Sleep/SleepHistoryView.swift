@@ -416,7 +416,7 @@ private struct SleepHistoryMainSection: View {
             }
             
             if selectedRange == .day, displayedEntry?.isAvailableInHealthKit == false {
-                Text("This sleep night is no longer available in Apple Health. VillainArc is showing the last synced summary.")
+                Text("This sleep night is no longer available in Apple Health. Villain Arc is showing the last synced summary.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else if let loadErrorMessage = loader.loadErrorMessage, selectedRange == .day {
@@ -769,9 +769,8 @@ private func roundedUpHour(_ date: Date, calendar: Calendar) -> Date {
     return calendar.date(byAdding: .hour, value: 1, to: roundedDown) ?? date
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         SleepHistoryView()
-            .sampleDataContainer()
     }
 }

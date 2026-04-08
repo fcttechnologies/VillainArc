@@ -183,7 +183,7 @@ struct OnboardingView: View {
                 Text("WiFi Required")
                     .font(.title2.bold())
 
-                Text("VillainArc needs WiFi for first time setup to sync your workout data.")
+                Text("Villain Arc needs WiFi for first time setup to sync your workout data.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
 
@@ -251,7 +251,7 @@ struct OnboardingView: View {
                 Text("Check Your iCloud Account")
                     .font(.title2.bold())
 
-                Text("VillainArc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted.")
+                Text("Villain Arc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
 
@@ -310,7 +310,7 @@ struct OnboardingView: View {
             OnboardingProgressStateView(title: "Syncing Your Data", message: "Checking iCloud for your existing workout history and profile...")
 
         case .syncingSlowNetwork:
-            OnboardingProgressStateView(title: "Still Syncing...", message: "This is taking longer than expected. VillainArc will keep waiting for iCloud sync to finish before continuing.")
+            OnboardingProgressStateView(title: "Still Syncing...", message: "This is taking longer than expected. Villain Arc will keep waiting for iCloud sync to finish before continuing.")
 
         case .seeding:
             OnboardingProgressStateView(title: "Updating Exercises", message: "Preparing your exercise catalog...")

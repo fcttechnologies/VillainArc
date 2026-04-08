@@ -117,7 +117,6 @@ struct NewWeightEntryView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NewWeightEntryView()
-        .sampleDataContainer()
 }

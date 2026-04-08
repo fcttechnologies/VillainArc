@@ -53,9 +53,9 @@ struct WorkoutSummaryView: View {
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         if hours > 0 {
-            return "\(hours)h \(minutes)m"
+            return String(localized: "\(hours)h \(minutes)m")
         }
-        return "\(minutes)m"
+        return String(localized: "\(minutes)m")
     }
 
     private var shouldShowSuggestions: Bool {
@@ -250,6 +250,10 @@ struct WorkoutSummaryView: View {
             Text("Effort")
                 .font(.headline)
             WorkoutEffortCardView(model: .init(title: workoutEffortTitle(workout.postEffort), description: workoutEffortDescription(workout.postEffort), valueText: "\(workout.postEffort)", score: Double(workout.postEffort), caption: nil))
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryEffortCard(workout.postEffort))
+                .accessibilityLabel(AccessibilityText.workoutSummaryEffortCardLabel)
+                .accessibilityValue(AccessibilityText.workoutSummaryEffortCardValue(score: workout.postEffort, description: workoutEffortDescription(workout.postEffort)))
         }
     }
 
@@ -415,13 +419,13 @@ struct WorkoutSummaryView: View {
     private func prValueText(type: PRType, value: Double) -> String {
         switch type {
         case .estimated1RM:
-            return "New Estimated 1RM: \(formattedWeightText(value, unit: weightUnit))"
+            return String(localized: "New Estimated 1RM: \(formattedWeightText(value, unit: weightUnit))")
         case .maxWeight:
-            return "Max Weight: \(formattedWeightText(value, unit: weightUnit))"
+            return String(localized: "Max Weight: \(formattedWeightText(value, unit: weightUnit))")
         case .maxReps:
-            return "Max Reps: \(Int(value))"
+            return String(localized: "Max Reps: \(Int(value))")
         case .totalVolume:
-            return "Total Volume: \(formattedWeightText(value, unit: weightUnit, fractionDigits: 0...0))"
+            return String(localized: "Total Volume: \(formattedWeightText(value, unit: weightUnit, fractionDigits: 0...0))")
         }
     }
 
@@ -435,7 +439,7 @@ struct WorkoutSummaryView: View {
         var items: [SummaryStatItem] = []
 
         if let averageHeartRate = healthStats.averageHeartRate {
-            items.append(SummaryStatItem(title: "Avg Heart Rate", value: "\(Int(averageHeartRate.rounded())) bpm"))
+            items.append(SummaryStatItem(title: "Avg Heart Rate", value: String(localized: "\(Int(averageHeartRate.rounded())) bpm")))
         }
 
         if let totalEnergyBurned = healthStats.totalEnergyBurned {
@@ -514,12 +518,10 @@ struct WorkoutSummaryView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataSuggestionGeneration) {
     WorkoutSummaryView(workout: sampleSuggestionGenerationSession())
-        .sampleDataContainerSuggestionGeneration()
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     WorkoutSummaryView(workout: sampleIncompleteSession())
-        .sampleDataContainerIncomplete()
 }

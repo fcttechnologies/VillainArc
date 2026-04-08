@@ -103,20 +103,20 @@ struct RepRangeEditorView: View {
     private var modeFooterText: String {
         switch repRange.activeMode {
         case .notSet:
-            return "No rep goal is stored for this exercise."
+            return String(localized: "No rep goal is stored for this exercise.")
         case .target:
-            return "Set a single rep goal you want to acheive for each set."
+            return String(localized: "Set a single rep goal you want to achieve for each set.")
         case .range:
-            return "Set a rep range you want to aim for."
+            return String(localized: "Set a rep range you want to aim for.")
         }
     }
     
     private var repGuidanceFooterText: String {
         switch repRange.activeMode {
         case .target:
-            return "Pick one rep target that matches your goal: strength often uses a low target like 3 reps, hypertrophy is often around 10 reps, endurance is usually 15+ reps."
+            return String(localized: "Pick one rep target that matches your goal: strength often uses a low target like 3 reps, hypertrophy is often around 10 reps, endurance is usually 15+ reps.")
         case .range:
-            return "Pick a rep range that matches your goal: strength usually sits around 1–3 reps, hypertrophy is often 8–12 reps, endurance is commonly 12–20+ reps."
+            return String(localized: "Pick a rep range that matches your goal: strength usually sits around 1–3 reps, hypertrophy is often 8–12 reps, endurance is commonly 12–20+ reps.")
         case .notSet:
             return ""
         }
@@ -232,27 +232,27 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
         var title: String {
             switch self {
             case .target:
-                return "Target"
+                return String(localized: "Target")
             case .range:
-                return "Range"
+                return String(localized: "Range")
             }
         }
 
         var detailText: String? {
             switch self {
             case .target(let reps):
-                return "\(reps) reps"
+                return String(localized: "^[\(reps) rep](inflect: true)")
             case .range(let lower, let upper):
-                return "\(lower)-\(upper) reps"
+                return String(localized: "\(lower)-\(upper) reps")
             }
         }
 
         var accessibilityValue: String {
             switch self {
             case .target(let reps):
-                return "Target \(reps) reps"
+                return String(localized: "Target \(reps) reps")
             case .range(let lower, let upper):
-                return "Range \(lower) to \(upper) reps"
+                return String(localized: "Range \(lower) to \(upper) reps")
             }
         }
     }
@@ -278,10 +278,9 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     ExerciseView(
         exercise: sampleIncompleteSession().sortedExercises.first!,
         appSettingsSnapshot: AppSettingsSnapshot(settings: nil)
     )
-        .sampleDataContainerIncomplete()
 }

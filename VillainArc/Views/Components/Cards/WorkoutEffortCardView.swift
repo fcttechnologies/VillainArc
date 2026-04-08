@@ -10,6 +10,7 @@ struct WorkoutEffortCardModel {
 
 struct WorkoutEffortCardView: View {
     let model: WorkoutEffortCardModel
+    @ScaledMetric(relativeTo: .title3) private var valueFontSize: CGFloat = 23
 
     var body: some View {
         HStack(spacing: 20) {
@@ -17,7 +18,7 @@ struct WorkoutEffortCardView: View {
                 WorkoutEffortDisplayDial(score: model.score, size: 78, lineWidth: 10)
 
                 Text(model.valueText)
-                    .font(.system(size: 23, weight: .bold, design: .rounded))
+                    .font(.system(size: valueFontSize, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(WorkoutEffortDialStyle.tint(for: model.score))
                     .minimumScaleFactor(0.6)
@@ -91,6 +92,7 @@ struct WorkoutEffortInteractiveDial: View {
     let showsScaleLabels: Bool
     let markerAccessibilityIdentifier: (Int) -> String
     let markerAccessibilityHint: String
+    @ScaledMetric(relativeTo: .body) private var scaleLabelFontSize: CGFloat = 18
 
     private var displayedScore: Double? {
         (1...10).contains(selection) ? Double(selection) : nil
@@ -135,12 +137,12 @@ struct WorkoutEffortInteractiveDial: View {
                         let highPoint = highLabelPoint(in: proxy.size, radius: labelRadius)
 
                         Text("1")
-                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .font(.system(size: scaleLabelFontSize, weight: .medium, design: .rounded))
                             .fontWeight(.medium)
                             .position(lowPoint)
 
                         Text("10")
-                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .font(.system(size: scaleLabelFontSize, weight: .medium, design: .rounded))
                             .fontWeight(.medium)
                             .position(highPoint)
                     }

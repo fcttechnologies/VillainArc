@@ -331,23 +331,23 @@ private struct SelectDaysView: View {
     private func daysDescription(for days: Int) -> String {
         switch config.type {
         case .fullBody:
-            return "\(days) sessions per week"
+            return String(localized: "^[\(days) session](inflect: true) per week")
         case .upperLower:
-            return "\(days / 2)x Upper, \(days / 2)x Lower"
+            return String(localized: "\(days / 2)x Upper, \(days / 2)x Lower")
         case .pushPullLegs, .arnoldSplit:
             switch days {
-            case 3: return "One full cycle"
-            case 6: return "Two full cycles"
-            default: return "Continuous rotation"
+            case 3: return String(localized: "One full cycle")
+            case 6: return String(localized: "Two full cycles")
+            default: return String(localized: "Continuous rotation")
             }
         case .broSplit:
-            return "One muscle group per day"
+            return String(localized: "One muscle group per day")
         case .hourglass:
             switch days {
-            case 3: return "2x Lower, 1x Upper"
-            case 4: return "2x Lower, 2x Upper"
-            case 5: return "3x Lower, 2x Upper"
-            default: return "Lower body focus"
+            case 3: return String(localized: "2x Lower, 1x Upper")
+            case 4: return String(localized: "2x Lower, 2x Upper")
+            case 5: return String(localized: "3x Lower, 2x Upper")
+            default: return String(localized: "Lower body focus")
             }
         }
     }
@@ -538,7 +538,6 @@ private struct SelectRestDaysView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     SplitBuilderView { _ in }
-        .sampleDataContainer()
 }

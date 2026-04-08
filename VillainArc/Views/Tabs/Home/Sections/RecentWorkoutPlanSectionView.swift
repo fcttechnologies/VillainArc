@@ -25,10 +25,9 @@ struct RecentWorkoutPlanSectionView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NavigationStack {
         RecentWorkoutPlanSectionView()
             .padding()
     }
-    .sampleDataContainer()
 }

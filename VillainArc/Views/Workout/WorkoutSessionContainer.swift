@@ -23,12 +23,10 @@ struct WorkoutSessionContainer: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleDataIncomplete) {
     WorkoutSessionContainer(workout: sampleIncompleteSession())
-        .sampleDataContainerIncomplete()
 }
 
-#Preview("Suggestions") {
+#Preview("Suggestions", traits: .sampleDataSuggestions) {
     WorkoutSessionContainer(workout: sampleSessionWithSuggestions())
-        .sampleDataContainerSuggestions()
 }

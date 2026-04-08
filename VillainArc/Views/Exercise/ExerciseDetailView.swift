@@ -561,16 +561,14 @@ private struct ExerciseMetricPoint: Identifiable, Equatable {
     }
 }
 
-#Preview("Exercise Detail") {
+#Preview("Exercise Detail", traits: .sampleDataSuggestionGeneration) {
     NavigationStack {
         ExerciseDetailView(catalogID: "dumbbell_incline_bench_press")
     }
-    .sampleDataContainerSuggestionGeneration()
 }
 
-#Preview("Exercise Detail Empty") {
+#Preview("Exercise Detail Empty", traits: .sampleData) {
     NavigationStack {
         ExerciseDetailView(catalogID: "barbell_bent_over_row")
     }
-    .sampleDataContainer()
 }
