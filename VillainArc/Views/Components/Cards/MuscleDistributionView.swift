@@ -42,7 +42,6 @@ struct MuscleDistributionView: View {
                 Text(percentageText(for: topSlice?.percentage ?? 0))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .monospacedDigit()
             }
             .padding(.horizontal, 18)
             .accessibilityHidden(true)
@@ -67,7 +66,6 @@ struct MuscleDistributionView: View {
                     Spacer()
 
                     Text(percentageText(for: slice.percentage))
-                        .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
                 .fontWeight(.semibold)

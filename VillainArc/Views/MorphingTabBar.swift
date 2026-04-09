@@ -1,6 +1,7 @@
 import SwiftUI
 
 protocol MorphingTabProtocol: CaseIterable, Hashable {
+    var title: String { get }
     var symbolImage: String { get }
 }
 
@@ -27,11 +28,34 @@ struct MorphingTabBar<Tab: MorphingTabProtocol, ExpandedContent: View>: View {
                 ExpandableGlassEffect(alignment: .center, progress: progress, labelSize: labelSize, cornerRadius: cornerRadius) {
                     expandedContent
                 } label: {
-                    CustomTabBar(symbols: symbols, index: selectedIndex) { image in
-                        let font = UIFont.systemFont(ofSize: 19)
-                        let configuration = UIImage.SymbolConfiguration(font: font)
-                        
-                        return UIImage(systemName: image, withConfiguration: configuration)
+                    ZStack {
+                        CustomTabBar(symbols: symbols, index: selectedIndex) { image in
+                            let font = UIFont.systemFont(ofSize: 19)
+                            let configuration = UIImage.SymbolConfiguration(font: font)
+                            
+                            return UIImage(systemName: image, withConfiguration: configuration)
+                        }
+                        .allowsHitTesting(false)
+
+                        HStack(spacing: 0) {
+                            ForEach(Array(Tab.allCases), id: \.self) { tab in
+                                Button {
+                                    Haptics.selection()
+                                    activeTab = tab
+                                } label: {
+                                    Color.clear
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .contentShape(.rect)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isExpanded)
+                                .accessibilityLabel(tab.title)
+                                .accessibilityHint("Switches tabs.")
+                                .accessibilityIdentifier("morphingTabButton-\(tab.symbolImage)")
+                                .accessibilityRemoveTraits(.isSelected)
+                                .accessibilityAddTraits(activeTab == tab ? .isSelected : [])
+                            }
+                        }
                     }
                     .frame(height: 48)
                     .padding(.horizontal, 2)
@@ -54,16 +78,16 @@ fileprivate struct CustomTabBar: UIViewRepresentable {
     var symbols: [String]
     @Binding var index: Int
     var image: (String) -> UIImage?
+
     func makeUIView(context: Context) -> UISegmentedControl {
         let control = UISegmentedControl(items: symbols)
         control.selectedSegmentIndex = index
         control.selectedSegmentTintColor = UIColor(tint)
+        control.isUserInteractionEnabled = false
         for (index, symbol) in symbols.enumerated() {
             control.setImage(image(symbol), forSegmentAt: index)
         }
-        
-        control.addTarget(context.coordinator, action: #selector(context.coordinator.didSelect(_:)), for: .valueChanged)
-        
+
         DispatchQueue.main.async {
             for view in control.subviews.dropLast() {
                 if view is UIImageView {
@@ -80,23 +104,7 @@ fileprivate struct CustomTabBar: UIViewRepresentable {
             uiView.selectedSegmentIndex = index
         }
     }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
-    
-    class Coordinator: NSObject {
-        var parent: CustomTabBar
-        init(parent: CustomTabBar) {
-            self.parent = parent
-        }
-        
-        @objc
-        func didSelect(_ control: UISegmentedControl) {
-            parent.index = control.selectedSegmentIndex
-        }
-    }
-    
+
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UISegmentedControl, context: Context) -> CGSize? {
         return proposal.replacingUnspecifiedDimensions()
     }

@@ -44,6 +44,11 @@ nonisolated func formattedRecentDay(_ date: Date) -> String {
 
 nonisolated func formattedRecentDayAndTime(_ date: Date) -> String { "\(formattedRecentDay(date)) • \(date.formatted(date: .omitted, time: .shortened))" }
 
+nonisolated func localizedCountText(_ count: Int, singular: String.LocalizationValue, plural: String.LocalizationValue) -> String {
+    let noun = count == 1 ? String(localized: singular) : String(localized: plural)
+    return "\(count) \(noun)"
+}
+
 func formattedAbsoluteDateRange(start: Date, end: Date? = nil) -> String {
     guard let end = normalizedEndDate(start: start, end: end) else { return formattedSingleDate(start) }
 
@@ -75,6 +80,17 @@ func formattedAbsoluteDateRange(start: Date, end: Date? = nil) -> String {
 
 nonisolated func formattedWeightValue(_ kg: Double, unit: WeightUnit, fractionDigits: ClosedRange<Int> = 0...1) -> String {
     unit.fromKg(kg).formatted(.number.precision(.fractionLength(fractionDigits)))
+}
+
+nonisolated func roundedDisplayValue(_ value: Double, fractionDigits: Int) -> Double {
+    guard fractionDigits >= 0 else { return value }
+    let scale = pow(10.0, Double(fractionDigits))
+    guard scale.isFinite, scale > 0 else { return value }
+    return (value * scale).rounded() / scale
+}
+
+nonisolated func roundedWeightDisplayValue(_ kg: Double, unit: WeightUnit, fractionDigits: Int = 2) -> Double {
+    roundedDisplayValue(unit.fromKg(kg), fractionDigits: fractionDigits)
 }
 
 nonisolated func formattedWeightText(_ kg: Double, unit: WeightUnit, fractionDigits: ClosedRange<Int> = 0...1) -> String {

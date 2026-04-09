@@ -67,12 +67,10 @@ struct SummaryStatCard: View {
                 .foregroundStyle(.secondary)
             if let date {
                 Text(date, style: .timer)
-                    .monospacedDigit()
             } else if usesNumericLayout {
                 HStack(alignment: .firstTextBaseline, spacing: text.isEmpty ? 0 : 4) {
                     if let number {
                         Text(number, format: .number.precision(.fractionLength(fractionDigits)))
-                            .monospacedDigit()
                             .contentTransition(.numericText(value: number))
                     } else {
                         Text(placeholderText)

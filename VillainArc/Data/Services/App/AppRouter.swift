@@ -42,6 +42,11 @@ enum HomeQuickAction: String {
         var id: String { rawValue }
     }
 
+    enum QuickActionContext: Hashable {
+        case home
+        case workoutSplit
+    }
+
     enum WorkoutSheet: Hashable, Identifiable {
         case addExercise
         case restTimer
@@ -102,6 +107,9 @@ enum HomeQuickAction: String {
     var tabSelection: AppTab = .home {
         didSet { persistTabSelection(tabSelection) }
     }
+    var navigationEventToken = 0
+    var homeTabResetToken = UUID()
+    var healthTabResetToken = UUID()
     enum Destination: Hashable {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
@@ -123,10 +131,19 @@ enum HomeQuickAction: String {
         case workoutSplitDetail(WorkoutSplit)
     }
 
-    var homeTabPath = NavigationPath()
-    var healthTabPath = NavigationPath()
+    var homeTabPath: [Destination] = []
+    var healthTabPath: [Destination] = []
     private init() { tabSelection = restoredTabSelection() }
     private var context: ModelContext { SharedModelContainer.container.mainContext }
+
+    var quickActionContext: QuickActionContext {
+        switch tabSelection {
+        case .home:
+            return quickActionContext(for: homeTabPath.last)
+        case .health:
+            return quickActionContext(for: healthTabPath.last)
+        }
+    }
 
     private func weightUnit() -> WeightUnit { (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs }
 
@@ -158,6 +175,19 @@ enum HomeQuickAction: String {
     }
 
     private func persistTabSelection(_ tab: AppTab) { SharedModelContainer.sharedDefaults.set(tab.rawValue, forKey: Self.selectedTabDefaultsKey) }
+
+    func noteNavigationStateChanged() {
+        navigationEventToken += 1
+    }
+
+    func selectTab(_ tab: AppTab) {
+        if tabSelection == tab {
+            popToRoot(tab: tab)
+            return
+        }
+
+        tabSelection = tab
+    }
 
     func handleIncomingURL(_ url: URL) {
         guard let destination = destination(for: url) else { return }
@@ -215,11 +245,38 @@ enum HomeQuickAction: String {
             tabSelection = .home
             homeTabPath.append(destination)
         }
+        noteNavigationStateChanged()
     }
     func popToRoot() {
         tabSelection = .home
-        homeTabPath = NavigationPath()
-        healthTabPath = NavigationPath()
+        homeTabPath = []
+        healthTabPath = []
+        homeTabResetToken = UUID()
+        healthTabResetToken = UUID()
+        noteNavigationStateChanged()
+    }
+
+    func popToRoot(tab: AppTab) {
+        switch tab {
+        case .home:
+            if homeTabPath.isEmpty { return }
+            homeTabPath = []
+            homeTabResetToken = UUID()
+        case .health:
+            if healthTabPath.isEmpty { return }
+            healthTabPath = []
+            healthTabResetToken = UUID()
+        }
+        noteNavigationStateChanged()
+    }
+
+    private func quickActionContext(for destination: Destination?) -> QuickActionContext {
+        switch destination {
+        case .workoutSplit, .workoutSplitDetail:
+            return .workoutSplit
+        default:
+            return .home
+        }
     }
 
     func presentWeightGoalCompletion(for goal: WeightGoal, trigger: WeightGoalCompletionRoute.Trigger, triggeringEntry: WeightEntry? = nil, referenceDate: Date? = nil) {
@@ -246,8 +303,8 @@ enum HomeQuickAction: String {
 
         switch action {
         case .addWeightEntry:
-            homeTabPath = NavigationPath()
-            healthTabPath = NavigationPath()
+            homeTabPath = []
+            healthTabPath = []
             tabSelection = .health
             activeHealthSheet = .addWeightEntry
 

@@ -34,6 +34,7 @@ struct SleepHistoryView: View {
             }
             .padding()
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .navigationTitle("Sleep")
         .toolbarTitleDisplayMode(.inline)
     }

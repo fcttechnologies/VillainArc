@@ -35,6 +35,7 @@ struct TrainingConditionHistoryView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .listStyle(.plain)
         .navigationTitle("Condition")
         .toolbarTitleDisplayMode(.inline)

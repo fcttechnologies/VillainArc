@@ -715,6 +715,7 @@
       }
     },
     "^[%lld day](inflect: true)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -725,6 +726,7 @@
       }
     },
     "^[%lld of %lld set](inflect: true) complete" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -735,6 +737,7 @@
       }
     },
     "^[%lld rep](inflect: true)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -745,6 +748,7 @@
       }
     },
     "^[%lld selected exercise](inflect: true)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -755,6 +759,7 @@
       }
     },
     "^[%lld session](inflect: true) per week" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -765,6 +770,7 @@
       }
     },
     "^[%lld set](inflect: true)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -775,6 +781,7 @@
       }
     },
     "^[%lld time](inflect: true)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2605,6 +2612,7 @@
       }
     },
     "Create New Split" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2635,6 +2643,7 @@
       }
     },
     "Create workout plan" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2854,6 +2863,9 @@
         }
       }
     },
+    "day" : {
+
+    },
     "Day" : {
       "localizations" : {
         "en" : {
@@ -2873,6 +2885,9 @@
           }
         }
       }
+    },
+    "days" : {
+
     },
     "Decrease rest time by 15 seconds" : {
       "localizations" : {
@@ -3563,6 +3578,12 @@
           }
         }
       }
+    },
+    "empty set" : {
+
+    },
+    "empty sets" : {
+
     },
     "Enable iCloud in Settings" : {
       "localizations" : {
@@ -4584,6 +4605,9 @@
         }
       }
     },
+    "Hide quick actions" : {
+
+    },
     "High" : {
       "localizations" : {
         "en" : {
@@ -5253,6 +5277,12 @@
           }
         }
       }
+    },
+    "logged set" : {
+
+    },
+    "logged sets" : {
+
     },
     "Logs a new weight entry for right now." : {
       "localizations" : {
@@ -7774,6 +7804,9 @@
         }
       }
     },
+    "Pre-Workout Context" : {
+
+    },
     "Pre-workout energy drink" : {
       "localizations" : {
         "en" : {
@@ -8064,6 +8097,9 @@
         }
       }
     },
+    "rep" : {
+
+    },
     "Rep range" : {
       "localizations" : {
         "en" : {
@@ -8193,6 +8229,9 @@
           }
         }
       }
+    },
+    "reps" : {
+
     },
     "Reps" : {
       "localizations" : {
@@ -9014,6 +9053,12 @@
         }
       }
     },
+    "selected exercise" : {
+
+    },
+    "selected exercises" : {
+
+    },
     "Selected Time" : {
       "localizations" : {
         "en" : {
@@ -9113,6 +9158,15 @@
           }
         }
       }
+    },
+    "session" : {
+
+    },
+    "sessions" : {
+
+    },
+    "set" : {
+
     },
     "Set" : {
       "localizations" : {
@@ -9243,6 +9297,9 @@
           }
         }
       }
+    },
+    "sets" : {
+
     },
     "Sets this day as the current rotation day." : {
       "localizations" : {
@@ -9383,6 +9440,9 @@
           }
         }
       }
+    },
+    "Show quick actions" : {
+
     },
     "Show Sleep History" : {
       "localizations" : {
@@ -9594,6 +9654,9 @@
         }
       }
     },
+    "Shows or hides the quick action toolbar." : {
+
+    },
     "Shows pre workout details." : {
       "localizations" : {
         "en" : {
@@ -9715,6 +9778,7 @@
       }
     },
     "Shows workout and workout plan options." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10085,6 +10149,7 @@
       }
     },
     "Start empty workout" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10095,6 +10160,7 @@
       }
     },
     "Start Empty Workout" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10634,6 +10700,9 @@
         }
       }
     },
+    "Switches tabs." : {
+
+    },
     "Sync at least 2 sleep nights for every weekday to unlock averages." : {
       "localizations" : {
         "en" : {
@@ -11154,6 +11223,9 @@
         }
       }
     },
+    "time" : {
+
+    },
     "Time" : {
       "localizations" : {
         "en" : {
@@ -11193,6 +11265,9 @@
           }
         }
       }
+    },
+    "times" : {
+
     },
     "Tired" : {
       "localizations" : {
@@ -13244,6 +13319,12 @@
         }
       }
     },
+    "You have %@ with data, but not marked complete." : {
+
+    },
+    "You have %@.\nLog them or remove them before finishing." : {
+
+    },
     "You have %lld empty sets.\nLog them or remove them before finishing." : {
       "localizations" : {
         "en" : {
@@ -13265,6 +13346,7 @@
       }
     },
     "You have ^[%lld empty set](inflect: true).\nLog them or remove them before finishing." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13275,6 +13357,7 @@
       }
     },
     "You have ^[%lld logged set](inflect: true) and ^[%lld empty set](inflect: true) with no data." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13285,6 +13368,7 @@
       }
     },
     "You have ^[%lld set](inflect: true) with data, but not marked complete." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

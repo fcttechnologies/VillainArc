@@ -32,7 +32,7 @@ struct AddExerciseView: View {
         NavigationStack {
             FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly, sortOption: exerciseSort)
                 .navigationTitle("Exercises")
-                .navigationSubtitle(Text("^[\(selectedExercises.count) selected exercise](inflect: true)"))
+                .navigationSubtitle(Text(localizedCountText(selectedExercises.count, singular: "selected exercise", plural: "selected exercises")))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

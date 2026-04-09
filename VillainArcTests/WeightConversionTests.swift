@@ -5,6 +5,14 @@ import Testing
 @testable import VillainArc
 
 struct WeightConversionTests {
+    @Test func roundedWeightDisplayValue_limitsCopiedDisplayPrecision() {
+        let roundedLbsValue = roundedWeightDisplayValue(12.5, unit: .lbs)
+        #expect(roundedLbsValue == 27.56)
+
+        let roundedKgValue = roundedWeightDisplayValue(12.3456, unit: .kg)
+        #expect(roundedKgValue == 12.35)
+    }
+
     @Test @MainActor func workoutSessionWeightRoundTrip_preservesCanonicalKg() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, _) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100)

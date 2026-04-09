@@ -241,7 +241,7 @@ private struct RepRangeSuggestion: Identifiable, Hashable {
         var detailText: String? {
             switch self {
             case .target(let reps):
-                return String(localized: "^[\(reps) rep](inflect: true)")
+                return localizedCountText(reps, singular: "rep", plural: "reps")
             case .range(let lower, let upper):
                 return String(localized: "\(lower)-\(upper) reps")
             }

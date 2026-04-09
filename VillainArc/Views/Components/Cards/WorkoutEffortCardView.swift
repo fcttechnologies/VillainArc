@@ -19,7 +19,6 @@ struct WorkoutEffortCardView: View {
 
                 Text(model.valueText)
                     .font(.system(size: valueFontSize, weight: .bold, design: .rounded))
-                    .monospacedDigit()
                     .foregroundStyle(WorkoutEffortDialStyle.tint(for: model.score))
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)

@@ -5,7 +5,7 @@ struct HomeTabView: View {
     @State private var showAppSettings = false
 
     var body: some View {
-        NavigationStack(path: $router.homeTabPath) {
+        NavigationStack(path: homeTabPathBinding) {
             ScrollView {
                 WorkoutSplitSectionView()
                     .padding()
@@ -30,6 +30,7 @@ struct HomeTabView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentExercisesSection)
             }
+            .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
             .navBar(title: "Home", includePadding: false) {
                 Button {
                     showAppSettings = true
@@ -46,31 +47,6 @@ struct HomeTabView: View {
                 .accessibilityHint(AccessibilityText.homeSettingsHint)
             }
             .scrollIndicators(.hidden)
-            .toolbar {
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Menu("Options", systemImage: "plus") {
-                        Button("Start Empty Workout", systemImage: "figure.strengthtraining.traditional") {
-                            router.startWorkoutSession()
-                            Task { await IntentDonations.donateStartWorkout() }
-                        }
-                        .accessibilityLabel(AccessibilityText.homeStartWorkoutLabel)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.homeStartWorkoutButton)
-                        .accessibilityHint(AccessibilityText.homeStartWorkoutHint)
-                        Button("Create Workout Plan", systemImage: "list.clipboard") {
-                            router.createWorkoutPlan()
-                            Task { await IntentDonations.donateCreateWorkoutPlan() }
-                        }
-                        .accessibilityLabel(AccessibilityText.homeCreatePlanLabel)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.homeCreatePlanButton)
-                        .accessibilityHint(AccessibilityText.homeCreatePlanHint)
-                    }
-                    .labelStyle(.iconOnly)
-                    .accessibilityLabel(AccessibilityText.homeOptionsMenuLabel)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.homeOptionsMenu)
-                    .accessibilityHint(AccessibilityText.homeOptionsMenuHint)
-                }
-            }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .workoutSessionsList:
@@ -98,9 +74,18 @@ struct HomeTabView: View {
                 }
             }
         }
+        .id(router.homeTabResetToken)
         .sheet(isPresented: $showAppSettings) {
             AppSettingsView()
         }
+    }
+
+    private var homeTabPathBinding: Binding<[AppRouter.Destination]> {
+        Binding(get: { router.homeTabPath },
+            set: { newValue in
+                router.homeTabPath = newValue
+                router.noteNavigationStateChanged()
+            })
     }
 }
 

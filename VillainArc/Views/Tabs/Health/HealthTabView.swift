@@ -4,7 +4,7 @@ struct HealthTabView: View {
     @State private var router = AppRouter.shared
     
     var body: some View {
-        NavigationStack(path: $router.healthTabPath) {
+        NavigationStack(path: healthTabPathBinding) {
             ScrollView {
                 VStack(spacing: 16) {
                     TrainingConditionSectionCard()
@@ -15,22 +15,7 @@ struct HealthTabView: View {
                 }
                 .padding()
             }
-            .navBar(title: "Health", includePadding: false) {
-                Button {
-                    Haptics.selection()
-                    router.activeHealthSheet = .addWeightEntry
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .padding(3)
-                }
-                .buttonBorderShape(.circle)
-                .buttonStyle(.glass)
-                .accessibilityLabel(AccessibilityText.healthAddWeightEntryLabel)
-                .accessibilityIdentifier(AccessibilityIdentifiers.healthAddWeightEntryButton)
-                .accessibilityHint(AccessibilityText.healthAddWeightEntryHint)
-            }
+            .navBar(title: "Health", includePadding: false)
             .scrollIndicators(.hidden)
             .sheet(isPresented: addWeightEntrySheetBinding) {
                 NewWeightEntryView()
@@ -60,6 +45,7 @@ struct HealthTabView: View {
                 }
             }
         }
+        .id(router.healthTabResetToken)
     }
 
     private var addWeightEntrySheetBinding: Binding<Bool> {
@@ -69,6 +55,16 @@ struct HealthTabView: View {
                 if !isPresented, router.activeHealthSheet == .addWeightEntry {
                     router.activeHealthSheet = nil
                 }
+            }
+        )
+    }
+
+    private var healthTabPathBinding: Binding<[AppRouter.Destination]> {
+        Binding(
+            get: { router.healthTabPath },
+            set: { newValue in
+                router.healthTabPath = newValue
+                router.noteNavigationStateChanged()
             }
         )
     }

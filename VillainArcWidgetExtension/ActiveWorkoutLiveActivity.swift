@@ -312,7 +312,6 @@ private struct WorkoutLiveActivitySummaryTopMetricView: View {
                 Text(metricValue)
                     .font(.title3)
                     .lineLimit(1)
-                    .monospacedDigit()
 
                 if let unitText = metricUnitText, unitVisibility == .always || !unitText.isEmpty {
                     Text(unitText)
@@ -407,7 +406,6 @@ private struct WorkoutLiveActivitySummaryCompactMetricView: View {
                 Text(summaryCompactMetricText(metric))
                     .bold()
                     .font(.title3)
-                    .monospacedDigit()
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: alignment)
@@ -431,7 +429,6 @@ private struct WorkoutLiveActivitySummaryIslandMetricView: View {
                 Text(summaryExpandedMetricText(metric))
                     .font(.title3)
                     .fontWeight(.semibold)
-                    .monospacedDigit()
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: alignment)
@@ -660,7 +657,6 @@ private struct WorkoutLiveActivityExpandedTopRow: View {
                     Text(formatSeconds(remaining))
                         .font(.title)
                         .bold()
-                        .monospacedDigit()
                 }
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
@@ -719,7 +715,6 @@ private struct WorkoutLiveActivityExpandedMetricView: View {
                 Text(number, format: .number.precision(.fractionLength(0)))
                     .font(.title)
                     .lineLimit(1)
-                    .monospacedDigit()
                     .contentTransition(.numericText(value: number))
 
                 if !unitText.isEmpty {
@@ -763,7 +758,6 @@ private struct WorkoutLiveActivityIslandMetricView: View {
                 .accessibilityHidden(true)
             Text(number, format: .number.precision(.fractionLength(0)))
                 .font(isSmall ? .caption2 : .title2)
-                .monospacedDigit()
                 .contentTransition(.numericText(value: number))
         }
         .fontDesign(.rounded)

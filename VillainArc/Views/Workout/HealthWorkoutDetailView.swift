@@ -37,6 +37,7 @@ struct HealthWorkoutDetailView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .navigationTitle(loader.summary.activityTypeDisplayName)
         .navigationSubtitle(Text(formattedDateRange(start: loader.summary.startDate, end: loader.summary.endDate, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)

@@ -74,7 +74,7 @@ struct ExerciseSummaryRow: View {
     
     private var sessionText: String? {
         guard let history, history.totalSessions > 0 else { return nil }
-        return String(localized: "^[\(history.totalSessions) time](inflect: true)")
+        return localizedCountText(history.totalSessions, singular: "time", plural: "times")
     }
     
     private var recordText: String? {
@@ -83,7 +83,7 @@ struct ExerciseSummaryRow: View {
             return formattedWeightText(history.bestWeight, unit: weightUnit)
         }
         if history.bestReps > 0 {
-            return String(localized: "^[\(history.bestReps) rep](inflect: true)")
+            return localizedCountText(history.bestReps, singular: "rep", plural: "reps")
         }
         return nil
     }

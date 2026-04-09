@@ -275,14 +275,14 @@ struct WorkoutView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseList)
     }
 
-    private func exerciseSetStatusText(totalSets: Int, completedSets: Int) -> LocalizedStringKey {
+    private func exerciseSetStatusText(totalSets: Int, completedSets: Int) -> String {
         if totalSets > 0, completedSets == totalSets {
             return "All sets complete"
         }
         if completedSets > 0 {
-            return "^[\(completedSets) of \(totalSets) set](inflect: true) complete"
+            return "\(completedSets) of \(localizedCountText(totalSets, singular: "set", plural: "sets")) complete"
         }
-        return "^[\(totalSets) set](inflect: true)"
+        return localizedCountText(totalSets, singular: "set", plural: "sets")
     }
 
     @ViewBuilder
@@ -390,11 +390,11 @@ struct WorkoutView: View {
             let summary = unfinishedSetSummary
             switch summary.caseType {
             case .emptyAndLogged:
-                Text("You have ^[\(summary.loggedCount) logged set](inflect: true) and ^[\(summary.emptyCount) empty set](inflect: true) with no data.")
+                Text("You have \(localizedCountText(summary.loggedCount, singular: "logged set", plural: "logged sets")) and \(localizedCountText(summary.emptyCount, singular: "empty set", plural: "empty sets")) with no data.")
             case .loggedOnly:
-                Text("You have ^[\(summary.loggedCount) set](inflect: true) with data, but not marked complete.")
+                Text("You have \(localizedCountText(summary.loggedCount, singular: "set", plural: "sets")) with data, but not marked complete.")
             case .emptyOnly:
-                Text("You have ^[\(summary.emptyCount) empty set](inflect: true).\nLog them or remove them before finishing.")
+                Text("You have \(localizedCountText(summary.emptyCount, singular: "empty set", plural: "empty sets")).\nLog them or remove them before finishing.")
             case .none:
                 Text("Finish and save workout?")
             }

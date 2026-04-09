@@ -103,6 +103,7 @@ struct StepsGoalHistoryView: View {
                     }
             }
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .navigationTitle("Steps Goals")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)

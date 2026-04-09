@@ -47,6 +47,22 @@ struct ExerciseDetailView: View {
                 return weightUnit.rawValue
             }
         }
+
+        var valueFractionDigits: ClosedRange<Int> {
+            switch self {
+            case .estimatedOneRepMax:
+                return 0...1
+            case .topWeight:
+                return 0...2
+            case .volume, .reps:
+                return 0...0
+            }
+        }
+
+        func formattedValueText(_ value: Double, weightUnit: WeightUnit) -> String {
+            let valueText = value.formatted(.number.precision(.fractionLength(valueFractionDigits)))
+            return "\(valueText) \(unitString(weightUnit: weightUnit))"
+        }
     }
 
     let catalogID: String
@@ -200,7 +216,7 @@ struct ExerciseDetailView: View {
 
     private var latestMetricValueText: String {
         guard let activeMetric, let latestValue = points(for: activeMetric).last?.value else { return "" }
-        return "\(latestValue.formatted(.number.precision(.fractionLength(0)))) \(activeMetric.unitString(weightUnit: weightUnit))"
+        return activeMetric.formattedValueText(latestValue, weightUnit: weightUnit)
     }
 
     var body: some View {
@@ -228,7 +244,12 @@ struct ExerciseDetailView: View {
                                     .font(.headline)
                             }
 
-                            ExerciseMetricChartCard(points: points(for: activeMetric), tint: activeMetric.tint, unit: activeMetric.unitString(weightUnit: weightUnit), aggregation: aggregation(for: activeMetric))
+                            ExerciseMetricChartCard(
+                                points: points(for: activeMetric),
+                                tint: activeMetric.tint,
+                                aggregation: aggregation(for: activeMetric),
+                                formatValueText: { activeMetric.formattedValueText($0, weightUnit: weightUnit) }
+                            )
 
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {
@@ -410,8 +431,8 @@ private struct ExerciseMetricChartCard: View {
     
     let points: [ExerciseMetricPoint]
     let tint: Color
-    let unit: String
     let aggregation: Aggregation
+    let formatValueText: (Double) -> String
 
     @State private var selectedDate: Date?
     
@@ -475,7 +496,7 @@ private struct ExerciseMetricChartCard: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(annotationDateText(for: point))
                                         .foregroundStyle(.white.opacity(0.9))
-                                    Text("\(point.value, format: .number) \(unit)")
+                                    Text(formatValueText(point.value))
                                         .font(.title2)
                                         .foregroundStyle(.white)
                                 }

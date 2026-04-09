@@ -64,6 +64,7 @@ struct WeightHistoryView: View {
             }
             .padding()
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .navigationTitle("Weight")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {

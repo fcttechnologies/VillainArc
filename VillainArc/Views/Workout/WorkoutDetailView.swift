@@ -11,23 +11,9 @@ struct WorkoutDetailView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     @State private var showDeleteWorkoutConfirmation: Bool = false
-    @State private var showPreWorkoutContextSheet = false
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
-
-    private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
-    private var hasPreWorkoutFeeling: Bool {
-        guard let feeling = preWorkoutContext?.feeling else { return false }
-        return feeling != .notSet
-    }
-    private var hasPreWorkoutDrink: Bool { preWorkoutContext?.tookPreWorkout == true }
-
-    private var preWorkoutToolbarIdentifier: String? {
-        if hasPreWorkoutFeeling { return AccessibilityIdentifiers.workoutDetailPreWorkoutContextButton }
-        if hasPreWorkoutDrink { return AccessibilityIdentifiers.workoutDetailPreWorkoutDrinkButton }
-        return nil
-    }
     
     var body: some View {
         ScrollView {
@@ -40,6 +26,7 @@ struct WorkoutDetailView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailList)
         .navigationTitle(workout.title)
         .navigationSubtitle(Text(formattedDateRange(start: workout.startedAt, end: workout.endedAt, includeTime: true)))
@@ -77,43 +64,6 @@ struct WorkoutDetailView: View {
                     Text("Are you sure you want to delete this workout?")
                 }
             }
-            ToolbarItemGroup(placement: .bottomBar) {
-                if let preWorkoutToolbarIdentifier {
-                    Button {
-                        showPreWorkoutContextSheet = true
-                    } label: {
-                        preWorkoutToolbarIcon
-                    }
-                    .accessibilityIdentifier(preWorkoutToolbarIdentifier)
-                    .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
-                    .accessibilityValue(preWorkoutAccessibilityValue)
-                    .accessibilityHint(AccessibilityText.workoutDetailPreWorkoutContextHint)
-                }
-            }
-        }
-        .sheet(isPresented: $showPreWorkoutContextSheet) {
-            NavigationStack {
-                List {
-                    if hasPreWorkoutFeeling, let preWorkoutContext {
-                        LabeledContent("Felt", value: preWorkoutContext.feeling.displayName)
-                    }
-                    if hasPreWorkoutDrink {
-                        LabeledContent("Took pre workout", value: "Yes")
-                    }
-                }
-                .fontWeight(.semibold)
-                .fontDesign(.rounded)
-                .navigationTitle("Pre Workout Context")
-                .toolbarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(role: .close) {
-                            showPreWorkoutContextSheet = false
-                        }
-                    }
-                }
-                .presentationDetents([.medium])
-            }
         }
         .userActivity("com.villainarc.workoutSession.view", element: workout) { session, activity in
             activity.title = session.title
@@ -148,30 +98,6 @@ struct WorkoutDetailView: View {
         router.popToRoot()
         router.navigate(to: .workoutPlanDetail(plan, false))
         Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
-    }
-
-    private var preWorkoutAccessibilityValue: String {
-        var parts: [String] = []
-
-        if hasPreWorkoutFeeling, let feeling = preWorkoutContext?.feeling.displayName {
-            parts.append(feeling)
-        }
-        if hasPreWorkoutDrink { parts.append("Pre workout taken") }
-
-        return parts.joined(separator: ". ")
-    }
-
-    @ViewBuilder
-    private var preWorkoutToolbarIcon: some View {
-        if hasPreWorkoutFeeling, let preWorkoutContext {
-            Text(preWorkoutContext.feeling.emoji)
-                .font(.title)
-                .frame(width: 28, height: 28)
-        } else if hasPreWorkoutDrink {
-            Image(systemName: "bolt.fill")
-                .foregroundStyle(.yellow)
-                .accessibilityHidden(true)
-        }
     }
 }
 
@@ -235,6 +161,19 @@ private struct WorkoutSessionDetailContent: View {
         MuscleDistributionCalculator.slices(for: workout)
     }
 
+    private var preWorkoutContext: PreWorkoutContext? { workout.preWorkoutContext }
+
+    private var hasPreWorkoutFeeling: Bool {
+        guard let feeling = preWorkoutContext?.feeling else { return false }
+        return feeling != .notSet
+    }
+
+    private var hasPreWorkoutDrink: Bool { preWorkoutContext?.tookPreWorkout == true }
+
+    private var hasPreWorkoutContext: Bool {
+        hasPreWorkoutFeeling || hasPreWorkoutDrink
+    }
+
     private var summaryColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 130), spacing: 12, alignment: .top)]
     }
@@ -269,7 +208,13 @@ private struct WorkoutSessionDetailContent: View {
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 20) {
-            if workout.healthWorkout == nil { workoutSection }
+            if workout.healthWorkout == nil {
+                workoutSection
+            }
+
+            if hasPreWorkoutContext {
+                preWorkoutContextSection
+            }
 
             if !workout.notes.isEmpty {
                 notesSection
@@ -285,7 +230,7 @@ private struct WorkoutSessionDetailContent: View {
 
     private var workoutSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(workout.healthWorkout == nil ? "Summary" : "Workout")
+            Text("Summary")
                 .font(.headline)
 
             LazyVGrid(columns: summaryColumns, spacing: 12) {
@@ -302,6 +247,44 @@ private struct WorkoutSessionDetailContent: View {
                     .accessibilityValue(AccessibilityText.workoutDetailEffortValue(score: workout.postEffort, description: workoutEffortDescription(workout.postEffort)))
             }
         }
+    }
+
+    private var preWorkoutContextSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Pre-Workout Context")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 10) {
+                if hasPreWorkoutFeeling, let feeling = preWorkoutContext?.feeling {
+                    LabeledContent("Felt", value: "\(feeling.emoji) \(feeling.displayName)")
+                }
+
+                if hasPreWorkoutDrink {
+                    LabeledContent("Took pre workout", value: "Yes")
+                }
+            }
+            .fontWeight(.semibold)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutContextCard)
+            .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
+            .accessibilityValue(preWorkoutAccessibilityValue)
+        }
+    }
+
+    private var preWorkoutAccessibilityValue: String {
+        var parts: [String] = []
+
+        if hasPreWorkoutFeeling, let feeling = preWorkoutContext?.feeling.displayName {
+            parts.append("Felt \(feeling)")
+        }
+        if hasPreWorkoutDrink {
+            parts.append("Pre workout taken")
+        }
+
+        return parts.joined(separator: ". ")
     }
 
     private var notesSection: some View {

@@ -330,7 +330,7 @@ struct WeightGoalCompletionView: View {
     private var durationText: String {
         let days = max(calendar.dateComponents([.day], from: calendar.startOfDay(for: goal?.startedAt ?? evaluationDate), to: calendar.startOfDay(for: evaluationDate)).day ?? 0, 0)
         if days == 0 { return String(localized: "Started today") }
-        return String(localized: "^[\(days) day](inflect: true)")
+        return localizedCountText(days, singular: "day", plural: "days")
     }
 
     private var averagePaceText: String? {

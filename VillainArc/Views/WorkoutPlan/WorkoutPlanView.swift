@@ -209,7 +209,7 @@ struct WorkoutPlanView: View {
                             .fontWeight(.semibold)
                             .font(.headline)
                         Spacer()
-                        Text("^[\(exercise.sortedSets.count) set](inflect: true)")
+                        Text(localizedCountText(exercise.sortedSets.count, singular: "set", plural: "sets"))
                             .foregroundStyle(.secondary)
                             .font(.subheadline)
                     }

@@ -6,14 +6,10 @@ struct WorkoutSplitListView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var splits: [WorkoutSplit]
+    @State private var router = AppRouter.shared
 
-    @State private var path: [WorkoutSplit]
     @State private var showSplitBuilder = false
     @State private var pendingDeletionIDs: Set<PersistentIdentifier> = []
-
-    init(initialPath: [WorkoutSplit] = []) {
-        _path = State(initialValue: initialPath)
-    }
 
     private var visibleSplits: [WorkoutSplit] {
         splits.filter { !pendingDeletionIDs.contains($0.persistentModelID) }
@@ -28,7 +24,7 @@ struct WorkoutSplitListView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             List {
                 if !visibleSplits.isEmpty {
                     if let activeSplit {
@@ -60,7 +56,9 @@ struct WorkoutSplitListView: View {
                             ForEach(inactiveSplits) { split in
                                 HStack(spacing: 12) {
                                     Button {
-                                        path.append(split)
+                                        Haptics.selection()
+                                        dismiss()
+                                        router.navigate(to: .workoutSplitDetail(split))
                                     } label: {
                                         splitRowContent(for: split, isActive: false)
                                     }
@@ -100,28 +98,15 @@ struct WorkoutSplitListView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitList)
             .navigationTitle("Workout Splits")
             .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Create New Split", systemImage: "plus") {
-                        Haptics.selection()
-                        showSplitBuilder = true
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
-                    .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
-                }
-            }
             .sheet(isPresented: $showSplitBuilder) {
                 SplitBuilderView { newSplit in
                     if newSplit.isActive {
                         dismiss()
                     } else {
-                        path.append(newSplit)
+                        dismiss()
+                        router.navigate(to: .workoutSplitDetail(newSplit))
                     }
                 }
-            }
-            .navigationDestination(for: WorkoutSplit.self) { split in
-                WorkoutSplitView(split: split)
             }
         }
     }

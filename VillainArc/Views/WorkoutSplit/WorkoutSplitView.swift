@@ -21,7 +21,6 @@ struct WorkoutSplitView: View {
     @State private var isSwapMode = false
     @State private var swapFirstDay: WorkoutSplitDay?
     @State private var swapSecondDay: WorkoutSplitDay?
-    @State private var splitListInitialPath: [WorkoutSplit] = []
 
     private let autoPresentBuilder: Bool
     @ScaledMetric(relativeTo: .caption) private var capsuleFontSize: CGFloat = 14
@@ -84,16 +83,16 @@ struct WorkoutSplitView: View {
                     }
             }
         }
-        .sheet(isPresented: splitBuilderBinding, onDismiss: { splitListInitialPath = [] }) {
+        .sheet(isPresented: splitBuilderBinding) {
             SplitBuilderView { newSplit in
                 if !newSplit.isActive {
-                    splitListInitialPath = [newSplit]
-                    router.activeSplitSheet = .list
+                    router.activeSplitSheet = nil
+                    router.navigate(to: .workoutSplitDetail(newSplit))
                 }
             }
         }
-        .sheet(isPresented: splitListBinding, onDismiss: { splitListInitialPath = [] }) {
-            WorkoutSplitListView(initialPath: splitListInitialPath)
+        .sheet(isPresented: splitListBinding) {
+            WorkoutSplitListView()
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .onAppear {
@@ -201,18 +200,6 @@ struct WorkoutSplitView: View {
                     splitOptionsMenu
                 }
             }
-            if !isOverride {
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Create New Split", systemImage: "plus") {
-                        Haptics.selection()
-                        router.activeSplitSheet = .builder
-                        Task { await IntentDonations.donateCreateWorkoutSplit() }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
-                    .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
-                }
-            }
         }
     }
 
@@ -230,7 +217,6 @@ struct WorkoutSplitView: View {
             if !isOverride && !allSplits.isEmpty {
                 Button("All Splits", systemImage: "list.bullet") {
                     Haptics.selection()
-                    splitListInitialPath = []
                     router.activeSplitSheet = .list
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
@@ -328,9 +314,9 @@ struct WorkoutSplitView: View {
 
     private var splitBuilderBinding: Binding<Bool> {
         Binding(
-            get: { router.activeSplitSheet == .builder },
+            get: { !isOverride && router.activeSplitSheet == .builder },
             set: { isPresented in
-                if !isPresented, router.activeSplitSheet == .builder {
+                if !isPresented, !isOverride, router.activeSplitSheet == .builder {
                     router.activeSplitSheet = nil
                 }
             }
@@ -339,9 +325,9 @@ struct WorkoutSplitView: View {
 
     private var splitListBinding: Binding<Bool> {
         Binding(
-            get: { router.activeSplitSheet == .list },
+            get: { !isOverride && router.activeSplitSheet == .list },
             set: { isPresented in
-                if !isPresented, router.activeSplitSheet == .list {
+                if !isPresented, !isOverride, router.activeSplitSheet == .list {
                     router.activeSplitSheet = nil
                 }
             }

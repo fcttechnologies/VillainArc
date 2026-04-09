@@ -331,7 +331,7 @@ private struct SelectDaysView: View {
     private func daysDescription(for days: Int) -> String {
         switch config.type {
         case .fullBody:
-            return String(localized: "^[\(days) session](inflect: true) per week")
+            return "\(localizedCountText(days, singular: "session", plural: "sessions")) per week"
         case .upperLower:
             return String(localized: "\(days / 2)x Upper, \(days / 2)x Lower")
         case .pushPullLegs, .arnoldSplit:

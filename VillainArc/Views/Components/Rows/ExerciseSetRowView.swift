@@ -16,7 +16,8 @@ struct SetReferenceData {
             return "\(reps) reps"
         }
         guard let reps, let weight else { return "-" }
-        return "\(reps)x\(unit.fromKg(weight).formatted(.number.precision(.fractionLength(0...2))))"
+        let displayWeight = roundedWeightDisplayValue(weight, unit: unit)
+        return "\(reps)x\(displayWeight.formatted(.number.precision(.fractionLength(0...2))))"
     }
 }
 
@@ -143,7 +144,7 @@ struct ExerciseSetRowView: View {
                                 set.reps = reps
                             }
                             if let weight = referenceData.weight {
-                                set.weight = weightUnit.fromKg(weight)
+                                set.weight = roundedWeightDisplayValue(weight, unit: weightUnit)
                             }
                             saveContext(context: context)
                         }

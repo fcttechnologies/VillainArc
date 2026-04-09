@@ -48,6 +48,7 @@ struct StepsDistanceHistoryView: View {
             }
             .padding()
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .navigationTitle("Steps")
         .toolbarTitleDisplayMode(.inline)
         .sheet(isPresented: $showNewStepsGoalSheet) {
