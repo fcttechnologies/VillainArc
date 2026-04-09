@@ -3,38 +3,38 @@ import SwiftUI
 struct ContentView: View {
     @State private var router = AppRouter.shared
     @State private var isMorphingTabBarExpanded = false
-    @State private var cachedTabViews: [AppTab: AnyView] = Self.makeCachedTabViews()
     
     var body: some View {
-        activeTabContent
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaBar(edge: .bottom) {
-                MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: expandedActions)
-            }
-            .onChange(of: router.navigationEventToken) {
-                collapseMorphingTabBar()
-            }
-            .fullScreenCover(item: $router.activeWorkoutSession) {
-                WorkoutSessionContainer(workout: $0)
-            }
-            .fullScreenCover(item: $router.activeWorkoutPlan, onDismiss: {
-                router.activeWorkoutPlanOriginal = nil
-            }) {
-                WorkoutPlanView(plan: $0, originalPlan: router.activeWorkoutPlanOriginal)
-            }
-            .fullScreenCover(item: $router.activeWeightGoalCompletion) {
-                WeightGoalCompletionView(route: $0)
-            }
-            .background {
-                ToastOverlaySceneInstaller()
-                    .allowsHitTesting(false)
-            }
-    }
-    
-    private var activeTabContent: AnyView {
-        switch router.tabSelection {
-        case .home: return cachedTabViews[.home] ?? AnyView(Color.clear)
-        case .health: return cachedTabViews[.health] ?? AnyView(Color.clear)
+        TabView(selection: tabSelectionBinding) {
+            HomeTabView()
+                .tag(AppTab.home)
+                .toolbar(.hidden, for: .tabBar)
+            
+            HealthTabView()
+                .tag(AppTab.health)
+                .toolbar(.hidden, for: .tabBar)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaBar(edge: .bottom) {
+            MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: expandedActions)
+        }
+        .onChange(of: router.navigationEventToken) {
+            collapseMorphingTabBar()
+        }
+        .fullScreenCover(item: $router.activeWorkoutSession) {
+            WorkoutSessionContainer(workout: $0)
+        }
+        .fullScreenCover(item: $router.activeWorkoutPlan, onDismiss: {
+            router.activeWorkoutPlanOriginal = nil
+        }) {
+            WorkoutPlanView(plan: $0, originalPlan: router.activeWorkoutPlanOriginal)
+        }
+        .fullScreenCover(item: $router.activeWeightGoalCompletion) {
+            WeightGoalCompletionView(route: $0)
+        }
+        .background {
+            ToastOverlaySceneInstaller()
+                .allowsHitTesting(false)
         }
     }
     
@@ -45,7 +45,7 @@ struct ContentView: View {
     private var expandedActions: [ExpandedAction] {
         homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext)
     }
-
+    
     private func additionalExpandedActions(for context: AppRouter.AdditionalQuickActionContext?) -> [ExpandedAction] {
         switch context {
         case .workoutSplit:
@@ -60,7 +60,7 @@ struct ContentView: View {
             []
         }
     }
-
+    
     private var homeExpandedActions: [ExpandedAction] {
         [
             ExpandedAction("New Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartWorkoutButton, accessibilityHint: AccessibilityText.morphingStartWorkoutHint) {
@@ -80,7 +80,7 @@ struct ContentView: View {
             }
         ]
     }
-
+    
     private var workoutSplitExpandedActions: [ExpandedAction] {
         [
             ExpandedAction("New Split", icon: "plus.rectangle.on.folder", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreateSplitButton, accessibilityHint: AccessibilityText.workoutSplitCreateHint) {
@@ -90,7 +90,7 @@ struct ContentView: View {
             }
         ]
     }
-
+    
     private func workoutPlanExpandedActions(plan: WorkoutPlan, showsUseOnly: Bool) -> [ExpandedAction] {
         [
             ExpandedAction(showsUseOnly ? "Use Plan" : "Start Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingUsePlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailStartWorkoutHint) {
@@ -105,7 +105,7 @@ struct ContentView: View {
             }
         ]
     }
-
+    
     private var weightGoalExpandedActions: [ExpandedAction] {
         [
             ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewWeightGoalButton, accessibilityHint: AccessibilityText.healthWeightGoalHistoryAddHint) {
@@ -114,7 +114,7 @@ struct ContentView: View {
             }
         ]
     }
-
+    
     private var stepsGoalExpandedActions: [ExpandedAction] {
         [
             ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewStepsGoalButton, accessibilityHint: AccessibilityText.healthStepsGoalHistoryAddHint) {
@@ -124,10 +124,6 @@ struct ContentView: View {
         ]
     }
     
-    private static func makeCachedTabViews() -> [AppTab: AnyView] {
-        [.home: AnyView(HomeTabView()), .health: AnyView(HealthTabView())]
-    }
-
     private func collapseMorphingTabBar() {
         guard isMorphingTabBarExpanded else { return }
         withAnimation(.bouncy(duration: 0.35, extraBounce: 0.02)) {

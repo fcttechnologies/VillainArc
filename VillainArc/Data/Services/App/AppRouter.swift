@@ -101,9 +101,9 @@ enum HomeQuickAction: String {
     }
     var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
-    var activeWorkoutPlanOriginal: WorkoutPlan?
-    var pendingHomeQuickAction: HomeQuickAction?
-    var pendingWidgetDestination: Destination?
+    @ObservationIgnored var activeWorkoutPlanOriginal: WorkoutPlan?
+    @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
+    @ObservationIgnored var pendingWidgetDestination: Destination?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
     var activeWorkoutSheet: WorkoutSheet?

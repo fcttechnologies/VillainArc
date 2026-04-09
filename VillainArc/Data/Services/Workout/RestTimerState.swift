@@ -12,12 +12,12 @@ import Observation
         static let startedFromSetID = "restTimerStartedFromSetID"
         static let startedSeconds = "restTimerStartedSeconds"
     }
-    private var stopTask: Task<Void, Never>?
+    @ObservationIgnored private var stopTask: Task<Void, Never>?
     var endDate: Date?
     var pausedRemainingSeconds: Int
     var isPaused: Bool
-    var startedFromSetID: UUID?
-    var startedSeconds: Int
+    @ObservationIgnored var startedFromSetID: UUID?
+    @ObservationIgnored var startedSeconds: Int
     init() {
         let defaults = SharedModelContainer.sharedDefaults
         let storedEndDate = defaults.double(forKey: StorageKey.endDate)

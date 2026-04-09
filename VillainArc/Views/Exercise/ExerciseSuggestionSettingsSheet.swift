@@ -6,7 +6,6 @@ struct ExerciseSuggestionSettingsSheet: View {
     @Environment(\.modelContext) private var context
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var exercise: Exercise
-    @FocusState private var isValueFieldFocused: Bool
 
     @State private var suggestionsEnabled = true
     @State private var valueText = ""
@@ -97,7 +96,6 @@ struct ExerciseSuggestionSettingsSheet: View {
                                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                                     TextField("System default", text: $valueText)
                                         .keyboardType(.decimalPad)
-                                        .focused($isValueFieldFocused)
                                         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseProgressionStepValueField)
 
                                     Text(weightUnit.rawValue)
@@ -201,13 +199,9 @@ struct ExerciseSuggestionSettingsSheet: View {
             }
             .onAppear {
                 syncFromExercise()
-                if suggestionsEnabled {
-                    isValueFieldFocused = true
-                }
             }
             .onChange(of: suggestionsEnabled) { _, isEnabled in
                 if !isEnabled {
-                    isValueFieldFocused = false
                     dismissKeyboard()
                 }
             }
