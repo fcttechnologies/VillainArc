@@ -99,7 +99,7 @@ enum HomeQuickAction: String {
     var activeSplitSheet: SplitSheet?
     var activeWorkoutSheet: WorkoutSheet?
     var activeWorkoutDialog: WorkoutDialog?
-    var tabSelection: Tabs = .home {
+    var tabSelection: AppTab = .home {
         didSet { persistTabSelection(tabSelection) }
     }
     enum Destination: Hashable {
@@ -147,9 +147,9 @@ enum HomeQuickAction: String {
 
     private func incompleteWorkoutSession() -> WorkoutSession? { try? context.fetch(WorkoutSession.incomplete).first }
 
-    private func restoredTabSelection() -> Tabs {
+    private func restoredTabSelection() -> AppTab {
         guard let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
-              let storedTab = Tabs(rawValue: storedRawValue)
+              let storedTab = AppTab(rawValue: storedRawValue)
         else {
             return .home
         }
@@ -157,7 +157,7 @@ enum HomeQuickAction: String {
         return storedTab
     }
 
-    private func persistTabSelection(_ tab: Tabs) { SharedModelContainer.sharedDefaults.set(tab.rawValue, forKey: Self.selectedTabDefaultsKey) }
+    private func persistTabSelection(_ tab: AppTab) { SharedModelContainer.sharedDefaults.set(tab.rawValue, forKey: Self.selectedTabDefaultsKey) }
 
     func handleIncomingURL(_ url: URL) {
         guard let destination = destination(for: url) else { return }

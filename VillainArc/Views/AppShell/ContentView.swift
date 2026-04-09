@@ -5,11 +5,11 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $router.tabSelection) {
-            Tab(Tabs.home.title, systemImage: Tabs.home.icon, value: Tabs.home) {
+            Tab(AppTab.home.title, systemImage: AppTab.home.symbolImage, value: AppTab.home) {
                 HomeTabView()
             }
 
-            Tab(Tabs.health.title, systemImage: Tabs.health.icon, value: Tabs.health) {
+            Tab(AppTab.health.title, systemImage: AppTab.health.symbolImage, value: AppTab.health) {
                 HealthTabView()
             }
         }

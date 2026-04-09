@@ -243,6 +243,7 @@ private struct NotificationSettingsView: View {
         }
         .navigationTitle("Notifications")
         .toolbarTitleDisplayMode(.inline)
+        .scrollDisabled(true)
         .task {
             await refreshNotificationAuthorizationState()
         }
@@ -368,6 +369,7 @@ private struct UnitSettingsView: View {
         }
         .navigationTitle("Units")
         .toolbarTitleDisplayMode(.inline)
+        .scrollDisabled(true)
         .onChange(of: settings.weightUnit) {
             saveContext(context: context)
             HealthMetricWidgetReloader.reloadWeight()

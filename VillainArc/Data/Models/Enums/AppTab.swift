@@ -1,8 +1,8 @@
 import Foundation
 
-enum Tabs: String, Hashable {
-    case home
-    case health
+enum AppTab: String, MorphingTabProtocol {
+    case home = "Home"
+    case health = "Health"
 
     var title: String {
         switch self {
@@ -11,7 +11,7 @@ enum Tabs: String, Hashable {
         }
     }
 
-    var icon: String {
+    var symbolImage: String {
         switch self {
         case .home: return "house.fill"
         case .health: return "heart.text.square"
