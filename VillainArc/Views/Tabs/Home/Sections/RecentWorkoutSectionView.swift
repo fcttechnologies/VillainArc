@@ -42,7 +42,7 @@ struct RecentWorkoutSectionView: View {
             } else if let recentItem {
                 switch recentItem.source {
                 case .session(let workout):
-                    WorkoutRowView(workout: workout)
+                    WorkoutRowView(workout: workout, deletionSettings: appSettings.first)
                         .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutRow)
                         .accessibilityHint(AccessibilityText.recentWorkoutRowHint)
                         .simultaneousGesture(
@@ -51,7 +51,7 @@ struct RecentWorkoutSectionView: View {
                             }
                         )
                 case .health:
-                    WorkoutHistoryRowView(item: recentItem, appSettingsSnapshot: appSettingsSnapshot)
+                    WorkoutHistoryRowView(item: recentItem, appSettingsSnapshot: appSettingsSnapshot, deletionSettings: appSettings.first)
                         .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutRow)
                         .accessibilityHint(AccessibilityText.recentWorkoutRowHint)
                 }

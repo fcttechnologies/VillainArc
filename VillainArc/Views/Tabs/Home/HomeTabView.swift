@@ -31,7 +31,7 @@ struct HomeTabView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentExercisesSection)
             }
             .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
-            .navBar(title: "Home", includePadding: false) {
+            .navBar(title: "Workout", includePadding: false) {
                 Button {
                     showAppSettings = true
                     Haptics.selection()

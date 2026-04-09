@@ -40,6 +40,7 @@ struct WorkoutPlansListView: View {
             }
             .onDelete(perform: deleteWorkoutPlan)
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansList)
         .environment(\.editMode, editModeBinding)
         .animation(reduceMotion ? nil : .smooth, value: isEditing)

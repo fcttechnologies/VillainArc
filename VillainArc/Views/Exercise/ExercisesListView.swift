@@ -40,8 +40,9 @@ struct ExercisesListView: View {
             .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .scrollDismissesKeyboard(.immediately)
-        .searchable(text: $searchText)
+        .searchable(text: $searchText, placement: .navigationBarDrawer)
         .searchPresentationToolbarBehavior(.avoidHidingContent)
         .overlay {
             if exercises.isEmpty {

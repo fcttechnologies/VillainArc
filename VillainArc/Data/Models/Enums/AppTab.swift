@@ -6,14 +6,14 @@ enum AppTab: String, MorphingTabProtocol {
 
     var title: String {
         switch self {
-        case .home: return "Home"
+        case .home: return "Workout"
         case .health: return "Health"
         }
     }
 
     var symbolImage: String {
         switch self {
-        case .home: return "house.fill"
+        case .home: return "figure.run"
         case .health: return "heart.text.square"
         }
     }

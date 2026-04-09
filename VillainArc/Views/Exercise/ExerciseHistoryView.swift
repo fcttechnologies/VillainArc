@@ -115,37 +115,13 @@ private struct ExerciseHistoryPerformanceCard: View {
 
             Divider()
 
-            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-                GridRow {
-                    Text("Set")
-                    Spacer()
-                    Text("Reps")
-                    Spacer()
-                    Text("Weight")
-                    Spacer()
-                    Text("Rest")
-                }
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-                ForEach(performance.sortedSets) { set in
-                    GridRow {
-                        ExerciseHistorySetIndicator(set: set)
-                            .gridColumnAlignment(.leading)
-                        Spacer()
-                        Text(set.reps > 0 ? "\(set.reps)" : "-")
-                            .gridColumnAlignment(set.reps > 0 ? .leading : .center)
-                        Spacer()
-                        Text(set.weight > 0 ? formattedWeightText(set.weight, unit: weightUnit) : "-")
-                            .gridColumnAlignment(set.weight > 0 ? .leading : .center)
-                        Spacer()
-                        Text(set.effectiveRestSeconds > 0 ? secondsToTime(set.effectiveRestSeconds) : "-")
-                            .gridColumnAlignment(set.effectiveRestSeconds > 0 ? .leading : .center)
-                    }
-                    .font(.body)
-                }
+            ExerciseSetTable(
+                rows: performance.sortedSets,
+                repsText: { $0.reps > 0 ? "\($0.reps)" : "-" },
+                weightText: { $0.weight > 0 ? formattedWeightText($0.weight, unit: weightUnit) : "-" },
+                restText: { $0.effectiveRestSeconds > 0 ? secondsToTime($0.effectiveRestSeconds) : "-" }
+            ) { set in
+                ExerciseHistorySetIndicator(set: set)
             }
         }
         .padding(16)

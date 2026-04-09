@@ -4,10 +4,6 @@ import Charts
 struct MuscleDistributionView: View {
     let slices: [MuscleDistributionSlice]
 
-    private var topSlice: MuscleDistributionSlice? {
-        slices.first
-    }
-
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             chartColumn
@@ -17,35 +13,19 @@ struct MuscleDistributionView: View {
     }
 
     private var chartColumn: some View {
-        ZStack {
-            Chart(slices) { slice in
-                SectorMark(angle: .value("Percentage", slice.percentage), innerRadius: .ratio(0.64), angularInset: 3)
-                    .cornerRadius(8)
-                    .foregroundStyle(slice.muscle.distributionColor)
-            }
-            .chartLegend(.hidden)
-            .chartBackground { _ in
-                Color.clear
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.muscleDistributionChart)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(AccessibilityText.muscleDistributionChartLabel)
-            .accessibilityValue(chartAccessibilityValue)
-
-            VStack(spacing: 2) {
-                Text(topSlice?.muscle.displayName ?? "")
-                    .font(.headline)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .fontWeight(.semibold)
-
-                Text(percentageText(for: topSlice?.percentage ?? 0))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 18)
-            .accessibilityHidden(true)
+        Chart(slices) { slice in
+            SectorMark(angle: .value("Percentage", slice.percentage), innerRadius: .ratio(0.64), angularInset: 3)
+                .cornerRadius(8)
+                .foregroundStyle(slice.muscle.distributionColor)
         }
+        .chartLegend(.hidden)
+        .chartBackground { _ in
+            Color.clear
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.muscleDistributionChart)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AccessibilityText.muscleDistributionChartLabel)
+        .accessibilityValue(chartAccessibilityValue)
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
     }

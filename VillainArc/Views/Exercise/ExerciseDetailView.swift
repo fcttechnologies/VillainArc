@@ -273,6 +273,8 @@ struct ExerciseDetailView: View {
             }
             .padding(.horizontal)
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(item: $suggestionSettingsExercise) { exercise in
             ExerciseSuggestionSettingsSheet(exercise: exercise)
@@ -306,8 +308,7 @@ struct ExerciseDetailView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
         .toolbar {
-            ToolbarSpacer(.flexible, placement: .bottomBar)
-            ToolbarItem(placement: .bottomBar) {
+            ToolbarItem(placement: .topBarTrailing) {
                 if totalSessions > 0 {
                     Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
                         appRouter.navigate(to: .exerciseHistory(catalogID))

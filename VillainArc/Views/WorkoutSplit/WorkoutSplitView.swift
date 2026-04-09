@@ -195,6 +195,17 @@ struct WorkoutSplitView: View {
                     .accessibilityHint(AccessibilityText.workoutSplitSwapConfirmHint)
             }
         } else {
+            if !isOverride {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("New Split", systemImage: "plus") {
+                        Haptics.selection()
+                        router.activeSplitSheet = .builder
+                        Task { await IntentDonations.donateCreateWorkoutSplit() }
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
+                    .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
+                }
+            }
             if currentSplit != nil || (!isOverride && !allSplits.isEmpty) {
                 ToolbarItem(placement: .topBarTrailing) {
                     splitOptionsMenu

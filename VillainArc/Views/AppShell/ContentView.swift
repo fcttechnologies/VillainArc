@@ -9,28 +9,7 @@ struct ContentView: View {
         activeTabContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaBar(edge: .bottom) {
-                HStack(alignment: .bottom, spacing: 12) {
-                    MorphingTabBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded) {
-                        ExpandedContent(actions: expandedActions)
-                    }
-                    
-                    Button {
-                        toggleMorphingTabBar()
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 19, weight: .medium))
-                            .rotationEffect(.degrees(isMorphingTabBarExpanded ? 45 : 0))
-                            .frame(width: 52, height: 52)
-                            .foregroundStyle(Color.primary)
-                            .contentShape(.circle)
-                    }
-                    .buttonStyle(PlainGlassButtonEffect(shape: .circle))
-                    .contentShape(.circle)
-                    .accessibilityLabel(isMorphingTabBarExpanded ? AccessibilityText.morphingCollapseToolbarLabel : AccessibilityText.morphingExpandToolbarLabel)
-                    .accessibilityHint(AccessibilityText.morphingToolbarHint)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.morphingToolbarToggleButton)
-                }
-                .padding(.horizontal, 20)
+                MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: expandedActions)
             }
             .onChange(of: router.navigationEventToken) {
                 collapseMorphingTabBar()
@@ -64,42 +43,37 @@ struct ContentView: View {
     }
     
     private var expandedActions: [ExpandedAction] {
-        switch router.quickActionContext {
-        case .home:
-            homeExpandedActions
+        homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext)
+    }
+
+    private func additionalExpandedActions(for context: AppRouter.AdditionalQuickActionContext?) -> [ExpandedAction] {
+        switch context {
         case .workoutSplit:
-            homeExpandedActions + workoutSplitExpandedActions
+            workoutSplitExpandedActions
+        case .workoutPlanDetail(let plan, let showsUseOnly):
+            workoutPlanExpandedActions(plan: plan, showsUseOnly: showsUseOnly)
+        case .weightGoalHistory:
+            weightGoalExpandedActions
+        case .stepsGoalHistory:
+            stepsGoalExpandedActions
+        case nil:
+            []
         }
     }
 
     private var homeExpandedActions: [ExpandedAction] {
         [
-            ExpandedAction(
-                title: "New Workout",
-                icon: "figure.strengthtraining.traditional",
-                accessibilityIdentifier: AccessibilityIdentifiers.morphingStartWorkoutButton,
-                accessibilityHint: AccessibilityText.morphingStartWorkoutHint
-            ) {
+            ExpandedAction("New Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartWorkoutButton, accessibilityHint: AccessibilityText.morphingStartWorkoutHint) {
                 collapseMorphingTabBar()
                 router.startWorkoutSession()
                 Task { await IntentDonations.donateStartWorkout() }
             },
-            ExpandedAction(
-                title: "Create Plan",
-                icon: "list.clipboard",
-                accessibilityIdentifier: AccessibilityIdentifiers.morphingCreatePlanButton,
-                accessibilityHint: AccessibilityText.morphingCreatePlanHint
-            ) {
+            ExpandedAction("Create Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreatePlanButton, accessibilityHint: AccessibilityText.morphingCreatePlanHint) {
                 collapseMorphingTabBar()
                 router.createWorkoutPlan()
                 Task { await IntentDonations.donateCreateWorkoutPlan() }
             },
-            ExpandedAction(
-                title: "Add Weight",
-                icon: "scalemass",
-                accessibilityIdentifier: AccessibilityIdentifiers.morphingAddWeightButton,
-                accessibilityHint: AccessibilityText.morphingAddWeightHint
-            ) {
+            ExpandedAction("Add Weight", icon: "scalemass", accessibilityIdentifier: AccessibilityIdentifiers.morphingAddWeightButton, accessibilityHint: AccessibilityText.morphingAddWeightHint) {
                 collapseMorphingTabBar()
                 router.tabSelection = .health
                 router.activeHealthSheet = .addWeightEntry
@@ -109,15 +83,43 @@ struct ContentView: View {
 
     private var workoutSplitExpandedActions: [ExpandedAction] {
         [
-            ExpandedAction(
-                title: "New Split",
-                icon: "plus.rectangle.on.folder",
-                accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitCreateButton,
-                accessibilityHint: AccessibilityText.workoutSplitCreateHint
-            ) {
+            ExpandedAction("New Split", icon: "plus.rectangle.on.folder", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreateSplitButton, accessibilityHint: AccessibilityText.workoutSplitCreateHint) {
                 collapseMorphingTabBar()
                 router.activeSplitSheet = .builder
                 Task { await IntentDonations.donateCreateWorkoutSplit() }
+            }
+        ]
+    }
+
+    private func workoutPlanExpandedActions(plan: WorkoutPlan, showsUseOnly: Bool) -> [ExpandedAction] {
+        [
+            ExpandedAction(showsUseOnly ? "Use Plan" : "Start Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingUsePlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailStartWorkoutHint) {
+                collapseMorphingTabBar()
+                router.startWorkoutSession(from: plan)
+                Task {
+                    await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan)
+                    if router.isTodaysActiveSplitPlan(plan) {
+                        await IntentDonations.donateStartTodaysWorkout()
+                    }
+                }
+            }
+        ]
+    }
+
+    private var weightGoalExpandedActions: [ExpandedAction] {
+        [
+            ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewWeightGoalButton, accessibilityHint: AccessibilityText.healthWeightGoalHistoryAddHint) {
+                collapseMorphingTabBar()
+                router.activeHealthSheet = .newWeightGoal
+            }
+        ]
+    }
+
+    private var stepsGoalExpandedActions: [ExpandedAction] {
+        [
+            ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewStepsGoalButton, accessibilityHint: AccessibilityText.healthStepsGoalHistoryAddHint) {
+                collapseMorphingTabBar()
+                router.activeHealthSheet = .newStepsGoal
             }
         ]
     }
@@ -125,64 +127,12 @@ struct ContentView: View {
     private static func makeCachedTabViews() -> [AppTab: AnyView] {
         [.home: AnyView(HomeTabView()), .health: AnyView(HealthTabView())]
     }
-    
-    private func toggleMorphingTabBar() {
-        withAnimation(.bouncy(duration: 0.5, extraBounce: 0.05)) {
-            isMorphingTabBarExpanded.toggle()
-        }
-    }
-    
+
     private func collapseMorphingTabBar() {
         guard isMorphingTabBarExpanded else { return }
         withAnimation(.bouncy(duration: 0.35, extraBounce: 0.02)) {
             isMorphingTabBarExpanded = false
         }
-    }
-}
-
-struct ExpandedAction: Identifiable {
-    let id = UUID()
-    let title: String
-    let icon: String
-    let accessibilityIdentifier: String
-    let accessibilityHint: String
-    let action: () -> Void
-}
-
-struct ExpandedContent: View {
-    let actions: [ExpandedAction]
-    
-    var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(spacing: 10), count: 4), spacing: 10) {
-            ForEach(actions) { action in
-                VStack(spacing: 6) {
-                    Button {
-                        Haptics.selection()
-                        action.action()
-                    } label: {
-                        Image(systemName: action.icon)
-                            .font(.title3)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .foregroundStyle(Color.primary)
-                            .background(.gray.opacity(0.09), in: .rect(cornerRadius: 16))
-                    }
-                    .buttonStyle(PlainGlassButtonEffect(shape: .rect(cornerRadius: 16)))
-                    .accessibilityLabel(action.title)
-                    .accessibilityHint(action.accessibilityHint)
-                    .accessibilityIdentifier(action.accessibilityIdentifier)
-                    
-                    Text(action.title)
-                        .font(.system(size: 9))
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .fontWeight(.semibold)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-        .padding(10)
     }
 }
 

@@ -1,8 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct WorkoutHistoryRowView: View {
+    @Environment(\.modelContext) private var context
     let item: WorkoutHistoryItem
     let appSettingsSnapshot: AppSettingsSnapshot
+    let deletionSettings: AppSettings?
     private let appRouter = AppRouter.shared
 
     var body: some View {
@@ -22,6 +25,13 @@ struct WorkoutHistoryRowView: View {
                 .fontDesign(.rounded)
         }
         .buttonStyle(.borderless)
+        .contextMenu {
+            if let workout = item.session {
+                Button("Delete Workout", systemImage: "trash", role: .destructive) {
+                    deleteWorkout(workout)
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -89,5 +99,11 @@ struct WorkoutHistoryRowView: View {
         }
 
         return items
+    }
+
+    private func deleteWorkout(_ workout: WorkoutSession) {
+        Haptics.selection()
+        WorkoutDeletionCoordinator.deleteCompletedWorkouts([workout], context: context, settings: deletionSettings)
+        Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
     }
 }

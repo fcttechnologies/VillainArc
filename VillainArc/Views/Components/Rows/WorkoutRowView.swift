@@ -2,7 +2,9 @@ import SwiftUI
 import SwiftData
 
 struct WorkoutRowView: View {
+    @Environment(\.modelContext) private var context
     let workout: WorkoutSession
+    let deletionSettings: AppSettings?
     private let appRouter = AppRouter.shared
     
     var body: some View {
@@ -46,11 +48,22 @@ struct WorkoutRowView: View {
             .accessibilityHint(AccessibilityText.workoutRowHint)
         }
         .buttonStyle(.borderless)
+        .contextMenu {
+            Button("Delete Workout", systemImage: "trash", role: .destructive) {
+                deleteWorkout()
+            }
+        }
+    }
+
+    private func deleteWorkout() {
+        Haptics.selection()
+        WorkoutDeletionCoordinator.deleteCompletedWorkouts([workout], context: context, settings: deletionSettings)
+        Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
     }
 }
 
 #Preview(traits: .sampleData) {
     NavigationStack {
-        WorkoutRowView(workout: sampleCompletedSession())
+        WorkoutRowView(workout: sampleCompletedSession(), deletionSettings: nil)
     }
 }

@@ -6,7 +6,6 @@ import CoreSpotlight
 struct WorkoutPlanDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @Query(WorkoutSplit.active) private var activeSplits: [WorkoutSplit]
     @Query private var completedSessions: [WorkoutSession]
     @Bindable var plan: WorkoutPlan
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -26,13 +25,6 @@ struct WorkoutPlanDetailView: View {
         self.showsUseOnly = showsUseOnly
         self.onSelect = onSelect
         _completedSessions = Query(WorkoutSession.completedSessions(forWorkoutPlanID: plan.id))
-    }
-
-    private var isTodaysActiveSplitPlan: Bool {
-        guard let activeSplit = activeSplits.first else { return false }
-        let resolution = SplitScheduleResolver.resolve(activeSplit, context: context, syncProgress: false)
-        guard !resolution.isPaused, let todaysPlan = resolution.workoutPlan else { return false }
-        return todaysPlan.id == plan.id
     }
 
     private var toReviewSuggestionSections: [ExerciseSuggestionSection] {
@@ -97,6 +89,8 @@ struct WorkoutPlanDetailView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .scrollIndicators(.hidden)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
         .navigationTitle(plan.title)
         .navigationSubtitle(Text(plan.musclesTargeted()))
@@ -128,8 +122,45 @@ struct WorkoutPlanDetailView: View {
                     .fontWeight(.semibold)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSelectButton)
                     .accessibilityHint(AccessibilityText.workoutPlanDetailSelectHint)
-                } else if !showsUseOnly {
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                if onSelect == nil, showsUseOnly {
+                    Button("Use Plan", systemImage: "figure.strengthtraining.traditional") {
+                        startWorkoutFromPlan()
+                    }
+                    .labelStyle(.iconOnly)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailUseButton)
+                    .accessibilityLabel("Use Plan")
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                if onSelect == nil, !showsUseOnly {
+                    Button {
+                        Haptics.selection()
+                        plan.favorite.toggle()
+                        saveContext(context: context)
+                        Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
+                    } label: {
+                        Image(systemName: plan.favorite ? "star.fill" : "star")
+                            .foregroundStyle(plan.favorite ? .yellow : .primary)
+                            .accessibilityHidden(true)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailFavoriteButton)
+                    .accessibilityLabel(AccessibilityText.workoutPlanDetailFavoriteLabel(isFavorite: plan.favorite))
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailFavoriteHint)
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                if onSelect == nil, !showsUseOnly {
                     Menu("Options", systemImage: "ellipsis") {
+                        Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
+                            startWorkoutFromPlan()
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailStartWorkoutButton)
+                        .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
+
                         Button("Edit Plan", systemImage: "pencil") {
                             router.editWorkoutPlan(plan)
                         }
@@ -152,35 +183,6 @@ struct WorkoutPlanDetailView: View {
                     } message: {
                         Text("Are you sure you want to delete this workout plan?")
                     }
-                }
-            }
-            ToolbarItem(placement: .bottomBar) {
-                Button(plan.favorite ? "Undo" : "Favorite", systemImage: plan.favorite ? "star.fill" : "star.slash.fill") {
-                    Haptics.selection()
-                    plan.favorite.toggle()
-                    saveContext(context: context)
-                    Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
-                }
-                .tint(plan.favorite ? .yellow : .primary)
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailFavoriteButton)
-                .accessibilityLabel(AccessibilityText.workoutPlanDetailFavoriteLabel(isFavorite: plan.favorite))
-                .accessibilityHint(AccessibilityText.workoutPlanDetailFavoriteHint)
-            }
-            ToolbarSpacer(.flexible, placement: .bottomBar)
-            ToolbarItem(placement: .bottomBar) {
-                if onSelect == nil {
-                    Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
-                        router.startWorkoutSession(from: plan)
-                        Task {
-                            await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan)
-                            if isTodaysActiveSplitPlan {
-                                await IntentDonations.donateStartTodaysWorkout()
-                            }
-                        }
-                        dismiss()
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailStartWorkoutButton)
-                    .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
                 }
             }
         }
@@ -260,6 +262,16 @@ struct WorkoutPlanDetailView: View {
         dismiss()
     }
 
+    private func startWorkoutFromPlan() {
+        router.startWorkoutSession(from: plan)
+        Task {
+            await IntentDonations.donateStartWorkoutWithPlan(workoutPlan: plan)
+            if router.isTodaysActiveSplitPlan(plan) {
+                await IntentDonations.donateStartTodaysWorkout()
+            }
+        }
+    }
+
     private func pendingSuggestionCount(for exercise: ExercisePrescription) -> Int? {
         let count = toReviewSuggestionSections.first(where: { $0.exercisePrescription.id == exercise.id })?.groups.count ?? 0
         return count > 0 ? count : nil
@@ -318,41 +330,16 @@ private struct WorkoutPlanDetailExerciseCard: View {
 
             Divider()
 
-            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-                GridRow {
-                    Text("Set")
-                    Spacer()
-                    Text("Reps")
-                    Spacer()
-                    Text("Weight")
-                    Spacer()
-                    Text("Rest")
-                }
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-                ForEach(exercise.sortedSets) { set in
-                    GridRow {
-                        WorkoutPlanDetailSetIndicator(set: set)
-                            .gridColumnAlignment(.leading)
-                        Spacer()
-                        Text(set.targetReps > 0 ? "\(set.targetReps)" : "-")
-                            .gridColumnAlignment(set.targetReps > 0 ? .leading : .center)
-                        Spacer()
-                        Text(set.targetWeight > 0 ? formattedWeightText(set.targetWeight, unit: weightUnit) : "-")
-                            .gridColumnAlignment(set.targetWeight > 0 ? .leading : .center)
-                        Spacer()
-                        Text(set.targetRest > 0 ? secondsToTime(set.targetRest) : "-")
-                            .gridColumnAlignment(set.targetRest > 0 ? .leading : .center)
-                    }
-                    .font(.body)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: set))
-                    .accessibilityLabel(AccessibilityText.exerciseSetLabel(for: set))
-                    .accessibilityValue(AccessibilityText.exerciseSetValue(for: set, unit: weightUnit))
-                }
+            ExerciseSetTable(
+                rows: exercise.sortedSets,
+                repsText: { $0.targetReps > 0 ? "\($0.targetReps)" : "-" },
+                weightText: { $0.targetWeight > 0 ? formattedWeightText($0.targetWeight, unit: weightUnit) : "-" },
+                restText: { $0.targetRest > 0 ? secondsToTime($0.targetRest) : "-" },
+                rowAccessibilityIdentifier: { AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: $0) },
+                rowAccessibilityLabel: { AccessibilityText.exerciseSetLabel(for: $0) },
+                rowAccessibilityValue: { AccessibilityText.exerciseSetValue(for: $0, unit: weightUnit) }
+            ) { set in
+                WorkoutPlanDetailSetIndicator(set: set)
             }
         }
         .padding(16)

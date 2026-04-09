@@ -31,6 +31,8 @@ enum HomeQuickAction: String {
     enum HealthSheet: String, Identifiable {
         case addWeightEntry
         case trainingConditionEditor
+        case newWeightGoal
+        case newStepsGoal
 
         var id: String { rawValue }
     }
@@ -42,9 +44,11 @@ enum HomeQuickAction: String {
         var id: String { rawValue }
     }
 
-    enum QuickActionContext: Hashable {
-        case home
+    enum AdditionalQuickActionContext: Hashable {
         case workoutSplit
+        case workoutPlanDetail(WorkoutPlan, showsUseOnly: Bool)
+        case weightGoalHistory
+        case stepsGoalHistory
     }
 
     enum WorkoutSheet: Hashable, Identifiable {
@@ -136,12 +140,12 @@ enum HomeQuickAction: String {
     private init() { tabSelection = restoredTabSelection() }
     private var context: ModelContext { SharedModelContainer.container.mainContext }
 
-    var quickActionContext: QuickActionContext {
+    var additionalQuickActionContext: AdditionalQuickActionContext? {
         switch tabSelection {
         case .home:
-            return quickActionContext(for: homeTabPath.last)
+            return additionalQuickActionContext(for: homeTabPath.last)
         case .health:
-            return quickActionContext(for: healthTabPath.last)
+            return additionalQuickActionContext(for: healthTabPath.last)
         }
     }
 
@@ -270,12 +274,18 @@ enum HomeQuickAction: String {
         noteNavigationStateChanged()
     }
 
-    private func quickActionContext(for destination: Destination?) -> QuickActionContext {
+    private func additionalQuickActionContext(for destination: Destination?) -> AdditionalQuickActionContext? {
         switch destination {
         case .workoutSplit, .workoutSplitDetail:
             return .workoutSplit
+        case .workoutPlanDetail(let plan, let showsUseOnly):
+            return .workoutPlanDetail(plan, showsUseOnly: showsUseOnly)
+        case .weightGoalHistory:
+            return .weightGoalHistory
+        case .stepsGoalHistory:
+            return .stepsGoalHistory
         default:
-            return .home
+            return nil
         }
     }
 
@@ -431,6 +441,13 @@ enum HomeQuickAction: String {
         context.insert(workoutSession)
         saveContext(context: context)
         activeWorkoutSession = workoutSession
+    }
+
+    func isTodaysActiveSplitPlan(_ plan: WorkoutPlan) -> Bool {
+        guard let activeSplit = try? context.fetch(WorkoutSplit.active).first else { return false }
+        let resolution = SplitScheduleResolver.resolve(activeSplit, context: context, syncProgress: false)
+        guard !resolution.isPaused, let todaysPlan = resolution.workoutPlan else { return false }
+        return todaysPlan.id == plan.id
     }
 
     func resumeWorkoutSession(_ workoutSession: WorkoutSession) {

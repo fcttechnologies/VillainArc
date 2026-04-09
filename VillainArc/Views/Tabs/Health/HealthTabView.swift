@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HealthTabView: View {
     @State private var router = AppRouter.shared
+    @State private var showAppSettings = false
     
     var body: some View {
         NavigationStack(path: healthTabPathBinding) {
@@ -15,12 +16,29 @@ struct HealthTabView: View {
                 }
                 .padding()
             }
-            .navBar(title: "Health", includePadding: false)
+            .navBar(title: "Health", includePadding: false) {
+                Button {
+                    showAppSettings = true
+                    Haptics.selection()
+                } label: {
+                    Label("Settings", systemImage: "gear")
+                        .font(.title2)
+                        .labelStyle(.iconOnly)
+                }
+                .buttonBorderShape(.circle)
+                .buttonStyle(.glass)
+                .accessibilityLabel(AccessibilityText.homeSettingsLabel)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthSettingsButton)
+                .accessibilityHint(AccessibilityText.homeSettingsHint)
+            }
             .scrollIndicators(.hidden)
             .sheet(isPresented: addWeightEntrySheetBinding) {
                 NewWeightEntryView()
                     .presentationDetents([.fraction(0.5)])
                     .presentationBackground(Color(.systemBackground))
+            }
+            .sheet(isPresented: $showAppSettings) {
+                AppSettingsView()
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {

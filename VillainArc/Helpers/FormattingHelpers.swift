@@ -27,11 +27,17 @@ func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false
 }
 
 nonisolated func formattedRecentDay(_ date: Date) -> String {
-    let calendar = Calendar.autoupdatingCurrent
+    formattedRecentDay(date, relativeTo: .now)
+}
 
-    if calendar.isDateInToday(date) || calendar.isDateInYesterday(date) {
+nonisolated func formattedRecentDay(_ date: Date, relativeTo referenceDate: Date, calendar: Calendar = .autoupdatingCurrent, locale: Locale = .autoupdatingCurrent) -> String {
+    let startOfDate = calendar.startOfDay(for: date)
+    let startOfReferenceDate = calendar.startOfDay(for: referenceDate)
+    let dayOffset = calendar.dateComponents([.day], from: startOfDate, to: startOfReferenceDate).day ?? .min
+
+    if dayOffset == 0 || dayOffset == 1 {
         let formatter = DateFormatter()
-        formatter.locale = .autoupdatingCurrent
+        formatter.locale = locale
         formatter.calendar = calendar
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
@@ -39,7 +45,15 @@ nonisolated func formattedRecentDay(_ date: Date) -> String {
         return formatter.string(from: date)
     }
 
-    return formattedSingleDate(date)
+    if (2...5).contains(dayOffset) {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        formatter.setLocalizedDateFormatFromTemplate("EEEE")
+        return formatter.string(from: date)
+    }
+
+    return formattedSingleDate(date, calendar: calendar, locale: locale)
 }
 
 nonisolated func formattedRecentDayAndTime(_ date: Date) -> String { "\(formattedRecentDay(date)) • \(date.formatted(date: .omitted, time: .shortened))" }
@@ -201,7 +215,13 @@ nonisolated private func formattedRecentDateRangeText(start: Date, end: Date?) -
     return formatter.string(from: start, to: end)
 }
 
-nonisolated private func formattedSingleDate(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated).day().year()) }
+nonisolated private func formattedSingleDate(_ date: Date, calendar: Calendar = .autoupdatingCurrent, locale: Locale = .autoupdatingCurrent) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.calendar = calendar
+    formatter.setLocalizedDateFormatFromTemplate("MMMdyyyy")
+    return formatter.string(from: date)
+}
 
 nonisolated private func formattedTimeRangeText(start: Date, end: Date?) -> String {
     guard let end else { return start.formatted(date: .omitted, time: .shortened) }

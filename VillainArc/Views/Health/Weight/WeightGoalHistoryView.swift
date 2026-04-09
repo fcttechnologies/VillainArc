@@ -8,8 +8,6 @@ struct WeightGoalHistoryView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
 
-    @State private var showNewWeightGoalSheet = false
-
     private var weightUnit: WeightUnit {
         appSettings.first?.weightUnit ?? .systemDefault
     }
@@ -46,7 +44,7 @@ struct WeightGoalHistoryView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptics.selection()
-                    showNewWeightGoalSheet = true
+                    router.activeHealthSheet = .newWeightGoal
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)
@@ -56,7 +54,7 @@ struct WeightGoalHistoryView: View {
                 .accessibilityHint(AccessibilityText.healthWeightGoalHistoryAddHint)
             }
         }
-        .sheet(isPresented: $showNewWeightGoalSheet) {
+        .sheet(isPresented: newWeightGoalSheetBinding) {
             NewWeightGoalView(weightUnit: weightUnit)
                 .presentationDetents([.fraction(0.7), .large])
                 .presentationBackground(Color(.systemBackground))
@@ -73,6 +71,17 @@ struct WeightGoalHistoryView: View {
         context.delete(goal)
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadWeight()
+    }
+
+    private var newWeightGoalSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .newWeightGoal },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .newWeightGoal {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
     }
 }
 

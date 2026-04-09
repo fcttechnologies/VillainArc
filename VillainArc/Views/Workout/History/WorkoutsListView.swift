@@ -37,7 +37,7 @@ struct WorkoutsListView: View {
     var body: some View {
         List {
             ForEach(items) { item in
-                WorkoutHistoryRowView(item: item, appSettingsSnapshot: appSettingsSnapshot)
+                WorkoutHistoryRowView(item: item, appSettingsSnapshot: appSettingsSnapshot, deletionSettings: appSettings.first)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .deleteDisabled(item.session == nil)
@@ -46,6 +46,7 @@ struct WorkoutsListView: View {
             }
             .onDelete(perform: deleteWorkouts)
         }
+        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutsList)
         .environment(\.editMode, editModeBinding)
         .animation(reduceMotion ? nil : .smooth, value: isEditing)

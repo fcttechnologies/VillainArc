@@ -87,8 +87,7 @@ struct StepsGoalHistoryView: View {
     @Environment(\.modelContext) private var context
     @Query(StepsGoal.history) private var goals: [StepsGoal]
     @Query(HealthStepsDistance.history) private var entries: [HealthStepsDistance]
-
-    @State private var showNewStepsGoalSheet = false
+    @State private var router = AppRouter.shared
 
     var body: some View {
         List {
@@ -111,16 +110,17 @@ struct StepsGoalHistoryView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptics.selection()
-                    showNewStepsGoalSheet = true
+                    router.activeHealthSheet = .newStepsGoal
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)
                 }
                 .accessibilityLabel(AccessibilityText.healthStepsGoalHistoryAddLabel)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsGoalHistoryAddButton)
                 .accessibilityHint(AccessibilityText.healthStepsGoalHistoryAddHint)
             }
         }
-        .sheet(isPresented: $showNewStepsGoalSheet) {
+        .sheet(isPresented: newStepsGoalSheetBinding) {
             NewStepsGoalView()
                 .presentationDetents([.fraction(0.35)])
                 .presentationBackground(Color(.systemBackground))
@@ -142,6 +142,17 @@ struct StepsGoalHistoryView: View {
         }
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadSteps()
+    }
+
+    private var newStepsGoalSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .newStepsGoal },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .newStepsGoal {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
     }
 }
 
