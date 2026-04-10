@@ -26,3 +26,12 @@ import SwiftData
         targetReps = source?.targetReps ?? 8
     }
 }
+
+extension RepRangePolicy {
+    func apply(snapshot: RepRangeSnapshot) {
+        activeMode = snapshot.mode
+        lowerRange = snapshot.lower
+        upperRange = snapshot.upper
+        targetReps = snapshot.target
+    }
+}

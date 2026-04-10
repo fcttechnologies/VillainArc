@@ -98,10 +98,25 @@ That split keeps HealthKit from owning the app’s training logic while still le
 VillainArc can request Health access:
 
 - during new-user onboarding
-- during a returning-user standalone Health prompt if the current type set still needs a request
+- during a returning-user standalone Health prompt if the current Health permissions version still needs a request
 - later from Settings
 
-The app relies on HealthKit’s authorization-request status instead of keeping its own “already prompted” flag.
+The app uses both HealthKit request status and an app-defined handled version.
+
+The prompt rule is:
+
+- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write permission catalog
+- the app stores the last handled permissions version in shared defaults
+- onboarding or the standalone launch gate prompt only when:
+  - the current permissions version differs from the stored handled version
+  - and `statusForAuthorizationRequest(toShare:read:)` still reports `.shouldRequest`
+- tapping `Connect to Apple Health` or `Not Now` marks the current permissions version as handled
+- merely presenting the blocking screen does not update the stored handled version
+
+Settings remains separate from that handled-version logic:
+
+- if HealthKit still needs a real request, Settings offers `Connect Apple Health`
+- if a request was already made, Settings sends the user to the Health access settings flow instead of reusing the onboarding gate
 
 Important nuance:
 

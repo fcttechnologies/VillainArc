@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import WatchKit
 
 struct WatchLiveWorkoutView: View {
     private struct DisplaySet: Identifiable {
@@ -12,11 +13,19 @@ struct WatchLiveWorkoutView: View {
         let hasTarget: Bool
     }
 
+    private enum Page: Hashable {
+        case controls
+        case metrics
+        case workout
+        case nowPlaying
+    }
+
     let snapshot: ActiveWorkoutSnapshot?
     let fallbackSession: WorkoutSession?
     @State private var runtimeCoordinator: WatchWorkoutRuntimeCoordinator
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var showCancelConfirmation = false
+    @State private var selectedPage: Page = .workout
 
     init(
         snapshot: ActiveWorkoutSnapshot?,
@@ -130,12 +139,20 @@ struct WatchLiveWorkoutView: View {
     // MARK: - Body
 
     var body: some View {
-        TabView {
-            metricsPage
-            exercisePage
+        TabView(selection: $selectedPage) {
             controlsPage
+                .tag(Page.controls)
+
+            metricsPage
+                .tag(Page.metrics)
+
+            exercisePage
+                .tag(Page.workout)
+
+            nowPlayingPage
+                .tag(Page.nowPlaying)
         }
-        .tabViewStyle(.verticalPage)
+        .tabViewStyle(.carousel)
         .navigationTitle(titleText)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -287,6 +304,13 @@ struct WatchLiveWorkoutView: View {
             .padding(.horizontal, 4)
             .scenePadding(.bottom)
         }
+    }
+
+    // MARK: - Now Playing
+
+    private var nowPlayingPage: some View {
+        NowPlayingView()
+            .accessibilityLabel("Now Playing")
     }
 
     private func exerciseHeader(name: String) -> some View {

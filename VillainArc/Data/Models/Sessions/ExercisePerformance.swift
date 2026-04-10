@@ -1,6 +1,51 @@
 import Foundation
 import SwiftData
 
+enum ExerciseHistoryCopyMode: String, CaseIterable, Identifiable {
+    case sets
+    case setsAndNotes
+    case setsAndRepRange
+    case all
+
+    nonisolated var id: String { rawValue }
+
+    nonisolated var label: String {
+        switch self {
+        case .sets:
+            return "Copy Sets"
+        case .setsAndNotes:
+            return "Copy Sets + Notes"
+        case .setsAndRepRange:
+            return "Copy Sets + Rep Range"
+        case .all:
+            return "Copy All"
+        }
+    }
+
+    nonisolated var includesNotes: Bool {
+        switch self {
+        case .sets, .setsAndRepRange:
+            return false
+        case .setsAndNotes, .all:
+            return true
+        }
+    }
+
+    nonisolated var includesRepRange: Bool {
+        switch self {
+        case .sets, .setsAndNotes:
+            return false
+        case .setsAndRepRange, .all:
+            return true
+        }
+    }
+}
+
+enum ExerciseHistoryCopyStrategy: Hashable {
+    case replaceAll
+    case replaceRemaining
+}
+
 @Model final class ExercisePerformance {
     #Index<ExercisePerformance>([\.catalogID], [\.date], [\.catalogID, \.date])
 
@@ -140,16 +185,24 @@ import SwiftData
     }
 
     private func nextRestorableTailPrescription() -> SetPrescription? {
-        guard let prescription else { return nil }
-
-        let usedPrescriptionIDs = Set(sortedSets.compactMap { $0.prescription?.id })
-        let maxLinkedIndex = sortedSets.compactMap { $0.prescription?.index }.max() ?? -1
-
-        return prescription.sortedSets.first { !usedPrescriptionIDs.contains($0.id) && $0.index > maxLinkedIndex }
+        restorableTailPrescriptions(limit: 1).first
     }
 
     private func reindexSetsByCurrentOrder() {
         for (index, set) in sortedSets.enumerated() { set.index = index }
+    }
+
+    private func restorableTailPrescriptions(limit: Int? = nil) -> [SetPrescription] {
+        guard let prescription else { return [] }
+
+        let usedPrescriptionIDs = Set(sortedSets.compactMap { $0.prescription?.id })
+        let maxLinkedIndex = sortedSets.compactMap { $0.prescription?.index }.max() ?? -1
+
+        let candidates = prescription.sortedSets.filter { !usedPrescriptionIDs.contains($0.id) && $0.index > maxLinkedIndex }
+        if let limit {
+            return Array(candidates.prefix(limit))
+        }
+        return candidates
     }
 
     func clearPrescriptionLinksForHistoricalUse() {
@@ -190,6 +243,97 @@ extension ExercisePerformance {
 }
 
 extension ExercisePerformance {
+    var hasLoggedDataForHistoryReplacement: Bool {
+        sortedSets.contains { set in
+            set.complete || set.reps > 0 || set.weight > 0 || set.rpe > 0
+        }
+    }
+
+    var completedSetCount: Int {
+        sortedSets.reduce(into: 0) { result, set in
+            if set.complete {
+                result += 1
+            }
+        }
+    }
+
+    var completedPrefixCount: Int {
+        sortedSets.prefix(while: { $0.complete }).count
+    }
+
+    var canSafelyCopyIntoRemainingSets: Bool {
+        completedSetCount > 0 && completedPrefixCount == completedSetCount
+    }
+
+    func applyHistoryCopy(_ snapshot: ExercisePerformanceSnapshot, mode: ExerciseHistoryCopyMode, strategy: ExerciseHistoryCopyStrategy, context: ModelContext) {
+        switch strategy {
+        case .replaceAll:
+            syncSets(from: snapshot.sets, startingAt: 0, context: context)
+        case .replaceRemaining:
+            let remainingSnapshots = Array(snapshot.sets.dropFirst(completedPrefixCount))
+            syncSets(from: remainingSnapshots, startingAt: completedPrefixCount, context: context)
+        }
+
+        if mode.includesNotes {
+            notes = snapshot.notes
+        }
+
+        if mode.includesRepRange {
+            if repRange == nil {
+                repRange = RepRangePolicy()
+            }
+            repRange?.apply(snapshot: snapshot.repRange)
+        }
+    }
+
+    private func syncSets(from snapshots: [SetPerformanceSnapshot], startingAt startIndex: Int, context: ModelContext) {
+        let currentSets = sortedSets
+        let targetSets = Array(currentSets.dropFirst(startIndex))
+        var restorableTail = restorableTailPrescriptions(limit: max(0, snapshots.count - targetSets.count))
+
+        for (index, snapshot) in snapshots.enumerated() {
+            let targetIndex = startIndex + index
+
+            if index < targetSets.count {
+                let set = targetSets[index]
+                set.index = targetIndex
+                set.type = snapshot.type
+                set.weight = snapshot.weight
+                set.reps = snapshot.reps
+                set.restSeconds = snapshot.restSeconds
+                set.rpe = 0
+                set.complete = false
+                set.completedAt = nil
+            } else {
+                let set: SetPerformance
+                if let restoredPrescription = restorableTail.first {
+                    restorableTail.removeFirst()
+                    set = SetPerformance(exercise: self, setPrescription: restoredPrescription)
+                    set.weight = snapshot.weight
+                    set.reps = snapshot.reps
+                    set.restSeconds = snapshot.restSeconds
+                } else {
+                    set = SetPerformance(exercise: self, weight: snapshot.weight, reps: snapshot.reps, restSeconds: snapshot.restSeconds)
+                }
+                set.index = targetIndex
+                set.type = snapshot.type
+                set.rpe = 0
+                set.complete = false
+                set.completedAt = nil
+                sets?.append(set)
+            }
+        }
+
+        if targetSets.count > snapshots.count {
+            for set in targetSets.dropFirst(snapshots.count) {
+                sets?.removeAll { $0.id == set.id }
+                context.delete(set)
+            }
+        }
+
+        reindexSets()
+    }
+
     var latestCompletedSetAt: Date? {
         sortedSets.compactMap { set in
             guard set.complete else { return nil }

@@ -2418,6 +2418,9 @@
         }
       }
     },
+    "completed set" : {
+
+    },
     "Completed set %lld of %@." : {
       "localizations" : {
         "en" : {
@@ -2427,6 +2430,9 @@
           }
         }
       }
+    },
+    "completed sets" : {
+
     },
     "Completes the next incomplete set in your workout session." : {
       "localizations" : {
@@ -2537,6 +2543,9 @@
           }
         }
       }
+    },
+    "Copy from history" : {
+
     },
     "Couldn't determine today's workout." : {
       "localizations" : {
@@ -12102,6 +12111,9 @@
           }
         }
       }
+    },
+    "Villain Arc needs additional Apple Health permissions to enable new features it has added and future Health features as they roll out." : {
+
     },
     "Villain Arc needs WiFi for first time setup to sync your workout data." : {
       "localizations" : {

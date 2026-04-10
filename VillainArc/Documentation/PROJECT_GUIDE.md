@@ -188,7 +188,7 @@ Once the exercise-catalog bootstrap marker exists, launch is faster:
 - ensure singleton records exist
 - route into missing profile steps if needed
 - sync the bundled exercise catalog only if its version changed
-- decide whether Health permissions still need to be requested
+- decide whether the current Health permissions version still needs a one-time prompt
 - otherwise transition directly to `.ready`
 
 ## Main Product Areas

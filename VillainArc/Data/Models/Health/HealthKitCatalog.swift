@@ -1,6 +1,8 @@
 import HealthKit
 
 nonisolated enum HealthKitCatalog {
+    static let permissionsCatalogVersion = "1.1"
+
     static let workoutType = HKObjectType.workoutType()
     static let workoutRoute = HKSeriesType.workoutRoute()
     static let dateOfBirthCharacteristic = HKCharacteristicType(.dateOfBirth)

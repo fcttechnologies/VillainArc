@@ -143,6 +143,57 @@ import SwiftData
 extension ExercisePrescription: RestTimeEditable {}
 
 extension ExercisePrescription {
+    func applyHistoryCopy(_ snapshot: ExercisePerformanceSnapshot, mode: ExerciseHistoryCopyMode, context: ModelContext) {
+        syncSets(from: snapshot.sets, context: context)
+
+        if mode.includesNotes {
+            notes = snapshot.notes
+        }
+
+        if mode.includesRepRange {
+            if repRange == nil {
+                repRange = RepRangePolicy()
+            }
+            repRange?.apply(snapshot: snapshot.repRange)
+        }
+    }
+
+    private func syncSets(from snapshots: [SetPerformanceSnapshot], context: ModelContext) {
+        let currentSets = sortedSets
+
+        for (index, snapshot) in snapshots.enumerated() {
+            if index < currentSets.count {
+                let set = currentSets[index]
+                set.index = index
+                set.type = snapshot.type
+                set.targetWeight = snapshot.weight
+                set.targetReps = snapshot.reps
+                set.targetRest = snapshot.restSeconds
+                set.targetRPE = 0
+            } else {
+                let set = SetPrescription(
+                    exercisePrescription: self,
+                    targetWeight: snapshot.weight,
+                    targetReps: snapshot.reps,
+                    targetRest: snapshot.restSeconds,
+                    targetRPE: 0
+                )
+                set.index = index
+                set.type = snapshot.type
+                sets?.append(set)
+            }
+        }
+
+        if currentSets.count > snapshots.count {
+            for set in currentSets.dropFirst(snapshots.count) {
+                sets?.removeAll { $0.id == set.id }
+                context.delete(set)
+            }
+        }
+
+        reindexSets()
+    }
+
     static func matching(catalogID: String) -> FetchDescriptor<ExercisePrescription> {
         let predicate = #Predicate<ExercisePrescription> { $0.catalogID == catalogID }
         return FetchDescriptor(predicate: predicate)

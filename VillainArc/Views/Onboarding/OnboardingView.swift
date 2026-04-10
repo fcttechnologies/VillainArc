@@ -110,7 +110,7 @@ struct OnboardingView: View {
         guard case .profile(let step) = manager.state else { return }
         if step == .name {
             path = []
-        } else if manager.isNewUser {
+        } else if manager.shouldInsertHealthPermissionsStep {
             path = [.healthPermissions]
         } else {
             path = profileNavigationPath(to: step)
@@ -144,22 +144,35 @@ struct OnboardingView: View {
                 .font(.title)
                 .bold()
 
-            Text("Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer.")
+            Text("Villain Arc needs additional Apple Health permissions to enable new features it has added and future Health features as they roll out.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
             Spacer()
 
-            Button {
-                Task { await manager.connectAppleHealth() }
-            } label: {
-                Text("Connect to Apple Health")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
+            VStack(spacing: 12) {
+                Button {
+                    Task { await manager.connectAppleHealth() }
+                } label: {
+                    Text("Connect to Apple Health")
+                        .padding(.vertical, 8)
+                        .fontWeight(.semibold)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glassProminent)
+                .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
+
+                Button {
+                    manager.skipAppleHealth()
+                } label: {
+                    Text("Not Now")
+                        .padding(.vertical, 8)
+                        .fontWeight(.semibold)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glass)
+                .accessibilityHint(AccessibilityText.onboardingSkipHealthHint)
             }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
-            .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
         }
         .padding(.horizontal)
     }
@@ -412,7 +425,7 @@ private struct OnboardingHealthPermissionStepView: View {
                         isConnecting = true
                         Task {
                             await manager.connectAppleHealthDuringOnboarding()
-                            hasAuthorized = true
+                            hasAuthorized = HealthAuthorizationManager.currentAuthorizationState.isAuthorized
                             isConnecting = false
                             pushNextProfileStep()
                         }
@@ -427,6 +440,7 @@ private struct OnboardingHealthPermissionStepView: View {
                     .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
 
                     Button {
+                        manager.skipAppleHealthDuringOnboarding()
                         pushNextProfileStep()
                     } label: {
                         Text("Not Now")
@@ -478,7 +492,7 @@ private struct ProfileNameStepView: View {
             Button {
                 Task {
                     guard await manager.saveName(name) else { return }
-                    if manager.isNewUser {
+                    if manager.shouldInsertHealthPermissionsStep {
                         path.append(.healthPermissions)
                     } else if let nextStep = manager.profile?.firstMissingStep {
                         path = profileNavigationPath(to: nextStep)

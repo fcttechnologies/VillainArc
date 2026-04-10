@@ -31,7 +31,7 @@ enum OnboardingState: Equatable {
 
     var state: OnboardingState = .launching
     var profile: UserProfile?
-    private(set) var isNewUser = false
+    private(set) var shouldInsertHealthPermissionsStep = false
     private(set) var prefetchedBirthday: Date?
     private(set) var prefetchedGender: UserGender?
     private(set) var prefetchedHeightCm: Double?
@@ -136,7 +136,7 @@ enum OnboardingState: Equatable {
             _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             guard attemptID == onboardingAttemptID else { return }
-            isNewUser = true
+            shouldInsertHealthPermissionsStep = await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
             routeFromProfile(profile)
         } catch { state = .error("Failed to set up your profile: \(error.localizedDescription)") }
     }
@@ -158,7 +158,7 @@ enum OnboardingState: Equatable {
             _ = try SystemState.ensureAppSettings(context: context)
             _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
-            isNewUser = true
+            shouldInsertHealthPermissionsStep = await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
             routeFromProfile(profile)
         } catch { state = .error("Failed to finish setup: \(error.localizedDescription)") }
     }
@@ -189,8 +189,13 @@ enum OnboardingState: Equatable {
     }
 
     func connectAppleHealthDuringOnboarding() async {
+        HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
         _ = await HealthAuthorizationManager.requestAuthorization()
         await prefillProfileFromHealthKit()
+    }
+
+    func skipAppleHealthDuringOnboarding() {
+        HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
     }
 
     private func prefillProfileFromHealthKit() async {
@@ -217,15 +222,13 @@ enum OnboardingState: Equatable {
     }
 
     private func handleReturningLaunch() async {
-        isNewUser = false
         do {
             _ = try SystemState.ensureAppSettings(context: context)
             _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
+            shouldInsertHealthPermissionsStep = await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
             if let missingStep = profile.firstMissingStep {
                 self.profile = profile
-                let action = await HealthAuthorizationManager.authorizationAction()
-                if action == .requestAccess { isNewUser = true }
                 state = .profile(missingStep)
                 return
             }
@@ -306,8 +309,7 @@ enum OnboardingState: Equatable {
     }
 
     private func shouldOfferHealthPermissions() async -> Bool {
-        let action = await HealthAuthorizationManager.authorizationAction()
-        return action == .requestAccess
+        await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
     }
 
     private func transitionAfterSetup() async {
@@ -319,7 +321,13 @@ enum OnboardingState: Equatable {
     }
 
     func connectAppleHealth() async {
+        HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
         _ = await HealthAuthorizationManager.requestAuthorization()
+        transitionToReady()
+    }
+
+    func skipAppleHealth() {
+        HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
         transitionToReady()
     }
 

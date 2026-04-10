@@ -44,9 +44,13 @@ nonisolated enum HealthAuthorizationAction: Equatable {
 }
 
 nonisolated enum HealthAuthorizationManager {
+    private static let lastHandledPermissionsVersionKey = "lastHandledHealthPermissionsVersion"
+
     static let healthStore = HKHealthStore()
 
     static var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
+    static var currentPermissionsVersion: String { HealthKitCatalog.permissionsCatalogVersion }
+    static var lastHandledPermissionsVersion: String? { SharedModelContainer.sharedDefaults.string(forKey: lastHandledPermissionsVersionKey) }
 
     static var currentAuthorizationState: HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
@@ -120,12 +124,28 @@ nonisolated enum HealthAuthorizationManager {
         return healthStore.authorizationStatus(for: HealthKitCatalog.sleepAnalysisType) != .notDetermined
     }
 
+    static func shouldPromptForCurrentPermissionsVersion() async -> Bool {
+        guard isHealthDataAvailable else { return false }
+        guard currentPermissionsVersion != lastHandledPermissionsVersion else { return false }
+
+        do {
+            return try await authorizationRequestStatus() == .shouldRequest
+        } catch {
+            print("Failed to determine whether HealthKit permissions should prompt again: \(error)")
+            return currentAuthorizationState == .notDetermined
+        }
+    }
+
+    static func markCurrentPermissionsVersionHandled() {
+        SharedModelContainer.sharedDefaults.set(currentPermissionsVersion, forKey: lastHandledPermissionsVersionKey)
+    }
+
     static func authorizationAction() async -> HealthAuthorizationAction {
         let state = currentAuthorizationState
         guard state != .unavailable else { return .unavailable }
 
         do {
-            let requestStatus = try await healthStore.statusForAuthorizationRequest(toShare: healthShareTypes, read: healthReadTypes)
+            let requestStatus = try await authorizationRequestStatus()
             switch requestStatus {
             case .shouldRequest: return .requestAccess
             case .unnecessary, .unknown: return state == .authorized ? .manageInSettings : .openSettings
@@ -203,5 +223,9 @@ nonisolated enum HealthAuthorizationManager {
             HealthKitCatalog.workoutEffortScoreType,
             HealthKitCatalog.estimatedWorkoutEffortScoreType
         ]
+    }
+
+    private static func authorizationRequestStatus() async throws -> HKAuthorizationRequestStatus {
+        try await healthStore.statusForAuthorizationRequest(toShare: healthShareTypes, read: healthReadTypes)
     }
 }

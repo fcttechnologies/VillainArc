@@ -82,7 +82,7 @@ Returning launch does the short path:
 - ensure singleton records exist
 - route into missing profile steps if the profile is incomplete
 - sync the bundled exercise catalog only if its version changed
-- decide whether Health permissions still need to be requested
+- decide whether the current Health permissions version still needs a prompt
 - otherwise transition directly to `.ready`
 
 ## Profile Onboarding
@@ -108,12 +108,22 @@ The in-flow Apple Health step comes immediately after the name step.
 
 For a returning user with an incomplete profile:
 
-- if the current Health type set still has not crossed the request boundary, onboarding starts with the Health step after name
+- if the current Health permissions version still needs a prompt, onboarding starts with the Health step after name
 - otherwise onboarding jumps directly to the first missing required profile field
 
 ## Apple Health Permission Prompt
 
-VillainArc treats Health as optional from a product perspective, but the launch flow still treats the standalone Health-permission screen as part of readiness when the current type set still needs a request.
+VillainArc treats Health as optional from a product perspective, but the launch flow still treats the standalone Health-permission screen as part of readiness when the current Health permissions version still needs a request.
+
+The prompt rule is versioned:
+
+- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write type set
+- the app stores the last handled Health permissions version in shared defaults
+- onboarding and the standalone launch gate prompt only when:
+  - the current permissions version differs from the stored handled version
+  - and HealthKit still reports that the current type set should be requested
+- the handled version updates only when the user taps `Connect to Apple Health` or `Not Now`
+- if the user leaves the blocking screen without tapping either button, the prompt appears again on the next launch
 
 ### In-Flow Prompt for New Users
 
@@ -122,19 +132,21 @@ For new users:
 - the Health step lives inside profile onboarding
 - tapping Connect requests authorization
 - the app tries to prefill birthday, gender, and height for confirmation
-- tapping `Not Now` skips the request for that moment, but does not permanently suppress the later standalone prompt
+- tapping `Not Now` marks the current Health permissions version as handled and skips the request for that version
 
 ### Standalone Prompt After Profile Completion
 
-If the current type set still needs a request after the profile is otherwise complete, onboarding enters `.healthPermissions`.
+If the current Health permissions version still needs a request after the profile is otherwise complete, onboarding enters `.healthPermissions`.
 
 That screen:
 
-- shows a connect button only
-- requests authorization
+- explains that VillainArc needs additional Health permissions for newly added or upcoming features
+- shows `Connect to Apple Health` and `Not Now`
+- marks the current Health permissions version as handled only when the user taps one of those buttons
+- requests authorization only when the user taps `Connect to Apple Health`
 - then transitions to `.ready` whether access was granted or denied
 
-So the standalone Health prompt is effectively a launch gate that requires the user to tap through once.
+So the standalone Health prompt is effectively a launch gate that requires the user to explicitly handle the current permissions version once.
 
 ## Post-Ready Health Pass
 
