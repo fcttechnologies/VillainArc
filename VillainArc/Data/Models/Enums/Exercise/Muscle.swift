@@ -1,7 +1,12 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
 
-@Generable enum Muscle: String, Codable, CaseIterable {
+#if canImport(FoundationModels)
+@Generable
+#endif
+enum Muscle: String, Codable, CaseIterable {
     // Major Muscle
     case chest = "Chest"
     case back = "Back"
@@ -51,7 +56,7 @@ import FoundationModels
 
     static let allMajor: [Muscle] = Muscle.allCases.filter(\.isMajor)
 
-    var displayName: String {
+    nonisolated var displayName: String {
         switch self {
         case .chest: return String(localized: "Chest")
         case .back: return String(localized: "Back")

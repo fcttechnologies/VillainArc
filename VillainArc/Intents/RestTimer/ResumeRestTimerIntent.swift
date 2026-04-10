@@ -1,5 +1,6 @@
 import AppIntents
 import SwiftUI
+import SwiftData
 
 struct ResumeRestTimerIntent: AppIntent {
     static let title: LocalizedStringResource = "Resume Rest Timer"
@@ -7,6 +8,7 @@ struct ResumeRestTimerIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
+        let context = SharedModelContainer.container.mainContext
         let restTimer = RestTimerState.shared
 
         guard restTimer.isPaused, restTimer.pausedRemainingSeconds > 0 else {
@@ -15,6 +17,9 @@ struct ResumeRestTimerIntent: AppIntent {
         }
 
         restTimer.resume()
+        if let workout = try? context.fetch(WorkoutSession.incomplete).first {
+            WatchWorkoutCommandCoordinator.shared.pushRuntimeStateIfMirrored(for: workout)
+        }
         return .result(dialog: "Rest timer resumed.", snippetIntent: RestTimerSnippetIntent())
     }
 }

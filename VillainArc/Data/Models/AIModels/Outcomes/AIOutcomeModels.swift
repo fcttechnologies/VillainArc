@@ -1,4 +1,5 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable enum AIChangeScope: String {
@@ -85,3 +86,4 @@ import FoundationModels
     @Guide(description: "One short evidence sentence.")
     let reason: String
 }
+#endif

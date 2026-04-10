@@ -1,4 +1,5 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable struct AIInferenceInput {
@@ -12,3 +13,4 @@ import FoundationModels
     @Guide(description: "Confidence 0 to 1.", .range(0.0...1.0))
     let confidence: Double
 }
+#endif

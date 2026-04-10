@@ -1,7 +1,12 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
 
-@Generable enum TrainingStyle: String, Codable {
+#if canImport(FoundationModels)
+@Generable
+#endif
+enum TrainingStyle: String, Codable {
     case straightSets = "Straight Sets"
     case ascendingPyramid = "Ascending Pyramid"
     case descendingPyramid = "Descending Pyramid"

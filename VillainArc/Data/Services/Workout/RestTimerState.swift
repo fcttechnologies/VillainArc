@@ -55,6 +55,13 @@ import Observation
     }
     var isRunning: Bool { endDate != nil && !isPaused }
     var isActive: Bool { isRunning || (isPaused && pausedRemainingSeconds > 0) }
+
+    private func pushWatchRuntimeIfNeeded() {
+        Task { @MainActor in
+            WatchWorkoutCommandCoordinator.shared.pushLatestRuntimeStateIfNeeded()
+        }
+    }
+
     func start(seconds: Int, startedFromSetID: UUID? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
@@ -69,6 +76,7 @@ import Observation
         persist()
         scheduleStop()
         WorkoutActivityManager.update()
+        pushWatchRuntimeIfNeeded()
     }
 
     func pause() {
@@ -87,6 +95,7 @@ import Observation
         stopTask = nil
         cancelNotificationRequest()
         WorkoutActivityManager.update()
+        pushWatchRuntimeIfNeeded()
     }
 
     func resume() {
@@ -97,6 +106,7 @@ import Observation
         persist()
         scheduleStop()
         WorkoutActivityManager.update()
+        pushWatchRuntimeIfNeeded()
     }
 
     func stop() { stopInternal(cancelNotification: true) }
@@ -116,6 +126,7 @@ import Observation
         if updateLiveActivity {
             WorkoutActivityManager.update()
         }
+        pushWatchRuntimeIfNeeded()
     }
 
     func adjust(by deltaSeconds: Int) {
@@ -135,6 +146,7 @@ import Observation
             persist()
             scheduleStop()
             WorkoutActivityManager.update()
+            pushWatchRuntimeIfNeeded()
         } else if isPaused {
             let adjustedRemaining = pausedRemainingSeconds + deltaSeconds
             if adjustedRemaining <= 0 {
@@ -145,6 +157,7 @@ import Observation
             pausedRemainingSeconds = min(adjustedRemaining, maximumSeconds)
             persist()
             WorkoutActivityManager.update()
+            pushWatchRuntimeIfNeeded()
         }
     }
 
@@ -166,6 +179,7 @@ import Observation
         startedSeconds = clamped
         persist()
         WorkoutActivityManager.update()
+        pushWatchRuntimeIfNeeded()
     }
 
     private func scheduleStop() {

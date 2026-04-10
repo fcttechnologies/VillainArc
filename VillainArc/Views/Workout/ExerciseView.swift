@@ -218,6 +218,9 @@ struct ExerciseView: View {
                     exercise.replaceWith(newExercise, keepSets: keepSets, context: context)
                     saveContext(context: context)
                     WorkoutActivityManager.update()
+                    if let workout = exercise.workoutSession {
+                        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
+                    }
                     Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
                 }
             }
@@ -241,6 +244,9 @@ struct ExerciseView: View {
         exercise.addSet(unit: weightUnit)
         saveContext(context: context)
         WorkoutActivityManager.update()
+        if let workout = exercise.workoutSession {
+            WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
+        }
     }
 
     private func checkForRestTimeUpdate() {

@@ -1,7 +1,12 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
 
-@Generable enum SuggestionCategory: String, Codable {
+#if canImport(FoundationModels)
+@Generable
+#endif
+enum SuggestionCategory: String, Codable {
     case performance
     case recovery
     case structure

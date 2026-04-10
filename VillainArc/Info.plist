@@ -25,24 +25,26 @@
 		<string>com.villainarc.siri.startWorkout</string>
 		<string>com.villainarc.siri.cancelWorkout</string>
 		<string>com.villainarc.siri.endWorkout</string>
+		<string>com.villainarc.handoff.openApp</string>
+		<string>com.villainarc.handoff.openActiveWorkout</string>
 	</array>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>com.villainarc.quickaction.startTodaysWorkout</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Start Today's Workout</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>figure.strengthtraining.traditional</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Start Today's Workout</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.villainarc.quickaction.startTodaysWorkout</string>
 		</dict>
 		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>com.villainarc.quickaction.addWeightEntry</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Add Weight Entry</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>scalemass.fill</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Add Weight Entry</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.villainarc.quickaction.addWeightEntry</string>
 		</dict>
 	</array>
 	<key>UIBackgroundModes</key>

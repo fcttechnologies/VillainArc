@@ -78,6 +78,7 @@ private struct MorphingQuickActionsToggleButton: View {
     var body: some View {
         Button {
             withAnimation(.bouncy(duration: 0.5, extraBounce: 0.05)) {
+                Haptics.selection()
                 isExpanded.toggle()
             }
         } label: {

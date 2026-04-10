@@ -1,7 +1,12 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
 
-@Generable enum EquipmentType: String, Codable, CaseIterable {
+#if canImport(FoundationModels)
+@Generable
+#endif
+enum EquipmentType: String, Codable, CaseIterable {
     case barbell = "Barbell"
     case bodyweight = "Bodyweight"
     case band = "Band"
@@ -30,7 +35,7 @@ extension EquipmentType {
         }
     }
 
-    var displayName: String {
+    nonisolated var displayName: String {
         switch self {
         case .barbell: return String(localized: "Barbell")
         case .bodyweight: return String(localized: "Bodyweight")

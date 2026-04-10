@@ -161,8 +161,14 @@ struct ExerciseSetRowView: View {
                     Haptics.selection()
                     set.complete = false
                     set.completedAt = nil
+                    if restTimer.startedFromSetID == set.id {
+                        restTimer.stop()
+                    }
                     saveContext(context: context)
                     WorkoutActivityManager.update()
+                    if let workout = exercise.workoutSession {
+                        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
+                    }
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -222,6 +228,9 @@ struct ExerciseSetRowView: View {
         exercise.deleteSet(set)
         saveContext(context: context)
         WorkoutActivityManager.update()
+        if let workout = exercise.workoutSession {
+            WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
+        }
     }
     
     private func updateRPE(to value: Int) {
@@ -248,6 +257,9 @@ struct ExerciseSetRowView: View {
         handleAutoStartTimer()
         saveContext(context: context)
         WorkoutActivityManager.update()
+        if let workout = exercise.workoutSession {
+            WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
+        }
         if shouldPrewarmSuggestions {
             FoundationModelPrewarmer.warmup()
         }

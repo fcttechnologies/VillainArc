@@ -5,6 +5,8 @@ import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        WorkoutMirroringCoordinator.shared.registerMirroringStartHandler()
+        WatchWorkoutCommandCoordinator.shared.activateSessionIfNeeded()
         HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
         NotificationCoordinator.shared.installDelegate()
         return true
@@ -35,6 +37,12 @@ struct VillainArcApp: App {
                 }
                 .onContinueUserActivity("com.villainarc.siri.endWorkout") { userActivity in
                     AppRouter.shared.handleSiriEndWorkout(userActivity)
+                }
+                .onContinueUserActivity("com.villainarc.handoff.openApp") { userActivity in
+                    AppRouter.shared.handleWatchOpenAppHandoff(userActivity)
+                }
+                .onContinueUserActivity("com.villainarc.handoff.openActiveWorkout") { userActivity in
+                    AppRouter.shared.handleWatchOpenActiveWorkoutHandoff(userActivity)
                 }
                 .onOpenURL { url in
                     AppRouter.shared.handleIncomingURL(url)

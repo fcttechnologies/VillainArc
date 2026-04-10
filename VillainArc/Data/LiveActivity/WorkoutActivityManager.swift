@@ -106,7 +106,7 @@ enum WorkoutActivityManager {
         guard liveActivitiesEnabled else { return false }
         guard areActivitiesAvailable else { return false }
         guard currentActivity != nil else { return false }
-        return HealthLiveWorkoutSessionCoordinator.shared.isRunningLiveWorkoutCollection
+        return isLiveRuntimeRunning(for: resolveWorkout(for: nil))
     }
 
     private static func endAllActivities() {
@@ -139,7 +139,6 @@ enum WorkoutActivityManager {
     private static func activeContentState(for workout: WorkoutSession) -> WorkoutActivityAttributes.ContentState {
         let restTimer = RestTimerState.shared
         let activeInfo = workout.activeExerciseAndSet()
-        let healthLiveWorkoutCoordinator = HealthLiveWorkoutSessionCoordinator.shared
         let context = SharedModelContainer.container.mainContext
         let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
         let energyUnit = (try? context.fetch(AppSettings.single))?.first?.energyUnit ?? .systemDefault
@@ -165,8 +164,8 @@ enum WorkoutActivityManager {
             timerPausedRemaining: restTimer.isPaused ? restTimer.pausedRemainingSeconds : nil,
             timerStartedSeconds: restTimer.isActive ? restTimer.startedSeconds : nil,
             hasExercises: !(workout.exercises?.isEmpty ?? true),
-            liveHeartRateBPM: healthLiveWorkoutCoordinator.latestHeartRate,
-            liveActiveEnergyBurned: healthLiveWorkoutCoordinator.activeEnergyBurned,
+            liveHeartRateBPM: liveHeartRate(for: workout),
+            liveActiveEnergyBurned: liveActiveEnergy(for: workout),
             averageHeartRateBPM: nil,
             totalEnergyBurned: nil
         )
@@ -177,7 +176,6 @@ enum WorkoutActivityManager {
         let appSettings = (try? context.fetch(AppSettings.single))?.first
         let weightUnit = appSettings?.weightUnit ?? .lbs
         let energyUnit = appSettings?.energyUnit ?? .systemDefault
-        let liveCoordinator = HealthLiveWorkoutSessionCoordinator.shared
 
         return .init(
             displayMode: .summary,
@@ -203,7 +201,7 @@ enum WorkoutActivityManager {
             liveHeartRateBPM: nil,
             liveActiveEnergyBurned: nil,
             averageHeartRateBPM: workout.healthWorkout?.averageHeartRateBPM,
-            totalEnergyBurned: workout.healthWorkout?.totalEnergyBurned ?? liveCoordinator.totalEnergyBurned
+            totalEnergyBurned: workout.healthWorkout?.totalEnergyBurned ?? liveTotalEnergy(for: workout)
         )
     }
 
@@ -275,6 +273,42 @@ enum WorkoutActivityManager {
 
         let context = SharedModelContainer.container.mainContext
         return try? context.fetch(WorkoutSession.incomplete).first
+    }
+
+    private static func isUsingMirroredRuntime(for workout: WorkoutSession?) -> Bool {
+        workout?.healthCollectionMode == .watchMirrored
+    }
+
+    private static func isLiveRuntimeRunning(for workout: WorkoutSession?) -> Bool {
+        if isUsingMirroredRuntime(for: workout) {
+            return WorkoutMirroringCoordinator.shared.isRunningLiveWorkoutCollection
+        }
+
+        return HealthLiveWorkoutSessionCoordinator.shared.isRunningLiveWorkoutCollection
+    }
+
+    private static func liveHeartRate(for workout: WorkoutSession?) -> Double? {
+        if isUsingMirroredRuntime(for: workout) {
+            return WorkoutMirroringCoordinator.shared.latestHeartRate
+        }
+
+        return HealthLiveWorkoutSessionCoordinator.shared.latestHeartRate
+    }
+
+    private static func liveActiveEnergy(for workout: WorkoutSession?) -> Double? {
+        if isUsingMirroredRuntime(for: workout) {
+            return WorkoutMirroringCoordinator.shared.activeEnergyBurned
+        }
+
+        return HealthLiveWorkoutSessionCoordinator.shared.activeEnergyBurned
+    }
+
+    private static func liveTotalEnergy(for workout: WorkoutSession?) -> Double? {
+        if isUsingMirroredRuntime(for: workout) {
+            return WorkoutMirroringCoordinator.shared.totalEnergyBurned
+        }
+
+        return HealthLiveWorkoutSessionCoordinator.shared.totalEnergyBurned
     }
 
     private static func recordDeliveredState(_ state: WorkoutActivityAttributes.ContentState, forActivityID activityID: String) {

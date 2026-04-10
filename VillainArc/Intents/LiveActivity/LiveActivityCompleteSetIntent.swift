@@ -25,6 +25,8 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
 
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
+        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
+        WatchWorkoutCommandCoordinator.shared.pushRuntimeStateIfMirrored(for: workout)
         if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
 
         return .result()

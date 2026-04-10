@@ -189,9 +189,6 @@ struct WorkoutView: View {
             }
             .onAppear {
                 WorkoutActivityManager.start(workout: workout)
-                Task {
-                    await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
-                }
             }
         }
     }
@@ -446,20 +443,26 @@ struct WorkoutView: View {
             endWorkoutSession(shouldDismiss: false, endLiveActivity: false)
             WorkoutActivityManager.update(for: workout)
             Task {
-                await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workout, context: context)
+                if workout.healthCollectionMode == .watchMirrored {
+                    await WatchWorkoutCommandCoordinator.shared.requestFinishIfMirrored(for: workout)
+                }
                 WorkoutActivityManager.update(for: workout)
                 await IntentDonations.donateFinishWorkout()
                 await IntentDonations.donateLastWorkoutSummary()
             }
         case .workoutDeleted:
             saveContext(context: context)
-            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
+            if workout.healthCollectionMode == .watchMirrored {
+                WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workout)
+            }
             endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
         }
     }
     
     private func deleteWorkout() {
-        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
+        if workout.healthCollectionMode == .watchMirrored {
+            WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workout)
+        }
         context.delete(workout)
         Task { await IntentDonations.donateCancelWorkout() }
         endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
@@ -497,6 +500,7 @@ struct WorkoutView: View {
             showExerciseEditSheet = false
         }
         WorkoutActivityManager.update(for: workout)
+        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
     }
 
     private func deleteExercise(_ exercise: ExercisePerformance) {
@@ -516,12 +520,14 @@ struct WorkoutView: View {
             }
         }
         WorkoutActivityManager.update(for: workout)
+        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
     }
-    
+
     private func moveExercise(from source: IndexSet, to destination: Int) {
         workout.moveExercise(from: source, to: destination)
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
+        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
     }
 
     private func prepareForAddExerciseSheet() {
