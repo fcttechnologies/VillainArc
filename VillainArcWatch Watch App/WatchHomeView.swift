@@ -46,15 +46,9 @@ struct WatchHomeView: View {
                     .accessibilityHint("Starts today’s workout plan using your iPhone as the source of truth.")
                 }
             } else if activeSplits.isEmpty {
-                emptyState(
-                    title: "No Active Split",
-                    message: "Set an active split on iPhone to show today’s workout here."
-                )
+                emptyState(title: "No Active Split", message: "Set an active split on iPhone to show today’s workout here.")
             } else {
-                emptyState(
-                    title: "No Workout Today",
-                    message: "There isn’t a workout plan assigned for today."
-                )
+                emptyState(title: "No Workout Today", message: "There isn’t a workout plan assigned for today.")
             }
         }
     }
@@ -63,10 +57,7 @@ struct WatchHomeView: View {
     private var plansSection: some View {
         Section("All Plans") {
             if workoutPlans.isEmpty {
-                emptyState(
-                    title: "No Plans Yet",
-                    message: "Create a plan on iPhone to start workouts from Apple Watch."
-                )
+                emptyState(title: "No Plans Yet", message: "Create a plan on iPhone to start workouts from Apple Watch.")
             } else {
                 ForEach(workoutPlans.prefix(8)) { plan in
                     VStack(alignment: .leading, spacing: 6) {
@@ -98,10 +89,7 @@ struct WatchHomeView: View {
     private var workoutsSection: some View {
         Section("All Workouts") {
             if completedWorkouts.isEmpty {
-                emptyState(
-                    title: "No Workouts Yet",
-                    message: "Completed workouts from iPhone will show up here after they sync."
-                )
+                emptyState(title: "No Workouts Yet", message: "Completed workouts from iPhone will show up here after they sync.")
             } else {
                 ForEach(completedWorkouts.prefix(8)) { workout in
                     VStack(alignment: .leading, spacing: 2) {

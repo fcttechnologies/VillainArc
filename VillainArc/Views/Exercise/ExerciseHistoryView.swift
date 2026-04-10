@@ -126,7 +126,7 @@ struct ExerciseHistoryView: View {
 
         if let workoutExercise {
             stopRestTimerIfNeeded(for: workoutExercise, strategy: strategy)
-            workoutExercise.applyHistoryCopy(request.snapshot, mode: request.mode, strategy: strategy, context: context)
+            workoutExercise.applyHistoryCopy(request.snapshot, mode: request.mode, strategy: strategy, weightUnit: weightUnit, context: context)
             saveContext(context: context)
 
             if let workout = workoutExercise.workoutSession {

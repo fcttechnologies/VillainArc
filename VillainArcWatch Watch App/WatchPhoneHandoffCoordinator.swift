@@ -9,17 +9,11 @@ enum WatchPhoneHandoffCoordinator {
     private static var currentActivity: NSUserActivity?
 
     static func openAppOnPhone() {
-        beginHandoff(
-            activityType: WatchPhoneHandoffActivityType.openApp,
-            title: "Open Villain Arc on iPhone"
-        )
+        beginHandoff(activityType: WatchPhoneHandoffActivityType.openApp, title: "Open Villain Arc on iPhone")
     }
 
     static func openActiveWorkoutOnPhone() {
-        beginHandoff(
-            activityType: WatchPhoneHandoffActivityType.openActiveWorkout,
-            title: "Continue Workout on iPhone"
-        )
+        beginHandoff(activityType: WatchPhoneHandoffActivityType.openActiveWorkout, title: "Continue Workout on iPhone")
     }
 
     private static func beginHandoff(activityType: String, title: String) {

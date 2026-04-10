@@ -615,6 +615,7 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
 			);
 			mainGroup = FDA193872F16D14500CA57C5;
 			minimizedProjectReferenceProxies = 1;

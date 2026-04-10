@@ -43,6 +43,8 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
     private(set) var restingEnergyBurned: Double?
     private(set) var isBusy = false
     private(set) var isPhoneReachable = false
+    private(set) var isReconcilingLiveMetricsAvailability = false
+    private(set) var hasConflictingLocalWorkoutSession = false
     private(set) var healthAuthorizationState: WatchWorkoutAuthorizationState = .notDetermined
     var statusMessage: String?
 
@@ -52,6 +54,7 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
     @ObservationIgnored private var localWorkoutBuilder: HKLiveWorkoutBuilder?
     @ObservationIgnored private let mirroredCommandContinuations = MirroredCommandContinuationStore()
     @ObservationIgnored private var pendingPhoneRequestedWorkoutStart = false
+    @ObservationIgnored private var resolvedLiveMetricsAvailabilitySessionID: UUID?
 
     private override init() {
         healthAuthorizationState = WatchHealthAuthorizationManager.currentAuthorizationState
@@ -78,6 +81,27 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         return nil
     }
 
+    var hasLocalWorkoutSession: Bool {
+        localWorkoutSession != nil
+    }
+
+    var hasResolvedLiveMetricsAvailability: Bool {
+        guard let snapshot = activeSnapshot, snapshot.status == .active else { return true }
+        guard healthAuthorizationState != .unavailable else { return true }
+        return resolvedLiveMetricsAvailabilitySessionID == snapshot.sessionID
+    }
+
+    var canManuallyStartLiveMetrics: Bool {
+        guard let snapshot = activeSnapshot else { return false }
+        guard snapshot.status == .active else { return false }
+        guard snapshot.healthCollectionMode == .exportOnFinish else { return false }
+        guard healthAuthorizationState != .unavailable, healthAuthorizationState != .denied else { return false }
+        guard !hasConflictingLocalWorkoutSession else { return false }
+        guard !isBusy, !isReconcilingLiveMetricsAvailability else { return false }
+        guard hasResolvedLiveMetricsAvailability else { return false }
+        return !hasLocalWorkoutSession
+    }
+
     func activateIfNeeded() {
         guard let session, !didActivateConnectivity else { return }
         session.delegate = self
@@ -90,15 +114,14 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
     func sceneDidBecomeActive() async {
         activateIfNeeded()
         healthAuthorizationState = WatchHealthAuthorizationManager.currentAuthorizationState
-        await recoverLocalWorkoutIfNeeded()
-        await attemptPhoneRequestedAutoStartIfNeeded()
+        await reconcileLiveMetricsAvailabilityForCurrentSnapshot()
     }
 
     func handleWorkoutLaunchRequest(_ workoutConfiguration: HKWorkoutConfiguration) async {
         _ = workoutConfiguration
         pendingPhoneRequestedWorkoutStart = true
         activateIfNeeded()
-        await attemptPhoneRequestedAutoStartIfNeeded()
+        await reconcileLiveMetricsAvailabilityForCurrentSnapshot()
     }
 
     func clearStatusMessage() {
@@ -180,6 +203,7 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
                     await finishLocalWorkoutIfNeeded(endedAt: Date())
                 }
                 activeSnapshot = nil
+                resolvedLiveMetricsAvailabilitySessionID = nil
                 statusMessage = "Finished on iPhone."
             }
         case .finishOnPhone(let reason):
@@ -190,6 +214,7 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         case .cancelled:
             await discardLocalWorkoutIfNeeded()
             activeSnapshot = nil
+            resolvedLiveMetricsAvailabilitySessionID = nil
             statusMessage = "Workout cancelled."
         }
     }
@@ -268,7 +293,7 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         guard let context = try? JSONDecoder().decode(WatchRuntimeApplicationContext.self, from: data) else { return }
         activeSnapshot = context.activeSnapshot
         Task { @MainActor in
-            await self.attemptPhoneRequestedAutoStartIfNeeded()
+            await self.reconcileLiveMetricsAvailabilityForCurrentSnapshot()
         }
     }
 
@@ -276,20 +301,21 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         switch event {
         case .snapshot(let snapshot):
             activeSnapshot = snapshot
-            if snapshot.healthCollectionMode == .watchMirrored, localWorkoutSession == nil {
-                await recoverLocalWorkoutIfNeeded()
-            }
+            await reconcileLiveMetricsAvailabilityForCurrentSnapshot()
         case .clearActiveWorkout:
             activeSnapshot = nil
+            resolvedLiveMetricsAvailabilitySessionID = nil
         case .finishMirroredSession(let sessionID, let endedAt):
             guard matchesActiveSession(sessionID) else { return }
             await finishLocalWorkoutIfNeeded(endedAt: endedAt)
             activeSnapshot = nil
+            resolvedLiveMetricsAvailabilitySessionID = nil
             statusMessage = "Workout finished on iPhone."
         case .discardMirroredSession(let sessionID):
             guard matchesActiveSession(sessionID) else { return }
             await discardLocalWorkoutIfNeeded()
             activeSnapshot = nil
+            resolvedLiveMetricsAvailabilitySessionID = nil
             statusMessage = "Workout cancelled on iPhone."
         }
     }
@@ -298,21 +324,50 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         switch message {
         case .snapshot(let snapshot):
             activeSnapshot = snapshot
+            await reconcileLiveMetricsAvailabilityForCurrentSnapshot()
         case .commandResult(let commandID, let result):
             await mirroredCommandContinuations.resume(for: commandID, with: result)
         case .finishMirroredSession(let sessionID, let endedAt):
             guard matchesActiveSession(sessionID) else { return }
             await finishLocalWorkoutIfNeeded(endedAt: endedAt)
             activeSnapshot = nil
+            resolvedLiveMetricsAvailabilitySessionID = nil
             statusMessage = "Workout finished on iPhone."
         case .discardMirroredSession(let sessionID):
             guard matchesActiveSession(sessionID) else { return }
             await discardLocalWorkoutIfNeeded()
             activeSnapshot = nil
+            resolvedLiveMetricsAvailabilitySessionID = nil
             statusMessage = "Workout cancelled on iPhone."
         case .command:
             break
         }
+    }
+
+    private func reconcileLiveMetricsAvailabilityForCurrentSnapshot() async {
+        guard let snapshot = activeSnapshot, snapshot.status == .active else {
+            resolvedLiveMetricsAvailabilitySessionID = nil
+            hasConflictingLocalWorkoutSession = false
+            return
+        }
+
+        guard healthAuthorizationState != .unavailable else {
+            resolvedLiveMetricsAvailabilitySessionID = snapshot.sessionID
+            hasConflictingLocalWorkoutSession = false
+            return
+        }
+
+        isReconcilingLiveMetricsAvailability = true
+        hasConflictingLocalWorkoutSession = false
+        defer {
+            isReconcilingLiveMetricsAvailability = false
+            if activeSnapshot?.sessionID == snapshot.sessionID {
+                resolvedLiveMetricsAvailabilitySessionID = snapshot.sessionID
+            }
+        }
+
+        await recoverLocalWorkoutIfNeeded(matching: snapshot.sessionID)
+        await attemptPhoneRequestedAutoStartIfNeeded()
     }
 
     private func attemptPhoneRequestedAutoStartIfNeeded() async {
@@ -331,7 +386,12 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
 
     private func startMirroring(for snapshot: ActiveWorkoutSnapshot) async -> Bool {
         guard snapshot.status == .active else { return false }
-        guard localWorkoutSession == nil else {
+
+        if localWorkoutSession != nil {
+            guard localSessionID() == snapshot.sessionID else {
+                statusMessage = "Another Apple Watch workout is already active."
+                return false
+            }
             return await confirmMirroring(for: snapshot)
         }
 
@@ -358,10 +418,9 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
                 workoutConfiguration: configuration
             )
 
-            localWorkoutSession = workoutSession
-            localWorkoutBuilder = workoutBuilder
-            resetLocalMetrics()
+            try await workoutSession.startMirroringToCompanionDevice()
 
+            attachLocalWorkout(session: workoutSession, builder: workoutBuilder)
             workoutSession.startActivity(with: snapshot.startedAt)
             try await workoutBuilder.beginCollection(at: snapshot.startedAt)
             try await workoutBuilder.addMetadata([
@@ -369,7 +428,6 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
                 HealthMetadataKey.workoutTitle: snapshot.title,
                 HKMetadataKeyIndoorWorkout: true
             ])
-            try await workoutSession.startMirroringToCompanionDevice()
 
             return await confirmMirroring(for: snapshot)
         } catch {
@@ -402,19 +460,25 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         }
     }
 
-    private func recoverLocalWorkoutIfNeeded() async {
+    private func recoverLocalWorkoutIfNeeded(matching expectedSessionID: UUID) async {
         guard localWorkoutSession == nil else { return }
 
         do {
             guard let recoveredSession = try await WatchHealthAuthorizationManager.healthStore.recoverActiveWorkoutSession() else {
+                hasConflictingLocalWorkoutSession = false
                 return
             }
 
             let recoveredBuilder = recoveredSession.associatedWorkoutBuilder()
+            guard sessionID(from: recoveredBuilder) == expectedSessionID else {
+                hasConflictingLocalWorkoutSession = true
+                statusMessage = "Another Apple Watch workout is already active."
+                return
+            }
             recoveredSession.delegate = self
             recoveredBuilder.delegate = self
-            localWorkoutSession = recoveredSession
-            localWorkoutBuilder = recoveredBuilder
+            hasConflictingLocalWorkoutSession = false
+            attachLocalWorkout(session: recoveredSession, builder: recoveredBuilder)
             refreshLocalMetrics(from: recoveredBuilder, collectedTypes: [
                 HealthKitCatalog.heartRateType,
                 HealthKitCatalog.activeEnergyBurnedType,
@@ -453,9 +517,16 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         clearLocalWorkoutState()
     }
 
+    private func attachLocalWorkout(session: HKWorkoutSession, builder: HKLiveWorkoutBuilder) {
+        localWorkoutSession = session
+        localWorkoutBuilder = builder
+        resetLocalMetrics()
+    }
+
     private func clearLocalWorkoutState() {
         localWorkoutSession = nil
         localWorkoutBuilder = nil
+        hasConflictingLocalWorkoutSession = false
         resetLocalMetrics()
     }
 
@@ -489,12 +560,16 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
         activeSnapshot?.sessionID == sessionID || localSessionID() == sessionID
     }
 
-    private func localSessionID() -> UUID? {
-        guard let rawValue = localWorkoutBuilder?.metadata[HealthMetadataKey.workoutSessionID] as? String else {
+    private func sessionID(from workoutBuilder: HKLiveWorkoutBuilder?) -> UUID? {
+        guard let rawValue = workoutBuilder?.metadata[HealthMetadataKey.workoutSessionID] as? String else {
             return nil
         }
 
         return UUID(uuidString: rawValue)
+    }
+
+    private func localSessionID() -> UUID? {
+        sessionID(from: localWorkoutBuilder)
     }
 
     private func failureMessage(for error: any Error) -> String {
@@ -579,14 +654,9 @@ extension WatchWorkoutRuntimeCoordinator: WCSessionDelegate {
 }
 
 extension WatchWorkoutRuntimeCoordinator: HKWorkoutSessionDelegate {
-    nonisolated func workoutSession(
-        _ workoutSession: HKWorkoutSession,
-        didChangeTo toState: HKWorkoutSessionState,
-        from fromState: HKWorkoutSessionState,
-        date: Date
-    ) {
+    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
         Task { @MainActor in
-            if toState == .ended {
+            if toState == .stopped || toState == .ended {
                 self.clearLocalWorkoutState()
             }
         }

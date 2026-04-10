@@ -27,11 +27,7 @@ struct WatchLiveWorkoutView: View {
     @State private var showCancelConfirmation = false
     @State private var selectedPage: Page = .workout
 
-    init(
-        snapshot: ActiveWorkoutSnapshot?,
-        fallbackSession: WorkoutSession?,
-        runtimeCoordinator: WatchWorkoutRuntimeCoordinator
-    ) {
+    init(snapshot: ActiveWorkoutSnapshot?, fallbackSession: WorkoutSession?, runtimeCoordinator: WatchWorkoutRuntimeCoordinator) {
         self.snapshot = snapshot
         self.fallbackSession = fallbackSession
         _runtimeCoordinator = State(initialValue: runtimeCoordinator)
@@ -62,10 +58,14 @@ struct WatchLiveWorkoutView: View {
     }
 
     private var canStartLiveMetrics: Bool {
+        runtimeCoordinator.canManuallyStartLiveMetrics
+    }
+
+    private var isResolvingLiveMetricsAvailability: Bool {
         guard let snapshot else { return false }
         guard snapshot.status == .active else { return false }
         guard snapshot.healthCollectionMode == .exportOnFinish else { return false }
-        return runtimeCoordinator.healthAuthorizationState != .unavailable
+        return runtimeCoordinator.isReconcilingLiveMetricsAvailability || !runtimeCoordinator.hasResolvedLiveMetricsAvailability
     }
 
     private var displayExerciseName: String? {
@@ -100,30 +100,14 @@ struct WatchLiveWorkoutView: View {
     private var displaySets: [DisplaySet] {
         if let snapshotExercise = currentExerciseSnapshot {
             return snapshotExercise.sets.map { set in
-                DisplaySet(
-                    id: set.setID,
-                    index: set.index,
-                    complete: set.complete,
-                    reps: set.reps,
-                    weight: set.weight,
-                    targetRPE: set.targetRPE,
-                    hasTarget: set.hasTarget
-                )
+                DisplaySet(id: set.setID, index: set.index, complete: set.complete, reps: set.reps, weight: set.weight, targetRPE: set.targetRPE, hasTarget: set.hasTarget)
             }
         }
         guard let fallbackSession, let currentExercise = fallbackSession.activeExerciseAndSet()?.exercise else {
             return []
         }
         return currentExercise.sortedSets.map { set in
-            DisplaySet(
-                id: set.id,
-                index: set.index,
-                complete: set.complete,
-                reps: set.reps,
-                weight: set.weight,
-                targetRPE: set.prescription?.visibleTargetRPE,
-                hasTarget: set.reps > 0 || set.weight > 0 || set.prescription?.visibleTargetRPE != nil
-            )
+            DisplaySet(id: set.id, index: set.index, complete: set.complete, reps: set.reps, weight: set.weight, targetRPE: set.prescription?.visibleTargetRPE, hasTarget: set.reps > 0 || set.weight > 0 || set.prescription?.visibleTargetRPE != nil)
         }
     }
 
@@ -152,9 +136,6 @@ struct WatchLiveWorkoutView: View {
             nowPlayingPage
                 .tag(Page.nowPlaying)
         }
-        .tabViewStyle(.carousel)
-        .navigationTitle(titleText)
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: - Metrics Page
@@ -162,10 +143,7 @@ struct WatchLiveWorkoutView: View {
     private var metricsPage: some View {
         VStack(spacing: 8) {
             if let startedAt {
-                metricTile(
-                    label: "Duration",
-                    icon: "timer"
-                ) {
+                metricTile(label: "Duration", icon: "timer") {
                     Text(startedAt, style: .timer)
                         .font(.title2.monospacedDigit().weight(.semibold))
                         .foregroundStyle(.primary)
@@ -173,11 +151,7 @@ struct WatchLiveWorkoutView: View {
             }
 
             HStack(spacing: 8) {
-                metricTile(
-                    label: "HR",
-                    icon: "heart.fill",
-                    iconColor: .red
-                ) {
+                metricTile(label: "HR", icon: "heart.fill", iconColor: .red) {
                     if let hr = runtimeCoordinator.displayHeartRate {
                         Text("\(Int(hr.rounded())) bpm")
                             .font(.title3.monospacedDigit().weight(.semibold))
@@ -188,11 +162,7 @@ struct WatchLiveWorkoutView: View {
                     }
                 }
 
-                metricTile(
-                    label: "Active",
-                    icon: "flame.fill",
-                    iconColor: .orange
-                ) {
+                metricTile(label: "Active", icon: "flame.fill", iconColor: .orange) {
                     if let energy = runtimeCoordinator.displayActiveEnergy {
                         Text(formattedEnergyText(energy, unit: energyUnit))
                             .font(.title3.monospacedDigit().weight(.semibold))
@@ -245,13 +215,22 @@ struct WatchLiveWorkoutView: View {
 
     @ViewBuilder
     private var liveMetricsPrompt: some View {
-        if canStartLiveMetrics {
+        if isResolvingLiveMetricsAvailability {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Checking Watch Metrics…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(minHeight: 36)
+        } else if canStartLiveMetrics {
             Button {
                 Task {
                     await runtimeCoordinator.startMirroringForCurrentWorkout()
                 }
             } label: {
-                Label(runtimeCoordinator.isBusy ? "Starting..." : "Start Live Metrics", systemImage: "waveform.path.ecg")
+                Label(runtimeCoordinator.isBusy ? "Connecting..." : "Connect Watch Metrics", systemImage: "waveform.path.ecg")
                     .font(.caption)
             }
             .disabled(runtimeCoordinator.isBusy)
@@ -333,11 +312,7 @@ struct WatchLiveWorkoutView: View {
         Button {
             guard let sessionID else { return }
             Task {
-                await runtimeCoordinator.toggleSet(
-                    sessionID: sessionID,
-                    setID: set.id,
-                    desiredComplete: !set.complete
-                )
+                await runtimeCoordinator.toggleSet(sessionID: sessionID, setID: set.id, desiredComplete: !set.complete)
             }
         } label: {
             HStack(spacing: 8) {
@@ -454,12 +429,7 @@ struct WatchLiveWorkoutView: View {
         .frame(minHeight: 36)
     }
 
-    private func metricTile<Content: View>(
-        label: String,
-        icon: String,
-        iconColor: Color = .primary,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
+    private func metricTile<Content: View>(label: String, icon: String, iconColor: Color = .primary, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 3) {
                 Image(systemName: icon)

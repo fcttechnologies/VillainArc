@@ -711,83 +711,6 @@
         }
       }
     },
-    "^[%lld day](inflect: true)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld day](inflect: true)"
-          }
-        }
-      }
-    },
-    "^[%lld of %lld set](inflect: true) complete" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%1$lld of %2$lld set](inflect: true) complete"
-          }
-        }
-      }
-    },
-    "^[%lld rep](inflect: true)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld rep](inflect: true)"
-          }
-        }
-      }
-    },
-    "^[%lld selected exercise](inflect: true)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld selected exercise](inflect: true)"
-          }
-        }
-      }
-    },
-    "^[%lld session](inflect: true) per week" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld session](inflect: true) per week"
-          }
-        }
-      }
-    },
-    "^[%lld set](inflect: true)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld set](inflect: true)"
-          }
-        }
-      }
-    },
-    "^[%lld time](inflect: true)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld time](inflect: true)"
-          }
-        }
-      }
-    },
     "1" : {
       "localizations" : {
         "en" : {
@@ -2419,7 +2342,14 @@
       }
     },
     "completed set" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "completed set"
+          }
+        }
+      }
     },
     "Completed set %lld of %@." : {
       "localizations" : {
@@ -2432,7 +2362,14 @@
       }
     },
     "completed sets" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "completed sets"
+          }
+        }
+      }
     },
     "Completes the next incomplete set in your workout session." : {
       "localizations" : {
@@ -2545,7 +2482,14 @@
       }
     },
     "Copy from history" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy from history"
+          }
+        }
+      }
     },
     "Couldn't determine today's workout." : {
       "localizations" : {
@@ -2617,17 +2561,6 @@
         }
       }
     },
-    "Create New Split" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create New Split"
-          }
-        }
-      }
-    },
     "Create Split" : {
       "localizations" : {
         "en" : {
@@ -2644,17 +2577,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create Steps Goal"
-          }
-        }
-      }
-    },
-    "Create workout plan" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create workout plan"
           }
         }
       }
@@ -2870,7 +2792,14 @@
       }
     },
     "day" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day"
+          }
+        }
+      }
     },
     "Day" : {
       "localizations" : {
@@ -2893,7 +2822,14 @@
       }
     },
     "days" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        }
+      }
     },
     "Decrease rest time by 15 seconds" : {
       "localizations" : {
@@ -3586,10 +3522,24 @@
       }
     },
     "empty set" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "empty set"
+          }
+        }
+      }
     },
     "empty sets" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "empty sets"
+          }
+        }
+      }
     },
     "Enable iCloud in Settings" : {
       "localizations" : {
@@ -4612,7 +4562,14 @@
       }
     },
     "Hide quick actions" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide quick actions"
+          }
+        }
+      }
     },
     "High" : {
       "localizations" : {
@@ -5285,10 +5242,24 @@
       }
     },
     "logged set" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "logged set"
+          }
+        }
+      }
     },
     "logged sets" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "logged sets"
+          }
+        }
+      }
     },
     "Logs a new weight entry for right now." : {
       "localizations" : {
@@ -5951,7 +5922,14 @@
       }
     },
     "New Split" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Split"
+          }
+        }
+      }
     },
     "New Weight Entry" : {
       "localizations" : {
@@ -8104,7 +8082,14 @@
       }
     },
     "rep" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rep"
+          }
+        }
+      }
     },
     "Rep range" : {
       "localizations" : {
@@ -8237,7 +8222,14 @@
       }
     },
     "reps" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reps"
+          }
+        }
+      }
     },
     "Reps" : {
       "localizations" : {
@@ -8285,17 +8277,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Resets the weekly split offset to today."
-          }
-        }
-      }
-    },
-    "Rest" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest"
           }
         }
       }
@@ -9061,10 +9042,24 @@
       }
     },
     "selected exercise" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "selected exercise"
+          }
+        }
+      }
     },
     "selected exercises" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "selected exercises"
+          }
+        }
+      }
     },
     "Selected Time" : {
       "localizations" : {
@@ -9167,13 +9162,34 @@
       }
     },
     "session" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "session"
+          }
+        }
+      }
     },
     "sessions" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sessions"
+          }
+        }
+      }
     },
     "set" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "set"
+          }
+        }
+      }
     },
     "Set" : {
       "localizations" : {
@@ -9306,7 +9322,14 @@
       }
     },
     "sets" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sets"
+          }
+        }
+      }
     },
     "Sets this day as the current rotation day." : {
       "localizations" : {
@@ -9449,7 +9472,14 @@
       }
     },
     "Show quick actions" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show quick actions"
+          }
+        }
+      }
     },
     "Show Sleep History" : {
       "localizations" : {
@@ -9662,7 +9692,14 @@
       }
     },
     "Shows or hides the quick action toolbar." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows or hides the quick action toolbar."
+          }
+        }
+      }
     },
     "Shows pre workout details." : {
       "localizations" : {
@@ -9780,17 +9817,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shows weight goal details."
-          }
-        }
-      }
-    },
-    "Shows workout and workout plan options." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shows workout and workout plan options."
           }
         }
       }
@@ -10151,28 +10177,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start Date"
-          }
-        }
-      }
-    },
-    "Start empty workout" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start empty workout"
-          }
-        }
-      }
-    },
-    "Start Empty Workout" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start Empty Workout"
           }
         }
       }
@@ -10708,7 +10712,14 @@
       }
     },
     "Switches tabs." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switches tabs."
+          }
+        }
+      }
     },
     "Sync at least 2 sleep nights for every weekday to unlock averages." : {
       "localizations" : {
@@ -11231,7 +11242,14 @@
       }
     },
     "time" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "time"
+          }
+        }
+      }
     },
     "Time" : {
       "localizations" : {
@@ -11274,7 +11292,14 @@
       }
     },
     "times" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "times"
+          }
+        }
+      }
     },
     "Tired" : {
       "localizations" : {
@@ -11797,7 +11822,14 @@
       }
     },
     "Undo Favorite" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo Favorite"
+          }
+        }
+      }
     },
     "Unfavorite" : {
       "localizations" : {
@@ -12000,7 +12032,14 @@
       }
     },
     "Use Plan" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Plan"
+          }
+        }
+      }
     },
     "Value" : {
       "localizations" : {
@@ -12113,7 +12152,14 @@
       }
     },
     "Villain Arc needs additional Apple Health permissions to enable new features it has added and future Health features as they roll out." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc needs additional Apple Health permissions to enable features added since your last update and support future Health features."
+          }
+        }
+      }
     },
     "Villain Arc needs WiFi for first time setup to sync your workout data." : {
       "localizations" : {
@@ -13336,10 +13382,24 @@
       }
     },
     "You have %@ with data, but not marked complete." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have %@ with data, but it isn't marked complete."
+          }
+        }
+      }
     },
     "You have %@.\nLog them or remove them before finishing." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have %@.\nLog them or remove them before finishing."
+          }
+        }
+      }
     },
     "You have %lld empty sets.\nLog them or remove them before finishing." : {
       "localizations" : {
@@ -13357,39 +13417,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You have %lld sets with data, but they are not marked complete."
-          }
-        }
-      }
-    },
-    "You have ^[%lld empty set](inflect: true).\nLog them or remove them before finishing." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You have ^[%lld empty set](inflect: true).\nLog them or remove them before finishing."
-          }
-        }
-      }
-    },
-    "You have ^[%lld logged set](inflect: true) and ^[%lld empty set](inflect: true) with no data." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You have ^[%1$lld logged set](inflect: true) and ^[%2$lld empty set](inflect: true) with no data."
-          }
-        }
-      }
-    },
-    "You have ^[%lld set](inflect: true) with data, but not marked complete." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You have ^[%lld set](inflect: true) with data, but not marked complete."
           }
         }
       }

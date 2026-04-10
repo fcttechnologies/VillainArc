@@ -265,13 +265,13 @@ extension ExercisePerformance {
         completedSetCount > 0 && completedPrefixCount == completedSetCount
     }
 
-    func applyHistoryCopy(_ snapshot: ExercisePerformanceSnapshot, mode: ExerciseHistoryCopyMode, strategy: ExerciseHistoryCopyStrategy, context: ModelContext) {
+    func applyHistoryCopy(_ snapshot: ExercisePerformanceSnapshot, mode: ExerciseHistoryCopyMode, strategy: ExerciseHistoryCopyStrategy, weightUnit: WeightUnit? = nil, context: ModelContext) {
         switch strategy {
         case .replaceAll:
-            syncSets(from: snapshot.sets, startingAt: 0, context: context)
+            syncSets(from: snapshot.sets, startingAt: 0, weightUnit: weightUnit, context: context)
         case .replaceRemaining:
             let remainingSnapshots = Array(snapshot.sets.dropFirst(completedPrefixCount))
-            syncSets(from: remainingSnapshots, startingAt: completedPrefixCount, context: context)
+            syncSets(from: remainingSnapshots, startingAt: completedPrefixCount, weightUnit: weightUnit, context: context)
         }
 
         if mode.includesNotes {
@@ -286,19 +286,20 @@ extension ExercisePerformance {
         }
     }
 
-    private func syncSets(from snapshots: [SetPerformanceSnapshot], startingAt startIndex: Int, context: ModelContext) {
+    private func syncSets(from snapshots: [SetPerformanceSnapshot], startingAt startIndex: Int, weightUnit: WeightUnit?, context: ModelContext) {
         let currentSets = sortedSets
         let targetSets = Array(currentSets.dropFirst(startIndex))
         var restorableTail = restorableTailPrescriptions(limit: max(0, snapshots.count - targetSets.count))
 
         for (index, snapshot) in snapshots.enumerated() {
             let targetIndex = startIndex + index
+            let displayWeight = convertedWeightForActiveCopy(snapshot.weight, unit: weightUnit)
 
             if index < targetSets.count {
                 let set = targetSets[index]
                 set.index = targetIndex
                 set.type = snapshot.type
-                set.weight = snapshot.weight
+                set.weight = displayWeight
                 set.reps = snapshot.reps
                 set.restSeconds = snapshot.restSeconds
                 set.rpe = 0
@@ -309,11 +310,11 @@ extension ExercisePerformance {
                 if let restoredPrescription = restorableTail.first {
                     restorableTail.removeFirst()
                     set = SetPerformance(exercise: self, setPrescription: restoredPrescription)
-                    set.weight = snapshot.weight
+                    set.weight = displayWeight
                     set.reps = snapshot.reps
                     set.restSeconds = snapshot.restSeconds
                 } else {
-                    set = SetPerformance(exercise: self, weight: snapshot.weight, reps: snapshot.reps, restSeconds: snapshot.restSeconds)
+                    set = SetPerformance(exercise: self, weight: displayWeight, reps: snapshot.reps, restSeconds: snapshot.restSeconds)
                 }
                 set.index = targetIndex
                 set.type = snapshot.type
@@ -332,6 +333,11 @@ extension ExercisePerformance {
         }
 
         reindexSets()
+    }
+
+    private func convertedWeightForActiveCopy(_ storedKgWeight: Double, unit: WeightUnit?) -> Double {
+        guard let unit else { return storedKgWeight }
+        return roundedWeightDisplayValue(storedKgWeight, unit: unit)
     }
 
     var latestCompletedSetAt: Date? {
