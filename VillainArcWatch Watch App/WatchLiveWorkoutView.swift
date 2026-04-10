@@ -69,6 +69,14 @@ struct WatchLiveWorkoutView: View {
         return nil
     }
 
+    private var hasAnyExercises: Bool {
+        if let snapshot {
+            return !snapshot.exercises.isEmpty
+        }
+
+        return !(fallbackSession?.sortedExercises.isEmpty ?? true)
+    }
+
     private var currentExerciseSnapshot: WatchExerciseSnapshot? {
         guard let snapshot else { return nil }
         if let activeExerciseID = snapshot.activeExerciseID,
@@ -77,7 +85,7 @@ struct WatchLiveWorkoutView: View {
         }
         return snapshot.exercises.first(where: { exercise in
             exercise.sets.contains(where: { !$0.complete })
-        }) ?? snapshot.exercises.first
+        })
     }
 
     private var displaySets: [DisplaySet] {
@@ -254,6 +262,15 @@ struct WatchLiveWorkoutView: View {
                             setRow(set)
                         }
                     }
+                } else if !hasAnyExercises {
+                    VStack(spacing: 8) {
+                        Text("Structure changed on iPhone")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        continueOnPhoneButton
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 16)
                 } else {
                     VStack(spacing: 8) {
                         Image(systemName: "checkmark.circle")
@@ -345,27 +362,16 @@ struct WatchLiveWorkoutView: View {
     private var controlsPage: some View {
         VStack(spacing: 12) {
             if let sessionID, isActive {
-                if snapshot?.canFinishOnWatch == true {
-                    Button {
-                        Task {
-                            await runtimeCoordinator.finishWorkout(sessionID: sessionID)
-                        }
-                    } label: {
-                        Label("Finish Workout", systemImage: "flag.checkered")
-                            .frame(maxWidth: .infinity)
+                Button {
+                    Task {
+                        await runtimeCoordinator.finishWorkout(sessionID: sessionID)
                     }
-                    .disabled(runtimeCoordinator.isBusy)
-                    .frame(minHeight: 44)
-                    .tint(.green)
-                } else {
-                    Button {
-                        WatchPhoneHandoffCoordinator.openActiveWorkoutOnPhone()
-                    } label: {
-                        Label("Finish on iPhone", systemImage: "iphone")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .frame(minHeight: 44)
+                } label: {
+                    Label("Finish on iPhone", systemImage: "iphone")
+                        .frame(maxWidth: .infinity)
                 }
+                .disabled(runtimeCoordinator.isBusy)
+                .frame(minHeight: 44)
 
                 Button(role: .destructive) {
                     showCancelConfirmation = true

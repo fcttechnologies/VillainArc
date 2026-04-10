@@ -32,17 +32,88 @@ import SwiftData
     }
 
     func ensureRunning(for workout: WorkoutSession) async {
-        _ = workout
-        // Strength workout live collection now starts on Apple Watch when mirroring is active.
+        guard workout.healthCollectionMode != .watchMirrored else { return }
+        guard workout.statusValue == .active else { return }
+        guard HealthAuthorizationManager.canWriteWorkouts else { return }
+
+        if activeWorkoutSessionID == workout.id, liveWorkoutSession != nil, liveWorkoutBuilder != nil { return }
+
+        guard liveWorkoutSession == nil, liveWorkoutBuilder == nil else { return }
+
+        let configuration = makeWorkoutConfiguration()
+
+        if await recoverIfPossible(for: workout, configuration: configuration) { return }
+
+        do {
+            let session = try HKWorkoutSession(healthStore: HealthAuthorizationManager.healthStore, configuration: configuration)
+            let builder = session.associatedWorkoutBuilder()
+
+            attachLiveObjects(session: session, builder: builder, workout: workout, configuration: configuration)
+
+            session.startActivity(with: workout.startedAt)
+            try await builder.beginCollection(at: workout.startedAt)
+            try await builder.addMetadata(HealthAuthorizationManager.metadata(for: workout))
+        } catch {
+            clearLiveWorkoutState()
+            print("Failed to start live Health workout session for \(workout.id): \(error)")
+        }
     }
 
     func finishIfRunning(for workout: WorkoutSession, context: ModelContext) async {
-        _ = workout
-        _ = context
+        if workout.healthWorkout == nil, let savedWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: workout.id) {
+            await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedSessionID: workout.id)
+            refreshLinkedHealthWorkout(for: workout, healthWorkoutUUID: savedWorkout.uuid, context: context)
+            print("Linked existing Apple Health workout \(savedWorkout.uuid) to live session \(workout.id)")
+            return
+        }
+
+        guard activeWorkoutSessionID == workout.id, let liveWorkoutSession, let liveWorkoutBuilder else { return }
+
+        guard !isFinishingWorkout else { return }
+        isFinishingWorkout = true
+
+        let endDate = max(workout.startedAt, workout.endedAt ?? .now)
+        let workoutEffortSample = HealthWorkoutEffortSampleBuilder.makeSample(for: workout, endDate: endDate)
+
+        liveWorkoutSession.stopActivity(with: endDate)
+        await waitForSessionToStop(liveWorkoutSession)
+
+        do {
+            try await liveWorkoutBuilder.addMetadata(HealthAuthorizationManager.metadata(for: workout))
+            try await liveWorkoutBuilder.endCollection(at: endDate)
+
+            let savedWorkout = try await liveWorkoutBuilder.finishWorkout()
+
+            if let savedWorkout {
+                if let workoutEffortSample, HealthAuthorizationManager.canWriteWorkoutEffortScore {
+                    do {
+                        _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
+                    } catch {
+                        print("Failed to relate workout effort score for \(workout.id): \(error)")
+                    }
+                }
+
+                await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedSessionID: workout.id)
+                refreshLinkedHealthWorkout(for: workout, healthWorkoutUUID: savedWorkout.uuid, context: context)
+                print("Saved live workout session \(workout.id) to Apple Health as \(savedWorkout.uuid)")
+            } else {
+                print("HealthKit finished live workout for \(workout.id), but the workout sample was unavailable.")
+            }
+        } catch {
+            print("Failed to finish live Health workout session for \(workout.id): \(error)")
+        }
+
+        liveWorkoutSession.end()
+        isFinishingWorkout = false
+        clearLiveWorkoutState()
     }
 
     func discardIfRunning(for workout: WorkoutSession) {
-        _ = workout
+        guard activeWorkoutSessionID == workout.id else { return }
+        liveWorkoutBuilder?.discardWorkout()
+        liveWorkoutSession?.end()
+        isFinishingWorkout = false
+        clearLiveWorkoutState()
     }
 
     private func makeWorkoutConfiguration() -> HKWorkoutConfiguration {

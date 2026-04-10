@@ -107,6 +107,10 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
 
     func startWorkout(planID: UUID) async {
         guard !isBusy else { return }
+        guard activeSnapshot == nil else {
+            statusMessage = "A workout is already in progress."
+            return
+        }
         isBusy = true
         defer { isBusy = false }
 
@@ -178,7 +182,10 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
                 activeSnapshot = nil
                 statusMessage = "Finished on iPhone."
             }
-        case .finishOnPhone(let reason), .blocked(let reason), .failed(let reason):
+        case .finishOnPhone(let reason):
+            WatchPhoneHandoffCoordinator.openActiveWorkoutOnPhone()
+            statusMessage = reason
+        case .blocked(let reason), .failed(let reason):
             statusMessage = reason
         case .cancelled:
             await discardLocalWorkoutIfNeeded()
@@ -384,6 +391,7 @@ final class WatchWorkoutRuntimeCoordinator: NSObject {
             statusMessage = "Live metrics started."
             return true
         case .failed(let reason), .blocked(let reason), .finishOnPhone(let reason):
+            await discardLocalWorkoutIfNeeded()
             statusMessage = reason
             return false
         case .cancelled:

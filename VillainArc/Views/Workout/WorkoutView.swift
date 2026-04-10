@@ -147,6 +147,7 @@ struct WorkoutView: View {
                         }
                         saveContext(context: context)
                         WorkoutActivityManager.update(for: workout)
+                        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
                     }
             }
             .sheet(isPresented: workoutSettingsSheetBinding) {
@@ -189,6 +190,9 @@ struct WorkoutView: View {
             }
             .onAppear {
                 WorkoutActivityManager.start(workout: workout)
+                Task {
+                    await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
+                }
             }
         }
     }
@@ -445,6 +449,8 @@ struct WorkoutView: View {
             Task {
                 if workout.healthCollectionMode == .watchMirrored {
                     await WatchWorkoutCommandCoordinator.shared.requestFinishIfMirrored(for: workout)
+                } else {
+                    await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workout, context: context)
                 }
                 WorkoutActivityManager.update(for: workout)
                 await IntentDonations.donateFinishWorkout()
@@ -454,14 +460,18 @@ struct WorkoutView: View {
             saveContext(context: context)
             if workout.healthCollectionMode == .watchMirrored {
                 WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workout)
+            } else {
+                HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
             }
             endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
         }
     }
-    
+
     private func deleteWorkout() {
         if workout.healthCollectionMode == .watchMirrored {
             WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workout)
+        } else {
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
         }
         context.delete(workout)
         Task { await IntentDonations.donateCancelWorkout() }

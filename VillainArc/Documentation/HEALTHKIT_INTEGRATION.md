@@ -10,6 +10,7 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Models/Health/HealthSleepNight.swift`
 - `Data/Services/HealthKit/HealthMirrorSupport.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
+- `Data/Services/HealthKit/Live/WorkoutMirroringCoordinator.swift`
 - `Data/Services/HealthKit/Sync/HealthPreferences.swift`
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
 - `Data/Services/HealthKit/Sync/HealthSleepSync.swift`
@@ -28,6 +29,10 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Intents/Health/*`
 - `Root/VillainArcApp.swift`
 - `Root/RootView.swift`
+
+For companion-watch behavior, also see:
+
+- `Documentation/WATCH_COMPANION_FLOW.md`
 
 ## Core Model Split
 
@@ -157,19 +162,32 @@ Observer-driven background sync is best-effort. It can be prompt, delayed, or sk
 
 ## Live Workout Path
 
-During a live workout, `HealthLiveWorkoutSessionCoordinator` can start or recover:
+VillainArc supports two live workout runtime modes.
+
+### `.exportOnFinish`
+
+The original iPhone-owned path uses `HealthLiveWorkoutSessionCoordinator` to start or recover:
 
 - an `HKWorkoutSession`
 - an `HKLiveWorkoutBuilder`
 
-That live path:
+That path:
 
 - starts when the local workout is actively logging
 - stores the local `WorkoutSession.id` in Health metadata
 - ends when local logging moves to summary
 - tries to link the finished `HKWorkout` back into the local `HealthWorkout` mirror immediately
 
-This keeps the Apple Health workout closely tied to the app’s live workout runtime.
+### `.watchMirrored`
+
+For the companion-watch path:
+
+- Apple Watch owns the primary `HKWorkoutSession`
+- watch mirrors that runtime to iPhone
+- iPhone attaches to the mirrored session through `WorkoutMirroringCoordinator`
+- iPhone still owns the canonical `WorkoutSession` and all workout-model writes
+
+This keeps Apple Health runtime collection flexible without changing the app-owned workout model.
 
 ## Export and Reconciliation
 
@@ -184,6 +202,8 @@ The normal order is:
 3. only fall back to exporting a new one if no matching Health workout exists
 
 That minimizes duplicates and keeps the app aligned with the live-workout path.
+
+For `.watchMirrored` workouts, fallback creation is intentionally suppressed while the app waits to relink the watch-saved workout. That prevents duplicate Health workouts.
 
 ### Weight Entries
 

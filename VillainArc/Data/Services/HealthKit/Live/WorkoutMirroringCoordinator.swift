@@ -307,6 +307,7 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
 
             switch result {
             case .started(let updatedSnapshot), .updated(let updatedSnapshot):
+                HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
                 if workout.healthCollectionMode != .watchMirrored {
                     workout.healthCollectionMode = .watchMirrored
                     saveContext(context: SharedModelContainer.container.mainContext)
@@ -338,8 +339,6 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
     }
 
     func makeActiveWorkoutSnapshot(for workout: WorkoutSession) -> ActiveWorkoutSnapshot {
-        let context = SharedModelContainer.container.mainContext
-        let settings = (try? context.fetch(AppSettings.single))?.first
         let restTimer = RestTimerState.shared
         let usesMirroring = workout.healthCollectionMode == .watchMirrored
         let activeInfo = workout.activeExerciseAndSet()
@@ -359,7 +358,7 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
             title: workout.title,
             status: workout.statusValue,
             startedAt: workout.startedAt,
-            activeExerciseID: activeInfo?.exercise.id ?? workout.activeExercise?.id,
+            activeExerciseID: activeInfo?.exercise.id,
             exercises: workout.sortedExercises.map { exercise in
                 WatchExerciseSnapshot(
                     exerciseID: exercise.id,
@@ -386,9 +385,7 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
                 )
                 : nil,
             healthCollectionMode: workout.healthCollectionMode,
-            canFinishOnWatch: workout.unfinishedSetSummary.caseType == .none
-                && !(settings?.promptForPostWorkoutEffort ?? true)
-                && workout.statusValue == .active,
+            canFinishOnWatch: false,
             latestHeartRate: heartRate,
             activeEnergyBurned: activeEnergy,
             restingEnergyBurned: restingEnergy
@@ -564,11 +561,13 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
 
         context.insert(workoutSession)
         saveContext(context: context)
+        AppRouter.shared.activeWorkoutSession = workoutSession
 
         if hasDeferredSuggestions {
             return .finishOnPhone(reason: "Continue on iPhone to review suggestions.")
         }
 
+        WorkoutActivityManager.start(workout: workoutSession)
         return .started(makeActiveWorkoutSnapshot(for: workoutSession))
     }
 
@@ -587,6 +586,7 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
         }
 
         if workout.healthCollectionMode != .watchMirrored {
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
             workout.healthCollectionMode = .watchMirrored
             saveContext(context: context)
             WorkoutActivityManager.update(for: workout)
@@ -648,33 +648,8 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
             return .failed(reason: "session not active")
         }
 
-        let settings = (try? context.fetch(AppSettings.single))?.first
-        let shouldPromptForPostWorkoutEffort = settings?.promptForPostWorkoutEffort ?? true
-
-        guard workout.unfinishedSetSummary.caseType == .none else {
-            return .finishOnPhone(reason: "Finish on iPhone to review unfinished sets.")
-        }
-
-        guard !shouldPromptForPostWorkoutEffort else {
-            return .finishOnPhone(reason: "Finish on iPhone to review post-workout effort.")
-        }
-
-        let weightUnit = settings?.weightUnit ?? .lbs
-        let result = workout.finish(action: .finish, context: context)
-
-        switch result {
-        case .finished:
-            RestTimerState.shared.stop()
-            workout.convertSetWeightsToKg(from: weightUnit)
-            saveContext(context: context)
-            WorkoutActivityManager.update(for: workout)
-            return .updated(makeActiveWorkoutSnapshot(for: workout))
-        case .workoutDeleted:
-            AppRouter.shared.activeWorkoutSession = nil
-            saveContext(context: context)
-            WorkoutActivityManager.end()
-            return .cancelled
-        }
+        AppRouter.shared.presentFinishWorkoutFlow(for: workout)
+        return .finishOnPhone(reason: "Continue on iPhone to finish your workout.")
     }
 
     private func handleCancel(sessionID: UUID, commandID: UUID) async -> WatchWorkoutCommandResult {
@@ -688,6 +663,7 @@ final class WatchWorkoutCommandCoordinator: NSObject, WCSessionDelegate {
         }
 
         RestTimerState.shared.stop()
+        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
         context.delete(workout)
         saveContext(context: context)
         if AppRouter.shared.activeWorkoutSession?.id == sessionID {

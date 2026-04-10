@@ -236,6 +236,8 @@ enum HomeQuickAction: String {
         RestTimerState.shared.stop()
         if workoutSession.healthCollectionMode == .watchMirrored {
             WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workoutSession)
+        } else {
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
         }
         context.delete(workoutSession)
         saveContext(context: context)
