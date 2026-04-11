@@ -106,6 +106,7 @@
 				Documentation/SUGGESTION_AND_OUTCOME_FLOW.md,
 				Documentation/TRAINING_CONTEXT_ROADMAP.md,
 				Info.plist,
+				Views/Testing.swift,
 			);
 			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
 		};
