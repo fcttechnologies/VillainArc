@@ -41,16 +41,8 @@ actor HealthExportCoordinator {
         guard !session.hasBeenExportedToHealth else { return }
 
         if let existingWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: session.id) {
-            if session.healthCollectionMode == .watchMirrored {
-                await relateWorkoutEffortIfNeeded(for: session, to: existingWorkout)
-            }
             await HealthWorkoutMirrorImporter.shared.importWorkout(existingWorkout, linkedSessionID: session.id)
             print("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id)")
-            return
-        }
-
-        if session.healthCollectionMode == .watchMirrored {
-            print("Skipping fallback Health export for mirrored workout \(session.id) until the watch-saved workout is available for relinking.")
             return
         }
 
@@ -82,19 +74,6 @@ actor HealthExportCoordinator {
             await HealthWorkoutMirrorImporter.shared.importWorkout(workout, linkedSessionID: session.id)
             print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
         } catch { print("Failed to export workout \(session.id) to HealthKit: \(error)") }
-    }
-
-    private func relateWorkoutEffortIfNeeded(for session: WorkoutSession, to workout: HKWorkout) async {
-        guard HealthAuthorizationManager.canWriteWorkoutEffortScore else { return }
-
-        let endDate = max(session.startedAt, session.endedAt ?? session.startedAt)
-        guard let workoutEffortSample = HealthWorkoutEffortSampleBuilder.makeSample(for: session, endDate: endDate) else { return }
-
-        do {
-            _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: workout, activity: nil)
-        } catch {
-            print("Failed to relate mirrored workout effort score for \(session.id): \(error)")
-        }
     }
 
     private func exportLoadedWeightEntry(_ weightEntry: WeightEntry, context: ModelContext) async {

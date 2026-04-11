@@ -4,7 +4,8 @@ import SwiftData
 struct SetReferenceData {
     let reps: Int?
     let weight: Double?
-    let targetRPE: Int?
+    let rpe: Int?
+    let rpeStyle: RPEBadge.Style
     let actionLabel: String
     
     var hasActionableValues: Bool {
@@ -129,9 +130,9 @@ struct ExerciseSetRowView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .overlay(alignment: .topTrailing) {
-                    if let targetRPE = referenceData?.targetRPE {
-                        RPEBadge(value: targetRPE, style: .target)
-                            .offset(x: targetRPE == 10 ? 14 : 7, y: -4)
+                    if let referenceData, let rpe = referenceData.rpe {
+                        RPEBadge(value: rpe, style: referenceData.rpeStyle)
+                            .offset(x: rpe == 10 ? 14 : 7, y: -4)
                     }
                 }
                 .frame(maxWidth: fieldWidth)
@@ -166,9 +167,6 @@ struct ExerciseSetRowView: View {
                     }
                     saveContext(context: context)
                     WorkoutActivityManager.update()
-                    if let workout = exercise.workoutSession {
-                        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
-                    }
                 } label: {
                     Image(systemName: "checkmark")
                         .padding(2)
@@ -228,9 +226,6 @@ struct ExerciseSetRowView: View {
         exercise.deleteSet(set)
         saveContext(context: context)
         WorkoutActivityManager.update()
-        if let workout = exercise.workoutSession {
-            WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
-        }
     }
     
     private func updateRPE(to value: Int) {
@@ -257,9 +252,6 @@ struct ExerciseSetRowView: View {
         handleAutoStartTimer()
         saveContext(context: context)
         WorkoutActivityManager.update()
-        if let workout = exercise.workoutSession {
-            WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
-        }
         if shouldPrewarmSuggestions {
             FoundationModelPrewarmer.warmup()
         }
@@ -284,8 +276,9 @@ struct ExerciseSetRowView: View {
     private var referenceValueText: String {
         guard let referenceData else { return "None" }
         let text = referenceData.displayText(unit: weightUnit)
-        if let targetRPE = referenceData.targetRPE {
-            return "\(text), target RPE \(targetRPE)"
+        if let rpe = referenceData.rpe {
+            let prefix = referenceData.rpeStyle.accessibilityPrefix.lowercased()
+            return "\(text), \(prefix) \(rpe)"
         }
         return text
     }

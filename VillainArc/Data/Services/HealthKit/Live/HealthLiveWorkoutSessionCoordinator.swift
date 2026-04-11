@@ -32,7 +32,6 @@ import SwiftData
     }
 
     func ensureRunning(for workout: WorkoutSession) async {
-        guard workout.healthCollectionMode != .watchMirrored else { return }
         guard workout.statusValue == .active else { return }
         guard HealthAuthorizationManager.canWriteWorkouts else { return }
 

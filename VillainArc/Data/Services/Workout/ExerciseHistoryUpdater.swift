@@ -63,15 +63,24 @@ struct ExerciseHistoryUpdater {
     }
 
     static func batchFetchCompletedPerformances(for catalogIDs: Set<String>, context: ModelContext) -> [String: [ExercisePerformance]] {
-        batchFetchPerformances(for: catalogIDs, context: context)
+        batchFetchVisibleCompletedPerformances(for: catalogIDs, context: context)
     }
 
     private static func batchFetchPerformances(for catalogIDs: Set<String>, context: ModelContext) -> [String: [ExercisePerformance]] {
+        batchFetchVisibleCompletedPerformances(for: catalogIDs, context: context)
+    }
+
+    private static func batchFetchVisibleCompletedPerformances(for catalogIDs: Set<String>, context: ModelContext) -> [String: [ExercisePerformance]] {
         guard !catalogIDs.isEmpty else { return [:] }
         let ids = Array(catalogIDs)
-        let descriptor = ExercisePerformance.matching(catalogIDs: ids)
-        let performances = (try? context.fetch(descriptor)) ?? []
-        return Dictionary(grouping: performances, by: \.catalogID)
+        let done = SessionStatus.done.rawValue
+        let descriptor = ExercisePerformance.forCatalogIDs(ids)
+        let allPerformances = (try? context.fetch(descriptor)) ?? []
+        let visibleCompleted = allPerformances.filter { performance in
+            performance.workoutSession?.status == done && performance.workoutSession?.isHidden == false
+        }
+
+        return Dictionary(grouping: visibleCompleted, by: \.catalogID)
     }
 
     private static func batchFetchPerformances(for catalogIDs: Set<String>, includingSessionID sessionID: UUID, context: ModelContext) -> [String: [ExercisePerformance]] {

@@ -59,20 +59,12 @@ struct FinishWorkoutIntent: AppIntent {
             workoutSession.convertSetWeightsToKg(from: weightUnit)
             RestTimerState.shared.stop()
             saveContext(context: context)
-            if workoutSession.healthCollectionMode == .watchMirrored {
-                await WatchWorkoutCommandCoordinator.shared.requestFinishIfMirrored(for: workoutSession)
-            } else {
-                await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)
-            }
+            await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)
             WorkoutActivityManager.end()
             if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
         case .workoutDeleted:
             RestTimerState.shared.stop()
-            if workoutSession.healthCollectionMode == .watchMirrored {
-                WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workoutSession)
-            } else {
-                HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
-            }
+            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
             saveContext(context: context)
             AppRouter.shared.activeWorkoutSession = nil
             WorkoutActivityManager.end()

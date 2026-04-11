@@ -24,7 +24,6 @@ import SwiftUI
     @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.sessionFrom) var createdSuggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
     var hasBeenExportedToHealth: Bool = false
     var healthWorkout: HealthWorkout?
-    var healthCollectionMode: HealthCollectionMode = HealthCollectionMode.exportOnFinish
 
     var sortedExercises: [ExercisePerformance] { (exercises ?? []).sorted { $0.index < $1.index } }
 

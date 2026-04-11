@@ -25,8 +25,6 @@
 		<string>com.villainarc.siri.startWorkout</string>
 		<string>com.villainarc.siri.cancelWorkout</string>
 		<string>com.villainarc.siri.endWorkout</string>
-		<string>com.villainarc.handoff.openApp</string>
-		<string>com.villainarc.handoff.openActiveWorkout</string>
 	</array>
 	<key>UIApplicationShortcutItems</key>
 	<array>

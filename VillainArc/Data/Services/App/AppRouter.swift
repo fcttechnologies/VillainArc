@@ -45,6 +45,7 @@ enum HomeQuickAction: String {
     }
 
     enum AdditionalQuickActionContext: Hashable {
+        case workoutDetail(WorkoutSession)
         case workoutSplit
         case workoutPlanDetail(WorkoutPlan, showsUseOnly: Bool)
         case weightGoalHistory
@@ -234,11 +235,7 @@ enum HomeQuickAction: String {
 
     func cancelWorkoutSession(_ workoutSession: WorkoutSession) {
         RestTimerState.shared.stop()
-        if workoutSession.healthCollectionMode == .watchMirrored {
-            WatchWorkoutCommandCoordinator.shared.requestDiscardIfMirrored(for: workoutSession)
-        } else {
-            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
-        }
+        HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
         context.delete(workoutSession)
         saveContext(context: context)
         if activeWorkoutSession?.id == workoutSession.id { activeWorkoutSession = nil }
@@ -280,6 +277,8 @@ enum HomeQuickAction: String {
 
     private func additionalQuickActionContext(for destination: Destination?) -> AdditionalQuickActionContext? {
         switch destination {
+        case .workoutSessionDetail(let workout):
+            return .workoutDetail(workout)
         case .workoutSplit, .workoutSplitDetail:
             return .workoutSplit
         case .workoutPlanDetail(let plan, let showsUseOnly):
@@ -399,9 +398,6 @@ enum HomeQuickAction: String {
         context.insert(newWorkout)
         saveContext(context: context)
         activeWorkoutSession = newWorkout
-        Task { @MainActor in
-            await WatchWorkoutCommandCoordinator.shared.requestWatchStartIfAvailable(for: newWorkout)
-        }
     }
     func createWorkoutPlan() {
         guard !hasActiveFlow() else { return }
@@ -448,10 +444,6 @@ enum HomeQuickAction: String {
         context.insert(workoutSession)
         saveContext(context: context)
         activeWorkoutSession = workoutSession
-        guard workoutSession.statusValue == .active else { return }
-        Task { @MainActor in
-            await WatchWorkoutCommandCoordinator.shared.requestWatchStartIfAvailable(for: workoutSession)
-        }
     }
 
     func isTodaysActiveSplitPlan(_ plan: WorkoutPlan) -> Bool {
@@ -508,25 +500,6 @@ enum HomeQuickAction: String {
         guard workoutSession.statusValue == .active else { return }
         guard !(workoutSession.exercises?.isEmpty ?? true) else { return }
         presentFinishWorkoutFlow(for: workoutSession)
-    }
-
-    func handleWatchOpenAppHandoff(_ userActivity: NSUserActivity) {
-        _ = userActivity
-        popToRoot()
-        if let workoutSession = incompleteWorkoutSession() {
-            resumeWorkoutSession(workoutSession)
-        }
-    }
-
-    func handleWatchOpenActiveWorkoutHandoff(_ userActivity: NSUserActivity) {
-        _ = userActivity
-        guard let workoutSession = incompleteWorkoutSession() else {
-            popToRoot()
-            showQuickActionToast(title: "No Active Workout", message: "There isn't an active workout to continue right now.")
-            return
-        }
-
-        resumeWorkoutSession(workoutSession)
     }
 
     func presentFinishWorkoutFlow(for workoutSession: WorkoutSession) {

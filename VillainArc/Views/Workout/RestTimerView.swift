@@ -322,7 +322,6 @@ struct RestTimerView: View {
         }
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
-        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
         if shouldPrewarmSuggestions {
             FoundationModelPrewarmer.warmup()
         }

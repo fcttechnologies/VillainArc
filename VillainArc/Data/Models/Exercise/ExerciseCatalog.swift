@@ -290,6 +290,7 @@ enum ExerciseCatalog {
         .init(id: "hanging_leg_raises", name: "Hanging Leg Raises", musclesTargeted: [.abs, .lowerAbs, .forearms], equipmentType: .bodyweight),
         .init(id: "hanging_knee_raises", name: "Hanging Knee Raises", musclesTargeted: [.abs, .lowerAbs, .forearms], equipmentType: .bodyweight),
         .init(id: "heel_touches", name: "Heel Touches", musclesTargeted: [.abs, .obliques], equipmentType: .bodyweight),
+        .init(id: "in_and_outs", name: "In and Outs", musclesTargeted: [.abs, .upperAbs, .lowerAbs], aliases: ["In and Out Abs", "In & Outs"], equipmentType: .bodyweight),
         .init(id: "lying_leg_raises", name: "Lying Leg Raises", musclesTargeted: [.abs, .lowerAbs], equipmentType: .bodyweight),
         .init(id: "machine_crunches", name: "Crunches", musclesTargeted: [.abs, .upperAbs], equipmentType: .machine),
         .init(id: "mountain_climbers", name: "Mountain Climbers", musclesTargeted: [.abs, .upperAbs, .lowerAbs, .obliques], equipmentType: .bodyweight),

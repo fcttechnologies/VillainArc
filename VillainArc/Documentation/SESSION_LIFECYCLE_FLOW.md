@@ -87,20 +87,6 @@ That method:
 - starts the session in `.pending` or `.active`
 - saves and presents it
 
-### Watch Companion Start
-
-The Apple Watch companion can only start plan-backed workouts.
-
-That flow is:
-
-1. watch sends a start request to iPhone
-2. iPhone applies the same readiness and one-active-flow checks as the main app
-3. iPhone creates the canonical `WorkoutSession`
-4. if the session is `.pending`, the user must continue on iPhone for suggestion review
-5. if the session is `.active`, the watch may start mirrored HealthKit runtime
-
-The watch never becomes the canonical workout authoring surface.
-
 ## Resume Behavior
 
 After onboarding reaches `.ready`, `RootView` calls `AppRouter.checkForUnfinishedData()`.
@@ -138,8 +124,6 @@ Important behavior:
 
 The workout only moves to `.active` once the pending/deferred set is empty.
 
-For the watch companion, `.pending` remains an iPhone-owned blocker state. The watch can direct the user to continue on iPhone, but it does not review or resolve suggestions itself.
-
 ## Active Logging
 
 `WorkoutView` is the main logging screen. It owns:
@@ -169,13 +153,6 @@ Important runtime rules:
 - live activities mirror the active incomplete workout
 - router-driven workout sheets and dialogs are keyed off typed `AppRouter` presentation routes, not view-local intent booleans
 
-During `.watchMirrored` workouts:
-
-- iPhone still owns all SwiftData writes
-- watch sends commands for set completion, finish, and cancel
-- watch UI mirrors the current incomplete workout target, closer to the expanded Live Activity than to the full iPhone screen
-- title, structure, set completion, and timer changes on iPhone must push updated runtime snapshots to the watch
-
 ## Finishing a Workout
 
 Finish is intentionally split into two phases.
@@ -195,12 +172,6 @@ Finish is intentionally split into two phases.
 - ends the Live Activity
 
 Foreground finish/cancel entry points from Siri or App Intents route into the same workout dialog/sheet flow through `AppRouter`, so the workout screen remains the single owner of the actual UI.
-
-For watch-initiated finish:
-
-- the watch requests finish
-- iPhone presents the same finish flow used by the app and finish intent
-- unfinished-set review, effort prompt, and summary remain on iPhone
 
 `WorkoutSession.finish(...)` itself:
 
@@ -250,12 +221,7 @@ Those flows are related, but not the same feature.
 
 ## Apple Health During Workout Runtime
 
-VillainArc supports two live Health runtime modes:
-
-- `.exportOnFinish`
-  - the original iPhone-owned `HealthLiveWorkoutSessionCoordinator` path
-- `.watchMirrored`
-  - a watch-owned workout session mirrored to iPhone
+VillainArc uses the iPhone-owned `HealthLiveWorkoutSessionCoordinator` path during active logging.
 
 Rules:
 
@@ -267,7 +233,6 @@ Rules:
 See:
 
 - `Documentation/HEALTHKIT_INTEGRATION.md`
-- `Documentation/WATCH_COMPANION_FLOW.md`
 
 ## Canceling a Workout
 

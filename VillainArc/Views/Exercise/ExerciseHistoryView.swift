@@ -131,7 +131,6 @@ struct ExerciseHistoryView: View {
 
             if let workout = workoutExercise.workoutSession {
                 WorkoutActivityManager.update(for: workout)
-                WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
             }
 
             dismiss()

@@ -12,7 +12,7 @@ struct WorkoutSplitView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allSplits: [WorkoutSplit]
     @State private var router = AppRouter.shared
-
+    
     @State private var overrideSplit: WorkoutSplit?
     @State private var selectedSplitDay: WorkoutSplitDay?
     @State private var showSplitTitleEditor = false
@@ -21,28 +21,36 @@ struct WorkoutSplitView: View {
     @State private var isSwapMode = false
     @State private var swapFirstDay: WorkoutSplitDay?
     @State private var swapSecondDay: WorkoutSplitDay?
-
+    
     private let autoPresentBuilder: Bool
     @ScaledMetric(relativeTo: .caption) private var capsuleFontSize: CGFloat = 14
-
+    
     private var isOverride: Bool { overrideSplit != nil }
-
+    
     private var activeSplit: WorkoutSplit? {
         allSplits.first(where: { $0.isActive })
     }
-
+    
     private var currentSplit: WorkoutSplit? {
         overrideSplit ?? activeSplit
     }
-
+    
     private var currentWeekday: Int {
         Calendar.current.component(.weekday, from: .now)
     }
-
+    
+    private var showsSplitOptionsMenu: Bool {
+        currentSplit != nil || (!isOverride && !allSplits.isEmpty)
+    }
+    
+    private var showsStandaloneNewSplitButton: Bool {
+        !isOverride && !showsSplitOptionsMenu
+    }
+    
     private func animated<Result>(_ animation: Animation, _ updates: () -> Result) -> Result {
         withAnimation(reduceMotion ? nil : animation, updates)
     }
-
+    
     init(split: WorkoutSplit? = nil, autoPresentBuilder: Bool = false) {
         self.autoPresentBuilder = autoPresentBuilder
         if let split {
@@ -50,7 +58,7 @@ struct WorkoutSplitView: View {
             _selectedSplitDay = State(initialValue: split.isActive ? nil : split.todaysSplitDay)
         }
     }
-
+    
     var body: some View {
         Group {
             if let split = currentSplit {
@@ -128,9 +136,9 @@ struct WorkoutSplitView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
     }
-
+    
     // MARK: - Content
-
+    
     @ViewBuilder
     private func splitContent(for split: WorkoutSplit) -> some View {
         TabView(selection: $selectedSplitDay) {
@@ -150,36 +158,28 @@ struct WorkoutSplitView: View {
             }
         }
     }
-
+    
     private var emptyContent: some View {
         Group {
             if allSplits.isEmpty {
-                ContentUnavailableView(
-                    "No Splits",
-                    systemImage: "calendar.badge.plus",
-                    description: Text("Create a workout split to plan your training routine.")
-                )
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
+                ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine."))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
             } else {
-                ContentUnavailableView(
-                    "No Active Split",
-                    systemImage: "calendar.badge.plus",
-                    description: Text("Open all splits to set one as active or create a new one.")
-                )
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitNoActiveView)
+                ContentUnavailableView("No Active Split", systemImage: "calendar.badge.plus", description: Text("Open all splits to set one as active or create a new one."))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitNoActiveView)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
+    
     private var navigationTitle: String {
         guard let split = currentSplit else { return "Workout Split" }
         if split.title.isEmpty { return split.mode == .weekly ? "Weekly Split" : "Rotation Split" }
         return split.title
     }
-
+    
     // MARK: - Toolbar
-
+    
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         if isSwapMode {
@@ -195,28 +195,36 @@ struct WorkoutSplitView: View {
                     .accessibilityHint(AccessibilityText.workoutSplitSwapConfirmHint)
             }
         } else {
-            if !isOverride {
+            if showsStandaloneNewSplitButton {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("New Split", systemImage: "plus") {
-                        Haptics.selection()
-                        router.activeSplitSheet = .builder
-                        Task { await IntentDonations.donateCreateWorkoutSplit() }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
-                    .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
+                    newSplitButton
                 }
             }
-            if currentSplit != nil || (!isOverride && !allSplits.isEmpty) {
+            if showsSplitOptionsMenu {
                 ToolbarItem(placement: .topBarTrailing) {
                     splitOptionsMenu
                 }
             }
         }
     }
-
+    
+    private var newSplitButton: some View {
+        Button("New Split", systemImage: "plus") {
+            Haptics.selection()
+            router.activeSplitSheet = .builder
+            Task { await IntentDonations.donateCreateWorkoutSplit() }
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
+        .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
+    }
+    
     @ViewBuilder
     private var splitOptionsMenu: some View {
         Menu("Split Options", systemImage: "ellipsis") {
+            if !isOverride {
+                newSplitButton
+            }
+            
             if currentSplit != nil {
                 Button("Rename Split", systemImage: "pencil") {
                     Haptics.selection()
@@ -224,7 +232,7 @@ struct WorkoutSplitView: View {
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRenameButton(currentSplit!))
             }
-
+            
             if !isOverride && !allSplits.isEmpty {
                 Button("All Splits", systemImage: "list.bullet") {
                     Haptics.selection()
@@ -232,7 +240,7 @@ struct WorkoutSplitView: View {
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
             }
-
+            
             if let split = currentSplit, split.isActive {
                 switch split.mode {
                 case .weekly:
@@ -244,7 +252,7 @@ struct WorkoutSplitView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitMissedDayButton)
                     .accessibilityHint(AccessibilityText.workoutSplitMissedDayHint)
-
+                    
                     if split.normalizedWeeklyOffset != 0 {
                         Button {
                             resetOffset(for: split)
@@ -264,7 +272,7 @@ struct WorkoutSplitView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationPreviousButton)
                     .accessibilityHint(AccessibilityText.workoutSplitRotationPreviousHint)
-
+                    
                     Button {
                         updateRotation(for: split, advanced: true)
                     } label: {
@@ -275,7 +283,7 @@ struct WorkoutSplitView: View {
                     .accessibilityHint(AccessibilityText.workoutSplitRotationAdvanceHint)
                 }
             }
-
+            
             if currentSplit != nil {
                 Button {
                     startSwapMode()
@@ -286,7 +294,7 @@ struct WorkoutSplitView: View {
                 .disabled(currentSplit?.mode == .rotation && !canSwapRotationDays)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapModeButton)
                 .accessibilityHint(AccessibilityText.workoutSplitSwapModeHint)
-
+                
                 Menu("Rotate Days", systemImage: "arrow.triangle.2.circlepath") {
                     Button {
                         rotateSplit(by: -1)
@@ -296,7 +304,7 @@ struct WorkoutSplitView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotateBackwardButton)
                     .accessibilityHint(AccessibilityText.workoutSplitRotateBackwardHint)
-
+                    
                     Button {
                         rotateSplit(by: 1)
                     } label: {
@@ -308,7 +316,7 @@ struct WorkoutSplitView: View {
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotateMenu)
                 .accessibilityHint(AccessibilityText.workoutSplitRotateMenuHint)
-
+                
                 Button("Delete Split", systemImage: "trash", role: .destructive) {
                     showDeleteSplitConfirmation = true
                 }
@@ -322,7 +330,7 @@ struct WorkoutSplitView: View {
         .accessibilityLabel(AccessibilityText.workoutSplitOptionsMenuLabel)
         .accessibilityHint(AccessibilityText.workoutSplitOptionsMenuHint)
     }
-
+    
     private var splitBuilderBinding: Binding<Bool> {
         Binding(
             get: { !isOverride && router.activeSplitSheet == .builder },
@@ -333,7 +341,7 @@ struct WorkoutSplitView: View {
             }
         )
     }
-
+    
     private var splitListBinding: Binding<Bool> {
         Binding(
             get: { !isOverride && router.activeSplitSheet == .list },
@@ -344,9 +352,9 @@ struct WorkoutSplitView: View {
             }
         )
     }
-
+    
     // MARK: - Weekly Header
-
+    
     private func weeklyHeader(for split: WorkoutSplit) -> some View {
         HStack {
             Spacer()
@@ -356,7 +364,7 @@ struct WorkoutSplitView: View {
             }
         }
     }
-
+    
     private func rotationHeader(for split: WorkoutSplit) -> some View {
         ScrollView(.horizontal) {
             HStack(spacing: 12) {
@@ -399,14 +407,14 @@ struct WorkoutSplitView: View {
         .scrollIndicators(.hidden)
         .scrollClipDisabled()
     }
-
+    
     @ViewBuilder
     private func weekdayCapsule(for day: WorkoutSplitDay) -> some View {
         let isSelected = selectedSplitDay == day
         let isToday = day.weekday == currentWeekday
         let initial = weekdayInitial(for: day.weekday)
         let isSwapSelected = swapSelectionContains(day)
-
+        
         Button {
             handleCapsuleTap(day)
         } label: {
@@ -421,9 +429,9 @@ struct WorkoutSplitView: View {
                 }
                 .frame(width: 34, height: 34)
                 .padding(.top, 6)
-
+                
                 Spacer()
-
+                
                 Circle()
                     .fill(isToday ? Color.secondary.opacity(0.5) : Color.clear)
                     .frame(width: 4, height: 4)
@@ -461,14 +469,14 @@ struct WorkoutSplitView: View {
             }
         }
     }
-
+    
     @ViewBuilder
     private func rotationCapsule(for day: WorkoutSplitDay, split: WorkoutSplit) -> some View {
         let isSelected = selectedSplitDay == day
         let isCurrentDay = split.isActive && day.index == split.rotationCurrentIndex
         let dayNumber = day.index + 1
         let isSwapSelected = swapSelectionContains(day)
-
+        
         let capsule = Button {
             handleCapsuleTap(day)
         } label: {
@@ -483,9 +491,9 @@ struct WorkoutSplitView: View {
                 }
                 .frame(width: 34, height: 34)
                 .padding(.top, 6)
-
+                
                 Spacer()
-
+                
                 Circle()
                     .fill(isCurrentDay ? Color.secondary.opacity(0.5) : Color.clear)
                     .frame(width: 4, height: 4)
@@ -511,7 +519,7 @@ struct WorkoutSplitView: View {
         .accessibilityHint(AccessibilityText.workoutSplitCapsuleHint)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .modifier(SwapWiggleModifier(isActive: isSwapMode && !reduceMotion))
-
+        
         if isSwapMode {
             capsule
         } else {
@@ -527,7 +535,7 @@ struct WorkoutSplitView: View {
                 ))
         }
     }
-
+    
     private func addDayCapsule(for split: WorkoutSplit) -> some View {
         Button {
             Haptics.selection()
@@ -547,9 +555,9 @@ struct WorkoutSplitView: View {
                 }
                 .frame(width: 34, height: 34)
                 .padding(.top, 6)
-
+                
                 Spacer()
-
+                
                 Circle()
                     .fill(Color.clear)
                     .frame(width: 4, height: 4)
@@ -567,43 +575,38 @@ struct WorkoutSplitView: View {
         .accessibilityLabel(AccessibilityText.workoutSplitAddRotationDayLabel)
         .accessibilityHint(AccessibilityText.workoutSplitAddRotationDayHint)
     }
-
+    
     // MARK: - Actions
-
+    
     private func deleteDay(_ day: WorkoutSplitDay, from split: WorkoutSplit) {
         let ordered = split.sortedDays
         let deletedIndex = ordered.firstIndex(of: day) ?? 0
         let currentIndex = selectedSplitDay.flatMap { ordered.firstIndex(of: $0) } ?? 0
-
+        
         split.deleteDay(day)
         context.delete(day)
         saveContext(context: context)
         SpotlightIndexer.index(workoutSplit: split)
-
+        
         let updated = split.sortedDays
         var nextIndex = currentIndex
         if deletedIndex <= currentIndex, currentIndex > 0 { nextIndex = currentIndex - 1 }
         nextIndex = min(nextIndex, updated.count - 1)
         selectedSplitDay = updated.isEmpty ? nil : updated[nextIndex]
     }
-
+    
     private func moveRotationDay(from source: WorkoutSplitDay, to destination: WorkoutSplitDay, split: WorkoutSplit) {
         guard source !== destination else { return }
         var ordered = split.sortedDays
-        guard let sourceIndex = ordered.firstIndex(of: source),
-              let destinationIndex = ordered.firstIndex(of: destination) else { return }
-        let currentDay = (split.rotationCurrentIndex >= 0 && split.rotationCurrentIndex < ordered.count)
-            ? ordered[split.rotationCurrentIndex] : nil
-        ordered.move(
-            fromOffsets: IndexSet(integer: sourceIndex),
-            toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex
-        )
+        guard let sourceIndex = ordered.firstIndex(of: source), let destinationIndex = ordered.firstIndex(of: destination) else { return }
+        let currentDay = (split.rotationCurrentIndex >= 0 && split.rotationCurrentIndex < ordered.count) ? ordered[split.rotationCurrentIndex] : nil
+        ordered.move(fromOffsets: IndexSet(integer: sourceIndex), toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex)
         for (index, day) in ordered.enumerated() { day.index = index }
         if let currentDay { split.rotationCurrentIndex = currentDay.index }
         scheduleSave(context: context)
         SpotlightIndexer.index(workoutSplit: split)
     }
-
+    
     private func setCurrentRotationDay(_ day: WorkoutSplitDay, split: WorkoutSplit) {
         Haptics.selection()
         split.rotationCurrentIndex = day.index
@@ -611,7 +614,7 @@ struct WorkoutSplitView: View {
         animated(.smooth) { selectedSplitDay = day }
         saveContext(context: context)
     }
-
+    
     private func setActive(_ split: WorkoutSplit) {
         Haptics.selection()
         for item in allSplits where item !== split { item.isActive = false }
@@ -623,25 +626,25 @@ struct WorkoutSplitView: View {
         saveContext(context: context)
         SpotlightIndexer.index(workoutSplits: allSplits)
     }
-
+    
     private func missedDay(for split: WorkoutSplit) {
         Haptics.selection()
         split.missedDay()
         saveContext(context: context)
     }
-
+    
     private func resetOffset(for split: WorkoutSplit) {
         Haptics.selection()
         split.resetSplit()
         saveContext(context: context)
     }
-
+    
     private func updateRotation(for split: WorkoutSplit, advanced: Bool) {
         Haptics.selection()
         split.updateCurrentIndex(advanced: advanced)
         saveContext(context: context)
     }
-
+    
     private func refreshRotationIfNeeded() {
         guard let split = currentSplit, split.isActive, split.mode == .rotation else { return }
         _ = SplitScheduleResolver.resolve(split, context: context)
@@ -649,14 +652,14 @@ struct WorkoutSplitView: View {
             selectedSplitDay = resolvedCurrentDay(for: split)
         }
     }
-
+    
     private func resolvedCurrentDay(for split: WorkoutSplit) -> WorkoutSplitDay? {
         if split.isActive {
             return SplitScheduleResolver.resolve(split, context: context).splitDay
         }
         return split.todaysSplitDay
     }
-
+    
     private func deleteSplit() {
         guard let split = currentSplit else { return }
         Haptics.selection()
@@ -664,7 +667,7 @@ struct WorkoutSplitView: View {
         if isOverride { dismiss() }
         context.delete(split)
     }
-
+    
     private func startSwapMode() {
         Haptics.selection()
         isSwapMode = true
@@ -672,20 +675,20 @@ struct WorkoutSplitView: View {
         swapSecondDay = nil
         draggingRotationDay = nil
     }
-
+    
     private func startSwapMode(with day: WorkoutSplitDay) {
         startSwapMode()
         animated(.smooth) { selectedSplitDay = day }
         swapFirstDay = day
     }
-
+    
     private func cancelSwapMode() {
         Haptics.selection()
         isSwapMode = false
         swapFirstDay = nil
         swapSecondDay = nil
     }
-
+    
     private func confirmSwap() {
         guard let first = swapFirstDay, let second = swapSecondDay, first !== second,
               let split = currentSplit else { return }
@@ -695,7 +698,7 @@ struct WorkoutSplitView: View {
         SpotlightIndexer.index(workoutSplit: split)
         cancelSwapMode()
     }
-
+    
     private func swapDays(_ first: WorkoutSplitDay, _ second: WorkoutSplitDay, split: WorkoutSplit) {
         switch split.mode {
         case .weekly:
@@ -704,21 +707,21 @@ struct WorkoutSplitView: View {
             second.weekday = temp
         case .rotation:
             let currentDay = (split.rotationCurrentIndex >= 0 && split.rotationCurrentIndex < split.sortedDays.count)
-                ? split.sortedDays[split.rotationCurrentIndex] : nil
+            ? split.sortedDays[split.rotationCurrentIndex] : nil
             let temp = first.index
             first.index = second.index
             second.index = temp
             if let currentDay { split.rotationCurrentIndex = currentDay.index }
         }
     }
-
+    
     private func handleCapsuleTap(_ day: WorkoutSplitDay) {
         Haptics.selection()
         animated(.smooth) { selectedSplitDay = day }
         guard isSwapMode else { return }
         updateSwapSelection(with: day)
     }
-
+    
     private func updateSwapSelection(with day: WorkoutSplitDay) {
         if swapFirstDay === day { swapFirstDay = swapSecondDay; swapSecondDay = nil; return }
         if swapSecondDay === day { swapSecondDay = nil; return }
@@ -726,14 +729,14 @@ struct WorkoutSplitView: View {
         if swapSecondDay == nil { swapSecondDay = day; return }
         swapSecondDay = day
     }
-
+    
     private func swapSelectionContains(_ day: WorkoutSplitDay) -> Bool {
         swapFirstDay === day || swapSecondDay === day
     }
-
+    
     private var canConfirmSwap: Bool { swapFirstDay != nil && swapSecondDay != nil }
     private var canSwapRotationDays: Bool { (currentSplit?.days?.count ?? 0) > 1 }
-
+    
     private func rotateSplit(by delta: Int) {
         guard let split = currentSplit else { return }
         Haptics.selection()
@@ -743,7 +746,7 @@ struct WorkoutSplitView: View {
         }
         saveContext(context: context)
     }
-
+    
     private func rotateWeekly(split: WorkoutSplit, by delta: Int) {
         let wrappedDelta = delta % 7
         guard wrappedDelta != 0 else { return }
@@ -752,7 +755,7 @@ struct WorkoutSplitView: View {
             day.weekday = ((adjusted - 1) % 7 + 7) % 7 + 1
         }
     }
-
+    
     private func rotateRotation(split: WorkoutSplit, by delta: Int) {
         let count = split.days?.count ?? 0
         guard count > 1 else { return }
@@ -763,26 +766,26 @@ struct WorkoutSplitView: View {
             day.index = ((adjusted % count) + count) % count
         }
     }
-
+    
     private func weekdayName(for weekday: Int) -> String {
         let names = Calendar.autoupdatingCurrent.weekdaySymbols
         guard weekday >= 1, weekday <= names.count else { return String(localized: "Day \(weekday)") }
         return names[weekday - 1]
     }
-
+    
     private func weekdayInitial(for weekday: Int) -> String {
         let symbols = Calendar.autoupdatingCurrent.veryShortStandaloneWeekdaySymbols
         guard weekday >= 1, weekday <= symbols.count else { return String(localized: "D") }
         return symbols[weekday - 1]
     }
-
+    
     // MARK: - Nested Types
-
+    
     private struct RotationDropDelegate: DropDelegate {
         let targetDay: WorkoutSplitDay
         @Binding var draggingDay: WorkoutSplitDay?
         let onMove: (WorkoutSplitDay, WorkoutSplitDay) -> Void
-
+        
         func dropEntered(info: DropInfo) {
             guard let draggingDay, draggingDay !== targetDay else { return }
             onMove(draggingDay, targetDay)
@@ -790,7 +793,7 @@ struct WorkoutSplitView: View {
         func performDrop(info: DropInfo) -> Bool { draggingDay = nil; return true }
         func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
     }
-
+    
     private struct SwapWiggleModifier: ViewModifier {
         let isActive: Bool
         func body(content: Content) -> some View {

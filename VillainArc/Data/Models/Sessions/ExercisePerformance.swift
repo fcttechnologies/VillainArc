@@ -436,6 +436,13 @@ extension ExercisePerformance {
         return FetchDescriptor(predicate: predicate)
     }
 
+    static func forCatalogIDs(_ catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
+        let predicate = #Predicate<ExercisePerformance> { item in catalogIDs.contains(item.catalogID) }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.repRange, \.workoutSession]
+        return descriptor
+    }
+
     static var completedAll: FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<ExercisePerformance> { item in item.workoutSession?.status == done && item.workoutSession?.isHidden == false }

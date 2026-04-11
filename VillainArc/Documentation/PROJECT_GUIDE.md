@@ -25,7 +25,6 @@ The main product areas are:
 - onboarding and readiness
 - home navigation and active-flow routing
 - workout sessions
-- watch companion workout runtime
 - workout plans and plan editing
 - workout splits
 - training condition status and history
@@ -207,7 +206,6 @@ Workout sessions are the live logging flow. They move through:
 See:
 
 - `Documentation/SESSION_LIFECYCLE_FLOW.md`
-- `Documentation/WATCH_COMPANION_FLOW.md`
 - `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
 
 ### Workout Plans

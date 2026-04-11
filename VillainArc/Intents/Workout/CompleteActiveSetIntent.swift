@@ -27,8 +27,6 @@ struct CompleteActiveSetIntent: AppIntent {
         }
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
-        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
-        WatchWorkoutCommandCoordinator.shared.pushRuntimeStateIfMirrored(for: workout)
         if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
         let setNumber = set.index + 1
         return .result(dialog: "Completed set \(setNumber) of \(exercise.name).")

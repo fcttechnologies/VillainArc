@@ -208,24 +208,3 @@ App Intents can run before the foreground app has completed the current launchâ€
 - any additional no-active-flow requirement is satisfied
 
 That keeps shortcut/intents behavior aligned with the appâ€™s actual readiness rules.
-
-## Apple Watch Companion Readiness
-
-The Apple Watch companion does not reuse the iPhone `SetupGuard`.
-
-Instead, the watch derives readiness only from its own synced SwiftData store:
-
-- `AppSettings.single` must exist
-- `UserProfile.single` must exist
-- `UserProfile.firstMissingStep` must be `nil`
-- at least one catalog exercise must be present
-
-Important distinctions:
-
-- watch readiness is local-store driven, not App Group driven
-- the watch never performs iPhone bootstrap or onboarding repair work
-- watch-side Health authorization is checked at workout runtime start, not as part of readiness
-
-See:
-
-- `Documentation/WATCH_COMPANION_FLOW.md`

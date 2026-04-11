@@ -48,6 +48,8 @@ struct ContentView: View {
     
     private func additionalExpandedActions(for context: AppRouter.AdditionalQuickActionContext?) -> [ExpandedAction] {
         switch context {
+        case .workoutDetail(let workout):
+            workoutDetailExpandedActions(workout: workout)
         case .workoutSplit:
             workoutSplitExpandedActions
         case .workoutPlanDetail(let plan, let showsUseOnly):
@@ -90,9 +92,33 @@ struct ContentView: View {
             }
         ]
     }
-    
+
+    private func workoutDetailExpandedActions(workout: WorkoutSession) -> [ExpandedAction] {
+        var actions: [ExpandedAction] = []
+
+        if let linkedPlan = workout.workoutPlan {
+            actions.append(
+                ExpandedAction("Open Plan", icon: "arrowshape.turn.up.right", accessibilityIdentifier: AccessibilityIdentifiers.morphingOpenWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailOpenWorkoutPlanHint) {
+                    collapseMorphingTabBar()
+                    router.popToRoot()
+                    router.navigate(to: .workoutPlanDetail(linkedPlan, false))
+                    Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: linkedPlan) }
+                }
+            )
+        } else {
+            actions.append(
+                ExpandedAction("Save as Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingSaveWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailSaveWorkoutPlanHint) {
+                    collapseMorphingTabBar()
+                    router.createWorkoutPlan(from: workout)
+                }
+            )
+        }
+
+        return actions
+    }
+
     private func workoutPlanExpandedActions(plan: WorkoutPlan, showsUseOnly: Bool) -> [ExpandedAction] {
-        [
+        var actions = [
             ExpandedAction(showsUseOnly ? "Use Plan" : "Start Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingUsePlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailStartWorkoutHint) {
                 collapseMorphingTabBar()
                 router.startWorkoutSession(from: plan)
@@ -104,6 +130,17 @@ struct ContentView: View {
                 }
             }
         ]
+
+        if !showsUseOnly {
+            actions.append(
+                ExpandedAction("Edit Plan", icon: "pencil", accessibilityIdentifier: AccessibilityIdentifiers.morphingEditPlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailEditHint) {
+                    collapseMorphingTabBar()
+                    router.editWorkoutPlan(plan)
+                }
+            )
+        }
+
+        return actions
     }
     
     private var weightGoalExpandedActions: [ExpandedAction] {

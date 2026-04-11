@@ -7,17 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		35084A8B2F88BA1600A409D4 /* WatchWorkoutCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A882F88BA1600A409D4 /* WatchWorkoutCommand.swift */; };
-		35084A8C2F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A862F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift */; };
-		35084A8D2F88BA1600A409D4 /* WatchRuntimeMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A872F88BA1600A409D4 /* WatchRuntimeMessages.swift */; };
-		35084A8E2F88BA2A00A409D4 /* ActiveWorkoutSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A862F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift */; };
-		35084A8F2F88BA2D00A409D4 /* WatchRuntimeMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A872F88BA1600A409D4 /* WatchRuntimeMessages.swift */; };
-		35084A902F88BA3100A409D4 /* WatchWorkoutCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A882F88BA1600A409D4 /* WatchWorkoutCommand.swift */; };
-		35084A912F88BA4800A409D4 /* WatchWorkoutCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A882F88BA1600A409D4 /* WatchWorkoutCommand.swift */; };
-		35084A922F88BA4B00A409D4 /* WatchRuntimeMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A872F88BA1600A409D4 /* WatchRuntimeMessages.swift */; };
-		35084A932F88BA4E00A409D4 /* ActiveWorkoutSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35084A862F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift */; };
 		354CA66B2F535701005622B1 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66A2F535701005622B1 /* README.md */; };
-		3552C2C22F8896B80068E09B /* VillainArcWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3552C2B82F8896B70068E09B /* VillainArcWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FD68290A2F31190700C83480 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD6829092F31190700C83480 /* Intents.framework */; };
 		FD6829112F31190700C83480 /* VillainArcIntentsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD93E5E62F3051FD009569BB /* WidgetKit.framework */; };
@@ -26,13 +16,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		3552C2C02F8896B80068E09B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 3552C2B72F8896B70068E09B;
-			remoteInfo = "VillainArcWatch Watch App";
-		};
 		FD6824602F33A712009F6D98 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
@@ -57,17 +40,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		3552C2C62F8896B80068E09B /* Embed Watch Content */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
-			files = (
-				3552C2C22F8896B80068E09B /* VillainArcWatch Watch App.app in Embed Watch Content */,
-			);
-			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD18C78A2F248B3000EB287C /* Embed ExtensionKit Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -93,11 +65,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		35084A862F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutSnapshot.swift; sourceTree = "<group>"; };
-		35084A872F88BA1600A409D4 /* WatchRuntimeMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRuntimeMessages.swift; sourceTree = "<group>"; };
-		35084A882F88BA1600A409D4 /* WatchWorkoutCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWorkoutCommand.swift; sourceTree = "<group>"; };
 		354CA66A2F535701005622B1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		3552C2B82F8896B70068E09B /* VillainArcWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "VillainArcWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VillainArcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VillainArcIntentsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD6829092F31190700C83480 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
@@ -110,77 +78,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		3552C2D12F8899920068E09B /* Exceptions for "VillainArc" folder in "VillainArcWatch Watch App" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Data/Models/AppSettings.swift,
-				Data/Models/Enums/Exercise/EquipmentType.swift,
-				Data/Models/Enums/Exercise/ExerciseSetType.swift,
-				Data/Models/Enums/Exercise/Muscle.swift,
-				Data/Models/Enums/Exercise/RepRangeMode.swift,
-				Data/Models/Enums/Health/StepsEventNotificationMode.swift,
-				Data/Models/Enums/Health/WeightGoalEndReason.swift,
-				Data/Models/Enums/Health/WeightGoalType.swift,
-				Data/Models/Enums/Sessions/HealthCollectionMode.swift,
-				Data/Models/Enums/Sessions/MoodLevel.swift,
-				Data/Models/Enums/Sessions/SessionStatus.swift,
-				Data/Models/Enums/SplitMode.swift,
-				Data/Models/Enums/Suggestions/ChangeType.swift,
-				Data/Models/Enums/Suggestions/Decision.swift,
-				Data/Models/Enums/Suggestions/DecisionReason.swift,
-				Data/Models/Enums/Suggestions/Outcome.swift,
-				Data/Models/Enums/Suggestions/SuggestionCategory.swift,
-				Data/Models/Enums/Suggestions/SuggestionConfidenceTier.swift,
-				Data/Models/Enums/Suggestions/SuggestionRule.swift,
-				Data/Models/Enums/Suggestions/SuggestionSource.swift,
-				Data/Models/Enums/Suggestions/TrainingStyle.swift,
-				Data/Models/Enums/Suggestions/UserFeedback.swift,
-				Data/Models/Enums/Training/TrainingConditionKind.swift,
-				Data/Models/Enums/Training/TrainingImpact.swift,
-				Data/Models/Enums/Units/DistanceUnit.swift,
-				Data/Models/Enums/Units/EnergyUnit.swift,
-				Data/Models/Enums/Units/HeightUnit.swift,
-				Data/Models/Enums/Units/WeightUnit.swift,
-				Data/Models/Exercise/Exercise.swift,
-				Data/Models/Exercise/ExerciseCatalog.swift,
-				Data/Models/Exercise/ExerciseHistory.swift,
-				Data/Models/Exercise/ProgressionPoint.swift,
-				Data/Models/Exercise/RepRangePolicy.swift,
-				Data/Models/Exercise/RestTimeDefaults.swift,
-				Data/Models/Health/HealthEnergy.swift,
-				Data/Models/Health/HealthKitCatalog.swift,
-				Data/Models/Health/HealthSleepBlock.swift,
-				Data/Models/Health/HealthSleepNight.swift,
-				Data/Models/Health/HealthStepsDistance.swift,
-				Data/Models/Health/HealthSyncState.swift,
-				Data/Models/Health/HealthWorkout.swift,
-				Data/Models/Health/StepsGoal.swift,
-				Data/Models/Health/WeightEntry.swift,
-				Data/Models/Health/WeightGoal.swift,
-				Data/Models/Plans/ExercisePrescription.swift,
-				Data/Models/Plans/SetPrescription.swift,
-				Data/Models/Plans/WorkoutPlan.swift,
-				Data/Models/RestTimeHistory.swift,
-				Data/Models/Sessions/ExercisePerformance.swift,
-				Data/Models/Sessions/PreWorkoutContext.swift,
-				Data/Models/Sessions/SetPerformance.swift,
-				Data/Models/Sessions/WorkoutSession.swift,
-				Data/Models/Suggestions/PrescriptionChange.swift,
-				Data/Models/Suggestions/SuggestionEvaluation.swift,
-				Data/Models/Suggestions/SuggestionEvent.swift,
-				Data/Models/Suggestions/SuggestionSnapshots.swift,
-				Data/Models/Training/TrainingConditionPeriod.swift,
-				Data/Models/UserProfile.swift,
-				Data/Models/WorkoutSplit/WorkoutSplit.swift,
-				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
-				Data/Protocols/RestTimeEditable.swift,
-				Data/SharedModelContainer.swift,
-				Helpers/ExerciseSearch.swift,
-				Helpers/FormattingHelpers.swift,
-				Helpers/TextNormalization.swift,
-			);
-			target = 3552C2B72F8896B70068E09B /* VillainArcWatch Watch App */;
-		};
 		FD6829152F31190700C83480 /* Exceptions for "VillainArcIntentsExtension" folder in "VillainArcIntentsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -227,7 +124,6 @@
 				Data/Models/Enums/Health/StepsEventNotificationMode.swift,
 				Data/Models/Enums/Health/WeightGoalEndReason.swift,
 				Data/Models/Enums/Health/WeightGoalType.swift,
-				Data/Models/Enums/Sessions/HealthCollectionMode.swift,
 				Data/Models/Enums/Sessions/MoodLevel.swift,
 				Data/Models/Enums/Sessions/SessionStatus.swift,
 				Data/Models/Enums/SplitMode.swift,
@@ -291,7 +187,6 @@
 				Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift,
 				Data/Services/HealthKit/HealthMirrorSupport.swift,
 				Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift,
-				Data/Services/HealthKit/Live/WorkoutMirroringCoordinator.swift,
 				Data/Services/HealthKit/Sync/StepsCoachingEvaluator.swift,
 				Data/Services/Training/SplitScheduleResolver.swift,
 				Data/Services/Training/TrainingConditionStore.swift,
@@ -324,11 +219,6 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		3552C2B92F8896B70068E09B /* VillainArcWatch Watch App */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "VillainArcWatch Watch App";
-			sourceTree = "<group>";
-		};
 		FD68245D2F33A712009F6D98 /* VillainArcTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = VillainArcTests;
@@ -355,7 +245,6 @@
 			exceptions = (
 				FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */,
 				FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */,
-				3552C2D12F8899920068E09B /* Exceptions for "VillainArc" folder in "VillainArcWatch Watch App" target */,
 			);
 			path = VillainArc;
 			sourceTree = "<group>";
@@ -363,13 +252,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		3552C2B52F8896B70068E09B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD6824592F33A712009F6D98 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -404,24 +286,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		35084A892F88BA1600A409D4 /* WatchCommunication */ = {
-			isa = PBXGroup;
-			children = (
-				35084A862F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift */,
-				35084A872F88BA1600A409D4 /* WatchRuntimeMessages.swift */,
-				35084A882F88BA1600A409D4 /* WatchWorkoutCommand.swift */,
-			);
-			path = WatchCommunication;
-			sourceTree = "<group>";
-		};
-		35084A8A2F88BA1600A409D4 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				35084A892F88BA1600A409D4 /* WatchCommunication */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
 		FD93E5E52F3051FD009569BB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -442,10 +306,8 @@
 				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
 				FD68290B2F31190700C83480 /* VillainArcIntentsExtension */,
 				FD68245D2F33A712009F6D98 /* VillainArcTests */,
-				3552C2B92F8896B70068E09B /* VillainArcWatch Watch App */,
 				FD93E5E52F3051FD009569BB /* Frameworks */,
 				FDA193912F16D14500CA57C5 /* Products */,
-				35084A8A2F88BA1600A409D4 /* Shared */,
 			);
 			sourceTree = "<group>";
 		};
@@ -456,7 +318,6 @@
 				FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */,
 				FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */,
 				FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */,
-				3552C2B82F8896B70068E09B /* VillainArcWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -464,28 +325,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3552C2B72F8896B70068E09B /* VillainArcWatch Watch App */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3552C2C32F8896B80068E09B /* Build configuration list for PBXNativeTarget "VillainArcWatch Watch App" */;
-			buildPhases = (
-				3552C2B42F8896B70068E09B /* Sources */,
-				3552C2B52F8896B70068E09B /* Frameworks */,
-				3552C2B62F8896B70068E09B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				3552C2B92F8896B70068E09B /* VillainArcWatch Watch App */,
-			);
-			name = "VillainArcWatch Watch App";
-			packageProductDependencies = (
-			);
-			productName = "VillainArcWatch Watch App";
-			productReference = 3552C2B82F8896B70068E09B /* VillainArcWatch Watch App.app */;
-			productType = "com.apple.product-type.application";
-		};
 		FD68245B2F33A712009F6D98 /* VillainArcTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FD6824642F33A712009F6D98 /* Build configuration list for PBXNativeTarget "VillainArcTests" */;
@@ -562,14 +401,12 @@
 				FDA1938E2F16D14500CA57C5 /* Resources */,
 				FD18C78A2F248B3000EB287C /* Embed ExtensionKit Extensions */,
 				FD93E5F92F3051FE009569BB /* Embed Foundation Extensions */,
-				3552C2C62F8896B80068E09B /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				FD93E5F32F3051FD009569BB /* PBXTargetDependency */,
 				FD6829102F31190700C83480 /* PBXTargetDependency */,
-				3552C2C12F8896B80068E09B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FDA193922F16D14500CA57C5 /* VillainArc */,
@@ -589,11 +426,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
-					3552C2B72F8896B70068E09B = {
-						CreatedOnToolsVersion = 26.4;
-					};
 					FD68245B2F33A712009F6D98 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = FDA1938F2F16D14500CA57C5;
@@ -615,7 +449,6 @@
 			knownRegions = (
 				en,
 				Base,
-				es,
 			);
 			mainGroup = FDA193872F16D14500CA57C5;
 			minimizedProjectReferenceProxies = 1;
@@ -628,19 +461,11 @@
 				FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */,
 				FD6829072F31190700C83480 /* VillainArcIntentsExtension */,
 				FD68245B2F33A712009F6D98 /* VillainArcTests */,
-				3552C2B72F8896B70068E09B /* VillainArcWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		3552C2B62F8896B70068E09B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD68245A2F33A712009F6D98 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -673,16 +498,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		3552C2B42F8896B70068E09B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				35084A8E2F88BA2A00A409D4 /* ActiveWorkoutSnapshot.swift in Sources */,
-				35084A8F2F88BA2D00A409D4 /* WatchRuntimeMessages.swift in Sources */,
-				35084A902F88BA3100A409D4 /* WatchWorkoutCommand.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD6824582F33A712009F6D98 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -701,9 +516,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				35084A912F88BA4800A409D4 /* WatchWorkoutCommand.swift in Sources */,
-				35084A932F88BA4E00A409D4 /* ActiveWorkoutSnapshot.swift in Sources */,
-				35084A922F88BA4B00A409D4 /* WatchRuntimeMessages.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -711,20 +523,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				35084A8B2F88BA1600A409D4 /* WatchWorkoutCommand.swift in Sources */,
-				35084A8C2F88BA1600A409D4 /* ActiveWorkoutSnapshot.swift in Sources */,
-				35084A8D2F88BA1600A409D4 /* WatchRuntimeMessages.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3552C2C12F8896B80068E09B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 3552C2B72F8896B70068E09B /* VillainArcWatch Watch App */;
-			targetProxy = 3552C2C02F8896B80068E09B /* PBXContainerItemProxy */;
-		};
 		FD6824612F33A712009F6D98 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
@@ -743,84 +547,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		3552C2C42F8896B80068E09B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "VillainArcWatch Watch App/VillainArcWatch Watch App.entitlements";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X26SC78YDG;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "VillainArcWatch-Watch-App-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc on Apple Watch reads workout metrics like heart rate and energy during your workout so it can show live workout stats and keep your workout session up to date.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc on Apple Watch saves workouts to Apple Health when you track a workout from Apple Watch.";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fcttechnologies.VillainArc;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-			};
-			name = Debug;
-		};
-		3552C2C52F8896B80068E09B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "VillainArcWatch Watch App/VillainArcWatch Watch App.entitlements";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X26SC78YDG;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "VillainArcWatch-Watch-App-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc on Apple Watch reads workout metrics like heart rate and energy during your workout so it can show live workout stats and keep your workout session up to date.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc on Apple Watch saves workouts to Apple Health when you track a workout from Apple Watch.";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fcttechnologies.VillainArc;
-				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-			};
-			name = Release;
-		};
 		FD6824622F33A712009F6D98 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1032,6 +758,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1099,6 +826,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1250,15 +978,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3552C2C32F8896B80068E09B /* Build configuration list for PBXNativeTarget "VillainArcWatch Watch App" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3552C2C42F8896B80068E09B /* Debug */,
-				3552C2C52F8896B80068E09B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		FD6824642F33A712009F6D98 /* Build configuration list for PBXNativeTarget "VillainArcTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

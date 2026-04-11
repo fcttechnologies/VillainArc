@@ -45,7 +45,7 @@ struct ExerciseView: View {
         let weight = prescription.targetWeight > 0 ? prescription.targetWeight : nil
         let targetRPE = prescription.visibleTargetRPE
         guard reps != nil || weight != nil || targetRPE != nil else { return nil }
-        return SetReferenceData(reps: reps, weight: weight, targetRPE: targetRPE, actionLabel: "Use Target")
+        return SetReferenceData(reps: reps, weight: weight, rpe: targetRPE, rpeStyle: .target, actionLabel: "Use Target")
     }
 
     private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
@@ -218,9 +218,6 @@ struct ExerciseView: View {
                     exercise.replaceWith(newExercise, keepSets: keepSets, context: context)
                     saveContext(context: context)
                     WorkoutActivityManager.update()
-                    if let workout = exercise.workoutSession {
-                        WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
-                    }
                     Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
                 }
             }
@@ -244,9 +241,6 @@ struct ExerciseView: View {
         exercise.addSet(unit: weightUnit)
         saveContext(context: context)
         WorkoutActivityManager.update()
-        if let workout = exercise.workoutSession {
-            WatchWorkoutCommandCoordinator.shared.pushSnapshotIfMirrored(for: workout)
-        }
     }
 
     private func checkForRestTimeUpdate() {
@@ -283,7 +277,7 @@ struct ExerciseView: View {
 
         let previousSets = (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
         previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
-            (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, targetRPE: nil, actionLabel: "Use Previous"))
+            (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, rpe: previousSet.visibleRPE, rpeStyle: .actual, actionLabel: "Use Previous"))
         })
     }
 

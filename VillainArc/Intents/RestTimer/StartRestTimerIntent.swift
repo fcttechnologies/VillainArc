@@ -15,7 +15,7 @@ struct StartRestTimerIntent: AppIntent {
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
         let context = SharedModelContainer.container.mainContext
 
-        guard let workout = try? context.fetch(WorkoutSession.incomplete).first else { throw RestTimerIntentError.noWorkoutSession }
+        guard (try? context.fetch(WorkoutSession.incomplete).first) != nil else { throw RestTimerIntentError.noWorkoutSession }
 
         let durationSeconds = Int(duration.converted(to: .seconds).value.rounded())
         guard durationSeconds > 0 else { throw RestTimerIntentError.invalidDuration }
@@ -24,7 +24,6 @@ struct StartRestTimerIntent: AppIntent {
         RestTimerState.shared.start(seconds: clampedSeconds)
         RestTimeHistory.record(seconds: clampedSeconds, context: context)
         saveContext(context: context)
-        WatchWorkoutCommandCoordinator.shared.pushRuntimeStateIfMirrored(for: workout)
 
         return .result(dialog: "Rest timer started for \(secondsToTime(clampedSeconds)).", snippetIntent: RestTimerSnippetIntent())
     }

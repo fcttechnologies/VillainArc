@@ -3,8 +3,7 @@ import SwiftData
 
 struct WorkoutLiveStatsView: View {
     let workout: WorkoutSession
-    @State private var healthCoordinator = HealthLiveWorkoutSessionCoordinator.shared
-    @State private var mirroringCoordinator = WorkoutMirroringCoordinator.shared
+    @State private var coordinator = HealthLiveWorkoutSessionCoordinator.shared
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
@@ -14,12 +13,7 @@ struct WorkoutLiveStatsView: View {
     }
 
     private var summary: Summary {
-        Summary(
-            workout: workout,
-            healthCoordinator: healthCoordinator,
-            mirroringCoordinator: mirroringCoordinator,
-            energyUnit: energyUnit
-        )
+        Summary(coordinator: coordinator, energyUnit: energyUnit)
     }
 
     var body: some View {
@@ -41,46 +35,12 @@ struct WorkoutLiveStatsView: View {
     static func toolbarAccessibilityValue(for workoutID: UUID) -> String {
         let context = SharedModelContainer.container.mainContext
         let energyUnit = (try? context.fetch(AppSettings.single))?.first?.energyUnit ?? .systemDefault
-        let workout = try? context.fetch(WorkoutSession.byID(workoutID)).first
-        let summary = Summary(
-            workout: workout,
-            healthCoordinator: HealthLiveWorkoutSessionCoordinator.shared,
-            mirroringCoordinator: WorkoutMirroringCoordinator.shared,
-            energyUnit: energyUnit
-        )
+        let summary = Summary(coordinator: HealthLiveWorkoutSessionCoordinator.shared, workoutID: workoutID, energyUnit: energyUnit)
         return AccessibilityText.workoutLiveHealthValue(heartRate: summary.heartRateToolbarText, activeEnergy: summary.activeEnergyToolbarText, totalEnergy: summary.totalEnergyToolbarText)
     }
 }
 
 private extension WorkoutLiveStatsView {
-    struct RuntimeMetrics {
-        let isActiveWorkout: Bool
-        let heartRate: Double?
-        let activeEnergy: Double?
-        let totalEnergy: Double?
-
-        init(
-            workout: WorkoutSession?,
-            healthCoordinator: HealthLiveWorkoutSessionCoordinator,
-            mirroringCoordinator: WorkoutMirroringCoordinator
-        ) {
-            let runtimeUsesMirroring = workout?.healthCollectionMode == .watchMirrored
-            let workoutID = workout?.id
-
-            if runtimeUsesMirroring {
-                isActiveWorkout = workoutID == nil || mirroringCoordinator.activeWorkoutSessionID == workoutID
-                heartRate = mirroringCoordinator.latestHeartRate
-                activeEnergy = mirroringCoordinator.activeEnergyBurned
-                totalEnergy = mirroringCoordinator.totalEnergyBurned
-            } else {
-                isActiveWorkout = workoutID == nil || healthCoordinator.activeWorkoutSessionID == workoutID
-                heartRate = healthCoordinator.latestHeartRate
-                activeEnergy = healthCoordinator.activeEnergyBurned
-                totalEnergy = healthCoordinator.totalEnergyBurned
-            }
-        }
-    }
-
     struct Summary {
         let heartRateToolbarText: String
         let activeEnergyToolbarText: String
@@ -89,45 +49,36 @@ private extension WorkoutLiveStatsView {
         let activeEnergyValue: Int?
         let totalEnergyValue: Int?
 
-        init(
-            workout: WorkoutSession?,
-            healthCoordinator: HealthLiveWorkoutSessionCoordinator,
-            mirroringCoordinator: WorkoutMirroringCoordinator,
-            energyUnit: EnergyUnit
-        ) {
-            let metrics = RuntimeMetrics(
-                workout: workout,
-                healthCoordinator: healthCoordinator,
-                mirroringCoordinator: mirroringCoordinator
-            )
+        init(coordinator: HealthLiveWorkoutSessionCoordinator, workoutID: UUID? = nil, energyUnit: EnergyUnit) {
+            let isActiveWorkout = workoutID == nil || coordinator.activeWorkoutSessionID == workoutID
 
-            if let heartRate = metrics.heartRate {
+            if let heartRate = coordinator.latestHeartRate {
                 let roundedValue = Int(heartRate.rounded())
                 let text = formattedHeartRateText(Double(roundedValue), fractionDigits: 0...0)
                 heartRateToolbarText = text
                 heartRateValue = roundedValue
             } else {
-                heartRateToolbarText = metrics.isActiveWorkout ? AccessibilityText.workoutLiveHealthWaitingValue : AccessibilityText.workoutLiveHealthUnavailableValue
+                heartRateToolbarText = isActiveWorkout ? AccessibilityText.workoutLiveHealthWaitingValue : AccessibilityText.workoutLiveHealthUnavailableValue
                 heartRateValue = nil
             }
 
-            if let activeEnergy = metrics.activeEnergy {
+            if let activeEnergy = coordinator.activeEnergyBurned {
                 let roundedValue = Int(energyUnit.fromKilocalories(activeEnergy).rounded())
                 let text = formattedEnergyText(activeEnergy, unit: energyUnit)
                 activeEnergyToolbarText = text
                 activeEnergyValue = roundedValue
             } else {
-                activeEnergyToolbarText = metrics.isActiveWorkout ? AccessibilityText.workoutLiveHealthWaitingValue : AccessibilityText.workoutLiveHealthUnavailableValue
+                activeEnergyToolbarText = isActiveWorkout ? AccessibilityText.workoutLiveHealthWaitingValue : AccessibilityText.workoutLiveHealthUnavailableValue
                 activeEnergyValue = nil
             }
 
-            if let totalEnergy = metrics.totalEnergy {
+            if let totalEnergy = coordinator.totalEnergyBurned {
                 let roundedValue = Int(energyUnit.fromKilocalories(totalEnergy).rounded())
                 let text = formattedEnergyText(totalEnergy, unit: energyUnit)
                 totalEnergyToolbarText = text
                 totalEnergyValue = roundedValue
             } else {
-                totalEnergyToolbarText = metrics.isActiveWorkout ? AccessibilityText.workoutLiveHealthWaitingValue : AccessibilityText.workoutLiveHealthUnavailableValue
+                totalEnergyToolbarText = isActiveWorkout ? AccessibilityText.workoutLiveHealthWaitingValue : AccessibilityText.workoutLiveHealthUnavailableValue
                 totalEnergyValue = nil
             }
         }
