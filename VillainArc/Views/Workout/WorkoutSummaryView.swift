@@ -189,6 +189,8 @@ struct WorkoutSummaryView: View {
                 .fontDesign(.rounded)
                 .padding(.horizontal)
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -271,7 +273,7 @@ struct WorkoutSummaryView: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+            .appCardStyle()
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPlanSavedRow)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(AccessibilityText.workoutSummaryPlanSavedLabel)
@@ -313,7 +315,7 @@ struct WorkoutSummaryView: View {
             }
         }
         .padding(12)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .appCardStyle()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPRSection)
         .accessibilityLabel(AccessibilityText.workoutSummaryPRSectionLabel)
         .accessibilityValue(AccessibilityText.workoutSummaryPRSectionValue(count: prCount))
@@ -336,7 +338,7 @@ struct WorkoutSummaryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .fontDesign(.rounded)
         .padding(10)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 10))
+        .appCardStyle()
     }
 
     private func loadPRs() {

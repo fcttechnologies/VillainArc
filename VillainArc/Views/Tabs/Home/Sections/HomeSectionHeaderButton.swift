@@ -7,7 +7,9 @@ struct HomeSectionHeaderButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            action()
+        } label: {
             HStack(spacing: 1) {
                 Text(title)
                     .font(.title2)

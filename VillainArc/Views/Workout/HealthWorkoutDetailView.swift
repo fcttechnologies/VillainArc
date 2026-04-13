@@ -38,6 +38,7 @@ struct HealthWorkoutDetailView: View {
             .padding(.vertical, 20)
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .appBackground()
         .navigationTitle(loader.summary.activityTypeDisplayName)
         .navigationSubtitle(Text(formattedDateRange(start: loader.summary.startDate, end: loader.summary.endDate, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
@@ -413,7 +414,7 @@ private struct HealthWorkoutZoneRow: View {
         }
         .fontDesign(.rounded)
         .padding(12)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
+        .appCardStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(zoneTitle)
         .accessibilityValue(AccessibilityText.healthWorkoutZoneValue(durationText: durationText, percentageText: percentageText, rangeText: rangeText))
@@ -442,7 +443,7 @@ private struct HealthWorkoutSplitRow: View {
         }
         .fontDesign(.rounded)
         .padding(12)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
+        .appCardStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(splitLabel)
         .accessibilityValue(AccessibilityText.healthWorkoutSplitValue(paceText: paceText, heartRateText: heartRateText))
@@ -498,7 +499,7 @@ private struct HealthWorkoutRouteMapCard: View {
         .mapStyle(.standard(elevation: .realistic))
         .frame(height: 240)
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
+        .appCardStyle()
         .task(id: coordinates.count) {
             position = .region(region)
         }
@@ -621,7 +622,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
             .frame(height: 220)
         }
         .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
+        .appCardStyle()
         .onChange(of: points) { _, newPoints in
             guard let selectedDate else { return }
             self.selectedDate = nearestPoint(in: newPoints, to: selectedDate)?.date

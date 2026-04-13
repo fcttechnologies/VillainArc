@@ -31,6 +31,7 @@ struct HomeTabView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentExercisesSection)
             }
             .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+            .appBackground()
             .navBar(title: "Workout", includePadding: false) {
                 Button {
                     showAppSettings = true

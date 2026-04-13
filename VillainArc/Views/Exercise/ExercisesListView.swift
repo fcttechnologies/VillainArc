@@ -41,6 +41,8 @@ struct ExercisesListView: View {
         }
         .listStyle(.plain)
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .scrollDismissesKeyboard(.immediately)
         .searchable(text: $searchText, placement: .navigationBarDrawer)
         .searchPresentationToolbarBehavior(.avoidHidingContent)

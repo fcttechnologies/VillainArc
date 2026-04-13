@@ -31,6 +31,8 @@ struct WorkoutPlanPickerView: View {
             .navigationTitle("Select Plan")
             .toolbarTitleDisplayMode(.inline)
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Clear") {

@@ -35,6 +35,8 @@ struct DeferredSuggestionsView: View {
                 .fontDesign(.rounded)
                 .padding()
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(AccessibilityText.deferredSuggestionsSkipLabel) {

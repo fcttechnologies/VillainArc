@@ -35,7 +35,6 @@ struct HealthStepsSectionCard: View {
 
     var body: some View {
         Button {
-            Haptics.selection()
             router.navigate(to: .stepsDistanceHistory)
             Task { await IntentDonations.donateShowStepsHistory() }
         } label: {
@@ -96,7 +95,7 @@ struct HealthStepsSectionCard: View {
                 }
             }
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 12))
+            .appCardStyle()
             .tint(.primary)
         }
         .buttonStyle(.borderless)

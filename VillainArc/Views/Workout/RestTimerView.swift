@@ -24,6 +24,7 @@ struct RestTimerView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
                 .accessibilityIdentifier(AccessibilityIdentifiers.restTimerCountdown)
                 .accessibilityLabel(AccessibilityText.restTimerLabel)
                 .accessibilityValue(restTimer.isPaused ? AccessibilityText.restTimerValuePaused : restTimer.isRunning ? AccessibilityText.restTimerValueRunning : AccessibilityText.restTimerValueReady)
@@ -32,12 +33,14 @@ struct RestTimerView: View {
                     TimerDurationPicker(seconds: $selectedSeconds, showZero: false)
                         .frame(height: 60)
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                         .accessibilityIdentifier(AccessibilityIdentifiers.restTimerDurationPicker)
                 }
                 
                 controls
                     .frame(maxWidth: .infinity, alignment: .center)
                     .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 
                 if !restTimer.isActive && !recentTimes.isEmpty {
                     Section("Recents") {
@@ -75,7 +78,8 @@ struct RestTimerView: View {
                     }
                 }
             }
-            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .scrollIndicators(.hidden)
             .accessibilityIdentifier(AccessibilityIdentifiers.restTimerList)
             .toolbar {

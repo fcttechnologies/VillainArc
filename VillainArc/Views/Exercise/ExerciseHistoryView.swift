@@ -69,6 +69,7 @@ struct ExerciseHistoryView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryEmptyState)
             }
         }
+        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryList)
         .navigationTitle(exercise?.name ?? "Exercise History")
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
@@ -82,6 +83,7 @@ struct ExerciseHistoryView: View {
                 }
             }
             Button("Cancel", role: .cancel) {
+                Haptics.selection()
                 pendingCopyRequest = nil
             }
         } message: {
@@ -253,7 +255,7 @@ private struct ExerciseHistoryPerformanceCard: View {
             }
         }
         .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .appCardStyle()
     }
 }
 

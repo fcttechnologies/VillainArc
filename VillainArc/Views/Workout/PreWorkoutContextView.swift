@@ -47,12 +47,15 @@ struct PreWorkoutContextView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) {
+                        Haptics.selection()
                         dismiss()
                     }
                 }
             }
             .navigationTitle("How are you feeling?")
             .navigationBarTitleDisplayMode(.inline)
+            .scrollContentBackground(.hidden)
+            .appBackground()
         }
     }
 
@@ -74,7 +77,7 @@ struct PreWorkoutContextView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .padding(.horizontal, 8)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+            .appCardStyle()
             .opacity(isSelected ? 1.0 : 0.6)
             .scaleEffect(isSelected ? 1.2 : 1.0)
         }

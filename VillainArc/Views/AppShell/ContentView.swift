@@ -32,6 +32,11 @@ struct ContentView: View {
         .fullScreenCover(item: $router.activeWeightGoalCompletion) {
             WeightGoalCompletionView(route: $0)
         }
+        .sheet(isPresented: addWeightEntrySheetBinding) {
+            NewWeightEntryView()
+                .presentationDetents([.fraction(0.5)])
+                .presentationBackground(Color.bg)
+        }
         .background {
             ToastOverlaySceneInstaller()
                 .allowsHitTesting(false)
@@ -77,8 +82,7 @@ struct ContentView: View {
             },
             ExpandedAction("Add Weight", icon: "scalemass", accessibilityIdentifier: AccessibilityIdentifiers.morphingAddWeightButton, accessibilityHint: AccessibilityText.morphingAddWeightHint) {
                 collapseMorphingTabBar()
-                router.tabSelection = .health
-                router.activeHealthSheet = .addWeightEntry
+                router.presentHealthSheet(.addWeightEntry)
             }
         ]
     }
@@ -87,7 +91,7 @@ struct ContentView: View {
         [
             ExpandedAction("New Split", icon: "plus.rectangle.on.folder", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreateSplitButton, accessibilityHint: AccessibilityText.workoutSplitCreateHint) {
                 collapseMorphingTabBar()
-                router.activeSplitSheet = .builder
+                router.presentSplitSheet(.builder)
                 Task { await IntentDonations.donateCreateWorkoutSplit() }
             }
         ]
@@ -147,7 +151,7 @@ struct ContentView: View {
         [
             ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewWeightGoalButton, accessibilityHint: AccessibilityText.healthWeightGoalHistoryAddHint) {
                 collapseMorphingTabBar()
-                router.activeHealthSheet = .newWeightGoal
+                router.presentHealthSheet(.newWeightGoal)
             }
         ]
     }
@@ -156,7 +160,7 @@ struct ContentView: View {
         [
             ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewStepsGoalButton, accessibilityHint: AccessibilityText.healthStepsGoalHistoryAddHint) {
                 collapseMorphingTabBar()
-                router.activeHealthSheet = .newStepsGoal
+                router.presentHealthSheet(.newStepsGoal)
             }
         ]
     }
@@ -166,6 +170,17 @@ struct ContentView: View {
         withAnimation(.bouncy(duration: 0.35, extraBounce: 0.02)) {
             isMorphingTabBarExpanded = false
         }
+    }
+
+    private var addWeightEntrySheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .addWeightEntry },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .addWeightEntry {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
     }
 }
 

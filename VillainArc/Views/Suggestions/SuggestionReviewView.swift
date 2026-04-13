@@ -15,6 +15,7 @@ struct SuggestionReviewView: View {
             // If a custom empty state is provided, show it; otherwise render nothing.
             if let emptyState {
                 emptyState.view
+                    .appBackground()
             } else {
                 EmptyView()
             }
@@ -35,6 +36,7 @@ struct SuggestionReviewView: View {
                     .id(section.id)
                 }
             }
+            .appBackground()
         }
     }
 }
@@ -128,7 +130,7 @@ struct SuggestionGroupRow: View {
         .fontDesign(.rounded)
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .appCardStyle()
     }
 
     private var visibleDecisionState: DecisionState? {
@@ -188,7 +190,7 @@ struct SuggestionEmptyState {
         .fontDesign(.rounded)
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .appCardStyle()
     }
 }
 

@@ -28,6 +28,7 @@ struct WorkoutDetailView: View {
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .scrollIndicators(.hidden)
+        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailList)
         .navigationTitle(workout.title)
         .navigationSubtitle(Text(formattedDateRange(start: workout.startedAt, end: workout.endedAt, includeTime: true)))
@@ -95,7 +96,6 @@ struct WorkoutDetailView: View {
     }
 
     private func openWorkoutPlan(_ plan: WorkoutPlan) {
-        Haptics.selection()
         router.popToRoot()
         router.navigate(to: .workoutPlanDetail(plan, false))
         Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
@@ -267,7 +267,7 @@ private struct WorkoutSessionDetailContent: View {
             .fontWeight(.semibold)
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+            .appCardStyle()
             .accessibilityElement(children: .ignore)
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailPreWorkoutContextCard)
             .accessibilityLabel(AccessibilityText.workoutDetailPreWorkoutContextLabel)
@@ -300,7 +300,7 @@ private struct WorkoutSessionDetailContent: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+            .appCardStyle()
         }
     }
 
@@ -311,7 +311,7 @@ private struct WorkoutSessionDetailContent: View {
 
             MuscleDistributionView(slices: muscleDistributionSlices)
                 .padding(16)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+                .appCardStyle()
         }
     }
 
@@ -377,7 +377,7 @@ private struct WorkoutDetailExerciseCard: View {
             }
         }
         .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .appCardStyle()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
     }
 }

@@ -242,6 +242,7 @@ enum HomeQuickAction: String {
         WorkoutActivityManager.end()
     }
     func navigate(to destination: Destination) {
+        Haptics.selection()
         switch destination {
         case .trainingConditionHistory, .weightHistory, .sleepHistory, .stepsDistanceHistory, .stepsGoalHistory, .energyHistory, .allWeightEntriesList, .weightGoalHistory:
             tabSelection = .health
@@ -251,6 +252,26 @@ enum HomeQuickAction: String {
             homeTabPath.append(destination)
         }
         noteNavigationStateChanged()
+    }
+
+    func presentHealthSheet(_ sheet: HealthSheet) {
+        Haptics.selection()
+        activeHealthSheet = sheet
+    }
+
+    func presentSplitSheet(_ sheet: SplitSheet) {
+        Haptics.selection()
+        activeSplitSheet = sheet
+    }
+
+    func presentWorkoutSheet(_ sheet: WorkoutSheet) {
+        Haptics.selection()
+        activeWorkoutSheet = sheet
+    }
+
+    func presentWorkoutDialog(_ dialog: WorkoutDialog) {
+        Haptics.selection()
+        activeWorkoutDialog = dialog
     }
     func popToRoot() {
         tabSelection = .home
@@ -283,9 +304,9 @@ enum HomeQuickAction: String {
             return .workoutSplit
         case .workoutPlanDetail(let plan, let showsUseOnly):
             return .workoutPlanDetail(plan, showsUseOnly: showsUseOnly)
-        case .weightGoalHistory:
+        case .weightHistory, .weightGoalHistory:
             return .weightGoalHistory
-        case .stepsGoalHistory:
+        case .stepsDistanceHistory, .stepsGoalHistory:
             return .stepsGoalHistory
         default:
             return nil
@@ -293,6 +314,7 @@ enum HomeQuickAction: String {
     }
 
     func presentWeightGoalCompletion(for goal: WeightGoal, trigger: WeightGoalCompletionRoute.Trigger, triggeringEntry: WeightEntry? = nil, referenceDate: Date? = nil) {
+        Haptics.selection()
         tabSelection = .health
         activeWeightGoalCompletion = WeightGoalCompletionRoute(goalID: goal.id, triggeringEntryID: triggeringEntry?.id, trigger: trigger, referenceDate: referenceDate ?? triggeringEntry?.date ?? .now)
     }
@@ -318,8 +340,7 @@ enum HomeQuickAction: String {
         case .addWeightEntry:
             homeTabPath = []
             healthTabPath = []
-            tabSelection = .health
-            activeHealthSheet = .addWeightEntry
+            presentHealthSheet(.addWeightEntry)
 
         case .startTodaysWorkout:
             handleStartTodaysWorkoutQuickAction()

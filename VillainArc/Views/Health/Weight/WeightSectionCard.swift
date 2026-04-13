@@ -36,7 +36,6 @@ struct WeightSectionCard: View {
 
     var body: some View {
         Button {
-            Haptics.selection()
             router.navigate(to: .weightHistory)
             Task { await IntentDonations.donateShowWeightHistory() }
         } label: {
@@ -102,7 +101,7 @@ struct WeightSectionCard: View {
                 }
             }
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 12))
+            .appCardStyle()
             .tint(.primary)
         }
         .buttonStyle(.borderless)

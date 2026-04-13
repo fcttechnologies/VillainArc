@@ -100,6 +100,8 @@ struct WorkoutPlanSuggestionsSheet: View {
                 .onChange(of: selectedTab) { _, _ in
                     scrollToFocusedExerciseIfNeeded(using: proxy)
                 }
+                .scrollContentBackground(.hidden)
+                .appBackground()
             }
         }
     }

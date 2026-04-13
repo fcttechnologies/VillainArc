@@ -53,7 +53,7 @@ struct RecentExercisesSectionView: View {
         } label: {
             SmallUnavailableView(sfIconName: "dumbbell", title: "No Exercises Used", subtitle: "Complete exercises in workouts to track progress here.")
                 .padding()
-                .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .appCardStyle()
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)

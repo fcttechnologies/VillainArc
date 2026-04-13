@@ -214,7 +214,9 @@ struct ExerciseSetRowView: View {
                 }
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetReplaceTimerButton(exercise, set: set))
-            Button("Keep Current", role: .cancel) {}
+            Button("Keep Current", role: .cancel) {
+                Haptics.selection()
+            }
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCancelReplaceTimerButton(exercise, set: set))
         } message: {
             Text(replaceTimerPrompt)
@@ -303,7 +305,7 @@ struct ExerciseSetRowView: View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .frame(width: 40, height: 40)
-            .glassEffect(.regular, in: .circle)
+            .appCircleStyle()
             .opacity(set.complete ? 0.4 : 1)
             .overlay(alignment: .topTrailing) {
                 if let visibleRPE = set.visibleRPE {

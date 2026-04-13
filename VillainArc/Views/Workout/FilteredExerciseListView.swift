@@ -119,6 +119,8 @@ struct FilteredExerciseListView: View {
             }
         }
         .scrollDismissesKeyboard(.immediately)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .sheet(item: $progressionStepExercise) { progressionStepExercise in
             ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
         }

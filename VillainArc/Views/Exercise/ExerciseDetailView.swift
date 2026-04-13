@@ -276,6 +276,7 @@ struct ExerciseDetailView: View {
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .appBackground()
         .sheet(item: $suggestionSettingsExercise) { exercise in
             ExerciseSuggestionSettingsSheet(exercise: exercise)
         }
@@ -327,19 +328,20 @@ struct ExerciseDetailView: View {
         ContentUnavailableView("Progress Charts", systemImage: "chart.line.uptrend.xyaxis", description: Text("Charts appear after at least 2 logged sessions for this exercise."))
         .padding()
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
     }
 
     private var noHistoryCard: some View {
         ContentUnavailableView("No Exercise History", systemImage: "chart.line.uptrend.xyaxis", description: Text("Complete this exercise in a workout to start tracking progress and personal records."))
             .padding()
             .frame(maxWidth: .infinity)
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .appCardStyle()
             .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailEmptyState)
     }
 
     private func suggestionSettingsSection(for exercise: Exercise) -> some View {
         Button {
+            Haptics.selection()
             suggestionSettingsExercise = exercise
         } label: {
             VStack(alignment: .leading, spacing: 14) {
@@ -362,7 +364,7 @@ struct ExerciseDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .appCardStyle()
             .tint(.primary)
         }
         .buttonStyle(.borderless)

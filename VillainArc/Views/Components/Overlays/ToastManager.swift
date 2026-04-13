@@ -109,7 +109,7 @@ struct ToastOverlayView: View {
             Spacer()
         }
         .padding(12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
         .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
         .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
     }

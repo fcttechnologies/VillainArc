@@ -37,6 +37,8 @@ struct TrainingConditionHistoryView: View {
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .navigationTitle("Condition")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
@@ -75,7 +77,7 @@ struct TrainingConditionHistoryView: View {
             ContentUnavailableView("Training Normally", systemImage: "figure.strengthtraining.traditional", description: Text("Add a condition when illness, injury, travel, recovery, or time off changes how you should train."))
                 .frame(maxWidth: .infinity)
                 .padding()
-                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                .appCardStyle()
                 .listRowSeparator(.hidden)
         }
     }
@@ -86,7 +88,7 @@ struct TrainingConditionHistoryView: View {
             ContentUnavailableView("No Condition History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90", description: Text("Ended or replaced conditions will appear here."))
                 .frame(maxWidth: .infinity)
                 .padding()
-                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                .appCardStyle()
                 .listRowSeparator(.hidden)
         } else {
             ForEach(endedPeriods) { period in
@@ -187,7 +189,7 @@ private struct TrainingConditionHistoryRow: View {
             }
         }
         .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .appCardStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(period.kind.title)
         .accessibilityValue(AccessibilityText.healthTrainingConditionRowValue(subtitleText: subtitleText, periodText: periodText))

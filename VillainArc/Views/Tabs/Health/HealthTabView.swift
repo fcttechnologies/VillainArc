@@ -16,6 +16,7 @@ struct HealthTabView: View {
                 }
                 .padding()
             }
+            .appBackground()
             .navBar(title: "Health", includePadding: false) {
                 Button {
                     showAppSettings = true
@@ -32,11 +33,6 @@ struct HealthTabView: View {
                 .accessibilityHint(AccessibilityText.homeSettingsHint)
             }
             .scrollIndicators(.hidden)
-            .sheet(isPresented: addWeightEntrySheetBinding) {
-                NewWeightEntryView()
-                    .presentationDetents([.fraction(0.5)])
-                    .presentationBackground(Color(.systemBackground))
-            }
             .sheet(isPresented: $showAppSettings) {
                 AppSettingsView()
             }
@@ -64,17 +60,6 @@ struct HealthTabView: View {
             }
         }
         .id(router.healthTabResetToken)
-    }
-
-    private var addWeightEntrySheetBinding: Binding<Bool> {
-        Binding(
-            get: { router.activeHealthSheet == .addWeightEntry },
-            set: { isPresented in
-                if !isPresented, router.activeHealthSheet == .addWeightEntry {
-                    router.activeHealthSheet = nil
-                }
-            }
-        )
     }
 
     private var healthTabPathBinding: Binding<[AppRouter.Destination]> {

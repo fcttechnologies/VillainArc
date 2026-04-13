@@ -73,9 +73,13 @@ struct WorkoutEffortPromptView: View {
             }
             .fontDesign(.rounded)
             .padding(.horizontal)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close", systemImage: "xmark", action: onClose)
+                    Button("Close", systemImage: "xmark") {
+                        Haptics.selection()
+                        onClose()
+                    }
                         .labelStyle(.iconOnly)
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortCloseButton)
                         .accessibilityHint(AccessibilityText.workoutFinishEffortCloseHint)

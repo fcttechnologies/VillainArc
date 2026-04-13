@@ -61,7 +61,7 @@ struct WorkoutSplitSectionView: View {
         } label: {
             SmallUnavailableView(sfIconName: "calendar.badge.exclamationmark", title: title, subtitle: description)
                 .padding()
-                .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .appCardStyle()
                 .tint(.primary)
         }
         .buttonStyle(.borderless)
@@ -99,7 +99,7 @@ struct WorkoutSplitSectionView: View {
                     }
                 }
                 .padding()
-                .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .appCardStyle()
                 .tint(.primary)
             }
             .buttonStyle(.borderless)

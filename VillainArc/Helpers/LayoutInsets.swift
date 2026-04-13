@@ -1,3 +1,3 @@
 import SwiftUI
 
-let quickActionContentBottomMargin: CGFloat = 48
+let quickActionContentBottomMargin: CGFloat = 52

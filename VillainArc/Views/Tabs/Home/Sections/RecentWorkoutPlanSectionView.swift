@@ -15,7 +15,7 @@ struct RecentWorkoutPlanSectionView: View {
             if recentWorkoutPlan.isEmpty {
                 ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Tap the \(Image(systemName: "plus")) button to create a workout plan."))
                     .frame(maxWidth: .infinity)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                    .appCardStyle()
                     .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutPlanEmptyState)
             } else if let plan = recentWorkoutPlan.first {
                 WorkoutPlanRowView(workoutPlan: plan)

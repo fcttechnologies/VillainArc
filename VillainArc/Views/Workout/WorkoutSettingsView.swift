@@ -80,6 +80,8 @@ struct WorkoutSettingsView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .onChange(of: settings.autoStartRestTimer) {
             saveContext(context: context)
         }

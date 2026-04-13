@@ -31,7 +31,6 @@ struct StepsDistanceHistoryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 StepsGoalSummaryCard(activeGoal: activeGoal, todayEntry: todayEntry, hasGoalHistory: hasGoalHistory) {
-                    Haptics.selection()
                     if activeGoal != nil || hasGoalHistory {
                         router.navigate(to: .stepsGoalHistory)
                         Task { await IntentDonations.donateShowStepsGoalHistory() }
@@ -49,6 +48,7 @@ struct StepsDistanceHistoryView: View {
             .padding()
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .appBackground()
         .navigationTitle("Steps")
         .toolbarTitleDisplayMode(.inline)
         .sheet(isPresented: $showNewStepsGoalSheet) {
@@ -296,7 +296,7 @@ private struct StepsDistanceMainChartSection: View {
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
         .animation(reduceMotion ? nil : .smooth, value: latestEntry?.stepCount)
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
@@ -427,7 +427,7 @@ private struct StepsDistanceWeekdayChartSection: View {
     var body: some View {
         WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthStepsWeekdayChartLabel)
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .appCardStyle()
             .task(id: cacheKey) {
                 let newPoints = makeWeekdayAveragePoints(from: entries, date: \.date, value: { Double($0.stepCount) })
                 points = newPoints

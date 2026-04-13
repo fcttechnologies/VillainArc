@@ -49,7 +49,7 @@ struct WorkoutEffortCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+        .appCardStyle()
     }
 }
 

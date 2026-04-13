@@ -2781,6 +2781,9 @@
         }
       }
     },
+    "Dark Ring Surface" : {
+
+    },
     "Date" : {
       "localizations" : {
         "en" : {
@@ -4111,6 +4114,9 @@
         }
       }
     },
+    "Focused lifting. Cleaner surfaces." : {
+
+    },
     "For %@, %@." : {
       "localizations" : {
         "en" : {
@@ -5140,6 +5146,9 @@
           }
         }
       }
+    },
+    "Light Ring Surface" : {
+
     },
     "Live Activities aren’t available on this device or are turned off in system settings. Villain Arc will fall back to in-app toasts and local notifications when possible." : {
       "localizations" : {
@@ -12130,6 +12139,9 @@
           }
         }
       }
+    },
+    "Villain Arc" : {
+
     },
     "Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer." : {
       "localizations" : {

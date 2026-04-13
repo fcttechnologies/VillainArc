@@ -41,18 +41,19 @@ struct WorkoutView: View {
                     showNotesEditorSheet = true
                 }
                 Button("Pre Workout Context", systemImage: "bolt.fill") {
-                    router.activeWorkoutSheet = .preWorkoutContext
+                    router.presentWorkoutSheet(.preWorkoutContext)
                     Task { await IntentDonations.donateOpenPreWorkoutContext() }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPreMoodButton)
                 .accessibilityHint(AccessibilityText.workoutPreMoodHint)
             }
             .toolbarTitleDisplayMode(.inline)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        router.activeWorkoutSheet = .restTimer
-                        Haptics.selection()
+                        router.presentWorkoutSheet(.restTimer)
                         Task { await IntentDonations.donateOpenRestTimer() }
                     } label: {
                         timerToolbarLabel
@@ -78,8 +79,7 @@ struct WorkoutView: View {
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
                     Button("Add Exercise", systemImage: "plus") {
-                        Haptics.selection()
-                        router.activeWorkoutSheet = .addExercise
+                        router.presentWorkoutSheet(.addExercise)
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutAddExerciseButton)
                     .accessibilityHint(AccessibilityText.workoutAddExerciseHint)
@@ -115,7 +115,7 @@ struct WorkoutView: View {
                 WorkoutLiveStatsView(workout: workout)
                     .presentationDetents([.height(240)])
                     .presentationDragIndicator(.visible)
-                    .presentationBackground(Color(.systemBackground))
+                    .presentationBackground(Color.bg)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthSheet)
             }
             .sheet(isPresented: $showNotesEditorSheet) {
@@ -184,7 +184,7 @@ struct WorkoutView: View {
             }
             .task {
                 if shouldPromptForPreWorkoutContext, workout.preWorkoutContext?.feeling == .notSet {
-                    router.activeWorkoutSheet = .preWorkoutContext
+                    router.presentWorkoutSheet(.preWorkoutContext)
                 }
             }
             .onAppear {
@@ -273,6 +273,8 @@ struct WorkoutView: View {
         .scrollIndicators(.hidden)
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseList)
+        .scrollContentBackground(.hidden)
+        .appBackground()
     }
 
     private func exerciseSetStatusText(totalSets: Int, completedSets: Int) -> String {
@@ -313,8 +315,7 @@ struct WorkoutView: View {
             } else {
                 Menu("Workout Options", systemImage: "ellipsis") {
                     Button("Workout Settings", systemImage: "gear") {
-                        Haptics.selection()
-                        router.activeWorkoutSheet = .settings
+                        router.presentWorkoutSheet(.settings)
                         Task { await IntentDonations.donateOpenWorkoutSettings() }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsButton)
@@ -332,7 +333,7 @@ struct WorkoutView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishButton)
                     .accessibilityHint(AccessibilityText.workoutFinishHint)
                     Button("Cancel Workout", systemImage: "xmark", role: .destructive) {
-                        router.activeWorkoutDialog = .cancel
+                        router.presentWorkoutDialog(.cancel)
                     }
                     .tint(.red)
                     .buttonStyle(.glassProminent)
@@ -378,7 +379,9 @@ struct WorkoutView: View {
                     queueBeginFinishFlow(action: .deleteEmpty)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishDeleteEmptySetsButton)
-                Button("Go back", role: .cancel) {}
+                Button("Go back", role: .cancel) {
+                    Haptics.selection()
+                }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishGoBackButton)
             case .none:
                 Button("Finish") {
@@ -410,7 +413,7 @@ struct WorkoutView: View {
         if unfinishedSetSummary.caseType == .none, shouldPromptForPostWorkoutEffort {
             beginFinishFlow(action: .finish)
         } else {
-            router.activeWorkoutDialog = .finish
+            router.presentWorkoutDialog(.finish)
         }
     }
 
@@ -426,7 +429,7 @@ struct WorkoutView: View {
         }
 
         pendingEffortSelection = 0
-        router.activeWorkoutSheet = .effortPrompt(action)
+        router.presentWorkoutSheet(.effortPrompt(action))
     }
 
     private func commitEffortAndFinish(_ effort: Int?, action: WorkoutFinishAction) {

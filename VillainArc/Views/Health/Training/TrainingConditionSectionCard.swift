@@ -30,8 +30,7 @@ struct TrainingConditionSectionCard: View {
 
     var body: some View {
         Button {
-            Haptics.selection()
-            router.activeHealthSheet = .trainingConditionEditor
+            router.presentHealthSheet(.trainingConditionEditor)
         } label: {
             HStack(alignment: .center, spacing: 12) {
                 Image(systemName: activePeriod?.kind.systemImage ?? "figure.run")
@@ -58,7 +57,7 @@ struct TrainingConditionSectionCard: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 14)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .appCardStyle()
             .tint(.primary)
         }
         .buttonStyle(.borderless)

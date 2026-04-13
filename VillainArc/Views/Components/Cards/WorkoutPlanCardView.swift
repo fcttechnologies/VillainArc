@@ -37,7 +37,7 @@ struct WorkoutPlanCardView: View {
             }
         }
         .padding()
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .appCardStyle()
         .tint(.primary)
         .fontDesign(.rounded)
         .accessibilityElement(children: .ignore)

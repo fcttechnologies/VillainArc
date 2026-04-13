@@ -170,6 +170,8 @@ private struct SelectTypeView: View {
                 Text("Templates are just a starting point. You can adjust the split to fit your needs after you create it.")
             }
         }
+        .scrollContentBackground(.hidden)
+        .appBackground()
     }
 }
 
@@ -242,6 +244,8 @@ private struct SelectModeView: View {
         }
         .navigationTitle("Schedule Type")
         .navigationBarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .appBackground()
     }
     
     private func navigateToNextStep() {
@@ -309,6 +313,8 @@ private struct SelectDaysView: View {
         }
         .navigationTitle("Training Days")
         .navigationBarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .appBackground()
     }
     
     private func navigateToNextStep() {
@@ -369,6 +375,8 @@ private struct SelectRestDaysView: View {
         }
         .navigationTitle("Rest Days")
         .navigationBarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .appBackground()
     }
     
     @ViewBuilder

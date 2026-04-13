@@ -15,6 +15,7 @@ struct SmallUnavailableView: View {
                     .font(.title2)
                 Text(subtitle)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
             }
             .fontDesign(.rounded)
             .frame(maxWidth: .infinity, alignment: .leading)

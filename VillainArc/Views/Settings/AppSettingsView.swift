@@ -41,6 +41,7 @@ struct AppSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close", systemImage: "xmark", role: .close) {
+                        Haptics.selection()
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -183,6 +184,8 @@ private struct AppSettingsFormView: View {
             }
         }
         .scrollDisabled(true)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .onChange(of: settings.retainPerformancesForLearning) {
             saveContext(context: context)
             guard !settings.retainPerformancesForLearning else { return }
@@ -243,6 +246,8 @@ private struct NotificationSettingsView: View {
         }
         .navigationTitle("Notifications")
         .toolbarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .scrollDisabled(true)
         .task {
             await refreshNotificationAuthorizationState()
@@ -369,6 +374,8 @@ private struct UnitSettingsView: View {
         }
         .navigationTitle("Units")
         .toolbarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .scrollDisabled(true)
         .onChange(of: settings.weightUnit) {
             saveContext(context: context)

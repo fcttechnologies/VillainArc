@@ -47,6 +47,7 @@ struct OnboardingView: View {
                 bootstrapView
             }
         }
+        .appBackground()
         .onChange(of: manager.state, initial: true) { oldState, newState in
             if case .profile = newState {
                 if !didSetInitialPath {
@@ -145,8 +146,10 @@ struct OnboardingView: View {
                 .bold()
 
             Text("Villain Arc needs additional Apple Health permissions to enable new features it has added and future Health features as they roll out.")
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
 
             Spacer()
 
@@ -404,8 +407,10 @@ private struct OnboardingHealthPermissionStepView: View {
                 .bold()
 
             Text("Villain Arc can export your completed workouts to Apple Health as well as read other workout metrics to improve suggestions and make the overall app richer.")
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
             
             Spacer()
 

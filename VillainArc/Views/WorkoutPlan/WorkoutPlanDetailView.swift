@@ -91,6 +91,7 @@ struct WorkoutPlanDetailView: View {
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .scrollIndicators(.hidden)
+        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
         .navigationTitle(plan.title)
         .navigationSubtitle(Text(plan.musclesTargeted()))
@@ -224,7 +225,7 @@ struct WorkoutPlanDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+            .appCardStyle()
         }
     }
 
@@ -235,7 +236,7 @@ struct WorkoutPlanDetailView: View {
 
             MuscleDistributionView(slices: muscleDistributionSlices)
                 .padding(16)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+                .appCardStyle()
         }
     }
 
@@ -343,7 +344,7 @@ private struct WorkoutPlanDetailExerciseCard: View {
             }
         }
         .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .appCardStyle()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExercise(exercise))
     }
 }

@@ -110,7 +110,7 @@ struct ExerciseView: View {
                         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
                 }
                 .padding()
-                .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                .appCardStyle()
                 .contextMenu {
                     Button {
                         openProgressionStepEditor()
@@ -198,7 +198,9 @@ struct ExerciseView: View {
                 Button(restTimerPromptConfirmLabel) {
                     applyRestTimerPrompt()
                 }
-                Button("Keep Current", role: .cancel) {}
+                Button("Keep Current", role: .cancel) {
+                    Haptics.selection()
+                }
             } message: {
                 Text(restTimerPromptMessage)
             }

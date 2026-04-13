@@ -212,6 +212,7 @@
 				Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift,
 				Intents/WorkoutSplit/WorkoutSplitEntity.swift,
 				Views/Components/Overlays/ToastManager.swift,
+				Views/Components/Surface/VillainSurface.swift,
 				Views/MorphingTabBar.swift,
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;

@@ -101,14 +101,16 @@ struct WorkoutSplitView: View {
         }
         .sheet(isPresented: splitListBinding) {
             WorkoutSplitListView()
+                .presentationDragIndicator(.visible)
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .appBackground()
         .onAppear {
             if selectedSplitDay == nil, let split = currentSplit {
                 selectedSplitDay = resolvedCurrentDay(for: split)
             }
-            if autoPresentBuilder && allSplits.isEmpty {
-                router.activeSplitSheet = .builder
+                if autoPresentBuilder && allSplits.isEmpty {
+                router.presentSplitSheet(.builder)
             }
             refreshRotationIfNeeded()
             Task { await IntentDonations.donateTrainingSummary() }
@@ -210,8 +212,7 @@ struct WorkoutSplitView: View {
     
     private var newSplitButton: some View {
         Button("New Split", systemImage: "plus") {
-            Haptics.selection()
-            router.activeSplitSheet = .builder
+            router.presentSplitSheet(.builder)
             Task { await IntentDonations.donateCreateWorkoutSplit() }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
@@ -235,8 +236,7 @@ struct WorkoutSplitView: View {
             
             if !isOverride && !allSplits.isEmpty {
                 Button("All Splits", systemImage: "list.bullet") {
-                    Haptics.selection()
-                    router.activeSplitSheet = .list
+                    router.presentSplitSheet(.list)
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
             }

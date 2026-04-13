@@ -9,21 +9,21 @@ struct WeightGoalCompletionView: View {
     @Query private var triggeringEntries: [WeightEntry]
     @State private var router = AppRouter.shared
     @State private var hasPlayedCelebration = false
-
+    
     let route: AppRouter.WeightGoalCompletionRoute
-
+    
     init(route: AppRouter.WeightGoalCompletionRoute) {
         self.route = route
         _goals = Query(WeightGoal.byID(route.goalID))
         _entries = Query(WeightEntry.history)
         _triggeringEntries = Query(WeightEntry.byID(route.triggeringEntryID ?? UUID()))
     }
-
+    
     private enum PrimaryAction {
         case completeAchieved
         case completeManualOverride
         case deleteGoal
-
+        
         var buttonTitle: String {
             switch self {
             case .completeAchieved:
@@ -34,43 +34,43 @@ struct WeightGoalCompletionView: View {
                 return String(localized: "Delete Goal")
             }
         }
-
+        
         var isDestructive: Bool {
             self == .deleteGoal
         }
     }
-
+    
     private struct Metric: Identifiable {
         let id = UUID()
         let title: String
         let text: String
     }
-
+    
     private var goal: WeightGoal? {
         goals.first
     }
-
+    
     private var triggeringEntry: WeightEntry? {
         triggeringEntries.first
     }
-
+    
     private var weightUnit: WeightUnit {
         appSettings.first?.weightUnit ?? .systemDefault
     }
-
+    
     private var evaluationDate: Date {
         route.referenceDate
     }
-
+    
     private var calendar: Calendar {
         .autoupdatingCurrent
     }
-
+    
     private var goalEntries: [WeightEntry] {
         guard let goal else { return [] }
         return entries.filter { $0.date >= goal.startedAt && $0.date <= evaluationDate }.sorted { $0.date < $1.date }
     }
-
+    
     private var dailyPoints: [TimeSeriesSample] {
         let buckets = Dictionary(grouping: goalEntries) { calendar.startOfDay(for: $0.date) }
         return buckets.compactMap { date, bucketEntries in
@@ -80,21 +80,21 @@ struct WeightGoalCompletionView: View {
         }
         .sorted { $0.date < $1.date }
     }
-
+    
     private var chartModel: WeightGoalProgressChartModel? {
         guard let goal else { return nil }
         return WeightGoalProgressChartModel(goal: goal, entries: goalEntries, now: evaluationDate)
     }
-
+    
     private var latestWeight: Double? {
         triggeringEntry?.weight ?? dailyPoints.last?.value ?? goalEntries.last?.weight
     }
-
+    
     private var isSameDayGoal: Bool {
         guard let goal else { return false }
         return calendar.isDate(goal.startedAt, inSameDayAs: evaluationDate)
     }
-
+    
     private var primaryAction: PrimaryAction? {
         guard let goal else { return nil }
         if isSameDayGoal { return .deleteGoal }
@@ -105,7 +105,7 @@ struct WeightGoalCompletionView: View {
             return goal.type == .maintain ? .completeAchieved : .completeManualOverride
         }
     }
-
+    
     private var titleText: String {
         guard let goal else { return String(localized: "Weight Goal") }
         if isSameDayGoal { return String(localized: "Delete \(goal.type.title.lowercased()) goal?") }
@@ -130,7 +130,7 @@ struct WeightGoalCompletionView: View {
             }
         }
     }
-
+    
     private var subtitleText: String {
         guard let goal else { return String(localized: "This goal is no longer available.") }
         if isSameDayGoal { return String(localized: "Goals started today can only be deleted so they don’t immediately move into history.") }
@@ -144,7 +144,7 @@ struct WeightGoalCompletionView: View {
             return String(localized: "Finish this goal now. It will be saved as an ended early override if you haven’t actually hit the target.")
         }
     }
-
+    
     private var metrics: [Metric] {
         guard let goal else { return [] }
         switch goal.type {
@@ -154,79 +154,80 @@ struct WeightGoalCompletionView: View {
             return directionalMetrics(for: goal)
         }
     }
-
+    
     var body: some View {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(titleText)
-                        .font(.largeTitle)
-                        .bold()
-                        .fontDesign(.rounded)
-
-                    Text(subtitleText)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if let chartModel {
-                    WeightGoalProgressChart(model: chartModel, weightUnit: weightUnit)
-                        .frame(height: 220)
-                        .padding(16)
-                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(chartModel.accessibilitySummary(unit: weightUnit))
-                }
-
-                if !metrics.isEmpty {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12, alignment: .top)], spacing: 12) {
-                        ForEach(metrics) { metric in
-                            SummaryStatCard(title: metric.title, text: metric.text)
-                        }
-                    }
-                }
-                Spacer()
-                VStack(spacing: 12) {
-                    if let primaryAction {
-                        primaryActionButton(for: primaryAction)
-                    }
-
-                    Button {
-                        Haptics.selection()
-                        dismissFlow()
-                    } label: {
-                        Text("Keep Active")
-                            .padding(.vertical, 5)
-                    }
-                    .buttonSizing(.flexible)
-                    .buttonStyle(.glass)
-                }
-                .font(.title3)
-                .fontWeight(.semibold)
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(titleText)
+                    .font(.largeTitle)
+                    .bold()
+                    .fontDesign(.rounded)
+                
+                Text(subtitleText)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding()
-            .task {
-                guard let goal else {
-                    dismissFlow()
-                    return
-                }
-                guard goal.endedAt == nil else {
-                    dismissFlow()
-                    return
-                }
-                guard !hasPlayedCelebration else { return }
-                if route.trigger == .achievedByEntry, !isSameDayGoal {
-                    Haptics.success()
-                    hasPlayedCelebration = true
+            
+            if let chartModel {
+                WeightGoalProgressChart(model: chartModel, weightUnit: weightUnit)
+                    .frame(height: 220)
+                    .padding(16)
+                    .appCardStyle()
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(chartModel.accessibilitySummary(unit: weightUnit))
+            }
+            
+            if !metrics.isEmpty {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12, alignment: .top)], spacing: 12) {
+                    ForEach(metrics) { metric in
+                        SummaryStatCard(title: metric.title, text: metric.text)
+                    }
                 }
             }
+            Spacer()
+            VStack(spacing: 12) {
+                if let primaryAction {
+                    primaryActionButton(for: primaryAction)
+                }
+                
+                Button {
+                    Haptics.selection()
+                    dismissFlow()
+                } label: {
+                    Text("Keep Active")
+                        .padding(.vertical, 5)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glass)
+            }
+            .font(.title3)
+            .fontWeight(.semibold)
+        }
+        .padding()
+        .task {
+            guard let goal else {
+                dismissFlow()
+                return
+            }
+            guard goal.endedAt == nil else {
+                dismissFlow()
+                return
+            }
+            guard !hasPlayedCelebration else { return }
+            if route.trigger == .achievedByEntry, !isSameDayGoal {
+                Haptics.success()
+                hasPlayedCelebration = true
+            }
+        }
+        .appBackground()
     }
-
+    
     private func finishGoal(using action: PrimaryAction) {
         guard let goal else {
             dismissFlow()
             return
         }
-
+        
         switch action {
         case .completeAchieved:
             goal.endedAt = evaluationDate
@@ -237,17 +238,17 @@ struct WeightGoalCompletionView: View {
         case .deleteGoal:
             context.delete(goal)
         }
-
+        
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadWeight()
         Haptics.success()
         dismissFlow()
     }
-
+    
     private func dismissFlow() {
         router.activeWeightGoalCompletion = nil
     }
-
+    
     @ViewBuilder
     private func primaryActionButton(for action: PrimaryAction) -> some View {
         if action.isDestructive {
@@ -271,7 +272,7 @@ struct WeightGoalCompletionView: View {
             .buttonStyle(.glassProminent)
         }
     }
-
+    
     private func achievedSubtitle(for goal: WeightGoal, entry: WeightEntry) -> String {
         switch goal.type {
         case .cut:
@@ -282,7 +283,7 @@ struct WeightGoalCompletionView: View {
             return String(localized: "You logged \(formattedWeightText(entry.weight, unit: weightUnit)) and wrapped up this goal.")
         }
     }
-
+    
     private func maintainMetrics(for goal: WeightGoal) -> [Metric] {
         guard !goalEntries.isEmpty else {
             return [
@@ -290,7 +291,7 @@ struct WeightGoalCompletionView: View {
                 Metric(title: "Target Weight", text: formattedWeightText(goal.targetWeight, unit: weightUnit))
             ]
         }
-
+        
         let weights = goalEntries.map(\.weight)
         let minimumWeight = weights.min() ?? goal.startWeight
         let maximumWeight = weights.max() ?? goal.startWeight
@@ -302,37 +303,37 @@ struct WeightGoalCompletionView: View {
             Metric(title: "Logged Days", text: "\(dailyPoints.count)")
         ]
     }
-
+    
     private func directionalMetrics(for goal: WeightGoal) -> [Metric] {
         var items = [
             Metric(title: goal.type == .cut ? "Lost" : "Gained", text: totalDirectionalChangeText(for: goal)),
             Metric(title: "Current", text: formattedWeightText(latestWeight ?? goal.startWeight, unit: weightUnit)),
             Metric(title: "Duration", text: durationText)
         ]
-
+        
         if let averagePaceText {
             items.append(Metric(title: "Avg Pace", text: averagePaceText))
         }
-
+        
         if let fastestPaceText {
             items.append(Metric(title: "Fastest Pace", text: fastestPaceText))
         }
-
+        
         return items
     }
-
+    
     private func totalDirectionalChangeText(for goal: WeightGoal) -> String {
         guard let latestWeight else { return formattedWeightText(0, unit: weightUnit) }
         let change = abs(latestWeight - goal.startWeight)
         return formattedWeightText(change, unit: weightUnit)
     }
-
+    
     private var durationText: String {
         let days = max(calendar.dateComponents([.day], from: calendar.startOfDay(for: goal?.startedAt ?? evaluationDate), to: calendar.startOfDay(for: evaluationDate)).day ?? 0, 0)
         if days == 0 { return String(localized: "Started today") }
         return localizedCountText(days, singular: "day", plural: "days")
     }
-
+    
     private var averagePaceText: String? {
         guard dailyPoints.count >= 2 else { return nil }
         guard let firstPoint = dailyPoints.first, let lastPoint = dailyPoints.last else { return nil }
@@ -341,7 +342,7 @@ struct WeightGoalCompletionView: View {
         let pacePerWeek = abs(((lastPoint.value - firstPoint.value) / spanDays) * 7)
         return formattedWeightPerWeekText(pacePerWeek, unit: weightUnit, fractionDigits: 0...1)
     }
-
+    
     private var fastestPaceText: String? {
         let segments = zip(dailyPoints, dailyPoints.dropFirst()).compactMap { previous, next -> Double? in
             let spanDays = next.date.timeIntervalSince(previous.date) / 86_400
@@ -356,7 +357,7 @@ struct WeightGoalCompletionView: View {
                 return nil
             }
         }
-
+        
         guard let fastestPace = segments.max() else { return nil }
         return formattedWeightPerWeekText(fastestPace, unit: weightUnit, fractionDigits: 0...1)
     }

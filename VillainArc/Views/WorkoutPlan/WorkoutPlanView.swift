@@ -41,6 +41,8 @@ struct WorkoutPlanView: View {
                 }
             }
             .toolbarTitleDisplayMode(.inline)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel", systemImage: "xmark", role: .cancel) {
@@ -223,6 +225,8 @@ struct WorkoutPlanView: View {
             .onMove(perform: moveExercise)
         }
         .scrollIndicators(.hidden)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseList)
     }
@@ -402,7 +406,7 @@ private struct WorkoutPlanExerciseView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseNotesField(exercise))
         }
         .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .appCardStyle()
         .contextMenu {
             Button {
                 openProgressionStepEditor()
@@ -586,7 +590,7 @@ private struct WorkoutPlanSetRowView: View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)
             .foregroundStyle(set.type.tintColor)
             .frame(width: 40, height: 40)
-            .glassEffect(.regular, in: .circle)
+            .appCircleStyle()
             .overlay(alignment: .topTrailing) {
                 if let visibleTargetRPE = set.visibleTargetRPE {
                     RPEBadge(value: visibleTargetRPE, style: .target)

@@ -49,6 +49,7 @@ struct WorkoutSplitListView: View {
                                 .bold()
                         }
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
 
                     if !inactiveSplits.isEmpty {
@@ -56,7 +57,6 @@ struct WorkoutSplitListView: View {
                             ForEach(inactiveSplits) { split in
                                 HStack(spacing: 12) {
                                     Button {
-                                        Haptics.selection()
                                         dismiss()
                                         router.navigate(to: .workoutSplitDetail(split))
                                     } label: {
@@ -81,16 +81,15 @@ struct WorkoutSplitListView: View {
                                 .bold()
                         }
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
                 }
             }
             .listStyle(.plain)
+            .appBackground()
             .overlay {
                 if visibleSplits.isEmpty {
-                    ContentUnavailableView(
-                        "No Splits",
-                        systemImage: "calendar.badge.plus",
-                        description: Text("Create a workout split to plan your training routine.")
+                    ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine.")
                     )
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
                 }

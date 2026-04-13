@@ -34,7 +34,6 @@ struct WeightHistoryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 WeightGoalSummaryCard(activeGoal: activeGoal, analysis: goalAnalysis, entries: weightEntries, weightUnit: weightUnit, hasGoalHistory: hasGoalHistory) {
-                    Haptics.selection()
                     if activeGoal != nil || hasGoalHistory {
                         router.navigate(to: .weightGoalHistory)
                         Task { await IntentDonations.donateShowWeightGoalHistory() }
@@ -48,7 +47,6 @@ struct WeightHistoryView: View {
                 }
                 
                 Button {
-                    Haptics.selection()
                     router.navigate(to: .allWeightEntriesList)
                     Task { await IntentDonations.donateShowAllWeightEntries() }
                 } label: {
@@ -65,6 +63,7 @@ struct WeightHistoryView: View {
             .padding()
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .appBackground()
         .navigationTitle("Weight")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
@@ -85,12 +84,12 @@ struct WeightHistoryView: View {
         .sheet(isPresented: $showAddWeightEntrySheet) {
             NewWeightEntryView()
                 .presentationDetents([.fraction(0.5)])
-                .presentationBackground(Color(.systemBackground))
+                .presentationBackground(Color.bg)
         }
         .sheet(isPresented: $showNewWeightGoalSheet) {
             NewWeightGoalView(weightUnit: weightUnit)
                 .presentationDetents([.fraction(0.7), .large])
-                .presentationBackground(Color(.systemBackground))
+                .presentationBackground(Color.bg)
         }
     }
 }
@@ -357,7 +356,7 @@ private struct WeightHistoryMainSection: View {
                 .onChange(of: selectedRange) { Haptics.selection() }
             }
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .appCardStyle()
             
             if !summaryStats.isEmpty {
                 HStack(spacing: 10) {

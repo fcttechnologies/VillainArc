@@ -120,7 +120,7 @@ private struct RingSurfaceStyle {
     }
 
     static let light = RingSurfaceStyle(
-        stageBackground: Color(white: 0.925),
+        stageBackground: Color(white: 0.95),
         ringColor: .white,
         fillColor: Color(white: 0.97),
         titleColor: .black,

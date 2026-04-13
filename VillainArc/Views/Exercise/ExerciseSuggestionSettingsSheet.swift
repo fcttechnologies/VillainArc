@@ -72,7 +72,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                    .appCardStyle()
 
                     if suggestionsEnabled {
                         VStack(alignment: .leading, spacing: 12) {
@@ -86,7 +86,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                        .appCardStyle()
 
                         VStack(alignment: .leading, spacing: 16) {
                             VStack(alignment: .leading, spacing: 8) {
@@ -162,7 +162,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                        .appCardStyle()
                     } else {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Suggestions are off for this exercise.")
@@ -173,16 +173,19 @@ struct ExerciseSuggestionSettingsSheet: View {
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                        .appCardStyle()
                     }
                 }
                 .padding()
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
+                        Haptics.selection()
                         dismiss()
                     }
                 }

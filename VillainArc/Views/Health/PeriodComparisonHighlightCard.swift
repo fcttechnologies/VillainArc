@@ -41,7 +41,7 @@ struct PeriodComparisonHighlightCard: View {
             ComparisonBarRow(value: previousValue, label: previousLabel, unitText: unitText, maxValue: maxValue, fillStyle: AnyShapeStyle(Color.secondary.opacity(0.18)), valueTextStyle: AnyShapeStyle(.primary), labelTextStyle: AnyShapeStyle(.primary), valueText: valueText)
         }
         .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilitySummary)
         .accessibilityValue(accessibilityValue)

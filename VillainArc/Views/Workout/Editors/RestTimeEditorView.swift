@@ -34,6 +34,8 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
         .navBar(title: "Set Rest Times") {
             CloseButton()
         }
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.restTimeEditorForm)
         .onDisappear {
             saveContext(context: context)

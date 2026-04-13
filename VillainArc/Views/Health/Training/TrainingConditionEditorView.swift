@@ -89,6 +89,8 @@ struct TrainingConditionEditorView: View {
             .navigationTitle("Activity Status")
             .navigationSubtitle(subtitleText ?? String())
             .toolbarTitleDisplayMode(.inlineLarge)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Update", systemImage: "checkmark", role: .confirm) {
@@ -106,7 +108,7 @@ struct TrainingConditionEditorView: View {
                 affectedMuscles = selection
             }
             .presentationDetents([.fraction(0.75), .large])
-            .presentationBackground(Color(.systemBackground))
+            .presentationBackground(Color.bg)
         }
         .onChange(of: selectedKind) { _, newKind in
             applyDefaultImpactIfNeeded(for: newKind)
@@ -131,7 +133,7 @@ struct TrainingConditionEditorView: View {
                     .datePickerStyle(.graphical)
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionEndDatePicker)
                     .padding(12)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                    .appCardStyle()
             }
 
             if usesAffectedMuscles {
@@ -151,7 +153,7 @@ struct TrainingConditionEditorView: View {
                         Spacer()
                     }
                     .padding()
-                    .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                    .appCardStyle()
                     .tint(.primary)
                 }
                 .buttonStyle(.borderless)
@@ -161,7 +163,6 @@ struct TrainingConditionEditorView: View {
 
             if showsHistoryButton {
                 Button {
-                    Haptics.selection()
                     dismiss()
                     router.navigate(to: .trainingConditionHistory)
                 } label: {
@@ -217,7 +218,7 @@ struct TrainingConditionEditorView: View {
             }
         }
         .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
     }
 
     private func statusButton(for choice: TrainingConditionChoice) -> some View {
@@ -253,7 +254,7 @@ struct TrainingConditionEditorView: View {
                     .foregroundStyle(selectedKind == choice.kind ? .blue : .secondary)
             }
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 24))
+            .appCardStyle()
             .tint(.primary)
         }
         .buttonStyle(.borderless)

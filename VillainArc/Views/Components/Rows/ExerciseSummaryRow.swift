@@ -40,7 +40,7 @@ struct ExerciseSummaryRow: View {
             }
             .fontWeight(.semibold)
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .appCardStyle()
             .fontDesign(.rounded)
             .tint(.primary)
         }

@@ -53,6 +53,8 @@ struct WorkoutsListView: View {
         .navigationTitle("Workouts")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .navigationBarBackButtonHidden(isEditing)
         .alert("Delete All Workouts?", isPresented: $showDeleteAllConfirmation) {
             Button("Delete All", role: .destructive) {

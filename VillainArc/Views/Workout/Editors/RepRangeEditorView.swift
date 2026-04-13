@@ -72,6 +72,8 @@ struct RepRangeEditorView: View {
         .navBar(title: "Rep Range") {
             CloseButton()
         }
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.repRangeForm)
         .onChange(of: repRange.activeMode) {
             Haptics.selection()

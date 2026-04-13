@@ -106,11 +106,12 @@ struct StepsGoalHistoryView: View {
         .navigationTitle("Steps Goals")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    Haptics.selection()
-                    router.activeHealthSheet = .newStepsGoal
+                    router.presentHealthSheet(.newStepsGoal)
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)
@@ -123,7 +124,7 @@ struct StepsGoalHistoryView: View {
         .sheet(isPresented: newStepsGoalSheetBinding) {
             NewStepsGoalView()
                 .presentationDetents([.fraction(0.35)])
-                .presentationBackground(Color(.systemBackground))
+                .presentationBackground(Color.bg)
         }
         .overlay {
             if goals.isEmpty {
@@ -176,7 +177,7 @@ private struct StepsGoalHistoryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
@@ -203,15 +204,13 @@ private struct StepsGoalHistoryRow: View {
                 Spacer(minLength: 12)
             }
 
-            Divider()
-
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
-                SummaryStatCard(title: String(localized: "Target"), text: "\(goal.targetSteps.formatted(.number)) steps")
-                SummaryStatCard(title: String(localized: "Achieved Days"), text: achievedDays.formatted(.number))
+                SummaryStatCard(title: String(localized: "Target"), text: "\(goal.targetSteps.formatted(.number)) steps", usesSubStyle: true)
+                SummaryStatCard(title: String(localized: "Achieved Days"), text: achievedDays.formatted(.number), usesSubStyle: true)
             }
         }
         .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .appCardStyle()
     }
 
     private var goalStatusBadgeTitle: String {
@@ -291,6 +290,8 @@ struct NewStepsGoalView: View {
             }
             .navigationTitle("Steps Goal")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save", systemImage: "checkmark", role: .confirm) {

@@ -38,6 +38,8 @@ struct AllWeightEntriesListView: View {
         .animation(reduceMotion ? nil : .smooth, value: isEditing)
         .navigationTitle("All Weight Entries")
         .toolbarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .navigationBarBackButtonHidden(isEditing)
         .alert("Delete All Weight Entries?", isPresented: $showDeleteAllConfirmation) {
             Button("Delete All", role: .destructive) {

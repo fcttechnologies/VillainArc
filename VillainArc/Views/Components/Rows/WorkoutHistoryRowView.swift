@@ -20,7 +20,7 @@ struct WorkoutHistoryRowView: View {
         } label: {
             content
                 .padding()
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+                .appCardStyle()
                 .tint(.primary)
                 .fontDesign(.rounded)
         }

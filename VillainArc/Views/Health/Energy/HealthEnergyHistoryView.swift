@@ -31,6 +31,7 @@ struct HealthEnergyHistoryView: View {
             .padding()
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .appBackground()
         .navigationTitle("Energy")
         .toolbarTitleDisplayMode(.inline)
     }
@@ -278,7 +279,7 @@ private struct HealthEnergyMainChartSection: View {
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
         .animation(reduceMotion ? nil : .smooth, value: latestEntry?.totalEnergyBurned)
         .onChange(of: selectedRange) { selectedDate = nil }
         .task(id: cacheKey) {
@@ -407,7 +408,7 @@ private struct HealthEnergyWeekdayChartSection: View {
     var body: some View {
         WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthEnergyWeekdayChartLabel)
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .appCardStyle()
             .task(id: cacheKey) {
                 let newPoints = makeWeekdayAveragePoints(from: entries, date: \.date, value: \.activeEnergyBurned)
                     .map { WeekdayAveragePoint(weekday: $0.weekday, averageValue: energyUnit.fromKilocalories($0.averageValue), sampleCount: $0.sampleCount) }

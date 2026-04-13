@@ -22,7 +22,6 @@ struct WeightGoalHistoryView: View {
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         if goal.endedAt == nil {
                             Button("Complete", systemImage: "checkmark.circle") {
-                                Haptics.selection()
                                 router.presentWeightGoalCompletion(for: goal, trigger: .manualCompletion)
                             }
                             .tint(.blue)
@@ -40,11 +39,12 @@ struct WeightGoalHistoryView: View {
         .navigationTitle("Weight Goals")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .appBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    Haptics.selection()
-                    router.activeHealthSheet = .newWeightGoal
+                    router.presentHealthSheet(.newWeightGoal)
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)
@@ -103,7 +103,7 @@ private struct WeightGoalHistoryRowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
@@ -136,31 +136,29 @@ private struct WeightGoalHistoryRowView: View {
                 }
             }
 
-            Divider()
-
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)], spacing: 12) {
-                SummaryStatCard(title: String(localized: "Starting Weight"), text: formattedWeightText(goal.startWeight, unit: weightUnit))
-                SummaryStatCard(title: String(localized: "Target Weight"), text: formattedWeightText(goal.targetWeight, unit: weightUnit))
+                SummaryStatCard(title: String(localized: "Starting Weight"), text: formattedWeightText(goal.startWeight, unit: weightUnit), usesSubStyle: true)
+                SummaryStatCard(title: String(localized: "Target Weight"), text: formattedWeightText(goal.targetWeight, unit: weightUnit), usesSubStyle: true)
                 
                 if let latestGoalWeight {
-                    SummaryStatCard(title: String(localized: "Progress"), text: weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit))
+                    SummaryStatCard(title: String(localized: "Progress"), text: weightGoalProgressText(goal: goal, currentWeight: latestGoalWeight, unit: weightUnit), usesSubStyle: true)
                 }
 
                 if let targetDate = goal.targetDate {
-                    SummaryStatCard(title: String(localized: "Target Date"), text: formattedRecentDay(targetDate))
+                    SummaryStatCard(title: String(localized: "Target Date"), text: formattedRecentDay(targetDate), usesSubStyle: true)
                 }
 
                 if let targetRatePerWeek = goal.targetRatePerWeek, goal.type != .maintain {
-                    SummaryStatCard(title: String(localized: "Target Pace"), text: formattedWeightPerWeekText(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1))
+                    SummaryStatCard(title: String(localized: "Target Pace"), text: formattedWeightPerWeekText(targetRatePerWeek, unit: weightUnit, fractionDigits: 0...1), usesSubStyle: true)
                 }
 
                 if let endedAt = goal.endedAt {
-                    SummaryStatCard(title: String(localized: "Ended"), text: formattedRecentDay(endedAt))
+                    SummaryStatCard(title: String(localized: "Ended"), text: formattedRecentDay(endedAt), usesSubStyle: true)
                 }
             }
         }
         .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .appCardStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(AccessibilityText.healthWeightGoalRowLabel(typeTitle: goal.type.title))
         .accessibilityValue(accessibilityValue)

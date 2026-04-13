@@ -35,6 +35,7 @@ struct SleepHistoryView: View {
             .padding()
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .appBackground()
         .navigationTitle("Sleep")
         .toolbarTitleDisplayMode(.inline)
     }
@@ -99,7 +100,7 @@ private struct SleepWeekdayChartSection: View {
     var body: some View {
         WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthSleepWeekdayChartLabel, yAxisValueLabel: formattedSleepDurationText)
             .padding()
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .appCardStyle()
             .task(id: cacheKey) {
                 let newPoints = makeWeekdayAveragePoints(from: entries.filter { $0.timeAsleep > 0 }, date: \.displayWakeDay, value: \.timeAsleep)
                 points = newPoints
@@ -438,7 +439,7 @@ private struct SleepHistoryMainSection: View {
             }
         }
         .padding()
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+        .appCardStyle()
         .onChange(of: latestEntry?.wakeDay) {
             if let selectedWakeDay, entryByWakeDay[selectedWakeDay] != nil { return }
             selectedWakeDay = latestEntry?.wakeDay

@@ -5,55 +5,61 @@ struct SummaryStatCard: View {
     let title: String
     let text: String
     let date: Date?
+    private let usesSubStyle: Bool
     private let number: Double?
     private let fractionDigits: ClosedRange<Int>
     private let placeholderText: String
     private let usesNumericLayout: Bool
 
-    init(title: String, text: String, date: Date? = nil) {
+    init(title: String, text: String, date: Date? = nil, usesSubStyle: Bool = false) {
         self.title = title
         self.text = text
         self.date = date
+        self.usesSubStyle = usesSubStyle
         self.number = nil
         self.fractionDigits = 0...0
         self.placeholderText = text
         self.usesNumericLayout = false
     }
 
-    init(title: String, number: Int, text: String = "", date: Date? = nil) {
+    init(title: String, number: Int, text: String = "", date: Date? = nil, usesSubStyle: Bool = false) {
         self.title = title
         self.text = text
         self.date = date
+        self.usesSubStyle = usesSubStyle
         self.number = Double(number)
         self.fractionDigits = 0...0
         self.placeholderText = "-"
         self.usesNumericLayout = true
     }
 
-    init(title: String, number: Double, text: String = "", date: Date? = nil) {
+    init(title: String, number: Double, text: String = "", date: Date? = nil, usesSubStyle: Bool = false) {
         self.title = title
         self.text = text
         self.date = date
+        self.usesSubStyle = usesSubStyle
         self.number = number
         self.fractionDigits = 0...1
         self.placeholderText = "-"
         self.usesNumericLayout = true
     }
 
-    init(title: String, number: Int?, text: String = "", placeholderText: String = "-", date: Date? = nil) {
+    init(title: String, number: Int?, text: String = "", placeholderText: String = "-", date: Date? = nil, usesSubStyle: Bool = false) {
         self.title = title
         self.text = text
         self.date = date
+        self.usesSubStyle = usesSubStyle
         self.number = number.map(Double.init)
         self.fractionDigits = 0...0
         self.placeholderText = placeholderText
         self.usesNumericLayout = true
     }
 
-    init(title: String, number: Double?, text: String = "", placeholderText: String = "-", date: Date? = nil) {
+    init(title: String, number: Double?, text: String = "", placeholderText: String = "-", date: Date? = nil, usesSubStyle: Bool = false) {
         self.title = title
         self.text = text
         self.date = date
+        self.usesSubStyle = usesSubStyle
         self.number = number
         self.fractionDigits = 0...1
         self.placeholderText = placeholderText
@@ -90,7 +96,19 @@ struct SummaryStatCard: View {
         .fontWeight(.semibold)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 12))
+        .modifier(SummaryStatSurfaceStyle(usesSubStyle: usesSubStyle))
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct SummaryStatSurfaceStyle: ViewModifier {
+    let usesSubStyle: Bool
+
+    func body(content: Content) -> some View {
+        if usesSubStyle {
+            content.appSubCardStyle()
+        } else {
+            content.appCardStyle()
+        }
     }
 }
