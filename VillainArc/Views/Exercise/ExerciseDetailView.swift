@@ -279,6 +279,7 @@ struct ExerciseDetailView: View {
         .appBackground()
         .sheet(item: $suggestionSettingsExercise) { exercise in
             ExerciseSuggestionSettingsSheet(exercise: exercise)
+                .presentationBackground(Color.sheetBg)
         }
         .overlay {
             if exercise == nil {

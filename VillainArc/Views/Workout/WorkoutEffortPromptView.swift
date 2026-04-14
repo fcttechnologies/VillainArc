@@ -100,7 +100,7 @@ struct WorkoutEffortPromptView: View {
             }
         }
         .presentationDetents([.fraction(0.62)])
-        .presentationBackground(Color(.systemBackground))
+        .presentationBackground(Color.sheetBg)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortSheet)
     }
 }

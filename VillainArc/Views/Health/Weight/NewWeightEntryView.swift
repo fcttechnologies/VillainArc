@@ -66,7 +66,6 @@ struct NewWeightEntryView: View {
             .navigationTitle("New Weight Entry")
             .toolbarTitleDisplayMode(.inlineLarge)
             .scrollContentBackground(.hidden)
-            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save", systemImage: "checkmark", role: .confirm) {

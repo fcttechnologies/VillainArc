@@ -37,6 +37,7 @@ struct TextEntryEditorView: View {
             text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         .padding()
+        .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
         .simultaneousGesture(
             TapGesture().onEnded {

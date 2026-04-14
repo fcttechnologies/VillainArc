@@ -126,14 +126,17 @@ struct WorkoutPlanView: View {
                             }
                         }
                 }
+                .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showAddExerciseSheet) {
                 AddExerciseView(plan: plan)
                     .interactiveDismissDisabled()
+                    .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showNotesEditorSheet) {
                 TextEntryEditorView(title: "Notes", promptText: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, isTitle: true)
                     .presentationDetents([.fraction(0.4)])
+                    .presentationBackground(Color.sheetBg)
                     .onChange(of: plan.notes) {
                         scheduleSave(context: context)
                     }
@@ -151,6 +154,7 @@ struct WorkoutPlanView: View {
             .sheet(isPresented: $showTitleEditorSheet) {
                 TextEntryEditorView(title: "Title", promptText: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)
                     .presentationDetents([.fraction(0.2)])
+                    .presentationBackground(Color.sheetBg)
                     .onChange(of: plan.title) {
                         scheduleSave(context: context)
                     }
@@ -226,7 +230,7 @@ struct WorkoutPlanView: View {
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseList)
     }
@@ -435,25 +439,30 @@ private struct WorkoutPlanExerciseView: View {
         .sheet(isPresented: $showRepRangeEditor) {
             RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                 .presentationDetents([.medium])
+                .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: $showRestTimeEditor) {
             RestTimeEditorView(exercise: exercise)
                 .presentationDetents([.medium, .large])
+                .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: $showReplaceExerciseSheet) {
             ReplaceExerciseView(currentCatalogID: exercise.catalogID) { newExercise, keepSets in
                 exercise.replaceWith(newExercise, keepSets: keepSets, context: context)
                 saveContext(context: context)
             }
+            .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: $showExerciseHistorySheet) {
             NavigationStack {
                 ExerciseHistoryView(exercise: exercise)
             }
             .presentationDetents([.medium, .large])
+            .presentationBackground(Color.sheetBg)
         }
         .sheet(item: $progressionStepExercise) { progressionStepExercise in
             ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
+                .presentationBackground(Color.sheetBg)
         }
     }
 

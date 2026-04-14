@@ -1,18 +1,10 @@
 import SwiftUI
 import SwiftData
 
-private enum TrainingConditionEditorMode: Identifiable {
-    case current
-
-    var id: String {
-        "current"
-    }
-}
-
 struct TrainingConditionHistoryView: View {
     @Environment(\.modelContext) private var context
     @Query(TrainingConditionPeriod.history, animation: .smooth) private var periods: [TrainingConditionPeriod]
-    @State private var editorMode: TrainingConditionEditorMode?
+    @State private var router = AppRouter.shared
 
     private var activePeriod: TrainingConditionPeriod? { periods.first(where: { $0.isActive() }) }
     private var endedPeriods: [TrainingConditionPeriod] { periods.filter { !$0.isActive() } }
@@ -26,6 +18,7 @@ struct TrainingConditionHistoryView: View {
                     .font(.headline)
                     .foregroundStyle(.secondary)
             }
+            .listRowBackground(Color.clear)
 
             Section {
                 historySection
@@ -34,6 +27,7 @@ struct TrainingConditionHistoryView: View {
                     .font(.headline)
                     .foregroundStyle(.secondary)
             }
+            .listRowBackground(Color.clear)
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .listStyle(.plain)
@@ -45,7 +39,7 @@ struct TrainingConditionHistoryView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptics.selection()
-                    editorMode = .current
+                    router.presentHealthSheet(.trainingConditionEditor)
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)
@@ -55,11 +49,6 @@ struct TrainingConditionHistoryView: View {
                 .accessibilityHint(AccessibilityText.healthTrainingConditionHistoryAddHint)
             }
         }
-        .sheet(item: $editorMode) { mode in
-            TrainingConditionEditorView(activePeriod: activePeriod)
-                .presentationDetents([.fraction(0.74)])
-                .presentationBackground(Color(.systemBackground))
-        }
     }
 
     @ViewBuilder
@@ -67,7 +56,7 @@ struct TrainingConditionHistoryView: View {
         if let activePeriod {
             TrainingConditionHistoryRow(period: activePeriod, isActive: true, onEdit: {
                 Haptics.selection()
-                editorMode = .current
+                router.presentHealthSheet(.trainingConditionEditor)
             }, onEnd: {
                 Haptics.selection()
                 try? TrainingConditionStore.endActiveCondition(activePeriod, context: context)

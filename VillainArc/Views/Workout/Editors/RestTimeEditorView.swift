@@ -35,7 +35,6 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
             CloseButton()
         }
         .scrollContentBackground(.hidden)
-        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.restTimeEditorForm)
         .onDisappear {
             saveContext(context: context)

@@ -98,10 +98,12 @@ struct WorkoutView: View {
                             }
                         }
                 }
+                .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: addExerciseSheetBinding, onDismiss: handleAddExerciseSheetDismiss) {
                 AddExerciseView(workout: workout)
                     .interactiveDismissDisabled()
+                    .presentationBackground(Color.sheetBg)
                     .task {
                         prepareForAddExerciseSheet()
                     }
@@ -109,18 +111,19 @@ struct WorkoutView: View {
             .sheet(isPresented: restTimerSheetBinding) {
                 RestTimerView(workout: workout, appSettingsSnapshot: appSettingsSnapshot)
                     .presentationDetents([.medium, .large])
-                    .presentationBackground(Color(.systemBackground))
+                    .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showLiveHealthSheet) {
                 WorkoutLiveStatsView(workout: workout)
                     .presentationDetents([.height(240)])
                     .presentationDragIndicator(.visible)
-                    .presentationBackground(Color.bg)
+                    .presentationBackground(Color.sheetBg)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutLiveHealthSheet)
             }
             .sheet(isPresented: $showNotesEditorSheet) {
                 TextEntryEditorView(title: "Notes", promptText: "Workout Notes", text: $workout.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutNotesEditorField)
                     .presentationDetents([.fraction(0.4)])
+                    .presentationBackground(Color.sheetBg)
                     .onChange(of: workout.notes) {
                         scheduleSave(context: context)
                     }
@@ -131,6 +134,7 @@ struct WorkoutView: View {
             .sheet(isPresented: preWorkoutSheetBinding) {
                 PreWorkoutContextView(preWorkoutContext: workout.preWorkoutContext ?? PreWorkoutContext())
                     .presentationDetents([.fraction(0.4)])
+                    .presentationBackground(Color.sheetBg)
                     .onDisappear {
                         saveContext(context: context)
                     }
@@ -138,6 +142,7 @@ struct WorkoutView: View {
             .sheet(isPresented: $showTitleEditorSheet) {
                 TextEntryEditorView(title: "Title", promptText: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField, isTitle: true)
                     .presentationDetents([.fraction(0.2)])
+                    .presentationBackground(Color.sheetBg)
                     .onChange(of: workout.title) {
                         scheduleSave(context: context)
                     }
@@ -151,6 +156,7 @@ struct WorkoutView: View {
             }
             .sheet(isPresented: workoutSettingsSheetBinding) {
                 WorkoutSettingsView(workout: workout)
+                    .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: effortPromptSheetBinding) {
                 WorkoutEffortPromptView(
@@ -274,7 +280,7 @@ struct WorkoutView: View {
         .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseList)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
     }
 
     private func exerciseSetStatusText(totalSets: Int, completedSets: Int) -> String {

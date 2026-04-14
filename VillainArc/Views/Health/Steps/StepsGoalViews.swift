@@ -121,11 +121,6 @@ struct StepsGoalHistoryView: View {
                 .accessibilityHint(AccessibilityText.healthStepsGoalHistoryAddHint)
             }
         }
-        .sheet(isPresented: newStepsGoalSheetBinding) {
-            NewStepsGoalView()
-                .presentationDetents([.fraction(0.35)])
-                .presentationBackground(Color.bg)
-        }
         .overlay {
             if goals.isEmpty {
                 ContentUnavailableView("No Steps Goals", systemImage: "target", description: Text("Your saved and previous steps goals will appear here."))
@@ -143,17 +138,6 @@ struct StepsGoalHistoryView: View {
         }
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadSteps()
-    }
-
-    private var newStepsGoalSheetBinding: Binding<Bool> {
-        Binding(
-            get: { router.activeHealthSheet == .newStepsGoal },
-            set: { isPresented in
-                if !isPresented, router.activeHealthSheet == .newStepsGoal {
-                    router.activeHealthSheet = nil
-                }
-            }
-        )
     }
 }
 
@@ -291,7 +275,6 @@ struct NewStepsGoalView: View {
             .navigationTitle("Steps Goal")
             .toolbarTitleDisplayMode(.inlineLarge)
             .scrollContentBackground(.hidden)
-            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save", systemImage: "checkmark", role: .confirm) {

@@ -35,7 +35,7 @@ struct RootView: View {
             .sheet(isPresented: onboardingBinding) {
                 OnboardingView(manager: onboardingManager)
                     .presentationDetents([.fraction(0.5)])
-                    .presentationBackground(Color(.systemBackground))
+                    .presentationBackground(Color.sheetBg)
                     .interactiveDismissDisabled(true)
             }
     }

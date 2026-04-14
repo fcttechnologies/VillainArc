@@ -102,7 +102,7 @@ struct AddExerciseView: View {
                     MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
                         selectedMuscles = updatedMuscles
                     }
-                    .presentationBackground(Color.bg)
+                    .presentationBackground(Color.sheetBg)
                     .presentationDetents([.fraction(0.3)])
                 }
                 .onChange(of: favoritesOnly) {

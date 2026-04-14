@@ -45,6 +45,7 @@ enum HomeQuickAction: String {
     }
 
     enum AdditionalQuickActionContext: Hashable {
+        case healthRoot
         case workoutDetail(WorkoutSession)
         case workoutSplit
         case workoutPlanDetail(WorkoutPlan, showsUseOnly: Bool)
@@ -109,6 +110,7 @@ enum HomeQuickAction: String {
     var activeSplitSheet: SplitSheet?
     var activeWorkoutSheet: WorkoutSheet?
     var activeWorkoutDialog: WorkoutDialog?
+    var isQuickActionsBarHidden = false
     var tabSelection: AppTab = .home {
         didSet { persistTabSelection(tabSelection) }
     }
@@ -298,6 +300,10 @@ enum HomeQuickAction: String {
 
     private func additionalQuickActionContext(for destination: Destination?) -> AdditionalQuickActionContext? {
         switch destination {
+        case nil:
+            return tabSelection == .health ? .healthRoot : nil
+        case .trainingConditionHistory:
+            return .healthRoot
         case .workoutSessionDetail(let workout):
             return .workoutDetail(workout)
         case .workoutSplit, .workoutSplitDetail:

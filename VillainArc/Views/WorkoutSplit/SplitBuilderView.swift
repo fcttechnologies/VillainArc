@@ -171,7 +171,7 @@ private struct SelectTypeView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
     }
 }
 
@@ -245,7 +245,7 @@ private struct SelectModeView: View {
         .navigationTitle("Schedule Type")
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
     }
     
     private func navigateToNextStep() {
@@ -314,7 +314,7 @@ private struct SelectDaysView: View {
         .navigationTitle("Training Days")
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
     }
     
     private func navigateToNextStep() {
@@ -376,7 +376,7 @@ private struct SelectRestDaysView: View {
         .navigationTitle("Rest Days")
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
     }
     
     @ViewBuilder

@@ -79,7 +79,6 @@ struct RestTimerView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .appBackground()
             .scrollIndicators(.hidden)
             .accessibilityIdentifier(AccessibilityIdentifiers.restTimerList)
             .toolbar {

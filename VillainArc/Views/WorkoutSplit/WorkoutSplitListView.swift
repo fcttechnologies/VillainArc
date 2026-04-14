@@ -86,7 +86,7 @@ struct WorkoutSplitListView: View {
                 }
             }
             .listStyle(.plain)
-            .appBackground()
+            .sheetBackground()
             .overlay {
                 if visibleSplits.isEmpty {
                     ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine.")
@@ -106,6 +106,7 @@ struct WorkoutSplitListView: View {
                         router.navigate(to: .workoutSplitDetail(newSplit))
                     }
                 }
+                .presentationBackground(Color.sheetBg)
             }
         }
     }

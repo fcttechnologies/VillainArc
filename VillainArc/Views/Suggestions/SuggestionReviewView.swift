@@ -9,13 +9,19 @@ struct SuggestionReviewView: View {
     var showDecisionState: Bool = false
     var actionableDecisions: Set<Decision> = [.pending]
     var emptyState: SuggestionEmptyState?
+    var fromSheet: Bool = false
     
     var body: some View {
         if sections.isEmpty {
             // If a custom empty state is provided, show it; otherwise render nothing.
             if let emptyState {
-                emptyState.view
-                    .appBackground()
+                if fromSheet {
+                    emptyState.view
+                        .sheetBackground()
+                } else {
+                    emptyState.view
+                        .appBackground()
+                }
             } else {
                 EmptyView()
             }
@@ -36,7 +42,19 @@ struct SuggestionReviewView: View {
                     .id(section.id)
                 }
             }
-            .appBackground()
+            .modifier(SuggestionReviewBackgroundModifier(fromSheet: fromSheet))
+        }
+    }
+}
+
+private struct SuggestionReviewBackgroundModifier: ViewModifier {
+    let fromSheet: Bool
+
+    func body(content: Content) -> some View {
+        if fromSheet {
+            content.sheetBackground()
+        } else {
+            content.appBackground()
         }
     }
 }

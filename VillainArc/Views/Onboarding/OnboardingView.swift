@@ -47,7 +47,6 @@ struct OnboardingView: View {
                 bootstrapView
             }
         }
-        .appBackground()
         .onChange(of: manager.state, initial: true) { oldState, newState in
             if case .profile = newState {
                 if !didSetInitialPath {

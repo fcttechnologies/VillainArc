@@ -54,7 +54,7 @@ struct StepsDistanceHistoryView: View {
         .sheet(isPresented: $showNewStepsGoalSheet) {
             NewStepsGoalView()
                 .presentationDetents([.fraction(0.35)])
-                .presentationBackground(Color(.systemBackground))
+                .presentationBackground(Color.sheetBg)
         }
     }
 }

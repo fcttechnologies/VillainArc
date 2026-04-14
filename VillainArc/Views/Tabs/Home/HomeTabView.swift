@@ -78,6 +78,7 @@ struct HomeTabView: View {
         .id(router.homeTabResetToken)
         .sheet(isPresented: $showAppSettings) {
             AppSettingsView()
+                .presentationBackground(Color.sheetBg)
         }
     }
 

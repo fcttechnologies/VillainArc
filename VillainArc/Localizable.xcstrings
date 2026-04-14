@@ -1941,6 +1941,12 @@
         }
       }
     },
+    "Cancel Rest Timer?" : {
+
+    },
+    "Cancel Timer" : {
+
+    },
     "Cancel Workout" : {
       "localizations" : {
         "en" : {
@@ -5116,6 +5122,9 @@
           }
         }
       }
+    },
+    "Leave Timer As Is" : {
+
     },
     "less" : {
       "localizations" : {
@@ -11199,6 +11208,9 @@
           }
         }
       }
+    },
+    "This set started the current rest timer. Do you want to cancel the timer, or leave it running while marking the set incomplete?" : {
+
     },
     "This sleep night is no longer available in Apple Health. Villain Arc is showing the last synced summary." : {
       "localizations" : {

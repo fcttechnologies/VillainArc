@@ -4,51 +4,53 @@ private struct AppSurfaceStyle<S: InsettableShape>: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
 
     let shape: S
-    let fillColor: Color
+    let fillColor: Color?
 
-    private var ringWidth: CGFloat {
-        colorScheme == .dark ? 0.5 : 1.5
+    private var resolvedFillColor: Color {
+        fillColor ?? (colorScheme == .dark
+            ? Color(.sRGB, red: 15.0 / 255.0, green: 15.0 / 255.0, blue: 15.0 / 255.0, opacity: 1)
+            : .white)
+    }
+
+    private var darkModeRingColor: Color {
+        Color(.sRGB, red: 51.0 / 255.0, green: 51.0 / 255.0, blue: 51.0 / 255.0, opacity: 1)
     }
 
     func body(content: Content) -> some View {
         content
             .background {
-                shape
-                    .fill(Color.cardRing)
-                    .overlay {
-                        shape
-                            .inset(by: ringWidth)
-                            .fill(fillColor)
-                    }
+                if colorScheme == .dark {
+                    shape
+                        .fill(darkModeRingColor)
+                        .overlay {
+                            shape
+                                .inset(by: 0.5)
+                                .fill(resolvedFillColor)
+                        }
+                } else {
+                    shape
+                        .fill(resolvedFillColor)
+                }
             }
             .clipShape(shape)
     }
 }
 
 private struct AppSubSurfaceStyle<S: InsettableShape>: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-
     let shape: S
-
-    private var fillColor: Color {
-        colorScheme == .dark ? .black : .white
-    }
 
     func body(content: Content) -> some View {
         content
             .background {
                 shape
-                    .fill(fillColor)
+                    .fill(.thinMaterial)
             }
             .clipShape(shape)
     }
 }
 
 extension View {
-    func appSurfaceStyle<S: InsettableShape>(
-        in shape: S,
-        fillColor: Color = Color.cardFill
-    ) -> some View {
+    func appSurfaceStyle<S: InsettableShape>(in shape: S, fillColor: Color? = nil) -> some View {
         modifier(AppSurfaceStyle(shape: shape, fillColor: fillColor))
     }
 

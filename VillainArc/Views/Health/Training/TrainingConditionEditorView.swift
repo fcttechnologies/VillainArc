@@ -15,9 +15,10 @@ struct TrainingConditionEditorView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Query(TrainingConditionPeriod.activeNow, animation: .smooth) private var activePeriods: [TrainingConditionPeriod]
     @Query(TrainingConditionPeriod.history) private var periods: [TrainingConditionPeriod]
 
-    let activePeriod: TrainingConditionPeriod?
+    private let initialActivePeriod: TrainingConditionPeriod?
 
     @State private var selectedKind: TrainingConditionKind?
     @State private var selectedImpact: TrainingImpact
@@ -26,15 +27,20 @@ struct TrainingConditionEditorView: View {
     @State private var selectedEndDay: Date
     @State private var affectedMuscles: Set<Muscle>
     @State private var showAffectedMusclesSheet = false
+    @State private var didLoadResolvedActivePeriod = false
 
-    init(activePeriod: TrainingConditionPeriod?) {
-        self.activePeriod = activePeriod
+    init(activePeriod: TrainingConditionPeriod? = nil) {
+        initialActivePeriod = activePeriod
         _selectedKind = State(initialValue: activePeriod?.kind)
         _selectedImpact = State(initialValue: activePeriod?.trainingImpact ?? .contextOnly)
         _includeEndDate = State(initialValue: activePeriod?.endDate != nil)
         _showEndDatePicker = State(initialValue: false)
         _selectedEndDay = State(initialValue: TrainingConditionStore.displayedEndDay(for: activePeriod?.endDate) ?? .now)
         _affectedMuscles = State(initialValue: Set(activePeriod?.affectedMuscles ?? []))
+    }
+
+    private var activePeriod: TrainingConditionPeriod? {
+        initialActivePeriod ?? activePeriods.first
     }
 
     private var choices: [TrainingConditionChoice] {
@@ -90,7 +96,6 @@ struct TrainingConditionEditorView: View {
             .navigationSubtitle(subtitleText ?? String())
             .toolbarTitleDisplayMode(.inlineLarge)
             .scrollContentBackground(.hidden)
-            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Update", systemImage: "checkmark", role: .confirm) {
@@ -108,10 +113,21 @@ struct TrainingConditionEditorView: View {
                 affectedMuscles = selection
             }
             .presentationDetents([.fraction(0.75), .large])
-            .presentationBackground(Color.bg)
+            .presentationBackground(Color.sheetBg)
         }
         .onChange(of: selectedKind) { _, newKind in
             applyDefaultImpactIfNeeded(for: newKind)
+        }
+        .onAppear {
+            guard !didLoadResolvedActivePeriod else { return }
+            didLoadResolvedActivePeriod = true
+            guard initialActivePeriod == nil, let activePeriod else { return }
+
+            selectedKind = activePeriod.kind
+            selectedImpact = activePeriod.trainingImpact
+            includeEndDate = activePeriod.endDate != nil
+            selectedEndDay = TrainingConditionStore.displayedEndDay(for: activePeriod.endDate) ?? .now
+            affectedMuscles = Set(activePeriod.affectedMuscles ?? [])
         }
     }
 
@@ -169,8 +185,10 @@ struct TrainingConditionEditorView: View {
                     Text("View History")
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                        .padding(.vertical, 5)
                 }
                 .buttonStyle(.glass)
+                .buttonSizing(.flexible)
             }
         }
     }

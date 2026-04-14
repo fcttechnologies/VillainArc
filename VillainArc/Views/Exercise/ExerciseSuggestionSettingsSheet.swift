@@ -181,7 +181,6 @@ struct ExerciseSuggestionSettingsSheet: View {
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.immediately)
             .scrollContentBackground(.hidden)
-            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {

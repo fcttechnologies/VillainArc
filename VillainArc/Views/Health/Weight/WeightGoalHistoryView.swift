@@ -54,11 +54,6 @@ struct WeightGoalHistoryView: View {
                 .accessibilityHint(AccessibilityText.healthWeightGoalHistoryAddHint)
             }
         }
-        .sheet(isPresented: newWeightGoalSheetBinding) {
-            NewWeightGoalView(weightUnit: weightUnit)
-                .presentationDetents([.fraction(0.7), .large])
-                .presentationBackground(Color(.systemBackground))
-        }
         .overlay {
             if goals.isEmpty {
                 ContentUnavailableView("No Weight Goals", systemImage: "target", description: Text("Your saved and previous weight goals will appear here."))
@@ -71,17 +66,6 @@ struct WeightGoalHistoryView: View {
         context.delete(goal)
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadWeight()
-    }
-
-    private var newWeightGoalSheetBinding: Binding<Bool> {
-        Binding(
-            get: { router.activeHealthSheet == .newWeightGoal },
-            set: { isPresented in
-                if !isPresented, router.activeHealthSheet == .newWeightGoal {
-                    router.activeHealthSheet = nil
-                }
-            }
-        )
     }
 }
 

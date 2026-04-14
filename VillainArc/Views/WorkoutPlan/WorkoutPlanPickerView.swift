@@ -14,11 +14,11 @@ struct WorkoutPlanPickerView: View {
             List {
                 ForEach(workoutPlans) { plan in
                     NavigationLink {
-                        WorkoutPlanDetailView(plan: plan) {
+                        WorkoutPlanDetailView(plan: plan, onSelect: {
                             selectedPlan = plan
                             saveContext(context: context)
                             dismiss()
-                        }
+                        }, showSheetBackground: true)
                     } label: {
                         WorkoutPlanCardView(workoutPlan: plan)
                     }
@@ -32,7 +32,6 @@ struct WorkoutPlanPickerView: View {
             .toolbarTitleDisplayMode(.inline)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Clear") {

@@ -12,12 +12,11 @@ struct NewWeightGoalView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(WeightEntry.latest) private var latestEntries: [WeightEntry]
     @Query(WeightGoal.active) private var activeGoals: [WeightGoal]
     @Query(WeightGoal.latestEnded) private var latestEndedGoals: [WeightGoal]
     @FocusState private var focusedField: Field?
-
-    let weightUnit: WeightUnit
 
     @State private var selectedType: WeightGoalType = .cut
     @State private var startWeightText = ""
@@ -27,6 +26,10 @@ struct NewWeightGoalView: View {
     @State private var selectedStartDate = Date()
     @State private var includeTargetDate = false
     @State private var selectedTargetDate = Date()
+
+    private var weightUnit: WeightUnit {
+        appSettings.first?.weightUnit ?? .systemDefault
+    }
 
     private var parsedStartWeight: Double? {
         parseDecimal(from: startWeightText)
@@ -136,18 +139,6 @@ struct NewWeightGoalView: View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("Goal Type", selection: $selectedType) {
-                        ForEach(WeightGoalType.allCases, id: \.self) { type in
-                            Text(type.title).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalTypePicker)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(.all, 0)
-
-                Section {
                     HStack {
                         TextField(weightUnit.unitLabel, text: $startWeightText)
                             .keyboardType(.decimalPad)
@@ -227,20 +218,42 @@ struct NewWeightGoalView: View {
                 }
                 .listRowSeparator(.hidden)
             }
-            .navigationTitle("New Weight Goal")
-            .toolbarTitleDisplayMode(.inlineLarge)
             .scrollContentBackground(.hidden)
-            .appBackground()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save", systemImage: "checkmark", role: .confirm) {
-                        save()
+            .safeAreaBar(edge: .top, spacing: 0) {
+                VStack(spacing: 12) {
+                    HStack {
+                        Text("New Weight Goal")
+                            .font(.largeTitle)
+                            .bold()
+                            .fontDesign(.rounded)
+                        
+                        Spacer()
+                        
+                        Button {
+                            save()
+                        } label: {
+                            Label("Save", systemImage: "checkmark")
+                                .font(.title2)
+                                .labelStyle(.iconOnly)
+                                .padding(5)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .buttonBorderShape(.circle)
+                        .disabled(!canSave)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalSaveButton)
+                        .accessibilityHint(AccessibilityText.healthNewWeightGoalSaveHint)
                     }
-                    .labelStyle(.iconOnly)
-                    .disabled(!canSave)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalSaveButton)
-                    .accessibilityHint(AccessibilityText.healthNewWeightGoalSaveHint)
+                    Picker("Goal Type", selection: $selectedType) {
+                        ForEach(WeightGoalType.allCases, id: \.self) { type in
+                            Text(type.title).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalTypePicker)
                 }
+                .padding([.horizontal, .top])
+            }
+            .toolbar {
                 ToolbarItem(placement: .keyboard) {
                     if focusedField == .targetRate, selectedType != .maintain, calculatedTargetRatePerWeek != nil {
                         Button(estimatedTargetRateButtonTitle) {
@@ -336,5 +349,5 @@ struct NewWeightGoalView: View {
 }
 
 #Preview(traits: .sampleData) {
-    NewWeightGoalView(weightUnit: .lbs)
+    NewWeightGoalView()
 }

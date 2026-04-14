@@ -185,7 +185,7 @@ private struct AppSettingsFormView: View {
         }
         .scrollDisabled(true)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
         .onChange(of: settings.retainPerformancesForLearning) {
             saveContext(context: context)
             guard !settings.retainPerformancesForLearning else { return }
@@ -247,7 +247,7 @@ private struct NotificationSettingsView: View {
         .navigationTitle("Notifications")
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
         .scrollDisabled(true)
         .task {
             await refreshNotificationAuthorizationState()
@@ -375,7 +375,7 @@ private struct UnitSettingsView: View {
         .navigationTitle("Units")
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
-        .appBackground()
+        .sheetBackground()
         .scrollDisabled(true)
         .onChange(of: settings.weightUnit) {
             saveContext(context: context)

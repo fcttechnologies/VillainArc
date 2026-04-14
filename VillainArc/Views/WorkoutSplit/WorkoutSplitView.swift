@@ -83,6 +83,7 @@ struct WorkoutSplitView: View {
                 @Bindable var split = split
                 TextEntryEditorView(title: "Split Name", promptText: "Workout Split", text: $split.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutSplitTitleEditorField, isTitle: true)
                     .presentationDetents([.fraction(0.2)])
+                    .presentationBackground(Color.sheetBg)
                     .onChange(of: split.title) { scheduleSave(context: context) }
                     .onDisappear {
                         split.title = split.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -98,10 +99,12 @@ struct WorkoutSplitView: View {
                     router.navigate(to: .workoutSplitDetail(newSplit))
                 }
             }
+            .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: splitListBinding) {
             WorkoutSplitListView()
                 .presentationDragIndicator(.visible)
+                .presentationBackground(Color.sheetBg)
         }
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .appBackground()
@@ -120,6 +123,10 @@ struct WorkoutSplitView: View {
             isSwapMode = false
             swapFirstDay = nil
             swapSecondDay = nil
+            endSplitDayEditing()
+        }
+        .onChange(of: selectedSplitDay?.id) { _, _ in
+            endSplitDayEditing()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
@@ -152,6 +159,11 @@ struct WorkoutSplitView: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10).onChanged { _ in
+                endSplitDayEditing()
+            }
+        )
         .safeAreaBar(edge: .top) {
             if split.mode == .weekly {
                 weeklyHeader(for: split)
@@ -159,6 +171,11 @@ struct WorkoutSplitView: View {
                 rotationHeader(for: split)
             }
         }
+    }
+
+    private func endSplitDayEditing() {
+        dismissKeyboard()
+        router.isQuickActionsBarHidden = false
     }
     
     private var emptyContent: some View {

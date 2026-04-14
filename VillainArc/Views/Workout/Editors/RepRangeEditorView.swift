@@ -73,7 +73,6 @@ struct RepRangeEditorView: View {
             CloseButton()
         }
         .scrollContentBackground(.hidden)
-        .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.repRangeForm)
         .onChange(of: repRange.activeMode) {
             Haptics.selection()

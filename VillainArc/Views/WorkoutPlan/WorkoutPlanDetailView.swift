@@ -14,16 +14,18 @@ struct WorkoutPlanDetailView: View {
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private let onSelect: (() -> Void)?
     private let showsUseOnly: Bool
+    private let showSheetBackground: Bool
 
     @State private var showDeleteWorkoutPlanConfirmation = false
     @State private var showSuggestionsSheet = false
     @State private var suggestionsInitialTab: WorkoutPlanSuggestionsSheet.Tab = .toReview
     @State private var focusedSuggestionExerciseID: UUID?
 
-    init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil) {
+    init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil, showSheetBackground: Bool = false) {
         self.plan = plan
         self.showsUseOnly = showsUseOnly
         self.onSelect = onSelect
+        self.showSheetBackground = showSheetBackground
         _completedSessions = Query(WorkoutSession.completedSessions(forWorkoutPlanID: plan.id))
     }
 
@@ -91,18 +93,20 @@ struct WorkoutPlanDetailView: View {
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .scrollIndicators(.hidden)
-        .appBackground()
+        .modifier(WorkoutPlanDetailBackgroundModifier(showSheetBackground: showSheetBackground))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
         .navigationTitle(plan.title)
         .navigationSubtitle(Text(plan.musclesTargeted()))
         .toolbarTitleDisplayMode(.inline)
         .sheet(isPresented: $showSuggestionsSheet) {
             WorkoutPlanSuggestionsSheet(plan: plan, initialTab: suggestionsInitialTab, initialFocusedExerciseID: focusedSuggestionExerciseID)
+                .presentationBackground(Color.sheetBg)
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if hasSuggestionsSheetContent && onSelect == nil {
                     Button {
+                        Haptics.selection()
                         openSuggestionsSheet(tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview, focusedExerciseID: nil)
                     } label: {
                         Image(systemName: "sparkles")
@@ -199,6 +203,18 @@ struct WorkoutPlanDetailView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
     }
+
+private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
+    let showSheetBackground: Bool
+
+    func body(content: Content) -> some View {
+        if showSheetBackground {
+            content.sheetBackground()
+        } else {
+            content.appBackground()
+        }
+    }
+}
 
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 14) {

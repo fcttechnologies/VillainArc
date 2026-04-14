@@ -55,7 +55,6 @@ struct PreWorkoutContextView: View {
             .navigationTitle("How are you feeling?")
             .navigationBarTitleDisplayMode(.inline)
             .scrollContentBackground(.hidden)
-            .appBackground()
         }
     }
 

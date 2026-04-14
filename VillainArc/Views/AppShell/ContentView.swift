@@ -16,10 +16,17 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaBar(edge: .bottom) {
-            MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: expandedActions)
+            if !router.isQuickActionsBarHidden {
+                MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: expandedActions)
+            }
         }
         .onChange(of: router.navigationEventToken) {
             collapseMorphingTabBar()
+        }
+        .onChange(of: router.isQuickActionsBarHidden) { _, isHidden in
+            if isHidden {
+                collapseMorphingTabBar()
+            }
         }
         .fullScreenCover(item: $router.activeWorkoutSession) {
             WorkoutSessionContainer(workout: $0)
@@ -35,7 +42,16 @@ struct ContentView: View {
         .sheet(isPresented: addWeightEntrySheetBinding) {
             NewWeightEntryView()
                 .presentationDetents([.fraction(0.5)])
-                .presentationBackground(Color.bg)
+                .presentationBackground(Color.sheetBg)
+        }
+        .sheet(isPresented: newWeightGoalSheetBinding) {
+            NewWeightGoalView()
+                .presentationBackground(Color.sheetBg)
+        }
+        .sheet(isPresented: newStepsGoalSheetBinding) {
+            NewStepsGoalView()
+                .presentationDetents([.fraction(0.35)])
+                .presentationBackground(Color.sheetBg)
         }
         .background {
             ToastOverlaySceneInstaller()
@@ -53,6 +69,8 @@ struct ContentView: View {
     
     private func additionalExpandedActions(for context: AppRouter.AdditionalQuickActionContext?) -> [ExpandedAction] {
         switch context {
+        case .healthRoot:
+            healthExpandedActions
         case .workoutDetail(let workout):
             workoutDetailExpandedActions(workout: workout)
         case .workoutSplit:
@@ -83,6 +101,15 @@ struct ContentView: View {
             ExpandedAction("Add Weight", icon: "scalemass", accessibilityIdentifier: AccessibilityIdentifiers.morphingAddWeightButton, accessibilityHint: AccessibilityText.morphingAddWeightHint) {
                 collapseMorphingTabBar()
                 router.presentHealthSheet(.addWeightEntry)
+            }
+        ]
+    }
+
+    private var healthExpandedActions: [ExpandedAction] {
+        [
+            ExpandedAction("Status", icon: "figure.run", accessibilityIdentifier: "morphing_training_condition_button", accessibilityHint: "Opens your training condition editor.") {
+                collapseMorphingTabBar()
+                router.presentHealthSheet(.trainingConditionEditor)
             }
         ]
     }
@@ -177,6 +204,28 @@ struct ContentView: View {
             get: { router.activeHealthSheet == .addWeightEntry },
             set: { isPresented in
                 if !isPresented, router.activeHealthSheet == .addWeightEntry {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
+    }
+
+    private var newWeightGoalSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .newWeightGoal },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .newWeightGoal {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
+    }
+
+    private var newStepsGoalSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .newStepsGoal },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .newStepsGoal {
                     router.activeHealthSheet = nil
                 }
             }

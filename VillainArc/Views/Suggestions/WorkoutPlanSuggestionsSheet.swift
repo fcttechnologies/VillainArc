@@ -48,14 +48,7 @@ struct WorkoutPlanSuggestionsSheet: View {
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Picker("Suggestion State", selection: $selectedTab) {
-                            ForEach(Tab.allCases) { tab in
-                                Text(tab.displayName).tag(tab)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-
+                    Group {
                         if selectedTab == .toReview {
                             SuggestionReviewView(
                                 sections: toReviewSections,
@@ -68,10 +61,8 @@ struct WorkoutPlanSuggestionsSheet: View {
                                 onDeferGroup: nil,
                                 showDecisionState: false,
                                 actionableDecisions: [.pending, .deferred],
-                                emptyState: SuggestionEmptyState(
-                                    title: "Nothing to Review",
-                                    message: "There are no pending or deferred suggestions for this plan right now."
-                                )
+                                emptyState: SuggestionEmptyState(title: "Nothing to Review", message: "There are no pending or deferred suggestions for this plan right now."),
+                                fromSheet: true
                             )
                         } else {
                             SuggestionReviewView(
@@ -81,18 +72,34 @@ struct WorkoutPlanSuggestionsSheet: View {
                                 onDeferGroup: nil,
                                 showDecisionState: true,
                                 actionableDecisions: [],
-                                emptyState: SuggestionEmptyState(
-                                    title: "No Pending Outcomes",
-                                    message: "Accepted and rejected changes will appear here until a later workout evaluates them."
-                                )
+                                emptyState: SuggestionEmptyState(title: "No Pending Outcomes", message: "Accepted and rejected changes will appear here until a later workout evaluates them."),
+                                fromSheet: true
                             )
                         }
                     }
-                    .fontDesign(.rounded)
                     .padding()
                 }
-                .navBar(title: "Suggestions") {
-                    CloseButton()
+                .scrollContentBackground(.hidden)
+                .safeAreaBar(edge: .top, spacing: 0) {
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Suggestions")
+                                .font(.largeTitle)
+                                .bold()
+                                .fontDesign(.rounded)
+                            
+                            Spacer()
+                            
+                            CloseButton()
+                        }
+                        Picker("Suggestion State", selection: $selectedTab) {
+                            ForEach(Tab.allCases) { tab in
+                                Text(tab.displayName).tag(tab)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .padding([.horizontal, .top])
                 }
                 .onAppear {
                     scrollToFocusedExerciseIfNeeded(using: proxy)
@@ -100,8 +107,6 @@ struct WorkoutPlanSuggestionsSheet: View {
                 .onChange(of: selectedTab) { _, _ in
                     scrollToFocusedExerciseIfNeeded(using: proxy)
                 }
-                .scrollContentBackground(.hidden)
-                .appBackground()
             }
         }
     }

@@ -4,10 +4,12 @@ import SwiftData
 struct WorkoutSplitDayView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var router = AppRouter.shared
     @Bindable var splitDay: WorkoutSplitDay
     let mode: SplitMode
     @State private var showPlanPicker = false
     @State private var showTargetMusclesPicker = false
+    @FocusState private var isNameFieldFocused: Bool
     
     var body: some View {
         VStack(spacing: 20) {
@@ -34,6 +36,7 @@ struct WorkoutSplitDayView: View {
                     .fontWeight(.semibold)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.words)
+                    .focused($isNameFieldFocused)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDayNameField)
                     .accessibilityHint(AccessibilityText.workoutSplitDayNameHint)
                 Button {
@@ -66,15 +69,20 @@ struct WorkoutSplitDayView: View {
             scheduleSave(context: context)
             reindexSplit()
         }
+        .onChange(of: isNameFieldFocused) { _, isFocused in
+            router.isQuickActionsBarHidden = isFocused
+        }
         .onChange(of: splitDay.workoutPlan?.id) {
             saveContext(context: context)
             reindexSplit()
         }
         .onDisappear {
+            router.isQuickActionsBarHidden = false
             reindexSplit()
         }
         .sheet(isPresented: $showPlanPicker) {
             WorkoutPlanPickerView(selectedPlan: $splitDay.workoutPlan)
+                .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: $showTargetMusclesPicker) {
             MuscleFilterSheetView(selectedMuscles: Set(splitDay.targetMuscles), showMinorMuscles: true) { selection in
@@ -83,7 +91,15 @@ struct WorkoutSplitDayView: View {
                 saveContext(context: context)
                 reindexSplit()
             }
+            .presentationBackground(Color.sheetBg)
         }
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                isNameFieldFocused = false
+                dismissKeyboard()
+                router.isQuickActionsBarHidden = false
+            }
+        )
     }
 
     private var targetMusclesRow: some View {

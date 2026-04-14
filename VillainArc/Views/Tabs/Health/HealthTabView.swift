@@ -35,6 +35,11 @@ struct HealthTabView: View {
             .scrollIndicators(.hidden)
             .sheet(isPresented: $showAppSettings) {
                 AppSettingsView()
+                    .presentationBackground(Color.sheetBg)
+            }
+            .sheet(isPresented: trainingConditionEditorBinding) {
+                TrainingConditionEditorView()
+                    .presentationBackground(Color.sheetBg)
             }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
@@ -68,6 +73,17 @@ struct HealthTabView: View {
             set: { newValue in
                 router.healthTabPath = newValue
                 router.noteNavigationStateChanged()
+            }
+        )
+    }
+
+    private var trainingConditionEditorBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .trainingConditionEditor },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .trainingConditionEditor {
+                    router.activeHealthSheet = nil
+                }
             }
         )
     }

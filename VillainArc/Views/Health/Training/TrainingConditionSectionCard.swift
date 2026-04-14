@@ -61,24 +61,10 @@ struct TrainingConditionSectionCard: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
-        .sheet(isPresented: trainingConditionEditorBinding) {
-            TrainingConditionEditorView(activePeriod: activePeriod)
-        }
         .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionSectionCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(cardAccessibilityLabel)
         .accessibilityHint(AccessibilityText.healthTrainingConditionSectionHint)
-    }
-
-    private var trainingConditionEditorBinding: Binding<Bool> {
-        Binding(
-            get: { router.activeHealthSheet == .trainingConditionEditor },
-            set: { isPresented in
-                if !isPresented, router.activeHealthSheet == .trainingConditionEditor {
-                    router.activeHealthSheet = nil
-                }
-            }
-        )
     }
 }
 

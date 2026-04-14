@@ -4,6 +4,7 @@ import SwiftData
 struct DeferredSuggestionsView: View {
     @Bindable var workout: WorkoutSession
     @Environment(\.modelContext) private var context
+    @State private var router = AppRouter.shared
     
     @State private var sections: [ExerciseSuggestionSection] = []
     @State private var sessionEvents: [SuggestionEvent] = []
@@ -39,16 +40,32 @@ struct DeferredSuggestionsView: View {
             .appBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    Button(role: .close) {
+                        router.presentWorkoutDialog(.cancel)
+                    }
+                    .accessibilityHint(AccessibilityText.workoutDeleteHint)
+                    .confirmationDialog("Cancel Workout", isPresented: cancelWorkoutDialogBinding) {
+                        Button("Cancel Workout", role: .destructive) {
+                            cancelWorkout()
+                        }
+                    } message: {
+                        Text("Are you sure you want to delete this workout?")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(AccessibilityText.deferredSuggestionsSkipLabel) {
                         skipAll()
                     }
-                    .tint(.red)
                     .accessibilityHint(AccessibilityText.deferredSuggestionsSkipHint)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .bottomBar) {
+                    Spacer()
+                }
+                ToolbarItem(placement: .bottomBar) {
                     Button(AccessibilityText.deferredSuggestionsAcceptAllLabel) {
                         acceptAll()
                     }
+                    .tint(.blue)
                     .accessibilityHint(AccessibilityText.deferredSuggestionsAcceptAllHint)
                 }
             }
@@ -112,6 +129,21 @@ struct DeferredSuggestionsView: View {
         isTransitioning = true
         workout.status = SessionStatus.active.rawValue
         saveContext(context: context)
+    }
+
+    private func cancelWorkout() {
+        router.cancelWorkoutSession(workout)
+    }
+
+    private var cancelWorkoutDialogBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutDialog == .cancel },
+            set: { isPresented in
+                if !isPresented, router.activeWorkoutDialog == .cancel {
+                    router.activeWorkoutDialog = nil
+                }
+            }
+        )
     }
 }
 

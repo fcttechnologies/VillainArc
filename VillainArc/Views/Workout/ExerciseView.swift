@@ -6,13 +6,13 @@ struct ExerciseView: View {
         case updateExistingTimer
         case startNewTimer(setID: UUID)
     }
-
+    
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
     let appSettingsSnapshot: AppSettingsSnapshot
     let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
-
+    
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showReplaceExerciseSheet = false
@@ -22,23 +22,23 @@ struct ExerciseView: View {
     @State private var restTimeUpdateSeconds = 0
     @State private var restTimeSnapshotBySetID: [UUID: Int] = [:]
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
-
+    
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
-
+    
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
     }
-
+    
     init(exercise: ExercisePerformance, appSettingsSnapshot: AppSettingsSnapshot, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
         self.appSettingsSnapshot = appSettingsSnapshot
         self.onDeleteExercise = onDeleteExercise
     }
-
+    
     private var shouldUseTargetReference: Bool {
         exercise.prescription != nil
     }
-
+    
     private func targetReferenceData(for set: SetPerformance) -> SetReferenceData? {
         guard let prescription = set.prescription else { return nil }
         let reps = prescription.targetReps > 0 ? prescription.targetReps : nil
@@ -47,18 +47,18 @@ struct ExerciseView: View {
         guard reps != nil || weight != nil || targetRPE != nil else { return nil }
         return SetReferenceData(reps: reps, weight: weight, rpe: targetRPE, rpeStyle: .target, actionLabel: "Use Target")
     }
-
+    
     private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
         previousReferenceBySetIndex[set.index]
     }
-
+    
     private func referenceData(for set: SetPerformance) -> SetReferenceData? {
         if shouldUseTargetReference {
             return targetReferenceData(for: set)
         }
         return previousReferenceData(for: set)
     }
-
+    
     var body: some View {
         GeometryReader { geometry in
             let fieldWidth = geometry.size.width / 5
@@ -88,7 +88,7 @@ struct ExerciseView: View {
                             .labelStyle(.iconOnly)
                             .font(.title)
                             .tint(.primary)
-
+                            
                             Button("Rest Times", systemImage: "timer") {
                                 Haptics.selection()
                                 captureRestTimeSnapshot()
@@ -101,7 +101,7 @@ struct ExerciseView: View {
                             .tint(.primary)
                         }
                     }
-
+                    
                     TextField("Notes", text: $exercise.notes)
                         .padding(.top, 8)
                         .onChange(of: exercise.notes) {
@@ -137,7 +137,7 @@ struct ExerciseView: View {
                     }
                 }
                 .padding(.horizontal)
-
+                
                 Grid(verticalSpacing: 12) {
                     GridRow {
                         Spacer()
@@ -160,7 +160,7 @@ struct ExerciseView: View {
                     .font(.title3)
                     .bold()
                     .accessibilityHidden(true)
-
+                    
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
                             ExerciseSetRowView(set: set, exercise: exercise, appSettingsSnapshot: appSettingsSnapshot, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
@@ -170,7 +170,7 @@ struct ExerciseView: View {
                     }
                 }
                 .padding(.vertical)
-
+                
                 Button {
                     addSet()
                 } label: {
@@ -207,10 +207,12 @@ struct ExerciseView: View {
             .sheet(isPresented: $showRepRangeEditor) {
                 RepRangeEditorView(repRange: exercise.repRange ?? RepRangePolicy(), catalogID: exercise.catalogID)
                     .presentationDetents([.medium])
+                    .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showRestTimeEditor) {
                 RestTimeEditorView(exercise: exercise)
                     .presentationDetents([.medium, .large])
+                    .presentationBackground(Color.sheetBg)
                     .onDisappear {
                         checkForRestTimeUpdate()
                     }
@@ -222,29 +224,32 @@ struct ExerciseView: View {
                     WorkoutActivityManager.update()
                     Task { await IntentDonations.donateReplaceExercise(newExercise: newExercise) }
                 }
+                .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showExerciseHistorySheet) {
                 NavigationStack {
                     ExerciseHistoryView(exercise: exercise)
                 }
                 .presentationDetents([.medium, .large])
+                .presentationBackground(Color.sheetBg)
             }
             .sheet(item: $progressionStepExercise) { progressionStepExercise in
                 ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
+                    .presentationBackground(Color.sheetBg)
             }
             .task(id: exercise.catalogID) {
                 loadPreviousReferenceData()
             }
         }
     }
-
+    
     private func addSet() {
         Haptics.selection()
         exercise.addSet(unit: weightUnit)
         saveContext(context: context)
         WorkoutActivityManager.update()
     }
-
+    
     private func checkForRestTimeUpdate() {
         defer { restTimeSnapshotBySetID = [:] }
         guard autoStartRestTimerEnabled else { return }
@@ -256,47 +261,47 @@ struct ExerciseView: View {
             pendingRestTimerPromptAction = .updateExistingTimer
             return
         }
-
+        
         guard !restTimer.isActive else { return }
         guard let workout = exercise.workoutSession,
               let latestCompletedSet = workout.latestCompletedSet(),
               latestCompletedSet.exercise?.id == exercise.id,
               let previousRestSeconds = restTimeSnapshotBySetID[latestCompletedSet.id]
         else { return }
-
+        
         let newRestSeconds = latestCompletedSet.effectiveRestSeconds
         guard previousRestSeconds == 0, newRestSeconds > 0 else { return }
-
+        
         restTimeUpdateSeconds = newRestSeconds
         pendingRestTimerPromptAction = .startNewTimer(setID: latestCompletedSet.id)
     }
-
+    
     private func loadPreviousReferenceData() {
         guard !shouldUseTargetReference else {
             previousReferenceBySetIndex = [:]
             return
         }
-
+        
         let previousSets = (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
         previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
             (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, rpe: previousSet.visibleRPE, rpeStyle: .actual, actionLabel: "Use Previous"))
         })
     }
-
+    
     private func openProgressionStepEditor() {
         guard let sourceExercise = try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first else { return }
         progressionStepExercise = sourceExercise
         Haptics.selection()
     }
-
+    
     private func captureRestTimeSnapshot() {
         restTimeSnapshotBySetID = Dictionary(uniqueKeysWithValues: exercise.sortedSets.map { ($0.id, $0.effectiveRestSeconds) })
     }
-
+    
     private func applyRestTimerPrompt() {
         guard let pendingRestTimerPromptAction else { return }
         Haptics.selection()
-
+        
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:
             restTimer.syncStartedDuration(to: restTimeUpdateSeconds)
@@ -306,10 +311,10 @@ struct ExerciseView: View {
             saveContext(context: context)
             Task { await IntentDonations.donateStartRestTimer(seconds: restTimeUpdateSeconds) }
         }
-
+        
         self.pendingRestTimerPromptAction = nil
     }
-
+    
     private var restTimePromptBinding: Binding<Bool> {
         Binding(
             get: { pendingRestTimerPromptAction != nil },
@@ -320,7 +325,7 @@ struct ExerciseView: View {
             }
         )
     }
-
+    
     private var restTimerPromptTitle: String {
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:
@@ -331,7 +336,7 @@ struct ExerciseView: View {
             return ""
         }
     }
-
+    
     private var restTimerPromptConfirmLabel: String {
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:
@@ -342,7 +347,7 @@ struct ExerciseView: View {
             return String(localized: "OK")
         }
     }
-
+    
     private var restTimerPromptMessage: String {
         switch pendingRestTimerPromptAction {
         case .updateExistingTimer:

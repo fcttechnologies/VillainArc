@@ -72,7 +72,6 @@ struct MuscleFilterSheetView: View {
             .navigationTitle("Muscles")
             .navigationBarTitleDisplayMode(.inline)
             .scrollContentBackground(.hidden)
-            .appBackground()
             .animation(reduceMotion ? .none : .bouncy, value: selectedMuscles)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

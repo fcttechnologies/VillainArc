@@ -11,8 +11,6 @@ struct WeightHistoryView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     
     @State private var showAddWeightEntrySheet = false
-    @State private var showNewWeightGoalSheet = false
-    
     private var activeGoal: WeightGoal? {
         activeGoals.first
     }
@@ -38,7 +36,7 @@ struct WeightHistoryView: View {
                         router.navigate(to: .weightGoalHistory)
                         Task { await IntentDonations.donateShowWeightGoalHistory() }
                     } else {
-                        showNewWeightGoalSheet = true
+                        router.presentHealthSheet(.newWeightGoal)
                     }
                 }
                 
@@ -84,12 +82,7 @@ struct WeightHistoryView: View {
         .sheet(isPresented: $showAddWeightEntrySheet) {
             NewWeightEntryView()
                 .presentationDetents([.fraction(0.5)])
-                .presentationBackground(Color.bg)
-        }
-        .sheet(isPresented: $showNewWeightGoalSheet) {
-            NewWeightGoalView(weightUnit: weightUnit)
-                .presentationDetents([.fraction(0.7), .large])
-                .presentationBackground(Color.bg)
+                .presentationBackground(Color.sheetBg)
         }
     }
 }

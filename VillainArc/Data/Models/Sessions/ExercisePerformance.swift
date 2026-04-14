@@ -152,8 +152,13 @@ enum ExerciseHistoryCopyStrategy: Hashable {
         }
 
         if !keepSets {
-            for set in sets ?? [] { context.delete(set) }
-            sets?.removeAll()
+            let existingSets = sortedSets
+            sets = []
+            for set in existingSets {
+                set.prescription?.activePerformance = nil
+                set.prescription = nil
+                context.delete(set)
+            }
             addSet()
         }
     }

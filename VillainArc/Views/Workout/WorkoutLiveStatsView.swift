@@ -30,7 +30,6 @@ struct WorkoutLiveStatsView: View {
         }
         .fontDesign(.rounded)
         .padding()
-        .appBackground()
     }
 
     static func toolbarAccessibilityValue(for workoutID: UUID) -> String {
