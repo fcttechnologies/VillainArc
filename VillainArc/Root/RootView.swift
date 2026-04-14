@@ -34,9 +34,10 @@ struct RootView: View {
             }
             .sheet(isPresented: onboardingBinding) {
                 OnboardingView(manager: onboardingManager)
-                    .presentationDetents([.fraction(0.5)])
+                    .presentationDetents([.fraction(0.75)])
                     .presentationBackground(Color.sheetBg)
                     .interactiveDismissDisabled(true)
+                    .presentationDragIndicator(.hidden)
             }
     }
 
@@ -49,6 +50,7 @@ struct RootView: View {
         }
         saveContext(context: context)
     }
+
 }
 
 #Preview(traits: .sampleData) {

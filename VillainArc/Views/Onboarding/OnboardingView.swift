@@ -1,11 +1,19 @@
 import SwiftUI
 import SwiftData
 
+private func normalizedOnboardingImperialHeightComponents(from centimeters: Double) -> (feet: Int, inches: Int) {
+    let roundedTotalInches = Int((centimeters / 2.54).rounded())
+    let feet = roundedTotalInches / 12
+    let inches = roundedTotalInches % 12
+    return (feet, inches)
+}
+
 private enum OnboardingStep: Hashable {
     case healthPermissions
     case birthday
     case gender
     case height
+    case trainingGoal
 }
 
 private extension OnboardingStep {
@@ -19,19 +27,16 @@ private extension OnboardingStep {
             self = .gender
         case .height:
             self = .height
+        case .trainingGoal:
+            self = .trainingGoal
         }
     }
-}
-
-private func profileNavigationPath(to step: UserProfileOnboardingStep) -> [OnboardingStep] {
-    UserProfileOnboardingStep.navigationPath(to: step).compactMap(OnboardingStep.init(profileStep:))
 }
 
 struct OnboardingView: View {
     @Bindable var manager: OnboardingManager
     @Environment(\.scenePhase) private var scenePhase
     @State private var path: [OnboardingStep] = []
-    @State private var didSetInitialPath = false
     @ScaledMetric(relativeTo: .largeTitle) private var onboardingIconSize: CGFloat = 60
 
     var body: some View {
@@ -48,21 +53,12 @@ struct OnboardingView: View {
             }
         }
         .onChange(of: manager.state, initial: true) { oldState, newState in
-            if case .profile = newState {
-                if !didSetInitialPath {
-                    didSetInitialPath = true
-                    guard case .profile(let step) = manager.state else { return }
-                    if step == .name {
-                        path = []
-                    } else if manager.shouldInsertHealthPermissionsStep {
-                        path = [.healthPermissions]
-                    } else {
-                        path = profileNavigationPath(to: step)
-                    }
-                }
-            } else if case .profile = oldState {
+            if case .profile = oldState, case .profile = newState {
+                return
+            }
+
+            if case .profile = oldState {
                 path = []
-                didSetInitialPath = false
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -74,12 +70,13 @@ struct OnboardingView: View {
 
     private var bootstrapView: some View {
         VStack(spacing: 40) {
-
             Text("Setting up Villain Arc")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .padding(.top, 20)
-
+            
+            Spacer()
+            
             stateView(for: manager.state)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 20)
@@ -90,7 +87,7 @@ struct OnboardingView: View {
 
     private var profileFlow: some View {
         NavigationStack(path: $path) {
-            ProfileNameStepView(manager: manager, path: $path)
+            profileRootView
                 .navigationDestination(for: OnboardingStep.self) { step in
                     switch step {
                     case .healthPermissions:
@@ -101,8 +98,39 @@ struct OnboardingView: View {
                         ProfileGenderStepView(manager: manager, path: $path)
                     case .height:
                         ProfileHeightStepView(manager: manager, path: $path)
+                    case .trainingGoal:
+                        ProfileTrainingGoalStepView(manager: manager, path: $path)
                     }
                 }
+        }
+    }
+
+    @ViewBuilder
+    private var profileRootView: some View {
+        if case .profile(let step) = manager.state {
+            if step != .name && manager.shouldInsertHealthPermissionsStep {
+                OnboardingHealthPermissionStepView(manager: manager, path: $path)
+            } else {
+                profileStepView(for: step)
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private func profileStepView(for step: UserProfileOnboardingStep) -> some View {
+        switch step {
+        case .name:
+            ProfileNameStepView(manager: manager, path: $path)
+        case .birthday:
+            ProfileBirthdayStepView(manager: manager, path: $path)
+        case .gender:
+            ProfileGenderStepView(manager: manager, path: $path)
+        case .height:
+            ProfileHeightStepView(manager: manager, path: $path)
+        case .trainingGoal:
+            ProfileTrainingGoalStepView(manager: manager, path: $path)
         }
     }
 
@@ -210,6 +238,8 @@ struct OnboardingView: View {
                 Text("Your workout data won't sync across devices or be backed up if you delete the app.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
+                
+                Spacer()
 
                 VStack(spacing: 12) {
                     Button {
@@ -250,6 +280,8 @@ struct OnboardingView: View {
                 Text("Villain Arc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
+                
+                Spacer()
 
                 VStack(spacing: 12) {
                     Button {
@@ -290,6 +322,8 @@ struct OnboardingView: View {
                 Text("Unable to connect to iCloud right now. Please check your internet connection and try again.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
+                
+                Spacer()
 
                 Button {
                     Task { await manager.retry() }
@@ -325,6 +359,8 @@ struct OnboardingView: View {
                 Text(message)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
+                
+                Spacer()
 
                 Button {
                     Task { await manager.retry() }
@@ -373,6 +409,7 @@ private struct OnboardingHealthPermissionStepView: View {
 
     var body: some View {
         VStack(spacing: 14) {
+            Spacer()
             Image(systemName: "heart.text.square.fill")
                 .font(.system(size: iconSize))
                 .accessibilityHidden(true)
@@ -442,8 +479,10 @@ private struct OnboardingHealthPermissionStepView: View {
     }
 
     private func pushNextProfileStep() {
-        guard let nextStep = manager.profile?.firstMissingStep else { return }
-        path = [.healthPermissions] + profileNavigationPath(to: nextStep)
+        guard let nextStep = manager.nextRequiredStep else { return }
+        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+            path.append(onboardingStep)
+        }
     }
 }
 
@@ -476,8 +515,10 @@ private struct ProfileNameStepView: View {
                     guard await manager.saveName(name) else { return }
                     if manager.shouldInsertHealthPermissionsStep {
                         path.append(.healthPermissions)
-                    } else if let nextStep = manager.profile?.firstMissingStep {
-                        path = profileNavigationPath(to: nextStep)
+                    } else if let nextStep = manager.nextRequiredStep {
+                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                            path.append(onboardingStep)
+                        }
                     }
                 }
             } label: {
@@ -525,8 +566,10 @@ private struct ProfileBirthdayStepView: View {
             Button {
                 Task {
                     guard await manager.saveBirthday(birthday) else { return }
-                    if let nextStep = manager.profile?.firstMissingStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                        path.append(onboardingStep)
+                    if let nextStep = manager.nextRequiredStep {
+                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                            path.append(onboardingStep)
+                        }
                     }
                 }
             } label: {
@@ -601,8 +644,10 @@ private struct ProfileGenderStepView: View {
             Button {
                 Task {
                     guard await manager.saveGender(gender) else { return }
-                    if let nextStep = manager.profile?.firstMissingStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                        path.append(onboardingStep)
+                    if let nextStep = manager.nextRequiredStep {
+                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                            path.append(onboardingStep)
+                        }
                     }
                 }
             } label: {
@@ -632,7 +677,7 @@ private struct ProfileHeightStepView: View {
     @State private var inches: Double
 
     private static let feetOptions = Array(3...8)
-    private static let inchOptions = stride(from: 0.0, through: 11.5, by: 0.5).map { $0 }
+    private static let inchOptions = Array(0...11).map(Double.init)
     private static let cmOptions = Array(100...250).map { Double($0) }
 
     init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
@@ -640,11 +685,11 @@ private struct ProfileHeightStepView: View {
         _path = path
         let storedCm = manager.prefetchedHeightCm ?? manager.profile?.heightCm ?? 177.0
         _cm = State(initialValue: storedCm)
-        let totalInches = storedCm / 2.54
-        let f = max(3, min(8, Int(totalInches / 12)))
-        let i = (totalInches.truncatingRemainder(dividingBy: 12) * 2).rounded() / 2
+        let normalizedHeight = normalizedOnboardingImperialHeightComponents(from: storedCm)
+        let f = max(3, min(8, normalizedHeight.feet))
+        let i = Double(normalizedHeight.inches)
         _feet = State(initialValue: f)
-        _inches = State(initialValue: min(i, 11.5))
+        _inches = State(initialValue: i)
     }
 
     private var heightUnit: HeightUnit { appSettings.first?.heightUnit ?? .imperial }
@@ -684,9 +729,16 @@ private struct ProfileHeightStepView: View {
 
             Button {
                 let saveCm = heightUnit == .imperial ? HeightUnit.imperial.toCm(feet: feet, inches: inches) : cm
-                Task { await manager.saveHeight(cm: saveCm) }
+                Task {
+                    guard await manager.saveHeight(cm: saveCm) else { return }
+                    if let nextStep = manager.nextRequiredStep {
+                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                            path.append(onboardingStep)
+                        }
+                    }
+                }
             } label: {
-                Text("Finish")
+                Text("Continue")
                     .padding(.vertical, 8)
                     .fontWeight(.semibold)
             }
@@ -699,9 +751,56 @@ private struct ProfileHeightStepView: View {
     }
 
     private func inchesLabel(for value: Double) -> String {
-        if value.rounded(.towardZero) == value {
-            return "\(Int(value)) in"
+        "\(Int(value)) in"
+    }
+}
+
+private struct ProfileTrainingGoalStepView: View {
+    @Bindable var manager: OnboardingManager
+    @Binding var path: [OnboardingStep]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query(TrainingGoal.active) private var activeGoals: [TrainingGoal]
+    @State private var selectedGoal: TrainingGoalKind?
+
+    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
+        self.manager = manager
+        _path = path
+        _selectedGoal = State(initialValue: nil)
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(TrainingGoalKind.influenceDescription)
+                .multilineTextAlignment(.leading)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            TrainingGoalSelectionList(selection: $selectedGoal)
+
+            Spacer()
+
+            Button {
+                guard let selectedGoal else { return }
+                Task {
+                    guard await manager.saveTrainingGoal(selectedGoal) else { return }
+                }
+            } label: {
+                Text("Finish")
+                    .padding(.vertical, 8)
+                    .fontWeight(.semibold)
+            }
+            .buttonSizing(.flexible)
+            .buttonStyle(.glassProminent)
+            .disabled(selectedGoal == nil)
+            .accessibilityHint(AccessibilityText.onboardingTrainingGoalContinueHint)
         }
-        return String(format: "%.1f in", value)
+        .padding()
+        .animation(reduceMotion ? nil : .bouncy, value: selectedGoal)
+        .navigationTitle("How do you like to train?")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            selectedGoal = activeGoals.first?.kind
+        }
     }
 }

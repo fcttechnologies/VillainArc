@@ -7,7 +7,8 @@ nonisolated enum SetupGuard {
         guard (try? context.fetch(AppSettings.single).first) != nil else { return false }
         guard (try? context.fetch(HealthSyncState.single).first) != nil else { return false }
         guard let profile = try? context.fetch(UserProfile.single).first else { return false }
-        return profile.firstMissingStep == nil
+        guard profile.firstMissingStep == nil else { return false }
+        return (try? context.fetch(TrainingGoal.active).first) != nil
     }
 
     static func requireReady(context: ModelContext) throws {

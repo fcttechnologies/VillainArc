@@ -35,6 +35,17 @@ This file is the structure map for the app. It answers “where does this respon
 - presents full-screen workout, plan, and weight-goal-completion flows
 - installs the toast overlay host
 
+### Profile and Settings Surfaces
+
+- `Views/Profile/ProfileSheetView.swift`
+  - shared profile hub opened from both top-level tabs
+- `Views/Profile/ProfilePhotoViews.swift`
+  - avatar rendering plus camera/library image-picking helpers
+- `Views/Profile/ProfileEditorViews.swift`
+  - reusable profile editor/detail rows plus profile-edit sheets
+- `Views/Settings/AppSettingsView.swift`
+  - app settings surface, including Apple Health, notifications, and units detail routes
+
 ### `Data/Services/App/AppRouter.swift`
 
 - shared navigation and active-flow coordinator
@@ -61,6 +72,8 @@ This file is the structure map for the app. It answers “where does this respon
 - `Data/Models/Health/HealthSyncState.swift`
 
 These are created by startup/system-state code and treated as singleton-style records.
+
+`UserProfile` now also carries the user-facing profile photo payload through externally stored image data.
 
 ### `Data/Services/App/SystemState.swift`
 
@@ -137,6 +150,10 @@ These are created by startup/system-state code and treated as singleton-style re
 
 - `Data/Models/Training/TrainingConditionPeriod.swift`
   - timestamp-ranged cross-session condition history
+- `Data/Models/Training/TrainingGoal.swift`
+  - date-ranged active training-goal history
+- `Data/Models/Enums/Training/TrainingGoalKind.swift`
+  - supported training-goal choices and presentation metadata
 - `Data/Models/Enums/Training/TrainingConditionKind.swift`
   - supported non-normal condition kinds and presentation metadata
 - `Data/Models/Enums/Training/TrainingImpact.swift`

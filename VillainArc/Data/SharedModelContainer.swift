@@ -18,6 +18,7 @@ enum SharedModelContainer {
         HealthStepsDistance.self,
         HealthEnergy.self,
         TrainingConditionPeriod.self,
+        TrainingGoal.self,
         HealthSleepNight.self,
         HealthSleepBlock.self,
         HealthSyncState.self,

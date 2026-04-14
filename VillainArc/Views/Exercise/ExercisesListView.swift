@@ -6,8 +6,10 @@ struct ExercisesListView: View {
     @Query private var exercises: [Exercise]
     @Query(ExerciseHistory.recentCompleted()) private var histories: [ExerciseHistory]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @State private var router = AppRouter.shared
     @State private var searchText = ""
     @State private var favoritesOnly = false
+    @FocusState private var isSearchFieldFocused: Bool
     
     private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
     
@@ -25,6 +27,10 @@ struct ExercisesListView: View {
             exerciseSearchScore(for: exercise, queryTokens: queryTokens)
         }
         )
+    }
+
+    private var shouldHideQuickActionsBar: Bool {
+        isSearchFieldFocused || !searchText.isEmpty
     }
     
     var body: some View {
@@ -45,6 +51,7 @@ struct ExercisesListView: View {
         .appBackground()
         .scrollDismissesKeyboard(.immediately)
         .searchable(text: $searchText, placement: .navigationBarDrawer)
+        .searchFocused($isSearchFieldFocused)
         .searchPresentationToolbarBehavior(.avoidHidingContent)
         .overlay {
             if exercises.isEmpty {
@@ -78,6 +85,15 @@ struct ExercisesListView: View {
         }
         .onChange(of: favoritesOnly) {
             Haptics.selection()
+        }
+        .onAppear {
+            router.isQuickActionsBarHidden = shouldHideQuickActionsBar
+        }
+        .onChange(of: shouldHideQuickActionsBar) { _, shouldHide in
+            router.isQuickActionsBarHidden = shouldHide
+        }
+        .onDisappear {
+            router.isQuickActionsBarHidden = false
         }
     }
     

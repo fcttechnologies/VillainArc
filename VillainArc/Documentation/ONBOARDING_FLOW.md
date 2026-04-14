@@ -1,6 +1,8 @@
 # Onboarding Flow
 
-This document explains how VillainArc gets from process launch to a ready app state. It covers first bootstrap, returning launch, profile onboarding, the Apple Health permission prompt, and why the app waits for CloudKit import before seeding the exercise catalog.
+This document explains how VillainArc gets from process launch to a ready app state. It covers first bootstrap, returning launch, profile onboarding, the required training-goal step, the Apple Health permission prompt, and why the app waits for CloudKit import before seeding the exercise catalog.
+
+This file is only about launch readiness. Ongoing profile editing after setup lives in the shared profile hub (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
 
 ## Main Files
 
@@ -81,6 +83,7 @@ Returning launch does the short path:
 
 - ensure singleton records exist
 - route into missing profile steps if the profile is incomplete
+- route into the training-goal step if profile fields are complete but no active training goal exists
 - sync the bundled exercise catalog only if its version changed
 - decide whether the current Health permissions version still needs a prompt
 - otherwise transition directly to `.ready`
@@ -94,13 +97,15 @@ The required profile fields are:
 - gender
 - height
 
+VillainArc also requires one active `TrainingGoal` before setup is considered complete.
+
 `OnboardingView` uses a `NavigationStack` for the profile portion of onboarding. `OnboardingManager.state` chooses the initial entry point, but the per-step screens drive the forward navigation once the flow is active.
 
 ### New User Flow
 
 For a true first-time user, the profile flow is:
 
-`name -> health permissions -> birthday -> gender -> height`
+`name -> health permissions -> birthday -> gender -> height -> training goal`
 
 The in-flow Apple Health step comes immediately after the name step.
 
@@ -110,6 +115,11 @@ For a returning user with an incomplete profile:
 
 - if the current Health permissions version still needs a prompt, onboarding starts with the Health step after name
 - otherwise onboarding jumps directly to the first missing required profile field
+
+For a returning user whose profile fields are complete but who has no active training goal:
+
+- onboarding jumps directly to the training-goal step
+- if the current Health permissions version still needs a prompt, the Health step appears before the training-goal step
 
 ## Apple Health Permission Prompt
 
@@ -205,6 +215,7 @@ App Intents can run before the foreground app has completed the current launchâ€
 - bootstrap has completed
 - singleton records exist
 - the profile is complete
+- an active training goal exists
 - any additional no-active-flow requirement is satisfied
 
 That keeps shortcut/intents behavior aligned with the appâ€™s actual readiness rules.

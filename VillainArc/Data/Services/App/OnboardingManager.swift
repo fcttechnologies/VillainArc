@@ -40,6 +40,18 @@ enum OnboardingState: Equatable {
     private var networkRetryTask: Task<Void, Never>?
     private var onboardingAttemptID = UUID()
 
+    var nextRequiredStep: UserProfileOnboardingStep? {
+        if let profile, let missingStep = profile.firstMissingStep {
+            return missingStep
+        }
+
+        if (try? context.fetch(TrainingGoal.active).first) == nil {
+            return .trainingGoal
+        }
+
+        return nil
+    }
+
     func startOnboarding() async {
         // Start monitoring immediately on first bootstrap so we don't miss an
         // import-complete event before the flow reaches the explicit wait.
@@ -185,11 +197,21 @@ enum OnboardingState: Equatable {
         return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your gender")
     }
 
-    func saveHeight(cm: Double) async {
-        guard let profile else { return }
+    func saveHeight(cm: Double) async -> Bool {
+        guard let profile else { return false }
         profile.heightCm = cm
 
-        _ = await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your height")
+        return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your height")
+    }
+
+    func saveTrainingGoal(_ kind: TrainingGoalKind) async -> Bool {
+        do {
+            _ = try TrainingGoal.replaceActiveGoal(with: kind, context: context)
+            return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your training goal")
+        } catch {
+            state = .error("Failed to save your training goal: \(error.localizedDescription)")
+            return false
+        }
     }
 
     func connectAppleHealthDuringOnboarding() async {
@@ -231,13 +253,12 @@ enum OnboardingState: Equatable {
             _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
             shouldInsertHealthPermissionsStep = await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
-            if let missingStep = profile.firstMissingStep {
-                self.profile = profile
+            self.profile = profile
+            if let missingStep = nextRequiredStep {
                 state = .profile(missingStep)
                 return
             }
 
-            self.profile = profile
             await syncCatalogIfNeededBeforeReady()
             await transitionAfterSetup()
         } catch { state = .error("Failed to load your profile: \(error.localizedDescription)") }
@@ -262,7 +283,7 @@ enum OnboardingState: Equatable {
 
     private func routeFromProfile(_ profile: UserProfile) {
         self.profile = profile
-        if let missingStep = profile.firstMissingStep {
+        if let missingStep = nextRequiredStep {
             state = .profile(missingStep)
         } else {
             Task { await transitionAfterSetup() }
@@ -275,7 +296,7 @@ enum OnboardingState: Equatable {
             return false
         }
 
-        guard profile?.firstMissingStep == nil else { return true }
+        guard nextRequiredStep == nil else { return true }
 
         state = .finishing
         await syncCatalogIfNeededBeforeReady()
@@ -305,7 +326,9 @@ enum OnboardingState: Equatable {
     }
 
     private func transitionAfterSetup() async {
-        if await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion() {
+        if let missingStep = nextRequiredStep {
+            state = .profile(missingStep)
+        } else if await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion() {
             state = .healthPermissions
         } else {
             transitionToReady()
@@ -315,12 +338,20 @@ enum OnboardingState: Equatable {
     func connectAppleHealth() async {
         HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
         _ = await HealthAuthorizationManager.requestAuthorization()
-        transitionToReady()
+        if let missingStep = nextRequiredStep {
+            state = .profile(missingStep)
+        } else {
+            transitionToReady()
+        }
     }
 
     func skipAppleHealth() {
         HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
-        transitionToReady()
+        if let missingStep = nextRequiredStep {
+            state = .profile(missingStep)
+        } else {
+            transitionToReady()
+        }
     }
 
 }

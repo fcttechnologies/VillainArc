@@ -138,6 +138,7 @@
 				Data/Models/Enums/Suggestions/TrainingStyle.swift,
 				Data/Models/Enums/Suggestions/UserFeedback.swift,
 				Data/Models/Enums/Training/TrainingConditionKind.swift,
+				Data/Models/Enums/Training/TrainingGoalKind.swift,
 				Data/Models/Enums/Training/TrainingImpact.swift,
 				Data/Models/Enums/Units/DistanceUnit.swift,
 				Data/Models/Enums/Units/EnergyUnit.swift,
@@ -174,6 +175,7 @@
 				Data/Models/Suggestions/SuggestionGrouping.swift,
 				Data/Models/Suggestions/SuggestionSnapshots.swift,
 				Data/Models/Training/TrainingConditionPeriod.swift,
+				Data/Models/Training/TrainingGoal.swift,
 				Data/Models/UserProfile.swift,
 				Data/Models/WorkoutSplit/WorkoutSplit.swift,
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
@@ -898,8 +900,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Villain Arc uses the camera so you can take a profile photo.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc reads your workouts, body weight, heart rate, energy, distance, routes, and related workout metrics so it can show workout details, health history, and workout-linked stats inside the app.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc saves your completed workouts and body weight entries to Apple Health so your workout history and progress stay in sync.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Villain Arc uses your photo library so you can choose a profile photo.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -945,8 +949,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Villain Arc uses the camera so you can take a profile photo.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc reads your workouts, body weight, heart rate, energy, distance, routes, and related workout metrics so it can show workout details, health history, and workout-linked stats inside the app.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc saves your completed workouts and body weight entries to Apple Health so your workout history and progress stay in sync.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Villain Arc uses your photo library so you can choose a profile photo.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

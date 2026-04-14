@@ -8,6 +8,19 @@ enum AccessibilityIdentifiers {
     static let homeRecentWorkoutPlanSection = "homeRecentWorkoutPlanSection"
     static let homeSettingsButton = "homeSettingsButton"
     static let healthSettingsButton = "healthSettingsButton"
+    static let homeProfileButton = "homeProfileButton"
+    static let healthProfileButton = "healthProfileButton"
+    static let profileSheetCloseButton = "profileSheetCloseButton"
+    static let profileSheetSettingsButton = "profileSheetSettingsButton"
+    static let profileSheetAvatar = "profileSheetAvatar"
+    static let profileSheetEditPhotoButton = "profileSheetEditPhotoButton"
+    static let profileSheetName = "profileSheetName"
+    static let profileSheetDetailsCard = "profileSheetDetailsCard"
+    static let profileSheetTrainingGoalRow = "profileSheetTrainingGoalRow"
+    static let profileSheetReviewRow = "profileSheetReviewRow"
+    static let settingsAppleHealthLink = "settingsAppleHealthLink"
+    static let settingsAppleHealthActionButton = "settingsAppleHealthActionButton"
+    static let settingsAppleHealthKeepRemovedDataToggle = "settingsAppleHealthKeepRemovedDataToggle"
     static let morphingToolbarToggleButton = "morphingToolbarToggleButton"
     static let morphingStartWorkoutButton = "morphingStartWorkoutButton"
     static let morphingCreatePlanButton = "morphingCreatePlanButton"
@@ -500,6 +513,15 @@ enum AccessibilityText {
     static let homeRecentWorkoutPlanHint = localized("Shows your most recent workout plan.")
     static let homeSettingsLabel = localized("Settings")
     static let homeSettingsHint = localized("Shows app settings.")
+    static let profileLabel = localized("Profile")
+    static let profileHint = localized("Shows your profile.")
+    static let profileSheetSettingsHint = localized("Shows app settings.")
+    static let profileSheetEditPhotoLabel = localized("Edit profile photo")
+    static let profileSheetEditPhotoHint = localized("Shows options to take, select, or remove your profile photo.")
+    static let profileSheetReviewHint = localized("Opens the App Store review page.")
+    static let settingsAppleHealthHint = localized("Shows Apple Health settings.")
+    static let onboardingTrainingGoalOptionHint = localized("Selects this training goal.")
+    static let onboardingTrainingGoalContinueHint = localized("Saves your selected training goal and continues into the app.")
     static let morphingExpandToolbarLabel = localized("Show quick actions")
     static let morphingCollapseToolbarLabel = localized("Hide quick actions")
     static let morphingToolbarHint = localized("Shows or hides the quick action toolbar.")
@@ -1044,6 +1066,20 @@ enum AccessibilityText {
     static let onboardingGenderContinueHint = localized("Saves your selected gender and continues to the next profile step.")
 
     static func onboardingGenderOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
+    static func onboardingTrainingGoalOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
+    static func profileSheetEditPhotoValue(hasPhoto: Bool) -> String { hasPhoto ? localized("Photo added") : localized("No photo selected") }
+    static func settingsAppleHealthActionHint(action: HealthAuthorizationAction) -> String {
+        switch action {
+        case .requestAccess:
+            return localized("Requests Apple Health read and write access.")
+        case .openSettings:
+            return localized("Opens Settings so you can change Apple Health permissions.")
+        case .manageInSettings:
+            return localized("Opens Settings so you can review Apple Health access.")
+        case .unavailable:
+            return localized("Apple Health access is unavailable.")
+        }
+    }
 
     // MARK: - HealthWorkoutDetailView
     static let healthWorkoutRouteMapLabel = localized("Workout route map")

@@ -19,6 +19,13 @@ These existing pieces already give the roadmap a clean foundation:
   - `Data/Models/UserProfile.swift`
   - `Data/Services/App/OnboardingManager.swift`
   - `Views/Onboarding/OnboardingView.swift`
+- `TrainingGoal` history plus profile editing surfaces
+  - `Data/Models/Training/TrainingGoal.swift`
+  - `Views/Profile/ProfileSheetView.swift`
+  - `Views/Profile/TrainingGoalSelectionViews.swift`
+- Shared profile/settings entry point
+  - `Views/Profile/*`
+  - `Views/Settings/AppSettingsView.swift`
 - Date-ranged goal patterns
   - `Data/Models/Health/StepsGoal.swift`
   - `Data/Models/Health/WeightGoal.swift`
@@ -76,9 +83,6 @@ These decisions should guide the roadmap unless a future release proves they nee
 
 ### 1. Profile, Onboarding, and Goals
 
-- Training goal
-  - New date-ranged model similar to `StepsGoal`.
-  - Influences suggestion style, onboarding defaults, template-plan selection, and later plan generation.
 - Sleep goal
   - New date-ranged health goal with history and one active goal at a time through app logic.
 - Desired wake-up time
@@ -87,16 +91,23 @@ These decisions should guide the roadmap unless a future release proves they nee
 - Fitness level
   - Add to profile with a smart review flow rather than silent hard auto-overwrite.
   - Useful for onboarding, template plans, generation complexity, and suggestion tone.
-- Profile hub
-  - Replace the Health-tab gear button with a profile entry point.
-  - Profile sheet can own profile fields, photo, training goal, sleep goal, fitness level, and a separate button into app settings.
+- Profile and settings expansion
+  - Extend the current profile sheet with sleep goal, fitness level, and other profile-owned surfaces.
+  - Keep app settings and profile editing separate, but continue using the shared entry point from both tabs.
+- Settings and support expansion
+  - Continue moving legal, support, and feedback actions into the new settings/profile structure.
+  - Include Terms of Service, Privacy Policy, Request a Feature, Report a Bug, Rate on the App Store, and a Getting Started surface.
+- App theme
+  - Add user-selectable appearance/theme direction once the settings hub exists.
+  - Keep this scoped to a cohesive app-wide system, not one-off per-screen styling toggles.
 - Improved onboarding
   - Add a proper feature-intro sequence before data-entry steps.
-  - Add onboarding steps for training goal, sleep goal, wake time, and fitness level where appropriate.
+  - Add onboarding steps for fitness level and any new profile-owned setup that truly needs to block readiness.
 - TipKit and product education
   - Best used for context menus, suggestion review, split behaviors, and other non-obvious UX.
 - What's New and update surfaces
   - Add an "update available" prompt and a post-update feature sheet tied to app version tracking.
+  - Pair this with a lightweight Getting Started or re-entry surface for users who want a refresher after onboarding.
 - App review prompt
   - Best triggered by clear success moments such as a positive outcome, completed goal, or repeated healthy usage streak.
 
@@ -123,6 +134,9 @@ These decisions should guide the roadmap unless a future release proves they nee
 - Hydration integration
   - Prefer both HealthKit sync and manual entries.
   - Good candidate for another app-owned health input like weight.
+- Weight logging reminders and notification controls
+  - Add a reminder to log weight.
+  - Expand notification settings with a global app notifications toggle plus more granular notification preferences.
 - Manual health inputs
   - Keep hydration as the first manual metric.
   - Defer manual sleep and manual steps until there is a stronger non-HealthKit strategy.
@@ -150,12 +164,14 @@ These decisions should guide the roadmap unless a future release proves they nee
   - Weight accepted-good outcomes more than rejected-good outcomes.
 - Full suggestion and outcome loop improvements
   - Better use of prior outcomes, user preference patterns, and condition context.
+- Template learning from completed workouts
+  - Explore a smart template system that can learn from what the user actually did the next time the template is reused.
+  - Keep this separate from unresolved suggestion state so template catch-up for previously zero-target prescriptions is not forced through the current suggestion pipeline unless that ends up being the cleanest fit.
 - Core ML personalization
   - Later phase once the app has better labels and more structured user feedback.
 - Foundation Models expansion
   - Plan generation from text
   - Split generation from text
-  - Enum selection or parsing from text
   - Add exercises from text
   - Text-to-plan flows
   - Plan or split critique/chat features
@@ -167,10 +183,15 @@ These decisions should guide the roadmap unless a future release proves they nee
 - Split-aware add-exercise flow
   - Emphasize exercises that match the active split day's muscles.
   - This fits naturally into `AddExerciseView` because split day target muscles already exist.
+- Search-mode navigation polish
+  - Hide the quick-actions bar while searching exercises anywhere it competes with focused search UX.
 - Smarter split completion handling
   - Detect when today's split workout already happened and reflect that in the Home split section, quick actions, and intents.
 - Template plans for template splits
   - Template split creation should be able to suggest or attach starter plans.
+- Post-workout plan update flow
+  - Offer a way to update a plan from the workout that was just completed.
+  - This should be deliberate and selective so the app does not silently overwrite long-term plan intent with one-off session adjustments.
 - Improved exercise detail
   - How-to content
   - Exercise instructions
@@ -196,6 +217,9 @@ These decisions should guide the roadmap unless a future release proves they nee
 
 ### 5. New Surfaces and Business
 
+- Shortcuts and system surfaces polish
+  - Add any missing App Intents.
+  - Wire donation coverage across all high-value actions and validate that surfaced suggestions stay aligned with the current navigation model.
 - Cardio tab
   - Strong standalone product area.
   - Should support both outdoor and indoor cardio.
@@ -219,14 +243,15 @@ This is the recommended shipping order based on current architecture, product le
 
 Keep `1.2` focused on extending existing patterns rather than opening brand-new product areas.
 
-- Profile hub replacing the simple Health settings button
-- Training goal
+- Finish profile and settings hub expansion
 - Sleep goal
 - Desired wake-up time
 - Fitness level
-- Onboarding refresh for the new profile and goal fields
+- Onboarding refresh for the remaining new profile fields
 - Optional:
   - What's New sheet
+  - Getting Started / refresher entry point
+  - app theme if the settings foundation is already in place
   - lightweight review prompt
   - small rest-timer UX cleanup if it fits the release
 
@@ -266,7 +291,9 @@ Reason:
 ### `1.5`
 
 - Split-aware add-exercise flow
+- Search-mode polish across exercise flows
 - Template plans for template splits
+- Post-workout plan update flow
 - Improved exercise detail and how-to surfaces
 - Muscle diagrams
 - Workout heatmap
@@ -313,9 +340,8 @@ Reason:
 
 If the roadmap is executed one feature cluster at a time, the cleanest next implementation sequence is:
 
-1. Add a profile hub and move app settings behind it.
-2. Add `TrainingGoal` and `SleepGoal` using the current goal-history pattern.
-3. Add desired wake-up time plus onboarding/profile editing support.
+1. Fold legal, support, feedback, theme, and update surfaces into the current profile/settings structure.
+2. Add `SleepGoal` using the current goal-history pattern.
+3. Add desired wake-up time plus profile editing support.
 4. Add fitness level with review metadata.
-5. Refresh onboarding to introduce the new profile and goal structure.
-
+5. Refresh onboarding only for the profile-owned fields that truly need first-run setup coverage.

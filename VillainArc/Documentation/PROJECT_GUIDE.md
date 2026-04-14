@@ -23,6 +23,7 @@ VillainArc is a SwiftUI + SwiftData strength-training app built around:
 The main product areas are:
 
 - onboarding and readiness
+- profile hub and app settings
 - home navigation and active-flow routing
 - workout sessions
 - workout plans and plan editing
@@ -63,6 +64,12 @@ Quick actions follow the same rule too:
 - `Start Today's Workout` only runs when no workout or plan flow is already active
 - `Add Weight Entry` routes into the Health tab and presents the same sheet the foreground UI uses
 
+Top-level tab chrome also follows a shared profile/settings convention:
+
+- `Home` and `Health` both surface the same profile launcher instead of separate per-tab settings buttons
+- the profile sheet owns profile fields, training goal editing, profile photo actions, and a review entry point
+- deeper settings continue through `AppSettingsView`
+
 ### Persist Real Drafts, Not Temporary State
 
 Incomplete workouts and new-plan drafts are persisted SwiftData records, not temporary view-only state.
@@ -92,6 +99,7 @@ Current goal patterns are:
 
 - `WeightGoal` uses start/end timestamps and allows only one active goal at a time through app logic
 - `StepsGoal` uses start/end calendar days and also keeps one active goal at a time through app logic
+- `TrainingGoal` uses start/end calendar days and also keeps one active goal at a time through app logic
 
 Replacing a goal does not mutate the old goal into the new goal. The app ends or deletes the old active record and inserts a new one. That preserves history and keeps charts and summaries date-correct.
 
@@ -117,6 +125,12 @@ VillainArc keeps true singleton-style records in SwiftData:
 - `HealthSyncState`
 
 Startup code ensures they exist before the app treats launch as ready.
+
+`UserProfile` also owns user-facing profile state such as:
+
+- the required onboarding fields
+- the current display name
+- externally stored profile photo data
 
 ### Apple Health Is an Integration Layer
 
@@ -161,6 +175,11 @@ The high-level launch path is:
 
 That ordering matters. VillainArc does not resume unfinished work before setup is valid.
 
+Setup is only considered valid once:
+
+- required profile fields are complete
+- one active training goal exists
+
 ## First Bootstrap
 
 On the first launch, VillainArc takes the full setup path:
@@ -186,9 +205,29 @@ Once the exercise-catalog bootstrap marker exists, launch is faster:
 
 - ensure singleton records exist
 - route into missing profile steps if needed
+- route into training-goal setup if the profile fields are complete but no active goal exists
 - sync the bundled exercise catalog only if its version changed
 - decide whether the current Health permissions version still needs a one-time prompt
 - otherwise transition directly to `.ready`
+
+## Profile Hub and Settings
+
+VillainArc now uses a shared profile entry point from both tabs.
+
+The profile sheet currently owns:
+
+- avatar and profile photo management
+- name, birthday, gender, and height editing
+- active training-goal editing
+- a manual App Store review entry point
+- a route into app settings
+
+`AppSettingsView` remains the settings surface for:
+
+- workout-history retention behavior
+- Apple Health access and removed-data retention
+- notifications
+- display units
 
 ## Main Product Areas
 
@@ -263,6 +302,8 @@ Notification behavior is part of that surface:
 
 - rest timer completions
 - steps goal and coaching events, including double goal, triple goal, and new-best milestones when the app can observe the Health update in time
+
+Health settings no longer live directly off the Health tab chrome. They now route through the shared profile hub into `AppSettingsView`, where Apple Health has its own detail screen alongside notifications and units.
 
 Home-tab navigation also includes workout-centric history/detail routes such as:
 

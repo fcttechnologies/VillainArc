@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HomeTabView: View {
     @State private var router = AppRouter.shared
-    @State private var showAppSettings = false
 
     var body: some View {
         NavigationStack(path: Binding(get: { router.homeTabPath }, set: { router.homeTabPath = $0; router.noteNavigationStateChanged() })) {
@@ -33,19 +32,7 @@ struct HomeTabView: View {
             .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
             .appBackground()
             .navBar(title: "Workout", includePadding: false) {
-                Button {
-                    showAppSettings = true
-                    Haptics.selection()
-                } label: {
-                    Label("Settings", systemImage: "gear")
-                        .font(.title2)
-                        .labelStyle(.iconOnly)
-                }
-                .buttonBorderShape(.circle)
-                .buttonStyle(.glass)
-                .accessibilityLabel(AccessibilityText.homeSettingsLabel)
-                .accessibilityIdentifier(AccessibilityIdentifiers.homeSettingsButton)
-                .accessibilityHint(AccessibilityText.homeSettingsHint)
+                ProfileSheetLauncherButton(accessibilityIdentifier: AccessibilityIdentifiers.homeProfileButton)
             }
             .scrollIndicators(.hidden)
             .navigationDestination(for: AppRouter.Destination.self) { destination in
@@ -76,10 +63,6 @@ struct HomeTabView: View {
             }
         }
         .id(router.homeTabResetToken)
-        .sheet(isPresented: $showAppSettings) {
-            AppSettingsView()
-                .presentationBackground(Color.sheetBg)
-        }
     }
 }
 

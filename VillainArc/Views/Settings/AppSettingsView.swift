@@ -5,53 +5,13 @@ import UserNotifications
 
 struct AppSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var context
-    @Environment(\.scenePhase) private var scenePhase
     @Query(AppSettings.single) private var appSettings: [AppSettings]
-
-    @State private var healthAuthorizationState: HealthAuthorizationState = .notDetermined
-    @State private var healthAuthorizationAction: HealthAuthorizationAction = .requestAccess
-    @State private var isRefreshingHealthStatus = false
-    @State private var isHandlingHealthAction = false
-    @State private var showHealthAccessInstructions = false
 
     var body: some View {
         NavigationStack {
             Group {
                 if let settings = appSettings.first {
-                    let healthAccessHint: String = switch healthAuthorizationAction {
-                    case .requestAccess: String(localized: "Requests Apple Health read and write access.")
-                    case .openSettings: String(localized: "Opens Settings so you can change Apple Health permissions.")
-                    case .manageInSettings: String(localized: "Opens Settings so you can review Apple Health access.")
-                    case .unavailable: ""
-                    }
-                    AppSettingsFormView(
-                        settings: settings,
-                        healthAuthorizationState: healthAuthorizationState,
-                        healthAuthorizationAction: healthAuthorizationAction,
-                        isRefreshingHealthStatus: isRefreshingHealthStatus,
-                        isHandlingHealthAction: isHandlingHealthAction,
-                        healthAccessHint: healthAccessHint,
-                        onHealthAuthorizationAction: {
-                            guard !isHandlingHealthAction else { return }
-                            isHandlingHealthAction = true
-                            defer { isHandlingHealthAction = false }
-
-                            switch healthAuthorizationAction {
-                            case .requestAccess:
-                                _ = await HealthAuthorizationManager.requestAuthorization()
-                                HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
-                                await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
-                                await HealthStoreUpdateCoordinator.shared.syncNow()
-                            case .openSettings, .manageInSettings:
-                                showHealthAccessInstructions = true
-                            case .unavailable:
-                                break
-                            }
-
-                            await refreshHealthAuthorizationState()
-                        }
-                    )
+                    AppSettingsFormView(settings: settings)
                 } else {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -70,34 +30,6 @@ struct AppSettingsView: View {
                 }
             }
         }
-        .task {
-            await refreshHealthAuthorizationState()
-        }
-        .onChange(of: scenePhase, initial: false) { _, newPhase in
-            guard newPhase == .active else { return }
-            Task {
-                await refreshHealthAuthorizationState()
-                HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
-                await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
-                await HealthStoreUpdateCoordinator.shared.syncNow()
-            }
-        }
-        .alert("Manage Apple Health Access", isPresented: $showHealthAccessInstructions) {
-            Button("Open Settings Apps") {
-                guard let url = URL(string: "App-prefs:root=HEALTH") else { return }
-                UIApplication.shared.open(url)
-            }
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions.")
-        }
-    }
-
-    private func refreshHealthAuthorizationState() async {
-        isRefreshingHealthStatus = true
-        healthAuthorizationState = HealthAuthorizationManager.currentAuthorizationState
-        healthAuthorizationAction = await HealthAuthorizationManager.authorizationAction()
-        isRefreshingHealthStatus = false
     }
 }
 
@@ -108,13 +40,6 @@ struct AppSettingsView: View {
 private struct AppSettingsFormView: View {
     @Environment(\.modelContext) private var context
     @Bindable var settings: AppSettings
-
-    let healthAuthorizationState: HealthAuthorizationState
-    let healthAuthorizationAction: HealthAuthorizationAction
-    let isRefreshingHealthStatus: Bool
-    let isHandlingHealthAction: Bool
-    let healthAccessHint: String
-    let onHealthAuthorizationAction: () async -> Void
 
     var body: some View {
         Form {
@@ -129,23 +54,15 @@ private struct AppSettingsFormView: View {
             }
 
             Section {
-                LabeledContent("Status", value: healthAuthorizationState.statusText)
-
-                if healthAuthorizationAction != .unavailable {
-                    Button(healthAuthorizationAction.buttonTitle, systemImage: healthAuthorizationAction.systemImage) {
-                        Task {
-                            await onHealthAuthorizationAction()
-                        }
-                    }
-                    .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
-                    .accessibilityHint(healthAccessHint)
+                NavigationLink {
+                    AppleHealthSettingsView(settings: settings)
+                } label: {
+                    Label("Apple Health", systemImage: "heart.text.square")
                 }
-
-                Toggle("Keep Removed Data", isOn: $settings.keepRemovedHealthData)
-            } header: {
-                Text("Apple Health")
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthLink)
+                .accessibilityHint(AccessibilityText.settingsAppleHealthHint)
             } footer: {
-                Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
+                Text("Manage Apple Health permissions and choose whether removed Health data stays in Villain Arc.")
             }
 
             Section {
@@ -176,6 +93,61 @@ private struct AppSettingsFormView: View {
             guard !settings.retainPerformancesForLearning else { return }
             WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
         }
+    }
+}
+
+private struct AppleHealthSettingsView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
+    @Bindable var settings: AppSettings
+
+    @State private var healthAuthorizationState: HealthAuthorizationState = .notDetermined
+    @State private var healthAuthorizationAction: HealthAuthorizationAction = .requestAccess
+    @State private var isRefreshingHealthStatus = false
+    @State private var isHandlingHealthAction = false
+    @State private var showHealthAccessInstructions = false
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Status", value: healthAuthorizationState.statusText)
+
+                if healthAuthorizationAction != .unavailable {
+                    Button(healthAuthorizationAction.buttonTitle, systemImage: healthAuthorizationAction.systemImage) {
+                        Task {
+                            await handleHealthAuthorizationAction()
+                        }
+                    }
+                    .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthActionButton)
+                    .accessibilityHint(AccessibilityText.settingsAppleHealthActionHint(action: healthAuthorizationAction))
+                }
+            }
+
+            Section {
+                Toggle("Keep Removed Data", isOn: $settings.keepRemovedHealthData)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthKeepRemovedDataToggle)
+            } footer: {
+                Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
+            }
+        }
+        .navigationTitle("Apple Health")
+        .toolbarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .sheetBackground()
+        .scrollDisabled(true)
+        .task {
+            await refreshHealthAuthorizationState()
+        }
+        .onChange(of: scenePhase, initial: false) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                await refreshHealthAuthorizationState()
+                HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+                await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
+                await HealthStoreUpdateCoordinator.shared.syncNow()
+            }
+        }
         .onChange(of: settings.keepRemovedHealthData) {
             saveContext(context: context)
             guard !settings.keepRemovedHealthData else { return }
@@ -183,6 +155,41 @@ private struct AppSettingsFormView: View {
                 await HealthSyncCoordinator.shared.applyRemovedHealthDataRetentionSetting()
             }
         }
+        .alert("Manage Apple Health Access", isPresented: $showHealthAccessInstructions) {
+            Button("Open Settings Apps") {
+                guard let url = URL(string: "App-prefs:root=HEALTH") else { return }
+                UIApplication.shared.open(url)
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions.")
+        }
+    }
+    private func refreshHealthAuthorizationState() async {
+        isRefreshingHealthStatus = true
+        healthAuthorizationState = HealthAuthorizationManager.currentAuthorizationState
+        healthAuthorizationAction = await HealthAuthorizationManager.authorizationAction()
+        isRefreshingHealthStatus = false
+    }
+
+    private func handleHealthAuthorizationAction() async {
+        guard !isHandlingHealthAction else { return }
+        isHandlingHealthAction = true
+        defer { isHandlingHealthAction = false }
+
+        switch healthAuthorizationAction {
+        case .requestAccess:
+            _ = await HealthAuthorizationManager.requestAuthorization()
+            HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+            await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
+            await HealthStoreUpdateCoordinator.shared.syncNow()
+        case .openSettings, .manageInSettings:
+            showHealthAccessInstructions = true
+        case .unavailable:
+            break
+        }
+
+        await refreshHealthAuthorizationState()
     }
 }
 

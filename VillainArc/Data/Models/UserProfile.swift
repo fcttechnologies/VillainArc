@@ -24,6 +24,7 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
     case birthday
     case gender
     case height
+    case trainingGoal
 
     static func navigationPath(to step: UserProfileOnboardingStep) -> [UserProfileOnboardingStep] {
         Array(allCases.prefix(step.rawValue + 1).dropFirst())
@@ -36,6 +37,7 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
     var gender: UserGender = UserGender.notSet
     var dateJoined: Date = Date()
     var heightCm: Double?
+    @Attribute(.externalStorage) var profileImageData: Data?
 
     init() {}
 
