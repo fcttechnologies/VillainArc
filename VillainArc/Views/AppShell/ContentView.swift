@@ -17,7 +17,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaBar(edge: .bottom) {
             if !router.isQuickActionsBarHidden {
-                MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: expandedActions)
+                MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext))
             }
         }
         .onChange(of: router.navigationEventToken) {
@@ -32,6 +32,9 @@ struct ContentView: View {
             WorkoutSessionContainer(workout: $0)
         }
         .fullScreenCover(item: $router.activeWorkoutPlan, onDismiss: {
+            let cleanup = router.pendingWorkoutPlanDismissCleanup
+            router.pendingWorkoutPlanDismissCleanup = nil
+            cleanup?()
             router.activeWorkoutPlanOriginal = nil
         }) {
             WorkoutPlanView(plan: $0, originalPlan: router.activeWorkoutPlanOriginal)
@@ -62,11 +65,7 @@ struct ContentView: View {
     private var tabSelectionBinding: Binding<AppTab> {
         Binding(get: { router.tabSelection }, set: { router.selectTab($0) })
     }
-    
-    private var expandedActions: [ExpandedAction] {
-        homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext)
-    }
-    
+
     private func additionalExpandedActions(for context: AppRouter.AdditionalQuickActionContext?) -> [ExpandedAction] {
         switch context {
         case .healthRoot:

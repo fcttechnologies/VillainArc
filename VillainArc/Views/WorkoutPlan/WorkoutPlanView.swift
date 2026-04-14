@@ -5,9 +5,11 @@ import AppIntents
 struct WorkoutPlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @State private var router = AppRouter.shared
     
     @Bindable var plan: WorkoutPlan
     private let originalPlan: WorkoutPlan?
+    @State private var initialStructureSnapshot: PlanStructureSnapshot
 
     @State private var showAddExerciseSheet = false
     @State private var showCancelWorkoutPlanConfirmation = false
@@ -22,6 +24,7 @@ struct WorkoutPlanView: View {
     init(plan: WorkoutPlan, originalPlan: WorkoutPlan? = nil) {
         self.plan = plan
         self.originalPlan = originalPlan
+        _initialStructureSnapshot = State(initialValue: Self.makeStructureSnapshot(for: plan))
     }
 
     private var isEditingExistingPlan: Bool {
@@ -31,147 +34,154 @@ struct WorkoutPlanView: View {
     var body: some View {
         NavigationStack {
             planDetailView
-            .navigationTitle(plan.title)
-            .toolbarTitleMenu {
-                Button("Change Title", systemImage: "pencil") {
-                    showTitleEditorSheet = true
-                }
-                Button("Plan Notes", systemImage: "note.text") {
-                    showNotesEditorSheet = true
-                }
-            }
-            .toolbarTitleDisplayMode(.inline)
-            .scrollContentBackground(.hidden)
-            .appBackground()
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", systemImage: "xmark", role: .cancel) {
-                        Haptics.selection()
-                        if isEditingExistingPlan {
-                            cancelEditingAndDismiss()
-                        } else if plan.completed {
-                            dismiss()
-                        } else if plan.sortedExercises.isEmpty {
-                            deleteWorkoutPlanAndDismiss()
-                        } else {
-                            showCancelWorkoutPlanConfirmation = true
-                        }
+                .navigationTitle(plan.title)
+                .toolbarTitleMenu {
+                    Button("Change Title", systemImage: "pencil") {
+                        showTitleEditorSheet = true
                     }
-                    .labelStyle(.iconOnly)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanCancelButton)
-                    .confirmationDialog("Cancel Workout Plan?", isPresented: $showCancelWorkoutPlanConfirmation) {
-                        Button("Cancel Plan", role: .destructive) {
-                            deleteWorkoutPlanAndDismiss()
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanConfirmCancelButton)
-                    } message: {
-                        Text("Are you sure you want to cancel this workout plan?")
+                    Button("Plan Notes", systemImage: "note.text") {
+                        showNotesEditorSheet = true
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
-                        Haptics.selection()
-                        plan.convertTargetWeightsToKg(from: weightUnit)
-                        if let originalPlan {
-                            originalPlan.applyEditingCopy(plan, context: context)
-                            context.delete(plan)
-                            saveContext(context: context)
-                            SpotlightIndexer.index(workoutPlan: originalPlan)
-                            SpotlightIndexer.reindexLinkedWorkoutSplits(for: originalPlan)
-                            dismiss()
-                            return
-                        }
-                        if !plan.completed {
-                            plan.completed = true
-                        }
-                        plan.clearCompletedSessionPerformanceReferences()
-                        saveContext(context: context)
-                        SpotlightIndexer.index(workoutPlan: plan)
-                        SpotlightIndexer.reindexLinkedWorkoutSplits(for: plan)
-                        dismiss()
-                    }
-                    .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSaveButton)
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    if !plan.sortedExercises.isEmpty {
-                        Button("Edit Exercises", systemImage: "pencil") {
+                .toolbarTitleDisplayMode(.inline)
+                .scrollContentBackground(.hidden)
+                .appBackground()
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel", systemImage: "xmark", role: .cancel) {
                             Haptics.selection()
-                            showExerciseEditSheet = true
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanEditExercisesButton)
-                        .accessibilityHint(AccessibilityText.workoutPlanEditExercisesHint)
-                    }
-                }
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Add Exercise", systemImage: "plus") {
-                        Haptics.selection()
-                        showAddExerciseSheet = true
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanAddExerciseButton)
-                    .accessibilityHint(AccessibilityText.workoutPlanAddExerciseHint)
-                }
-            }
-            .sheet(isPresented: $showExerciseEditSheet) {
-                NavigationStack {
-                    exerciseListView
-                        .navigationTitle("Edit Exercises")
-                        .toolbarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button(role: .confirm) {
-                                    showExerciseEditSheet = false
+                            if isEditingExistingPlan {
+                                if Self.makeStructureSnapshot(for: plan) != initialStructureSnapshot {
+                                    showCancelWorkoutPlanConfirmation = true
+                                } else {
+                                    discardEditingCopyAndDismiss()
                                 }
+                            } else if plan.completed {
+                                dismiss()
+                            } else if plan.sortedExercises.isEmpty {
+                                deleteWorkoutPlanAndDismiss()
+                            } else {
+                                showCancelWorkoutPlanConfirmation = true
                             }
                         }
-                }
-                .presentationBackground(Color.sheetBg)
-            }
-            .sheet(isPresented: $showAddExerciseSheet) {
-                AddExerciseView(plan: plan)
-                    .interactiveDismissDisabled()
-                    .presentationBackground(Color.sheetBg)
-            }
-            .sheet(isPresented: $showNotesEditorSheet) {
-                TextEntryEditorView(title: "Notes", promptText: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, isTitle: true)
-                    .presentationDetents([.fraction(0.4)])
-                    .presentationBackground(Color.sheetBg)
-                    .onChange(of: plan.notes) {
-                        scheduleSave(context: context)
-                    }
-                    .onDisappear {
-                        saveContext(context: context)
-                    }
-            }
-            .userActivity("com.villainarc.workoutPlan.edit", element: plan) { plan, activity in
-                activity.title = plan.title
-                activity.isEligibleForSearch = false
-                activity.isEligibleForPrediction = true
-                let entity = WorkoutPlanEntity(workoutPlan: plan)
-                activity.appEntityIdentifier = .init(for: entity)
-            }
-            .sheet(isPresented: $showTitleEditorSheet) {
-                TextEntryEditorView(title: "Title", promptText: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)
-                    .presentationDetents([.fraction(0.2)])
-                    .presentationBackground(Color.sheetBg)
-                    .onChange(of: plan.title) {
-                        scheduleSave(context: context)
-                    }
-                    .onDisappear {
-                        if plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            plan.title = "New Workout Plan"
+                        .labelStyle(.iconOnly)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanCancelButton)
+                        .confirmationDialog(isEditingExistingPlan ? "Discard Changes?" : "Cancel Workout Plan?", isPresented: $showCancelWorkoutPlanConfirmation) {
+                            Button(isEditingExistingPlan ? "Discard Changes" : "Cancel Plan", role: .destructive) {
+                                if isEditingExistingPlan {
+                                    discardEditingCopyAndDismiss()
+                                } else {
+                                    deleteWorkoutPlanAndDismiss()
+                                }
+                            }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanConfirmCancelButton)
+                        } message: {
+                            Text(isEditingExistingPlan ? "Are you sure you want to discard your changes to this workout plan?" : "Are you sure you want to cancel this workout plan?")
                         }
-                        saveContext(context: context)
                     }
-            }
-            .alert("Delete Plan?", isPresented: $showDeletePlanConfirmation) {
-                Button("Delete Plan", role: .destructive) {
-                    deleteWorkoutPlanAndDismiss()
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
+                            Haptics.selection()
+                            plan.convertTargetWeightsToKg(from: weightUnit)
+                            if let originalPlan {
+                                originalPlan.applyEditingCopy(plan, context: context)
+                                saveContext(context: context)
+                                SpotlightIndexer.index(workoutPlan: originalPlan)
+                                SpotlightIndexer.reindexLinkedWorkoutSplits(for: originalPlan)
+                                discardEditingCopyAndDismiss()
+                                return
+                            }
+                            if !plan.completed {
+                                plan.completed = true
+                            }
+                            plan.clearCompletedSessionPerformanceReferences()
+                            saveContext(context: context)
+                            SpotlightIndexer.index(workoutPlan: plan)
+                            SpotlightIndexer.reindexLinkedWorkoutSplits(for: plan)
+                            dismiss()
+                        }
+                        .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSaveButton)
+                    }
+                    ToolbarItem(placement: .bottomBar) {
+                        if !plan.sortedExercises.isEmpty {
+                            Button("Edit Exercises", systemImage: "pencil") {
+                                Haptics.selection()
+                                showExerciseEditSheet = true
+                            }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanEditExercisesButton)
+                            .accessibilityHint(AccessibilityText.workoutPlanEditExercisesHint)
+                        }
+                    }
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        Button("Add Exercise", systemImage: "plus") {
+                            Haptics.selection()
+                            showAddExerciseSheet = true
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanAddExerciseButton)
+                        .accessibilityHint(AccessibilityText.workoutPlanAddExerciseHint)
+                    }
                 }
-            } message: {
-                Text("Removing the last exercise will delete this plan.")
-            }
+                .sheet(isPresented: $showExerciseEditSheet) {
+                    NavigationStack {
+                        exerciseListView
+                            .navigationTitle("Edit Exercises")
+                            .toolbarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button(role: .confirm) {
+                                        showExerciseEditSheet = false
+                                    }
+                                }
+                            }
+                    }
+                    .presentationBackground(Color.sheetBg)
+                }
+                .sheet(isPresented: $showAddExerciseSheet) {
+                    AddExerciseView(plan: plan)
+                        .interactiveDismissDisabled()
+                        .presentationBackground(Color.sheetBg)
+                }
+                .sheet(isPresented: $showNotesEditorSheet) {
+                    TextEntryEditorView(title: "Notes", promptText: "Plan Notes", text: $plan.notes, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanNotesEditorField, isTitle: true)
+                        .presentationDetents([.fraction(0.4)])
+                        .presentationBackground(Color.sheetBg)
+                        .onChange(of: plan.notes) {
+                            scheduleSave(context: context)
+                        }
+                        .onDisappear {
+                            saveContext(context: context)
+                        }
+                }
+                .userActivity("com.villainarc.workoutPlan.edit", element: plan) { plan, activity in
+                    activity.title = plan.title
+                    activity.isEligibleForSearch = false
+                    activity.isEligibleForPrediction = true
+                    let entity = WorkoutPlanEntity(workoutPlan: plan)
+                    activity.appEntityIdentifier = .init(for: entity)
+                }
+                .sheet(isPresented: $showTitleEditorSheet) {
+                    TextEntryEditorView(title: "Title", promptText: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)
+                        .presentationDetents([.fraction(0.2)])
+                        .presentationBackground(Color.sheetBg)
+                        .onChange(of: plan.title) {
+                            scheduleSave(context: context)
+                        }
+                        .onDisappear {
+                            if plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                plan.title = "New Workout Plan"
+                            }
+                            saveContext(context: context)
+                        }
+                }
+                .alert("Delete Plan?", isPresented: $showDeletePlanConfirmation) {
+                    Button("Delete Plan", role: .destructive) {
+                        deleteWorkoutPlanAndDismiss()
+                    }
+                } message: {
+                    Text("Removing the last exercise will delete this plan.")
+                }
         }
     }
     
@@ -282,12 +292,21 @@ struct WorkoutPlanView: View {
         Haptics.selection()
         if let originalPlan {
             let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: originalPlan)
-            SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
-            originalPlan.deleteWithSuggestionCleanup(context: context)
-            context.delete(plan)
-            try? context.save()
-            SpotlightIndexer.index(workoutSplits: linkedSplits)
-            dismiss()
+            let editingCopy = plan
+            if router.activeWorkoutPlan?.id == plan.id {
+                router.pendingWorkoutPlanDismissCleanup = {
+                    SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
+                    originalPlan.deleteWithSuggestionCleanup(context: context)
+                    context.delete(editingCopy)
+                    SpotlightIndexer.index(workoutSplits: linkedSplits)
+                }
+            } else {
+                SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
+                originalPlan.deleteWithSuggestionCleanup(context: context)
+                context.delete(editingCopy)
+                SpotlightIndexer.index(workoutSplits: linkedSplits)
+            }
+            dismissPresentedPlanEditor()
             return
         }
         let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: plan)
@@ -300,11 +319,47 @@ struct WorkoutPlanView: View {
         dismiss()
     }
 
-    private func cancelEditingAndDismiss() {
-        context.delete(plan)
-        try? context.save()
-        dismiss()
+    private func dismissPresentedPlanEditor() {
+        if router.activeWorkoutPlan?.id == plan.id {
+            router.activeWorkoutPlan = nil
+        } else {
+            dismiss()
+        }
     }
+
+    private func discardEditingCopyAndDismiss() {
+        let editingCopy = plan
+        if router.activeWorkoutPlan?.id == plan.id {
+            router.pendingWorkoutPlanDismissCleanup = {
+                context.delete(editingCopy)
+            }
+        } else {
+            context.delete(editingCopy)
+        }
+        dismissPresentedPlanEditor()
+    }
+
+    private static func makeStructureSnapshot(for plan: WorkoutPlan) -> PlanStructureSnapshot {
+        PlanStructureSnapshot(
+            title: plan.title.trimmingCharacters(in: .whitespacesAndNewlines),
+            notes: plan.notes.trimmingCharacters(in: .whitespacesAndNewlines),
+            exercises: plan.sortedExercises.map {
+                ExerciseStructureSnapshot(id: $0.id, catalogID: $0.catalogID, setCount: $0.sortedSets.count)
+            }
+        )
+    }
+}
+
+private struct PlanStructureSnapshot: Equatable {
+    let title: String
+    let notes: String
+    let exercises: [ExerciseStructureSnapshot]
+}
+
+private struct ExerciseStructureSnapshot: Equatable {
+    let id: UUID
+    let catalogID: String
+    let setCount: Int
 }
 
 private struct WorkoutPlanExerciseView: View {

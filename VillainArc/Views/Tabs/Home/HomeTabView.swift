@@ -5,7 +5,7 @@ struct HomeTabView: View {
     @State private var showAppSettings = false
 
     var body: some View {
-        NavigationStack(path: homeTabPathBinding) {
+        NavigationStack(path: Binding(get: { router.homeTabPath }, set: { router.homeTabPath = $0; router.noteNavigationStateChanged() })) {
             ScrollView {
                 WorkoutSplitSectionView()
                     .padding()
@@ -80,14 +80,6 @@ struct HomeTabView: View {
             AppSettingsView()
                 .presentationBackground(Color.sheetBg)
         }
-    }
-
-    private var homeTabPathBinding: Binding<[AppRouter.Destination]> {
-        Binding(get: { router.homeTabPath },
-            set: { newValue in
-                router.homeTabPath = newValue
-                router.noteNavigationStateChanged()
-            })
     }
 }
 

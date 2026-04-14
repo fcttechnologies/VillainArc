@@ -1621,6 +1621,9 @@
         }
       }
     },
+    "Are you sure you want to discard your changes to this workout plan?" : {
+
+    },
     "Arnold Split" : {
       "localizations" : {
         "en" : {
@@ -2007,6 +2010,9 @@
         }
       }
     },
+    "Change Plan" : {
+
+    },
     "Change Title" : {
       "localizations" : {
         "en" : {
@@ -2126,6 +2132,9 @@
           }
         }
       }
+    },
+    "Clear Plan" : {
+
     },
     "Clear Sets" : {
       "localizations" : {
@@ -3289,6 +3298,12 @@
           }
         }
       }
+    },
+    "Discard Changes" : {
+
+    },
+    "Discard Changes?" : {
+
     },
     "Discard selected exercises?" : {
       "localizations" : {
@@ -7748,6 +7763,9 @@
           }
         }
       }
+    },
+    "Plan Actions" : {
+
     },
     "Plan Notes" : {
       "localizations" : {

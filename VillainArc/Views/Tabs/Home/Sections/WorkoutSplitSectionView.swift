@@ -7,15 +7,7 @@ struct WorkoutSplitSectionView: View {
     @Query(WorkoutSplit.active) private var activeSplits: [WorkoutSplit]
     @Query(WorkoutSplit.any) private var storedSplits: [WorkoutSplit]
     private let appRouter = AppRouter.shared
-    
-    private var activeSplit: WorkoutSplit? {
-        activeSplits.first
-    }
-    
-    private var hasAnySplit: Bool {
-        !storedSplits.isEmpty
-    }
-    
+
     var body: some View {
         content
             .onAppear {
@@ -29,12 +21,12 @@ struct WorkoutSplitSectionView: View {
     
     @ViewBuilder
     private var content: some View {
-        if !hasAnySplit {
+        if storedSplits.isEmpty {
             splitUnavailableView(title: String(localized: "No Workout Split"), description: String(localized: "Create a split to plan your training days."), autoOpenBuilder: true) {
                 await IntentDonations.donateCreateWorkoutSplit()
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutSplitEmptyState)
-        } else if let activeSplit {
+        } else if let activeSplit = activeSplits.first {
             let resolution = SplitScheduleResolver.resolve(activeSplit, context: context, syncProgress: false)
 
             if let day = resolution.splitDay {
@@ -166,7 +158,7 @@ struct WorkoutSplitSectionView: View {
     }
     
     private func refreshRotationIfNeeded() {
-        guard let split = activeSplit else { return }
+        guard let split = activeSplits.first else { return }
         _ = SplitScheduleResolver.resolve(split, context: context)
     }
 }

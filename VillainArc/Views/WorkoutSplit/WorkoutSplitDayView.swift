@@ -8,6 +8,8 @@ struct WorkoutSplitDayView: View {
     @Bindable var splitDay: WorkoutSplitDay
     let mode: SplitMode
     @State private var showPlanPicker = false
+    @State private var presentedPlan: WorkoutPlan?
+    @State private var pendingPickerAfterPlanDismiss = false
     @State private var showTargetMusclesPicker = false
     @FocusState private var isNameFieldFocused: Bool
     
@@ -41,7 +43,11 @@ struct WorkoutSplitDayView: View {
                     .accessibilityHint(AccessibilityText.workoutSplitDayNameHint)
                 Button {
                     Haptics.selection()
-                    showPlanPicker = true
+                    if let plan = splitDay.workoutPlan {
+                        presentedPlan = plan
+                    } else {
+                        showPlanPicker = true
+                    }
                 } label: {
                     if let plan = splitDay.workoutPlan {
                         WorkoutPlanCardView(workoutPlan: plan)
@@ -76,13 +82,42 @@ struct WorkoutSplitDayView: View {
             saveContext(context: context)
             reindexSplit()
         }
+        .onChange(of: presentedPlan?.id) { _, newValue in
+            guard newValue == nil, pendingPickerAfterPlanDismiss else { return }
+            pendingPickerAfterPlanDismiss = false
+            showPlanPicker = true
+        }
         .onDisappear {
             router.isQuickActionsBarHidden = false
             reindexSplit()
         }
         .sheet(isPresented: $showPlanPicker) {
-            WorkoutPlanPickerView(selectedPlan: $splitDay.workoutPlan)
+            WorkoutPlanPickerView(selectedPlan: $splitDay.workoutPlan, showsClearButton: false)
                 .presentationBackground(Color.sheetBg)
+        }
+        .sheet(item: $presentedPlan) { plan in
+            NavigationStack {
+                WorkoutPlanDetailView(
+                    plan: plan,
+                    showsUseOnly: router.isTodaysActiveSplitPlan(plan),
+                    showSheetBackground: true,
+                    showsCloseButton: true,
+                    splitAssignmentActions: .init(
+                        canUsePlan: router.isTodaysActiveSplitPlan(plan),
+                        onChangePlan: {
+                            pendingPickerAfterPlanDismiss = true
+                            presentedPlan = nil
+                        },
+                        onClearPlan: {
+                            splitDay.workoutPlan = nil
+                            saveContext(context: context)
+                            reindexSplit()
+                            presentedPlan = nil
+                        }
+                    )
+                )
+            }
+            .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: $showTargetMusclesPicker) {
             MuscleFilterSheetView(selectedMuscles: Set(splitDay.targetMuscles), showMinorMuscles: true) { selection in

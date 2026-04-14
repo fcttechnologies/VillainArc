@@ -4,6 +4,12 @@ import AppIntents
 import CoreSpotlight
 
 struct WorkoutPlanDetailView: View {
+    struct SplitAssignmentActions {
+        let canUsePlan: Bool
+        let onChangePlan: () -> Void
+        let onClearPlan: () -> Void
+    }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Query private var completedSessions: [WorkoutSession]
@@ -15,17 +21,25 @@ struct WorkoutPlanDetailView: View {
     private let onSelect: (() -> Void)?
     private let showsUseOnly: Bool
     private let showSheetBackground: Bool
+    private let showsCloseButton: Bool
+    private let splitAssignmentActions: SplitAssignmentActions?
 
     @State private var showDeleteWorkoutPlanConfirmation = false
     @State private var showSuggestionsSheet = false
     @State private var suggestionsInitialTab: WorkoutPlanSuggestionsSheet.Tab = .toReview
     @State private var focusedSuggestionExerciseID: UUID?
 
-    init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil, showSheetBackground: Bool = false) {
+    private var isSplitAssignmentPreview: Bool {
+        splitAssignmentActions != nil
+    }
+
+    init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil, showSheetBackground: Bool = false, showsCloseButton: Bool = false, splitAssignmentActions: SplitAssignmentActions? = nil) {
         self.plan = plan
         self.showsUseOnly = showsUseOnly
         self.onSelect = onSelect
         self.showSheetBackground = showSheetBackground
+        self.showsCloseButton = showsCloseButton
+        self.splitAssignmentActions = splitAssignmentActions
         _completedSessions = Query(WorkoutSession.completedSessions(forWorkoutPlanID: plan.id))
     }
 
@@ -103,8 +117,17 @@ struct WorkoutPlanDetailView: View {
                 .presentationBackground(Color.sheetBg)
         }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if showsCloseButton {
+                    Button("Close", systemImage: "xmark", role: .close) {
+                        Haptics.selection()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                if hasSuggestionsSheetContent && onSelect == nil {
+                if hasSuggestionsSheetContent && onSelect == nil && !isSplitAssignmentPreview {
                     Button {
                         Haptics.selection()
                         openSuggestionsSheet(tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview, focusedExerciseID: nil)
@@ -130,7 +153,15 @@ struct WorkoutPlanDetailView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if onSelect == nil, showsUseOnly {
+                if let splitAssignmentActions, splitAssignmentActions.canUsePlan {
+                    Button("Use Plan", systemImage: "figure.strengthtraining.traditional") {
+                        startWorkoutFromPlan()
+                    }
+                    .labelStyle(.iconOnly)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailUseButton)
+                    .accessibilityLabel("Use Plan")
+                    .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
+                } else if onSelect == nil, showsUseOnly {
                     Button("Use Plan", systemImage: "figure.strengthtraining.traditional") {
                         startWorkoutFromPlan()
                     }
@@ -141,7 +172,19 @@ struct WorkoutPlanDetailView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if onSelect == nil, !showsUseOnly {
+                if let splitAssignmentActions {
+                    Menu("Plan Actions", systemImage: "ellipsis") {
+                        Button("Change Plan", systemImage: "arrow.triangle.2.circlepath") {
+                            Haptics.selection()
+                            splitAssignmentActions.onChangePlan()
+                        }
+
+                        Button("Clear Plan", systemImage: "xmark.circle", role: .destructive) {
+                            Haptics.selection()
+                            splitAssignmentActions.onClearPlan()
+                        }
+                    }
+                } else if onSelect == nil, !showsUseOnly {
                     Button {
                         Haptics.selection()
                         plan.favorite.toggle()
@@ -158,7 +201,7 @@ struct WorkoutPlanDetailView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                if onSelect == nil, !showsUseOnly {
+                if onSelect == nil, !showsUseOnly && !isSplitAssignmentPreview {
                     Menu("Options", systemImage: "ellipsis") {
                         Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
                             startWorkoutFromPlan()
@@ -347,15 +390,7 @@ private struct WorkoutPlanDetailExerciseCard: View {
 
             Divider()
 
-            ExerciseSetTable(
-                rows: exercise.sortedSets,
-                repsText: { $0.targetReps > 0 ? "\($0.targetReps)" : "-" },
-                weightText: { $0.targetWeight > 0 ? formattedWeightText($0.targetWeight, unit: weightUnit) : "-" },
-                restText: { $0.targetRest > 0 ? secondsToTime($0.targetRest) : "-" },
-                rowAccessibilityIdentifier: { AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: $0) },
-                rowAccessibilityLabel: { AccessibilityText.exerciseSetLabel(for: $0) },
-                rowAccessibilityValue: { AccessibilityText.exerciseSetValue(for: $0, unit: weightUnit) }
-            ) { set in
+            ExerciseSetTable(rows: exercise.sortedSets, repsText: { $0.targetReps > 0 ? "\($0.targetReps)" : "-" }, weightText: { $0.targetWeight > 0 ? formattedWeightText($0.targetWeight, unit: weightUnit) : "-" }, restText: { $0.targetRest > 0 ? secondsToTime($0.targetRest) : "-" }, rowAccessibilityIdentifier: { AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: $0) }, rowAccessibilityLabel: { AccessibilityText.exerciseSetLabel(for: $0) }, rowAccessibilityValue: { AccessibilityText.exerciseSetValue(for: $0, unit: weightUnit) }) { set in
                 WorkoutPlanDetailSetIndicator(set: set)
             }
         }

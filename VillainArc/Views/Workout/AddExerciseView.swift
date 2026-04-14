@@ -53,7 +53,7 @@ struct AddExerciseView: View {
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseDiscardSelectionsButton)
                         } message: {
-                            Text(confirmationMessage)
+                            Text(workout != nil ? String(localized: "If you leave now, the selected exercises will not be added to your workout.") : String(localized: "If you leave now, the selected exercises will not be added to your plan."))
                         }
                     }
                     ToolbarItem(placement: .confirmationAction) {
@@ -63,7 +63,7 @@ struct AddExerciseView: View {
                         }
                         .accessibilityLabel(AccessibilityText.addExerciseConfirmLabel)
                         .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseConfirmButton)
-                        .accessibilityHint(confirmationHint)
+                        .accessibilityHint(workout != nil ? String(localized: "Adds the selected exercises to your workout.") : String(localized: "Adds the selected exercises to your plan."))
                     }
                     ToolbarItem(placement: .bottomBar) {
                         Menu("Filters", systemImage: "line.3.horizontal.decrease") {
@@ -82,7 +82,8 @@ struct AddExerciseView: View {
                             Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
                                 .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFavoritesToggle)
                             Button("Muscle Filters", systemImage: "figure") {
-                                presentMuscleFilterSheet()
+                                Haptics.selection()
+                                showMuscleFilterSheet = true
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseMuscleFiltersButton)
                             .accessibilityHint(AccessibilityText.addExerciseMuscleFiltersHint)
@@ -116,23 +117,7 @@ struct AddExerciseView: View {
                 }
         }
     }
-    
-    private var confirmationMessage: String {
-        if workout != nil {
-            return String(localized: "If you leave now, the selected exercises will not be added to your workout.")
-        } else {
-            return String(localized: "If you leave now, the selected exercises will not be added to your plan.")
-        }
-    }
-    
-    private var confirmationHint: String {
-        if workout != nil {
-            return String(localized: "Adds the selected exercises to your workout.")
-        } else {
-            return String(localized: "Adds the selected exercises to your plan.")
-        }
-    }
-    
+
     private func addSelectedExercises() {
         if let workout {
             for exercise in selectedExercises {
@@ -158,11 +143,6 @@ struct AddExerciseView: View {
             }
         }
         dismiss()
-    }
-
-    private func presentMuscleFilterSheet() {
-        Haptics.selection()
-        showMuscleFilterSheet = true
     }
 }
 

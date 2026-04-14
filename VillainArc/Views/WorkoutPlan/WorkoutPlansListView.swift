@@ -10,11 +10,7 @@ struct WorkoutPlansListView: View {
     @State private var isEditing = false
     @State private var favoritesOnly = false
     @State private var previousFavoritesState = false
-    
-    private var editModeBinding: Binding<EditMode> {
-        Binding(get: { isEditing ? .active : .inactive }, set: { newValue in isEditing = newValue == .active })
-    }
-    
+
     var filteredWorkoutPlans: [WorkoutPlan] {
         if favoritesOnly {
             return workoutPlans.filter { $0.favorite }
@@ -42,7 +38,7 @@ struct WorkoutPlansListView: View {
         }
         .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansList)
-        .environment(\.editMode, editModeBinding)
+        .environment(\.editMode, Binding(get: { isEditing ? .active : .inactive }, set: { isEditing = $0 == .active }))
         .animation(reduceMotion ? nil : .smooth, value: isEditing)
         .navigationTitle("Workout Plans")
         .toolbarTitleDisplayMode(.inline)

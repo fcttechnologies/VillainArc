@@ -104,6 +104,7 @@ enum HomeQuickAction: String {
     var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     @ObservationIgnored var activeWorkoutPlanOriginal: WorkoutPlan?
+    @ObservationIgnored var pendingWorkoutPlanDismissCleanup: (() -> Void)?
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
     @ObservationIgnored var pendingWidgetDestination: Destination?
     var activeHealthSheet: HealthSheet?
@@ -112,11 +113,12 @@ enum HomeQuickAction: String {
     var activeWorkoutDialog: WorkoutDialog?
     var isQuickActionsBarHidden = false
     var tabSelection: AppTab = .home {
-        didSet { persistTabSelection(tabSelection) }
+        didSet { SharedModelContainer.sharedDefaults.set(tabSelection.rawValue, forKey: Self.selectedTabDefaultsKey) }
     }
     var navigationEventToken = 0
     var homeTabResetToken = UUID()
     var healthTabResetToken = UUID()
+
     enum Destination: Hashable {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
@@ -140,7 +142,12 @@ enum HomeQuickAction: String {
 
     var homeTabPath: [Destination] = []
     var healthTabPath: [Destination] = []
-    private init() { tabSelection = restoredTabSelection() }
+    private init() {
+        if let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
+           let storedTab = AppTab(rawValue: storedRawValue) {
+            tabSelection = storedTab
+        }
+    }
     private var context: ModelContext { SharedModelContainer.container.mainContext }
 
     var additionalQuickActionContext: AdditionalQuickActionContext? {
@@ -170,18 +177,6 @@ enum HomeQuickAction: String {
     }
 
     private func incompleteWorkoutSession() -> WorkoutSession? { try? context.fetch(WorkoutSession.incomplete).first }
-
-    private func restoredTabSelection() -> AppTab {
-        guard let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
-              let storedTab = AppTab(rawValue: storedRawValue)
-        else {
-            return .home
-        }
-
-        return storedTab
-    }
-
-    private func persistTabSelection(_ tab: AppTab) { SharedModelContainer.sharedDefaults.set(tab.rawValue, forKey: Self.selectedTabDefaultsKey) }
 
     func noteNavigationStateChanged() {
         navigationEventToken += 1

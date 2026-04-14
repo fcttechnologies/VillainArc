@@ -166,7 +166,11 @@ enum OnboardingState: Equatable {
     func saveName(_ name: String) async -> Bool {
         guard let profile else { return false }
         profile.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return await persistProfileAndAdvance()
+        do { try context.save() } catch {
+            state = .error("Failed to save your profile: \(error.localizedDescription)")
+            return false
+        }
+        return true
     }
 
     func saveBirthday(_ birthday: Date) async -> Bool {
@@ -265,14 +269,6 @@ enum OnboardingState: Equatable {
         }
     }
 
-    private func persistProfileAndAdvance() async -> Bool {
-        do { try context.save() } catch {
-            state = .error("Failed to save your profile: \(error.localizedDescription)")
-            return false
-        }
-        return true
-    }
-
     private func persistProfileAndMaybeFinish(saveFailureMessage: String) async -> Bool {
         do { try context.save() } catch {
             state = .error("\(saveFailureMessage): \(error.localizedDescription)")
@@ -308,12 +304,8 @@ enum OnboardingState: Equatable {
         }
     }
 
-    private func shouldOfferHealthPermissions() async -> Bool {
-        await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
-    }
-
     private func transitionAfterSetup() async {
-        if await shouldOfferHealthPermissions() {
+        if await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion() {
             state = .healthPermissions
         } else {
             transitionToReady()

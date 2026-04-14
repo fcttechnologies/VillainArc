@@ -101,10 +101,10 @@
 				Documentation/HEALTHKIT_INTEGRATION.md,
 				Documentation/ONBOARDING_FLOW.md,
 				Documentation/PLAN_EDITING_FLOW.md,
+				Documentation/PRODUCT_ROADMAP.md,
 				Documentation/PROJECT_GUIDE.md,
 				Documentation/SESSION_LIFECYCLE_FLOW.md,
 				Documentation/SUGGESTION_AND_OUTCOME_FLOW.md,
-				Documentation/TRAINING_CONTEXT_ROADMAP.md,
 				Info.plist,
 			);
 			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;

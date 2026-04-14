@@ -5,7 +5,7 @@ struct HealthTabView: View {
     @State private var showAppSettings = false
     
     var body: some View {
-        NavigationStack(path: healthTabPathBinding) {
+        NavigationStack(path: Binding(get: { router.healthTabPath }, set: { router.healthTabPath = $0; router.noteNavigationStateChanged() })) {
             ScrollView {
                 VStack(spacing: 16) {
                     TrainingConditionSectionCard()
@@ -37,7 +37,7 @@ struct HealthTabView: View {
                 AppSettingsView()
                     .presentationBackground(Color.sheetBg)
             }
-            .sheet(isPresented: trainingConditionEditorBinding) {
+            .sheet(isPresented: Binding(get: { router.activeHealthSheet == .trainingConditionEditor }, set: { if !$0, router.activeHealthSheet == .trainingConditionEditor { router.activeHealthSheet = nil } })) {
                 TrainingConditionEditorView()
                     .presentationBackground(Color.sheetBg)
             }
@@ -65,27 +65,6 @@ struct HealthTabView: View {
             }
         }
         .id(router.healthTabResetToken)
-    }
-
-    private var healthTabPathBinding: Binding<[AppRouter.Destination]> {
-        Binding(
-            get: { router.healthTabPath },
-            set: { newValue in
-                router.healthTabPath = newValue
-                router.noteNavigationStateChanged()
-            }
-        )
-    }
-
-    private var trainingConditionEditorBinding: Binding<Bool> {
-        Binding(
-            get: { router.activeHealthSheet == .trainingConditionEditor },
-            set: { isPresented in
-                if !isPresented, router.activeHealthSheet == .trainingConditionEditor {
-                    router.activeHealthSheet = nil
-                }
-            }
-        )
     }
 }
 

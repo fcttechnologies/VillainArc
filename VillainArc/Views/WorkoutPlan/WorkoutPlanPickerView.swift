@@ -6,8 +6,14 @@ struct WorkoutPlanPickerView: View {
     @Environment(\.modelContext) private var context
     @Query(WorkoutPlan.all) private var workoutPlans: [WorkoutPlan]
     @Binding var selectedPlan: WorkoutPlan?
+    let showsClearButton: Bool
     @State private var newWorkoutPlan: WorkoutPlan?
     @State private var newWorkoutPlanID: UUID?
+
+    init(selectedPlan: Binding<WorkoutPlan?>, showsClearButton: Bool = true) {
+        _selectedPlan = selectedPlan
+        self.showsClearButton = showsClearButton
+    }
 
     var body: some View {
         NavigationStack {
@@ -34,14 +40,16 @@ struct WorkoutPlanPickerView: View {
             .scrollContentBackground(.hidden)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Clear") {
-                        Haptics.selection()
-                        selectedPlan = nil
-                        saveContext(context: context)
-                        dismiss()
+                    if showsClearButton {
+                        Button("Clear") {
+                            Haptics.selection()
+                            selectedPlan = nil
+                            saveContext(context: context)
+                            dismiss()
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerClearButton)
+                        .accessibilityHint(AccessibilityText.workoutPlanPickerClearHint)
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerClearButton)
-                    .accessibilityHint(AccessibilityText.workoutPlanPickerClearHint)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create", systemImage: "plus") {
@@ -57,7 +65,21 @@ struct WorkoutPlanPickerView: View {
                 }
             }
         }
-        .fullScreenCover(item: $newWorkoutPlan, onDismiss: handleNewWorkoutPlanDismissal) {
+        .fullScreenCover(item: $newWorkoutPlan, onDismiss: {
+            defer {
+                newWorkoutPlanID = nil
+                newWorkoutPlan = nil
+            }
+
+            guard let id = newWorkoutPlanID else { return }
+            let predicate = #Predicate<WorkoutPlan> { $0.id == id }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            guard let storedPlan = try? context.fetch(descriptor).first, storedPlan.completed else { return }
+            selectedPlan = storedPlan
+            saveContext(context: context)
+            dismiss()
+        }) {
             WorkoutPlanView(plan: $0)
         }
     }
@@ -70,23 +92,6 @@ struct WorkoutPlanPickerView: View {
         Task { await IntentDonations.donateCreateWorkoutPlan() }
         newWorkoutPlanID = plan.id
         newWorkoutPlan = plan
-    }
-
-    private func handleNewWorkoutPlanDismissal() {
-        defer {
-            newWorkoutPlanID = nil
-            newWorkoutPlan = nil
-        }
-
-        guard let id = newWorkoutPlanID else { return }
-        let predicate = #Predicate<WorkoutPlan> { $0.id == id }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-        guard let storedPlan = try? context.fetch(descriptor).first else { return }
-        guard storedPlan.completed else { return }
-        selectedPlan = storedPlan
-        saveContext(context: context)
-        dismiss()
     }
 }
 

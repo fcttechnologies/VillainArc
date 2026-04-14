@@ -51,16 +51,23 @@ struct OnboardingView: View {
             if case .profile = newState {
                 if !didSetInitialPath {
                     didSetInitialPath = true
-                    setInitialProfilePath()
+                    guard case .profile(let step) = manager.state else { return }
+                    if step == .name {
+                        path = []
+                    } else if manager.shouldInsertHealthPermissionsStep {
+                        path = [.healthPermissions]
+                    } else {
+                        path = profileNavigationPath(to: step)
+                    }
                 }
-            } else if isProfileState(oldState) {
+            } else if case .profile = oldState {
                 path = []
                 didSetInitialPath = false
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
-            guard shouldRetryWhenBecomingActive else { return }
+            guard manager.state == .noiCloud || manager.state == .cloudKitAccountIssue || manager.state == .cloudKitUnavailable else { return }
             Task { await manager.retry() }
         }
     }
@@ -96,33 +103,6 @@ struct OnboardingView: View {
                         ProfileHeightStepView(manager: manager, path: $path)
                     }
                 }
-        }
-    }
-
-    private func isProfileState(_ state: OnboardingState) -> Bool {
-        if case .profile = state {
-            return true
-        }
-        return false
-    }
-
-    private func setInitialProfilePath() {
-        guard case .profile(let step) = manager.state else { return }
-        if step == .name {
-            path = []
-        } else if manager.shouldInsertHealthPermissionsStep {
-            path = [.healthPermissions]
-        } else {
-            path = profileNavigationPath(to: step)
-        }
-    }
-
-    private var shouldRetryWhenBecomingActive: Bool {
-        switch manager.state {
-        case .noiCloud, .cloudKitAccountIssue, .cloudKitUnavailable:
-            return true
-        default:
-            return false
         }
     }
 
@@ -244,7 +224,8 @@ struct OnboardingView: View {
                     .accessibilityHint(AccessibilityText.onboardingContinueWithoutiCloudHint)
 
                     Button {
-                        openICloudSettings()
+                        guard let url = URL(string: "App-prefs:CASTLE") else { return }
+                        UIApplication.shared.open(url)
                     } label: {
                         Text("Enable iCloud in Settings")
                             .padding(.vertical, 8)
@@ -283,7 +264,8 @@ struct OnboardingView: View {
                     .accessibilityHint(AccessibilityText.onboardingRetryHint)
 
                     Button {
-                        openICloudSettings()
+                        guard let url = URL(string: "App-prefs:CASTLE") else { return }
+                        UIApplication.shared.open(url)
                     } label: {
                         Text("Open iCloud Settings")
                             .padding(.vertical, 8)
@@ -361,10 +343,6 @@ struct OnboardingView: View {
         }
     }
 
-    private func openICloudSettings() {
-        guard let url = URL(string: "App-prefs:CASTLE") else { return }
-        UIApplication.shared.open(url)
-    }
 }
 
 private struct OnboardingProgressStateView: View {

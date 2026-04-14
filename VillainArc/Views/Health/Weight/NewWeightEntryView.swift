@@ -15,9 +15,7 @@ struct NewWeightEntryView: View {
 
     private let goalAchievementToleranceKg = 0.1
 
-    private var weightUnit: WeightUnit {
-        appSettings.first?.weightUnit ?? .systemDefault
-    }
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .systemDefault }
 
     private var parsedWeight: Double? {
         let trimmed = weightText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -32,10 +30,6 @@ struct NewWeightEntryView: View {
     private var canSave: Bool {
         guard let parsedWeight else { return false }
         return parsedWeight > 0
-    }
-
-    private var activeGoal: WeightGoal? {
-        activeGoals.first
     }
 
     var body: some View {
@@ -96,7 +90,7 @@ struct NewWeightEntryView: View {
         let entryDate = calendar.date(bySettingHour: timeComponents.hour ?? 0, minute: timeComponents.minute ?? 0, second: 0, of: selectedDate) ?? selectedDate
 
         let entry = WeightEntry(date: entryDate, weight: weightUnit.toKg(parsedWeight))
-        let completionGoal = activeGoal
+        let completionGoal = activeGoals.first
         let shouldPresentCompletion = completionGoal.map { $0.contains(entryDate) && $0.reachesTarget(with: entry.weight, toleranceKg: goalAchievementToleranceKg) } == true
 
         context.insert(entry)

@@ -19,6 +19,12 @@ struct AppSettingsView: View {
         NavigationStack {
             Group {
                 if let settings = appSettings.first {
+                    let healthAccessHint: String = switch healthAuthorizationAction {
+                    case .requestAccess: String(localized: "Requests Apple Health read and write access.")
+                    case .openSettings: String(localized: "Opens Settings so you can change Apple Health permissions.")
+                    case .manageInSettings: String(localized: "Opens Settings so you can review Apple Health access.")
+                    case .unavailable: ""
+                    }
                     AppSettingsFormView(
                         settings: settings,
                         healthAuthorizationState: healthAuthorizationState,
@@ -27,7 +33,23 @@ struct AppSettingsView: View {
                         isHandlingHealthAction: isHandlingHealthAction,
                         healthAccessHint: healthAccessHint,
                         onHealthAuthorizationAction: {
-                            await handleHealthAuthorizationAction()
+                            guard !isHandlingHealthAction else { return }
+                            isHandlingHealthAction = true
+                            defer { isHandlingHealthAction = false }
+
+                            switch healthAuthorizationAction {
+                            case .requestAccess:
+                                _ = await HealthAuthorizationManager.requestAuthorization()
+                                HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+                                await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
+                                await HealthStoreUpdateCoordinator.shared.syncNow()
+                            case .openSettings, .manageInSettings:
+                                showHealthAccessInstructions = true
+                            case .unavailable:
+                                break
+                            }
+
+                            await refreshHealthAuthorizationState()
                         }
                     )
                 } else {
@@ -62,24 +84,12 @@ struct AppSettingsView: View {
         }
         .alert("Manage Apple Health Access", isPresented: $showHealthAccessInstructions) {
             Button("Open Settings Apps") {
-                openHealthSettingsList()
+                guard let url = URL(string: "App-prefs:root=HEALTH") else { return }
+                UIApplication.shared.open(url)
             }
             Button("OK", role: .cancel) {}
         } message: {
             Text("Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions.")
-        }
-    }
-
-    private var healthAccessHint: String {
-        switch healthAuthorizationAction {
-        case .requestAccess:
-            return String(localized: "Requests Apple Health read and write access.")
-        case .openSettings:
-            return String(localized: "Opens Settings so you can change Apple Health permissions.")
-        case .manageInSettings:
-            return String(localized: "Opens Settings so you can review Apple Health access.")
-        case .unavailable:
-            return ""
         }
     }
 
@@ -88,31 +98,6 @@ struct AppSettingsView: View {
         healthAuthorizationState = HealthAuthorizationManager.currentAuthorizationState
         healthAuthorizationAction = await HealthAuthorizationManager.authorizationAction()
         isRefreshingHealthStatus = false
-    }
-
-    private func handleHealthAuthorizationAction() async {
-        guard !isHandlingHealthAction else { return }
-        isHandlingHealthAction = true
-        defer { isHandlingHealthAction = false }
-
-        switch healthAuthorizationAction {
-        case .requestAccess:
-            _ = await HealthAuthorizationManager.requestAuthorization()
-            HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
-            await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
-            await HealthStoreUpdateCoordinator.shared.syncNow()
-        case .openSettings, .manageInSettings:
-            showHealthAccessInstructions = true
-        case .unavailable:
-            break
-        }
-
-        await refreshHealthAuthorizationState()
-    }
-
-    private func openHealthSettingsList() {
-        guard let url = URL(string: "App-prefs:root=HEALTH") else { return }
-        UIApplication.shared.open(url)
     }
 }
 

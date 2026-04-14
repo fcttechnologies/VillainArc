@@ -58,14 +58,17 @@ struct DeferredSuggestionsView: View {
                     }
                     .accessibilityHint(AccessibilityText.deferredSuggestionsSkipHint)
                 }
+                ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
-                    Spacer()
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    Button(AccessibilityText.deferredSuggestionsAcceptAllLabel) {
+                    Button {
                         acceptAll()
+                    } label: {
+                        Text(AccessibilityText.deferredSuggestionsAcceptAllLabel)
+                            .foregroundStyle(.white)
+                            .font(.title3)
+                            .fontWeight(.semibold)
                     }
-                    .tint(.blue)
+                    .buttonStyle(.glassProminent)
                     .accessibilityHint(AccessibilityText.deferredSuggestionsAcceptAllHint)
                 }
             }
