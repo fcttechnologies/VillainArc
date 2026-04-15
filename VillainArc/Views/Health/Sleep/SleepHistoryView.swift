@@ -172,7 +172,9 @@ private struct SleepPeriodHighlightsSection: View {
 
 private struct SleepHistoryMainSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query(SleepGoal.active, animation: .smooth) private var activeGoals: [SleepGoal]
     private let tint = Color.indigo
+    private let router = AppRouter.shared
     
     let entries: [HealthSleepNight]
     let loader: HealthSleepHistoryLoader
@@ -185,6 +187,7 @@ private struct SleepHistoryMainSection: View {
     private let timeAsleepNamespace: UInt64 = 0x534C4545500001
     
     private var latestEntry: HealthSleepNight? { entries.first }
+    private var activeGoal: SleepGoal? { activeGoals.first }
     
     private var entryByWakeDay: [Date: HealthSleepNight] {
         Dictionary(uniqueKeysWithValues: entries.map { ($0.wakeDay, $0) })
@@ -369,30 +372,70 @@ private struct SleepHistoryMainSection: View {
         return "\(headerSubtitleText), \(formattedSleepDurationAccessibilityText(headerDuration)) asleep"
     }
 
+    private var sleepGoalAccessibilityLabel: String {
+        if let activeGoal {
+            return String(localized: "Sleep Goal \(formattedSleepDurationAccessibilityText(activeGoal.targetSleepDuration)). Opens sleep goal history.")
+        }
+        return String(localized: "Sleep goal not set. Opens new sleep goal editor.")
+    }
+
     private var selectedChartDate: Date? {
         if selectedRange == .day {
             return selectedDate
         }
         return selectedPoint?.date
     }
+
+    private func handleSleepGoalTap() {
+        Haptics.selection()
+        if activeGoal == nil {
+            router.presentHealthSheet(.newSleepGoal)
+        } else {
+            router.navigate(to: .sleepGoalHistory)
+        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(headerSubtitleText)
+            VStack(spacing: 0) {
+                HStack(alignment: .bottom) {
+                    Text(headerSubtitleText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Spacer()
+                    Text("Goal")
+                }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fontWeight(.semibold)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
 
-                if let headerDuration {
-                    SleepDurationValueView(duration: headerDuration)
-                } else {
-                    Text(verbatim: "-")
-                        .font(.largeTitle)
-                        .bold()
+                HStack(alignment: .center) {
+                    Group {
+                        if let headerDuration {
+                            SleepDurationValueView(duration: headerDuration)
+                        } else {
+                            Text(verbatim: "-")
+                        }
+                    }
+                    .font(.largeTitle)
+
+                    Spacer()
+
+                    Button(action: handleSleepGoalTap) {
+                        Group {
+                            if let activeGoal {
+                                SleepDurationValueView(duration: activeGoal.targetSleepDuration)
+                            } else {
+                                Text("Not Set")
+                            }
+                        }
+                        .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(sleepGoalAccessibilityLabel)
                 }
+                .bold()
+                .fontDesign(.rounded)
             }
             
             chartView
@@ -607,15 +650,7 @@ private struct SleepHistoryMainSection: View {
                 let visibleEntries = entries.filter { layout.currentDomain.contains($0.displayWakeDay) }
                 let windowBars = makeWindowBars(for: range, points: layout.points, visibleEntries: visibleEntries)
                 
-                return SleepHistoryCachedRangeData(
-                    layout: layout,
-                    visibleEntries: visibleEntries,
-                    averageTimeAsleep: averageDuration(in: visibleEntries, for: \.timeAsleep),
-                    averageRemDuration: averageDuration(in: visibleEntries, for: \.remDuration),
-                    averageCoreDuration: averageDuration(in: visibleEntries, for: \.coreDuration),
-                    averageDeepDuration: averageDuration(in: visibleEntries, for: \.deepDuration),
-                    windowBars: windowBars
-                )
+                return SleepHistoryCachedRangeData(layout: layout, visibleEntries: visibleEntries, averageTimeAsleep: averageDuration(in: visibleEntries, for: \.timeAsleep), averageRemDuration: averageDuration(in: visibleEntries, for: \.remDuration), averageCoreDuration: averageDuration(in: visibleEntries, for: \.coreDuration), averageDeepDuration: averageDuration(in: visibleEntries, for: \.deepDuration), windowBars: windowBars)
             }
         )
     }
@@ -733,28 +768,19 @@ private struct SleepHistoryMainSection: View {
     }
 
     private func sleepStageStats(remDuration: TimeInterval?, coreDuration: TimeInterval?, deepDuration: TimeInterval?) -> [(title: String, duration: TimeInterval)] {
-        [
-            (title: "REM", duration: remDuration ?? 0),
-            (title: "Core", duration: coreDuration ?? 0),
-            (title: "Deep", duration: deepDuration ?? 0)
-        ]
-        .filter { $0.duration > 0 }
+        [(title: "REM", duration: remDuration ?? 0), (title: "Core", duration: coreDuration ?? 0), (title: "Deep", duration: deepDuration ?? 0)]
+            .filter { $0.duration > 0 }
     }
 }
 
 private extension HealthSleepStage {
     var tint: Color {
         switch self {
-        case .awake:
-            return Color.red.opacity(0.72)
-        case .rem:
-            return Color.cyan
-        case .core:
-            return Color.blue
-        case .asleep:
-            return Color.indigo.opacity(0.72)
-        case .deep:
-            return Color.indigo
+        case .awake: Color.red.opacity(0.72)
+        case .rem: Color.cyan
+        case .core: Color.blue
+        case .asleep: Color.indigo.opacity(0.72)
+        case .deep: Color.indigo
         }
     }
 }
@@ -765,9 +791,7 @@ private func roundedDownHour(_ date: Date, calendar: Calendar) -> Date {
 
 private func roundedUpHour(_ date: Date, calendar: Calendar) -> Date {
     let roundedDown = roundedDownHour(date, calendar: calendar)
-    if roundedDown == date {
-        return date
-    }
+    if roundedDown == date { return date }
     return calendar.date(byAdding: .hour, value: 1, to: roundedDown) ?? date
 }
 

@@ -571,6 +571,9 @@
         }
       }
     },
+    "%lld hr" : {
+
+    },
     "%lld in" : {
 
     },
@@ -583,6 +586,9 @@
           }
         }
       }
+    },
+    "%lld min" : {
+
     },
     "%lld muscles" : {
       "localizations" : {
@@ -1116,6 +1122,9 @@
           }
         }
       }
+    },
+    "Add sleep goal" : {
+
     },
     "Add steps goal" : {
       "localizations" : {
@@ -2647,6 +2656,9 @@
         }
       }
     },
+    "Creates a new sleep goal." : {
+
+    },
     "Creates a new steps goal." : {
       "localizations" : {
         "en" : {
@@ -2766,6 +2778,9 @@
           }
         }
       }
+    },
+    "Current goal: %@." : {
+
     },
     "Current Progression Step" : {
       "localizations" : {
@@ -4441,6 +4456,9 @@
         }
       }
     },
+    "Goal" : {
+
+    },
     "Goal achieved" : {
       "localizations" : {
         "en" : {
@@ -4690,6 +4708,9 @@
           }
         }
       }
+    },
+    "Hours" : {
+
     },
     "How are you feeling?" : {
       "localizations" : {
@@ -5100,6 +5121,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Latest entry %@"
+          }
+        }
+      }
+    },
+    "Latest sleep %@ was %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Latest sleep %1$@ was %2$@."
+          }
+        }
+      }
+    },
+    "Latest sleep on %@ was %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Latest sleep on %1$@ was %2$@."
           }
         }
       }
@@ -5752,6 +5793,9 @@
           }
         }
       }
+    },
+    "Minutes" : {
+
     },
     "Missed a Day" : {
       "localizations" : {
@@ -6545,6 +6589,9 @@
           }
         }
       }
+    },
+    "No Sleep Goals" : {
+
     },
     "No Split Day Configured" : {
       "localizations" : {
@@ -10153,12 +10200,34 @@
         }
       }
     },
+    "Sleep Goal" : {
+
+    },
+    "Sleep Goal %@. Opens sleep goal history." : {
+
+    },
+    "Sleep goal not set. Opens new sleep goal editor." : {
+
+    },
+    "Sleep Goals" : {
+
+    },
     "Sleep history chart" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sleep history chart"
+          }
+        }
+      }
+    },
+    "Sleep. %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Sleep. %1$@. %2$@"
           }
         }
       }
@@ -11065,6 +11134,9 @@
           }
         }
       }
+    },
+    "Target Sleep" : {
+
     },
     "Target Steps" : {
       "localizations" : {
@@ -14028,6 +14100,9 @@
 
     },
     "Your Profile" : {
+
+    },
+    "Your saved and previous sleep goals will appear here." : {
 
     },
     "Your saved and previous steps goals will appear here." : {

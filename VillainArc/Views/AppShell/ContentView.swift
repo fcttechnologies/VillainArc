@@ -56,6 +56,11 @@ struct ContentView: View {
                 .presentationDetents([.fraction(0.35)])
                 .presentationBackground(Color.sheetBg)
         }
+        .sheet(isPresented: newSleepGoalSheetBinding) {
+            NewSleepGoalView()
+                .presentationDetents([.fraction(0.5)])
+                .presentationBackground(Color.sheetBg)
+        }
         .background {
             ToastOverlaySceneInstaller()
                 .allowsHitTesting(false)
@@ -78,6 +83,8 @@ struct ContentView: View {
             workoutPlanExpandedActions(plan: plan, showsUseOnly: showsUseOnly)
         case .weightGoalHistory:
             weightGoalExpandedActions
+        case .sleepGoalHistory:
+            sleepGoalExpandedActions
         case .stepsGoalHistory:
             stepsGoalExpandedActions
         case nil:
@@ -149,7 +156,7 @@ struct ContentView: View {
 
     private func workoutPlanExpandedActions(plan: WorkoutPlan, showsUseOnly: Bool) -> [ExpandedAction] {
         var actions = [
-            ExpandedAction(showsUseOnly ? "Use Plan" : "Start Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingUsePlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailStartWorkoutHint) {
+            ExpandedAction("Use Plan", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingUsePlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailStartWorkoutHint) {
                 collapseMorphingTabBar()
                 router.startWorkoutSession(from: plan)
                 Task {
@@ -190,6 +197,15 @@ struct ContentView: View {
             }
         ]
     }
+
+    private var sleepGoalExpandedActions: [ExpandedAction] {
+        [
+            ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewSleepGoalButton, accessibilityHint: AccessibilityText.healthSleepGoalHistoryAddHint) {
+                collapseMorphingTabBar()
+                router.presentHealthSheet(.newSleepGoal)
+            }
+        ]
+    }
     
     private func collapseMorphingTabBar() {
         guard isMorphingTabBarExpanded else { return }
@@ -225,6 +241,17 @@ struct ContentView: View {
             get: { router.activeHealthSheet == .newStepsGoal },
             set: { isPresented in
                 if !isPresented, router.activeHealthSheet == .newStepsGoal {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
+    }
+
+    private var newSleepGoalSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .newSleepGoal },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .newSleepGoal {
                     router.activeHealthSheet = nil
                 }
             }

@@ -57,7 +57,7 @@ private enum HealthMetricWidgetKind {
     var description: String {
         switch self {
         case .weight: String(localized: "Shows your latest weight and current goal.")
-        case .sleep: String(localized: "Shows your latest sleep duration.")
+        case .sleep: String(localized: "Shows your latest sleep duration and current goal.")
         case .steps: String(localized: "Shows your latest steps entry and current goal.")
         case .energy: String(localized: "Shows your latest active and total energy.")
         }
@@ -88,7 +88,7 @@ private enum HealthMetricWidgetKind {
 
 private enum HealthMetricWidgetContent {
     case weight(goalLabelText: String?, goalValueText: String?, valueText: String, unitText: String)
-    case sleep(duration: TimeInterval)
+    case sleep(goalLabelText: String?, goalValueText: String?, duration: TimeInterval)
     case steps(goalLabelText: String?, goalValueText: String?, stepCount: Int)
     case energy(activeText: String, totalText: String)
     case empty(message: String)
@@ -205,15 +205,26 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
 
         case .sleep:
             let latestEntry = try? context.fetch(HealthSleepNight.latest).first
+            let activeGoal = try? context.fetch(SleepGoal.active).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .sleep, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
+            }
+
+            let goalLabelText: String?
+            let goalValueText: String?
+            if let activeGoal {
+                goalLabelText = String(localized: "Goal:")
+                goalValueText = widgetFormattedSleepGoalDuration(activeGoal.targetSleepDuration)
+            } else {
+                goalLabelText = nil
+                goalValueText = nil
             }
 
             return .init(
                 date: .now,
                 metric: .sleep,
                 latestDateText: widgetFormattedSleepWakeDay(latestEntry.wakeDay),
-                content: .sleep(duration: latestEntry.timeAsleep),
+                content: .sleep(goalLabelText: goalLabelText, goalValueText: goalValueText, duration: latestEntry.timeAsleep),
                 chartContent: loadSleepChartContent(context: context, loadStyle: loadStyle)
             )
 
@@ -324,7 +335,7 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
                 date: .now,
                 metric: .sleep,
                 latestDateText: String(localized: "Today"),
-                content: .sleep(duration: 7 * 3_600 + 22 * 60),
+                content: .sleep(goalLabelText: String(localized: "Goal:"), goalValueText: "8h", duration: 7 * 3_600 + 22 * 60),
                 chartContent: .sleep(sampleValuePoints([6.8 * 3_600, 7.1 * 3_600, 6.4 * 3_600, 7.6 * 3_600, 7.0 * 3_600, 6.9 * 3_600, 7.37 * 3_600]))
             )
         case .steps:
@@ -462,8 +473,8 @@ private struct HealthMetricWidgetView: View {
         switch entry.content {
         case let .weight(goalLabelText, goalValueText, valueText, unitText):
             weightContent(goalLabelText: goalLabelText, goalValueText: goalValueText, valueText: valueText, unitText: unitText)
-        case let .sleep(duration):
-            HealthMetricWidgetSleepDurationView(duration: duration)
+        case let .sleep(goalLabelText, goalValueText, duration):
+            HealthMetricWidgetSleepDurationView(goalLabelText: goalLabelText, goalValueText: goalValueText, duration: duration)
         case let .steps(goalLabelText, goalValueText, stepCount):
             stepsContent(goalLabelText: goalLabelText, goalValueText: goalValueText, stepCount: stepCount)
         case let .energy(activeText, totalText):
@@ -634,46 +645,81 @@ private struct HealthMetricWidgetView: View {
 }
 
 private struct HealthMetricWidgetSleepDurationView: View {
+    let goalLabelText: String?
+    let goalValueText: String?
     let duration: TimeInterval
 
     private var hours: Int { Int((duration / 3_600).rounded(.down)) }
     private var minutes: Int { max(0, Int((duration / 60).rounded()) - (hours * 60)) }
 
     var body: some View {
-        HStack(alignment: .lastTextBaseline, spacing: 0) {
-            if hours > 0 {
+        VStack(alignment: .leading, spacing: 0) {
+            if let goalValueText {
+                HStack(alignment: .lastTextBaseline, spacing: 3) {
+                    if let goalLabelText {
+                        Text(goalLabelText)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text(goalValueText)
+                }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+            }
+
+            HStack(alignment: .lastTextBaseline, spacing: 0) {
+                if hours > 0 {
+                    HStack(alignment: .lastTextBaseline, spacing: 0) {
+                        Text(hours, format: .number)
+                            .font(.largeTitle)
+                            .minimumScaleFactor(0.7)
+                        Text(String(localized: "hr"))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .minimumScaleFactor(0.4)
+                    }
+                    .padding(.trailing, 2)
+                }
+
                 HStack(alignment: .lastTextBaseline, spacing: 0) {
-                    Text(hours, format: .number)
+                    Text(minutes, format: .number)
                         .font(.largeTitle)
                         .minimumScaleFactor(0.7)
-                    Text(String(localized: "hr"))
+                    Text(String(localized: "min"))
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
                         .minimumScaleFactor(0.4)
                 }
-                .padding(.trailing, 2)
             }
-
-            HStack(alignment: .lastTextBaseline, spacing: 0) {
-                Text(minutes, format: .number)
-                    .font(.largeTitle)
-                    .minimumScaleFactor(0.7)
-                Text(String(localized: "min"))
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .minimumScaleFactor(0.4)
-            }
+            .lineLimit(1)
+            .bold()
+            .fontDesign(.rounded)
         }
-        .bold()
-        .fontDesign(.rounded)
-        .lineLimit(1)
     }
 }
 
 private func widgetFormattedSleepWakeDay(_ wakeDay: Date) -> String {
     formattedRecentDay(HealthSleepNight.displayDate(forWakeDay: wakeDay))
+}
+
+private func widgetFormattedSleepGoalDuration(_ duration: TimeInterval) -> String {
+    let totalMinutes = Int((duration / 60).rounded())
+    let hours = totalMinutes / 60
+    let minutes = totalMinutes % 60
+
+    if hours > 0 && minutes > 0 {
+        return "\(hours)h \(minutes)m"
+    }
+
+    if hours > 0 {
+        return "\(hours)h"
+    }
+
+    return "\(minutes)m"
 }
 
 private func widgetCompactStepsText(_ steps: Int) -> String {

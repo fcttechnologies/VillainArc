@@ -539,7 +539,8 @@ enum VillainArcSchemaV2: VersionedSchema {
             SuggestionEvent.self,
             PrescriptionChange.self,
             SuggestionEvaluation.self,
-            TrainingGoal.self
+            TrainingGoal.self,
+            SleepGoal.self
         ]
     }
 }

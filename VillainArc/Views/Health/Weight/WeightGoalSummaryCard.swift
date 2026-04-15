@@ -269,14 +269,18 @@ struct WeightGoalProgressChartModel {
     let maintainBand: ClosedRange<Double>?
     
     init?(goal: WeightGoal, entries: [WeightEntry], now: Date, calendar: Calendar = .autoupdatingCurrent) {
-        let goalEntries = entries.filter { goal.contains($0.date) && $0.date <= now }.sorted { $0.date < $1.date }
-        let historyPoints = Self.dailyAveragedPoints(from: goalEntries, calendar: calendar)
         let lowerBound = calendar.startOfDay(for: goal.startedAt)
+        let goalEndDate = goal.endedAt ?? .distantFuture
+        let goalEntries = entries
+            .filter { $0.date >= lowerBound && $0.date < goalEndDate && $0.date <= now }
+            .sorted { $0.date < $1.date }
+        let historyPoints = Self.dailyAveragedPoints(from: goalEntries, calendar: calendar)
+        let anchoredHistoryPoints = Self.addStartAnchorIfNeeded(to: historyPoints, goal: goal, allEntries: entries, lowerBound: lowerBound, now: now, calendar: calendar)
         let effectiveEndDate = goal.endedAt ?? now
         let effectiveUpperBound = calendar.endOfDay(for: effectiveEndDate)
         let targetUpperBound = goal.endedAt == nil ? (goal.targetDate.map { calendar.endOfDay(for: $0) } ?? effectiveUpperBound) : effectiveUpperBound
         let upperBound = max(effectiveUpperBound, targetUpperBound)
-        let visibleHistoryPoints = historyPoints.filter { $0.date >= lowerBound && $0.date <= upperBound }
+        let visibleHistoryPoints = anchoredHistoryPoints.filter { $0.date >= lowerBound && $0.date <= upperBound }
         let maintainBand = goal.type == .maintain ? (goal.targetWeight - Self.maintainBandDeltaKg)...(goal.targetWeight + Self.maintainBandDeltaKg) : nil
         let bandValues = maintainBand.map { [$0.lowerBound, $0.upperBound] } ?? []
         let yValues = visibleHistoryPoints.map(\.value) + [goal.targetWeight] + bandValues
@@ -317,6 +321,44 @@ struct WeightGoalProgressChartModel {
             return TimeSeriesSample(date: date, value: averageWeight)
         }
         .sorted { $0.date < $1.date }
+    }
+
+    private static func addStartAnchorIfNeeded(to points: [TimeSeriesSample], goal: WeightGoal, allEntries: [WeightEntry], lowerBound: Date, now: Date, calendar: Calendar) -> [TimeSeriesSample] {
+        let hasStartDayPoint = points.contains { calendar.isDate($0.date, inSameDayAs: lowerBound) }
+        guard !hasStartDayPoint else { return points }
+
+        guard let startWeight = startAnchorWeight(
+            goal: goal,
+            allEntries: allEntries,
+            lowerBound: lowerBound,
+            now: now,
+            calendar: calendar
+        ) else {
+            return points
+        }
+
+        var anchored = points
+        anchored.insert(TimeSeriesSample(date: lowerBound, value: startWeight), at: 0)
+        return anchored
+    }
+
+    private static func startAnchorWeight(goal: WeightGoal, allEntries: [WeightEntry], lowerBound: Date, now: Date, calendar: Calendar) -> Double? {
+        let startDayEntries = allEntries.filter {
+            calendar.isDate($0.date, inSameDayAs: lowerBound) &&
+            $0.date <= now &&
+            $0.date < (goal.endedAt ?? .distantFuture)
+        }
+        if !startDayEntries.isEmpty {
+            return startDayEntries.reduce(0) { $0 + $1.weight } / Double(startDayEntries.count)
+        }
+
+        if let latestPreGoalEntry = allEntries
+            .filter({ $0.date < lowerBound && $0.date <= now })
+            .max(by: { $0.date < $1.date }) {
+            return latestPreGoalEntry.weight
+        }
+
+        return goal.startWeight > 0 ? goal.startWeight : nil
     }
 }
 

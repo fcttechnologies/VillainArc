@@ -203,7 +203,7 @@ struct WorkoutPlanDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if onSelect == nil, !showsUseOnly && !isSplitAssignmentPreview {
                     Menu("Options", systemImage: "ellipsis") {
-                        Button("Start Workout", systemImage: "figure.strengthtraining.traditional") {
+                        Button("Use Plan", systemImage: "figure.strengthtraining.traditional") {
                             startWorkoutFromPlan()
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailStartWorkoutButton)

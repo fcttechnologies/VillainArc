@@ -311,7 +311,8 @@ struct ProfileSheetView: View {
             } label: {
                 ProfileEditorRowLabel(title: "Birthday", value: birthdayText)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
             .disabled(profile == nil)
 
             Divider()
@@ -329,7 +330,8 @@ struct ProfileSheetView: View {
             } label: {
                 ProfileEditorRowLabel(title: "Gender", value: genderText)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
 
             Divider()
                 .padding(.horizontal, 16)
@@ -341,7 +343,8 @@ struct ProfileSheetView: View {
             } label: {
                 ProfileEditorRowLabel(title: "Height", value: heightText)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
 
             Divider()
                 .padding(.horizontal, 16)
@@ -352,7 +355,8 @@ struct ProfileSheetView: View {
             } label: {
                 ProfileEditorRowLabel(title: "Training Goal", value: trainingGoalText)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
             .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetTrainingGoalRow)
         }
         .appCardStyle()
@@ -515,7 +519,6 @@ struct ProfileSheetView: View {
         return trimmed.isEmpty ? defaultProfileName : trimmed
     }
 
-    @MainActor
     private func startCameraFlow() async {
         guard canUseCamera() else { return }
 
@@ -537,20 +540,17 @@ struct ProfileSheetView: View {
         }
     }
 
-    @MainActor
     private func saveProfilePhoto(image: UIImage) {
         guard let data = processedProfileImageData(from: image) else { return }
         saveProfilePhoto(data: data)
     }
 
-    @MainActor
     private func saveProfilePhoto(data: Data?) {
         guard let profile else { return }
         profile.profileImageData = data
         saveContext(context: context)
     }
 
-    @MainActor
     private func clearProfilePhoto() {
         saveProfilePhoto(data: nil)
     }

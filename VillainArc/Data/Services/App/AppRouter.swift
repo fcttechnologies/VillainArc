@@ -33,6 +33,7 @@ enum HomeQuickAction: String {
         case trainingConditionEditor
         case newWeightGoal
         case newStepsGoal
+        case newSleepGoal
 
         var id: String { rawValue }
     }
@@ -51,6 +52,7 @@ enum HomeQuickAction: String {
         case workoutPlanDetail(WorkoutPlan, showsUseOnly: Bool)
         case weightGoalHistory
         case stepsGoalHistory
+        case sleepGoalHistory
     }
 
     enum WorkoutSheet: Hashable, Identifiable {
@@ -126,6 +128,7 @@ enum HomeQuickAction: String {
         case trainingConditionHistory
         case weightHistory
         case sleepHistory
+        case sleepGoalHistory
         case stepsDistanceHistory
         case stepsGoalHistory
         case energyHistory
@@ -241,7 +244,7 @@ enum HomeQuickAction: String {
     func navigate(to destination: Destination) {
         Haptics.selection()
         switch destination {
-        case .trainingConditionHistory, .weightHistory, .sleepHistory, .stepsDistanceHistory, .stepsGoalHistory, .energyHistory, .allWeightEntriesList, .weightGoalHistory:
+        case .trainingConditionHistory, .weightHistory, .sleepHistory, .sleepGoalHistory, .stepsDistanceHistory, .stepsGoalHistory, .energyHistory, .allWeightEntriesList, .weightGoalHistory:
             tabSelection = .health
             healthTabPath.append(destination)
         default:
@@ -307,6 +310,8 @@ enum HomeQuickAction: String {
             return .workoutPlanDetail(plan, showsUseOnly: showsUseOnly)
         case .weightHistory, .weightGoalHistory:
             return .weightGoalHistory
+        case .sleepHistory, .sleepGoalHistory:
+            return .sleepGoalHistory
         case .stepsDistanceHistory, .stepsGoalHistory:
             return .stepsGoalHistory
         default:

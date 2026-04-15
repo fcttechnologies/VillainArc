@@ -6,13 +6,24 @@ struct HealthSleepSectionCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let router = AppRouter.shared
     @Query(HealthSleepNight.summary, animation: .smooth) private var summaryEntries: [HealthSleepNight]
+    @Query(SleepGoal.active, animation: .smooth) private var activeGoals: [SleepGoal]
 
     private var latestEntry: HealthSleepNight? { summaryEntries.first }
+    private var activeGoal: SleepGoal? { activeGoals.first }
+    private var activeGoalText: String? {
+        guard let activeGoal else { return nil }
+        return String(localized: "Goal: \(formattedSleepDurationText(activeGoal.targetSleepDuration))")
+    }
 
     private var cardAccessibilityLabel: String {
-        guard let latestEntry else { return AccessibilityText.healthSleepSectionEmptyValue }
+        guard let latestEntry else {
+            if let activeGoalText {
+                return String(localized: "Sleep. \(activeGoalText). \(AccessibilityText.healthHistoryNoHealthDataDescription)")
+            }
+            return AccessibilityText.healthSleepSectionEmptyValue
+        }
 
-        return AccessibilityText.healthSleepSectionValue(dateText: formattedSleepWakeDay(latestEntry.wakeDay), sleepText: formattedSleepDurationAccessibilityText(latestEntry.timeAsleep), timingText: nil, secondaryText: nil)
+        return AccessibilityText.healthSleepSectionValue(dateText: formattedSleepWakeDay(latestEntry.wakeDay), sleepText: formattedSleepDurationAccessibilityText(latestEntry.timeAsleep), timingText: nil, secondaryText: activeGoalText)
     }
 
     var body: some View {
@@ -44,7 +55,21 @@ struct HealthSleepSectionCard: View {
 
                 if let latestEntry {
                     HStack(alignment: .bottom, spacing: 0) {
-                        SleepDurationValueView(duration: latestEntry.timeAsleep)
+                        VStack(alignment: .leading, spacing: 0) {
+                            if let activeGoal {
+                                HStack(alignment: .lastTextBaseline, spacing: 3) {
+                                    Text("Goal:")
+                                        .foregroundStyle(.secondary)
+                                    Text(formattedSleepDurationText(activeGoal.targetSleepDuration))
+                                        .foregroundStyle(.primary)
+                                }
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .lineLimit(1)
+                            }
+
+                            SleepDurationValueView(duration: latestEntry.timeAsleep)
+                        }
 
                         Spacer()
 

@@ -70,6 +70,12 @@ struct WeightGoalCompletionView: View {
         guard let goal else { return [] }
         return entries.filter { $0.date >= goal.startedAt && $0.date <= evaluationDate }.sorted { $0.date < $1.date }
     }
+
+    private var chartEntries: [WeightEntry] {
+        entries
+            .filter { $0.date <= evaluationDate }
+            .sorted { $0.date < $1.date }
+    }
     
     private var dailyPoints: [TimeSeriesSample] {
         let buckets = Dictionary(grouping: goalEntries) { calendar.startOfDay(for: $0.date) }
@@ -83,7 +89,7 @@ struct WeightGoalCompletionView: View {
     
     private var chartModel: WeightGoalProgressChartModel? {
         guard let goal else { return nil }
-        return WeightGoalProgressChartModel(goal: goal, entries: goalEntries, now: evaluationDate)
+        return WeightGoalProgressChartModel(goal: goal, entries: chartEntries, now: evaluationDate)
     }
     
     private var latestWeight: Double? {

@@ -11,6 +11,13 @@ Use the other files in this folder for current architecture and shipped behavior
 - Do not let richer Health or AI features weaken the current app-owned source of truth for workouts, plans, suggestions, and goals.
 - Ship in layers: foundation first, intelligence second, expansion surfaces third.
 
+## Recently Shipped
+
+- `SleepGoal` now exists as a date-ranged goal with one active goal at a time through app logic.
+- The profile sheet/settings hub has been expanded.
+- Terms of Service and Privacy Policy are now surfaced in the profile/settings structure.
+- App theme is now user-configurable in settings.
+
 ## Current Extension Points
 
 These existing pieces already give the roadmap a clean foundation:
@@ -29,6 +36,7 @@ These existing pieces already give the roadmap a clean foundation:
 - Date-ranged goal patterns
   - `Data/Models/Health/StepsGoal.swift`
   - `Data/Models/Health/WeightGoal.swift`
+  - `Data/Models/Health/SleepGoal.swift`
 - Health sync, caches, and detail loaders
   - `Documentation/HEALTHKIT_INTEGRATION.md`
   - `Data/Services/HealthKit/Sync/*`
@@ -83,8 +91,6 @@ These decisions should guide the roadmap unless a future release proves they nee
 
 ### 1. Profile, Onboarding, and Goals
 
-- Sleep goal
-  - New date-ranged health goal with history and one active goal at a time through app logic.
 - Desired wake-up time
   - Start as a sleep preference, not a historical goal.
   - Use it for bedtime nudges, sleep debt messaging, and bedtime/wake charts.
@@ -92,14 +98,11 @@ These decisions should guide the roadmap unless a future release proves they nee
   - Add to profile with a smart review flow rather than silent hard auto-overwrite.
   - Useful for onboarding, template plans, generation complexity, and suggestion tone.
 - Profile and settings expansion
-  - Extend the current profile sheet with sleep goal, fitness level, and other profile-owned surfaces.
+  - Continue extending the current profile sheet with fitness level and other profile-owned surfaces.
   - Keep app settings and profile editing separate, but continue using the shared entry point from both tabs.
 - Settings and support expansion
   - Continue moving legal, support, and feedback actions into the new settings/profile structure.
-  - Include Terms of Service, Privacy Policy, Request a Feature, Report a Bug, Rate on the App Store, and a Getting Started surface.
-- App theme
-  - Add user-selectable appearance/theme direction once the settings hub exists.
-  - Keep this scoped to a cohesive app-wide system, not one-off per-screen styling toggles.
+  - Prioritize Request a Feature, Report a Bug, and a Getting Started surface.
 - Improved onboarding
   - Add a proper feature-intro sequence before data-entry steps.
   - Add onboarding steps for fitness level and any new profile-owned setup that truly needs to block readiness.
@@ -244,14 +247,12 @@ This is the recommended shipping order based on current architecture, product le
 Keep `1.2` focused on extending existing patterns rather than opening brand-new product areas.
 
 - Finish profile and settings hub expansion
-- Sleep goal
 - Desired wake-up time
 - Fitness level
 - Onboarding refresh for the remaining new profile fields
 - Optional:
   - What's New sheet
   - Getting Started / refresher entry point
-  - app theme if the settings foundation is already in place
   - lightweight review prompt
   - small rest-timer UX cleanup if it fits the release
 
@@ -340,8 +341,7 @@ Reason:
 
 If the roadmap is executed one feature cluster at a time, the cleanest next implementation sequence is:
 
-1. Fold legal, support, feedback, theme, and update surfaces into the current profile/settings structure.
-2. Add `SleepGoal` using the current goal-history pattern.
-3. Add desired wake-up time plus profile editing support.
-4. Add fitness level with review metadata.
-5. Refresh onboarding only for the profile-owned fields that truly need first-run setup coverage.
+1. Fold legal, support, feedback, and update surfaces into the current profile/settings structure.
+2. Add desired wake-up time plus profile editing support.
+3. Add fitness level with review metadata.
+4. Refresh onboarding only for the profile-owned fields that truly need first-run setup coverage.

@@ -159,6 +159,7 @@
 				Data/Models/Health/HealthStepsDistance.swift,
 				Data/Models/Health/HealthSyncState.swift,
 				Data/Models/Health/HealthWorkout.swift,
+				Data/Models/Health/SleepGoal.swift,
 				Data/Models/Health/StepsGoal.swift,
 				Data/Models/Health/WeightEntry.swift,
 				Data/Models/Health/WeightGoal.swift,

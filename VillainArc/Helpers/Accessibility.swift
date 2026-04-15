@@ -35,6 +35,7 @@ enum AccessibilityIdentifiers {
     static let morphingCreateSplitButton = "morphingCreateSplitButton"
     static let morphingNewWeightGoalButton = "morphingNewWeightGoalButton"
     static let morphingNewStepsGoalButton = "morphingNewStepsGoalButton"
+    static let morphingNewSleepGoalButton = "morphingNewSleepGoalButton"
     static let healthAddWeightEntryButton = "healthAddWeightEntryButton"
     static let healthAddWeightEntryConfirmButton = "healthAddWeightEntryConfirmButton"
     static let healthAddWeightEntryWeightField = "healthAddWeightEntryWeightField"
@@ -44,6 +45,7 @@ enum AccessibilityIdentifiers {
     static let healthWeightGoalHistoryList = "healthWeightGoalHistoryList"
     static let healthWeightGoalHistoryAddButton = "healthWeightGoalHistoryAddButton"
     static let healthStepsGoalHistoryAddButton = "healthStepsGoalHistoryAddButton"
+    static let healthSleepGoalHistoryAddButton = "healthSleepGoalHistoryAddButton"
     static let healthNewWeightGoalSaveButton = "healthNewWeightGoalSaveButton"
     static let healthNewWeightGoalTypePicker = "healthNewWeightGoalTypePicker"
     static let healthNewWeightGoalStartWeightField = "healthNewWeightGoalStartWeightField"
@@ -552,6 +554,8 @@ enum AccessibilityText {
     static let healthStepsSectionHint = localized("Opens detailed steps history.")
     static let healthStepsGoalHistoryAddLabel = localized("Add steps goal")
     static let healthStepsGoalHistoryAddHint = localized("Creates a new steps goal.")
+    static let healthSleepGoalHistoryAddLabel = localized("Add sleep goal")
+    static let healthSleepGoalHistoryAddHint = localized("Creates a new sleep goal.")
     static let healthEnergySectionHint = localized("Opens detailed energy history.")
     static let healthTrainingConditionHistoryAddLabel = localized("Add training condition")
     static let healthTrainingConditionHistoryAddHint = localized("Adds or replaces a training condition.")
