@@ -44,14 +44,16 @@ private struct AppSettingsFormView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Retain for Improved Accuracy", isOn: $settings.retainPerformancesForLearning)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
-                    .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
-                    .appGroupedListRow(position: .single)
-            } header: {
-                Text("Workout History")
+                NavigationLink {
+                    WorkoutPreferencesView()
+                } label: {
+                    Label("Workouts", systemImage: "figure.strengthtraining.traditional")
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsButton)
+                .accessibilityHint(AccessibilityText.workoutSettingsHint)
+                .appGroupedListRow(position: .single)
             } footer: {
-                Text("When this is on, deleting a workout keeps its performances so suggestions have more data to work with. When it is off, it permanently removes the session and the suggestion data tied to it.")
+                Text("Customize workout logging, prompts, Live Activity behavior, and retention.")
             }
 
             Section {
@@ -64,7 +66,7 @@ private struct AppSettingsFormView: View {
                 .accessibilityHint(AccessibilityText.settingsAppleHealthHint)
                 .appGroupedListRow(position: .single)
             } footer: {
-                Text("Manage Apple Health permissions and choose whether removed Health data stays in Villain Arc.")
+                Text("Manage Apple Health permissions and choose whether removed Health data stays in this app.")
             }
 
             Section {
@@ -75,7 +77,7 @@ private struct AppSettingsFormView: View {
                 }
                 .appGroupedListRow(position: .single)
             } footer: {
-                Text("Choose how Villain Arc handles steps goal notifications.")
+                Text("Manage notification preferences for your health goals.")
             }
 
             Section {
@@ -98,19 +100,148 @@ private struct AppSettingsFormView: View {
                 }
                 .appGroupedListRow(position: .single)
             } footer: {
-                Text("Choose whether Villain Arc follows your device appearance or always uses light or dark mode.")
+                Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
             }
         }
         .scrollContentBackground(.hidden)
         .sheetBackground()
+        .onChange(of: settings.appearanceMode) {
+            saveContext(context: context)
+            dismissAllPresentedSheets()
+        }
+    }
+}
+
+private struct WorkoutPreferencesView: View {
+    @Environment(\.modelContext) private var context
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @Query(WorkoutSession.incomplete) private var incompleteWorkouts: [WorkoutSession]
+
+    private var systemLiveActivitiesAvailable: Bool {
+        WorkoutActivityManager.areActivitiesAvailable
+    }
+
+    private var activeWorkout: WorkoutSession? {
+        incompleteWorkouts.first
+    }
+
+    var body: some View {
+        Group {
+            if let settings = appSettings.first {
+                settingsForm(settings)
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .navigationTitle("Workouts")
+        .toolbarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .sheetBackground()
+    }
+
+    private func settingsForm(_ settings: AppSettings) -> some View {
+        @Bindable var settings = settings
+
+        return Form {
+            Section {
+                Toggle("Retain for Improved Accuracy", isOn: $settings.retainPerformancesForLearning)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
+                    .appGroupedListRow(position: .single)
+            } header: {
+                Text("Workout History")
+            } footer: {
+                Text("When this is on, deleting a workout keeps its performances so suggestions have more data to work with. When it is off, it permanently removes the session and the suggestion data tied to it.")
+            }
+
+            Section {
+                Toggle("Auto Start Rest Timer", isOn: $settings.autoStartRestTimer)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoStartTimerToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsAutoStartTimerHint)
+                    .appGroupedListRow(position: .top)
+                Toggle("Auto Complete After RPE", isOn: $settings.autoCompleteSetAfterRPE)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoCompleteAfterRPEToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsAutoCompleteAfterRPEHint)
+                    .appGroupedListRow(position: .bottom)
+            } header: {
+                Text("Set Logging")
+            } footer: {
+                Text("After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it also starts the timer.")
+            }
+
+            Section {
+                Toggle("Prompt For Pre Workout Context", isOn: $settings.promptForPreWorkoutContext)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPreWorkoutPromptToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsPreWorkoutPromptHint)
+                    .appGroupedListRow(position: .top)
+                Toggle("Prompt For Post Workout Effort", isOn: $settings.promptForPostWorkoutEffort)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPostWorkoutEffortToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsPostWorkoutEffortHint)
+                    .appGroupedListRow(position: .bottom)
+            } header: {
+                Text("Workout Context")
+            } footer: {
+                Text("Prompt For Pre Workout Context asks for how you feel before logging starts. Prompt For Post Workout Effort asks for your overall effort rating when you finish a workout. Turn either off to enter those details manually only when needed.")
+            }
+
+            Section {
+                Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
+                    .appGroupedListRow(position: settings.liveActivitiesEnabled && systemLiveActivitiesAvailable && activeWorkout != nil ? .top : .single)
+
+                if settings.liveActivitiesEnabled && systemLiveActivitiesAvailable, let activeWorkout {
+                    Button("Restart Live Activity", systemImage: "arrow.clockwise") {
+                        Haptics.selection()
+                        WorkoutActivityManager.restart(workout: activeWorkout)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRestartLiveActivityButton)
+                    .accessibilityHint(AccessibilityText.workoutSettingsRestartLiveActivityHint)
+                    .appGroupedListRow(position: .bottom)
+                }
+            } header: {
+                Text("Live Activity")
+            } footer: {
+                if !systemLiveActivitiesAvailable {
+                    Text("Live Activities are not available on this device or are disabled in system settings. The app will fall back to in app toasts and local notifications when possible.")
+                }
+            }
+        }
         .onChange(of: settings.retainPerformancesForLearning) {
             saveContext(context: context)
             guard !settings.retainPerformancesForLearning else { return }
             WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
         }
-        .onChange(of: settings.appearanceMode) {
+        .onChange(of: settings.autoStartRestTimer) {
             saveContext(context: context)
-            dismissAllPresentedSheets()
+        }
+        .onChange(of: settings.autoCompleteSetAfterRPE) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.promptForPreWorkoutContext) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.promptForPostWorkoutEffort) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.liveActivitiesEnabled) {
+            saveContext(context: context)
+
+            if settings.liveActivitiesEnabled {
+                if let activeWorkout {
+                    WorkoutActivityManager.restart(workout: activeWorkout)
+                }
+            } else {
+                WorkoutActivityManager.end()
+            }
+
+            let restTimer = RestTimerState.shared
+            if let endDate = restTimer.endDate, restTimer.isRunning {
+                Task { await NotificationCoordinator.scheduleRestTimer(endDate: endDate) }
+            } else {
+                Task { NotificationCoordinator.cancelRestTimer() }
+            }
         }
     }
 }
@@ -162,7 +293,7 @@ private struct AppleHealthSettingsView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthKeepRemovedDataToggle)
                     .appGroupedListRow(position: .single)
             } footer: {
-                Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
+                Text("When this is off, data removed from Apple Health is also removed from this app.")
             }
         }
         .navigationTitle("Apple Health")
@@ -195,7 +326,7 @@ private struct AppleHealthSettingsView: View {
             }
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions.")
+            Text("Apple does not let this app open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access and Devices, tap this app, then update the workout permissions.")
         }
     }
     private func refreshHealthAuthorizationState() async {
@@ -260,14 +391,35 @@ private struct NotificationSettingsView: View {
                 .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
                 .appGroupedListRow(position: .single)
             } header: {
-                Text("Goal Completions")
+                Text("Steps")
             } footer: {
                 if !notificationsAreAllowedBySystem {
-                    Text("Enable notifications in system settings to change this. Villain Arc can still show in-app toasts while you’re using the app.")
+                    Text("Enable notifications in system settings to change this. You can still see in app toasts while using the app.")
                 } else if backgroundRefreshStatus != .available {
-                    Text("Background App Refresh is off, so Villain Arc can’t reliably deliver steps goal notifications while the app is closed.")
+                    Text("Background App Refresh is off, so steps notifications may be delayed while the app is closed.")
                 } else {
-                    Text("Choose whether Villain Arc schedules local notifications only for goal completions or also for coaching milestones like double goal, triple goal, and new step records. In-app toasts can still appear while you’re using the app.")
+                    Text("Choose whether you receive notifications when you complete your steps goal only, or also receive coaching notifications for double goal, triple goal, and new best milestones.")
+                }
+            }
+
+            Section {
+                Picker("Mode", selection: $settings.sleepNotificationMode) {
+                    ForEach(SleepNotificationMode.allCases, id: \.self) { mode in
+                        Text(mode.title)
+                            .tag(mode)
+                    }
+                }
+                .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+                .appGroupedListRow(position: .single)
+            } header: {
+                Text("Sleep")
+            } footer: {
+                if !notificationsAreAllowedBySystem {
+                    Text("Enable notifications in system settings to change this. You can still see in app toasts while using the app.")
+                } else if backgroundRefreshStatus != .available {
+                    Text("Background App Refresh is off, so sleep notifications may be delayed while the app is closed.")
+                } else {
+                    Text("Choose whether you receive notifications when you complete your sleep goal only, or also receive coaching notifications such as suggested bedtime reminders.")
                 }
             }
 
@@ -286,6 +438,9 @@ private struct NotificationSettingsView: View {
             }
         }
         .onChange(of: settings.stepsNotificationMode) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.sleepNotificationMode) {
             saveContext(context: context)
         }
     }

@@ -12,20 +12,8 @@ struct HealthStepsSectionCard: View {
         summaryEntries.first
     }
 
-    private var todayEntry: HealthStepsDistance? {
-        summaryEntries.first { Calendar.autoupdatingCurrent.isDateInToday($0.date) }
-    }
-
     private var activeGoal: StepsGoal? {
         activeGoals.first
-    }
-
-    private var activeGoalText: String? {
-        guard let activeGoal else { return nil }
-        if todayEntry?.goalCompleted == true {
-            return String(localized: "Goal achieved")
-        }
-        return String(localized: "Goal: \(compactStepsText(activeGoal.targetSteps))")
     }
 
     private var cardAccessibilityLabel: String {
@@ -107,21 +95,14 @@ struct HealthStepsSectionCard: View {
 
     @ViewBuilder
     private func stepsGoalLine(for goal: StepsGoal) -> some View {
-        if todayEntry?.goalCompleted == true {
-            Text("Goal achieved")
-                .font(.subheadline)
+        HStack(alignment: .lastTextBaseline, spacing: 3) {
+            Text("Goal:")
+                .foregroundStyle(.secondary)
+            Text(compactStepsText(goal.targetSteps))
                 .foregroundStyle(.primary)
-                .lineLimit(1)
-        } else {
-            HStack(alignment: .lastTextBaseline, spacing: 3) {
-                Text("Goal:")
-                    .foregroundStyle(.secondary)
-                Text(compactStepsText(goal.targetSteps))
-                    .foregroundStyle(.primary)
-            }
-            .font(.subheadline)
-            .lineLimit(1)
         }
+        .font(.subheadline)
+        .lineLimit(1)
     }
 }
 

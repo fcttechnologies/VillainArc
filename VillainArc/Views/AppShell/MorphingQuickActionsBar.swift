@@ -39,9 +39,13 @@ private struct MorphingQuickActionsGrid: View {
     let actions: [ExpandedAction]
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(spacing: 10), count: 4), spacing: 10) {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 4),
+            alignment: .leading,
+            spacing: 10
+        ) {
             ForEach(actions) { action in
-                VStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 6) {
                     Button {
                         Haptics.selection()
                         action.action()
@@ -64,8 +68,10 @@ private struct MorphingQuickActionsGrid: View {
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, minHeight: 22, alignment: .top)
                         .accessibilityHidden(true)
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
         .padding(10)

@@ -27,6 +27,7 @@ enum AccessibilityIdentifiers {
     static let settingsAppleHealthKeepRemovedDataToggle = "settingsAppleHealthKeepRemovedDataToggle"
     static let morphingToolbarToggleButton = "morphingToolbarToggleButton"
     static let morphingStartWorkoutButton = "morphingStartWorkoutButton"
+    static let morphingStartTodaysWorkoutButton = "morphingStartTodaysWorkoutButton"
     static let morphingCreatePlanButton = "morphingCreatePlanButton"
     static let morphingAddWeightButton = "morphingAddWeightButton"
     static let morphingUsePlanButton = "morphingUsePlanButton"
@@ -536,6 +537,7 @@ enum AccessibilityText {
     static let morphingCollapseToolbarLabel = localized("Hide quick actions")
     static let morphingToolbarHint = localized("Shows or hides the quick action toolbar.")
     static let morphingStartWorkoutHint = localized("Starts a new workout session.")
+    static let morphingStartTodaysWorkoutHint = localized("Starts today's workout from your active split.")
     static let morphingCreatePlanHint = localized("Creates a new workout plan.")
     static let morphingAddWeightHint = localized("Creates a new weight entry.")
     static let healthAddWeightEntryLabel = localized("Add weight entry")

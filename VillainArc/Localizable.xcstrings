@@ -693,6 +693,9 @@
         }
       }
     },
+    "%lldh" : {
+
+    },
     "%lldh %lldm" : {
       "localizations" : {
         "en" : {
@@ -1386,6 +1389,9 @@
         }
       }
     },
+    "After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it also starts the timer." : {
+
+    },
     "After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it will also start the timer." : {
       "localizations" : {
         "en" : {
@@ -1509,7 +1515,11 @@
         }
       }
     },
+    "Apple does not let this app open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access and Devices, tap this app, then update the workout permissions." : {
+
+    },
     "Apple doesn’t let Villain Arc open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access & Devices, tap Villain Arc, then update the workout permissions." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1785,7 +1795,14 @@
         }
       }
     },
+    "Background App Refresh is off, so sleep notifications may be delayed while the app is closed." : {
+
+    },
+    "Background App Refresh is off, so steps notifications may be delayed while the app is closed." : {
+
+    },
     "Background App Refresh is off, so Villain Arc can’t reliably deliver steps goal notifications while the app is closed." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2057,6 +2074,9 @@
         }
       }
     },
+    "Changes apply starting tomorrow." : {
+
+    },
     "Charts appear after at least 2 logged sessions for this exercise." : {
       "localizations" : {
         "en" : {
@@ -2108,6 +2128,7 @@
       }
     },
     "Choose how Villain Arc handles steps goal notifications." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2127,10 +2148,11 @@
         }
       }
     },
-    "Choose whether Villain Arc follows your device appearance or always uses light or dark mode." : {
+    "Choose whether the app follows your device appearance or always uses light or dark mode." : {
 
     },
     "Choose whether Villain Arc schedules local notifications only for goal completions or also for coaching milestones like double goal, triple goal, and new step records. In-app toasts can still appear while you’re using the app." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2139,6 +2161,12 @@
           }
         }
       }
+    },
+    "Choose whether you receive notifications when you complete your sleep goal only, or also receive coaching notifications such as suggested bedtime reminders." : {
+
+    },
+    "Choose whether you receive notifications when you complete your steps goal only, or also receive coaching notifications for double goal, triple goal, and new best milestones." : {
+
     },
     "Classic bodybuilding split" : {
       "localizations" : {
@@ -2811,6 +2839,9 @@
           }
         }
       }
+    },
+    "Customize workout logging, prompts, Live Activity behavior, and retention." : {
+
     },
     "Cut goal reached" : {
       "localizations" : {
@@ -3634,6 +3665,7 @@
       }
     },
     "Enable notifications in system settings to change this. Villain Arc can still show in-app toasts while you’re using the app." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3642,6 +3674,9 @@
           }
         }
       }
+    },
+    "Enable notifications in system settings to change this. You can still see in app toasts while using the app." : {
+
     },
     "End" : {
       "localizations" : {
@@ -4463,6 +4498,7 @@
 
     },
     "Goal achieved" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4473,6 +4509,7 @@
       }
     },
     "Goal Completions" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5254,7 +5291,14 @@
     "Light Ring Surface" : {
 
     },
+    "Live Activities are not available on this device or are disabled in system settings. The app will fall back to in app toasts and local notifications when possible." : {
+
+    },
+    "Live Activities are not available on this device or are turned off in system settings. The app will fall back to in app toasts and local notifications when possible." : {
+
+    },
     "Live Activities aren’t available on this device or are turned off in system settings. Villain Arc will fall back to in-app toasts and local notifications when possible." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5604,7 +5648,10 @@
         }
       }
     },
-    "Manage Apple Health permissions and choose whether removed Health data stays in Villain Arc." : {
+    "Manage Apple Health permissions and choose whether removed Health data stays in this app." : {
+
+    },
+    "Manage notification preferences for your health goals." : {
 
     },
     "Manage Workout Splits" : {
@@ -8009,6 +8056,9 @@
           }
         }
       }
+    },
+    "Prompt For Pre Workout Context asks for how you feel before logging starts. Prompt For Post Workout Effort asks for your overall effort rating when you finish a workout. Turn either off to enter those details manually only when needed." : {
+
     },
     "Prompts for post workout effort before summary when the workout is being saved." : {
       "localizations" : {
@@ -12791,7 +12841,11 @@
         }
       }
     },
+    "When this is off, data removed from Apple Health is also removed from this app." : {
+
+    },
     "When this is off, data removed from Apple Health is also removed from Villain Arc." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12812,6 +12866,7 @@
       }
     },
     "When turned off, those prompts stay manual. You can still open pre workout context from the workout title menu." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

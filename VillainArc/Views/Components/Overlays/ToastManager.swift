@@ -38,6 +38,10 @@ final class ToastManager {
 
             return Toast(title: event.title, message: event.body, systemImage: systemImage, tint: .red, haptic: .success)
         }
+
+        static func sleepGoalComplete(_ event: SleepGoalNotification) -> Toast {
+            Toast(title: event.title, message: event.body, systemImage: "bed.double.fill", tint: .indigo, haptic: .success)
+        }
     }
 
     static let shared = ToastManager()

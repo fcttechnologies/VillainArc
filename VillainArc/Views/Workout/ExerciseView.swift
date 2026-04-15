@@ -103,7 +103,7 @@ struct ExerciseView: View {
                     }
                     
                     TextField("Notes", text: $exercise.notes)
-                        .padding(.top, 8)
+                        .padding(.top, 10)
                         .onChange(of: exercise.notes) {
                             scheduleSave(context: context)
                         }

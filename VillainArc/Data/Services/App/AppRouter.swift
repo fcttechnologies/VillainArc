@@ -179,6 +179,19 @@ enum HomeQuickAction: String {
         } catch { return false }
     }
 
+    func canShowStartTodaysWorkoutExpandedAction() -> Bool {
+        guard isReadyForIntentActions() else { return false }
+        guard let split = try? context.fetch(WorkoutSplit.active).first else { return false }
+        guard !(split.days?.isEmpty ?? true) else { return false }
+
+        let resolution = SplitScheduleResolver.resolve(split, context: context, syncProgress: false)
+        guard !resolution.isPaused else { return false }
+        guard let splitDay = resolution.splitDay, !splitDay.isRestDay else { return false }
+        guard let todaysPlan = resolution.workoutPlan else { return false }
+
+        return !hasIncompleteWorkoutSession(forPlanID: todaysPlan.id)
+    }
+
     private func incompleteWorkoutSession() -> WorkoutSession? { try? context.fetch(WorkoutSession.incomplete).first }
 
     func noteNavigationStateChanged() {
@@ -349,7 +362,7 @@ enum HomeQuickAction: String {
             presentHealthSheet(.addWeightEntry)
 
         case .startTodaysWorkout:
-            handleStartTodaysWorkoutQuickAction()
+            _ = handleStartTodaysWorkoutQuickAction()
         }
     }
 
@@ -378,40 +391,66 @@ enum HomeQuickAction: String {
         }
     }
 
-    private func handleStartTodaysWorkoutQuickAction() {
+    @discardableResult
+    func startTodaysWorkoutFromExpandedAction() -> Bool {
+        if hasActiveFlow() {
+            handleBlockedHomeQuickAction()
+            return false
+        }
+        return handleStartTodaysWorkoutQuickAction()
+    }
+
+    @discardableResult
+    private func handleStartTodaysWorkoutQuickAction() -> Bool {
         guard let split = try? context.fetch(WorkoutSplit.active).first else {
             showQuickActionToast(title: "No Active Split", message: "Set an active workout split to start today's workout.")
-            return
+            return false
         }
 
         guard !(split.days?.isEmpty ?? true) else {
             showQuickActionToast(title: "No Split Days", message: "Add days to your split before starting today's workout.")
-            return
+            return false
         }
 
         let resolution = SplitScheduleResolver.resolve(split, context: context)
 
         guard let todaysDay = resolution.splitDay else {
             showQuickActionToast(title: "No Workout Today", message: "Villain Arc couldn't determine today's workout.")
-            return
+            return false
         }
 
         guard !resolution.isPaused else {
             showQuickActionToast(title: "Training Paused", message: resolution.conditionStatusText ?? "Training is currently paused.")
-            return
+            return false
         }
 
         guard !todaysDay.isRestDay else {
             showQuickActionToast(title: "Rest Day", message: "Today is a rest day. Enjoy your recovery.")
-            return
+            return false
         }
 
         guard let workoutPlan = resolution.workoutPlan else {
             showQuickActionToast(title: "No Workout Plan", message: "You don't have a workout plan assigned for today.")
-            return
+            return false
+        }
+
+        guard !hasIncompleteWorkoutSession(forPlanID: workoutPlan.id) else {
+            showQuickActionToast(title: "Workout In Progress", message: "Today's split workout is already in progress.")
+            return false
         }
 
         startWorkoutSession(from: workoutPlan)
+        return true
+    }
+
+    private func hasIncompleteWorkoutSession(forPlanID planID: UUID) -> Bool {
+        let done = SessionStatus.done.rawValue
+        let predicate = #Predicate<WorkoutSession> {
+            $0.status != done && $0.workoutPlan?.id == planID
+        }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return (try? context.fetch(descriptor).first) != nil
     }
 
     private func showQuickActionToast(title: String, message: String) {

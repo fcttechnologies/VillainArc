@@ -16,6 +16,7 @@ import SwiftData
     var tripleGoalLastTriggeredDay: Date?
     var bestDailyStepsKnown: Int?
     var newHighStepsLastTriggeredDay: Date?
+    var sleepGoalLastNotifiedWakeDay: Date?
 
     init() {}
 

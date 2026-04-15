@@ -38,6 +38,8 @@ struct NewSleepGoalView: View {
             segments.append(currentGoalText)
         }
 
+        segments.append(String(localized: "Changes apply starting tomorrow."))
+
         return segments.isEmpty ? nil : segments.joined(separator: " ")
     }
 
@@ -145,20 +147,8 @@ struct NewSleepGoalView: View {
 
     private func save() {
         guard canSave else { return }
-
-        let calendar = Calendar.autoupdatingCurrent
-        let todayStart = calendar.startOfDay(for: .now)
-
-        if let activeGoal {
-            if activeGoal.startedOnDay == todayStart {
-                context.delete(activeGoal)
-            } else {
-                activeGoal.endedOnDay = calendar.date(byAdding: .day, value: -1, to: todayStart) ?? todayStart
-            }
-        }
-
-        let newGoal = SleepGoal(startedOnDay: todayStart, targetSleepDuration: targetDuration)
-        context.insert(newGoal)
+        let normalizedTargetDuration = Self.normalizedDuration(targetDuration)
+        _ = try? SleepGoal.replaceActiveGoal(with: normalizedTargetDuration, context: context)
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadSleep()
         Haptics.selection()

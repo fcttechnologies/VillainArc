@@ -161,7 +161,7 @@ struct WorkoutPlanDetailView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailUseButton)
                     .accessibilityLabel("Use Plan")
                     .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
-                } else if onSelect == nil, showsUseOnly {
+                } else if onSelect == nil, !isSplitAssignmentPreview {
                     Button("Use Plan", systemImage: "figure.strengthtraining.traditional") {
                         startWorkoutFromPlan()
                     }
@@ -184,30 +184,17 @@ struct WorkoutPlanDetailView: View {
                             splitAssignmentActions.onClearPlan()
                         }
                     }
-                } else if onSelect == nil, !showsUseOnly {
-                    Button {
-                        Haptics.selection()
-                        plan.favorite.toggle()
-                        saveContext(context: context)
-                        Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
-                    } label: {
-                        Image(systemName: plan.favorite ? "star.fill" : "star")
-                            .foregroundStyle(plan.favorite ? .yellow : .primary)
-                            .accessibilityHidden(true)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailFavoriteButton)
-                    .accessibilityLabel(AccessibilityText.workoutPlanDetailFavoriteLabel(isFavorite: plan.favorite))
-                    .accessibilityHint(AccessibilityText.workoutPlanDetailFavoriteHint)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 if onSelect == nil, !showsUseOnly && !isSplitAssignmentPreview {
                     Menu("Options", systemImage: "ellipsis") {
-                        Button("Use Plan", systemImage: "figure.strengthtraining.traditional") {
-                            startWorkoutFromPlan()
+                        Button(plan.favorite ? "Unfavorite" : "Favorite", systemImage: plan.favorite ? "star.fill" : "star") {
+                            toggleFavorite()
                         }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailStartWorkoutButton)
-                        .accessibilityHint(AccessibilityText.workoutPlanDetailStartWorkoutHint)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailFavoriteButton)
+                        .accessibilityLabel(AccessibilityText.workoutPlanDetailFavoriteLabel(isFavorite: plan.favorite))
+                        .accessibilityHint(AccessibilityText.workoutPlanDetailFavoriteHint)
 
                         Button("Edit Plan", systemImage: "pencil") {
                             router.editWorkoutPlan(plan)
@@ -330,6 +317,13 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
                 await IntentDonations.donateStartTodaysWorkout()
             }
         }
+    }
+
+    private func toggleFavorite() {
+        Haptics.selection()
+        plan.favorite.toggle()
+        saveContext(context: context)
+        Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
     }
 
     private func pendingSuggestionCount(for exercise: ExercisePrescription) -> Int? {

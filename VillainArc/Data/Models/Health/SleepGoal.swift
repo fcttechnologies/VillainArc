@@ -43,4 +43,27 @@ extension SleepGoal {
         guard let endedOnDay else { return true }
         return normalizedDay <= endedOnDay
     }
+
+    @discardableResult
+    static func replaceActiveGoal(with targetSleepDuration: TimeInterval, on day: Date = .now, context: ModelContext) throws -> Bool {
+        let calendar = Calendar.autoupdatingCurrent
+        let normalizedDay = calendar.startOfDay(for: day)
+        let effectiveStartDay = calendar.date(byAdding: .day, value: 1, to: normalizedDay) ?? normalizedDay
+        let activeGoal = try context.fetch(active).first
+
+        if let activeGoal, activeGoal.targetSleepDuration == targetSleepDuration, calendar.isDate(activeGoal.startedOnDay, inSameDayAs: effectiveStartDay) {
+            return false
+        }
+
+        if let activeGoal {
+            if activeGoal.startedOnDay > normalizedDay || calendar.isDate(activeGoal.startedOnDay, inSameDayAs: effectiveStartDay) {
+                context.delete(activeGoal)
+            } else {
+                activeGoal.endedOnDay = normalizedDay
+            }
+        }
+
+        context.insert(SleepGoal(startedOnDay: effectiveStartDay, targetSleepDuration: targetSleepDuration))
+        return true
+    }
 }

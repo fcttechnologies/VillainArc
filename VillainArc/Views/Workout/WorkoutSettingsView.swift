@@ -56,7 +56,7 @@ struct WorkoutSettingsView: View {
             } header: {
                 Text("Workout Context")
             } footer: {
-                Text("When turned off, those prompts stay manual. You can still open pre workout context from the workout title menu.")
+                Text("Prompt For Pre Workout Context asks for how you feel before logging starts. Prompt For Post Workout Effort asks for your overall effort rating when you finish a workout. Turn either off to enter those details manually only when needed.")
             }
 
             Section {
@@ -81,7 +81,7 @@ struct WorkoutSettingsView: View {
                     Text("Turn off live activities completely or restart the current one if it was dismissed accidentally.")
 
                     if !systemLiveActivitiesAvailable {
-                        Text("Live Activities aren’t available on this device or are turned off in system settings. Villain Arc will fall back to in-app toasts and local notifications when possible.")
+                        Text("Live Activities are not available on this device or are turned off in system settings. The app will fall back to in app toasts and local notifications when possible.")
                     }
                 }
             }

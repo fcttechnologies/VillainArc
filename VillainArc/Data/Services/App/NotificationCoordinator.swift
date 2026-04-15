@@ -6,6 +6,7 @@ nonisolated enum NotificationType: String {
     case restTimerComplete
     case stepsGoalComplete
     case stepsEvent
+    case sleepGoalComplete
 }
 
 nonisolated enum NotificationUserInfoKey {
@@ -14,6 +15,7 @@ nonisolated enum NotificationUserInfoKey {
     static let stepCount = "stepCount"
     static let stepsMilestone = "stepsMilestone"
     static let includesNewBest = "stepsIncludesNewBest"
+    static let sleepWakeDay = "sleepWakeDay"
 }
 
 final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate {
@@ -104,13 +106,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         content.body = localEvent.body
         content.sound = .default
         content.threadIdentifier = "healthGoals"
-        content.userInfo = [
-            NotificationUserInfoKey.type: NotificationType.stepsEvent.rawValue,
-            NotificationUserInfoKey.targetSteps: localEvent.targetSteps as Any,
-            NotificationUserInfoKey.stepCount: localEvent.stepCount,
-            NotificationUserInfoKey.stepsMilestone: localEvent.milestone?.rawValue as Any,
-            NotificationUserInfoKey.includesNewBest: localEvent.includesNewBest
-        ]
+        content.userInfo = [NotificationUserInfoKey.type: NotificationType.stepsEvent.rawValue, NotificationUserInfoKey.targetSteps: localEvent.targetSteps as Any, NotificationUserInfoKey.stepCount: localEvent.stepCount, NotificationUserInfoKey.stepsMilestone: localEvent.milestone?.rawValue as Any, NotificationUserInfoKey.includesNewBest: localEvent.includesNewBest]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: "stepsEvent", content: content, trigger: trigger)
@@ -118,6 +114,36 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             try await center.add(request)
         } catch {
             print("Failed to schedule steps event notification: \(error)")
+        }
+    }
+
+    nonisolated static func deliverSleepGoal(_ event: SleepGoalNotification) async {
+        let settings = currentAppSettingsSnapshot()
+        let status = await authorizationStatus()
+
+        await shared.presentToastIfPossible(.sleepGoalComplete(event))
+
+        guard let localEvent = event.localNotificationVersion(for: settings.sleepNotificationMode), status.allowsLocalDelivery else {
+            return
+        }
+
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["sleepGoalComplete"])
+        center.removeDeliveredNotifications(withIdentifiers: ["sleepGoalComplete"])
+
+        let content = UNMutableNotificationContent()
+        content.title = localEvent.title
+        content.body = localEvent.body
+        content.sound = .default
+        content.threadIdentifier = "healthGoals"
+        content.userInfo = [NotificationUserInfoKey.type: NotificationType.sleepGoalComplete.rawValue, NotificationUserInfoKey.sleepWakeDay: localEvent.wakeDay.timeIntervalSince1970]
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: "sleepGoalComplete", content: content, trigger: trigger)
+        do {
+            try await center.add(request)
+        } catch {
+            print("Failed to schedule sleep goal notification: \(error)")
         }
     }
 
@@ -176,6 +202,8 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             let stepCount = userInfo[NotificationUserInfoKey.stepCount] as? Int ?? 0
             return .stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount)
         case .stepsEvent:
+            return nil
+        case .sleepGoalComplete:
             return nil
         }
     }

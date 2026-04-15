@@ -93,7 +93,7 @@ struct ContentView: View {
     }
     
     private var homeExpandedActions: [ExpandedAction] {
-        [
+        var actions: [ExpandedAction] = [
             ExpandedAction("New Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartWorkoutButton, accessibilityHint: AccessibilityText.morphingStartWorkoutHint) {
                 collapseMorphingTabBar()
                 router.startWorkoutSession()
@@ -109,6 +109,19 @@ struct ContentView: View {
                 router.presentHealthSheet(.addWeightEntry)
             }
         ]
+
+        if router.canShowStartTodaysWorkoutExpandedAction() {
+            actions.append(
+                ExpandedAction("Start Today's Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartTodaysWorkoutButton, accessibilityHint: AccessibilityText.morphingStartTodaysWorkoutHint) {
+                    collapseMorphingTabBar()
+                    if router.startTodaysWorkoutFromExpandedAction() {
+                        Task { await IntentDonations.donateStartTodaysWorkout() }
+                    }
+                }
+            )
+        }
+
+        return actions
     }
 
     private var healthExpandedActions: [ExpandedAction] {

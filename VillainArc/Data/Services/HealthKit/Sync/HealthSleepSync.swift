@@ -70,11 +70,19 @@ actor HealthSleepSync {
                 let result = try await anchoredResult(anchor: anchor)
                 let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: result)
                 let refreshedRange = refreshRange(addedSamples: result.addedSamples, syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
+                var sleepGoalNotification: SleepGoalNotification?
 
                 if let refreshedRange {
                     let samples = try await sleepSamples(inWakeDayRange: refreshedRange)
                     let summariesByWakeDay = summarizeNights(from: samples, in: refreshedRange)
                     try rebuildWakeDays(in: refreshedRange, summariesByWakeDay: summariesByWakeDay, retainRemovedHealthData: retainRemovedHealthData, context: context)
+
+                    let todayWakeDay = HealthSleepNight.wakeDayKey(for: .now)
+                    if refreshedRange.contains(todayWakeDay) {
+                        let todaySummary = try context.fetch(HealthSleepNight.forStoredWakeDayKey(todayWakeDay)).first
+                        sleepGoalNotification = try SleepGoalEvaluator.reconcileToday(summary: todaySummary, syncState: syncState, context: context)
+                    }
+
                     try context.save()
                 }
 
@@ -87,6 +95,9 @@ actor HealthSleepSync {
                 }
 
                 logSleepSyncIfNeeded(refreshedRange: refreshedRange)
+                if let sleepGoalNotification {
+                    await NotificationCoordinator.deliverSleepGoal(sleepGoalNotification)
+                }
             } catch {
                 print("Failed to sync Apple Health sleep summaries: \(error)")
             }
@@ -416,19 +427,7 @@ actor HealthSleepSync {
                 return $0.interval.start < $1.interval.start
             }
             .map { block in
-                let persistedBlock = HealthSleepBlock(
-                    startDate: block.interval.start,
-                    endDate: block.interval.end,
-                    isPrimary: block.interval.start == night.sleepStart && block.interval.end == night.sleepEnd,
-                    timeAsleep: max(0, block.asleepDuration),
-                    timeInBed: max(0, block.inBedDuration),
-                    awakeDuration: max(0, block.awakeDuration),
-                    remDuration: max(0, block.remDuration),
-                    coreDuration: max(0, block.coreDuration),
-                    deepDuration: max(0, block.deepDuration),
-                    asleepUnspecifiedDuration: max(0, block.asleepUnspecifiedDuration),
-                    night: night
-                )
+                let persistedBlock = HealthSleepBlock(startDate: block.interval.start, endDate: block.interval.end, isPrimary: block.interval.start == night.sleepStart && block.interval.end == night.sleepEnd, timeAsleep: max(0, block.asleepDuration), timeInBed: max(0, block.inBedDuration), awakeDuration: max(0, block.awakeDuration), remDuration: max(0, block.remDuration), coreDuration: max(0, block.coreDuration), deepDuration: max(0, block.deepDuration), asleepUnspecifiedDuration: max(0, block.asleepUnspecifiedDuration), night: night)
                 context.insert(persistedBlock)
                 return persistedBlock
             }

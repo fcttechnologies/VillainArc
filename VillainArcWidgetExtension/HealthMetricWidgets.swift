@@ -230,7 +230,6 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
 
         case .steps:
             let latestEntry = try? context.fetch(HealthStepsDistance.latest).first
-            let todayEntry = try? context.fetch(HealthStepsDistance.forDay(.now)).first
             let activeGoal = try? context.fetch(StepsGoal.active).first
             guard let latestEntry else {
                 return .init(date: .now, metric: .steps, latestDateText: nil, content: .empty(message: metric.emptyMessage), chartContent: .none)
@@ -239,13 +238,8 @@ private struct HealthMetricWidgetProvider: TimelineProvider {
             let goalLabelText: String?
             let goalValueText: String?
             if let activeGoal {
-                if todayEntry?.goalCompleted == true {
-                    goalLabelText = nil
-                    goalValueText = String(localized: "Goal achieved")
-                } else {
-                    goalLabelText = String(localized: "Goal:")
-                    goalValueText = widgetCompactStepsText(activeGoal.targetSteps)
-                }
+                goalLabelText = String(localized: "Goal:")
+                goalValueText = widgetCompactStepsText(activeGoal.targetSteps)
             } else {
                 goalLabelText = nil
                 goalValueText = nil
