@@ -29,6 +29,22 @@ private enum ProfileLegalDestination: String, Identifiable {
     }
 }
 
+private enum ProfileImagePickerSource: String, Identifiable {
+    case photoLibrary
+    case camera
+
+    var id: String { rawValue }
+
+    var uiKitSourceType: UIImagePickerController.SourceType {
+        switch self {
+        case .photoLibrary:
+            return .photoLibrary
+        case .camera:
+            return .camera
+        }
+    }
+}
+
 struct ProfileSheetLauncherButton: View {
     @Query(UserProfile.single) private var profiles: [UserProfile]
 
@@ -77,10 +93,9 @@ struct ProfileSheetView: View {
     @State private var showHeightEditor = false
     @State private var showTrainingGoalEditor = false
     @State private var showPhotoOptions = false
-    @State private var showImagePicker = false
     @State private var showCameraAccessAlert = false
     @State private var selectedProfileImage: UIImage?
-    @State private var imagePickerSourceType: UIImagePickerController.SourceType = .photoLibrary
+    @State private var presentedImagePickerSource: ProfileImagePickerSource?
     @State private var presentedLegalDestination: ProfileLegalDestination?
     @State private var editableName = ""
     @FocusState private var isNameFieldFocused: Bool
@@ -149,8 +164,8 @@ struct ProfileSheetView: View {
                 .presentationDetents([.fraction(0.7)])
                 .presentationBackground(Color.sheetBg)
             }
-            .sheet(isPresented: $showImagePicker) {
-                ProfileImagePicker(sourceType: imagePickerSourceType, image: $selectedProfileImage)
+            .sheet(item: $presentedImagePickerSource) { source in
+                ProfileImagePicker(sourceType: source.uiKitSourceType, image: $selectedProfileImage)
                     .ignoresSafeArea()
             }
             .sheet(item: $presentedLegalDestination) { destination in
@@ -167,8 +182,7 @@ struct ProfileSheetView: View {
 
                 Button("Select Photo") {
                     Haptics.selection()
-                    imagePickerSourceType = .photoLibrary
-                    showImagePicker = true
+                    presentedImagePickerSource = .photoLibrary
                 }
 
                 if profile?.profileImageData != nil {
@@ -508,13 +522,11 @@ struct ProfileSheetView: View {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
         switch status {
         case .authorized:
-            imagePickerSourceType = .camera
-            showImagePicker = true
+            presentedImagePickerSource = .camera
         case .notDetermined:
             let granted = await AVCaptureDevice.requestAccess(for: .video)
             if granted {
-                imagePickerSourceType = .camera
-                showImagePicker = true
+                presentedImagePickerSource = .camera
             } else {
                 showCameraAccessAlert = true
             }
