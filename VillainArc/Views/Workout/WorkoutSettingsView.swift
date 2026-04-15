@@ -33,9 +33,11 @@ struct WorkoutSettingsView: View {
                 Toggle("Auto Start Rest Timer", isOn: $settings.autoStartRestTimer)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoStartTimerToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsAutoStartTimerHint)
+                    .appGroupedListRow(position: .top)
                 Toggle("Auto Complete After RPE", isOn: $settings.autoCompleteSetAfterRPE)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoCompleteAfterRPEToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsAutoCompleteAfterRPEHint)
+                    .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Set Logging")
             } footer: {
@@ -46,9 +48,11 @@ struct WorkoutSettingsView: View {
                 Toggle("Prompt For Pre Workout Context", isOn: $settings.promptForPreWorkoutContext)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPreWorkoutPromptToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsPreWorkoutPromptHint)
+                    .appGroupedListRow(position: .top)
                 Toggle("Prompt For Post Workout Effort", isOn: $settings.promptForPostWorkoutEffort)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPostWorkoutEffortToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsPostWorkoutEffortHint)
+                    .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Workout Context")
             } footer: {
@@ -59,6 +63,7 @@ struct WorkoutSettingsView: View {
                 Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
+                    .appGroupedListRow(position: settings.liveActivitiesEnabled && systemLiveActivitiesAvailable ? .top : .single)
 
                 if settings.liveActivitiesEnabled && systemLiveActivitiesAvailable {
                     Button("Restart Live Activity", systemImage: "arrow.clockwise") {
@@ -67,6 +72,7 @@ struct WorkoutSettingsView: View {
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRestartLiveActivityButton)
                     .accessibilityHint(AccessibilityText.workoutSettingsRestartLiveActivityHint)
+                    .appGroupedListRow(position: .bottom)
                 }
             } header: {
                 Text("Live Activity")

@@ -132,6 +132,32 @@ Startup code ensures they exist before the app treats launch as ready.
 - the current display name
 - externally stored profile photo data
 
+### SwiftData Schemas Are Versioned
+
+VillainArc uses `VersionedSchema` and `SchemaMigrationPlan` for persisted store changes.
+
+The rules are:
+
+- treat the last shipped public store shape as a frozen historical schema
+- keep historical schema versions append-only and do not edit them after release
+- keep model entries in schema order
+- when adding a brand-new persisted model, append it to the end of the current schema list
+- when changing any persisted shape, add a new schema version instead of editing the old one in place
+
+The current convention is:
+
+- historical versions are fully frozen snapshots of the persisted model graph
+- the latest schema version can continue using the live app models
+- when the next store-shape change happens, freeze the current live schema into the next historical version first, then advance the live schema again
+
+This means all of these require a new schema version:
+
+- adding a new model
+- adding an optional field
+- adding a non-optional field
+- renaming or removing a field
+- changing relationship structure
+
 ### Apple Health Is an Integration Layer
 
 Apple Health is not the app’s primary source of truth.

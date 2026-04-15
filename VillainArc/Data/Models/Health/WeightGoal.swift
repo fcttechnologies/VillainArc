@@ -3,11 +3,9 @@ import SwiftData
 
 @Model final class WeightGoal {
     #Index<WeightGoal>([\.startedAt], [\.endedAt])
-
     var id: UUID = UUID()
     var type: WeightGoalType = WeightGoalType.maintain
     var startedAt: Date = Date()
-    // When non-nil, endedAt is the exclusive upper bound for the goal's range.
     var endedAt: Date?
     var endReason: WeightGoalEndReason?
     var startWeight: Double = 0

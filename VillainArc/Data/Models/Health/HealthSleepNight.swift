@@ -3,7 +3,6 @@ import SwiftData
 
 @Model final class HealthSleepNight {
     #Index<HealthSleepNight>([\.wakeDay])
-
     var wakeDay: Date = Date()
     @Relationship(deleteRule: .cascade, inverse: \HealthSleepBlock.night) var blocks: [HealthSleepBlock]? = [HealthSleepBlock]()
     var sleepStart: Date?

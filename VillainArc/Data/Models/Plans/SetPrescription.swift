@@ -10,15 +10,9 @@ import SwiftData
     var targetRest: Int = 0
     var targetRPE: Int = 0
     var exercise: ExercisePrescription?
-    @Relationship(deleteRule: .nullify) var activePerformance: SetPerformance?
-    @Relationship(deleteRule: .nullify) var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
-
-    var visibleTargetRPE: Int? {
-        guard type != .warmup, targetRPE > 0 else { return nil }
-        return targetRPE
-    }
-
-    var volume: Double { targetWeight * Double(targetReps) }
+    var activePerformance: SetPerformance?
+    var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
+    
     // Adding set in workout plan creation
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0) {
         index = exercisePrescription.sets?.count ?? 0
@@ -28,6 +22,13 @@ import SwiftData
         self.targetRest = targetRest
         self.targetRPE = targetRPE
     }
+
+    var visibleTargetRPE: Int? {
+        guard type != .warmup, targetRPE > 0 else { return nil }
+        return targetRPE
+    }
+
+    var volume: Double { targetWeight * Double(targetReps) }
 
     // Test/sample initializer to reduce setup boilerplate.
     convenience init(exercisePrescription: ExercisePrescription, setType: ExerciseSetType, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0, index: Int? = nil) {

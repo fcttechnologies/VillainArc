@@ -151,6 +151,7 @@ struct NewWeightGoalView: View {
                             .foregroundStyle(.secondary)
                     }
                     .fontWeight(.semibold)
+                    .appGroupedListRow(position: .top)
 
                     HStack {
                         TextField(weightUnit.unitLabel, text: $targetWeightText)
@@ -164,41 +165,45 @@ struct NewWeightGoalView: View {
                             .foregroundStyle(.secondary)
                     }
                     .fontWeight(.semibold)
+                    .appGroupedListRow(position: .bottom)
                 } footer: {
                     if let validationMessage {
                         Text(validationMessage)
                             .foregroundStyle(.red)
                     }
                 }
-                .listRowSeparator(.hidden)
 
                 if allowsCustomStartDate {
                     Section {
                         Toggle("Set Custom Start Date", isOn: $includeCustomStartDate)
                             .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalCustomStartDateToggle)
                             .fontWeight(.semibold)
+                            .appGroupedListRow(position: includeCustomStartDate ? .top : .single)
                         
                         if includeCustomStartDate {
                             if let minimumStartDate {
                                 DatePicker("Started At", selection: $selectedStartDate, in: minimumStartDate...Date(), displayedComponents: .date)
                                     .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalStartDatePicker)
+                                    .appGroupedListRow(position: .bottom)
                             } else {
                                 DatePicker("Started At", selection: $selectedStartDate, in: ...Date(), displayedComponents: .date)
                                     .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalStartDatePicker)
+                                    .appGroupedListRow(position: .bottom)
                             }
                         }
                     }
-                    .listRowSeparator(.hidden)
                 }
 
                 Section {
                     Toggle("Set A Target Date", isOn: $includeTargetDate)
                         .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalTargetDateToggle)
                         .fontWeight(.semibold)
+                        .appGroupedListRow(position: includeTargetDate || selectedType != .maintain ? .top : .single)
 
                     if includeTargetDate {
                         DatePicker("Target Date", selection: $selectedTargetDate, in: minimumTargetDate..., displayedComponents: .date)
                             .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalTargetDatePicker)
+                            .appGroupedListRow(position: selectedType != .maintain ? .middle : .bottom)
                     }
 
                     if selectedType != .maintain {
@@ -214,9 +219,9 @@ struct NewWeightGoalView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .fontWeight(.semibold)
+                        .appGroupedListRow(position: .bottom)
                     }
                 }
-                .listRowSeparator(.hidden)
             }
             .scrollContentBackground(.hidden)
             .safeAreaBar(edge: .top, spacing: 0) {

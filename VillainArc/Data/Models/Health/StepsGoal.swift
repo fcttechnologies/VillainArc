@@ -3,9 +3,6 @@ import SwiftData
 
 @Model final class StepsGoal {
     #Index<StepsGoal>([\.startedOnDay])
-
-    private static let calendar = Calendar.autoupdatingCurrent
-
     var startedOnDay: Date = Date()
     var endedOnDay: Date?
     var targetSteps: Int = 0
@@ -14,6 +11,8 @@ import SwiftData
         self.startedOnDay = Self.calendar.startOfDay(for: startedOnDay)
         self.targetSteps = max(0, targetSteps)
     }
+    
+    private static let calendar = Calendar.autoupdatingCurrent
 }
 
 extension StepsGoal {

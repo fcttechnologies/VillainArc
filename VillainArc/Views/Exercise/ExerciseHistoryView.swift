@@ -14,27 +14,31 @@ struct ExerciseHistoryView: View {
     @Query private var performances: [ExercisePerformance]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var pendingCopyRequest: ExerciseHistoryCopyRequest?
+    private let showSheetBackground: Bool
     
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     
-    init(catalogID: String) {
+    init(catalogID: String, showSheetBackground: Bool = false) {
         self.catalogID = catalogID
+        self.showSheetBackground = showSheetBackground
         workoutExercise = nil
         planExercise = nil
         _exercises = Query(Exercise.withCatalogID(catalogID))
         _performances = Query(ExercisePerformance.matching(catalogID: catalogID))
     }
     
-    init(exercise: ExercisePerformance) {
+    init(exercise: ExercisePerformance, showSheetBackground: Bool = false) {
         catalogID = exercise.catalogID
+        self.showSheetBackground = showSheetBackground
         workoutExercise = exercise
         planExercise = nil
         _exercises = Query(Exercise.withCatalogID(exercise.catalogID))
         _performances = Query(ExercisePerformance.matching(catalogID: exercise.catalogID))
     }
     
-    init(exercise: ExercisePrescription) {
+    init(exercise: ExercisePrescription, showSheetBackground: Bool = false) {
         catalogID = exercise.catalogID
+        self.showSheetBackground = showSheetBackground
         workoutExercise = nil
         planExercise = exercise
         _exercises = Query(Exercise.withCatalogID(catalogID))
@@ -69,7 +73,7 @@ struct ExerciseHistoryView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryEmptyState)
             }
         }
-        .appBackground()
+        .modifier(ExerciseHistoryBackgroundModifier(showSheetBackground: showSheetBackground))
         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryList)
         .navigationTitle(exercise?.name ?? "Exercise History")
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
@@ -137,7 +141,7 @@ struct ExerciseHistoryView: View {
         }
         
         if let planExercise {
-            planExercise.applyHistoryCopy(request.snapshot, mode: request.mode, context: context)
+            planExercise.applyHistoryCopy(request.snapshot, mode: request.mode, weightUnit: weightUnit, context: context)
             saveContext(context: context)
             dismiss()
         }
@@ -172,6 +176,18 @@ struct ExerciseHistoryView: View {
         let canCopyRemaining = workoutExercise.canSafelyCopyIntoRemainingSets && remainingSnapshots > 0
         
         return canCopyRemaining ? [.replaceRemaining, .replaceAll] : [.replaceAll]
+    }
+}
+
+private struct ExerciseHistoryBackgroundModifier: ViewModifier {
+    let showSheetBackground: Bool
+
+    func body(content: Content) -> some View {
+        if showSheetBackground {
+            content.sheetBackground()
+        } else {
+            content.appBackground()
+        }
     }
 }
 

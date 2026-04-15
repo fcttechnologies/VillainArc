@@ -3,7 +3,6 @@ import SwiftUI
 
 @Model final class WorkoutPlan {
     #Index<WorkoutPlan>([\.id], [\.completed], [\.isEditing], [\.lastUsed], [\.completed, \.isEditing, \.lastUsed])
-
     var id: UUID = UUID()
     var title: String = "New Workout Plan"
     var notes: String = ""
@@ -12,8 +11,10 @@ import SwiftUI
     var isEditing: Bool = false
     var lastUsed: Date?
     @Relationship(deleteRule: .cascade, inverse: \ExercisePrescription.workoutPlan) var exercises: [ExercisePrescription]? = [ExercisePrescription]()
-    @Relationship(deleteRule: .nullify, inverse: \WorkoutSplitDay.workoutPlan) var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
+    var splitDays: [WorkoutSplitDay]? = [WorkoutSplitDay]()
     var workoutSessions: [WorkoutSession]? = [WorkoutSession]()
+    
+    init() {}
 
     var sortedExercises: [ExercisePrescription] { (exercises ?? []).sorted { $0.index < $1.index } }
     var totalExercises: Int { sortedExercises.count }
@@ -37,8 +38,6 @@ import SwiftUI
             }
         }
     }
-
-    init() {}
 
     // Test/sample initializer to reduce setup boilerplate.
     convenience init(title: String = "New Workout Plan", notes: String = "", favorite: Bool = false, completed: Bool = false, lastUsed: Date? = nil) {

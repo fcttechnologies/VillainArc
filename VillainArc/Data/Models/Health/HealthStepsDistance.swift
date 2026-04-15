@@ -3,10 +3,9 @@ import SwiftData
 
 @Model final class HealthStepsDistance {
     #Index<HealthStepsDistance>([\.date])
-
     var date: Date = Date()
     var stepCount: Int = 0
-    var distance: Double = 0 // Stored canonically in meters.
+    var distance: Double = 0
     var goalCompletedAt: Date?
     var goalTargetSteps: Int?
 

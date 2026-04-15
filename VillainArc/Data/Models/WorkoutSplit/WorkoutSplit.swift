@@ -3,27 +3,24 @@ import SwiftData
 
 @Model final class WorkoutSplit {
     #Index<WorkoutSplit>([\.id], [\.isActive])
-
     var id: UUID = UUID()
     var title: String = ""
     var mode: SplitMode = SplitMode.weekly
     var isActive: Bool = false
-    // Weekly mode: offset when user misses a day
     var weeklySplitOffset: Int = 0
-    // Rotation mode: current position in the cycle
     var rotationCurrentIndex: Int = 0
     var rotationLastUpdatedDate: Date? = nil
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSplitDay.split) var days: [WorkoutSplitDay]? = [WorkoutSplitDay]()
 
+    init(mode: SplitMode) {
+        self.mode = mode
+    }
+    
     var sortedDays: [WorkoutSplitDay] {
         switch mode {
         case .weekly: return (days ?? []).sorted(by: { $0.weekday < $1.weekday })
         case .rotation: return (days ?? []).sorted(by: { $0.index < $1.index })
         }
-    }
-
-    init(mode: SplitMode) {
-        self.mode = mode
     }
 
     // Test/sample initializer to reduce setup boilerplate.

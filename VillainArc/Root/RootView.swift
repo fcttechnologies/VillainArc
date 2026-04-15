@@ -4,6 +4,7 @@ import SwiftData
 
 struct RootView: View {
     @State private var onboardingManager = OnboardingManager()
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var onboardingBinding: Binding<Bool> {
         Binding(
@@ -14,6 +15,7 @@ struct RootView: View {
 
     var body: some View {
         ContentView()
+            .preferredColorScheme(appSettings.first?.appearanceMode.preferredColorScheme)
             .task {
                 cleanupEditingWorkoutPlanCopies()
                 VillainArcShortcuts.updateAppShortcutParameters()

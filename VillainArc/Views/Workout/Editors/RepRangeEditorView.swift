@@ -17,6 +17,7 @@ struct RepRangeEditorView: View {
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.repRangeModePicker)
+                .appGroupedListRow(position: .single)
             } footer: {
                 Text(modeFooterText)
             }
@@ -25,11 +26,14 @@ struct RepRangeEditorView: View {
                 if repRange.activeMode == .target {
                     Stepper("Target: \(repRange.targetReps)", value: $repRange.targetReps, in: 1...200)
                         .accessibilityIdentifier(AccessibilityIdentifiers.repRangeTargetStepper)
+                        .appGroupedListRow(position: .single)
                 } else if repRange.activeMode == .range {
                     Stepper("Lower: \(repRange.lowerRange)", value: $repRange.lowerRange, in: 1...200)
                         .accessibilityIdentifier(AccessibilityIdentifiers.repRangeLowerStepper)
+                        .appGroupedListRow(position: .top)
                     Stepper("Upper: \(repRange.upperRange)", value: $repRange.upperRange, in: (repRange.lowerRange + 1)...200)
                         .accessibilityIdentifier(AccessibilityIdentifiers.repRangeUpperStepper)
+                        .appGroupedListRow(position: .bottom)
                 }
             } footer: {
                 if repRange.activeMode == .target || repRange.activeMode == .range {
@@ -55,7 +59,7 @@ struct RepRangeEditorView: View {
                     }
                     .tint(.primary)
                     .buttonStyle(.borderless)
-                    .listRowBackground(Color.blue.opacity(0.2))
+                    .appGroupedListRow(position: .single)
                     .accessibilityIdentifier(AccessibilityIdentifiers.repRangeSuggestionButton(catalogID: catalogID, index: 0))
                     .accessibilityLabel(AccessibilityText.repRangeSuggestionLabel)
                     .accessibilityValue(suggestion.accessibilityValue)

@@ -3,11 +3,8 @@ import SwiftData
 
 @Model final class SuggestionEvaluation {
     var id: UUID = UUID()
-
-    @Relationship(deleteRule: .nullify) var event: SuggestionEvent?
-
-    @Relationship(deleteRule: .nullify) var performance: ExercisePerformance?
-
+    var event: SuggestionEvent?
+    var performance: ExercisePerformance?
     var sourceWorkoutSessionID: UUID = UUID()
     var partialOutcome: Outcome = Outcome.pending
     var confidence: Double = 0

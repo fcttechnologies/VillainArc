@@ -24,8 +24,9 @@ struct AllWeightEntriesListView: View {
 
     var body: some View {
         List {
-            ForEach(entries) { entry in
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
                 AllWeightEntriesRowView(entry: entry, weightUnit: weightUnit)
+                    .appGroupedListRow(position: rowPosition(for: index, count: entries.count))
                     .deleteDisabled(!entry.canDeleteInApp)
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightEntryRow(entry))
                     .accessibilityHint(AccessibilityText.healthWeightEntryRowHint)
@@ -123,6 +124,13 @@ struct AllWeightEntriesListView: View {
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadWeight()
         isEditing = false
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
     }
 }
 

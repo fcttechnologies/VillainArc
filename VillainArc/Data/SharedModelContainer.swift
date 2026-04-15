@@ -11,38 +11,7 @@ enum SharedModelContainer {
         return defaults
     }()
 
-    nonisolated static let schema = Schema([
-        WorkoutSession.self,
-        HealthWorkout.self,
-        WeightEntry.self,
-        HealthStepsDistance.self,
-        HealthEnergy.self,
-        TrainingConditionPeriod.self,
-        TrainingGoal.self,
-        HealthSleepNight.self,
-        HealthSleepBlock.self,
-        HealthSyncState.self,
-        WeightGoal.self,
-        StepsGoal.self,
-        PreWorkoutContext.self,
-        ExercisePerformance.self,
-        SetPerformance.self,
-        Exercise.self,
-        AppSettings.self,
-        UserProfile.self,
-        ExerciseHistory.self,
-        ProgressionPoint.self,
-        RepRangePolicy.self,
-        RestTimeHistory.self,
-        WorkoutPlan.self,
-        ExercisePrescription.self,
-        SetPrescription.self,
-        WorkoutSplit.self,
-        WorkoutSplitDay.self,
-        SuggestionEvent.self,
-        PrescriptionChange.self,
-        SuggestionEvaluation.self
-    ])
+    nonisolated static let schema = Schema(versionedSchema: VillainArcSchemaV2.self)
 
     nonisolated static let container: ModelContainer = {
         do {
@@ -53,15 +22,9 @@ enum SharedModelContainer {
                 fatalError("App Group container URL not found for \(appGroupID). Check App Groups capability + entitlements.")
             }
 
-            let configuration = ModelConfiguration(
-                nil,
-                schema: schema,
-                url: url,
-                allowsSave: true,
-                cloudKitDatabase: .private("iCloud.com.fcttechnologies.VillainArcCont")
-            )
+            let configuration = ModelConfiguration(nil, schema: schema, url: url, allowsSave: true, cloudKitDatabase: .private("iCloud.com.fcttechnologies.VillainArcCont"))
 
-            return try ModelContainer(for: schema, configurations: [configuration])
+            return try ModelContainer(for: schema, migrationPlan: VillainArcSchemaMigrationPlan.self, configurations: [configuration])
         } catch {
             fatalError("Failed to create shared ModelContainer: \(error)")
         }

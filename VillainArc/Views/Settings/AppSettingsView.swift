@@ -47,6 +47,7 @@ private struct AppSettingsFormView: View {
                 Toggle("Retain for Improved Accuracy", isOn: $settings.retainPerformancesForLearning)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRetainPerformanceSnapshotsToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsRetainPerformanceSnapshotsHint)
+                    .appGroupedListRow(position: .single)
             } header: {
                 Text("Workout History")
             } footer: {
@@ -61,6 +62,7 @@ private struct AppSettingsFormView: View {
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthLink)
                 .accessibilityHint(AccessibilityText.settingsAppleHealthHint)
+                .appGroupedListRow(position: .single)
             } footer: {
                 Text("Manage Apple Health permissions and choose whether removed Health data stays in Villain Arc.")
             }
@@ -71,6 +73,7 @@ private struct AppSettingsFormView: View {
                 } label: {
                     Label("Notifications", systemImage: "bell.badge")
                 }
+                .appGroupedListRow(position: .single)
             } footer: {
                 Text("Choose how Villain Arc handles steps goal notifications.")
             }
@@ -81,11 +84,23 @@ private struct AppSettingsFormView: View {
                 } label: {
                     Label("Units", systemImage: "ruler")
                 }
+                .appGroupedListRow(position: .single)
             } footer: {
                 Text("Choose how weight, height, distance, and energy are displayed throughout the app.")
             }
+
+            Section {
+                Picker("Theme", systemImage: "circle.lefthalf.filled", selection: $settings.appearanceMode) {
+                    ForEach(AppAppearanceMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName)
+                            .tag(mode)
+                    }
+                }
+                .appGroupedListRow(position: .single)
+            } footer: {
+                Text("Choose whether Villain Arc follows your device appearance or always uses light or dark mode.")
+            }
         }
-        .scrollDisabled(true)
         .scrollContentBackground(.hidden)
         .sheetBackground()
         .onChange(of: settings.retainPerformancesForLearning) {
@@ -93,6 +108,22 @@ private struct AppSettingsFormView: View {
             guard !settings.retainPerformancesForLearning else { return }
             WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
         }
+        .onChange(of: settings.appearanceMode) {
+            saveContext(context: context)
+            dismissAllPresentedSheets()
+        }
+    }
+}
+
+private func dismissAllPresentedSheets() {
+    let rootViewControllers = UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .flatMap(\.windows)
+        .filter(\.isKeyWindow)
+        .compactMap(\.rootViewController)
+
+    for rootViewController in rootViewControllers {
+        rootViewController.dismiss(animated: true)
     }
 }
 
@@ -111,6 +142,7 @@ private struct AppleHealthSettingsView: View {
         Form {
             Section {
                 LabeledContent("Status", value: healthAuthorizationState.statusText)
+                    .appGroupedListRow(position: healthAuthorizationAction != .unavailable ? .top : .single)
 
                 if healthAuthorizationAction != .unavailable {
                     Button(healthAuthorizationAction.buttonTitle, systemImage: healthAuthorizationAction.systemImage) {
@@ -121,12 +153,14 @@ private struct AppleHealthSettingsView: View {
                     .disabled(isRefreshingHealthStatus || isHandlingHealthAction)
                     .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthActionButton)
                     .accessibilityHint(AccessibilityText.settingsAppleHealthActionHint(action: healthAuthorizationAction))
+                    .appGroupedListRow(position: .bottom)
                 }
             }
 
             Section {
                 Toggle("Keep Removed Data", isOn: $settings.keepRemovedHealthData)
                     .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthKeepRemovedDataToggle)
+                    .appGroupedListRow(position: .single)
             } footer: {
                 Text("When this is off, data removed from Apple Health is also removed from Villain Arc.")
             }
@@ -135,7 +169,6 @@ private struct AppleHealthSettingsView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
-        .scrollDisabled(true)
         .task {
             await refreshHealthAuthorizationState()
         }
@@ -206,6 +239,7 @@ private struct NotificationSettingsView: View {
         Form {
             Section {
                 LabeledContent("Status", value: notificationStatusText)
+                    .appGroupedListRow(position: .top)
 
                 Button(notificationActionTitle, systemImage: notificationActionSystemImage) {
                     Task {
@@ -213,6 +247,7 @@ private struct NotificationSettingsView: View {
                     }
                 }
                 .disabled(isHandlingNotificationAction)
+                .appGroupedListRow(position: .bottom)
             }
 
             Section {
@@ -223,6 +258,7 @@ private struct NotificationSettingsView: View {
                     }
                 }
                 .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+                .appGroupedListRow(position: .single)
             } header: {
                 Text("Goal Completions")
             } footer: {
@@ -240,7 +276,6 @@ private struct NotificationSettingsView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
-        .scrollDisabled(true)
         .task {
             await refreshNotificationAuthorizationState()
         }
@@ -339,6 +374,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .appGroupedListRow(position: .top)
 
                 Picker("Height", selection: $settings.heightUnit) {
                     ForEach(HeightUnit.allCases, id: \.self) { unit in
@@ -346,6 +382,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .appGroupedListRow(position: .middle)
 
                 Picker("Distance", selection: $settings.distanceUnit) {
                     ForEach(DistanceUnit.allCases, id: \.self) { unit in
@@ -353,6 +390,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .appGroupedListRow(position: .middle)
 
                 Picker("Energy", selection: $settings.energyUnit) {
                     ForEach(EnergyUnit.allCases, id: \.self) { unit in
@@ -360,6 +398,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .appGroupedListRow(position: .bottom)
             } footer: {
                 Text("These units control how weight, height, distance, and energy are displayed throughout the app.")
             }
@@ -368,7 +407,6 @@ private struct UnitSettingsView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
-        .scrollDisabled(true)
         .onChange(of: settings.weightUnit) {
             saveContext(context: context)
             HealthMetricWidgetReloader.reloadWeight()

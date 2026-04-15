@@ -2118,6 +2118,9 @@
         }
       }
     },
+    "Choose whether Villain Arc follows your device appearance or always uses light or dark mode." : {
+
+    },
     "Choose whether Villain Arc schedules local notifications only for goal completions or also for coaching milestones like double goal, triple goal, and new step records. In-app toasts can still appear while you’re using the app." : {
       "localizations" : {
         "en" : {
@@ -2907,6 +2910,9 @@
         }
       }
     },
+    "Delete %@" : {
+
+    },
     "Delete %@ goal?" : {
       "localizations" : {
         "en" : {
@@ -3392,6 +3398,9 @@
           }
         }
       }
+    },
+    "Drag to change the exercise order." : {
+
     },
     "Drag to Rate" : {
       "localizations" : {
@@ -7902,6 +7911,9 @@
         }
       }
     },
+    "Privacy Policy" : {
+
+    },
     "Profile" : {
 
     },
@@ -8138,6 +8150,12 @@
         }
       }
     },
+    "Removes this exercise from the workout plan." : {
+
+    },
+    "Removes this exercise from the workout." : {
+
+    },
     "Removes this exercise from your selection." : {
       "localizations" : {
         "en" : {
@@ -8167,6 +8185,9 @@
           }
         }
       }
+    },
+    "Reorder %@" : {
+
     },
     "rep" : {
       "localizations" : {
@@ -9893,6 +9914,9 @@
         }
       }
     },
+    "Shows the privacy policy." : {
+
+    },
     "Shows the rest timer." : {
       "localizations" : {
         "en" : {
@@ -9912,6 +9936,9 @@
           }
         }
       }
+    },
+    "Shows the terms of service." : {
+
     },
     "Shows weight goal details." : {
       "localizations" : {
@@ -11239,6 +11266,9 @@
         }
       }
     },
+    "Terms of Service" : {
+
+    },
     "That exercise is no longer available." : {
       "localizations" : {
         "en" : {
@@ -11268,6 +11298,9 @@
           }
         }
       }
+    },
+    "Theme" : {
+
     },
     "These units control how weight, height, distance, and energy are displayed throughout the app." : {
       "localizations" : {

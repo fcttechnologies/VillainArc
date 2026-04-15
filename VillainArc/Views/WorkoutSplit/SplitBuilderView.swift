@@ -122,6 +122,7 @@ private struct SelectTypeView: View {
                     }
                 }
                 .buttonStyle(.borderless)
+                .appGroupedListRow(position: .single)
                 .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderScratchButton)
                 .confirmationDialog("Create from Scratch", isPresented: $showScratchPicker) {
                     Button("Weekly Split") {
@@ -136,7 +137,7 @@ private struct SelectTypeView: View {
             }
             
             Section {
-                ForEach(SplitPresetType.allCases) { type in
+                ForEach(Array(SplitPresetType.allCases.enumerated()), id: \.element.id) { index, type in
                     Button {
                         Haptics.selection()
                         config.resetForType(type)
@@ -162,6 +163,7 @@ private struct SelectTypeView: View {
                         .tint(.primary)
                     }
                     .buttonStyle(.borderless)
+                    .appGroupedListRow(position: rowPosition(for: index, count: SplitPresetType.allCases.count))
                     .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderType(type))
                 }
             } header: {
@@ -172,6 +174,13 @@ private struct SelectTypeView: View {
         }
         .scrollContentBackground(.hidden)
         .sheetBackground()
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
     }
 }
 
@@ -210,6 +219,7 @@ private struct SelectModeView: View {
                     .tint(.primary)
                 }
                 .buttonStyle(.borderless)
+                .appGroupedListRow(position: .top)
                 .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderModeWeekly)
 
                 Button {
@@ -237,6 +247,7 @@ private struct SelectModeView: View {
                     .tint(.primary)
                 }
                 .buttonStyle(.borderless)
+                .appGroupedListRow(position: .bottom)
                 .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderModeRotation)
             } header: {
                 Text("How do you want to schedule it?")
@@ -285,7 +296,7 @@ private struct SelectDaysView: View {
     var body: some View {
         List {
             Section {
-                ForEach(config.type.availableDays(for: config.mode), id: \.self) { days in
+                ForEach(Array(config.type.availableDays(for: config.mode).enumerated()), id: \.element) { index, days in
                     Button {
                         Haptics.selection()
                         config.daysPerWeek = days
@@ -305,6 +316,7 @@ private struct SelectDaysView: View {
                         .tint(.primary)
                     }
                     .buttonStyle(.borderless)
+                    .appGroupedListRow(position: rowPosition(for: index, count: config.type.availableDays(for: config.mode).count))
                     .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderDays(days))
                 }
             } header: {
@@ -315,6 +327,13 @@ private struct SelectDaysView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
     }
     
     private func navigateToNextStep() {
@@ -382,7 +401,7 @@ private struct SelectRestDaysView: View {
     @ViewBuilder
     private var rotationRestDaysSection: some View {
         Section {
-            ForEach(rotationRestOptions) { option in
+            ForEach(Array(rotationRestOptions.enumerated()), id: \.element.id) { index, option in
                 Button {
                     Haptics.selection()
                     config.rotationRestStyle = option.style
@@ -407,6 +426,7 @@ private struct SelectRestDaysView: View {
                     .tint(.primary)
                 }
                 .buttonStyle(.borderless)
+                .appGroupedListRow(position: rowPosition(for: index, count: rotationRestOptions.count))
                 .accessibilityIdentifier(option.accessibilityId)
             }
         } header: {
@@ -433,6 +453,7 @@ private struct SelectRestDaysView: View {
                 .tint(.primary)
             }
             .buttonStyle(.borderless)
+            .appGroupedListRow(position: .top)
             .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderWeekendsYes)
 
             Button {
@@ -451,10 +472,18 @@ private struct SelectRestDaysView: View {
                 .tint(.primary)
             }
             .buttonStyle(.borderless)
+            .appGroupedListRow(position: .bottom)
             .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderWeekendsNo)
         } header: {
             Text("Keep weekends free?")
         }
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
     }
 
     private var rotationRestOptions: [RotationRestOption] {

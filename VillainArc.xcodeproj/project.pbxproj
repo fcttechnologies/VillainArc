@@ -95,7 +95,6 @@
 		FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Documentation/AI_USAGE.md,
 				Documentation/ARCHITECTURE.md,
 				Documentation/EXERCISE_HISTORY_FLOW.md,
 				Documentation/HEALTHKIT_INTEGRATION.md,
@@ -115,6 +114,7 @@
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/AppSettings.swift,
+				Data/Models/Enums/AppAppearanceMode.swift,
 				Data/Models/Enums/AppTab.swift,
 				Data/Models/Enums/Exercise/EquipmentType.swift,
 				Data/Models/Enums/Exercise/ExerciseSetType.swift,
@@ -124,6 +124,8 @@
 				Data/Models/Enums/Health/StepsEventNotificationMode.swift,
 				Data/Models/Enums/Health/WeightGoalEndReason.swift,
 				Data/Models/Enums/Health/WeightGoalType.swift,
+				Data/Models/Enums/Other/UserGender.swift,
+				Data/Models/Enums/Other/UserProfileOnboardingStep.swift,
 				Data/Models/Enums/Sessions/MoodLevel.swift,
 				Data/Models/Enums/Sessions/SessionStatus.swift,
 				Data/Models/Enums/SplitMode.swift,
@@ -194,6 +196,7 @@
 				Data/Services/Training/TrainingConditionStore.swift,
 				Data/Services/Workout/RestTimerState.swift,
 				Data/SharedModelContainer.swift,
+				Data/VillainArcSchemaMigration.swift,
 				Helpers/ExerciseSearch.swift,
 				Helpers/FormattingHelpers.swift,
 				Helpers/Haptics.swift,

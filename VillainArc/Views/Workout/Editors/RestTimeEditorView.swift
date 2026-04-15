@@ -15,20 +15,15 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                     Text("Add sets first to change their rest times.")
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier(AccessibilityIdentifiers.restTimeEmptySetsMessage)
+                        .appGroupedListRow(position: .single)
                 } else {
                     ForEach(exercise.sortedSets, id: \.index) { set in
-                        restTimeRow(
-                            title: setTitle(for: set),
-                            seconds: restSecondsBinding(for: set),
-                            isExpanded: expandedSetIndex == set.index,
-                            toggle: { togglePicker(for: set.index) }
-                        )
+                        restTimeRow(title: setTitle(for: set), seconds: restSecondsBinding(for: set), isExpanded: expandedSetIndex == set.index, toggle: { togglePicker(for: set.index) }, position: rowPosition(for: set.index))
                     }
                 }
             } footer: {
                 Text("If the next set is a drop set, rest time is skipped.")
             }
-            .listRowSeparator(.hidden)
         }
         .listSectionSpacing(20)
         .navBar(title: "Set Rest Times") {
@@ -53,7 +48,8 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
         title: String,
         seconds: Binding<Int>,
         isExpanded: Bool,
-        toggle: @escaping () -> Void
+        toggle: @escaping () -> Void,
+        position: AppGroupedListRowPosition
     ) -> some View {
         VStack(spacing: 0) {
             HStack {
@@ -98,9 +94,19 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.restTimeRowPicker(title))
             }
         }
+        .appGroupedListRow(position: position)
         .onChange(of: seconds.wrappedValue) {
             scheduleSave(context: context)
         }
+    }
+
+    private func rowPosition(for setIndex: Int) -> AppGroupedListRowPosition {
+        let indices = exercise.sortedSets.map(\.index)
+        guard let first = indices.first, let last = indices.last else { return .single }
+        if first == last { return .single }
+        if setIndex == first { return .top }
+        if setIndex == last { return .bottom }
+        return .middle
     }
 
     private func togglePicker(for index: Int) {

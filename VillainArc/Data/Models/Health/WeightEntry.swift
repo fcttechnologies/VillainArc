@@ -3,7 +3,6 @@ import SwiftData
 
 @Model final class WeightEntry {
     #Index<WeightEntry>([\.date], [\.healthSampleUUID])
-
     var id: UUID = UUID()
     var date: Date = Date()
     var weight: Double = 0

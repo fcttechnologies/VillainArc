@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
 import AppIntents
+import UniformTypeIdentifiers
 
 struct WorkoutPlanView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var router = AppRouter.shared
     
     @Bindable var plan: WorkoutPlan
@@ -17,6 +19,8 @@ struct WorkoutPlanView: View {
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var showDeletePlanConfirmation = false
+    @State private var draggingExerciseID: UUID?
+    @State private var highlightedReorderExerciseID: UUID?
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
@@ -29,6 +33,15 @@ struct WorkoutPlanView: View {
 
     private var isEditingExistingPlan: Bool {
         originalPlan != nil
+    }
+
+    private func animated<Result>(_ animation: Animation, _ updates: () -> Result) -> Result {
+        withAnimation(reduceMotion ? nil : animation, updates)
+    }
+
+    private func finishExerciseReorder() {
+        draggingExerciseID = nil
+        highlightedReorderExerciseID = nil
     }
 
     var body: some View {
@@ -135,9 +148,12 @@ struct WorkoutPlanView: View {
                                     }
                                 }
                             }
-                    }
-                    .presentationBackground(Color.sheetBg)
                 }
+                .presentationBackground(Color.sheetBg)
+            }
+            .onChange(of: showExerciseEditSheet) {
+                finishExerciseReorder()
+            }
                 .sheet(isPresented: $showAddExerciseSheet) {
                     AddExerciseView(plan: plan)
                         .interactiveDismissDisabled()
@@ -212,37 +228,99 @@ struct WorkoutPlanView: View {
     }
     
     private var exerciseListView: some View {
-        List {
-            ForEach(plan.sortedExercises) { exercise in
-                VStack(alignment: .leading) {
-                    Text(exercise.name)
-                        .font(.title3)
-                        .bold()
-                        .lineLimit(1)
-                    HStack(alignment: .bottom) {
-                        Text(exercise.equipmentType.displayName)
-                            .foregroundStyle(.secondary)
-                            .fontWeight(.semibold)
-                            .font(.headline)
-                        Spacer()
-                        Text(localizedCountText(exercise.sortedSets.count, singular: "set", plural: "sets"))
-                            .foregroundStyle(.secondary)
-                            .font(.subheadline)
-                    }
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(plan.sortedExercises.enumerated()), id: \.element.id) { index, exercise in
+                    exerciseEditorRow(for: exercise, index: index)
                 }
-                .listRowSeparator(.hidden)
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseListRow(exercise))
-                .accessibilityLabel(exercise.name)
-                .accessibilityValue(AccessibilityText.workoutPlanExerciseListValue(for: exercise))
             }
-            .onDelete(perform: deleteExercise)
-            .onMove(perform: moveExercise)
+            .padding()
         }
         .scrollIndicators(.hidden)
-        .scrollContentBackground(.hidden)
         .sheetBackground()
-        .environment(\.editMode, .constant(.active))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseList)
+        .onDisappear {
+            finishExerciseReorder()
+        }
+    }
+
+    @ViewBuilder
+    private func exerciseEditorRow(for exercise: ExercisePrescription, index: Int) -> some View {
+        let isDragging = highlightedReorderExerciseID == exercise.id
+
+        HStack(spacing: 14) {
+            Button {
+                deleteExercise(exercise)
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.red)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete \(exercise.name)")
+            .accessibilityHint("Removes this exercise from the workout plan.")
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(exercise.name)
+                    .font(.title3)
+                    .bold()
+                    .lineLimit(1)
+                HStack(alignment: .bottom) {
+                    Text(exercise.equipmentType.displayName)
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(localizedCountText(exercise.sortedSets.count, singular: "set", plural: "sets"))
+                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+                }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseListRow(exercise))
+            .accessibilityLabel(exercise.name)
+            .accessibilityValue(AccessibilityText.workoutPlanExerciseListValue(for: exercise))
+
+            Image(systemName: "line.3.horizontal")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(isDragging ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.tertiary))
+                .frame(width: 28, height: 28)
+                .contentShape(.rect)
+                .accessibilityLabel("Reorder \(exercise.name)")
+                .accessibilityHint("Drag to change the exercise order.")
+        }
+        .contentShape(.rect)
+        .appGroupedStackRow(position: rowPosition(for: index, count: plan.sortedExercises.count), fillColor: isDragging ? Color.blue.opacity(0.14) : nil)
+        .overlay {
+            if isDragging {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(Color.blue.opacity(0.3), lineWidth: 1)
+            }
+        }
+        .zIndex(isDragging ? 1 : 0)
+        .animation(reduceMotion ? nil : .snappy, value: highlightedReorderExerciseID)
+        .onDrag {
+            draggingExerciseID = exercise.id
+            return NSItemProvider(object: exercise.id.uuidString as NSString)
+        }
+        .onDrop(
+            of: [UTType.text],
+            delegate: WorkoutPlanExerciseDropDelegate(
+                targetExercise: exercise,
+                draggingExerciseID: $draggingExerciseID,
+                highlightedExerciseID: $highlightedReorderExerciseID,
+                onMove: { draggedID, targetID in
+                    animated(.snappy) {
+                        moveExercise(draggedID, to: targetID)
+                    }
+                },
+                onDropCompleted: {
+                    finishExerciseReorder()
+                    saveContext(context: context)
+                }
+            )
+        )
     }
     
     private func deleteExercise(offsets: IndexSet) {
@@ -268,6 +346,9 @@ struct WorkoutPlanView: View {
         plan.deleteExercise(exercise)
         context.delete(exercise)
         saveContext(context: context)
+        if plan.sortedExercises.isEmpty {
+            showExerciseEditSheet = false
+        }
     }
 
     private func deleteExercises(at offsets: IndexSet) {
@@ -285,7 +366,24 @@ struct WorkoutPlanView: View {
 
     private func moveExercise(from source: IndexSet, to destination: Int) {
         plan.moveExercise(from: source, to: destination)
-        saveContext(context: context)
+        scheduleSave(context: context)
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
+    }
+
+    private func moveExercise(_ draggedID: UUID, to targetID: UUID) {
+        let exercises = plan.sortedExercises
+        guard let sourceIndex = exercises.firstIndex(where: { $0.id == draggedID }),
+              let targetIndex = exercises.firstIndex(where: { $0.id == targetID }),
+              sourceIndex != targetIndex else { return }
+
+        let destination = sourceIndex < targetIndex ? targetIndex + 1 : targetIndex
+        moveExercise(from: IndexSet(integer: sourceIndex), to: destination)
     }
 
     private func deleteWorkoutPlanAndDismiss() {
@@ -347,6 +445,29 @@ struct WorkoutPlanView: View {
                 ExerciseStructureSnapshot(id: $0.id, catalogID: $0.catalogID, setCount: $0.sortedSets.count)
             }
         )
+    }
+}
+
+private struct WorkoutPlanExerciseDropDelegate: DropDelegate {
+    let targetExercise: ExercisePrescription
+    @Binding var draggingExerciseID: UUID?
+    @Binding var highlightedExerciseID: UUID?
+    let onMove: (UUID, UUID) -> Void
+    let onDropCompleted: () -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let draggingExerciseID, draggingExerciseID != targetExercise.id else { return }
+        highlightedExerciseID = draggingExerciseID
+        onMove(draggingExerciseID, targetExercise.id)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        onDropCompleted()
+        return true
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }
 
@@ -510,7 +631,7 @@ private struct WorkoutPlanExerciseView: View {
         }
         .sheet(isPresented: $showExerciseHistorySheet) {
             NavigationStack {
-                ExerciseHistoryView(exercise: exercise)
+                ExerciseHistoryView(exercise: exercise, showSheetBackground: true)
             }
             .presentationDetents([.medium, .large])
             .presentationBackground(Color.sheetBg)

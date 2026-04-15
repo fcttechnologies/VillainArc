@@ -3,11 +3,9 @@ import SwiftData
 
 @Model final class TrainingConditionPeriod {
     #Index<TrainingConditionPeriod>([\.startDate], [\.endDate])
-
     var kind: TrainingConditionKind = TrainingConditionKind.recovering
     var trainingImpact: TrainingImpact = TrainingImpact.contextOnly
     var startDate: Date = Date()
-    // Exclusive upper bound. When the user picks an end day, we store the next day's start.
     var endDate: Date?
     var affectedMuscles: [Muscle]?
 

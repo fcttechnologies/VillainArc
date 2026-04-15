@@ -10,8 +10,6 @@ import SwiftData
     var split: WorkoutSplit?
     var workoutPlan: WorkoutPlan?
 
-    var resolvedMuscles: [Muscle] { workoutPlan?.musclesArray ?? targetMuscles }
-
     init(weekday: Int, split: WorkoutSplit) {
         self.weekday = weekday
         self.split = split
@@ -21,6 +19,8 @@ import SwiftData
         self.index = index
         self.split = split
     }
+    
+    var resolvedMuscles: [Muscle] { workoutPlan?.musclesArray ?? targetMuscles }
 
     // Test/sample initializer to reduce setup boilerplate.
     convenience init(weekday: Int, split: WorkoutSplit, name: String = "", isRestDay: Bool = false, targetMuscles: [Muscle] = []) {

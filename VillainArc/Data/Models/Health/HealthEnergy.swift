@@ -3,20 +3,19 @@ import SwiftData
 
 @Model final class HealthEnergy {
     #Index<HealthEnergy>([\.date])
-
     var date: Date = Date()
     var activeEnergyBurned: Double = 0
     var restingEnergyBurned: Double = 0
-
-    private static let calendar = Calendar.autoupdatingCurrent
-
-    var totalEnergyBurned: Double { activeEnergyBurned + restingEnergyBurned }
 
     init(date: Date, activeEnergyBurned: Double = 0, restingEnergyBurned: Double = 0) {
         self.date = Self.calendar.startOfDay(for: date)
         self.activeEnergyBurned = activeEnergyBurned
         self.restingEnergyBurned = restingEnergyBurned
     }
+    
+    private static let calendar = Calendar.autoupdatingCurrent
+
+    var totalEnergyBurned: Double { activeEnergyBurned + restingEnergyBurned }
 }
 
 extension HealthEnergy {

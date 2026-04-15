@@ -1,54 +1,8 @@
 import Foundation
 import SwiftData
 
-enum ExerciseHistoryCopyMode: String, CaseIterable, Identifiable {
-    case sets
-    case setsAndNotes
-    case setsAndRepRange
-    case all
-
-    nonisolated var id: String { rawValue }
-
-    nonisolated var label: String {
-        switch self {
-        case .sets:
-            return "Copy Sets"
-        case .setsAndNotes:
-            return "Copy Sets + Notes"
-        case .setsAndRepRange:
-            return "Copy Sets + Rep Range"
-        case .all:
-            return "Copy All"
-        }
-    }
-
-    nonisolated var includesNotes: Bool {
-        switch self {
-        case .sets, .setsAndRepRange:
-            return false
-        case .setsAndNotes, .all:
-            return true
-        }
-    }
-
-    nonisolated var includesRepRange: Bool {
-        switch self {
-        case .sets, .setsAndNotes:
-            return false
-        case .setsAndRepRange, .all:
-            return true
-        }
-    }
-}
-
-enum ExerciseHistoryCopyStrategy: Hashable {
-    case replaceAll
-    case replaceRemaining
-}
-
 @Model final class ExercisePerformance {
     #Index<ExercisePerformance>([\.catalogID], [\.date], [\.catalogID, \.date])
-
     var id: UUID = UUID()
     var index: Int = 0
     var date: Date = Date()
@@ -61,9 +15,9 @@ enum ExerciseHistoryCopyStrategy: Hashable {
     var originalTargetSnapshot: ExerciseTargetSnapshot?
     var workoutSession: WorkoutSession?
     var activeInSession: WorkoutSession?
-    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.activePerformance) var prescription: ExercisePrescription?
-    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.triggerPerformance) var triggeredSuggestions: [SuggestionEvent]?
-    @Relationship(deleteRule: .nullify, inverse: \SuggestionEvaluation.performance) var suggestionEvaluations: [SuggestionEvaluation]?
+    @Relationship(inverse: \ExercisePrescription.activePerformance) var prescription: ExercisePrescription?
+    @Relationship(inverse: \SuggestionEvent.triggerPerformance) var triggeredSuggestions: [SuggestionEvent]?
+    @Relationship(inverse: \SuggestionEvaluation.performance) var suggestionEvaluations: [SuggestionEvaluation]?
     @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise) var sets: [SetPerformance]? = [SetPerformance]()
 
     var sortedSets: [SetPerformance] { (sets ?? []).sorted { $0.index < $1.index } }
@@ -219,6 +173,51 @@ enum ExerciseHistoryCopyStrategy: Hashable {
             set.prescription = nil
         }
     }
+}
+
+enum ExerciseHistoryCopyMode: String, CaseIterable, Identifiable {
+    case sets
+    case setsAndNotes
+    case setsAndRepRange
+    case all
+
+    nonisolated var id: String { rawValue }
+
+    nonisolated var label: String {
+        switch self {
+        case .sets:
+            return "Copy Sets"
+        case .setsAndNotes:
+            return "Copy Sets + Notes"
+        case .setsAndRepRange:
+            return "Copy Sets + Rep Range"
+        case .all:
+            return "Copy All"
+        }
+    }
+
+    nonisolated var includesNotes: Bool {
+        switch self {
+        case .sets, .setsAndRepRange:
+            return false
+        case .setsAndNotes, .all:
+            return true
+        }
+    }
+
+    nonisolated var includesRepRange: Bool {
+        switch self {
+        case .sets, .setsAndNotes:
+            return false
+        case .setsAndRepRange, .all:
+            return true
+        }
+    }
+}
+
+enum ExerciseHistoryCopyStrategy: Hashable {
+    case replaceAll
+    case replaceRemaining
 }
 
 extension ExercisePerformance: RestTimeEditable {}

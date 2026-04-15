@@ -18,6 +18,9 @@ enum AccessibilityIdentifiers {
     static let profileSheetDetailsCard = "profileSheetDetailsCard"
     static let profileSheetTrainingGoalRow = "profileSheetTrainingGoalRow"
     static let profileSheetReviewRow = "profileSheetReviewRow"
+    static let profileSheetLegalCard = "profileSheetLegalCard"
+    static let profileSheetPrivacyPolicyRow = "profileSheetPrivacyPolicyRow"
+    static let profileSheetTermsOfServiceRow = "profileSheetTermsOfServiceRow"
     static let settingsAppleHealthLink = "settingsAppleHealthLink"
     static let settingsAppleHealthActionButton = "settingsAppleHealthActionButton"
     static let settingsAppleHealthKeepRemovedDataToggle = "settingsAppleHealthKeepRemovedDataToggle"
@@ -519,6 +522,8 @@ enum AccessibilityText {
     static let profileSheetEditPhotoLabel = localized("Edit profile photo")
     static let profileSheetEditPhotoHint = localized("Shows options to take, select, or remove your profile photo.")
     static let profileSheetReviewHint = localized("Opens the App Store review page.")
+    static let profileSheetPrivacyPolicyHint = localized("Shows the privacy policy.")
+    static let profileSheetTermsOfServiceHint = localized("Shows the terms of service.")
     static let settingsAppleHealthHint = localized("Shows Apple Health settings.")
     static let onboardingTrainingGoalOptionHint = localized("Selects this training goal.")
     static let onboardingTrainingGoalContinueHint = localized("Saves your selected training goal and continues into the app.")

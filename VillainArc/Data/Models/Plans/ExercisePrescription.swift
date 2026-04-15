@@ -3,7 +3,6 @@ import SwiftData
 
 @Model final class ExercisePrescription {
     #Index<ExercisePrescription>([\.catalogID])
-
     var id: UUID = UUID()
     var index: Int = 0
     var catalogID: String = ""
@@ -13,15 +12,10 @@ import SwiftData
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePrescription) var repRange: RepRangePolicy? = RepRangePolicy()
     var workoutPlan: WorkoutPlan?
-    @Relationship(deleteRule: .nullify) var activePerformance: ExercisePerformance?
+    var activePerformance: ExercisePerformance?
     @Relationship(deleteRule: .cascade, inverse: \SetPrescription.exercise) var sets: [SetPrescription]? = [SetPrescription]()
-
-    @Relationship(deleteRule: .nullify) var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
-
-    var sortedSets: [SetPrescription] { (sets ?? []).sorted { $0.index < $1.index } }
-
-    var totalVolume: Double { sortedSets.reduce(0) { $0 + $1.volume } }
-
+    var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
+    
     // Adding exercise in workout plan creation
     init(exercise: Exercise, workoutPlan: WorkoutPlan) {
         index = workoutPlan.exercises?.count ?? 0
@@ -32,6 +26,10 @@ import SwiftData
         self.workoutPlan = workoutPlan
         addSet()
     }
+
+    var sortedSets: [SetPrescription] { (sets ?? []).sorted { $0.index < $1.index } }
+
+    var totalVolume: Double { sortedSets.reduce(0) { $0 + $1.volume } }
 
     // Creating from session performance
     init(workoutPlan: WorkoutPlan, exercisePerformance: ExercisePerformance) {
@@ -143,8 +141,8 @@ import SwiftData
 extension ExercisePrescription: RestTimeEditable {}
 
 extension ExercisePrescription {
-    func applyHistoryCopy(_ snapshot: ExercisePerformanceSnapshot, mode: ExerciseHistoryCopyMode, context: ModelContext) {
-        syncSets(from: snapshot.sets, context: context)
+    func applyHistoryCopy(_ snapshot: ExercisePerformanceSnapshot, mode: ExerciseHistoryCopyMode, weightUnit: WeightUnit? = nil, context: ModelContext) {
+        syncSets(from: snapshot.sets, weightUnit: weightUnit, context: context)
 
         if mode.includesNotes {
             notes = snapshot.notes
@@ -158,22 +156,24 @@ extension ExercisePrescription {
         }
     }
 
-    private func syncSets(from snapshots: [SetPerformanceSnapshot], context: ModelContext) {
+    private func syncSets(from snapshots: [SetPerformanceSnapshot], weightUnit: WeightUnit?, context: ModelContext) {
         let currentSets = sortedSets
 
         for (index, snapshot) in snapshots.enumerated() {
+            let displayWeight = convertedWeightForPlanCopy(snapshot.weight, unit: weightUnit)
+
             if index < currentSets.count {
                 let set = currentSets[index]
                 set.index = index
                 set.type = snapshot.type
-                set.targetWeight = snapshot.weight
+                set.targetWeight = displayWeight
                 set.targetReps = snapshot.reps
                 set.targetRest = snapshot.restSeconds
                 set.targetRPE = 0
             } else {
                 let set = SetPrescription(
                     exercisePrescription: self,
-                    targetWeight: snapshot.weight,
+                    targetWeight: displayWeight,
                     targetReps: snapshot.reps,
                     targetRest: snapshot.restSeconds,
                     targetRPE: 0
@@ -192,6 +192,11 @@ extension ExercisePrescription {
         }
 
         reindexSets()
+    }
+
+    private func convertedWeightForPlanCopy(_ storedKgWeight: Double, unit: WeightUnit?) -> Double {
+        guard let unit else { return storedKgWeight }
+        return roundedWeightDisplayValue(storedKgWeight, unit: unit)
     }
 
     static func matching(catalogID: String) -> FetchDescriptor<ExercisePrescription> {

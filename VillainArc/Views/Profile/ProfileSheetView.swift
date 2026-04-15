@@ -2,6 +2,32 @@ import AVFoundation
 import SwiftUI
 import SwiftData
 import UIKit
+import WebKit
+
+private enum ProfileLegalDestination: String, Identifiable {
+    case privacyPolicy
+    case termsOfService
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .privacyPolicy:
+            return String(localized: "Privacy Policy")
+        case .termsOfService:
+            return String(localized: "Terms of Service")
+        }
+    }
+
+    var url: URL {
+        switch self {
+        case .privacyPolicy:
+            return URL(string: "https://fct-technologies.com/projects/villainarc/privacy/")!
+        case .termsOfService:
+            return URL(string: "https://fct-technologies.com/projects/villainarc/terms/")!
+        }
+    }
+}
 
 struct ProfileSheetLauncherButton: View {
     @Query(UserProfile.single) private var profiles: [UserProfile]
@@ -55,6 +81,7 @@ struct ProfileSheetView: View {
     @State private var showCameraAccessAlert = false
     @State private var selectedProfileImage: UIImage?
     @State private var imagePickerSourceType: UIImagePickerController.SourceType = .photoLibrary
+    @State private var presentedLegalDestination: ProfileLegalDestination?
     @State private var editableName = ""
     @FocusState private var isNameFieldFocused: Bool
 
@@ -72,7 +99,7 @@ struct ProfileSheetView: View {
                         detailsCard
                     }
                     
-                    reviewCard
+                    supportCard
                 }
                 .padding(.horizontal)
             }
@@ -125,6 +152,10 @@ struct ProfileSheetView: View {
             .sheet(isPresented: $showImagePicker) {
                 ProfileImagePicker(sourceType: imagePickerSourceType, image: $selectedProfileImage)
                     .ignoresSafeArea()
+            }
+            .sheet(item: $presentedLegalDestination) { destination in
+                ProfileLegalWebSheet(destination: destination)
+                    .presentationBackground(Color.sheetBg)
             }
             .confirmationDialog("Update Profile Photo", isPresented: $showPhotoOptions, titleVisibility: .visible) {
                 if canUseCamera() {
@@ -205,25 +236,21 @@ struct ProfileSheetView: View {
 
     private var profileSummary: some View {
         VStack(spacing: 8) {
+            ProfileAvatarBadge(displayName: trimmedEditableName, imageData: profile?.profileImageData, size: 96)
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetAvatar)
+
+            Text(effectiveDisplayName)
+                .font(.title2.weight(.bold))
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetName)
+
             Button {
                 Haptics.selection()
                 showPhotoOptions = true
             } label: {
-                VStack(spacing: 8) {
-                    ProfileAvatarBadge(displayName: trimmedEditableName, imageData: profile?.profileImageData, size: 96)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetAvatar)
-
-                    Text(effectiveDisplayName)
-                        .font(.title2.weight(.bold))
-                        .multilineTextAlignment(.center)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetName)
-
-                    Text("Edit photo")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(.rect)
+                Text("Edit photo")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(AccessibilityText.profileSheetEditPhotoLabel)
@@ -319,35 +346,80 @@ struct ProfileSheetView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetDetailsCard)
     }
 
-    private var reviewCard: some View {
-        Button {
-            Haptics.selection()
-            openWriteReviewPage()
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "star.bubble")
-                    .foregroundStyle(.blue)
-                    .fontWeight(.semibold)
-
-                Text("Rate Villain Arc on the App Store")
-                    .fontWeight(.semibold)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
+    private var supportCard: some View {
+        VStack(spacing: 0) {
+            Button {
+                Haptics.selection()
+                openWriteReviewPage()
+            } label: {
+                supportRowLabel(
+                    title: String(localized: "Rate Villain Arc on the App Store"),
+                    systemImage: "star.bubble"
+                )
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 18)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetReviewRow)
+            .accessibilityHint(AccessibilityText.profileSheetReviewHint)
+
+            Divider()
+                .padding(.horizontal, 16)
+
+            Button {
+                Haptics.selection()
+                presentedLegalDestination = .privacyPolicy
+            } label: {
+                supportRowLabel(
+                    title: String(localized: "Privacy Policy"),
+                    systemImage: "hand.raised"
+                )
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetPrivacyPolicyRow)
+            .accessibilityHint(AccessibilityText.profileSheetPrivacyPolicyHint)
+
+            Divider()
+                .padding(.horizontal, 16)
+
+            Button {
+                Haptics.selection()
+                presentedLegalDestination = .termsOfService
+            } label: {
+                supportRowLabel(
+                    title: String(localized: "Terms of Service"),
+                    systemImage: "doc.text"
+                )
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetTermsOfServiceRow)
+            .accessibilityHint(AccessibilityText.profileSheetTermsOfServiceHint)
         }
-        .buttonStyle(.borderless)
-        .foregroundStyle(.primary)
         .appCardStyle()
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetReviewRow)
-        .accessibilityHint(AccessibilityText.profileSheetReviewHint)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetLegalCard)
+    }
+
+    private func supportRowLabel(title: String, systemImage: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .foregroundStyle(.blue)
+                .fontWeight(.semibold)
+
+            Text(title)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 18)
     }
 
     private var trimmedEditableName: String? {
@@ -479,4 +551,28 @@ struct ProfileSheetView: View {
 
 #Preview(traits: .sampleData) {
     ProfileSheetView()
+}
+
+private struct ProfileLegalWebSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let destination: ProfileLegalDestination
+
+    var body: some View {
+        NavigationStack {
+            WebView(url: destination.url)
+                .webViewBackForwardNavigationGestures(.disabled)
+                .navigationTitle(destination.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .close) {
+                            Haptics.selection()
+                            dismiss()
+                        }
+                        .accessibilityHint(AccessibilityText.closeButtonHint)
+                    }
+                }
+        }
+    }
 }

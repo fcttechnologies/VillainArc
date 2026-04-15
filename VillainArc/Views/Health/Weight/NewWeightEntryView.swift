@@ -38,9 +38,11 @@ struct NewWeightEntryView: View {
                 Section {
                     DatePicker("Date", selection: $selectedDate, in: ...Date.now, displayedComponents: .date)
                         .accessibilityIdentifier(AccessibilityIdentifiers.healthAddWeightEntryDatePicker)
+                        .appGroupedListRow(position: .top)
                     
                     DatePicker("Time", selection: $selectedTime, in: ...Date.now, displayedComponents: .hourAndMinute)
                         .accessibilityIdentifier(AccessibilityIdentifiers.healthAddWeightEntryTimePicker)
+                        .appGroupedListRow(position: .bottom)
                 }
                 
                 Section {
@@ -54,6 +56,7 @@ struct NewWeightEntryView: View {
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                     }
+                    .appGroupedListRow(position: .single)
                 }
             }
             .scrollDisabled(true)

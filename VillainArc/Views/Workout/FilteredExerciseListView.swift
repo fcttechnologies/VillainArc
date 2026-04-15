@@ -69,7 +69,7 @@ struct FilteredExerciseListView: View {
         let visibleExercises = filteredExercises
 
         return List {
-            ForEach(visibleExercises) { exercise in
+            ForEach(Array(visibleExercises.enumerated()), id: \.element.catalogID) { index, exercise in
                 if selectedExerciseIDs.contains(exercise.catalogID) {
                     Button {
                         Haptics.selection()
@@ -79,7 +79,7 @@ struct FilteredExerciseListView: View {
                         exerciseRow(for: exercise)
                     }
                     .tint(.primary)
-                    .listRowBackground(Color.blue.opacity(0.45))
+                    .appGroupedListRow(position: rowPosition(for: index, count: visibleExercises.count), fillColor: Color.blue.opacity(0.45))
                     .swipeActions(edge: .leading) {
                         favoriteAction(for: exercise)
                     }
@@ -104,6 +104,7 @@ struct FilteredExerciseListView: View {
                         exerciseRow(for: exercise)
                     }
                     .tint(.primary)
+                    .appGroupedListRow(position: rowPosition(for: index, count: visibleExercises.count))
                     .swipeActions(edge: .leading) {
                         favoriteAction(for: exercise)
                     }
@@ -224,6 +225,13 @@ struct FilteredExerciseListView: View {
             let rightDate = right.lastAddedAt ?? .distantPast
             return leftDate > rightDate
         }
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
     }
 }
 

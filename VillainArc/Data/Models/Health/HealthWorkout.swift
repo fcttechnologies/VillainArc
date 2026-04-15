@@ -4,7 +4,6 @@ import SwiftData
 
 @Model final class HealthWorkout {
     #Index<HealthWorkout>([\.healthWorkoutUUID])
-
     var healthWorkoutUUID: UUID = UUID()
     var workoutSession: WorkoutSession?
     var startDate: Date = Date()
@@ -18,16 +17,6 @@ import SwiftData
     var restingEnergyBurned: Double?
     var totalDistance: Double?
     var isAvailableInHealthKit: Bool = true
-
-    var activityType: HKWorkoutActivityType {
-        get { HKWorkoutActivityType(rawValue: activityTypeRawValue) ?? .other }
-        set { activityTypeRawValue = newValue.rawValue }
-    }
-
-    var totalEnergyBurned: Double? {
-        guard let activeEnergyBurned, let restingEnergyBurned else { return nil }
-        return activeEnergyBurned + restingEnergyBurned
-    }
 
     init(workout: HKWorkout, workoutSession: WorkoutSession? = nil) {
         healthWorkoutUUID = workout.uuid
@@ -44,6 +33,16 @@ import SwiftData
         restingEnergyBurned = Self.energyBurned(for: HealthKitCatalog.restingEnergyBurnedType, in: workout)
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         isAvailableInHealthKit = true
+    }
+    
+    var activityType: HKWorkoutActivityType {
+        get { HKWorkoutActivityType(rawValue: activityTypeRawValue) ?? .other }
+        set { activityTypeRawValue = newValue.rawValue }
+    }
+
+    var totalEnergyBurned: Double? {
+        guard let activeEnergyBurned, let restingEnergyBurned else { return nil }
+        return activeEnergyBurned + restingEnergyBurned
     }
 
     func update(from workout: HKWorkout) {

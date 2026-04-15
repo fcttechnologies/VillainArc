@@ -3,42 +3,32 @@ import SwiftData
 
 @Model final class SuggestionEvent {
     #Index<SuggestionEvent>([\.createdAt])
-
     var id: UUID = UUID()
     var source: SuggestionSource = SuggestionSource.rules
     var category: SuggestionCategory = SuggestionCategory.performance
     var catalogID: String = ""
-
-    @Relationship(deleteRule: .nullify) var sessionFrom: WorkoutSession?
-    @Relationship(deleteRule: .nullify, inverse: \ExercisePrescription.suggestionEvents) var targetExercisePrescription: ExercisePrescription?
-    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.suggestionEvents) var targetSetPrescription: SetPrescription?
-    @Relationship(deleteRule: .nullify) var triggerPerformance: ExercisePerformance?
-
+    var sessionFrom: WorkoutSession?
+    @Relationship(inverse: \ExercisePrescription.suggestionEvents) var targetExercisePrescription: ExercisePrescription?
+    @Relationship(inverse: \SetPrescription.suggestionEvents) var targetSetPrescription: SetPrescription?
+    var triggerPerformance: ExercisePerformance?
     var triggerTargetSetID: UUID?
-
     var decision: Decision = Decision.pending
     var outcome: Outcome = Outcome.pending
-
     var ruleID: SuggestionRule?
     var decisionReason: DecisionReason?
     var userFeedback: UserFeedback?
-
     var trainingStyle: TrainingStyle = TrainingStyle.unknown
-
     var requiredEvaluationCount: Int = 1
     var weightStepUsed: Double?
-
     @Relationship(deleteRule: .cascade, inverse: \SuggestionEvaluation.event) var evaluations: [SuggestionEvaluation]? = [SuggestionEvaluation]()
-
     var suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore
-
     var createdAt: Date = Date()
     var evaluatedAt: Date?
-
     var changeReasoning: String?
     var outcomeReason: String?
-
     @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.event) var changes: [PrescriptionChange]? = [PrescriptionChange]()
+    
+    init() {}
 
     var currentTargetSetIndex: Int? { targetSetPrescription?.index }
 
@@ -64,8 +54,6 @@ import SwiftData
                 return lhs.id.uuidString < rhs.id.uuidString
             }
     }
-
-    init() {}
 
     convenience init(source: SuggestionSource = .rules, category: SuggestionCategory = .performance, catalogID: String, sessionFrom: WorkoutSession?, targetExercisePrescription: ExercisePrescription? = nil, targetSetPrescription: SetPrescription? = nil, triggerTargetSetID: UUID? = nil, decision: Decision = .pending, outcome: Outcome = .pending, triggerPerformance: ExercisePerformance? = nil, ruleID: SuggestionRule? = nil, trainingStyle: TrainingStyle, requiredEvaluationCount: Int = 1, weightStepUsed: Double? = nil, createdAt: Date = .now, evaluatedAt: Date? = nil, changeReasoning: String? = nil, outcomeReason: String? = nil, changes: [PrescriptionChange] = [], suggestionConfidence: Double = SuggestionConfidenceTier.moderate.defaultScore) {
         self.init()

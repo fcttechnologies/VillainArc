@@ -24,16 +24,18 @@ struct MuscleFilterSheetView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    FlowLayout(spacing: chipSpacing) {
-                        ForEach(Muscle.allMajor, id: \.rawValue) { muscle in
-                            muscleChip(for: muscle)
+                    VStack {
+                        FlowLayout(spacing: chipSpacing) {
+                            ForEach(Muscle.allMajor, id: \.rawValue) { muscle in
+                                muscleChip(for: muscle)
+                            }
                         }
                     }
                     .padding()
-                    .background(.ultraThickMaterial, in: .rect(cornerRadius: 20))
+                    .appCardStyle(cornerRadius: 20)
 
                     if showMinorMuscles {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 0) {
                             Button {
                                 Haptics.selection()
                                 showAdvanced.toggle()
@@ -49,24 +51,28 @@ struct MuscleFilterSheetView: View {
                             }
                             .buttonStyle(.plain)
                             .padding(.horizontal)
+                            .padding(.vertical, 16)
                             .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterAdvancedToggle)
                             .accessibilityLabel(AccessibilityText.muscleFilterAdvancedLabel)
                             .accessibilityValue(AccessibilityText.muscleFilterAdvancedValue(isExpanded: showAdvanced))
                             .accessibilityHint(AccessibilityText.muscleFilterAdvancedHint)
 
                             if showAdvanced {
+                                Divider()
+                                    .padding(.horizontal, 16)
+
                                 FlowLayout(spacing: chipSpacing) {
                                     ForEach(minorMuscles, id: \.rawValue) { muscle in
                                         muscleChip(for: muscle)
                                     }
                                 }
                                 .padding()
-                                .background(.ultraThickMaterial, in: .rect(cornerRadius: 20))
                             }
                         }
-                        .padding(.horizontal)
+                        .appCardStyle(cornerRadius: 20)
                     }
                 }
+                .padding(.horizontal)
                 .padding(.vertical)
             }
             .navigationTitle("Muscles")

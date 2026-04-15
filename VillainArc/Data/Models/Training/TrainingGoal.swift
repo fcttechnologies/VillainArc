@@ -3,9 +3,6 @@ import SwiftData
 
 @Model final class TrainingGoal {
     #Index<TrainingGoal>([\.startedOnDay])
-
-    private static let calendar = Calendar.autoupdatingCurrent
-
     var startedOnDay: Date = Date()
     var endedOnDay: Date?
     var kind: TrainingGoalKind = TrainingGoalKind.generalTraining
@@ -14,6 +11,8 @@ import SwiftData
         self.startedOnDay = Self.calendar.startOfDay(for: startedOnDay)
         self.kind = kind
     }
+    
+    private static let calendar = Calendar.autoupdatingCurrent
 }
 
 extension TrainingGoal {

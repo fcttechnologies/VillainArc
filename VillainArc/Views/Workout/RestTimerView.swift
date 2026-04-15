@@ -44,7 +44,7 @@ struct RestTimerView: View {
                 
                 if !restTimer.isActive && !recentTimes.isEmpty {
                     Section("Recents") {
-                        ForEach(recentTimes) { history in
+                        ForEach(Array(recentTimes.enumerated()), id: \.element.id) { index, history in
                             HStack {
                                 Text(secondsToTime(history.seconds))
                                     .font(.title)
@@ -72,6 +72,7 @@ struct RestTimerView: View {
                                 .accessibilityLabel(AccessibilityText.restTimerRecentStartLabel(seconds: history.seconds, secondsToTime: secondsToTime))
                                 .accessibilityHint(AccessibilityText.restTimerStartHint)
                             }
+                            .appGroupedListRow(position: rowPosition(for: index, count: recentTimes.count))
                             .accessibilityIdentifier(AccessibilityIdentifiers.restTimerRecentRow(history))
                         }
                         .onDelete(perform: deleteRecentTimes)
@@ -97,6 +98,13 @@ struct RestTimerView: View {
                 }
             }
         }
+    }
+
+    private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
+        if count <= 1 { return .single }
+        if index == 0 { return .top }
+        if index == count - 1 { return .bottom }
+        return .middle
     }
     
     @ViewBuilder

@@ -13,7 +13,16 @@ import SwiftData
     var complete: Bool = false
     var completedAt: Date?
     var exercise: ExercisePerformance?
-    @Relationship(deleteRule: .nullify, inverse: \SetPrescription.activePerformance) var prescription: SetPrescription?
+    @Relationship(inverse: \SetPrescription.activePerformance) var prescription: SetPrescription?
+    
+    // Adding set in session
+    init(exercise: ExercisePerformance, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0) {
+        index = exercise.sets?.count ?? 0
+        self.exercise = exercise
+        self.weight = weight
+        self.reps = reps
+        self.restSeconds = restSeconds
+    }
 
     var visibleRPE: Int? {
         guard type != .warmup, rpe > 0 else { return nil }
@@ -28,15 +37,6 @@ import SwiftData
     }
 
     var volume: Double { max(0, weight) * Double(max(0, reps)) }
-
-    // Adding set in session
-    init(exercise: ExercisePerformance, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0) {
-        index = exercise.sets?.count ?? 0
-        self.exercise = exercise
-        self.weight = weight
-        self.reps = reps
-        self.restSeconds = restSeconds
-    }
 
     // Test/sample initializer to reduce setup boilerplate.
     convenience init(exercise: ExercisePerformance, setType: ExerciseSetType, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0, index: Int? = nil, complete: Bool = false, completedAt: Date? = nil) {

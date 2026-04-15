@@ -228,7 +228,7 @@ struct ExerciseView: View {
             }
             .sheet(isPresented: $showExerciseHistorySheet) {
                 NavigationStack {
-                    ExerciseHistoryView(exercise: exercise)
+                    ExerciseHistoryView(exercise: exercise, showSheetBackground: true)
                 }
                 .presentationDetents([.medium, .large])
                 .presentationBackground(Color.sheetBg)

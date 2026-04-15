@@ -266,6 +266,7 @@ struct NewStepsGoalView: View {
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                     }
+                    .appGroupedListRow(position: .single)
                 } footer: {
                     if let footerText {
                         Text(footerText)

@@ -1,59 +1,27 @@
 import Foundation
 import SwiftData
 
-/// Cached aggregate statistics for an exercise across all completed workout sessions.
-///
-/// **When Computed:**
-/// - After a workout is marked as complete (WorkoutSummaryView -> finishSummary)
-/// - When a workout session is deleted (if it affects this exercise)
-/// - Manual rebuild via ExerciseHistoryUpdater.rebuildAllHistories()
-///
-/// **What Gets Recomputed:**
-/// - ALL statistics are recalculated from scratch each time
-/// - Fetches all completed ExercisePerformance records for the catalogID
-/// - Ensures statistics always reflect current state of data
-///
-/// **Reset Conditions:**
-/// - When no completed performances exist for the catalogID
-/// - When history.recalculate([]) is called with empty array
-/// - All stats return to zero/default values
-///
-/// One ExerciseHistory per unique catalogID.
 @Model final class ExerciseHistory {
     #Index<ExerciseHistory>([\.catalogID], [\.lastCompletedAt])
-
     var catalogID: String = ""
     var lastCompletedAt: Date? = nil
-
-    // Session counts
     var totalSessions: Int = 0
     var totalCompletedSets: Int = 0
     var totalCompletedReps: Int = 0
     var cumulativeVolume: Double = 0
     var latestEstimated1RM: Double = 0
-    // Personal Records
     var bestEstimated1RM: Double = 0
     var bestWeight: Double = 0
     var bestVolume: Double = 0
     var bestReps: Int = 0
-    // Progression points for charting across all completed sessions
     @Relationship(deleteRule: .cascade, inverse: \ProgressionPoint.exerciseHistory) var progressionPoints: [ProgressionPoint]? = [ProgressionPoint]()
-    var chronologicalProgressionPoints: [ProgressionPoint] { (progressionPoints ?? []).sorted { $0.date < $1.date } }
+    
     init(catalogID: String) {
         self.catalogID = catalogID
     }
-    /// Recalculates ALL statistics from scratch using completed exercise performances.
-    ///
-    /// **Full Recomputation Strategy:**
-    /// - Safer than incremental updates (avoids drift/corruption)
-    /// - Ensures statistics always match actual data
-    /// - Performance acceptable since this runs after workout (not during)
-    /// - Typical performance: 50-200ms for 50 sessions
-    ///
-    /// **Called When:**
-    /// - Workout completed (WorkoutSummaryView)
-    /// - Workout deleted (if catalogID affected)
-    /// - Manual rebuild (migration, data fix)
+    
+    var chronologicalProgressionPoints: [ProgressionPoint] { (progressionPoints ?? []).sorted { $0.date < $1.date } }
+    
     func recalculate(using performances: [ExercisePerformance], context: ModelContext) {
         guard !performances.isEmpty else {
             reset(context: context)
@@ -75,12 +43,6 @@ import SwiftData
         storeProgressionData(from: sessionSummaries, context: context)
     }
 
-    /// Resets all statistics to default/zero values.
-    ///
-    /// **Called When:**
-    /// - recalculate([]) is called with empty performances array
-    /// - All completed workouts for this exercise have been deleted
-    /// - No valid data exists to calculate from
     private func reset(context: ModelContext) {
         lastCompletedAt = nil
         totalSessions = 0

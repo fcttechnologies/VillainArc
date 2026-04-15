@@ -1,36 +1,6 @@
 import Foundation
 import SwiftData
 
-enum UserGender: String, Codable, CaseIterable, Hashable {
-    case male
-    case female
-    case other
-    case notSet
-
-    static var selectableCases: [UserGender] { [.male, .female, .other] }
-
-    var displayName: String {
-        switch self {
-        case .male: return "Male"
-        case .female: return "Female"
-        case .other: return "Other"
-        case .notSet: return "Not Set"
-        }
-    }
-}
-
-enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
-    case name
-    case birthday
-    case gender
-    case height
-    case trainingGoal
-
-    static func navigationPath(to step: UserProfileOnboardingStep) -> [UserProfileOnboardingStep] {
-        Array(allCases.prefix(step.rawValue + 1).dropFirst())
-    }
-}
-
 @Model final class UserProfile {
     var name: String = ""
     var birthday: Date?

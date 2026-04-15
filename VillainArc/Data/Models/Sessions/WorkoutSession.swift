@@ -3,7 +3,6 @@ import SwiftUI
 
 @Model final class WorkoutSession {
     #Index<WorkoutSession>([\.id], [\.status], [\.startedAt], [\.isHidden], [\.status, \.isHidden, \.startedAt])
-
     var id: UUID = UUID()
     var title: String = "New Workout"
     var notes: String = ""
@@ -11,11 +10,6 @@ import SwiftUI
     var status: String = SessionStatus.active.rawValue
     var startedAt: Date = Date()
     var endedAt: Date?
-
-    var statusValue: SessionStatus {
-        get { SessionStatus(rawValue: status) ?? .active }
-        set { status = newValue.rawValue }
-    }
     @Relationship(deleteRule: .cascade, inverse: \PreWorkoutContext.workoutSession) var preWorkoutContext: PreWorkoutContext? = PreWorkoutContext()
     var postEffort: Int = 0
     @Relationship(deleteRule: .nullify, inverse: \WorkoutPlan.workoutSessions) var workoutPlan: WorkoutPlan?
@@ -25,9 +19,14 @@ import SwiftUI
     var hasBeenExportedToHealth: Bool = false
     var healthWorkout: HealthWorkout?
 
-    var sortedExercises: [ExercisePerformance] { (exercises ?? []).sorted { $0.index < $1.index } }
-
     init() {}
+    
+    var sortedExercises: [ExercisePerformance] { (exercises ?? []).sorted { $0.index < $1.index } }
+    
+    var statusValue: SessionStatus {
+        get { SessionStatus(rawValue: status) ?? .active }
+        set { status = newValue.rawValue }
+    }
 
     // Test/sample initializer to reduce setup boilerplate.
     convenience init(title: String = "New Workout", notes: String = "", status: SessionStatus = .active, startedAt: Date = Date(), endedAt: Date? = nil) {

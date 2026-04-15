@@ -3,7 +3,6 @@ import SwiftData
 
 @Model final class Exercise {
     #Index<Exercise>([\.catalogID], [\.lastAddedAt], [\.favorite])
-
     var catalogID: String = ""
     var name: String = ""
     var musclesTargeted: [Muscle] = []
@@ -15,6 +14,15 @@ import SwiftData
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     var suggestionsEnabled: Bool = true
     var preferredWeightChange: Double?
+    
+    init(from catalogItem: ExerciseCatalogItem) {
+        catalogID = catalogItem.id
+        name = catalogItem.name
+        musclesTargeted = catalogItem.musclesTargeted
+        aliases = catalogItem.aliases
+        equipmentType = catalogItem.equipmentType
+        rebuildSearchData()
+    }
 
     var displayMuscle: String { musclesTargeted.first?.displayName ?? String(localized: "Unknown Muscle") }
 
@@ -50,15 +58,6 @@ import SwiftData
         }
 
         return alternateNames
-    }
-
-    init(from catalogItem: ExerciseCatalogItem) {
-        catalogID = catalogItem.id
-        name = catalogItem.name
-        musclesTargeted = catalogItem.musclesTargeted
-        aliases = catalogItem.aliases
-        equipmentType = catalogItem.equipmentType
-        rebuildSearchData()
     }
     
     func updateLastAddedAt(to time: Date = .now) { lastAddedAt = time }
