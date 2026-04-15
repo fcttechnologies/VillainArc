@@ -67,7 +67,7 @@ Quick actions follow the same rule too:
 Top-level tab chrome also follows a shared profile/settings convention:
 
 - `Home` and `Health` both surface the same profile launcher instead of separate per-tab settings buttons
-- the profile sheet owns profile fields, training goal editing, profile photo actions, and a review entry point
+- the profile sheet owns profile fields, fitness-level editing/review, training goal editing, profile photo actions, and a review entry point
 - deeper settings continue through `AppSettingsView`
 
 ### Persist Real Drafts, Not Temporary State
@@ -130,6 +130,7 @@ Startup code ensures they exist before the app treats launch as ready.
 
 - the required onboarding fields
 - the current display name
+- the user fitness level and last confirmed timestamp
 - externally stored profile photo data
 
 ### SwiftData Schemas Are Versioned
@@ -204,6 +205,7 @@ That ordering matters. VillainArc does not resume unfinished work before setup i
 Setup is only considered valid once:
 
 - required profile fields are complete
+- fitness level and `fitnessLevelSetAt` are set
 - one active training goal exists
 
 ## First Bootstrap
@@ -244,6 +246,8 @@ The profile sheet currently owns:
 
 - avatar and profile photo management
 - name, birthday, gender, and height editing
+- fitness-level editing
+- a fitness-level review cue when the current level has exceeded its time threshold (`beginner: 1 year`, `novice: 2 years`, `intermediate: 2 years`, `advanced: no cue`)
 - active training-goal editing
 - a manual App Store review entry point
 - a route into app settings

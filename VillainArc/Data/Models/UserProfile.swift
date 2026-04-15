@@ -7,6 +7,8 @@ import SwiftData
     var gender: UserGender = UserGender.notSet
     var dateJoined: Date = Date()
     var heightCm: Double?
+    var fitnessLevel: FitnessLevel?
+    var fitnessLevelSetAt: Date?
     @Attribute(.externalStorage) var profileImageData: Data?
 
     init() {}
@@ -20,6 +22,7 @@ import SwiftData
         if birthday == nil { return .birthday }
         if gender == .notSet { return .gender }
         if heightCm == nil { return .height }
+        if fitnessLevel == nil || fitnessLevelSetAt == nil { return .fitnessLevel }
         return nil
     }
 }

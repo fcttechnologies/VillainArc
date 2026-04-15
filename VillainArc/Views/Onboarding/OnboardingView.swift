@@ -13,6 +13,7 @@ private enum OnboardingStep: Hashable {
     case birthday
     case gender
     case height
+    case fitnessLevel
     case trainingGoal
 }
 
@@ -27,6 +28,8 @@ private extension OnboardingStep {
             self = .gender
         case .height:
             self = .height
+        case .fitnessLevel:
+            self = .fitnessLevel
         case .trainingGoal:
             self = .trainingGoal
         }
@@ -98,6 +101,8 @@ struct OnboardingView: View {
                         ProfileGenderStepView(manager: manager, path: $path)
                     case .height:
                         ProfileHeightStepView(manager: manager, path: $path)
+                    case .fitnessLevel:
+                        ProfileFitnessLevelStepView(manager: manager, path: $path)
                     case .trainingGoal:
                         ProfileTrainingGoalStepView(manager: manager, path: $path)
                     }
@@ -129,6 +134,8 @@ struct OnboardingView: View {
             ProfileGenderStepView(manager: manager, path: $path)
         case .height:
             ProfileHeightStepView(manager: manager, path: $path)
+        case .fitnessLevel:
+            ProfileFitnessLevelStepView(manager: manager, path: $path)
         case .trainingGoal:
             ProfileTrainingGoalStepView(manager: manager, path: $path)
         }
@@ -752,6 +759,58 @@ private struct ProfileHeightStepView: View {
 
     private func inchesLabel(for value: Double) -> String {
         "\(Int(value)) in"
+    }
+}
+
+private struct ProfileFitnessLevelStepView: View {
+    @Bindable var manager: OnboardingManager
+    @Binding var path: [OnboardingStep]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var selectedLevel: FitnessLevel?
+
+    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
+        self.manager = manager
+        _path = path
+        _selectedLevel = State(initialValue: manager.profile?.fitnessLevel)
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(FitnessLevel.influenceDescription)
+                .multilineTextAlignment(.leading)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            FitnessLevelSelectionList(selection: $selectedLevel)
+
+            Spacer()
+
+            Button {
+                guard let selectedLevel else { return }
+                Task {
+                    guard await manager.saveFitnessLevel(selectedLevel) else { return }
+                    if let nextStep = manager.nextRequiredStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                        path.append(onboardingStep)
+                    }
+                }
+            } label: {
+                Text("Continue")
+                    .padding(.vertical, 8)
+                    .fontWeight(.semibold)
+            }
+            .buttonSizing(.flexible)
+            .buttonStyle(.glassProminent)
+            .disabled(selectedLevel == nil)
+            .accessibilityHint(AccessibilityText.onboardingFitnessLevelContinueHint)
+        }
+        .padding()
+        .animation(reduceMotion ? nil : .bouncy, value: selectedLevel)
+        .navigationTitle("What's your fitness level?")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            selectedLevel = manager.profile?.fitnessLevel
+        }
     }
 }
 

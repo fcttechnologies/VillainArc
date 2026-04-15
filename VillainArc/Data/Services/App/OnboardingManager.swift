@@ -204,6 +204,13 @@ enum OnboardingState: Equatable {
         return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your height")
     }
 
+    func saveFitnessLevel(_ fitnessLevel: FitnessLevel) async -> Bool {
+        guard let profile else { return false }
+        profile.fitnessLevel = fitnessLevel
+        profile.fitnessLevelSetAt = .now
+        return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your fitness level")
+    }
+
     func saveTrainingGoal(_ kind: TrainingGoalKind) async -> Bool {
         do {
             _ = try TrainingGoal.replaceActiveGoal(with: kind, context: context)

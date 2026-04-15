@@ -323,6 +323,66 @@ struct TrainingGoalEditorSheet: View {
     }
 }
 
+struct FitnessLevelEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let initialSelection: FitnessLevel?
+    let lastSetAt: Date?
+    let onConfirm: (FitnessLevel) -> Void
+
+    @State private var selectedLevel: FitnessLevel?
+
+    init(initialSelection: FitnessLevel?, lastSetAt: Date?, onConfirm: @escaping (FitnessLevel) -> Void) {
+        self.initialSelection = initialSelection
+        self.lastSetAt = lastSetAt
+        self.onConfirm = onConfirm
+        _selectedLevel = State(initialValue: initialSelection)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(FitnessLevel.influenceDescription)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    FitnessLevelSelectionList(selection: $selectedLevel, warningLevel: warningLevel)
+                }
+                .padding()
+            }
+            .scrollIndicators(.hidden)
+            .sheetBackground()
+            .animation(reduceMotion ? nil : .bouncy, value: selectedLevel)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(role: .close) {
+                        Haptics.selection()
+                        dismiss()
+                    }
+                    .accessibilityHint(AccessibilityText.closeButtonHint)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .confirm) {
+                        guard let selectedLevel else { return }
+                        Haptics.selection()
+                        onConfirm(selectedLevel)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(selectedLevel == nil)
+                }
+            }
+        }
+    }
+
+    private var warningLevel: FitnessLevel? {
+        guard let initialSelection, let lastSetAt else { return nil }
+        return initialSelection.suggestedNextLevelIfReviewDue(lastSetAt: lastSetAt) == nil ? nil : initialSelection
+    }
+}
+
 struct TrainingGoalHeaderText: View {
     let text: String
 

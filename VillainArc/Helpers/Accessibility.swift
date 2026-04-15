@@ -16,6 +16,7 @@ enum AccessibilityIdentifiers {
     static let profileSheetEditPhotoButton = "profileSheetEditPhotoButton"
     static let profileSheetName = "profileSheetName"
     static let profileSheetDetailsCard = "profileSheetDetailsCard"
+    static let profileSheetFitnessLevelRow = "profileSheetFitnessLevelRow"
     static let profileSheetTrainingGoalRow = "profileSheetTrainingGoalRow"
     static let profileSheetReviewRow = "profileSheetReviewRow"
     static let profileSheetLegalCard = "profileSheetLegalCard"
@@ -527,6 +528,8 @@ enum AccessibilityText {
     static let profileSheetPrivacyPolicyHint = localized("Shows the privacy policy.")
     static let profileSheetTermsOfServiceHint = localized("Shows the terms of service.")
     static let settingsAppleHealthHint = localized("Shows Apple Health settings.")
+    static let onboardingFitnessLevelOptionHint = localized("Selects this fitness level.")
+    static let onboardingFitnessLevelContinueHint = localized("Saves your selected fitness level and continues to the next profile step.")
     static let onboardingTrainingGoalOptionHint = localized("Selects this training goal.")
     static let onboardingTrainingGoalContinueHint = localized("Saves your selected training goal and continues into the app.")
     static let morphingExpandToolbarLabel = localized("Show quick actions")
@@ -1075,6 +1078,7 @@ enum AccessibilityText {
     static let onboardingGenderContinueHint = localized("Saves your selected gender and continues to the next profile step.")
 
     static func onboardingGenderOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
+    static func onboardingFitnessLevelOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
     static func onboardingTrainingGoalOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
     static func profileSheetEditPhotoValue(hasPhoto: Bool) -> String { hasPhoto ? localized("Photo added") : localized("No photo selected") }
     static func settingsAppleHealthActionHint(action: HealthAuthorizationAction) -> String {

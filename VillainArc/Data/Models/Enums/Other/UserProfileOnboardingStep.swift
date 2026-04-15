@@ -5,6 +5,7 @@ enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
     case birthday
     case gender
     case height
+    case fitnessLevel
     case trainingGoal
 
     static func navigationPath(to step: UserProfileOnboardingStep) -> [UserProfileOnboardingStep] {

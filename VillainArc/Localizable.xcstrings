@@ -4163,6 +4163,9 @@
         }
       }
     },
+    "Fitness Level" : {
+
+    },
     "Flat" : {
       "localizations" : {
         "en" : {
@@ -7855,6 +7858,9 @@
         }
       }
     },
+    "Pick the level that best matches your lifting experience. Villain Arc uses this to shape plan defaults and how aggressively suggestions progress." : {
+
+    },
     "Pick two days to swap." : {
       "localizations" : {
         "en" : {
@@ -9046,6 +9052,9 @@
         }
       }
     },
+    "Saves your selected fitness level and continues to the next profile step." : {
+
+    },
     "Saves your selected gender and continues to the next profile step." : {
       "localizations" : {
         "en" : {
@@ -9271,6 +9280,9 @@
           }
         }
       }
+    },
+    "Selects this fitness level." : {
+
     },
     "Selects this gender option." : {
       "localizations" : {
@@ -12745,6 +12757,9 @@
           }
         }
       }
+    },
+    "What's your fitness level?" : {
+
     },
     "What's your gender?" : {
       "localizations" : {

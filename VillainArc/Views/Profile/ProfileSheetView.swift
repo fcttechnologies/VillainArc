@@ -91,6 +91,7 @@ struct ProfileSheetView: View {
     @State private var showBirthdayEditor = false
     @State private var showGenderEditor = false
     @State private var showHeightEditor = false
+    @State private var showFitnessLevelEditor = false
     @State private var showTrainingGoalEditor = false
     @State private var showPhotoOptions = false
     @State private var showCameraAccessAlert = false
@@ -148,6 +149,16 @@ struct ProfileSheetView: View {
                     saveContext(context: context)
                 }
                 .presentationDetents([.fraction(0.4)])
+                .presentationBackground(Color.sheetBg)
+            }
+            .sheet(isPresented: $showFitnessLevelEditor) {
+                FitnessLevelEditorSheet(initialSelection: profile?.fitnessLevel, lastSetAt: profile?.fitnessLevelSetAt) { selectedLevel in
+                    guard let profile else { return }
+                    profile.fitnessLevel = selectedLevel
+                    profile.fitnessLevelSetAt = .now
+                    saveContext(context: context)
+                }
+                .presentationDetents([.fraction(0.76)])
                 .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showTrainingGoalEditor) {
@@ -350,6 +361,46 @@ struct ProfileSheetView: View {
                 .padding(.horizontal, 16)
 
             Button {
+                guard profile != nil else { return }
+                Haptics.selection()
+                showFitnessLevelEditor = true
+            } label: {
+                HStack(spacing: 3) {
+                    Text("Fitness Level")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .minimumScaleFactor(0.7)
+
+                    Spacer()
+
+                    HStack(spacing: 3) {
+                        if shouldShowFitnessLevelWarningIcon {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundStyle(.yellow)
+                                .accessibilityHidden(true)
+                        }
+
+                        Text(fitnessLevelText)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 18)
+                .lineLimit(1)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetFitnessLevelRow)
+
+            Divider()
+                .padding(.horizontal, 16)
+
+            Button {
                 Haptics.selection()
                 showTrainingGoalEditor = true
             } label: {
@@ -491,6 +542,15 @@ struct ProfileSheetView: View {
 
     private var trainingGoalText: String {
         activeTrainingGoal?.kind.title ?? String(localized: "Not Set")
+    }
+
+    private var fitnessLevelText: String {
+        profile?.fitnessLevel?.title ?? String(localized: "Not Set")
+    }
+
+    private var shouldShowFitnessLevelWarningIcon: Bool {
+        guard let level = profile?.fitnessLevel, let setAt = profile?.fitnessLevelSetAt else { return false }
+        return level.suggestedNextLevelIfReviewDue(lastSetAt: setAt) != nil
     }
 
     private var resolvedBirthday: Date {

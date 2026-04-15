@@ -15,6 +15,8 @@ Use the other files in this folder for current architecture and shipped behavior
 
 - `SleepGoal` now exists as a date-ranged goal with one active goal at a time through app logic.
 - The profile sheet/settings hub has been expanded.
+- `FitnessLevel` has been added to `UserProfile` with required onboarding coverage and profile editing.
+- A time-threshold fitness-level review cue now appears in profile surfaces (no auto-overwrite; user confirms changes).
 - Terms of Service and Privacy Policy are now surfaced in the profile/settings structure.
 - App theme is now user-configurable in settings.
 
@@ -26,6 +28,7 @@ These existing pieces already give the roadmap a clean foundation:
   - `Data/Models/UserProfile.swift`
   - `Data/Services/App/OnboardingManager.swift`
   - `Views/Onboarding/OnboardingView.swift`
+  - `Views/Profile/FitnessLevelSelectionViews.swift`
 - `TrainingGoal` history plus profile editing surfaces
   - `Data/Models/Training/TrainingGoal.swift`
   - `Views/Profile/ProfileSheetView.swift`
@@ -71,13 +74,16 @@ These decisions should guide the roadmap unless a future release proves they nee
 - Desired wake-up time should start as a current preference, not a goal.
   - The app mostly cares about the active value.
   - If the app later uses it for historical reasoning, snapshot it at the moment it affects alerts, sleep debt, or coaching.
-- Fitness level should start as profile state with review metadata, not a fully autonomous model.
-  - Recommended shape:
-    - current level
-    - source (`user`, `derived`, or `suggested`)
-    - lastUpdatedAt
-    - lastConfirmedAt
-    - optional confidence or review-due flag
+- Fitness level should stay profile-owned and user-confirmed, not fully autonomous.
+  - Current shipped shape:
+    - `fitnessLevel`
+    - `fitnessLevelSetAt`
+  - Current shipped review behavior:
+    - time-threshold based move-up recommendation only
+    - no auto-overwrite
+    - no auto-downgrade
+  - Candidate future extension:
+    - add activity-quality gating before showing move-up prompts
 - Manual sleep or steps input should stay deferred for now.
   - These conflict with the current Apple Health integration philosophy more than hydration or weight-style manual input does.
 - Hydration is the better first manual metric.
@@ -95,8 +101,9 @@ These decisions should guide the roadmap unless a future release proves they nee
   - Start as a sleep preference, not a historical goal.
   - Use it for bedtime nudges, sleep debt messaging, and bedtime/wake charts.
 - Fitness level
-  - Add to profile with a smart review flow rather than silent hard auto-overwrite.
-  - Useful for onboarding, template plans, generation complexity, and suggestion tone.
+  - Extend from the current time-threshold cue into a richer review flow with explicit actions (`Move Up`, `Keep Current`, optional `Remind Later`).
+  - Add activity-quality gating (for example recent completed-session thresholds) before showing move-up prompts.
+  - Continue using user-confirmed updates only (no silent auto-overwrite).
 - Profile and settings expansion
   - Continue extending the current profile sheet with fitness level and other profile-owned surfaces.
   - Keep app settings and profile editing separate, but continue using the shared entry point from both tabs.
@@ -105,7 +112,8 @@ These decisions should guide the roadmap unless a future release proves they nee
   - Prioritize Request a Feature, Report a Bug, and a Getting Started surface.
 - Improved onboarding
   - Add a proper feature-intro sequence before data-entry steps.
-  - Add onboarding steps for fitness level and any new profile-owned setup that truly needs to block readiness.
+  - Fitness-level onboarding step is now shipped.
+  - Continue onboarding additions only for new profile-owned setup that truly needs to block readiness.
 - TipKit and product education
   - Best used for context menus, suggestion review, split behaviors, and other non-obvious UX.
 - What's New and update surfaces
@@ -248,7 +256,7 @@ Keep `1.2` focused on extending existing patterns rather than opening brand-new 
 
 - Finish profile and settings hub expansion
 - Desired wake-up time
-- Fitness level
+- Fitness level phase 2 (review prompt actions + optional activity gate)
 - Onboarding refresh for the remaining new profile fields
 - Optional:
   - What's New sheet
@@ -343,5 +351,6 @@ If the roadmap is executed one feature cluster at a time, the cleanest next impl
 
 1. Fold legal, support, feedback, and update surfaces into the current profile/settings structure.
 2. Add desired wake-up time plus profile editing support.
-3. Add fitness level with review metadata.
-4. Refresh onboarding only for the profile-owned fields that truly need first-run setup coverage.
+3. Add fitness-level review prompt actions (`Move Up`, `Keep Current`, optional `Remind Later`) on top of the shipped warning cue.
+4. Add activity-quality gating for move-up prompts.
+5. Refresh onboarding only for any new profile-owned fields that truly need first-run setup coverage.

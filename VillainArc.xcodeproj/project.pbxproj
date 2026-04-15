@@ -124,6 +124,7 @@
 				Data/Models/Enums/Health/StepsEventNotificationMode.swift,
 				Data/Models/Enums/Health/WeightGoalEndReason.swift,
 				Data/Models/Enums/Health/WeightGoalType.swift,
+				Data/Models/Enums/Other/FitnessLevel.swift,
 				Data/Models/Enums/Other/UserGender.swift,
 				Data/Models/Enums/Other/UserProfileOnboardingStep.swift,
 				Data/Models/Enums/Sessions/MoodLevel.swift,
