@@ -38,8 +38,10 @@ The main product areas are:
 After onboarding is ready, `Views/AppShell/ContentView.swift` owns:
 
 - the root `TabView` (`Home`, `Health`)
+- global profile/settings sheets
 - full-screen workout flow
 - full-screen workout-plan flow
+- active workout/plan resume bars when those flows are minimized
 - full-screen weight-goal-completion flow
 
 ## App-Wide Conventions
@@ -59,10 +61,21 @@ Starting a new workout or plan is blocked when any of these exist:
 
 This keeps UI flows, intents, Spotlight entry points, and resume behavior aligned.
 
+Important nuance:
+
+- active flow lifecycle is separate from full-screen presentation
+- users can temporarily dismiss workout/plan full-screen covers, access the rest of the app, and reopen from the active-flow resume bar
+- while minimized, the workout/plan still counts as active work and still blocks creating a second workout/plan
+
 Quick actions follow the same rule too:
 
 - `Start Today's Workout` only runs when no workout or plan flow is already active
 - `Add Weight Entry` routes into the Health tab and presents the same sheet the foreground UI uses
+
+For routing intents and deep links:
+
+- foreground navigation intents and widget deep links can temporarily collapse active workout/plan covers so navigation can proceed
+- workout/plan lifecycle state remains active underneath that temporary presentation collapse
 
 Top-level tab chrome also follows a shared profile/settings convention:
 
@@ -85,6 +98,8 @@ That is why:
 Persisted load values are stored canonically in kilograms.
 
 The app converts to the user’s preferred display unit when editing or presenting data and converts back to canonical values before save. This keeps calculations and merges stable even when the user changes unit preferences later.
+
+If the user changes weight units while an incomplete workout or plan is in progress, the app migrates those in-progress display values from the old unit to the new unit so finish/save conversion remains correct.
 
 The same general rule applies to Health caches:
 
@@ -327,6 +342,7 @@ That surface is also reused by App Intents and quick actions:
 - read-only health intents answer from the same local caches and app-owned records the Health tab uses
 - foreground health intents route into the same navigation destinations and sheets as the Health tab UI
 - the home-screen `Add Weight Entry` quick action opens the Health add-weight sheet once the app is ready
+- intent donations are triggered from foreground app UI actions; widget and Live Activity intent paths do not donate
 
 Notification behavior is part of that surface:
 

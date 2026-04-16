@@ -33,7 +33,7 @@ struct AllWeightEntriesListView: View {
             }
             .onDelete(perform: deleteEntries)
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightEntriesList)
         .environment(\.editMode, editModeBinding)
         .animation(reduceMotion ? nil : .smooth, value: isEditing)

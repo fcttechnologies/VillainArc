@@ -26,7 +26,7 @@ struct WorkoutDetailView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .scrollIndicators(.hidden)
         .appBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailList)

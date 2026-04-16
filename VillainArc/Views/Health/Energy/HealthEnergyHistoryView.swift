@@ -30,7 +30,7 @@ struct HealthEnergyHistoryView: View {
             }
             .padding()
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .appBackground()
         .navigationTitle("Energy")
         .toolbarTitleDisplayMode(.inline)

@@ -33,7 +33,14 @@ This file is the structure map for the app. It answers “where does this respon
 - top-level foreground shell after launch is ready
 - owns the root `TabView`
 - presents full-screen workout, plan, and weight-goal-completion flows
+- presents global profile/settings sheets
+- shows active workout/plan resume bars when those flows are minimized
 - installs the toast overlay host
+
+### `Views/AppShell/ActiveFlowResumeBars.swift`
+
+- minimized-flow resume bar surfaces for active workout and active plan
+- includes fast actions like complete-next-set when workout state allows it
 
 ### Profile and Settings Surfaces
 
@@ -53,6 +60,8 @@ This file is the structure map for the app. It answers “where does this respon
 - shared navigation and active-flow coordinator
 - owns home/health tab paths
 - owns the currently presented workout session and workout plan
+- tracks whether workout/plan full-screen covers are currently presented
+- owns active global app-sheet presentation (profile/settings)
 - owns the active weight-goal completion route
 - owns typed pending presentation state for router-driven health, split, and workout sheets/dialogs
 - receives Spotlight, Siri, intent, live-activity, and home-screen quick-action entry points
@@ -269,8 +278,10 @@ It also stores current fitness level plus last fitness-level confirmation timest
 
 - `Data/Services/App/SpotlightIndexer.swift`
 - `Intents/**/*`
+- `Intents/IntentDonations.swift`
 
 Health-specific intents reuse Health-tab routes and caches, while workout- and split-related intents usually hand the app off through `AppRouter` presentation routes instead of bespoke modal state in each entry point.
+Intent donations are foreground-surface driven; widget and Live Activity intent execution paths do not donate.
 
 ### Widgets and Live Activities
 

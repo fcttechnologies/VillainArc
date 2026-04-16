@@ -562,7 +562,9 @@ private struct UnitSettingsView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
-        .onChange(of: settings.weightUnit) {
+        .onChange(of: settings.weightUnit, initial: false) { oldUnit, newUnit in
+            guard oldUnit != newUnit else { return }
+            migrateInProgressWeightValues(from: oldUnit, to: newUnit)
             saveContext(context: context)
             HealthMetricWidgetReloader.reloadWeight()
         }
@@ -575,6 +577,20 @@ private struct UnitSettingsView: View {
         .onChange(of: settings.energyUnit) {
             saveContext(context: context)
             HealthMetricWidgetReloader.reloadEnergy()
+        }
+    }
+
+    private func migrateInProgressWeightValues(from oldUnit: WeightUnit, to newUnit: WeightUnit) {
+        if let workout = try? context.fetch(WorkoutSession.incomplete).first,
+           workout.statusValue == .active || workout.statusValue == .pending {
+            workout.convertSetWeightsToKg(from: oldUnit)
+            workout.convertSetWeightsFromKg(to: newUnit)
+            WorkoutActivityManager.update(for: workout)
+        }
+
+        if let plan = try? context.fetch(WorkoutPlan.incomplete).first {
+            plan.convertTargetWeightsToKg(from: oldUnit)
+            plan.convertTargetWeightsFromKg(to: newUnit)
         }
     }
 }

@@ -8,7 +8,7 @@ struct ManageWorkoutSplitsIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         var descriptor = FetchDescriptor<WorkoutSplit>()
         descriptor.fetchLimit = 1
@@ -16,6 +16,7 @@ struct ManageWorkoutSplitsIntent: AppIntent {
 
         if let activeSplit = try? context.fetch(WorkoutSplit.active).first { activeSplit.refreshRotationIfNeeded(context: context) }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.activeSplitSheet = .list
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))

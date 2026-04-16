@@ -11,6 +11,7 @@ struct StartWorkoutWithPlanIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
+        try SetupGuard.requireReady(context: context)
         if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutError.workoutPlanIsActive }
         if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutError.workoutIsActive }
         let workoutPlanID = workoutPlan.id

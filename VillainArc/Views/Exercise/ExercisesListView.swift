@@ -46,7 +46,7 @@ struct ExercisesListView: View {
             .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .scrollContentBackground(.hidden)
         .appBackground()
         .scrollDismissesKeyboard(.immediately)

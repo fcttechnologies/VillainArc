@@ -30,6 +30,7 @@ struct WorkoutSummaryView: View {
     @Environment(\.modelContext) private var context
     @Query private var sessionSuggestionEvents: [SuggestionEvent]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @State private var router = AppRouter.shared
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
@@ -467,7 +468,11 @@ struct WorkoutSummaryView: View {
         }
         WorkoutActivityManager.end()
         SpotlightIndexer.index(workoutSession: workout)
-        dismiss()
+        if router.activeWorkoutSession?.id == workout.id {
+            router.activeWorkoutSession = nil
+        } else {
+            dismiss()
+        }
     }
 
     private func saveWorkoutAsPlan() {

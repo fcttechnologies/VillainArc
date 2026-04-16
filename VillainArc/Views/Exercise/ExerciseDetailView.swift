@@ -273,7 +273,7 @@ struct ExerciseDetailView: View {
             }
             .padding(.horizontal)
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .appBackground()

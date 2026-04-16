@@ -38,6 +38,10 @@ enum AccessibilityIdentifiers {
     static let morphingNewWeightGoalButton = "morphingNewWeightGoalButton"
     static let morphingNewStepsGoalButton = "morphingNewStepsGoalButton"
     static let morphingNewSleepGoalButton = "morphingNewSleepGoalButton"
+    static let activeWorkoutResumeBarButton = "activeWorkoutResumeBarButton"
+    static let activeWorkoutResumeCompleteSetButton = "activeWorkoutResumeCompleteSetButton"
+    static let activePlanResumeBarButton = "activePlanResumeBarButton"
+    static let activePlanResumeOpenButton = "activePlanResumeOpenButton"
     static let healthAddWeightEntryButton = "healthAddWeightEntryButton"
     static let healthAddWeightEntryConfirmButton = "healthAddWeightEntryConfirmButton"
     static let healthAddWeightEntryWeightField = "healthAddWeightEntryWeightField"
@@ -540,6 +544,13 @@ enum AccessibilityText {
     static let morphingStartTodaysWorkoutHint = localized("Starts today's workout from your active split.")
     static let morphingCreatePlanHint = localized("Creates a new workout plan.")
     static let morphingAddWeightHint = localized("Creates a new weight entry.")
+    static let activeWorkoutResumeHint = localized("Reopens your current workout.")
+    static let activeWorkoutResumeCompleteSetHint = localized("Marks the next active set complete.")
+    static let activeWorkoutResumeCompleteSetLabel = localized("Complete set")
+    static let activeWorkoutResumeRestTimerLabel = localized("Rest timer")
+    static let activeWorkoutResumeElapsedLabel = localized("Workout elapsed time")
+    static let activePlanResumeHint = localized("Reopens your current plan.")
+    static let activePlanResumeOpenButtonLabel = localized("Open workout plan")
     static let healthAddWeightEntryLabel = localized("Add weight entry")
     static let healthAddWeightEntryHint = localized("Creates a new weight entry.")
     static let healthAddWeightEntryConfirmHint = localized("Saves the new weight entry.")
@@ -589,6 +600,14 @@ enum AccessibilityText {
     static let healthSleepHistoryEmptyTitle = localized("No Sleep Data")
 
     static func healthWeightHistoryChartValue(dateText: String, weightText: String) -> String { localized("\(dateText), \(weightText)") }
+
+    static func activeWorkoutResumeLabel(title: String, detail: String) -> String {
+        localized("Workout in progress. \(title). \(detail)")
+    }
+
+    static func activePlanResumeLabel(title: String, detail: String) -> String {
+        localized("Plan in progress. \(title). \(detail)")
+    }
 
     static func healthWeightHistoryEmptyDescription(for range: TimeSeriesRangeFilter) -> String {
         switch range {

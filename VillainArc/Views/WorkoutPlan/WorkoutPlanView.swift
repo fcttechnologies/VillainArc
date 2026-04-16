@@ -70,7 +70,7 @@ struct WorkoutPlanView: View {
                                     discardEditingCopyAndDismiss()
                                 }
                             } else if plan.completed {
-                                dismiss()
+                                dismissPresentedPlanEditor()
                             } else if plan.sortedExercises.isEmpty {
                                 deleteWorkoutPlanAndDismiss()
                             } else {
@@ -111,7 +111,7 @@ struct WorkoutPlanView: View {
                             saveContext(context: context)
                             SpotlightIndexer.index(workoutPlan: plan)
                             SpotlightIndexer.reindexLinkedWorkoutSplits(for: plan)
-                            dismiss()
+                            dismissPresentedPlanEditor()
                         }
                         .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSaveButton)
@@ -414,7 +414,7 @@ struct WorkoutPlanView: View {
         plan.deleteWithSuggestionCleanup(context: context)
         try? context.save()
         SpotlightIndexer.index(workoutSplits: linkedSplits)
-        dismiss()
+        dismissPresentedPlanEditor()
     }
 
     private func dismissPresentedPlanEditor() {

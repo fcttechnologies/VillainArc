@@ -1,4 +1,5 @@
 import AppIntents
+import SwiftData
 
 struct LiveActivityAddExerciseIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Add Exercise"
@@ -6,7 +7,13 @@ struct LiveActivityAddExerciseIntent: LiveActivityIntent {
     static let supportedModes: IntentModes = .foreground(.immediate)
 
     @MainActor func perform() async throws -> some IntentResult {
-        AppRouter.shared.activeWorkoutSheet = .addExercise
+        let context = SharedModelContainer.container.mainContext
+        guard let workout = try? context.fetch(WorkoutSession.incomplete).first, workout.statusValue == .active else {
+            return .result()
+        }
+
+        AppRouter.shared.resumeWorkoutSession(workout)
+        AppRouter.shared.presentWorkoutSheet(.addExercise)
         return .result()
     }
 }

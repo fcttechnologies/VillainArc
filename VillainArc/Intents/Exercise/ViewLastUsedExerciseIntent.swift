@@ -8,13 +8,14 @@ struct ViewLastUsedExerciseIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         guard let history = try context.fetch(ExerciseHistory.recentCompleted(limit: 1)).first else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
 
         let storedExercise = try context.fetch(Exercise.withCatalogID(history.catalogID)).first
         guard let storedExercise else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
         return .result(opensIntent: OpenAppIntent())

@@ -11,12 +11,13 @@ struct OpenWorkoutPlanIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         let workoutPlanID = workoutPlan.id
         guard let storedPlan = try context.fetch(WorkoutPlan.byID(workoutPlanID)).first else { throw OpenWorkoutPlanError.workoutPlanNotFound }
         guard storedPlan.completed else { throw OpenWorkoutPlanError.workoutPlanIncomplete }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(storedPlan, false))
         return .result(opensIntent: OpenAppIntent())

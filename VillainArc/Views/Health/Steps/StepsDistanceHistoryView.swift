@@ -47,7 +47,7 @@ struct StepsDistanceHistoryView: View {
             }
             .padding()
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .appBackground()
         .navigationTitle("Steps")
         .toolbarTitleDisplayMode(.inline)

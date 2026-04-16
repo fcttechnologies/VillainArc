@@ -49,6 +49,14 @@ Workouts move through:
 
 `WorkoutSessionContainer` routes the UI by this status.
 
+## Presentation vs Lifecycle
+
+Workout lifecycle state and full-screen presentation are intentionally separate.
+
+- an incomplete workout can stay active while its full-screen cover is dismissed
+- the app surfaces a bottom resume bar so the user can reopen that active workout
+- while minimized, that session still counts as the current active flow and still blocks starting another workout/plan
+
 ## Session Creation
 
 ### Empty Workout
@@ -152,6 +160,7 @@ Important runtime rules:
 - pre-workout context prompting is settings-driven
 - live activities mirror the active incomplete workout
 - router-driven workout sheets and dialogs are keyed off typed `AppRouter` presentation routes, not view-local intent booleans
+- workout intents that open workout sheets (rest timer, workout settings, pre-workout context, add exercise) first ensure the active workout cover is presented so sheet routing still targets the live workout flow
 
 ## Finishing a Workout
 

@@ -8,7 +8,7 @@ struct OpenTodaysPlanIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         guard let split = try? context.fetch(WorkoutSplit.active).first else { throw OpenTodaysPlanError.noActiveSplit }
         guard !(split.days?.isEmpty ?? true) else { throw OpenTodaysPlanError.noDaysInSplit }
@@ -19,6 +19,7 @@ struct OpenTodaysPlanIntent: AppIntent {
         guard !todaysDay.isRestDay else { throw OpenTodaysPlanError.todayIsRestDay }
         guard let workoutPlan = resolution.workoutPlan else { throw OpenTodaysPlanError.noWorkoutPlanForToday }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(workoutPlan, true))
         return .result(opensIntent: OpenAppIntent())

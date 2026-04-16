@@ -956,6 +956,9 @@
         }
       }
     },
+    "Achieved at %@" : {
+
+    },
     "Achieved Days" : {
       "localizations" : {
         "en" : {
@@ -1912,6 +1915,9 @@
         }
       }
     },
+    "Bulk" : {
+
+    },
     "Bulk goal reached" : {
       "localizations" : {
         "en" : {
@@ -2634,6 +2640,9 @@
         }
       }
     },
+    "Create Sleep Goal" : {
+
+    },
     "Create Split" : {
       "localizations" : {
         "en" : {
@@ -2653,6 +2662,9 @@
           }
         }
       }
+    },
+    "Create Weight Goal" : {
+
     },
     "Create Workout Plan" : {
       "localizations" : {
@@ -2767,6 +2779,9 @@
         }
       }
     },
+    "Creates or replaces your current sleep goal." : {
+
+    },
     "Creates or replaces your current steps goal." : {
       "localizations" : {
         "en" : {
@@ -2776,6 +2791,9 @@
           }
         }
       }
+    },
+    "Creates or replaces your current weight goal." : {
+
     },
     "Current" : {
       "localizations" : {
@@ -2841,6 +2859,9 @@
       }
     },
     "Customize workout logging, prompts, Live Activity behavior, and retention." : {
+
+    },
+    "Cut" : {
 
     },
     "Cut goal reached" : {
@@ -3898,6 +3919,9 @@
         }
       }
     },
+    "exercise" : {
+
+    },
     "Exercise" : {
       "localizations" : {
         "en" : {
@@ -3947,6 +3971,9 @@
           }
         }
       }
+    },
+    "exercises" : {
+
     },
     "Exercises" : {
       "localizations" : {
@@ -4814,6 +4841,9 @@
           }
         }
       }
+    },
+    "How much sleep should you aim for each night?" : {
+
     },
     "hr" : {
       "localizations" : {
@@ -5734,6 +5764,16 @@
         }
       }
     },
+    "Marks the next active set complete." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marks the next active set complete."
+          }
+        }
+      }
+    },
     "Marks the next set complete and restarts the timer." : {
       "localizations" : {
         "en" : {
@@ -6216,6 +6256,9 @@
           }
         }
       }
+    },
+    "No active workout plan found." : {
+
     },
     "No completed workouts to delete." : {
       "localizations" : {
@@ -7229,6 +7272,9 @@
         }
       }
     },
+    "Open Active Plan" : {
+
+    },
     "Open Active Workout" : {
       "localizations" : {
         "en" : {
@@ -7288,6 +7334,9 @@
           }
         }
       }
+    },
+    "Open Profile" : {
+
     },
     "Open Rest Timer" : {
       "localizations" : {
@@ -7418,6 +7467,9 @@
           }
         }
       }
+    },
+    "Opens app settings." : {
+
     },
     "Opens detailed energy history." : {
       "localizations" : {
@@ -7602,6 +7654,9 @@
         }
       }
     },
+    "Opens your active workout plan flow." : {
+
+    },
     "Opens your active workout split." : {
       "localizations" : {
         "en" : {
@@ -7651,6 +7706,12 @@
           }
         }
       }
+    },
+    "Opens your profile." : {
+
+    },
+    "Opens your sleep goal history." : {
+
     },
     "Opens your sleep history." : {
       "localizations" : {
@@ -7920,6 +7981,16 @@
     },
     "Plan Actions" : {
 
+    },
+    "Plan in progress. %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Plan in progress. %1$@. %2$@"
+          }
+        }
+      }
     },
     "Plan Notes" : {
       "localizations" : {
@@ -8285,6 +8356,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rename Split"
+          }
+        }
+      }
+    },
+    "Reopens your current plan." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopens your current plan."
+          }
+        }
+      }
+    },
+    "Reopens your current workout." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopens your current workout."
           }
         }
       }
@@ -9527,6 +9618,12 @@
         }
       }
     },
+    "Set my ${goalType} goal to ${targetWeight}" : {
+
+    },
+    "Set my sleep goal to ${duration}" : {
+
+    },
     "Set my steps goal to ${targetSteps}" : {
       "localizations" : {
         "en" : {
@@ -9637,6 +9734,9 @@
         }
       }
     },
+    "Should this be a cut, bulk, or maintain goal?" : {
+
+    },
     "Shoulders" : {
       "localizations" : {
         "en" : {
@@ -9706,6 +9806,9 @@
           }
         }
       }
+    },
+    "Show Sleep Goal History" : {
+
     },
     "Show Sleep History" : {
       "localizations" : {
@@ -12698,6 +12801,9 @@
         }
       }
     },
+    "Weight Goal Type" : {
+
+    },
     "Weight Goals" : {
       "localizations" : {
         "en" : {
@@ -12787,6 +12893,9 @@
           }
         }
       }
+    },
+    "What target weight should we use?" : {
+
     },
     "What type of split do you want to create?" : {
       "localizations" : {
@@ -13146,6 +13255,9 @@
         }
       }
     },
+    "Workout elapsed time" : {
+
+    },
     "Workout finish canceled." : {
       "localizations" : {
         "en" : {
@@ -13162,6 +13274,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Workout History"
+          }
+        }
+      }
+    },
+    "Workout in progress. %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Workout in progress. %1$@. %2$@"
           }
         }
       }
@@ -14086,6 +14208,16 @@
         }
       }
     },
+    "Your %@ goal target is now %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your %1$@ goal target is now %2$@."
+          }
+        }
+      }
+    },
     "Your created workout plans will appear here." : {
       "localizations" : {
         "en" : {
@@ -14205,6 +14337,12 @@
         }
       }
     },
+    "Your sleep goal is now %@. Changes apply starting tomorrow." : {
+
+    },
+    "Your sleep goal needs to be more than 0." : {
+
+    },
     "Your split doesn't have any days set up yet." : {
       "localizations" : {
         "en" : {
@@ -14244,6 +14382,9 @@
           }
         }
       }
+    },
+    "Your target weight needs to be more than 0." : {
+
     },
     "Your weight data will show up here once you add or sync body weight entries" : {
       "localizations" : {

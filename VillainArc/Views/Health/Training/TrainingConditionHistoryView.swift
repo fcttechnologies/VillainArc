@@ -29,7 +29,7 @@ struct TrainingConditionHistoryView: View {
             }
             .listRowBackground(Color.clear)
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .appBackground()

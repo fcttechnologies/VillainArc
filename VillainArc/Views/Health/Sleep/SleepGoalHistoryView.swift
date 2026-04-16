@@ -19,7 +19,7 @@ struct SleepGoalHistoryView: View {
                     }
             }
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .navigationTitle("Sleep Goals")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
@@ -29,6 +29,7 @@ struct SleepGoalHistoryView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     router.presentHealthSheet(.newSleepGoal)
+                    Task { await IntentDonations.donateCreateSleepGoal() }
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)

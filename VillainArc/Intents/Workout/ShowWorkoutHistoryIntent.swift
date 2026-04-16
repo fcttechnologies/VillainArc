@@ -8,10 +8,11 @@ struct ShowWorkoutHistoryIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         guard (try? context.fetch(WorkoutSession.recent).first) != nil else { throw ShowWorkoutHistoryError.noWorkoutsFound }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionsList)
         return .result(opensIntent: OpenAppIntent())

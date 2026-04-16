@@ -574,7 +574,11 @@ struct WorkoutView: View {
             WorkoutActivityManager.end()
         }
         if shouldDismiss {
-            dismiss()
+            if router.activeWorkoutSession?.id == workout.id {
+                router.activeWorkoutSession = nil
+            } else {
+                dismiss()
+            }
         }
     }
     

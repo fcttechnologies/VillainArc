@@ -105,7 +105,7 @@ struct WorkoutPlanDetailView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .scrollIndicators(.hidden)
         .modifier(WorkoutPlanDetailBackgroundModifier(showSheetBackground: showSheetBackground))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)

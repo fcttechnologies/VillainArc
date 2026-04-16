@@ -47,15 +47,14 @@ private enum ProfileImagePickerSource: String, Identifiable {
 
 struct ProfileSheetLauncherButton: View {
     @Query(UserProfile.single) private var profiles: [UserProfile]
+    @State private var router = AppRouter.shared
 
     let accessibilityIdentifier: String
 
-    @State private var isPresented = false
-
     var body: some View {
         Button {
-            Haptics.selection()
-            isPresented = true
+            router.presentAppSheet(.profile)
+            Task { await IntentDonations.donateOpenProfile() }
         } label: {
             ProfileAvatarBadge(displayName: profiles.first?.trimmedName, imageData: profiles.first?.profileImageData, size: 40)
                 .contentShape(.circle)
@@ -65,10 +64,6 @@ struct ProfileSheetLauncherButton: View {
         .accessibilityValue(accessibilityValue)
         .accessibilityHint(AccessibilityText.profileHint)
         .accessibilityIdentifier(accessibilityIdentifier)
-        .sheet(isPresented: $isPresented) {
-            ProfileSheetView()
-                .presentationBackground(Color.sheetBg)
-        }
         .padding(.trailing, 6)
     }
 
@@ -226,6 +221,7 @@ struct ProfileSheetView: View {
                     Button("Settings", systemImage: "gearshape") {
                         Haptics.selection()
                         showAppSettings = true
+                        Task { await IntentDonations.donateOpenSettings() }
                     }
                     .accessibilityLabel(AccessibilityText.homeSettingsLabel)
                     .accessibilityHint(AccessibilityText.profileSheetSettingsHint)

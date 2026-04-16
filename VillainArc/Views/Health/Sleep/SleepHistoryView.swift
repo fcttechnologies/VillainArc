@@ -34,7 +34,7 @@ struct SleepHistoryView: View {
             }
             .padding()
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .appBackground()
         .navigationTitle("Sleep")
         .toolbarTitleDisplayMode(.inline)
@@ -390,8 +390,10 @@ private struct SleepHistoryMainSection: View {
         Haptics.selection()
         if activeGoal == nil {
             router.presentHealthSheet(.newSleepGoal)
+            Task { await IntentDonations.donateCreateSleepGoal() }
         } else {
             router.navigate(to: .sleepGoalHistory)
+            Task { await IntentDonations.donateShowSleepGoalHistory() }
         }
     }
     

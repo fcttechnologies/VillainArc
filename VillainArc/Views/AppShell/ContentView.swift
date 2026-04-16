@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var router = AppRouter.shared
     @State private var isMorphingTabBarExpanded = false
+    @Namespace private var animation
     
     var body: some View {
         TabView(selection: tabSelectionBinding) {
@@ -17,7 +18,14 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaBar(edge: .bottom) {
             if !router.isQuickActionsBarHidden {
-                MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext))
+                VStack(spacing: 12) {
+                    if router.hasHiddenActiveFlowPresentation {
+                        activeFlowResumeBar
+                            .padding(.horizontal, 15)
+                    }
+                    MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext))
+                }
+                .matchedTransitionSource(id: "toolbarSource", in: animation)
             }
         }
         .onChange(of: router.navigationEventToken) {
@@ -28,19 +36,35 @@ struct ContentView: View {
                 collapseMorphingTabBar()
             }
         }
-        .fullScreenCover(item: $router.activeWorkoutSession) {
-            WorkoutSessionContainer(workout: $0)
+        .fullScreenCover(isPresented: workoutSessionCoverBinding) {
+            if let workout = router.activeWorkoutSession {
+                WorkoutSessionContainer(workout: workout)
+                    .navigationTransition(.zoom(sourceID: "toolbarSource", in: animation))
+            }
         }
-        .fullScreenCover(item: $router.activeWorkoutPlan, onDismiss: {
+        .fullScreenCover(isPresented: workoutPlanCoverBinding, onDismiss: {
+            guard router.activeWorkoutPlan == nil else { return }
             let cleanup = router.pendingWorkoutPlanDismissCleanup
             router.pendingWorkoutPlanDismissCleanup = nil
             cleanup?()
-            router.activeWorkoutPlanOriginal = nil
         }) {
-            WorkoutPlanView(plan: $0, originalPlan: router.activeWorkoutPlanOriginal)
+            if let plan = router.activeWorkoutPlan {
+                WorkoutPlanView(plan: plan, originalPlan: router.activeWorkoutPlanOriginal)
+                    .navigationTransition(.zoom(sourceID: "toolbarSource", in: animation))
+            }
         }
         .fullScreenCover(item: $router.activeWeightGoalCompletion) {
             WeightGoalCompletionView(route: $0)
+        }
+        .sheet(item: $router.activeAppSheet) { appSheet in
+            switch appSheet {
+            case .profile:
+                ProfileSheetView()
+                    .presentationBackground(Color.sheetBg)
+            case .settings:
+                AppSettingsView()
+                    .presentationBackground(Color.sheetBg)
+            }
         }
         .sheet(isPresented: addWeightEntrySheetBinding) {
             NewWeightEntryView()
@@ -111,14 +135,12 @@ struct ContentView: View {
         ]
 
         if router.canShowStartTodaysWorkoutExpandedAction() {
-            actions.append(
-                ExpandedAction("Start Today's Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartTodaysWorkoutButton, accessibilityHint: AccessibilityText.morphingStartTodaysWorkoutHint) {
+            actions.append(ExpandedAction("Start Today's Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartTodaysWorkoutButton, accessibilityHint: AccessibilityText.morphingStartTodaysWorkoutHint) {
                     collapseMorphingTabBar()
                     if router.startTodaysWorkoutFromExpandedAction() {
                         Task { await IntentDonations.donateStartTodaysWorkout() }
                     }
-                }
-            )
+                })
         }
 
         return actions
@@ -147,21 +169,17 @@ struct ContentView: View {
         var actions: [ExpandedAction] = []
 
         if let linkedPlan = workout.workoutPlan {
-            actions.append(
-                ExpandedAction("Open Plan", icon: "arrowshape.turn.up.right", accessibilityIdentifier: AccessibilityIdentifiers.morphingOpenWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailOpenWorkoutPlanHint) {
+            actions.append(ExpandedAction("Open Plan", icon: "arrowshape.turn.up.right", accessibilityIdentifier: AccessibilityIdentifiers.morphingOpenWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailOpenWorkoutPlanHint) {
                     collapseMorphingTabBar()
                     router.popToRoot()
                     router.navigate(to: .workoutPlanDetail(linkedPlan, false))
                     Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: linkedPlan) }
-                }
-            )
+                })
         } else {
-            actions.append(
-                ExpandedAction("Save as Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingSaveWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailSaveWorkoutPlanHint) {
+            actions.append(ExpandedAction("Save as Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingSaveWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailSaveWorkoutPlanHint) {
                     collapseMorphingTabBar()
                     router.createWorkoutPlan(from: workout)
-                }
-            )
+                })
         }
 
         return actions
@@ -198,6 +216,7 @@ struct ContentView: View {
             ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewWeightGoalButton, accessibilityHint: AccessibilityText.healthWeightGoalHistoryAddHint) {
                 collapseMorphingTabBar()
                 router.presentHealthSheet(.newWeightGoal)
+                Task { await IntentDonations.donateCreateWeightGoal() }
             }
         ]
     }
@@ -216,6 +235,7 @@ struct ContentView: View {
             ExpandedAction("New Goal", icon: "target", accessibilityIdentifier: AccessibilityIdentifiers.morphingNewSleepGoalButton, accessibilityHint: AccessibilityText.healthSleepGoalHistoryAddHint) {
                 collapseMorphingTabBar()
                 router.presentHealthSheet(.newSleepGoal)
+                Task { await IntentDonations.donateCreateSleepGoal() }
             }
         ]
     }
@@ -225,6 +245,47 @@ struct ContentView: View {
         withAnimation(.bouncy(duration: 0.35, extraBounce: 0.02)) {
             isMorphingTabBarExpanded = false
         }
+    }
+
+    @ViewBuilder
+    private var activeFlowResumeBar: some View {
+        if let workout = router.activeWorkoutSession, !router.isWorkoutSessionCoverPresented {
+            ActiveWorkoutResumeBarButton(workout: workout, isCollapsed: isMorphingTabBarExpanded) {
+                router.presentActiveWorkoutSessionIfPossible()
+                Task { await IntentDonations.donateOpenActiveWorkout() }
+            }
+        } else if let plan = router.activeWorkoutPlan, !router.isWorkoutPlanCoverPresented {
+            ActivePlanResumeBarButton(plan: plan, isCollapsed: isMorphingTabBarExpanded) {
+                router.presentActiveWorkoutPlanIfPossible()
+                Task { await IntentDonations.donateOpenActiveWorkoutPlan() }
+            }
+        }
+    }
+
+    private var workoutSessionCoverBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutSession != nil && router.isWorkoutSessionCoverPresented },
+            set: { isPresented in
+                if isPresented {
+                    router.presentActiveWorkoutSessionIfPossible()
+                } else {
+                    router.dismissActiveWorkoutSessionPresentation()
+                }
+            }
+        )
+    }
+
+    private var workoutPlanCoverBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeWorkoutPlan != nil && router.isWorkoutPlanCoverPresented },
+            set: { isPresented in
+                if isPresented {
+                    router.presentActiveWorkoutPlanIfPossible()
+                } else {
+                    router.dismissActiveWorkoutPlanPresentation()
+                }
+            }
+        )
     }
 
     private var addWeightEntrySheetBinding: Binding<Bool> {

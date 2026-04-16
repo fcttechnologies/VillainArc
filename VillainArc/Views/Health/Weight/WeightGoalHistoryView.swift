@@ -34,7 +34,7 @@ struct WeightGoalHistoryView: View {
                     }
             }
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalHistoryList)
         .navigationTitle("Weight Goals")
         .toolbarTitleDisplayMode(.inline)

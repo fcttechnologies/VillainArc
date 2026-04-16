@@ -151,6 +151,7 @@ struct NewSleepGoalView: View {
         _ = try? SleepGoal.replaceActiveGoal(with: normalizedTargetDuration, context: context)
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadSleep()
+        Task { await IntentDonations.donateCreateSleepGoal() }
         Haptics.selection()
         dismiss()
     }

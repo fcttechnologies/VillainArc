@@ -19,7 +19,12 @@ struct StepsGoalSummaryCard: View {
     private var subtitleText: String? {
         guard let activeGoal else { return nil }
         guard let todayEntry else { return nil }
-        if todayEntry.goalCompleted { return String(localized: "Achieved today") }
+        if todayEntry.goalCompleted {
+            if let completedAt = todayEntry.goalCompletedAt {
+                return String(localized: "Achieved at \(completedAt.formatted(date: .omitted, time: .shortened))")
+            }
+            return String(localized: "Achieved today")
+        }
         let remainingSteps = max(activeGoal.targetSteps - todayEntry.stepCount, 0)
         return String(localized: "\(remainingSteps.formatted(.number)) steps left today")
     }
@@ -102,7 +107,7 @@ struct StepsGoalHistoryView: View {
                     }
             }
         }
-        .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+        .quickActionContentBottomInset()
         .navigationTitle("Steps Goals")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)

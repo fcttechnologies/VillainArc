@@ -45,6 +45,13 @@ enum HomeQuickAction: String {
         var id: String { rawValue }
     }
 
+    enum AppSheet: String, Identifiable {
+        case profile
+        case settings
+
+        var id: String { rawValue }
+    }
+
     enum AdditionalQuickActionContext: Hashable {
         case healthRoot
         case workoutDetail(WorkoutSession)
@@ -100,20 +107,35 @@ enum HomeQuickAction: String {
             if activeWorkoutSession == nil {
                 activeWorkoutSheet = nil
                 activeWorkoutDialog = nil
+                isWorkoutSessionCoverPresented = false
+            } else {
+                isWorkoutSessionCoverPresented = true
             }
         }
     }
-    var activeWorkoutPlan: WorkoutPlan? { didSet { if activeWorkoutPlan == nil { activeWorkoutPlanOriginal = nil } } }
+    var activeWorkoutPlan: WorkoutPlan? {
+        didSet {
+            if activeWorkoutPlan == nil {
+                activeWorkoutPlanOriginal = nil
+                isWorkoutPlanCoverPresented = false
+            } else {
+                isWorkoutPlanCoverPresented = true
+            }
+        }
+    }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     @ObservationIgnored var activeWorkoutPlanOriginal: WorkoutPlan?
     @ObservationIgnored var pendingWorkoutPlanDismissCleanup: (() -> Void)?
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
     @ObservationIgnored var pendingWidgetDestination: Destination?
+    var activeAppSheet: AppSheet?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
     var activeWorkoutSheet: WorkoutSheet?
     var activeWorkoutDialog: WorkoutDialog?
     var isQuickActionsBarHidden = false
+    var isWorkoutSessionCoverPresented = false
+    var isWorkoutPlanCoverPresented = false
     var tabSelection: AppTab = .home {
         didSet { SharedModelContainer.sharedDefaults.set(tabSelection.rawValue, forKey: Self.selectedTabDefaultsKey) }
     }
@@ -172,6 +194,37 @@ enum HomeQuickAction: String {
 
     private func hasActiveFlow() -> Bool { hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork() }
 
+    private enum ActiveFlowBlockKind {
+        case workout
+        case plan
+    }
+
+    private func activeFlowBlockKind() -> ActiveFlowBlockKind? {
+        if activeWorkoutSession != nil || incompleteWorkoutSession() != nil {
+            return .workout
+        }
+        if activeWorkoutPlan != nil || hasPersistedActivePlanWork() {
+            return .plan
+        }
+        return nil
+    }
+
+    private func showActiveFlowBlockedToast() {
+        switch activeFlowBlockKind() {
+        case .workout:
+            showQuickActionToast(title: "Workout In Progress", message: "Finish, cancel, or resume your current workout first.")
+        case .plan:
+            showQuickActionToast(title: "Plan In Progress", message: "Finish, discard, or resume your current plan first.")
+        case nil:
+            showQuickActionToast(title: "Flow In Progress", message: "Finish your current workout or plan first.")
+        }
+    }
+
+    var hasHiddenActiveFlowPresentation: Bool {
+        (activeWorkoutSession != nil && !isWorkoutSessionCoverPresented) ||
+        (activeWorkoutPlan != nil && !isWorkoutPlanCoverPresented)
+    }
+
     private func isReadyForIntentActions() -> Bool {
         do {
             try SetupGuard.requireReady(context: context)
@@ -217,13 +270,8 @@ enum HomeQuickAction: String {
         guard let destination = pendingWidgetDestination else { return }
         guard isReadyForIntentActions() else { return }
 
-        if hasActiveFlow() {
-            pendingWidgetDestination = nil
-            handleBlockedHomeQuickAction()
-            return
-        }
-
         pendingWidgetDestination = nil
+        collapseActiveFlowPresentations()
         popToRoot()
         navigate(to: destination)
     }
@@ -272,6 +320,11 @@ enum HomeQuickAction: String {
         activeHealthSheet = sheet
     }
 
+    func presentAppSheet(_ sheet: AppSheet) {
+        Haptics.selection()
+        activeAppSheet = sheet
+    }
+
     func presentSplitSheet(_ sheet: SplitSheet) {
         Haptics.selection()
         activeSplitSheet = sheet
@@ -279,12 +332,51 @@ enum HomeQuickAction: String {
 
     func presentWorkoutSheet(_ sheet: WorkoutSheet) {
         Haptics.selection()
+        if activeWorkoutSession != nil {
+            isWorkoutSessionCoverPresented = true
+        }
         activeWorkoutSheet = sheet
     }
 
     func presentWorkoutDialog(_ dialog: WorkoutDialog) {
         Haptics.selection()
+        if activeWorkoutSession != nil {
+            isWorkoutSessionCoverPresented = true
+        }
         activeWorkoutDialog = dialog
+    }
+
+    func collapseActiveFlowPresentations() {
+        if activeWorkoutSession != nil {
+            isWorkoutSessionCoverPresented = false
+            activeWorkoutSheet = nil
+            activeWorkoutDialog = nil
+        }
+        if activeWorkoutPlan != nil {
+            isWorkoutPlanCoverPresented = false
+        }
+    }
+
+    func presentActiveWorkoutSessionIfPossible() {
+        guard activeWorkoutSession != nil else { return }
+        Haptics.selection()
+        isWorkoutSessionCoverPresented = true
+    }
+
+    func dismissActiveWorkoutSessionPresentation() {
+        isWorkoutSessionCoverPresented = false
+        activeWorkoutSheet = nil
+        activeWorkoutDialog = nil
+    }
+
+    func presentActiveWorkoutPlanIfPossible() {
+        guard activeWorkoutPlan != nil else { return }
+        Haptics.selection()
+        isWorkoutPlanCoverPresented = true
+    }
+
+    func dismissActiveWorkoutPlanPresentation() {
+        isWorkoutPlanCoverPresented = false
     }
     func popToRoot() {
         tabSelection = .home
@@ -347,21 +439,22 @@ enum HomeQuickAction: String {
         guard let action = pendingHomeQuickAction else { return }
         guard isReadyForIntentActions() else { return }
 
-        if hasActiveFlow() {
-            pendingHomeQuickAction = nil
-            handleBlockedHomeQuickAction()
-            return
-        }
-
-        pendingHomeQuickAction = nil
-
         switch action {
         case .addWeightEntry:
+            pendingHomeQuickAction = nil
+            collapseActiveFlowPresentations()
             homeTabPath = []
             healthTabPath = []
+            tabSelection = .health
             presentHealthSheet(.addWeightEntry)
 
         case .startTodaysWorkout:
+            if hasActiveFlow() {
+                pendingHomeQuickAction = nil
+                handleBlockedHomeQuickAction()
+                return
+            }
+            pendingHomeQuickAction = nil
             _ = handleStartTodaysWorkoutQuickAction()
         }
     }
@@ -458,7 +551,10 @@ enum HomeQuickAction: String {
     }
 
     func startWorkoutSession() {
-        guard !hasActiveFlow() else { return }
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
         Haptics.selection()
         let newWorkout = WorkoutSession()
         context.insert(newWorkout)
@@ -466,7 +562,10 @@ enum HomeQuickAction: String {
         activeWorkoutSession = newWorkout
     }
     func createWorkoutPlan() {
-        guard !hasActiveFlow() else { return }
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
         Haptics.selection()
         let newWorkoutPlan = WorkoutPlan()
         context.insert(newWorkoutPlan)
@@ -476,7 +575,10 @@ enum HomeQuickAction: String {
     }
 
     func createWorkoutPlan(from workout: WorkoutSession) {
-        guard !hasActiveFlow() else { return }
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
         Haptics.selection()
         let newWorkoutPlan = WorkoutPlan(from: workout)
         newWorkoutPlan.convertTargetWeightsFromKg(to: weightUnit())
@@ -488,7 +590,11 @@ enum HomeQuickAction: String {
     }
 
     func editWorkoutPlan(_ plan: WorkoutPlan) {
-        guard !hasActiveFlow(), plan.completed, !plan.isEditing else { return }
+        guard plan.completed, !plan.isEditing else { return }
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
         Haptics.selection()
         let editingCopy = plan.createEditingCopy(context: context)
         editingCopy.convertTargetWeightsFromKg(to: weightUnit())
@@ -498,7 +604,10 @@ enum HomeQuickAction: String {
     }
 
     func startWorkoutSession(from plan: WorkoutPlan) {
-        guard !hasActiveFlow() else { return }
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
         Haptics.selection()
         let workoutSession = WorkoutSession(from: plan)
         workoutSession.convertSetWeightsFromKg(to: weightUnit())
@@ -580,8 +689,8 @@ enum HomeQuickAction: String {
     }
 
     func handleSpotlight(_ userActivity: NSUserActivity) {
-        guard !hasActiveFlow() else { return }
         guard let identifier = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+        collapseActiveFlowPresentations()
 
         if identifier.hasPrefix(SpotlightIndexer.workoutSessionIdentifierPrefix) {
             let idString = String(identifier.dropFirst(SpotlightIndexer.workoutSessionIdentifierPrefix.count))

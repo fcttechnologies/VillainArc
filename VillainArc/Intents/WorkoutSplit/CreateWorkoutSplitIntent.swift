@@ -8,8 +8,9 @@ struct CreateWorkoutSplitIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.activeSplitSheet = .builder
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))

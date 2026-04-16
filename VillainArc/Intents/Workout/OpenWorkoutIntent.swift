@@ -11,7 +11,7 @@ struct OpenWorkoutIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         let workoutID = workout.id
         let predicate = #Predicate<WorkoutSession> { $0.id == workoutID }
@@ -20,6 +20,7 @@ struct OpenWorkoutIntent: AppIntent {
         guard let storedWorkout = try context.fetch(descriptor).first else { throw OpenWorkoutError.workoutNotFound }
         guard storedWorkout.status == SessionStatus.done.rawValue else { throw OpenWorkoutError.workoutIncomplete }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionDetail(storedWorkout))
         return .result(opensIntent: OpenAppIntent())

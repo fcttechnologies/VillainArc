@@ -11,7 +11,7 @@ struct ShowExerciseHistoryIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         let catalogID = exercise.id
         guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw ShowExerciseHistoryError.exerciseNotFound }
@@ -21,6 +21,7 @@ struct ShowExerciseHistoryIntent: AppIntent {
         descriptor.fetchLimit = 1
         guard (try? context.fetch(descriptor).first) != nil else { throw ShowExerciseHistoryError.noExerciseHistoryFound }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exerciseHistory(storedExercise.catalogID))
         return .result(opensIntent: OpenAppIntent())

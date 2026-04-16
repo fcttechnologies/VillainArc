@@ -8,12 +8,13 @@ struct OpenExercisesIntent: AppIntent {
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
         let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        try SetupGuard.requireReady(context: context)
 
         var descriptor = Exercise.all
         descriptor.fetchLimit = 1
         guard (try? context.fetch(descriptor).first) != nil else { throw OpenExercisesError.noExercisesAvailable }
 
+        AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exercisesList)
         return .result(opensIntent: OpenAppIntent())

@@ -137,6 +137,11 @@ The home-screen `Add Weight Entry` quick action is handled the same way:
 - routes into the Health tab
 - presents the same add-weight sheet used by the tab UI
 
+Intent-donation policy for this surface:
+
+- donations are emitted by foreground app UI actions
+- widget and Live Activity intent paths do not emit donations
+
 ## Observer and Background Delivery Design
 
 ### Observer Installation

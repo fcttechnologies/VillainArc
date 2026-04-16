@@ -29,7 +29,7 @@ struct HomeTabView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier(AccessibilityIdentifiers.homeRecentExercisesSection)
             }
-            .contentMargins(.bottom, quickActionContentBottomMargin, for: .scrollContent)
+            .quickActionContentBottomInset()
             .appBackground()
             .navBar(title: "Workout", includePadding: false) {
                 ProfileSheetLauncherButton(accessibilityIdentifier: AccessibilityIdentifiers.homeProfileButton)

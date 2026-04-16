@@ -27,6 +27,11 @@ For completed plans, the app always:
 
 That keeps the original plan stable until commit time and gives the app one place to clean up stale suggestion state invalidated by manual edits.
 
+Presentation note:
+
+- an active plan-editing flow can be temporarily dismissed from full-screen presentation and later reopened from the active-flow resume bar
+- while minimized, that draft/edit flow is still active work and still blocks starting another workout/plan flow
+
 ## Where Authoring Starts
 
 ### Blank Plan Creation
