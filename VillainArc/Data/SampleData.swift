@@ -9,10 +9,7 @@ final class PreviewDataContainer {
     init(includeIncompleteData: Bool = false) {
         do {
             let schema = SharedModelContainer.schema
-            modelContainer = try ModelContainer(
-                for: schema,
-                configurations: [.init(schema: schema, isStoredInMemoryOnly: true)]
-            )
+            modelContainer = try ModelContainer(for: schema, configurations: [.init(schema: schema, isStoredInMemoryOnly: true)])
 
             context.insert(AppSettings())
             syncExercises()

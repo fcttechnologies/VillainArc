@@ -288,8 +288,8 @@ private extension View {
     func activeFlowResumeBarChrome(isCollapsed: Bool, reduceMotion: Bool) -> some View {
         self
             .foregroundStyle(.primary)
-            .padding(.horizontal, 14)
-            .frame(height: 52)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .glassEffect(.regular.interactive(), in: .capsule)
             .scaleEffect(x: isCollapsed ? 0.1 : 1, y: isCollapsed ? 0.1 : 1, anchor: .center)

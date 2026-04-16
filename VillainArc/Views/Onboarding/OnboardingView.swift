@@ -516,26 +516,6 @@ private struct ProfileNameStepView: View {
                 .textContentType(.name)
 
             Spacer()
-
-            Button {
-                Task {
-                    guard await manager.saveName(name) else { return }
-                    if manager.shouldInsertHealthPermissionsStep {
-                        path.append(.healthPermissions)
-                    } else if let nextStep = manager.nextRequiredStep {
-                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                            path.append(onboardingStep)
-                        }
-                    }
-                }
-            } label: {
-                Text("Continue")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
-            }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
-            .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding()
         .simultaneousGesture(
@@ -545,6 +525,25 @@ private struct ProfileNameStepView: View {
         )
         .navigationTitle("What's your name?")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .confirm) {
+                    Haptics.selection()
+                    Task {
+                        guard await manager.saveName(name) else { return }
+                        if manager.shouldInsertHealthPermissionsStep {
+                            path.append(.healthPermissions)
+                        } else if let nextStep = manager.nextRequiredStep {
+                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                                path.append(onboardingStep)
+                            }
+                        }
+                    }
+                }
+                .fontWeight(.semibold)
+                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
     }
 }
 
@@ -569,27 +568,26 @@ private struct ProfileBirthdayStepView: View {
                 .labelsHidden()
 
             Spacer()
-
-            Button {
-                Task {
-                    guard await manager.saveBirthday(birthday) else { return }
-                    if let nextStep = manager.nextRequiredStep {
-                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                            path.append(onboardingStep)
-                        }
-                    }
-                }
-            } label: {
-                Text("Continue")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
-            }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
         }
         .padding()
         .navigationTitle("When's your birthday?")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .confirm) {
+                    Haptics.selection()
+                    Task {
+                        guard await manager.saveBirthday(birthday) else { return }
+                        if let nextStep = manager.nextRequiredStep {
+                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                                path.append(onboardingStep)
+                            }
+                        }
+                    }
+                }
+                .fontWeight(.semibold)
+            }
+        }
     }
 }
 
@@ -647,30 +645,29 @@ private struct ProfileGenderStepView: View {
             }
 
             Spacer()
-
-            Button {
-                Task {
-                    guard await manager.saveGender(gender) else { return }
-                    if let nextStep = manager.nextRequiredStep {
-                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                            path.append(onboardingStep)
-                        }
-                    }
-                }
-            } label: {
-                Text("Continue")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
-            }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
-            .disabled(gender == .notSet)
-            .accessibilityHint(AccessibilityText.onboardingGenderContinueHint)
         }
         .padding()
         .animation(reduceMotion ? nil : .bouncy, value: gender)
         .navigationTitle("What's your gender?")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .confirm) {
+                    Haptics.selection()
+                    Task {
+                        guard await manager.saveGender(gender) else { return }
+                        if let nextStep = manager.nextRequiredStep {
+                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                                path.append(onboardingStep)
+                            }
+                        }
+                    }
+                }
+                .fontWeight(.semibold)
+                .disabled(gender == .notSet)
+                .accessibilityHint(AccessibilityText.onboardingGenderContinueHint)
+            }
+        }
     }
 }
 
@@ -733,28 +730,27 @@ private struct ProfileHeightStepView: View {
             }
 
             Spacer()
-
-            Button {
-                let saveCm = heightUnit == .imperial ? HeightUnit.imperial.toCm(feet: feet, inches: inches) : cm
-                Task {
-                    guard await manager.saveHeight(cm: saveCm) else { return }
-                    if let nextStep = manager.nextRequiredStep {
-                        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                            path.append(onboardingStep)
-                        }
-                    }
-                }
-            } label: {
-                Text("Continue")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
-            }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
         }
         .padding()
         .navigationTitle("What's your height?")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .confirm) {
+                    Haptics.selection()
+                    let saveCm = heightUnit == .imperial ? HeightUnit.imperial.toCm(feet: feet, inches: inches) : cm
+                    Task {
+                        guard await manager.saveHeight(cm: saveCm) else { return }
+                        if let nextStep = manager.nextRequiredStep {
+                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                                path.append(onboardingStep)
+                            }
+                        }
+                    }
+                }
+                .fontWeight(.semibold)
+            }
+        }
     }
 
     private func inchesLabel(for value: Double) -> String {
@@ -775,39 +771,39 @@ private struct ProfileFitnessLevelStepView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text(FitnessLevel.influenceDescription)
-                .multilineTextAlignment(.leading)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(FitnessLevel.influenceDescription)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            FitnessLevelSelectionList(selection: $selectedLevel)
-
-            Spacer()
-
-            Button {
-                guard let selectedLevel else { return }
-                Task {
-                    guard await manager.saveFitnessLevel(selectedLevel) else { return }
-                    if let nextStep = manager.nextRequiredStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                        path.append(onboardingStep)
-                    }
-                }
-            } label: {
-                Text("Continue")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
+                FitnessLevelSelectionList(selection: $selectedLevel)
             }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
-            .disabled(selectedLevel == nil)
-            .accessibilityHint(AccessibilityText.onboardingFitnessLevelContinueHint)
+            .padding()
         }
-        .padding()
+        .scrollIndicators(.hidden)
         .animation(reduceMotion ? nil : .bouncy, value: selectedLevel)
         .navigationTitle("What's your fitness level?")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .confirm) {
+                    guard let selectedLevel else { return }
+                    Haptics.selection()
+                    Task {
+                        guard await manager.saveFitnessLevel(selectedLevel) else { return }
+                        if let nextStep = manager.nextRequiredStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
+                            path.append(onboardingStep)
+                        }
+                    }
+                }
+                .fontWeight(.semibold)
+                .disabled(selectedLevel == nil)
+                .accessibilityHint(AccessibilityText.onboardingFitnessLevelContinueHint)
+            }
+        }
         .onAppear {
             selectedLevel = manager.profile?.fitnessLevel
         }
@@ -828,36 +824,36 @@ private struct ProfileTrainingGoalStepView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text(TrainingGoalKind.influenceDescription)
-                .multilineTextAlignment(.leading)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            TrainingGoalSelectionList(selection: $selectedGoal)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(TrainingGoalKind.influenceDescription)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
-
-            Button {
-                guard let selectedGoal else { return }
-                Task {
-                    guard await manager.saveTrainingGoal(selectedGoal) else { return }
-                }
-            } label: {
-                Text("Finish")
-                    .padding(.vertical, 8)
-                    .fontWeight(.semibold)
+                TrainingGoalSelectionList(selection: $selectedGoal)
             }
-            .buttonSizing(.flexible)
-            .buttonStyle(.glassProminent)
-            .disabled(selectedGoal == nil)
-            .accessibilityHint(AccessibilityText.onboardingTrainingGoalContinueHint)
+            .padding()
         }
-        .padding()
+        .scrollIndicators(.hidden)
         .animation(reduceMotion ? nil : .bouncy, value: selectedGoal)
         .navigationTitle("How do you like to train?")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .confirm) {
+                    guard let selectedGoal else { return }
+                    Haptics.selection()
+                    Task {
+                        guard await manager.saveTrainingGoal(selectedGoal) else { return }
+                    }
+                }
+                .fontWeight(.semibold)
+                .disabled(selectedGoal == nil)
+                .accessibilityHint(AccessibilityText.onboardingTrainingGoalContinueHint)
+            }
+        }
         .onAppear {
             selectedGoal = activeGoals.first?.kind
         }

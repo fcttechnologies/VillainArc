@@ -154,6 +154,7 @@ private struct SelectTypeView: View {
                                 Text(type.description)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -210,6 +211,7 @@ private struct SelectModeView: View {
                             Text("Same workout on the same day every week")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
                         }
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -238,6 +240,7 @@ private struct SelectModeView: View {
                             Text("A repeating cycle not tied to calendar days")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
                         }
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -309,6 +312,7 @@ private struct SelectDaysView: View {
                             Text(daysDescription(for: days))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
                             Image(systemName: "chevron.right")
                                 .foregroundStyle(.tertiary)
                                 .accessibilityHidden(true)

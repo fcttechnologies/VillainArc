@@ -134,7 +134,7 @@ struct ProfileSheetView: View {
                     profile.gender = selectedGender
                     saveContext(context: context)
                 }
-                .presentationDetents([.fraction(0.4)])
+                .presentationDetents([.medium])
                 .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showHeightEditor) {
@@ -143,7 +143,7 @@ struct ProfileSheetView: View {
                     profile.heightCm = selectedHeightCm
                     saveContext(context: context)
                 }
-                .presentationDetents([.fraction(0.4)])
+                .presentationDetents([.medium])
                 .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showFitnessLevelEditor) {
@@ -153,7 +153,7 @@ struct ProfileSheetView: View {
                     profile.fitnessLevelSetAt = .now
                     saveContext(context: context)
                 }
-                .presentationDetents([.fraction(0.76)])
+                .presentationDetents([.fraction(0.8)])
                 .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showTrainingGoalEditor) {
@@ -167,7 +167,7 @@ struct ProfileSheetView: View {
                         print("Failed to save training goal: \(error)")
                     }
                 }
-                .presentationDetents([.fraction(0.7)])
+                .presentationDetents([.fraction(0.8)])
                 .presentationBackground(Color.sheetBg)
             }
             .sheet(item: $presentedImagePickerSource) { source in
@@ -475,6 +475,7 @@ struct ProfileSheetView: View {
             Text(title)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
 
             Spacer()
 

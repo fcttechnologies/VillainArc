@@ -68,7 +68,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: addWeightEntrySheetBinding) {
             NewWeightEntryView()
-                .presentationDetents([.fraction(0.5)])
+                .presentationDetents([.fraction(0.6)])
                 .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: newWeightGoalSheetBinding) {
@@ -77,12 +77,12 @@ struct ContentView: View {
         }
         .sheet(isPresented: newStepsGoalSheetBinding) {
             NewStepsGoalView()
-                .presentationDetents([.fraction(0.35)])
+                .presentationDetents([.fraction(0.4)])
                 .presentationBackground(Color.sheetBg)
         }
         .sheet(isPresented: newSleepGoalSheetBinding) {
             NewSleepGoalView()
-                .presentationDetents([.fraction(0.5)])
+                .presentationDetents([.fraction(0.6)])
                 .presentationBackground(Color.sheetBg)
         }
         .background {
