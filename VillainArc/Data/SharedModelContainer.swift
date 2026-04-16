@@ -23,7 +23,6 @@ enum SharedModelContainer {
             }
 
             let configuration = ModelConfiguration(nil, schema: schema, url: url, allowsSave: true, cloudKitDatabase: .private("iCloud.com.fcttechnologies.VillainArcCont"))
-
             return try ModelContainer(for: schema, migrationPlan: VillainArcSchemaMigrationPlan.self, configurations: [configuration])
         } catch {
             fatalError("Failed to create shared ModelContainer: \(error)")

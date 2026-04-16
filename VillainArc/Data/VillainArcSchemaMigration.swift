@@ -554,8 +554,15 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
     }
 
     static var stages: [MigrationStage] {
-        [
-            .lightweight(fromVersion: VillainArcSchemaV1.self, toVersion: VillainArcSchemaV2.self)
-        ]
+        [migrateV1toV2]
+    }
+
+    static let migrateV1toV2 = MigrationStage.custom(fromVersion: VillainArcSchemaV1.self, toVersion: VillainArcSchemaV2.self, willMigrate: nil) { context in
+        let settings = try context.fetch(FetchDescriptor<AppSettings>())
+        for setting in settings {
+            setting.appearanceMode = .system
+            setting.sleepNotificationMode = .goalOnly
+        }
+        try context.save()
     }
 }
