@@ -44,11 +44,21 @@ extension SleepGoal {
         return normalizedDay <= endedOnDay
     }
 
+    static func effectiveStartDay(on day: Date = .now, context: ModelContext) throws -> Date {
+        let normalizedDay = calendar.startOfDay(for: day)
+        let todaySleepDuration = try context.fetch(HealthSleepNight.forWakeDay(day))
+            .first?
+            .timeAsleep ?? 0
+        let hasSleepToday = todaySleepDuration > 0
+
+        guard hasSleepToday else { return normalizedDay }
+        return calendar.date(byAdding: .day, value: 1, to: normalizedDay) ?? normalizedDay
+    }
+
     @discardableResult
     static func replaceActiveGoal(with targetSleepDuration: TimeInterval, on day: Date = .now, context: ModelContext) throws -> Bool {
-        let calendar = Calendar.autoupdatingCurrent
         let normalizedDay = calendar.startOfDay(for: day)
-        let effectiveStartDay = calendar.date(byAdding: .day, value: 1, to: normalizedDay) ?? normalizedDay
+        let effectiveStartDay = try effectiveStartDay(on: day, context: context)
         let activeGoal = try context.fetch(active).first
 
         if let activeGoal, activeGoal.targetSleepDuration == targetSleepDuration, calendar.isDate(activeGoal.startedOnDay, inSameDayAs: effectiveStartDay) {
@@ -56,10 +66,15 @@ extension SleepGoal {
         }
 
         if let activeGoal {
-            if activeGoal.startedOnDay > normalizedDay || calendar.isDate(activeGoal.startedOnDay, inSameDayAs: effectiveStartDay) {
+            if activeGoal.startedOnDay >= effectiveStartDay {
                 context.delete(activeGoal)
             } else {
-                activeGoal.endedOnDay = normalizedDay
+                let replacementEndDay = calendar.date(byAdding: .day, value: -1, to: effectiveStartDay) ?? normalizedDay
+                if replacementEndDay < activeGoal.startedOnDay {
+                    context.delete(activeGoal)
+                } else {
+                    activeGoal.endedOnDay = replacementEndDay
+                }
             }
         }
 

@@ -15,7 +15,7 @@ struct ActiveWorkoutResumeBarButton: View {
         HStack(spacing: 10) {
             Button(action: openAction) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(activeSetInfo?.exercise.name ?? workout.title)
+                    Text(displayTitle)
                         .font(.caption.weight(.semibold))
                         .fontDesign(.rounded)
                         .lineLimit(1)
@@ -27,7 +27,7 @@ struct ActiveWorkoutResumeBarButton: View {
                         .lineLimit(1)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(AccessibilityText.activeWorkoutResumeLabel(title: activeSetInfo?.exercise.name ?? workout.title, detail: workoutDetailLine))
+                .accessibilityLabel(workoutAccessibilityLabel)
                 .accessibilityHint(AccessibilityText.activeWorkoutResumeHint)
             }
             .buttonStyle(.borderless)
@@ -53,65 +53,137 @@ struct ActiveWorkoutResumeBarButton: View {
         workout.activeExerciseAndSet()
     }
 
-    @ViewBuilder
-    private var trailingControl: some View {
-        if restTimer.isRunning, let endDate = restTimer.endDate, endDate > .now {
-            Text(timerInterval: .now...endDate, countsDown: true)
-                .font(.headline.weight(.semibold))
-                .fontDesign(.rounded)
-                .frame(minWidth: 62, alignment: .trailing)
-                .accessibilityLabel(AccessibilityText.activeWorkoutResumeRestTimerLabel)
-        } else if activeSetInfo != nil {
-            Button {
-                completeNextSet()
-            } label: {
-                Image(systemName: "checkmark")
-                    .font(.subheadline.weight(.semibold))
-                    .fontDesign(.rounded)
-                    .frame(width: 30, height: 30)
-                    .foregroundStyle(.white)
-                    .background(.blue, in: .circle)
-            }
-            .buttonStyle(.plain)
-            .frame(width: 46, height: 46)
-            .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeCompleteSetButton)
-            .accessibilityLabel(AccessibilityText.activeWorkoutResumeCompleteSetLabel)
-            .accessibilityHint(AccessibilityText.activeWorkoutResumeCompleteSetHint)
-        } else {
-            Text(timerInterval: workout.startedAt...Date.now, countsDown: false)
-                .font(.headline.weight(.semibold))
-                .fontDesign(.rounded)
-                .frame(minWidth: 62, alignment: .trailing)
-                .accessibilityLabel(AccessibilityText.activeWorkoutResumeElapsedLabel)
+    private var displayTitle: String {
+        switch workout.statusValue {
+        case .pending, .summary, .done:
+            let trimmedTitle = workout.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmedTitle.isEmpty ? "New Workout" : trimmedTitle
+        case .active:
+            return activeSetInfo?.exercise.name ?? workout.title
         }
     }
 
-    private var workoutDetailLine: String {
-        guard let activeSetInfo else {
-            if workout.exercises?.isEmpty ?? true {
-                return "No exercises added"
+    private var pendingSuggestionCount: Int {
+        guard let plan = workout.workoutPlan else { return 0 }
+        return pendingSuggestionEvents(for: plan, in: context).count
+    }
+
+    private var workoutAccessibilityLabel: String {
+        switch workout.statusValue {
+        case .pending:
+            return String(localized: "Workout pending review. \(displayTitle). \(workoutDetailLine)")
+        case .summary, .done:
+            return String(localized: "Workout summary ready. \(displayTitle). \(workoutDetailLine)")
+        case .active:
+            return AccessibilityText.activeWorkoutResumeLabel(title: displayTitle, detail: workoutDetailLine)
+        }
+    }
+
+    @ViewBuilder
+    private var trailingControl: some View {
+        switch workout.statusValue {
+        case .pending, .summary, .done:
+            resumeOpenButton
+        case .active:
+            if restTimer.isRunning, let endDate = restTimer.endDate, endDate > .now {
+                Text(timerInterval: .now...endDate, countsDown: true)
+                    .font(.headline.weight(.semibold))
+                    .fontDesign(.rounded)
+                    .frame(minWidth: 62, alignment: .trailing)
+                    .accessibilityLabel(AccessibilityText.activeWorkoutResumeRestTimerLabel)
+            } else if activeSetInfo != nil {
+                Button {
+                    completeNextSet()
+                } label: {
+                    Image(systemName: "checkmark")
+                        .font(.subheadline.weight(.semibold))
+                        .fontDesign(.rounded)
+                        .frame(width: 30, height: 30)
+                        .foregroundStyle(.white)
+                        .background(.blue, in: .circle)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeCompleteSetButton)
+                .accessibilityLabel(AccessibilityText.activeWorkoutResumeCompleteSetLabel)
+                .accessibilityHint(AccessibilityText.activeWorkoutResumeCompleteSetHint)
+            } else {
+                Text(timerInterval: workout.startedAt...Date.now, countsDown: false)
+                    .font(.headline.weight(.semibold))
+                    .fontDesign(.rounded)
+                    .frame(minWidth: 62, alignment: .trailing)
+                    .accessibilityLabel(AccessibilityText.activeWorkoutResumeElapsedLabel)
             }
-            return "All sets complete"
         }
+    }
 
-        let set = activeSetInfo.set
-        let totalSets = activeSetInfo.exercise.sortedSets.count
-        var parts: [String] = ["Set \(set.index + 1)/\(max(1, totalSets))"]
-
-        if set.reps > 0 {
-            parts.append("\(set.reps) reps")
+    private var resumeOpenButton: some View {
+        Button(action: openAction) {
+            Image(systemName: "arrow.up.forward")
+                .font(.subheadline.weight(.semibold))
+                .fontDesign(.rounded)
+                .frame(width: 30, height: 30)
+                .foregroundStyle(.white)
+                .background(.blue, in: .circle)
         }
+        .buttonStyle(.plain)
+        .frame(width: 46, height: 46)
+        .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeOpenButton)
+        .accessibilityLabel(AccessibilityText.activeWorkoutResumeOpenButtonLabel)
+        .accessibilityHint(AccessibilityText.activeWorkoutResumeHint)
+    }
 
-        if set.weight > 0 {
-            let formattedWeight = set.weight.formatted(.number.precision(.fractionLength(0...1)))
-            parts.append("\(formattedWeight) \(weightUnit.rawValue)")
+    private var workoutDetailLine: String {
+        switch workout.statusValue {
+        case .pending:
+            if pendingSuggestionCount > 0 {
+                return localizedCountText(pendingSuggestionCount, singular: "suggestion left", plural: "suggestions left")
+            }
+            return "Review suggestions to start"
+        case .summary, .done:
+            var parts = [
+                localizedCountText(workout.totalExercises, singular: "exercise", plural: "exercises"),
+                localizedCountText(workout.totalSets, singular: "set", plural: "sets")
+            ]
+
+            if workout.totalVolume > 0 {
+                let formattedVolume = workout.totalVolume.formatted(.number.precision(.fractionLength(0...1)))
+                parts.append("\(formattedVolume) \(weightUnit.rawValue) vol")
+            }
+
+            let prCount = WorkoutActivityManager.summaryPRCount(for: workout, context: context)
+            if prCount > 0 {
+                parts.append(localizedCountText(prCount, singular: "PR", plural: "PRs"))
+            }
+
+            return parts.joined(separator: " · ")
+        case .active:
+            guard let activeSetInfo else {
+                if workout.exercises?.isEmpty ?? true {
+                    return "No exercises added"
+                }
+                return "All sets complete"
+            }
+
+            let set = activeSetInfo.set
+            let totalSets = activeSetInfo.exercise.sortedSets.count
+            var parts: [String] = ["Set \(set.index + 1)/\(max(1, totalSets))"]
+
+            if set.reps > 0 {
+                parts.append("\(set.reps) reps")
+            }
+
+            if set.weight > 0 {
+                let formattedWeight = set.weight.formatted(.number.precision(.fractionLength(0...1)))
+                parts.append("\(formattedWeight) \(weightUnit.rawValue)")
+            }
+
+            if let targetRPE = set.prescription?.visibleTargetRPE {
+                parts.append("RPE \(targetRPE)")
+            }
+
+            return parts.joined(separator: " · ")
         }
-
-        if let targetRPE = set.prescription?.visibleTargetRPE {
-            parts.append("RPE \(targetRPE)")
-        }
-
-        return parts.joined(separator: " · ")
     }
 
     private func completeNextSet() {

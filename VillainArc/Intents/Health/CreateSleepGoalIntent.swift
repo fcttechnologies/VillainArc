@@ -26,11 +26,15 @@ struct CreateSleepGoalIntent: AppIntent {
         }
 
         let normalizedGoalDuration = normalizedGoalDurationSeconds(seconds)
+        let calendar = Calendar.autoupdatingCurrent
+        let today = calendar.startOfDay(for: .now)
+        let effectiveStartDay = (try? SleepGoal.effectiveStartDay(context: context)) ?? today
         _ = try? SleepGoal.replaceActiveGoal(with: normalizedGoalDuration, context: context)
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadSleep()
 
-        return .result(dialog: "Your sleep goal is now \(formattedDurationText(normalizedGoalDuration)). Changes apply starting tomorrow.")
+        let appliesMessage = calendar.isDate(effectiveStartDay, inSameDayAs: today) ? "Changes apply starting today." : "Changes apply starting tomorrow."
+        return .result(dialog: "Your sleep goal is now \(formattedDurationText(normalizedGoalDuration)). \(appliesMessage)")
     }
 
     private func normalizedGoalDurationSeconds(_ seconds: Double) -> TimeInterval {

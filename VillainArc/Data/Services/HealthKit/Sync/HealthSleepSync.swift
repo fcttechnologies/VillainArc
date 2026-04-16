@@ -84,6 +84,7 @@ actor HealthSleepSync {
                     }
 
                     try context.save()
+                    HealthMetricWidgetReloader.reloadSleep()
                 }
 
                 if shouldAdvanceSyncState {

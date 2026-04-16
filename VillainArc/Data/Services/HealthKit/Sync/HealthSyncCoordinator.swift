@@ -105,6 +105,9 @@ actor HealthSyncCoordinator {
                 for deletedObject in result.deletedObjects { try handleDeletedWeightEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
 
                 try context.save()
+                if !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty {
+                    HealthMetricWidgetReloader.reloadWeight()
+                }
                 if shouldAdvanceAnchor {
                     HealthSyncPreferences.weightEntryAnchor = result.newAnchor
                 }

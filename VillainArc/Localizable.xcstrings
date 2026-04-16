@@ -1991,12 +1991,6 @@
         }
       }
     },
-    "Cancel Rest Timer?" : {
-
-    },
-    "Cancel Timer" : {
-
-    },
     "Cancel Workout" : {
       "localizations" : {
         "en" : {
@@ -2079,6 +2073,9 @@
           }
         }
       }
+    },
+    "Changes apply starting today." : {
+
     },
     "Changes apply starting tomorrow." : {
 
@@ -5279,9 +5276,6 @@
         }
       }
     },
-    "Leave Timer As Is" : {
-
-    },
     "less" : {
       "localizations" : {
         "en" : {
@@ -7389,6 +7383,9 @@
         }
       }
     },
+    "Open workout" : {
+
+    },
     "Open Workout" : {
       "localizations" : {
         "en" : {
@@ -8023,6 +8020,9 @@
         }
       }
     },
+    "PR" : {
+
+    },
     "Pre workout context" : {
       "localizations" : {
         "en" : {
@@ -8141,6 +8141,9 @@
           }
         }
       }
+    },
+    "PRs" : {
+
     },
     "Push / Pull / Legs" : {
       "localizations" : {
@@ -10948,6 +10951,9 @@
         }
       }
     },
+    "suggestion left" : {
+
+    },
     "Suggestion Settings" : {
       "localizations" : {
         "en" : {
@@ -10997,6 +11003,9 @@
           }
         }
       }
+    },
+    "suggestions left" : {
+
     },
     "Summarizes your health metrics for a specific day." : {
       "localizations" : {
@@ -11559,9 +11568,6 @@
           }
         }
       }
-    },
-    "This set started the current rest timer. Do you want to cancel the timer, or leave it running while marking the set incomplete?" : {
-
     },
     "This sleep night is no longer available in Apple Health. Villain Arc is showing the last synced summary." : {
       "localizations" : {
@@ -13306,6 +13312,16 @@
         }
       }
     },
+    "Workout pending review. %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Workout pending review. %1$@. %2$@"
+          }
+        }
+      }
+    },
     "Workout Plan" : {
       "localizations" : {
         "en" : {
@@ -13422,6 +13438,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Workout Splits"
+          }
+        }
+      }
+    },
+    "Workout summary ready. %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Workout summary ready. %1$@. %2$@"
           }
         }
       }
@@ -14325,8 +14351,15 @@
         }
       }
     },
-    "Your sleep goal is now %@. Changes apply starting tomorrow." : {
-
+    "Your sleep goal is now %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your sleep goal is now %1$@. %2$@"
+          }
+        }
+      }
     },
     "Your sleep goal needs to be more than 0." : {
 

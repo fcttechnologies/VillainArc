@@ -40,6 +40,7 @@ enum AccessibilityIdentifiers {
     static let morphingNewSleepGoalButton = "morphingNewSleepGoalButton"
     static let activeWorkoutResumeBarButton = "activeWorkoutResumeBarButton"
     static let activeWorkoutResumeCompleteSetButton = "activeWorkoutResumeCompleteSetButton"
+    static let activeWorkoutResumeOpenButton = "activeWorkoutResumeOpenButton"
     static let activePlanResumeBarButton = "activePlanResumeBarButton"
     static let activePlanResumeOpenButton = "activePlanResumeOpenButton"
     static let healthAddWeightEntryButton = "healthAddWeightEntryButton"
@@ -547,6 +548,7 @@ enum AccessibilityText {
     static let activeWorkoutResumeHint = localized("Reopens your current workout.")
     static let activeWorkoutResumeCompleteSetHint = localized("Marks the next active set complete.")
     static let activeWorkoutResumeCompleteSetLabel = localized("Complete set")
+    static let activeWorkoutResumeOpenButtonLabel = localized("Open workout")
     static let activeWorkoutResumeRestTimerLabel = localized("Rest timer")
     static let activeWorkoutResumeElapsedLabel = localized("Workout elapsed time")
     static let activePlanResumeHint = localized("Reopens your current plan.")

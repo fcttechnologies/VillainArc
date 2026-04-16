@@ -38,9 +38,19 @@ struct NewSleepGoalView: View {
             segments.append(currentGoalText)
         }
 
-        segments.append(String(localized: "Changes apply starting tomorrow."))
+        segments.append(appliesText)
 
         return segments.isEmpty ? nil : segments.joined(separator: " ")
+    }
+
+    private var appliesText: String {
+        let calendar = Calendar.autoupdatingCurrent
+        let today = calendar.startOfDay(for: .now)
+        let effectiveStartDay = (try? SleepGoal.effectiveStartDay(context: context)) ?? today
+        if calendar.isDate(effectiveStartDay, inSameDayAs: today) {
+            return String(localized: "Changes apply starting today.")
+        }
+        return String(localized: "Changes apply starting tomorrow.")
     }
 
     private static let hourOptions = Array(4...12)

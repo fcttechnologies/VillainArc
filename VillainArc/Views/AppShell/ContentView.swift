@@ -117,24 +117,34 @@ struct ContentView: View {
     }
     
     private var homeExpandedActions: [ExpandedAction] {
-        var actions: [ExpandedAction] = [
-            ExpandedAction("New Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartWorkoutButton, accessibilityHint: AccessibilityText.morphingStartWorkoutHint) {
-                collapseMorphingTabBar()
-                router.startWorkoutSession()
-                Task { await IntentDonations.donateStartWorkout() }
-            },
-            ExpandedAction("Create Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreatePlanButton, accessibilityHint: AccessibilityText.morphingCreatePlanHint) {
-                collapseMorphingTabBar()
-                router.createWorkoutPlan()
-                Task { await IntentDonations.donateCreateWorkoutPlan() }
-            },
+        var actions: [ExpandedAction] = []
+
+        if !router.hasActiveAuthoringFlow {
+            actions.append(
+                ExpandedAction("New Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartWorkoutButton, accessibilityHint: AccessibilityText.morphingStartWorkoutHint) {
+                    collapseMorphingTabBar()
+                    router.startWorkoutSession()
+                    Task { await IntentDonations.donateStartWorkout() }
+                }
+            )
+
+            actions.append(
+                ExpandedAction("Create Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreatePlanButton, accessibilityHint: AccessibilityText.morphingCreatePlanHint) {
+                    collapseMorphingTabBar()
+                    router.createWorkoutPlan()
+                    Task { await IntentDonations.donateCreateWorkoutPlan() }
+                }
+            )
+        }
+
+        actions.append(
             ExpandedAction("Add Weight", icon: "scalemass", accessibilityIdentifier: AccessibilityIdentifiers.morphingAddWeightButton, accessibilityHint: AccessibilityText.morphingAddWeightHint) {
                 collapseMorphingTabBar()
                 router.presentHealthSheet(.addWeightEntry)
             }
-        ]
+        )
 
-        if router.canShowStartTodaysWorkoutExpandedAction() {
+        if shouldShowStartTodaysWorkoutAction {
             actions.append(ExpandedAction("Start Today's Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartTodaysWorkoutButton, accessibilityHint: AccessibilityText.morphingStartTodaysWorkoutHint) {
                     collapseMorphingTabBar()
                     if router.startTodaysWorkoutFromExpandedAction() {
@@ -144,6 +154,17 @@ struct ContentView: View {
         }
 
         return actions
+    }
+
+    private var shouldShowStartTodaysWorkoutAction: Bool {
+        guard router.canShowStartTodaysWorkoutExpandedAction() else { return false }
+
+        if case let .workoutPlanDetail(plan, _) = router.additionalQuickActionContext,
+           router.isTodaysActiveSplitPlan(plan) {
+            return false
+        }
+
+        return true
     }
 
     private var healthExpandedActions: [ExpandedAction] {
@@ -186,6 +207,8 @@ struct ContentView: View {
     }
 
     private func workoutPlanExpandedActions(plan: WorkoutPlan, showsUseOnly: Bool) -> [ExpandedAction] {
+        guard !router.hasActiveAuthoringFlow else { return [] }
+
         var actions = [
             ExpandedAction("Use Plan", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingUsePlanButton, accessibilityHint: AccessibilityText.workoutPlanDetailStartWorkoutHint) {
                 collapseMorphingTabBar()

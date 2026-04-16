@@ -34,7 +34,6 @@ struct ExerciseSetRowView: View {
     let appSettingsSnapshot: AppSettingsSnapshot
     private let restTimer = RestTimerState.shared
     @State private var showOverrideTimerAlert = false
-    @State private var showCancelStartedTimerAlert = false
     @FocusState private var focusedField: Field?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
@@ -215,17 +214,6 @@ struct ExerciseSetRowView: View {
         } message: {
             Text(replaceTimerPrompt)
         }
-        .alert("Cancel Rest Timer?", isPresented: $showCancelStartedTimerAlert) {
-            Button("Cancel Timer", role: .destructive) {
-                uncompleteSet(cancelStartedTimer: true)
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCancelReplaceTimerButton(exercise, set: set))
-            Button("Leave Timer As Is") {
-                uncompleteSet(cancelStartedTimer: false)
-            }
-        } message: {
-            Text("This set started the current rest timer. Do you want to cancel the timer, or leave it running while marking the set incomplete?")
-        }
     }
     
     private func deleteSet() {
@@ -266,22 +254,13 @@ struct ExerciseSetRowView: View {
     }
 
     private func toggleCompletionOff() {
-        if restTimer.startedFromSetID == set.id, restTimer.isActive {
-            Haptics.selection()
-            showCancelStartedTimerAlert = true
-            return
-        }
-
-        uncompleteSet(cancelStartedTimer: false)
+        uncompleteSet()
     }
 
-    private func uncompleteSet(cancelStartedTimer: Bool) {
+    private func uncompleteSet() {
         Haptics.selection()
         set.complete = false
         set.completedAt = nil
-        if cancelStartedTimer, restTimer.startedFromSetID == set.id {
-            restTimer.stop()
-        }
         saveContext(context: context)
         WorkoutActivityManager.update()
     }

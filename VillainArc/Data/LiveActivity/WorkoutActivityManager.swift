@@ -301,7 +301,7 @@ enum WorkoutActivityManager {
         }
     }
 
-    private static func summaryPRCount(for workout: WorkoutSession, context: ModelContext) -> Int {
+    static func summaryPRCount(for workout: WorkoutSession, context: ModelContext) -> Int {
         let exercises = workout.sortedExercises
         guard !exercises.isEmpty else { return 0 }
 

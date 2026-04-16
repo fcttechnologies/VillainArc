@@ -194,6 +194,8 @@ enum HomeQuickAction: String {
 
     private func hasActiveFlow() -> Bool { hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork() }
 
+    var hasActiveAuthoringFlow: Bool { hasActiveFlow() }
+
     private enum ActiveFlowBlockKind {
         case workout
         case plan
@@ -234,6 +236,7 @@ enum HomeQuickAction: String {
 
     func canShowStartTodaysWorkoutExpandedAction() -> Bool {
         guard isReadyForIntentActions() else { return false }
+        guard !hasActiveFlow() else { return false }
         guard let split = try? context.fetch(WorkoutSplit.active).first else { return false }
         guard !(split.days?.isEmpty ?? true) else { return false }
 
@@ -242,7 +245,7 @@ enum HomeQuickAction: String {
         guard let splitDay = resolution.splitDay, !splitDay.isRestDay else { return false }
         guard let todaysPlan = resolution.workoutPlan else { return false }
 
-        return !hasIncompleteWorkoutSession(forPlanID: todaysPlan.id)
+        return !hasWorkoutSessionForToday(forPlanID: todaysPlan.id)
     }
 
     private func incompleteWorkoutSession() -> WorkoutSession? { try? context.fetch(WorkoutSession.incomplete).first }
@@ -527,8 +530,8 @@ enum HomeQuickAction: String {
             return false
         }
 
-        guard !hasIncompleteWorkoutSession(forPlanID: workoutPlan.id) else {
-            showQuickActionToast(title: "Workout In Progress", message: "Today's split workout is already in progress.")
+        guard !hasWorkoutSessionForToday(forPlanID: workoutPlan.id) else {
+            showQuickActionToast(title: "Workout Already Logged", message: "Today's split workout has already been started.")
             return false
         }
 
@@ -536,10 +539,15 @@ enum HomeQuickAction: String {
         return true
     }
 
-    private func hasIncompleteWorkoutSession(forPlanID planID: UUID) -> Bool {
-        let done = SessionStatus.done.rawValue
+    private func hasWorkoutSessionForToday(forPlanID planID: UUID, on day: Date = .now) -> Bool {
+        let calendar = Calendar.autoupdatingCurrent
+        let startOfDay = calendar.startOfDay(for: day)
+        let startOfNextDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
         let predicate = #Predicate<WorkoutSession> {
-            $0.status != done && $0.workoutPlan?.id == planID
+            $0.workoutPlan?.id == planID &&
+            $0.isHidden == false &&
+            $0.startedAt >= startOfDay &&
+            $0.startedAt < startOfNextDay
         }
         var descriptor = FetchDescriptor(predicate: predicate)
         descriptor.fetchLimit = 1
