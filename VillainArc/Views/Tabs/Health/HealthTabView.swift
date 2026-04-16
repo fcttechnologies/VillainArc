@@ -15,6 +15,7 @@ struct HealthTabView: View {
                 }
                 .padding()
             }
+            .quickActionContentBottomInset()
             .appBackground()
             .navBar(title: "Health", includePadding: false) {
                 ProfileSheetLauncherButton(accessibilityIdentifier: AccessibilityIdentifiers.healthProfileButton)

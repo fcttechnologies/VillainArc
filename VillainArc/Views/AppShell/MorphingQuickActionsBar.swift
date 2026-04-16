@@ -17,8 +17,8 @@ struct ExpandedAction: Identifiable {
     }
 }
 
-struct MorphingQuickActionsBar<Tab: MorphingTabProtocol>: View {
-    @Binding var activeTab: Tab
+struct MorphingQuickActionsBar: View {
+    @Binding var activeTab: AppTab
     @Binding var isExpanded: Bool
     let actions: [ExpandedAction]
 

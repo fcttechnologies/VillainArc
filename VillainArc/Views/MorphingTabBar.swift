@@ -1,27 +1,11 @@
 import SwiftUI
 
-protocol MorphingTabProtocol: CaseIterable, Hashable {
-    var title: String { get }
-    var symbolImage: String { get }
-}
-
-struct MorphingTabBar<Tab: MorphingTabProtocol, ExpandedContent: View>: View {
-    @Binding var activeTab: Tab
+struct MorphingTabBar<ExpandedContent: View>: View {
+    @Binding var activeTab: AppTab
     @Binding var isExpanded: Bool
     @ViewBuilder var expandedContent: ExpandedContent
 
     @State private var viewWidth: CGFloat?
-
-    private var symbols: [String] {
-        Array(Tab.allCases).map(\.symbolImage)
-    }
-
-    private var selectedIndex: Binding<Int> {
-        Binding(
-            get: { symbols.firstIndex(of: activeTab.symbolImage) ?? 0 },
-            set: { activeTab = Array(Tab.allCases)[$0] }
-        )
-    }
 
     var body: some View {
         ZStack {
@@ -42,83 +26,55 @@ struct MorphingTabBar<Tab: MorphingTabProtocol, ExpandedContent: View>: View {
         return ExpandableGlassEffect(alignment: .center, progress: progress, labelSize: labelSize, cornerRadius: cornerRadius) {
             expandedContent
         } label: {
-            ZStack {
-                MorphingSegmentedTabBar(symbols: symbols, index: selectedIndex)
-                    .allowsHitTesting(false)
-
-                MorphingTabButtons(activeTab: $activeTab, isExpanded: isExpanded)
-            }
-            .frame(height: 48)
-            .padding(.horizontal, 2)
-            .offset(y: -0.7)
+            MorphingTabButtons(activeTab: $activeTab, isExpanded: isExpanded)
+                .frame(height: 48)
         }
     }
 }
 
-private struct MorphingTabButtons<Tab: MorphingTabProtocol>: View {
-    @Binding var activeTab: Tab
+private struct MorphingTabButtons: View {
+    @Binding var activeTab: AppTab
     let isExpanded: Bool
+    @Namespace private var selectionNamespace
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(Tab.allCases), id: \.self) { tab in
+        HStack(spacing: 6) {
+            ForEach(AppTab.allCases, id: \.self) { tab in
+                let isSelected = activeTab == tab
+                let accessibilityIdentifier = "morphingTabButton-\(tab.symbolImage)"
+
                 Button {
-                    Haptics.selection()
-                    activeTab = tab
+                    withAnimation(.smooth) {
+                        Haptics.selection()
+                        activeTab = tab
+                    }
                 } label: {
-                    Color.clear
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .contentShape(.rect)
+                    ZStack {
+                        if isSelected {
+                            Capsule()
+                                .fill(.thinMaterial)
+                                .matchedGeometryEffect(id: "activeTab", in: selectionNamespace)
+                        }
+
+                        Image(systemName: tab.symbolImage)
+                            .font(.system(size: 19, weight: .medium))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 40)
+                            .contentShape(.rect)
+                    }
                 }
                 .buttonStyle(.plain)
                 .disabled(isExpanded)
+                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                 .accessibilityLabel(tab.title)
                 .accessibilityHint("Switches tabs.")
-                .accessibilityIdentifier("morphingTabButton-\(tab.symbolImage)")
+                .accessibilityIdentifier(accessibilityIdentifier)
                 .accessibilityRemoveTraits(.isSelected)
-                .accessibilityAddTraits(activeTab == tab ? .isSelected : [])
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-    }
-}
-
-private struct MorphingSegmentedTabBar: UIViewRepresentable {
-    var tint: Color = .gray.opacity(0.15)
-    var symbols: [String]
-    @Binding var index: Int
-
-    func makeUIView(context: Context) -> UISegmentedControl {
-        let control = UISegmentedControl(items: symbols)
-        control.selectedSegmentIndex = index
-        control.selectedSegmentTintColor = UIColor(tint)
-        control.isUserInteractionEnabled = false
-
-        for (index, symbol) in symbols.enumerated() {
-            control.setImage(symbolImage(symbol), forSegmentAt: index)
-        }
-
-        DispatchQueue.main.async {
-            for view in control.subviews.dropLast() where view is UIImageView {
-                view.alpha = 0
-            }
-        }
-
-        return control
-    }
-
-    func updateUIView(_ uiView: UISegmentedControl, context: Context) {
-        if uiView.selectedSegmentIndex != index {
-            uiView.selectedSegmentIndex = index
-        }
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UISegmentedControl, context: Context) -> CGSize? {
-        proposal.replacingUnspecifiedDimensions()
-    }
-
-    private func symbolImage(_ name: String) -> UIImage? {
-        let configuration = UIImage.SymbolConfiguration(font: .systemFont(ofSize: 19))
-        return UIImage(systemName: name, withConfiguration: configuration)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
     }
 }
 
@@ -222,7 +178,7 @@ private extension ExpandableGlassEffect {
 
 private struct MorphingTabBarPreview: View {
     @State private var activeTab: AppTab = .home
-    @State private var isExpanded = true
+    @State private var isExpanded = false
 
     var body: some View {
         ZStack(alignment: .bottom) {

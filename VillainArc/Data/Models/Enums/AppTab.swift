@@ -1,6 +1,6 @@
-import Foundation
+import SwiftUI
 
-enum AppTab: String, MorphingTabProtocol {
+enum AppTab: String, CaseIterable, Hashable {
     case home = "Home"
     case health = "Health"
 
