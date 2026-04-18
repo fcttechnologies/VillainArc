@@ -12,10 +12,10 @@ struct WorkoutHistoryRowView: View {
         Button {
             switch item.source {
             case .session(let workout):
-                appRouter.navigate(to: .workoutSessionDetail(workout))
+                appRouter.push(to: .workoutSessionDetail(workout))
                 Task { await IntentDonations.donateOpenWorkout(workout: workout) }
             case .health(let workout):
-                appRouter.navigate(to: .healthWorkoutDetail(workout))
+                appRouter.push(to: .healthWorkoutDetail(workout))
             }
         } label: {
             content

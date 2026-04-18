@@ -39,11 +39,7 @@ private struct MorphingQuickActionsGrid: View {
     let actions: [ExpandedAction]
 
     var body: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 4),
-            alignment: .leading,
-            spacing: 10
-        ) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 4), alignment: .leading, spacing: 10) {
             ForEach(actions) { action in
                 VStack(alignment: .leading, spacing: 6) {
                     Button {

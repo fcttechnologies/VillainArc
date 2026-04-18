@@ -15,7 +15,6 @@ struct OpenExercisesIntent: AppIntent {
         guard (try? context.fetch(descriptor).first) != nil else { throw OpenExercisesError.noExercisesAvailable }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exercisesList)
         return .result(opensIntent: OpenAppIntent())
     }

@@ -17,7 +17,7 @@ struct ExerciseCatalogItem {
 }
 
 enum ExerciseCatalog {
-    nonisolated static let catalogVersion = "1.1.1"
+    nonisolated static let catalogVersion = "1.3"
 
     nonisolated static let all: [ExerciseCatalogItem] = [
         // BICEPS
@@ -199,6 +199,7 @@ enum ExerciseCatalog {
         .init(id: "landmine_single_arm_press", name: "Single Arm Press", musclesTargeted: [.shoulders, .frontDelt, .sideDelt, .chest, .upperChest, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps], equipmentType: .landmine),
         .init(id: "machine_lateral_raises", name: "Lateral Raises", musclesTargeted: [.shoulders, .sideDelt], equipmentType: .machine),
         .init(id: "machine_reverse_fly", name: "Reverse Fly", musclesTargeted: [.shoulders, .rearDelt], equipmentType: .machine),
+        .init(id: "machine_rear_delt_fly", name: "Rear Delt Fly", musclesTargeted: [.shoulders, .rearDelt], equipmentType: .machine),
         .init(id: "machine_shoulder_press", name: "Shoulder Press", musclesTargeted: [.shoulders, .frontDelt, .sideDelt, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps], equipmentType: .machine),
         .init(id: "plate_front_raise", name: "Front Raise", musclesTargeted: [.shoulders, .frontDelt], equipmentType: .plate),
         .init(id: "smith_machine_shoulder_press", name: "Shoulder Press", musclesTargeted: [.shoulders, .frontDelt, .sideDelt, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps], equipmentType: .smithMachine),
@@ -311,6 +312,7 @@ enum ExerciseCatalog {
         .init(id: "dumbbell_single_leg_calf_raises", name: "Single Leg Calf Raises", musclesTargeted: [.calves], equipmentType: .dumbbellSingle),
         .init(id: "dumbbell_standing_calf_raises", name: "Standing Calf Raises", musclesTargeted: [.calves], equipmentType: .dumbbells),
         .init(id: "leg_press_calf_raises", name: "Leg Press Calf Raises", musclesTargeted: [.calves], equipmentType: .machine),
+        .init(id: "machine_calf_extensions", name: "Calf Extensions", musclesTargeted: [.calves], aliases: ["Calf Extension"], equipmentType: .machine),
         .init(id: "machine_seated_calf_raises", name: "Seated Calf Raises", musclesTargeted: [.calves], equipmentType: .machine),
         .init(id: "machine_standing_calf_raises", name: "Standing Calf Raises", musclesTargeted: [.calves], equipmentType: .machine),
         .init(id: "smith_machine_seated_calf_raises", name: "Seated Calf Raises", musclesTargeted: [.calves], equipmentType: .smithMachine),
@@ -374,6 +376,7 @@ enum ExerciseCatalog {
         .init(id: "cable_adduction", name: "Adduction", musclesTargeted: [.adductors], equipmentType: .cableSingle),
         .init(id: "cable_hip_abduction", name: "Hip Abduction", musclesTargeted: [.glutes, .abductors], equipmentType: .cableSingle),
         .init(id: "hip_abduction_machine", name: "Hip Abduction", musclesTargeted: [.glutes, .abductors], equipmentType: .machine),
+        .init(id: "hip_adduction_machine", name: "Hip Adduction", musclesTargeted: [.adductors], equipmentType: .machine),
         .init(id: "machine_adductor", name: "Adductor", musclesTargeted: [.adductors], equipmentType: .machine),
     ]
 

@@ -23,7 +23,7 @@ struct HealthStepsSectionCard: View {
 
     var body: some View {
         Button {
-            router.navigate(to: .stepsDistanceHistory)
+            router.push(to: .stepsDistanceHistory)
             Task { await IntentDonations.donateShowStepsHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {

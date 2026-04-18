@@ -96,7 +96,6 @@ struct WorkoutDetailView: View {
     }
 
     private func openWorkoutPlan(_ plan: WorkoutPlan) {
-        router.popToRoot()
         router.navigate(to: .workoutPlanDetail(plan, false))
         Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
     }

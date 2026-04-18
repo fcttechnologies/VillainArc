@@ -140,6 +140,7 @@ enum HomeQuickAction: String {
     @ObservationIgnored var pendingWorkoutPlanDismissCleanup: (() -> Void)?
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
     @ObservationIgnored var pendingWidgetDestination: Destination?
+    @ObservationIgnored var pendingNotificationDestination: Destination?
     var activeAppSheet: AppSheet?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
@@ -287,7 +288,20 @@ enum HomeQuickAction: String {
 
         pendingWidgetDestination = nil
         collapseActiveFlowPresentations()
-        popToRoot()
+        navigate(to: destination)
+    }
+
+    func handleNotificationDestination(_ destination: Destination) {
+        pendingNotificationDestination = destination
+        handlePendingNotificationDestinationIfPossible()
+    }
+
+    func handlePendingNotificationDestinationIfPossible() {
+        guard let destination = pendingNotificationDestination else { return }
+        guard isReadyForIntentActions() else { return }
+
+        pendingNotificationDestination = nil
+        collapseActiveFlowPresentations()
         navigate(to: destination)
     }
 
@@ -318,12 +332,17 @@ enum HomeQuickAction: String {
         WorkoutActivityManager.end()
     }
     func navigate(to destination: Destination) {
+        popToRoot(tab: tab(for: destination))
+        push(to: destination)
+    }
+
+    func push(to destination: Destination) {
         Haptics.selection()
-        switch destination {
-        case .trainingConditionHistory, .weightHistory, .sleepHistory, .sleepGoalHistory, .stepsDistanceHistory, .stepsGoalHistory, .energyHistory, .allWeightEntriesList, .weightGoalHistory:
+        switch tab(for: destination) {
+        case .health:
             tabSelection = .health
             healthTabPath.append(destination)
-        default:
+        case .home:
             tabSelection = .home
             homeTabPath.append(destination)
         }
@@ -409,14 +428,6 @@ enum HomeQuickAction: String {
     func dismissActiveWorkoutPlanPresentation() {
         isWorkoutPlanCoverPresented = false
     }
-    func popToRoot() {
-        tabSelection = .home
-        homeTabPath = []
-        healthTabPath = []
-        homeTabResetToken = UUID()
-        healthTabResetToken = UUID()
-        noteNavigationStateChanged()
-    }
 
     func popToRoot(tab: AppTab) {
         switch tab {
@@ -474,9 +485,6 @@ enum HomeQuickAction: String {
         case .addWeightEntry:
             pendingHomeQuickAction = nil
             collapseActiveFlowPresentations()
-            homeTabPath = []
-            healthTabPath = []
-            tabSelection = .health
             presentHealthSheet(.addWeightEntry)
 
         case .startTodaysWorkout:
@@ -735,7 +743,6 @@ enum HomeQuickAction: String {
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
             if let workoutSession = try? context.fetch(descriptor).first {
-                popToRoot()
                 navigate(to: .workoutSessionDetail(workoutSession))
             }
             return
@@ -748,7 +755,6 @@ enum HomeQuickAction: String {
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
             if let workoutPlan = try? context.fetch(descriptor).first {
-                popToRoot()
                 navigate(to: .workoutPlanDetail(workoutPlan, false))
             }
             return
@@ -757,7 +763,6 @@ enum HomeQuickAction: String {
         if identifier.hasPrefix(SpotlightIndexer.exerciseIdentifierPrefix) {
             let catalogID = String(identifier.dropFirst(SpotlightIndexer.exerciseIdentifierPrefix.count))
             guard (try? context.fetch(Exercise.withCatalogID(catalogID)).first) != nil else { return }
-            popToRoot()
             navigate(to: .exerciseDetail(catalogID))
             return
         }
@@ -769,9 +774,26 @@ enum HomeQuickAction: String {
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
             if let workoutSplit = try? context.fetch(descriptor).first {
-                popToRoot()
                 navigate(to: .workoutSplitDetail(workoutSplit))
             }
         }
     }
+
+    private func tab(for destination: Destination) -> AppTab {
+        switch destination {
+        case .trainingConditionHistory,
+             .weightHistory,
+             .sleepHistory,
+             .sleepGoalHistory,
+             .stepsDistanceHistory,
+             .stepsGoalHistory,
+             .energyHistory,
+             .allWeightEntriesList,
+             .weightGoalHistory:
+            return .health
+        default:
+            return .home
+        }
+    }
+
 }

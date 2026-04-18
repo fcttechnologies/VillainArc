@@ -25,7 +25,6 @@ struct SaveWorkoutAsPlanIntent: AppIntent {
         SpotlightIndexer.index(workoutPlan: plan)
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(plan, false))
         return .result(opensIntent: OpenAppIntent())
     }

@@ -10,7 +10,7 @@ struct ExerciseSummaryRow: View {
     
     var body: some View {
         Button {
-            appRouter.navigate(to: .exerciseDetail(exercise.catalogID))
+            appRouter.push(to: .exerciseDetail(exercise.catalogID))
             Task { await IntentDonations.donateOpenExercise(exercise: exercise) }
         } label: {
             VStack(alignment: .leading, spacing: 10) {

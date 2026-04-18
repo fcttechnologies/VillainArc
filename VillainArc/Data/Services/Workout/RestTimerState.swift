@@ -59,7 +59,9 @@ import Observation
     func start(seconds: Int, startedFromSetID: UUID? = nil) {
         let clamped = max(0, seconds)
         guard clamped > 0 else {
-            stopInternal(cancelNotification: true)
+            self.startedFromSetID = startedFromSetID
+            startedSeconds = 0
+            stopInternal(cancelNotification: true, clearOrigin: false)
             return
         }
         endDate = Date.now.addingTimeInterval(TimeInterval(clamped))
@@ -102,12 +104,14 @@ import Observation
 
     func stop() { stopInternal(cancelNotification: true) }
 
-    private func stopInternal(cancelNotification: Bool, updateLiveActivity: Bool = true) {
+    private func stopInternal(cancelNotification: Bool, updateLiveActivity: Bool = true, clearOrigin: Bool = true) {
         endDate = nil
         pausedRemainingSeconds = 0
         isPaused = false
-        startedFromSetID = nil
-        startedSeconds = 0
+        if clearOrigin {
+            startedFromSetID = nil
+            startedSeconds = 0
+        }
         persist()
         stopTask?.cancel()
         stopTask = nil
@@ -150,11 +154,17 @@ import Observation
     }
 
     func syncStartedDuration(to seconds: Int) {
-        guard isActive else { return }
+        guard isActive || startedFromSetID != nil else { return }
 
         let clamped = min(max(0, seconds), Self.maximumRestSeconds)
         if clamped == 0 {
-            stopInternal(cancelNotification: true)
+            startedSeconds = 0
+            stopInternal(cancelNotification: true, clearOrigin: false)
+            return
+        }
+
+        if !isActive {
+            start(seconds: clamped, startedFromSetID: startedFromSetID)
             return
         }
 

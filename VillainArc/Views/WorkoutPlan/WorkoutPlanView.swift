@@ -178,7 +178,7 @@ struct WorkoutPlanView: View {
                     activity.appEntityIdentifier = .init(for: entity)
                 }
                 .sheet(isPresented: $showTitleEditorSheet) {
-                    TextEntryEditorView(title: "Title", promptText: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField)
+                    TextEntryEditorView(title: "Title", promptText: "Workout Plan Title", text: $plan.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutPlanTitleEditorField, initialSelectionBehavior: .whenTextMatches(["New Workout Plan"]))
                         .presentationDetents([.fraction(0.2)])
                         .presentationBackground(Color.sheetBg)
                         .onChange(of: plan.title) {

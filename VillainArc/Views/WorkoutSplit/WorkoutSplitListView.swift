@@ -58,7 +58,7 @@ struct WorkoutSplitListView: View {
                                 HStack(spacing: 12) {
                                     Button {
                                         dismiss()
-                                        router.navigate(to: .workoutSplitDetail(split))
+                                        router.push(to: .workoutSplitDetail(split))
                                     } label: {
                                         splitRowContent(for: split, isActive: false)
                                     }
@@ -103,7 +103,7 @@ struct WorkoutSplitListView: View {
                         dismiss()
                     } else {
                         dismiss()
-                        router.navigate(to: .workoutSplitDetail(newSplit))
+                        router.push(to: .workoutSplitDetail(newSplit))
                     }
                 }
                 .presentationBackground(Color.sheetBg)

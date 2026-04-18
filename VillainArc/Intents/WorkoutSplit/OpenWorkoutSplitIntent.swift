@@ -14,7 +14,6 @@ struct OpenWorkoutSplitIntent: AppIntent {
         _ = SplitScheduleResolver.resolve(split, context: context)
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))
         return .result(opensIntent: OpenAppIntent())
     }

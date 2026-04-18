@@ -32,7 +32,7 @@ struct StepsDistanceHistoryView: View {
             VStack(alignment: .leading, spacing: 24) {
                 StepsGoalSummaryCard(activeGoal: activeGoal, todayEntry: todayEntry, hasGoalHistory: hasGoalHistory) {
                     if activeGoal != nil || hasGoalHistory {
-                        router.navigate(to: .stepsGoalHistory)
+                        router.push(to: .stepsGoalHistory)
                         Task { await IntentDonations.donateShowStepsGoalHistory() }
                     } else {
                         showNewStepsGoalSheet = true

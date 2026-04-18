@@ -17,8 +17,8 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
         let autoStartRestTimerEnabled = (try? context.fetch(AppSettings.single).first)?.autoStartRestTimer ?? true
         if autoStartRestTimerEnabled {
             let restSeconds = set.effectiveRestSeconds
+            RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.id)
             if restSeconds > 0 {
-                RestTimerState.shared.start(seconds: restSeconds, startedFromSetID: set.id)
                 RestTimeHistory.record(seconds: restSeconds, context: context)
             }
         }

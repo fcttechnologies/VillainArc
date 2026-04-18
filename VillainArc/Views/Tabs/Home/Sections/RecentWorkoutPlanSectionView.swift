@@ -8,7 +8,7 @@ struct RecentWorkoutPlanSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HomeSectionHeaderButton(title: "Workout Plans", accessibilityIdentifier: AccessibilityIdentifiers.allWorkoutPlansLink, accessibilityHint: AccessibilityText.workoutPlansHeaderHint) {
-                appRouter.navigate(to: .workoutPlansList)
+                appRouter.push(to: .workoutPlansList)
                 Task { await IntentDonations.donateShowWorkoutPlans() }
             }
 

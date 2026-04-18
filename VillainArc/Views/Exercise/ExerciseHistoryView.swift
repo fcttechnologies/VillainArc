@@ -65,7 +65,7 @@ struct ExerciseHistoryView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .quickActionContentBottomInset()
         .overlay {
             if performances.isEmpty {
                 ContentUnavailableView("No Exercise History", systemImage: "clock.arrow.circlepath", description: Text("Complete this exercise in a workout to see every performance here."))

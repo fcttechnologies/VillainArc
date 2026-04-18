@@ -25,7 +25,7 @@ struct RecentExercisesSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HomeSectionHeaderButton(title: "Exercises", accessibilityIdentifier: AccessibilityIdentifiers.homeExercisesLink, accessibilityHint: AccessibilityText.recentExercisesHeaderHint) {
-                appRouter.navigate(to: .exercisesList)
+                appRouter.push(to: .exercisesList)
                 Task { await IntentDonations.donateOpenExercises() }
             }
 
@@ -48,7 +48,7 @@ struct RecentExercisesSectionView: View {
 
     private var unavailableView: some View {
         Button {
-            appRouter.navigate(to: .exercisesList)
+            appRouter.push(to: .exercisesList)
             Task { await IntentDonations.donateOpenExercises() }
         } label: {
             SmallUnavailableView(sfIconName: "dumbbell", title: "No Exercises Used", subtitle: "Complete exercises in workouts to track progress here.")

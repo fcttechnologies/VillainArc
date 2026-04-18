@@ -11,7 +11,6 @@ struct ViewLastWorkoutIntent: AppIntent {
         try SetupGuard.requireReady(context: context)
         guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else { throw ViewLastWorkoutError.noWorkoutsFound }
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionDetail(lastWorkoutSession))
         return .result(opensIntent: OpenAppIntent())
     }

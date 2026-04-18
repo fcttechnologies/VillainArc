@@ -18,7 +18,6 @@ struct ManageWorkoutSplitsIntent: AppIntent {
 
         AppRouter.shared.collapseActiveFlowPresentations()
         AppRouter.shared.activeSplitSheet = .list
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))
         return .result(opensIntent: OpenAppIntent())
     }

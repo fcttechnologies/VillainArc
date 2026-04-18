@@ -199,8 +199,8 @@ struct ExerciseSetRowView: View {
         .alert("Replace Rest Timer?", isPresented: $showOverrideTimerAlert) {
             Button("Replace", role: .destructive) {
                 let restSeconds = set.effectiveRestSeconds
+                restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
                 if restSeconds > 0 {
-                    restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
                     RestTimeHistory.record(seconds: restSeconds, context: context)
                     saveContext(context: context)
                     Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
@@ -268,15 +268,16 @@ struct ExerciseSetRowView: View {
     private func handleAutoStartTimer() {
         guard autoStartRestTimerEnabled else { return }
         let restSeconds = set.effectiveRestSeconds
-        guard restSeconds > 0 else { return }
-        
-        if restTimer.isActive {
+
+        if restSeconds > 0, restTimer.isActive {
             showOverrideTimerAlert = true
         } else {
             restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
-            RestTimeHistory.record(seconds: restSeconds, context: context)
-            saveContext(context: context)
-            Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
+            if restSeconds > 0 {
+                RestTimeHistory.record(seconds: restSeconds, context: context)
+                saveContext(context: context)
+                Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
+            }
         }
     }
     

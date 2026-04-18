@@ -33,7 +33,7 @@ struct WeightHistoryView: View {
             VStack(alignment: .leading, spacing: 24) {
                 WeightGoalSummaryCard(activeGoal: activeGoal, analysis: goalAnalysis, entries: weightEntries, weightUnit: weightUnit, hasGoalHistory: hasGoalHistory) {
                     if activeGoal != nil || hasGoalHistory {
-                        router.navigate(to: .weightGoalHistory)
+                        router.push(to: .weightGoalHistory)
                         Task { await IntentDonations.donateShowWeightGoalHistory() }
                     } else {
                         router.presentHealthSheet(.newWeightGoal)
@@ -45,7 +45,7 @@ struct WeightHistoryView: View {
                 }
                 
                 Button {
-                    router.navigate(to: .allWeightEntriesList)
+                    router.push(to: .allWeightEntriesList)
                     Task { await IntentDonations.donateShowAllWeightEntries() }
                 } label: {
                     Text("View All Entries")

@@ -238,6 +238,7 @@ enum AccessibilityIdentifiers {
     static let exercisesListSearchEmptyState = "exercisesListSearchEmptyState"
     static let exercisesListScrollView = "exercisesListScrollView"
     static let exercisesListFavoritesToggle = "exercisesListFavoritesToggle"
+    static let exercisesListMuscleFiltersButton = "exercisesListMuscleFiltersButton"
     static let exercisesListOptionsMenu = "exercisesListOptionsMenu"
 
     // MARK: - ExerciseDetailView

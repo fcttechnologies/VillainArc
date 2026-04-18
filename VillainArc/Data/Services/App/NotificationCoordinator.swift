@@ -175,6 +175,14 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         center.removeDeliveredNotifications(withIdentifiers: [response.notification.request.identifier])
+
+        guard let destination = notificationTapDestination(for: response.notification.request.content.userInfo) else {
+            return
+        }
+
+        await MainActor.run {
+            AppRouter.shared.handleNotificationDestination(destination)
+        }
     }
 
     nonisolated private static func currentAppSettingsSnapshot() -> AppSettingsSnapshot {
@@ -204,6 +212,21 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         case .stepsEvent:
             return nil
         case .sleepGoalComplete:
+            return nil
+        }
+    }
+
+    private func notificationTapDestination(for userInfo: [AnyHashable: Any]) -> AppRouter.Destination? {
+        guard let rawValue = userInfo[NotificationUserInfoKey.type] as? String, let type = NotificationType(rawValue: rawValue) else {
+            return nil
+        }
+
+        switch type {
+        case .stepsGoalComplete, .stepsEvent:
+            return .stepsDistanceHistory
+        case .sleepGoalComplete:
+            return .sleepHistory
+        case .restTimerComplete:
             return nil
         }
     }

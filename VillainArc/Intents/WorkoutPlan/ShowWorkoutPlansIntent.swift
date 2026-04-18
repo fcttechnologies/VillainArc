@@ -13,7 +13,6 @@ struct ShowWorkoutPlansIntent: AppIntent {
         guard (try? context.fetch(WorkoutPlan.recent).first) != nil else { throw ShowWorkoutPlansError.noWorkoutPlansFound }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlansList)
         return .result(opensIntent: OpenAppIntent())
     }

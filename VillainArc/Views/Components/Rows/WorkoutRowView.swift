@@ -9,7 +9,7 @@ struct WorkoutRowView: View {
     
     var body: some View {
         Button {
-            appRouter.navigate(to: .workoutSessionDetail(workout))
+            appRouter.push(to: .workoutSessionDetail(workout))
             Task { await IntentDonations.donateOpenWorkout(workout: workout) }
         } label: {
             VStack(alignment: .leading) {

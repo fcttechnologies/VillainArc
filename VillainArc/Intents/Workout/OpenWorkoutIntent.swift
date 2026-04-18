@@ -21,7 +21,6 @@ struct OpenWorkoutIntent: AppIntent {
         guard storedWorkout.status == SessionStatus.done.rawValue else { throw OpenWorkoutError.workoutIncomplete }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionDetail(storedWorkout))
         return .result(opensIntent: OpenAppIntent())
     }

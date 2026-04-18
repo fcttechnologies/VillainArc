@@ -326,10 +326,12 @@ struct RestTimerView: View {
         nextSet.completedAt = Date()
 
         let restSeconds = nextSet.effectiveRestSeconds
-        if autoStartRestTimerEnabled, restSeconds > 0 {
+        if autoStartRestTimerEnabled {
             restTimer.start(seconds: restSeconds, startedFromSetID: nextSet.id)
-            RestTimeHistory.record(seconds: restSeconds, context: context)
-            Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
+            if restSeconds > 0 {
+                RestTimeHistory.record(seconds: restSeconds, context: context)
+                Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
+            }
         }
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)

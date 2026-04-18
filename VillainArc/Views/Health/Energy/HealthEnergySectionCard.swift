@@ -40,7 +40,7 @@ struct HealthEnergySectionCard: View {
     
     var body: some View {
         Button {
-            router.navigate(to: .energyHistory)
+            router.push(to: .energyHistory)
             Task { await IntentDonations.donateShowCaloriesBurnedHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {

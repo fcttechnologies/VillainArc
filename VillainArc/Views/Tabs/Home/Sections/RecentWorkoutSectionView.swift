@@ -30,7 +30,7 @@ struct RecentWorkoutSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HomeSectionHeaderButton(title: "Workouts", accessibilityIdentifier: AccessibilityIdentifiers.workoutHistoryLink, accessibilityHint: AccessibilityText.workoutHistoryHeaderHint) {
-                appRouter.navigate(to: .workoutSessionsList)
+                appRouter.push(to: .workoutSessionsList)
                 Task { await IntentDonations.donateShowWorkoutHistory() }
             }
 

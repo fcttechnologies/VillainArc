@@ -11,8 +11,8 @@ struct UpdateTrainingConditionIntent: AppIntent {
         try SetupGuard.requireReady(context: context)
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
-        AppRouter.shared.tabSelection = .health
+        AppRouter.shared.popToRoot(tab: .health)
+        AppRouter.shared.selectTab(.health)
         AppRouter.shared.activeHealthSheet = .trainingConditionEditor
         return .result(opensIntent: OpenAppIntent())
     }

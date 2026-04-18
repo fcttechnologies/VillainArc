@@ -7,15 +7,14 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: tabSelectionBinding) {
-            HomeTabView()
+            HomeTabView(transitionNamespace: animation)
                 .tag(AppTab.home)
                 .toolbar(.hidden, for: .tabBar)
             
-            HealthTabView()
+            HealthTabView(transitionNamespace: animation)
                 .tag(AppTab.health)
                 .toolbar(.hidden, for: .tabBar)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaBar(edge: .bottom) {
             if !router.isQuickActionsBarHidden {
                 VStack(spacing: 12) {
@@ -25,7 +24,7 @@ struct ContentView: View {
                     }
                     MorphingQuickActionsBar(activeTab: tabSelectionBinding, isExpanded: $isMorphingTabBarExpanded, actions: homeExpandedActions + additionalExpandedActions(for: router.additionalQuickActionContext))
                 }
-                .matchedTransitionSource(id: "toolbarSource", in: animation)
+                .matchedTransitionSource(id: TransitionSourceID.toolbar, in: animation)
             }
         }
         .onChange(of: router.navigationEventToken) {
@@ -39,7 +38,7 @@ struct ContentView: View {
         .fullScreenCover(isPresented: workoutSessionCoverBinding) {
             if let workout = router.activeWorkoutSession {
                 WorkoutSessionContainer(workout: workout)
-                    .navigationTransition(.zoom(sourceID: "toolbarSource", in: animation))
+                    .navigationTransition(.zoom(sourceID: TransitionSourceID.toolbar, in: animation))
             }
         }
         .fullScreenCover(isPresented: workoutPlanCoverBinding, onDismiss: {
@@ -50,7 +49,7 @@ struct ContentView: View {
         }) {
             if let plan = router.activeWorkoutPlan {
                 WorkoutPlanView(plan: plan, originalPlan: router.activeWorkoutPlanOriginal)
-                    .navigationTransition(.zoom(sourceID: "toolbarSource", in: animation))
+                    .navigationTransition(.zoom(sourceID: TransitionSourceID.toolbar, in: animation))
             }
         }
         .fullScreenCover(item: $router.activeWeightGoalCompletion) {
@@ -199,7 +198,6 @@ struct ContentView: View {
         if let linkedPlan = workout.workoutPlan {
             actions.append(ExpandedAction("Open Plan", icon: "arrowshape.turn.up.right", accessibilityIdentifier: AccessibilityIdentifiers.morphingOpenWorkoutPlanButton, accessibilityHint: AccessibilityText.workoutDetailOpenWorkoutPlanHint) {
                     collapseMorphingTabBar()
-                    router.popToRoot()
                     router.navigate(to: .workoutPlanDetail(linkedPlan, false))
                     Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: linkedPlan) }
                 })

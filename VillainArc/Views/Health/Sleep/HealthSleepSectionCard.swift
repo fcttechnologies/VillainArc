@@ -28,7 +28,7 @@ struct HealthSleepSectionCard: View {
 
     var body: some View {
         Button {
-            router.navigate(to: .sleepHistory)
+            router.push(to: .sleepHistory)
             Task { await IntentDonations.donateShowSleepHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {

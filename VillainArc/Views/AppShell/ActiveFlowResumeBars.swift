@@ -12,33 +12,57 @@ struct ActiveWorkoutResumeBarButton: View {
     private let restTimer = RestTimerState.shared
 
     var body: some View {
-        HStack(spacing: 10) {
-            Button(action: openAction) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(displayTitle)
-                        .font(.caption.weight(.semibold))
-                        .fontDesign(.rounded)
+        Button(action: openAction) {
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(displayTitle())
                         .lineLimit(1)
 
-                    Text(workoutDetailLine)
-                        .font(.subheadline.weight(.semibold))
-                        .fontDesign(.rounded)
+                    Text(workoutDetailLine())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(workoutAccessibilityLabel)
-                .accessibilityHint(AccessibilityText.activeWorkoutResumeHint)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeBarButton)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .fontDesign(.rounded)
+                Spacer()
 
-            trailingControl
+                if restTimer.isRunning, let endDate = restTimer.endDate, endDate > .now {
+                    Text(timerInterval: .now...endDate, countsDown: true)
+                        .fontWeight(.semibold)
+                        .accessibilityLabel(AccessibilityText.activeWorkoutResumeRestTimerLabel)
+                } else if restTimer.isPaused {
+                    HStack(spacing: 3) {
+                        Image(systemName: "pause.fill")
+                        Text(secondsToTime(restTimer.pausedRemainingSeconds))
+                            .accessibilityLabel(AccessibilityText.activeWorkoutResumeRestTimerLabel)
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.yellow)
+                } else if activeSetInfo != nil {
+                    Button {
+                        completeNextSet()
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.regular)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeCompleteSetButton)
+                    .accessibilityLabel(AccessibilityText.activeWorkoutResumeCompleteSetLabel)
+                    .accessibilityHint(AccessibilityText.activeWorkoutResumeCompleteSetHint)
+                }
+            }
+            .padding(.horizontal, 3)
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
         }
-        .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
+        .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeBarButton)
+        .accessibilityLabel(workoutAccessibilityLabel())
+        .accessibilityHint(AccessibilityText.activeWorkoutResumeHint)
         .accessibilityElement(children: .contain)
+        .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
     }
 
     private var weightUnit: WeightUnit {
@@ -53,7 +77,7 @@ struct ActiveWorkoutResumeBarButton: View {
         workout.activeExerciseAndSet()
     }
 
-    private var displayTitle: String {
+    private func displayTitle() -> String {
         switch workout.statusValue {
         case .pending, .summary, .done:
             let trimmedTitle = workout.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -63,81 +87,28 @@ struct ActiveWorkoutResumeBarButton: View {
         }
     }
 
-    private var pendingSuggestionCount: Int {
+    private func pendingSuggestionCount() -> Int {
         guard let plan = workout.workoutPlan else { return 0 }
         return pendingSuggestionEvents(for: plan, in: context).count
     }
 
-    private var workoutAccessibilityLabel: String {
+    private func workoutAccessibilityLabel() -> String {
         switch workout.statusValue {
         case .pending:
-            return String(localized: "Workout pending review. \(displayTitle). \(workoutDetailLine)")
+            return String(localized: "Workout pending review. \(displayTitle()). \(workoutDetailLine())")
         case .summary, .done:
-            return String(localized: "Workout summary ready. \(displayTitle). \(workoutDetailLine)")
+            return String(localized: "Workout summary ready. \(displayTitle()). \(workoutDetailLine())")
         case .active:
-            return AccessibilityText.activeWorkoutResumeLabel(title: displayTitle, detail: workoutDetailLine)
+            return AccessibilityText.activeWorkoutResumeLabel(title: displayTitle(), detail: workoutDetailLine())
         }
     }
 
-    @ViewBuilder
-    private var trailingControl: some View {
-        switch workout.statusValue {
-        case .pending, .summary, .done:
-            resumeOpenButton
-        case .active:
-            if restTimer.isRunning, let endDate = restTimer.endDate, endDate > .now {
-                Text(timerInterval: .now...endDate, countsDown: true)
-                    .font(.headline.weight(.semibold))
-                    .fontDesign(.rounded)
-                    .frame(minWidth: 62, alignment: .trailing)
-                    .accessibilityLabel(AccessibilityText.activeWorkoutResumeRestTimerLabel)
-            } else if activeSetInfo != nil {
-                Button {
-                    completeNextSet()
-                } label: {
-                    Image(systemName: "checkmark")
-                        .font(.subheadline.weight(.semibold))
-                        .fontDesign(.rounded)
-                        .frame(width: 30, height: 30)
-                        .foregroundStyle(.white)
-                        .background(.blue, in: .circle)
-                }
-                .buttonStyle(.plain)
-                .frame(width: 46, height: 46)
-                .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeCompleteSetButton)
-                .accessibilityLabel(AccessibilityText.activeWorkoutResumeCompleteSetLabel)
-                .accessibilityHint(AccessibilityText.activeWorkoutResumeCompleteSetHint)
-            } else {
-                Text(timerInterval: workout.startedAt...Date.now, countsDown: false)
-                    .font(.headline.weight(.semibold))
-                    .fontDesign(.rounded)
-                    .frame(minWidth: 62, alignment: .trailing)
-                    .accessibilityLabel(AccessibilityText.activeWorkoutResumeElapsedLabel)
-            }
-        }
-    }
-
-    private var resumeOpenButton: some View {
-        Button(action: openAction) {
-            Image(systemName: "arrow.up.forward")
-                .font(.subheadline.weight(.semibold))
-                .fontDesign(.rounded)
-                .frame(width: 30, height: 30)
-                .foregroundStyle(.white)
-                .background(.blue, in: .circle)
-        }
-        .buttonStyle(.plain)
-        .frame(width: 46, height: 46)
-        .accessibilityIdentifier(AccessibilityIdentifiers.activeWorkoutResumeOpenButton)
-        .accessibilityLabel(AccessibilityText.activeWorkoutResumeOpenButtonLabel)
-        .accessibilityHint(AccessibilityText.activeWorkoutResumeHint)
-    }
-
-    private var workoutDetailLine: String {
+    private func workoutDetailLine() -> String {
         switch workout.statusValue {
         case .pending:
-            if pendingSuggestionCount > 0 {
-                return localizedCountText(pendingSuggestionCount, singular: "suggestion left", plural: "suggestions left")
+            let count = pendingSuggestionCount()
+            if count > 0 {
+                return localizedCountText(count, singular: "suggestion left", plural: "suggestions left")
             }
             return "Review suggestions to start"
         case .summary, .done:
@@ -196,8 +167,8 @@ struct ActiveWorkoutResumeBarButton: View {
 
         if autoStartRestTimerEnabled {
             let restSeconds = set.effectiveRestSeconds
+            restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
             if restSeconds > 0 {
-                restTimer.start(seconds: restSeconds, startedFromSetID: set.id)
                 RestTimeHistory.record(seconds: restSeconds, context: context)
                 Task { await IntentDonations.donateStartRestTimer(seconds: restSeconds) }
             }
@@ -221,46 +192,31 @@ struct ActivePlanResumeBarButton: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     var body: some View {
-        HStack(spacing: 10) {
-            Button(action: openAction) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(displayTitle)
-                        .font(.caption.weight(.semibold))
-                        .fontDesign(.rounded)
+        Button(action: openAction) {
+            HStack {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(displayTitle())
                         .lineLimit(1)
-                    Text(planSummaryLine)
-                        .font(.subheadline.weight(.semibold))
-                        .fontDesign(.rounded)
+                    Text(planSummaryLine())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                .accessibilityElement(children: .combine)
+                .font(.subheadline)
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+                .padding(.leading, 3)
+                Spacer()
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier(AccessibilityIdentifiers.activePlanResumeBarButton)
-            .accessibilityLabel(AccessibilityText.activePlanResumeLabel(title: displayTitle, detail: planSummaryLine))
-            .accessibilityHint(AccessibilityText.activePlanResumeHint)
-
-            Button(action: openAction) {
-                Image(systemName: "arrow.up.forward")
-                    .font(.subheadline.weight(.semibold))
-                    .fontDesign(.rounded)
-                    .frame(width: 30, height: 30)
-                    .foregroundStyle(.white)
-                    .background(.blue, in: .circle)
-            }
-            .buttonStyle(.plain)
-            .frame(width: 46, height: 46)
-            .accessibilityIdentifier(AccessibilityIdentifiers.activePlanResumeOpenButton)
-            .accessibilityLabel(AccessibilityText.activePlanResumeOpenButtonLabel)
-            .accessibilityHint(AccessibilityText.activePlanResumeHint)
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
         }
         .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
+        .accessibilityIdentifier(AccessibilityIdentifiers.activePlanResumeBarButton)
+        .accessibilityLabel(AccessibilityText.activePlanResumeLabel(title: displayTitle(), detail: planSummaryLine()))
+        .accessibilityHint(AccessibilityText.activePlanResumeHint)
     }
 
-    private var displayTitle: String {
+    private func displayTitle() -> String {
         let trimmedTitle = plan.title.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedTitle.isEmpty ? "New Workout Plan" : trimmedTitle
     }
@@ -269,7 +225,7 @@ struct ActivePlanResumeBarButton: View {
         appSettings.first?.weightUnit ?? .lbs
     }
 
-    private var planSummaryLine: String {
+    private func planSummaryLine() -> String {
         var parts = [
             localizedCountText(plan.totalExercises, singular: "exercise", plural: "exercises"),
             localizedCountText(plan.totalSets, singular: "set", plural: "sets")
@@ -287,11 +243,8 @@ struct ActivePlanResumeBarButton: View {
 private extension View {
     func activeFlowResumeBarChrome(isCollapsed: Bool, reduceMotion: Bool) -> some View {
         self
-            .foregroundStyle(.primary)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.glass)
             .scaleEffect(x: isCollapsed ? 0.1 : 1, y: isCollapsed ? 0.1 : 1, anchor: .center)
             .opacity(isCollapsed ? 0 : 1)
             .offset(y: isCollapsed ? 36 : 0)

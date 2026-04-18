@@ -50,6 +50,7 @@ struct ProfileSheetLauncherButton: View {
     @State private var router = AppRouter.shared
 
     let accessibilityIdentifier: String
+    let transitionNamespace: Namespace.ID?
 
     var body: some View {
         Button {
@@ -57,9 +58,9 @@ struct ProfileSheetLauncherButton: View {
             Task { await IntentDonations.donateOpenProfile() }
         } label: {
             ProfileAvatarBadge(displayName: profiles.first?.trimmedName, imageData: profiles.first?.profileImageData, size: 40)
-                .contentShape(.circle)
         }
         .buttonStyle(.plain)
+        .buttonBorderShape(.circle)
         .accessibilityLabel(AccessibilityText.profileLabel)
         .accessibilityValue(accessibilityValue)
         .accessibilityHint(AccessibilityText.profileHint)
@@ -74,7 +75,6 @@ struct ProfileSheetLauncherButton: View {
         return String(localized: "Not set")
     }
 }
-
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context

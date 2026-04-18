@@ -8,6 +8,8 @@ struct ExercisesListView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
     @State private var searchText = ""
+    @State private var selectedMuscles: Set<Muscle> = []
+    @State private var showMuscleFilterSheet = false
     @State private var favoritesOnly = false
     @FocusState private var isSearchFieldFocused: Bool
     
@@ -23,9 +25,17 @@ struct ExercisesListView: View {
     
     private var filteredExercises: [Exercise] {
         let sourceExercises = favoritesOnly ? exercises.filter(\.favorite) : exercises
-        return searchedExercises(in: sourceExercises, query: searchText, orderedBy: historyOrdering.isOrderedBefore, score: { exercise, _, queryTokens in
-            exerciseSearchScore(for: exercise, queryTokens: queryTokens)
+        let muscleFilteredExercises = selectedMuscles.isEmpty ? sourceExercises : sourceExercises.filter {
+            $0.musclesTargeted.contains(where: selectedMuscles.contains)
         }
+
+        return searchedExercises(
+            in: muscleFilteredExercises,
+            query: searchText,
+            orderedBy: historyOrdering.isOrderedBefore,
+            score: { exercise, _, queryTokens in
+                exerciseSearchScore(for: exercise, queryTokens: queryTokens)
+            }
         )
     }
 
@@ -78,12 +88,28 @@ struct ExercisesListView: View {
                         Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
                             .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListFavoritesToggle)
                             .accessibilityHint(AccessibilityText.exercisesListFavoritesToggleHint)
+                        Button("Muscle Filters", systemImage: "figure") {
+                            Haptics.selection()
+                            showMuscleFilterSheet = true
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListMuscleFiltersButton)
+                        .accessibilityHint(AccessibilityText.addExerciseMuscleFiltersHint)
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exercisesListOptionsMenu)
                 }
             }
         }
+        .sheet(isPresented: $showMuscleFilterSheet) {
+            MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
+                selectedMuscles = updatedMuscles
+            }
+            .presentationBackground(Color.sheetBg)
+            .presentationDetents([.fraction(0.3)])
+        }
         .onChange(of: favoritesOnly) {
+            Haptics.selection()
+        }
+        .onChange(of: selectedMuscles) {
             Haptics.selection()
         }
         .onAppear {

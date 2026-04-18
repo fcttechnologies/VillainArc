@@ -13,7 +13,6 @@ struct ShowWorkoutHistoryIntent: AppIntent {
         guard (try? context.fetch(WorkoutSession.recent).first) != nil else { throw ShowWorkoutHistoryError.noWorkoutsFound }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutSessionsList)
         return .result(opensIntent: OpenAppIntent())
     }

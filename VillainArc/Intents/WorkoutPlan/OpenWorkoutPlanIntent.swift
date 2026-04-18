@@ -18,7 +18,6 @@ struct OpenWorkoutPlanIntent: AppIntent {
         guard storedPlan.completed else { throw OpenWorkoutPlanError.workoutPlanIncomplete }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(storedPlan, false))
         return .result(opensIntent: OpenAppIntent())
     }

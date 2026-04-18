@@ -392,7 +392,7 @@ private struct SleepHistoryMainSection: View {
             router.presentHealthSheet(.newSleepGoal)
             Task { await IntentDonations.donateCreateSleepGoal() }
         } else {
-            router.navigate(to: .sleepGoalHistory)
+            router.push(to: .sleepGoalHistory)
             Task { await IntentDonations.donateShowSleepGoalHistory() }
         }
     }

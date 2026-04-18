@@ -36,7 +36,7 @@ struct WeightSectionCard: View {
 
     var body: some View {
         Button {
-            router.navigate(to: .weightHistory)
+            router.push(to: .weightHistory)
             Task { await IntentDonations.donateShowWeightHistory() }
         } label: {
             VStack(alignment: .leading, spacing: 10) {

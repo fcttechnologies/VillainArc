@@ -17,7 +17,6 @@ struct OpenExerciseIntent: AppIntent {
         guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw OpenExerciseError.exerciseNotFound }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
         return .result(opensIntent: OpenAppIntent())
     }

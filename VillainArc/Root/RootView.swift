@@ -26,6 +26,7 @@ struct RootView: View {
                 AppRouter.shared.checkForUnfinishedData()
                 AppRouter.shared.handlePendingHomeQuickActionIfPossible()
                 AppRouter.shared.handlePendingWidgetDestinationIfPossible()
+                AppRouter.shared.handlePendingNotificationDestinationIfPossible()
                 Task {
                     HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
                     await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()

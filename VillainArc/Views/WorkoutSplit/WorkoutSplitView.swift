@@ -96,7 +96,7 @@ struct WorkoutSplitView: View {
             SplitBuilderView { newSplit in
                 if !newSplit.isActive {
                     router.activeSplitSheet = nil
-                    router.navigate(to: .workoutSplitDetail(newSplit))
+                    router.push(to: .workoutSplitDetail(newSplit))
                 }
             }
             .presentationBackground(Color.sheetBg)

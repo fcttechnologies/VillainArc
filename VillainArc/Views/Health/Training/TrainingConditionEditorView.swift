@@ -180,7 +180,7 @@ struct TrainingConditionEditorView: View {
             if showsHistoryButton {
                 Button {
                     dismiss()
-                    router.navigate(to: .trainingConditionHistory)
+                    router.push(to: .trainingConditionHistory)
                 } label: {
                     Text("View History")
                         .font(.subheadline)

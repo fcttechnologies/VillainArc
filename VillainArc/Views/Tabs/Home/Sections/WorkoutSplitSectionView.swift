@@ -48,7 +48,7 @@ struct WorkoutSplitSectionView: View {
     
     private func splitUnavailableView(title: String, description: String, autoOpenBuilder: Bool = false, onNavigate: @escaping () async -> Void = {}) -> some View {
         Button {
-            appRouter.navigate(to: .workoutSplit(autoPresentBuilder: autoOpenBuilder))
+            appRouter.push(to: .workoutSplit(autoPresentBuilder: autoOpenBuilder))
             Task { await onNavigate() }
         } label: {
             SmallUnavailableView(sfIconName: "calendar.badge.exclamationmark", title: title, subtitle: description)
@@ -71,7 +71,7 @@ struct WorkoutSplitSectionView: View {
         
         return ZStack(alignment: .trailing) {
             Button {
-                appRouter.navigate(to: .workoutSplit(autoPresentBuilder: false))
+                appRouter.push(to: .workoutSplit(autoPresentBuilder: false))
                 Task { await IntentDonations.donateOpenWorkoutSplit() }
             } label: {
                 HStack(alignment: .center, spacing: 12) {
@@ -102,7 +102,7 @@ struct WorkoutSplitSectionView: View {
             
             if !isPaused, !isRestDay, let plan = resolution.workoutPlan {
                 Button {
-                    appRouter.navigate(to: .workoutPlanDetail(plan, true))
+                    appRouter.push(to: .workoutPlanDetail(plan, true))
                     Task { await IntentDonations.donateOpenTodaysPlan() }
                 } label: {
                     Image(systemName: "list.clipboard")

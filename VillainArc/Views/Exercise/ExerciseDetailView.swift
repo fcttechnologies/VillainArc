@@ -313,7 +313,7 @@ struct ExerciseDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if totalSessions > 0 {
                     Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
-                        appRouter.navigate(to: .exerciseHistory(catalogID))
+                        appRouter.push(to: .exerciseHistory(catalogID))
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailHistoryButton)
                 }

@@ -16,7 +16,6 @@ struct ViewLastUsedExerciseIntent: AppIntent {
         guard let storedExercise else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
         return .result(opensIntent: OpenAppIntent())
     }

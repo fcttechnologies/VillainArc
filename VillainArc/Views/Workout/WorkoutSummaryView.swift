@@ -233,7 +233,7 @@ struct WorkoutSummaryView: View {
                     }
             }
             .sheet(isPresented: $showTitleEditorSheet) {
-                TextEntryEditorView(title: "Title", promptText: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField)
+                TextEntryEditorView(title: "Title", promptText: "Workout Title", text: $workout.title, accessibilityIdentifier: AccessibilityIdentifiers.workoutTitleEditorField, initialSelectionBehavior: .whenTextMatches(["New Workout"]))
                     .presentationDetents([.fraction(0.2)])
                     .presentationBackground(Color.sheetBg)
                     .onChange(of: workout.title) {

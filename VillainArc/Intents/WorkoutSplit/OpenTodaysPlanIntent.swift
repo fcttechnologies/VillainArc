@@ -20,7 +20,6 @@ struct OpenTodaysPlanIntent: AppIntent {
         guard let workoutPlan = resolution.workoutPlan else { throw OpenTodaysPlanError.noWorkoutPlanForToday }
 
         AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot()
         AppRouter.shared.navigate(to: .workoutPlanDetail(workoutPlan, true))
         return .result(opensIntent: OpenAppIntent())
     }
