@@ -1,11 +1,7 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
-#if canImport(FoundationModels)
 @Generable
-#endif
 enum Muscle: String, Codable, CaseIterable {
     // Major Muscle
     case chest = "Chest"

@@ -1,5 +1,4 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable struct AIExercisePrescriptionSnapshot {
@@ -70,4 +69,3 @@ import FoundationModels
         targetRPE = snapshot.targetRPE
     }
 }
-#endif

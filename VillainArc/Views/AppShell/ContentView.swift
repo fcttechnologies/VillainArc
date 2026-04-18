@@ -56,6 +56,9 @@ struct ContentView: View {
         .fullScreenCover(item: $router.activeWeightGoalCompletion) {
             WeightGoalCompletionView(route: $0)
         }
+        .fullScreenCover(item: $router.activeGenerationCover) { generationCover in
+            GenerationCoverView(route: generationCover)
+        }
         .sheet(item: $router.activeAppSheet) { appSheet in
             switch appSheet {
             case .profile:
@@ -64,6 +67,10 @@ struct ContentView: View {
             case .settings:
                 AppSettingsView()
                     .presentationBackground(Color.sheetBg)
+            case .createWorkoutPlan:
+                CreateWorkoutPlanView {
+                    router.createWorkoutPlan()
+                }
             }
         }
         .sheet(isPresented: addWeightEntrySheetBinding) {
@@ -131,7 +138,7 @@ struct ContentView: View {
             actions.append(
                 ExpandedAction("Create Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreatePlanButton, accessibilityHint: AccessibilityText.morphingCreatePlanHint) {
                     collapseMorphingTabBar()
-                    router.createWorkoutPlan()
+                    router.presentCreateWorkoutPlanSheet()
                     Task { await IntentDonations.donateCreateWorkoutPlan() }
                 }
             )

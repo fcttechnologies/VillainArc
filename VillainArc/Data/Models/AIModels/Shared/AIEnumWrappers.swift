@@ -1,5 +1,4 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable enum AIRepRangeMode: String {
@@ -21,7 +20,6 @@ import FoundationModels
         }
     }
 }
-#endif
 
 @Generable enum AIExerciseSetType: String {
     case warmup = "Warm Up Set"

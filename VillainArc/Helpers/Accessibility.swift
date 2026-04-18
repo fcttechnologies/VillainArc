@@ -140,6 +140,11 @@ enum AccessibilityIdentifiers {
     static let workoutPlansFavoritesToggle = "workoutPlansFavoritesToggle"
     static let workoutPlansEmptyState = "workoutPlansEmptyState"
     static let workoutPlansNoFavoritesState = "workoutPlansNoFavoritesState"
+    static let createWorkoutPlanSheet = "createWorkoutPlanSheet"
+    static let createWorkoutPlanPromptField = "createWorkoutPlanPromptField"
+    static let createWorkoutPlanGenerateButton = "createWorkoutPlanGenerateButton"
+    static let createWorkoutPlanScratchButton = "createWorkoutPlanScratchButton"
+    static let createWorkoutPlanTemplatesPlaceholder = "createWorkoutPlanTemplatesPlaceholder"
 
     static func workoutRow(_ workout: WorkoutSession) -> String { "workoutsListRow-\(workout.id.uuidString)" }
 
@@ -814,6 +819,9 @@ enum AccessibilityText {
     // MARK: - WorkoutPlanPickerView
     static let workoutPlanPickerClearHint = localized("Removes the selected workout plan.")
     static let workoutPlanPickerCreateHint = localized("Creates a new workout plan to select.")
+    static let createWorkoutPlanPromptHint = localized("Describe the workout plan you want Villain Arc to generate.")
+    static let createWorkoutPlanGenerateHint = localized("Starts plan generation from your prompt.")
+    static let createWorkoutPlanScratchHint = localized("Starts a new workout plan from scratch.")
 
     // MARK: - WorkoutPlanView
     static let workoutPlanEditExercisesHint = localized("Shows the list of exercises.")

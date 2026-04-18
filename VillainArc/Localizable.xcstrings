@@ -41,6 +41,16 @@
         }
       }
     },
+    "%@ • %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ • %2$@"
+          }
+        }
+      }
+    },
     "%@ • Ends %@" : {
       "localizations" : {
         "en" : {
@@ -2637,6 +2647,9 @@
         }
       }
     },
+    "Create Plan" : {
+
+    },
     "Create Sleep Goal" : {
 
     },
@@ -3383,6 +3396,12 @@
           }
         }
       }
+    },
+    "Describe plan..." : {
+
+    },
+    "Describe the workout plan you want Villain Arc to generate." : {
+
     },
     "Discard Changes" : {
 
@@ -4291,6 +4310,9 @@
           }
         }
       }
+    },
+    "Generate" : {
+
     },
     "Generate Suggestions" : {
       "localizations" : {
@@ -7990,6 +8012,12 @@
         }
       }
     },
+    "Plan templates coming soon" : {
+
+    },
+    "Plan Title" : {
+
+    },
     "Plate" : {
       "localizations" : {
         "en" : {
@@ -8536,6 +8564,9 @@
           }
         }
       }
+    },
+    "Request changes..." : {
+
     },
     "Requests Apple Health read and write access for workouts." : {
       "localizations" : {
@@ -10691,6 +10722,9 @@
         }
       }
     },
+    "Starts a new workout plan from scratch." : {
+
+    },
     "Starts a new workout session." : {
       "localizations" : {
         "en" : {
@@ -10750,6 +10784,9 @@
           }
         }
       }
+    },
+    "Starts plan generation from your prompt." : {
+
     },
     "Starts the rest timer." : {
       "localizations" : {
@@ -11493,6 +11530,9 @@
         }
       }
     },
+    "Templates Coming Soon" : {
+
+    },
     "Temporary" : {
       "localizations" : {
         "en" : {
@@ -11548,6 +11588,9 @@
           }
         }
       }
+    },
+    "Thinking..." : {
+
     },
     "This goal is no longer available." : {
       "localizations" : {

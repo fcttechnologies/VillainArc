@@ -11,7 +11,7 @@ struct CreateWorkoutPlanIntent: AppIntent {
         try SetupGuard.requireReady(context: context)
         if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutPlanError.workoutIsActive }
         if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutPlanError.workoutPlanIsActive }
-        AppRouter.shared.createWorkoutPlan()
+        AppRouter.shared.presentCreateWorkoutPlanSheet()
         return .result(opensIntent: OpenAppIntent())
     }
 }

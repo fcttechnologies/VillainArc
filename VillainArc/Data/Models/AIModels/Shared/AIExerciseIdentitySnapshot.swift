@@ -1,5 +1,4 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable struct AIExerciseIdentitySnapshot {
@@ -31,4 +30,3 @@ import FoundationModels
         self.init(catalogID: prescription.catalogID, exerciseName: prescription.name, musclesTargeted: prescription.musclesTargeted, equipmentType: prescription.equipmentType)
     }
 }
-#endif

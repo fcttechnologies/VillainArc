@@ -1,5 +1,4 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable struct AIExercisePerformanceSnapshot {
@@ -74,4 +73,3 @@ import FoundationModels
         return targetSnapshot.sets.first(where: { $0.targetSetID == targetSetID })?.index
     }
 }
-#endif

@@ -1,5 +1,4 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
 
 @Generable struct AIRepRangeSnapshot {
@@ -37,4 +36,3 @@ import FoundationModels
         }
     }
 }
-#endif

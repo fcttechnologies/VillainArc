@@ -1,11 +1,7 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
-#if canImport(FoundationModels)
 @Generable
-#endif
 enum SplitMode: String, CaseIterable, Codable {
     case weekly = "Weekly"
     case rotation = "Rotation"

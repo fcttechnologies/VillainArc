@@ -1,6 +1,6 @@
 import Foundation
 
-struct ExerciseSearchMatch {
+nonisolated struct ExerciseSearchMatch {
     let exercise: Exercise
     let score: Int
 }
@@ -27,7 +27,7 @@ nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
     return tokens
 }
 
-func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
+nonisolated func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     guard !queryTokens.isEmpty else { return 0 }
 
     let nameTokens = normalizedTokens(for: exercise.name)
@@ -68,12 +68,12 @@ private nonisolated func tokenMatchScore(for token: String, in tokens: [String],
     return nil
 }
 
-func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
+nonisolated func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] {
     if !exercise.searchTokens.isEmpty { return exercise.searchTokens }
     return exerciseSearchTokens(for: exercise)
 }
 
-func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
+nonisolated func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
     guard !queryTokens.isEmpty else { return true }
 
     let haystackTokens = cachedExerciseSearchTokens(for: exercise) + additionalTokens

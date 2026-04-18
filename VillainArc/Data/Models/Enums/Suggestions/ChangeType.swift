@@ -1,11 +1,7 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
-#if canImport(FoundationModels)
 @Generable
-#endif
 enum ChangeType: String, Codable {
     // Set-level (target a specific set)
     case increaseWeight = "Increase Weight"
