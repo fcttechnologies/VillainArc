@@ -12,17 +12,25 @@ struct DeleteAllWorkoutPlansIntent: AppIntent {
 
         guard !workoutPlans.isEmpty else { return .result(dialog: "No workout plans to delete.") }
 
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: workoutPlans, context: context)
         let count = workoutPlans.count
         let label = count == 1 ? "1 workout plan" : "\(count) workout plans"
-        let choice = try await requestChoice(between: [IntentChoiceOption(title: "Delete All", style: .destructive), .cancel], dialog: IntentDialog("Delete \(label)? This action cannot be undone."))
+        let dialog: IntentDialog = switch assessment.risk {
+        case .activeEditing:
+            IntentDialog("One of these workout plans is currently being edited. Deleting them will close the editor and discard its editing copy.")
+        case .activeWorkout:
+            IntentDialog("An active workout was started from one of these workout plans. Deleting them will turn that live workout into a standalone workout and clear copied plan targets.")
+        case nil:
+            IntentDialog("Delete \(label)? This action cannot be undone.")
+        }
+        let choice = try await requestChoice(
+            between: [IntentChoiceOption(title: "Delete All", style: .destructive), .cancel],
+            dialog: dialog
+        )
 
         guard choice.style == .destructive else { throw DeleteAllWorkoutPlansIntentError.cancelled }
 
-        let linkedSplits = workoutPlans.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
-        SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
-        for plan in workoutPlans { plan.deleteWithSuggestionCleanup(context: context) }
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         return .result(dialog: "Deleted \(label).")
     }
 }

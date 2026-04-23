@@ -38,13 +38,13 @@ struct WorkoutSplitView: View {
     private var currentWeekday: Int {
         Calendar.current.component(.weekday, from: .now)
     }
-    
+
     private var showsSplitOptionsMenu: Bool {
-        currentSplit != nil || (!isOverride && !allSplits.isEmpty)
+        !isOverride && !allSplits.isEmpty
     }
-    
+
     private var showsStandaloneNewSplitButton: Bool {
-        !isOverride && !showsSplitOptionsMenu
+        !isOverride && allSplits.isEmpty
     }
     
     private func animated<Result>(_ animation: Animation, _ updates: () -> Result) -> Result {
@@ -106,7 +106,6 @@ struct WorkoutSplitView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color.sheetBg)
         }
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .appBackground()
         .onAppear {
             if selectedSplitDay == nil, let split = currentSplit {
@@ -239,9 +238,12 @@ struct WorkoutSplitView: View {
     @ViewBuilder
     private var splitOptionsMenu: some View {
         Menu("Split Options", systemImage: "ellipsis") {
-            if !isOverride {
-                newSplitButton
+            newSplitButton
+
+            Button("All Splits", systemImage: "list.bullet") {
+                router.presentSplitSheet(.list)
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
             
             if currentSplit != nil {
                 Button("Rename Split", systemImage: "pencil") {
@@ -249,13 +251,6 @@ struct WorkoutSplitView: View {
                     showSplitTitleEditor = true
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRenameButton(currentSplit!))
-            }
-            
-            if !isOverride && !allSplits.isEmpty {
-                Button("All Splits", systemImage: "list.bullet") {
-                    router.presentSplitSheet(.list)
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveActionsButton)
             }
             
             if let split = currentSplit, split.isActive {

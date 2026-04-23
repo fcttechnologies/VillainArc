@@ -97,6 +97,17 @@ struct WorkoutSplitListView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitList)
             .navigationTitle("Workout Splits")
             .toolbarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Create", systemImage: "plus") {
+                        Haptics.selection()
+                        showSplitBuilder = true
+                        Task { await IntentDonations.donateCreateWorkoutSplit() }
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitCreateButton)
+                    .accessibilityHint(AccessibilityText.workoutSplitCreateHint)
+                }
+            }
             .sheet(isPresented: $showSplitBuilder) {
                 SplitBuilderView { newSplit in
                     if newSplit.isActive {

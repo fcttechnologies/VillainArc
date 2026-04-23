@@ -14,14 +14,7 @@ struct ActiveWorkoutResumeBarButton: View {
     var body: some View {
         Button(action: openAction) {
             HStack {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(displayTitle())
-                        .lineLimit(1)
-
-                    Text(workoutDetailLine())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                workoutTextStack
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .fontDesign(.rounded)
@@ -65,6 +58,29 @@ struct ActiveWorkoutResumeBarButton: View {
         .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
     }
 
+    @ViewBuilder
+    private var workoutTextStack: some View {
+        if shouldFlipActiveSetTextOrder {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(workoutDetailLine())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Text(displayTitle())
+                    .lineLimit(1)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(displayTitle())
+                    .lineLimit(1)
+
+                Text(workoutDetailLine())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+
     private var weightUnit: WeightUnit {
         appSettings.first?.weightUnit ?? .lbs
     }
@@ -75,6 +91,10 @@ struct ActiveWorkoutResumeBarButton: View {
 
     private var activeSetInfo: (exercise: ExercisePerformance, set: SetPerformance)? {
         workout.activeExerciseAndSet()
+    }
+
+    private var shouldFlipActiveSetTextOrder: Bool {
+        workout.statusValue == .active && activeSetInfo != nil
     }
 
     private func displayTitle() -> String {

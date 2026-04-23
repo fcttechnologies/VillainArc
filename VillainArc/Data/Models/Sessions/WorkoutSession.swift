@@ -241,6 +241,17 @@ extension WorkoutSession {
     }
 
     func clearPrescriptionLinksForHistoricalUse() { for exercise in sortedExercises { exercise.clearPrescriptionLinksForHistoricalUse() } }
+
+    func detachFromDeletedWorkoutPlan() {
+        workoutPlan = nil
+        if statusValue == .pending {
+            statusValue = .active
+        }
+        for exercise in sortedExercises {
+            exercise.detachFromDeletedPlan()
+        }
+    }
+
     func convertSetWeightsToKg(from unit: WeightUnit) {
         guard unit == .lbs else { return }
         for exercise in exercises ?? [] { for set in exercise.sets ?? [] { set.weight = unit.toKg(set.weight) } }

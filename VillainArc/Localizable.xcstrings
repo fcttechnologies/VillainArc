@@ -41,16 +41,6 @@
         }
       }
     },
-    "%@ • %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ • %2$@"
-          }
-        }
-      }
-    },
     "%@ • Ends %@" : {
       "localizations" : {
         "en" : {
@@ -1528,6 +1518,12 @@
         }
       }
     },
+    "An active workout was started from one of these workout plans. Deleting them will turn that live workout into a standalone workout and clear copied plan targets." : {
+
+    },
+    "An active workout was started from this workout plan. Deleting it will turn that live workout into a standalone workout and clear copied plan targets." : {
+
+    },
     "Apple does not let this app open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access and Devices, tap this app, then update the workout permissions." : {
 
     },
@@ -2637,6 +2633,9 @@
         }
       }
     },
+    "Create another workout plan to assign a different one here." : {
+
+    },
     "Create from Scratch" : {
       "localizations" : {
         "en" : {
@@ -2646,9 +2645,6 @@
           }
         }
       }
-    },
-    "Create Plan" : {
-
     },
     "Create Sleep Goal" : {
 
@@ -3396,12 +3392,6 @@
           }
         }
       }
-    },
-    "Describe plan..." : {
-
-    },
-    "Describe the workout plan you want Villain Arc to generate." : {
-
     },
     "Discard Changes" : {
 
@@ -4310,9 +4300,6 @@
           }
         }
       }
-    },
-    "Generate" : {
-
     },
     "Generate Suggestions" : {
       "localizations" : {
@@ -6527,6 +6514,9 @@
         }
       }
     },
+    "No Other Workout Plans" : {
+
+    },
     "No paused rest timer to resume." : {
       "localizations" : {
         "en" : {
@@ -7218,6 +7208,9 @@
           }
         }
       }
+    },
+    "One of these workout plans is currently being edited. Deleting them will close the editor and discard its editing copy." : {
+
     },
     "Only completed workout plans can be deleted." : {
       "localizations" : {
@@ -8012,12 +8005,6 @@
         }
       }
     },
-    "Plan templates coming soon" : {
-
-    },
-    "Plan Title" : {
-
-    },
     "Plate" : {
       "localizations" : {
         "en" : {
@@ -8564,9 +8551,6 @@
           }
         }
       }
-    },
-    "Request changes..." : {
-
     },
     "Requests Apple Health read and write access for workouts." : {
       "localizations" : {
@@ -10722,9 +10706,6 @@
         }
       }
     },
-    "Starts a new workout plan from scratch." : {
-
-    },
     "Starts a new workout session." : {
       "localizations" : {
         "en" : {
@@ -10784,9 +10765,6 @@
           }
         }
       }
-    },
-    "Starts plan generation from your prompt." : {
-
     },
     "Starts the rest timer." : {
       "localizations" : {
@@ -11530,9 +11508,6 @@
         }
       }
     },
-    "Templates Coming Soon" : {
-
-    },
     "Temporary" : {
       "localizations" : {
         "en" : {
@@ -11588,9 +11563,6 @@
           }
         }
       }
-    },
-    "Thinking..." : {
-
     },
     "This goal is no longer available." : {
       "localizations" : {
@@ -14114,6 +14086,9 @@
           }
         }
       }
+    },
+    "You're currently editing this workout plan. Deleting it will close the editor and discard the editing copy." : {
+
     },
     "You're getting %@ amount of sleep this month as you did last month." : {
       "localizations" : {

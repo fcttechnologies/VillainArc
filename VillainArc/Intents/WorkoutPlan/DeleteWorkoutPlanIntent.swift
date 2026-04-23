@@ -16,15 +16,23 @@ struct DeleteWorkoutPlanIntent: AppIntent {
         guard let storedPlan = try context.fetch(WorkoutPlan.byIDForDeletion(workoutPlanID)).first else { throw DeleteWorkoutPlanIntentError.workoutPlanNotFound }
         guard storedPlan.completed else { throw DeleteWorkoutPlanIntentError.workoutPlanIncomplete }
 
-        let choice = try await requestChoice(between: [IntentChoiceOption(title: "Delete Workout Plan", style: .destructive), .cancel], dialog: IntentDialog("Delete \"\(storedPlan.title)\"? This action cannot be undone."))
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: [storedPlan], context: context)
+        let dialog: IntentDialog = switch assessment.risk {
+        case .activeEditing:
+            IntentDialog("You're currently editing this workout plan. Deleting it will close the editor and discard the editing copy.")
+        case .activeWorkout:
+            IntentDialog("An active workout was started from this workout plan. Deleting it will turn that live workout into a standalone workout and clear copied plan targets.")
+        case nil:
+            IntentDialog("Delete \"\(storedPlan.title)\"? This action cannot be undone.")
+        }
+        let choice = try await requestChoice(
+            between: [IntentChoiceOption(title: "Delete", style: .destructive), .cancel],
+            dialog: dialog
+        )
 
         guard choice.style == .destructive else { throw DeleteWorkoutPlanIntentError.cancelled }
 
-        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: storedPlan)
-        SpotlightIndexer.deleteWorkoutPlan(id: storedPlan.id)
-        storedPlan.deleteWithSuggestionCleanup(context: context)
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         return .result(dialog: "Workout plan deleted.")
     }
 }

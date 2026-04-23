@@ -92,6 +92,16 @@ struct ExerciseDetailView: View {
         histories.first
     }
 
+    private var activeFlowAddLabel: String? {
+        if appRouter.activeWorkoutSession?.statusValue == .active {
+            return "Add to Workout"
+        }
+        if appRouter.activeWorkoutPlan != nil {
+            return "Add to Plan"
+        }
+        return nil
+    }
+
     private var displayName: String {
         exercise?.name ?? "Exercise"
     }
@@ -310,12 +320,22 @@ struct ExerciseDetailView: View {
             activity.appEntityIdentifier = .init(for: entity)
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if totalSessions > 0 {
-                    Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
-                        appRouter.push(to: .exerciseHistory(catalogID))
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                if let exercise {
+                    if let addLabel = activeFlowAddLabel {
+                        Button(addLabel, systemImage: "plus") {
+                            _ = appRouter.addExerciseToActiveFlow(exercise)
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailAddToActiveFlowButton)
+                        .accessibilityLabel(addLabel)
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailHistoryButton)
+
+                    if totalSessions > 0 {
+                        Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
+                            appRouter.push(to: .exerciseHistory(catalogID))
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailHistoryButton)
+                    }
                 }
             }
         }

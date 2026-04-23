@@ -19,6 +19,7 @@ struct WorkoutPlanView: View {
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var showDeletePlanConfirmation = false
+    @State private var planDeletionAssessment: WorkoutPlanDeletionCoordinator.Assessment?
     @State private var draggingExerciseID: UUID?
     @State private var highlightedReorderExerciseID: UUID?
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -72,7 +73,7 @@ struct WorkoutPlanView: View {
                             } else if plan.completed {
                                 dismissPresentedPlanEditor()
                             } else if plan.sortedExercises.isEmpty {
-                                deleteWorkoutPlanAndDismiss()
+                                deleteDraftPlanAndDismiss()
                             } else {
                                 showCancelWorkoutPlanConfirmation = true
                             }
@@ -84,7 +85,7 @@ struct WorkoutPlanView: View {
                                 if isEditingExistingPlan {
                                     discardEditingCopyAndDismiss()
                                 } else {
-                                    deleteWorkoutPlanAndDismiss()
+                                    deleteDraftPlanAndDismiss()
                                 }
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanConfirmCancelButton)
@@ -193,10 +194,21 @@ struct WorkoutPlanView: View {
                 }
                 .alert("Delete Plan?", isPresented: $showDeletePlanConfirmation) {
                     Button("Delete Plan", role: .destructive) {
-                        deleteWorkoutPlanAndDismiss()
+                        confirmDeletePlanAndDismiss()
                     }
                 } message: {
                     Text("Removing the last exercise will delete this plan.")
+                }
+                .alert(planDeletionAssessment?.confirmationTitle ?? "Delete Workout Plan?", isPresented: planDeletionAlertBinding) {
+                    Button(planDeletionAssessment?.destructiveButtonTitle ?? "Delete", role: .destructive) {
+                        guard let planDeletionAssessment else { return }
+                        performDeletePlanAndDismiss(using: planDeletionAssessment)
+                    }
+                    Button("Cancel", role: .cancel) {
+                        planDeletionAssessment = nil
+                    }
+                } message: {
+                    Text(planDeletionAssessment?.confirmationMessage ?? "")
                 }
         }
     }
@@ -386,34 +398,39 @@ struct WorkoutPlanView: View {
         moveExercise(from: IndexSet(integer: sourceIndex), to: destination)
     }
 
-    private func deleteWorkoutPlanAndDismiss() {
-        Haptics.selection()
-        if let originalPlan {
-            let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: originalPlan)
-            let editingCopy = plan
-            if router.activeWorkoutPlan?.id == plan.id {
-                router.pendingWorkoutPlanDismissCleanup = {
-                    SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
-                    originalPlan.deleteWithSuggestionCleanup(context: context)
-                    context.delete(editingCopy)
-                    SpotlightIndexer.index(workoutSplits: linkedSplits)
-                }
-            } else {
-                SpotlightIndexer.deleteWorkoutPlan(id: originalPlan.id)
-                originalPlan.deleteWithSuggestionCleanup(context: context)
-                context.delete(editingCopy)
-                SpotlightIndexer.index(workoutSplits: linkedSplits)
-            }
-            dismissPresentedPlanEditor()
+    private func confirmDeletePlanAndDismiss() {
+        guard let targetPlan = deletionTargetPlan else {
+            deleteDraftPlanAndDismiss()
             return
         }
-        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: plan)
-        if plan.completed {
-            SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: [targetPlan], context: context)
+        if assessment.requiresWarning {
+            planDeletionAssessment = assessment
+            return
         }
+        performDeletePlanAndDismiss(using: assessment)
+    }
+
+    private var deletionTargetPlan: WorkoutPlan? {
+        if let originalPlan {
+            return originalPlan
+        }
+        return plan.completed ? plan : nil
+    }
+
+    private func performDeletePlanAndDismiss(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
+        let wasPresentedEditor = router.activeWorkoutPlan?.id == plan.id
+        planDeletionAssessment = nil
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
+        if !wasPresentedEditor {
+            dismissPresentedPlanEditor()
+        }
+    }
+
+    private func deleteDraftPlanAndDismiss() {
+        Haptics.selection()
         plan.deleteWithSuggestionCleanup(context: context)
         try? context.save()
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
         dismissPresentedPlanEditor()
     }
 
@@ -443,6 +460,17 @@ struct WorkoutPlanView: View {
             notes: plan.notes.trimmingCharacters(in: .whitespacesAndNewlines),
             exercises: plan.sortedExercises.map {
                 ExerciseStructureSnapshot(id: $0.id, catalogID: $0.catalogID, setCount: $0.sortedSets.count)
+            }
+        )
+    }
+
+    private var planDeletionAlertBinding: Binding<Bool> {
+        Binding(
+            get: { planDeletionAssessment != nil },
+            set: { isPresented in
+                if !isPresented {
+                    planDeletionAssessment = nil
+                }
             }
         )
     }

@@ -7,6 +7,8 @@ struct WorkoutPlansListView: View {
     @Query(WorkoutPlan.all) private var workoutPlans: [WorkoutPlan]
     
     @State private var showDeleteAllConfirmation = false
+    @State private var deleteAllAssessment: WorkoutPlanDeletionCoordinator.Assessment?
+    @State private var deleteSelectionAssessment: WorkoutPlanDeletionCoordinator.Assessment?
     @State private var isEditing = false
     @State private var favoritesOnly = false
     @State private var previousFavoritesState = false
@@ -48,11 +50,33 @@ struct WorkoutPlansListView: View {
         .navigationBarBackButtonHidden(isEditing)
         .alert("Delete All Workout Plans?", isPresented: $showDeleteAllConfirmation) {
             Button("Delete All", role: .destructive) {
-                deleteAllWorkoutPlans()
+                confirmDeleteAllWorkoutPlans()
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllConfirmButton)
         } message: {
             Text("Are you sure you want to delete all workout plans?")
+        }
+        .alert(deleteAllAssessment?.confirmationTitle ?? "Delete All Workout Plans?", isPresented: deleteAllAlertBinding) {
+            Button(deleteAllAssessment?.destructiveButtonTitle ?? "Delete All", role: .destructive) {
+                guard let deleteAllAssessment else { return }
+                performDeleteAll(using: deleteAllAssessment)
+            }
+            Button("Cancel", role: .cancel) {
+                deleteAllAssessment = nil
+            }
+        } message: {
+            Text(deleteAllAssessment?.confirmationMessage ?? "")
+        }
+        .alert(deleteSelectionAssessment?.confirmationTitle ?? "Delete Workout Plan?", isPresented: deleteSelectionAlertBinding) {
+            Button(deleteSelectionAssessment?.destructiveButtonTitle ?? "Delete", role: .destructive) {
+                guard let deleteSelectionAssessment else { return }
+                performDeleteSelection(using: deleteSelectionAssessment)
+            }
+            Button("Cancel", role: .cancel) {
+                deleteSelectionAssessment = nil
+            }
+        } message: {
+            Text(deleteSelectionAssessment?.confirmationMessage ?? "")
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -111,14 +135,29 @@ struct WorkoutPlansListView: View {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
         let workoutPlansToDelete = offsets.map { filteredWorkoutPlans[$0] }
-        let linkedSplits = workoutPlansToDelete.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
-        SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlansToDelete.map(\.id))
-        for plan in workoutPlansToDelete {
-            plan.deleteWithSuggestionCleanup(context: context)
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: workoutPlansToDelete, context: context)
+        if assessment.requiresWarning {
+            deleteSelectionAssessment = assessment
+            return
         }
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
-        if workoutPlansToDelete.count == 1, let plan = workoutPlansToDelete.first {
+        performDeleteSelection(using: assessment)
+    }
+
+    private func confirmDeleteAllWorkoutPlans() {
+        Haptics.selection()
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: workoutPlans, context: context)
+        if assessment.requiresWarning {
+            deleteAllAssessment = assessment
+            return
+        }
+        performDeleteAll(using: assessment)
+    }
+
+    private func performDeleteSelection(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
+        let deletedPlans = assessment.plans
+        deleteSelectionAssessment = nil
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
+        if deletedPlans.count == 1, let plan = deletedPlans.first {
             Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: plan) }
         }
         if workoutPlans.isEmpty {
@@ -127,18 +166,34 @@ struct WorkoutPlansListView: View {
         }
     }
 
-    private func deleteAllWorkoutPlans() {
-        Haptics.selection()
-        let linkedSplits = workoutPlans.flatMap(SpotlightIndexer.linkedWorkoutSplits(for:))
-        SpotlightIndexer.deleteWorkoutPlans(ids: workoutPlans.map(\.id))
-        for plan in workoutPlans {
-            plan.deleteWithSuggestionCleanup(context: context)
-        }
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
+    private func performDeleteAll(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
+        deleteAllAssessment = nil
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         Task { await IntentDonations.donateDeleteAllWorkoutPlans() }
         isEditing = false
         favoritesOnly = false
+    }
+
+    private var deleteAllAlertBinding: Binding<Bool> {
+        Binding(
+            get: { deleteAllAssessment != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deleteAllAssessment = nil
+                }
+            }
+        )
+    }
+
+    private var deleteSelectionAlertBinding: Binding<Bool> {
+        Binding(
+            get: { deleteSelectionAssessment != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deleteSelectionAssessment = nil
+                }
+            }
+        )
     }
 }
 

@@ -6,6 +6,7 @@ struct WorkoutPlanRowView: View {
     let workoutPlan: WorkoutPlan
     var showsUseOnly: Bool = false
     private let appRouter = AppRouter.shared
+    @State private var deletionAssessment: WorkoutPlanDeletionCoordinator.Assessment?
     
     var body: some View {
         Button {
@@ -25,6 +26,17 @@ struct WorkoutPlanRowView: View {
                 deleteWorkoutPlan()
             }
         }
+        .alert(deletionAssessment?.confirmationTitle ?? "Delete Workout Plan?", isPresented: deletionAlertBinding) {
+            Button(deletionAssessment?.destructiveButtonTitle ?? "Delete", role: .destructive) {
+                guard let deletionAssessment else { return }
+                performDelete(using: deletionAssessment)
+            }
+            Button("Cancel", role: .cancel) {
+                deletionAssessment = nil
+            }
+        } message: {
+            Text(deletionAssessment?.confirmationMessage ?? "")
+        }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanRow(workoutPlan))
     }
 
@@ -37,13 +49,30 @@ struct WorkoutPlanRowView: View {
 
     private func deleteWorkoutPlan() {
         Haptics.selection()
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: [workoutPlan], context: context)
+        if assessment.requiresWarning {
+            deletionAssessment = assessment
+            return
+        }
+        performDelete(using: assessment)
+    }
+
+    private func performDelete(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
+        deletionAssessment = nil
         let deletedPlan = workoutPlan
-        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: workoutPlan)
-        SpotlightIndexer.deleteWorkoutPlan(id: workoutPlan.id)
-        workoutPlan.deleteWithSuggestionCleanup(context: context)
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
+    }
+
+    private var deletionAlertBinding: Binding<Bool> {
+        Binding(
+            get: { deletionAssessment != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deletionAssessment = nil
+                }
+            }
+        )
     }
 }
 

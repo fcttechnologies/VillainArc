@@ -48,7 +48,7 @@ struct ExerciseHistoryView: View {
     private var exercise: Exercise? {
         exercises.first
     }
-    
+
     private var availableCopyModes: [ExerciseHistoryCopyMode] {
         guard workoutExercise != nil || planExercise != nil else { return [] }
         return ExerciseHistoryCopyMode.allCases

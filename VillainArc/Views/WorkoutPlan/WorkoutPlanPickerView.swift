@@ -9,7 +9,11 @@ struct WorkoutPlanPickerView: View {
     let showsClearButton: Bool
     @State private var newWorkoutPlan: WorkoutPlan?
     @State private var newWorkoutPlanID: UUID?
-    @State private var showCreateWorkoutPlanSheet = false
+
+    private var availableWorkoutPlans: [WorkoutPlan] {
+        guard let selectedPlan else { return workoutPlans }
+        return workoutPlans.filter { $0.id != selectedPlan.id }
+    }
 
     init(selectedPlan: Binding<WorkoutPlan?>, showsClearButton: Bool = true) {
         _selectedPlan = selectedPlan
@@ -19,7 +23,7 @@ struct WorkoutPlanPickerView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(workoutPlans) { plan in
+                ForEach(availableWorkoutPlans) { plan in
                     NavigationLink {
                         WorkoutPlanDetailView(plan: plan, onSelect: {
                             selectedPlan = plan
@@ -54,15 +58,19 @@ struct WorkoutPlanPickerView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create", systemImage: "plus") {
-                        presentCreateWorkoutPlanSheet()
+                        createWorkoutPlan()
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerCreateButton)
                     .accessibilityHint(AccessibilityText.workoutPlanPickerCreateHint)
                 }
             }
             .overlay {
-                if workoutPlans.isEmpty {
-                    ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Create a workout plan to assign it here."))
+                if availableWorkoutPlans.isEmpty {
+                    if selectedPlan != nil {
+                        ContentUnavailableView("No Other Workout Plans", systemImage: "list.clipboard", description: Text("Create another workout plan to assign a different one here."))
+                    } else {
+                        ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Create a workout plan to assign it here."))
+                    }
                 }
             }
         }
@@ -83,21 +91,11 @@ struct WorkoutPlanPickerView: View {
         }) {
             WorkoutPlanView(plan: $0)
         }
-        .sheet(isPresented: $showCreateWorkoutPlanSheet) {
-            CreateWorkoutPlanView {
-                createWorkoutPlanFromScratch()
-            }
-        }
     }
 
-    private func presentCreateWorkoutPlanSheet() {
+    private func createWorkoutPlan() {
         Haptics.selection()
-        showCreateWorkoutPlanSheet = true
         Task { await IntentDonations.donateCreateWorkoutPlan() }
-    }
-
-    private func createWorkoutPlanFromScratch() {
-        Haptics.selection()
         let plan = WorkoutPlan()
         context.insert(plan)
         saveContext(context: context)

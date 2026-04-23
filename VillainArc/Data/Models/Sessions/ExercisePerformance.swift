@@ -175,6 +175,17 @@ import SwiftData
             set.prescription = nil
         }
     }
+
+    func detachFromDeletedPlan() {
+        prescription?.activePerformance = nil
+        prescription = nil
+        originalTargetSnapshot = nil
+        for set in sortedSets {
+            set.prescription?.activePerformance = nil
+            set.prescription = nil
+            set.originalTargetSetID = nil
+        }
+    }
 }
 
 enum ExerciseHistoryCopyMode: String, CaseIterable, Identifiable {

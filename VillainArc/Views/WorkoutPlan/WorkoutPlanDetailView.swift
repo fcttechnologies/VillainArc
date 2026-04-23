@@ -25,6 +25,7 @@ struct WorkoutPlanDetailView: View {
     private let splitAssignmentActions: SplitAssignmentActions?
 
     @State private var showDeleteWorkoutPlanConfirmation = false
+    @State private var deleteWorkoutPlanAssessment: WorkoutPlanDeletionCoordinator.Assessment?
     @State private var showSuggestionsSheet = false
     @State private var suggestionsInitialTab: WorkoutPlanSuggestionsSheet.Tab = .toReview
     @State private var focusedSuggestionExerciseID: UUID?
@@ -212,11 +213,22 @@ struct WorkoutPlanDetailView: View {
                     .accessibilityHint(AccessibilityText.workoutPlanDetailOptionsMenuHint)
                     .confirmationDialog("Delete Workout Plan?", isPresented: $showDeleteWorkoutPlanConfirmation) {
                         Button("Delete", role: .destructive) {
-                            deleteWorkoutPlan()
+                            confirmDeleteWorkoutPlan()
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailConfirmDeleteButton)
                     } message: {
                         Text("Are you sure you want to delete this workout plan?")
+                    }
+                    .alert(deleteWorkoutPlanAssessment?.confirmationTitle ?? "Delete Workout Plan?", isPresented: deleteWorkoutPlanAlertBinding) {
+                        Button(deleteWorkoutPlanAssessment?.destructiveButtonTitle ?? "Delete", role: .destructive) {
+                            guard let deleteWorkoutPlanAssessment else { return }
+                            performDeleteWorkoutPlan(using: deleteWorkoutPlanAssessment)
+                        }
+                        Button("Cancel", role: .cancel) {
+                            deleteWorkoutPlanAssessment = nil
+                        }
+                    } message: {
+                        Text(deleteWorkoutPlanAssessment?.confirmationMessage ?? "")
                     }
                 }
             }
@@ -297,16 +309,33 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
         }
     }
 
-    private func deleteWorkoutPlan() {
+    private func confirmDeleteWorkoutPlan() {
+        let assessment = WorkoutPlanDeletionCoordinator.assess(plans: [plan], context: context)
+        if assessment.requiresWarning {
+            deleteWorkoutPlanAssessment = assessment
+            return
+        }
+        performDeleteWorkoutPlan(using: assessment)
+    }
+
+    private func performDeleteWorkoutPlan(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
+        deleteWorkoutPlanAssessment = nil
         Haptics.selection()
         let deletedPlan = plan
-        let linkedSplits = SpotlightIndexer.linkedWorkoutSplits(for: plan)
-        SpotlightIndexer.deleteWorkoutPlan(id: plan.id)
-        plan.deleteWithSuggestionCleanup(context: context)
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: linkedSplits)
+        WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()
+    }
+
+    private var deleteWorkoutPlanAlertBinding: Binding<Bool> {
+        Binding(
+            get: { deleteWorkoutPlanAssessment != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deleteWorkoutPlanAssessment = nil
+                }
+            }
+        )
     }
 
     private func startWorkoutFromPlan() {

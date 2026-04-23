@@ -15,16 +15,6 @@ enum HomeQuickAction: String {
 @Observable final class AppRouter {
     private static let selectedTabDefaultsKey = "selected_tab"
 
-    struct GenerationCover: Identifiable, Hashable {
-        enum Kind: String, Hashable {
-            case workoutPlan
-        }
-
-        let id = UUID()
-        let kind: Kind
-        let prompt: String
-    }
-
     struct WeightGoalCompletionRoute: Identifiable, Hashable {
         enum Trigger: String, Hashable {
             case achievedByEntry
@@ -58,7 +48,6 @@ enum HomeQuickAction: String {
     enum AppSheet: String, Identifiable {
         case profile
         case settings
-        case createWorkoutPlan
 
         var id: String { rawValue }
     }
@@ -135,7 +124,6 @@ enum HomeQuickAction: String {
         }
     }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
-    var activeGenerationCover: GenerationCover?
     @ObservationIgnored var activeWorkoutPlanOriginal: WorkoutPlan?
     @ObservationIgnored var pendingWorkoutPlanDismissCleanup: (() -> Void)?
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
@@ -357,22 +345,6 @@ enum HomeQuickAction: String {
     func presentAppSheet(_ sheet: AppSheet) {
         Haptics.selection()
         activeAppSheet = sheet
-    }
-
-    func presentCreateWorkoutPlanSheet() {
-        guard !hasActiveFlow() else {
-            showActiveFlowBlockedToast()
-            return
-        }
-        Haptics.selection()
-        activeAppSheet = .createWorkoutPlan
-    }
-
-    func presentWorkoutPlanGenerationCover(prompt: String) {
-        let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedPrompt.isEmpty else { return }
-        Haptics.selection()
-        activeGenerationCover = GenerationCover(kind: .workoutPlan, prompt: trimmedPrompt)
     }
 
     func presentSplitSheet(_ sheet: SplitSheet) {
@@ -652,6 +624,28 @@ enum HomeQuickAction: String {
         saveContext(context: context)
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
+    }
+
+    @discardableResult
+    func addExerciseToActiveFlow(_ exercise: Exercise) -> Bool {
+        if let workout = activeWorkoutSession, workout.statusValue == .active {
+            Haptics.selection()
+            workout.addExercise(exercise)
+            exercise.updateLastAddedAt()
+            saveContext(context: context)
+            WorkoutActivityManager.update(for: workout)
+            return true
+        }
+
+        if let plan = activeWorkoutPlan {
+            Haptics.selection()
+            plan.addExercise(exercise)
+            exercise.updateLastAddedAt()
+            saveContext(context: context)
+            return true
+        }
+
+        return false
     }
 
     func editWorkoutPlan(_ plan: WorkoutPlan) {
