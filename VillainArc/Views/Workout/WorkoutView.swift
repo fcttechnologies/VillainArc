@@ -208,12 +208,6 @@ struct WorkoutView: View {
                     router.presentWorkoutSheet(.preWorkoutContext)
                 }
             }
-            .onAppear {
-                WorkoutActivityManager.start(workout: workout)
-                Task {
-                    await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workout)
-                }
-            }
         }
     }
     

@@ -28,6 +28,13 @@ import SwiftData
 }
 
 extension RepRangePolicy {
+    func resetToDefault() {
+        activeMode = .notSet
+        lowerRange = 8
+        upperRange = 12
+        targetReps = 8
+    }
+
     func apply(snapshot: RepRangeSnapshot) {
         activeMode = snapshot.mode
         lowerRange = snapshot.lower

@@ -84,8 +84,10 @@ import SwiftData
         clearLinkedPerformanceReferences()
         catalogID = exercise.catalogID
         name = exercise.name
+        notes = ""
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        repRange?.resetToDefault()
         exercise.updateLastAddedAt()
 
         if !keepSets {

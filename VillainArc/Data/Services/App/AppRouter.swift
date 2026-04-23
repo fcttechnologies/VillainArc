@@ -594,6 +594,26 @@ enum HomeQuickAction: String {
         ToastManager.shared.show(.init(title: title, message: message, systemImage: "exclamationmark.circle", tint: .orange, haptic: .warning))
     }
 
+    private func startWorkoutRuntime(for workoutSession: WorkoutSession) {
+        guard workoutSession.statusValue == .active else { return }
+        WorkoutActivityManager.start(workout: workoutSession)
+        Task {
+            await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workoutSession)
+        }
+    }
+
+    private func restoreWorkoutRuntime(for workoutSession: WorkoutSession) {
+        guard workoutSession.statusValue == .active else { return }
+        WorkoutActivityManager.restoreIfNeeded(workout: workoutSession)
+        Task {
+            await HealthLiveWorkoutSessionCoordinator.shared.ensureRunning(for: workoutSession)
+        }
+    }
+
+    func activatePendingWorkoutSession(_ workoutSession: WorkoutSession) {
+        startWorkoutRuntime(for: workoutSession)
+    }
+
     func startWorkoutSession() {
         guard !hasActiveFlow() else {
             showActiveFlowBlockedToast()
@@ -604,6 +624,7 @@ enum HomeQuickAction: String {
         context.insert(newWorkout)
         saveContext(context: context)
         activeWorkoutSession = newWorkout
+        startWorkoutRuntime(for: newWorkout)
     }
     func createWorkoutPlan() {
         guard !hasActiveFlow() else {
@@ -663,6 +684,9 @@ enum HomeQuickAction: String {
         context.insert(workoutSession)
         saveContext(context: context)
         activeWorkoutSession = workoutSession
+        if workoutSession.statusValue == .active {
+            startWorkoutRuntime(for: workoutSession)
+        }
     }
 
     func isTodaysActiveSplitPlan(_ plan: WorkoutPlan) -> Bool {
@@ -675,6 +699,7 @@ enum HomeQuickAction: String {
     func resumeWorkoutSession(_ workoutSession: WorkoutSession) {
         Haptics.selection()
         activeWorkoutSession = workoutSession
+        restoreWorkoutRuntime(for: workoutSession)
     }
     func resumeWorkoutPlanCreation(_ workoutPlan: WorkoutPlan) {
         Haptics.selection()

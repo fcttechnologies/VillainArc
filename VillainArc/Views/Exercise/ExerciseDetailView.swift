@@ -271,7 +271,7 @@ struct ExerciseDetailView: View {
                     suggestionSettingsSection(for: exercise)
                 }
             }
-            .padding(.horizontal)
+            .padding([.horizontal, .bottom])
         }
         .quickActionContentBottomInset()
         .scrollIndicators(.hidden)

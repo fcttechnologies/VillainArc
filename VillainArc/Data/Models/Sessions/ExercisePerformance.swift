@@ -91,8 +91,10 @@ import SwiftData
         prescription?.activePerformance = nil
         catalogID = exercise.catalogID
         name = exercise.name
+        notes = ""
         musclesTargeted = exercise.musclesTargeted
         equipmentType = exercise.equipmentType
+        repRange?.resetToDefault()
         exercise.updateLastAddedAt()
         prescription = nil
         originalTargetSnapshot = nil

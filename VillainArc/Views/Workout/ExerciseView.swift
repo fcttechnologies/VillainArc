@@ -45,7 +45,7 @@ struct ExerciseView: View {
         let weight = prescription.targetWeight > 0 ? prescription.targetWeight : nil
         let targetRPE = prescription.visibleTargetRPE
         guard reps != nil || weight != nil || targetRPE != nil else { return nil }
-        return SetReferenceData(reps: reps, weight: weight, rpe: targetRPE, rpeStyle: .target, actionLabel: "Use Target")
+        return SetReferenceData(reps: reps, weight: weight, rpe: targetRPE, setType: prescription.type, rpeStyle: .target, actionLabel: "Use Target")
     }
     
     private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
@@ -284,7 +284,7 @@ struct ExerciseView: View {
         
         let previousSets = (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
         previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
-            (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, rpe: previousSet.visibleRPE, rpeStyle: .actual, actionLabel: "Use Previous"))
+            (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, rpe: previousSet.visibleRPE, setType: previousSet.type, rpeStyle: .actual, actionLabel: "Use Previous"))
         })
     }
     

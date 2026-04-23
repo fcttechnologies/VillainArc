@@ -5,6 +5,7 @@ struct SetReferenceData {
     let reps: Int?
     let weight: Double?
     let rpe: Int?
+    let setType: ExerciseSetType?
     let rpeStyle: RPEBadge.Style
     let actionLabel: String
     
@@ -13,12 +14,21 @@ struct SetReferenceData {
     }
     
     func displayText(unit: WeightUnit) -> String {
+        if let weight, weight > 0, (reps ?? 0) == 0 {
+            let displayWeight = roundedWeightDisplayValue(weight, unit: unit)
+            return "\(displayWeight.formatted(.number.precision(.fractionLength(0...2)))) \(unit.rawValue)"
+        }
         if let reps, reps > 0, (weight ?? 0) == 0 {
             return "\(reps) reps"
         }
         guard let reps, let weight else { return "-" }
         let displayWeight = roundedWeightDisplayValue(weight, unit: unit)
         return "\(reps)x\(displayWeight.formatted(.number.precision(.fractionLength(0...2))))"
+    }
+
+    var setTypeBadgeType: ExerciseSetType? {
+        guard let setType, setType != .working else { return nil }
+        return setType
     }
 }
 
@@ -133,6 +143,12 @@ struct ExerciseSetRowView: View {
                     if let referenceData, let rpe = referenceData.rpe {
                         RPEBadge(value: rpe, style: referenceData.rpeStyle)
                             .offset(x: rpe == 10 ? 14 : 7, y: -4)
+                    }
+                }
+                .overlay(alignment: .bottomLeading) {
+                    if let badgeType = referenceData?.setTypeBadgeType {
+                        ReferenceSetTypeLabel(type: badgeType)
+                            .offset(x: -8, y: 6)
                     }
                 }
                 .frame(maxWidth: fieldWidth)
@@ -283,12 +299,15 @@ struct ExerciseSetRowView: View {
     
     private var referenceValueText: String {
         guard let referenceData else { return "None" }
-        let text = referenceData.displayText(unit: weightUnit)
+        var parts: [String] = [referenceData.displayText(unit: weightUnit)]
+        if let badgeType = referenceData.setTypeBadgeType {
+            parts.append(badgeType.displayName)
+        }
         if let rpe = referenceData.rpe {
             let prefix = referenceData.rpeStyle.accessibilityPrefix.lowercased()
-            return "\(text), \(prefix) \(rpe)"
+            parts.append("\(prefix) \(rpe)")
         }
-        return text
+        return parts.joined(separator: ", ")
     }
     
     private var shouldPrewarmSuggestionModelsOnCompletion: Bool {
@@ -321,6 +340,18 @@ struct ExerciseSetRowView: View {
             }
     }
     
+}
+
+private struct ReferenceSetTypeLabel: View {
+    let type: ExerciseSetType
+
+    var body: some View {
+        Text(type.shortLabel)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundStyle(type.tintColor)
+            .accessibilityHidden(true)
+    }
 }
 
 #Preview(traits: .sampleDataIncomplete) {
