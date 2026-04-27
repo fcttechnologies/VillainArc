@@ -45,8 +45,13 @@
 			<string>com.villainarc.quickaction.addWeightEntry</string>
 		</dict>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.villainarc.health.weeklyCoaching</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
 </dict>

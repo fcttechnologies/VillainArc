@@ -173,13 +173,15 @@ When onboarding reaches `.ready`, `RootView` runs the post-ready Health pass:
 - `HealthStoreUpdateCoordinator.syncNow()`
 - `HealthMetricWidgetReloader.reloadAllHealthMetrics()`
 - `NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()`
+- `WeeklyHealthCoachingCoordinator.refreshSchedule()`
 
-This does four jobs:
+This does five jobs:
 
 - recreate missing Health observers after the launch path
 - backfill Health mirrors, sleep nights and sleep blocks, and daily caches
 - reconcile older workout and weight exports
 - refresh all Health widgets after the manual sync pass
+- schedule or cancel the weekly Health coaching background refresh based on the current notification settings and system permissions
 
 The observer reinstall matters because observer queries are also created earlier at process launch. If an earlier observer failed due to Health authorization state, the ready-time path can recreate it cleanly.
 
@@ -192,13 +194,14 @@ Before the app is ready, onboarding can enter:
 - iCloud account issue
 - CloudKit unavailable
 - syncing
-- syncing slow network
 - generic bootstrap error
 
 Important timing rules:
 
-- slow network appears after about 15 seconds of CloudKit import waiting
-- the first-bootstrap import wait fails after about 60 seconds
+- the first-bootstrap import wait starts checking for stalls after about 2 minutes
+- the wait only fails when CloudKit import appears idle long enough without local store progress, with a hard cap of about 8 minutes
+- stall failures resolve the CloudKit import wait before showing the retryable error, so retry starts a clean onboarding attempt
+- stall failures do not stop the CloudKit import observer; if a late import-complete event arrives after the retryable error, the monitor can still capture it for the next retry
 - no-network uses a retry loop that restarts onboarding when connectivity returns
 - iCloud/CloudKit blocking states also retry when the app becomes active again
 

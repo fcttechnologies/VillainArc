@@ -2109,12 +2109,12 @@
         }
       }
     },
-    "Checking iCloud for your existing workout history and profile..." : {
+    "Restoring your workouts, plans, profile, and health history from iCloud..." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Checking iCloud for your existing workout history and profile..."
+            "value" : "Restoring your workouts, plans, profile, and health history from iCloud..."
           }
         }
       }
@@ -2174,7 +2174,7 @@
         }
       }
     },
-    "Choose whether you receive notifications when you complete your sleep goal only, or also receive coaching notifications such as suggested bedtime reminders." : {
+    "Choose whether you receive notifications when you complete your sleep goal only, or also receive weekly coaching recaps for your sleep averages." : {
 
     },
     "Choose whether you receive notifications when you complete your steps goal only, or also receive coaching notifications for double goal, triple goal, and new best milestones." : {
@@ -10905,16 +10905,6 @@
         }
       }
     },
-    "Still Syncing..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Still Syncing..."
-          }
-        }
-      }
-    },
     "Stop" : {
       "localizations" : {
         "en" : {
@@ -11579,16 +11569,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This goal is no longer available."
-          }
-        }
-      }
-    },
-    "This is taking longer than expected. Villain Arc will keep waiting for iCloud sync to finish before continuing." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This is taking longer than expected. Villain Arc will keep waiting for iCloud sync to finish before continuing."
           }
         }
       }

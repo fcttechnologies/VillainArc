@@ -17,7 +17,7 @@ This file is the structure map for the app. It answers “where does this respon
 - app entry point
 - installs `SharedModelContainer.container`
 - forwards Spotlight and Siri handoffs into `AppRouter.shared`
-- app delegate reinstalls Health observers on process launch and installs the notification delegate
+- app delegate registers the weekly Health coaching background refresh task, reinstalls Health observers on process launch, and installs the notification delegate
 
 ### `Root/RootView.swift`
 
@@ -26,7 +26,7 @@ This file is the structure map for the app. It answers “where does this respon
 - cleans up abandoned plan-editing copies
 - refreshes shortcut parameters
 - only resumes unfinished flows after onboarding reaches `.ready`
-- after `.ready`, asks `AppRouter` to resume unfinished work, refreshes Health observer/background registration, runs Health sync/export reconciliation, and requests notification permission if needed
+- after `.ready`, asks `AppRouter` to resume unfinished work, refreshes Health observer/background registration, runs Health sync/export reconciliation, requests notification permission if needed, and refreshes the weekly Health coaching background schedule
 
 ### `Views/AppShell/ContentView.swift`
 
@@ -101,6 +101,7 @@ It also stores current fitness level plus last fitness-level confirmation timest
 - watches persistent CloudKit import events during first bootstrap
 - starts early in first bootstrap so onboarding does not miss import completion before the explicit wait step
 - lets onboarding wait for import completion before exercise catalog seeding
+- fails closed on stalled or missed completion signals: onboarding does not seed until a real import-complete event is observed
 
 ### `Data/Services/App/DataManager.swift`
 

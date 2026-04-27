@@ -433,7 +433,7 @@ private struct NotificationSettingsView: View {
                 } else if backgroundRefreshStatus != .available {
                     Text("Background App Refresh is off, so sleep notifications may be delayed while the app is closed.")
                 } else {
-                    Text("Choose whether you receive notifications when you complete your sleep goal only, or also receive coaching notifications such as suggested bedtime reminders.")
+                    Text("Choose whether you receive notifications when you complete your sleep goal only, or also receive weekly coaching recaps for your sleep averages.")
                 }
             }
 
@@ -449,13 +449,16 @@ private struct NotificationSettingsView: View {
             guard newPhase == .active else { return }
             Task {
                 await refreshNotificationAuthorizationState()
+                await WeeklyHealthCoachingCoordinator.shared.refreshSchedule()
             }
         }
         .onChange(of: settings.stepsNotificationMode) {
             saveContext(context: context)
+            Task { await WeeklyHealthCoachingCoordinator.shared.refreshSchedule() }
         }
         .onChange(of: settings.sleepNotificationMode) {
             saveContext(context: context)
+            Task { await WeeklyHealthCoachingCoordinator.shared.refreshSchedule() }
         }
     }
 
@@ -522,6 +525,7 @@ private struct NotificationSettingsView: View {
         }
 
         await refreshNotificationAuthorizationState()
+        await WeeklyHealthCoachingCoordinator.shared.refreshSchedule()
     }
 
     private func openAppSettings() {

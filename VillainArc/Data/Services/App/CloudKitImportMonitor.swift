@@ -58,6 +58,15 @@ final class CloudKitImportMonitor {
         }
     }
 
+    func failCurrentWait(message: String) {
+        status = .failed(message)
+
+        let pendingWaiters = waiters
+        waiters.removeAll()
+
+        for waiter in pendingWaiters { waiter.resume(returning: status) }
+    }
+
     private func handle(_ notification: Notification) {
         guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event else { return }
 

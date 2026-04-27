@@ -10,7 +10,6 @@ enum OnboardingState: Equatable {
     case cloudKitAccountIssue
     case cloudKitUnavailable
     case syncing
-    case syncingSlowNetwork
     case seeding
     case profile(UserProfileOnboardingStep)
     case finishing
@@ -26,8 +25,42 @@ enum OnboardingState: Equatable {
     }
 }
 
+private struct BootstrapSyncProgressSnapshot: Equatable {
+    let userProfiles: Int
+    let appSettings: Int
+    let healthSyncStates: Int
+    let exercises: Int
+    let exerciseHistories: Int
+    let workoutSessions: Int
+    let exercisePerformances: Int
+    let setPerformances: Int
+    let workoutPlans: Int
+    let exercisePrescriptions: Int
+    let setPrescriptions: Int
+    let workoutSplits: Int
+    let workoutSplitDays: Int
+    let trainingGoals: Int
+    let trainingConditionPeriods: Int
+    let weightEntries: Int
+    let weightGoals: Int
+    let stepsGoals: Int
+    let sleepGoals: Int
+    let healthWorkouts: Int
+    let healthSleepNights: Int
+    let healthSleepBlocks: Int
+    let healthStepsDistances: Int
+    let healthEnergyRecords: Int
+    let suggestionEvents: Int
+    let restTimeHistories: Int
+}
+
 @Observable class OnboardingManager {
     private static let networkRetryPollInterval: Duration = .milliseconds(500)
+    private static let bootstrapSyncPollInterval: Duration = .seconds(15)
+    private static let bootstrapSyncMinimumWait: TimeInterval = 120
+    private static let bootstrapSyncIdleGracePeriod: TimeInterval = 90
+    private static let bootstrapSyncMaximumWait: TimeInterval = 480
+    private static let bootstrapSyncTimeoutMessage = "Villain Arc couldn't confirm that your iCloud data finished syncing. Please try again."
 
     var state: OnboardingState = .launching
     var profile: UserProfile?
@@ -100,37 +133,23 @@ enum OnboardingState: Equatable {
         state = .syncing
         CloudKitImportMonitor.shared.prepareForBootstrapWait()
 
-        // Show "slow network" message if taking > 15 seconds
-        let slowNetworkTask = Task {
-            try? await Task.sleep(for: .seconds(15))
-            guard attemptID == self.onboardingAttemptID else { return }
-            if state == .syncing { state = .syncingSlowNetwork }
-        }
-
-        let stalledSyncTask = Task {
-            try? await Task.sleep(for: .seconds(60))
-            guard attemptID == self.onboardingAttemptID else { return }
-            guard state == .syncing || state == .syncingSlowNetwork else { return }
-
-            state = .error("Villain Arc couldn't confirm that your iCloud data finished syncing. Please try again.")
-        }
+        let stalledSyncTask = startBootstrapSyncStallWatcher(attemptID: attemptID)
 
         let importStatus = await CloudKitImportMonitor.shared.waitForImportCompletion()
-        slowNetworkTask.cancel()
         stalledSyncTask.cancel()
         guard attemptID == onboardingAttemptID else { return }
 
         switch importStatus {
         case .completed: break
         case .failed(let message):
-            state = .error("Unable to finish syncing your iCloud data: \(message)")
+            state = .error(message == Self.bootstrapSyncTimeoutMessage ? message : "Unable to finish syncing your iCloud data: \(message)")
             return
         case .idle, .waiting, .importing:
-            state = .error("Villain Arc couldn't confirm that your iCloud data finished syncing. Please try again.")
+            state = .error(Self.bootstrapSyncTimeoutMessage)
             return
         }
 
-        guard state == .syncing || state == .syncingSlowNetwork else { return }
+        guard state == .syncing else { return }
 
         // Step 5: Seed exercises
         state = .seeding
@@ -329,6 +348,86 @@ enum OnboardingState: Equatable {
                     return
                 }
             }
+        }
+    }
+
+    private func startBootstrapSyncStallWatcher(attemptID: UUID) -> Task<Void, Never> {
+        Task { [weak self] in
+            guard let self else { return }
+
+            let startedAt = Date()
+            var lastProgressAt = startedAt
+            var lastSnapshot = bootstrapSyncProgressSnapshot()
+
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: Self.bootstrapSyncPollInterval)
+                } catch {
+                    return
+                }
+
+                guard attemptID == onboardingAttemptID else { return }
+                guard state == .syncing else { return }
+
+                let now = Date()
+                let snapshot = bootstrapSyncProgressSnapshot()
+                if let snapshot, snapshot != lastSnapshot {
+                    lastSnapshot = snapshot
+                    lastProgressAt = now
+                }
+
+                let elapsed = now.timeIntervalSince(startedAt)
+                guard elapsed >= Self.bootstrapSyncMinimumWait else { continue }
+
+                if elapsed >= Self.bootstrapSyncMaximumWait {
+                    CloudKitImportMonitor.shared.failCurrentWait(message: Self.bootstrapSyncTimeoutMessage)
+                    return
+                }
+
+                let importStatus = CloudKitImportMonitor.shared.status
+                guard importStatus != .importing else { continue }
+
+                if now.timeIntervalSince(lastProgressAt) >= Self.bootstrapSyncIdleGracePeriod {
+                    CloudKitImportMonitor.shared.failCurrentWait(message: Self.bootstrapSyncTimeoutMessage)
+                    return
+                }
+            }
+        }
+    }
+
+    private func bootstrapSyncProgressSnapshot() -> BootstrapSyncProgressSnapshot? {
+        do {
+            return BootstrapSyncProgressSnapshot(
+                userProfiles: try context.fetchCount(FetchDescriptor<UserProfile>()),
+                appSettings: try context.fetchCount(FetchDescriptor<AppSettings>()),
+                healthSyncStates: try context.fetchCount(FetchDescriptor<HealthSyncState>()),
+                exercises: try context.fetchCount(FetchDescriptor<Exercise>()),
+                exerciseHistories: try context.fetchCount(FetchDescriptor<ExerciseHistory>()),
+                workoutSessions: try context.fetchCount(FetchDescriptor<WorkoutSession>()),
+                exercisePerformances: try context.fetchCount(FetchDescriptor<ExercisePerformance>()),
+                setPerformances: try context.fetchCount(FetchDescriptor<SetPerformance>()),
+                workoutPlans: try context.fetchCount(FetchDescriptor<WorkoutPlan>()),
+                exercisePrescriptions: try context.fetchCount(FetchDescriptor<ExercisePrescription>()),
+                setPrescriptions: try context.fetchCount(FetchDescriptor<SetPrescription>()),
+                workoutSplits: try context.fetchCount(FetchDescriptor<WorkoutSplit>()),
+                workoutSplitDays: try context.fetchCount(FetchDescriptor<WorkoutSplitDay>()),
+                trainingGoals: try context.fetchCount(FetchDescriptor<TrainingGoal>()),
+                trainingConditionPeriods: try context.fetchCount(FetchDescriptor<TrainingConditionPeriod>()),
+                weightEntries: try context.fetchCount(FetchDescriptor<WeightEntry>()),
+                weightGoals: try context.fetchCount(FetchDescriptor<WeightGoal>()),
+                stepsGoals: try context.fetchCount(FetchDescriptor<StepsGoal>()),
+                sleepGoals: try context.fetchCount(FetchDescriptor<SleepGoal>()),
+                healthWorkouts: try context.fetchCount(FetchDescriptor<HealthWorkout>()),
+                healthSleepNights: try context.fetchCount(FetchDescriptor<HealthSleepNight>()),
+                healthSleepBlocks: try context.fetchCount(FetchDescriptor<HealthSleepBlock>()),
+                healthStepsDistances: try context.fetchCount(FetchDescriptor<HealthStepsDistance>()),
+                healthEnergyRecords: try context.fetchCount(FetchDescriptor<HealthEnergy>()),
+                suggestionEvents: try context.fetchCount(FetchDescriptor<SuggestionEvent>()),
+                restTimeHistories: try context.fetchCount(FetchDescriptor<RestTimeHistory>())
+            )
+        } catch {
+            print("Unable to inspect bootstrap sync progress: \(error)")
+            return nil
         }
     }
 

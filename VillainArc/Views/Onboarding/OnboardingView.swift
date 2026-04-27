@@ -345,10 +345,7 @@ struct OnboardingView: View {
             }
 
         case .syncing:
-            OnboardingProgressStateView(title: "Syncing Your Data", message: "Checking iCloud for your existing workout history and profile...")
-
-        case .syncingSlowNetwork:
-            OnboardingProgressStateView(title: "Still Syncing...", message: "This is taking longer than expected. Villain Arc will keep waiting for iCloud sync to finish before continuing.")
+            OnboardingProgressStateView(title: "Syncing Your Data", message: "Restoring your workouts, plans, profile, and health history from iCloud...")
 
         case .seeding:
             OnboardingProgressStateView(title: "Updating Exercises", message: "Preparing your exercise catalog...")

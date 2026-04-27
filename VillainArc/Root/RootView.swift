@@ -33,6 +33,7 @@ struct RootView: View {
                     await HealthStoreUpdateCoordinator.shared.syncNow()
                     HealthMetricWidgetReloader.reloadAllHealthMetrics()
                     await NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()
+                    await WeeklyHealthCoachingCoordinator.shared.refreshSchedule()
                 }
             }
             .sheet(isPresented: onboardingBinding) {

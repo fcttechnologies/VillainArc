@@ -7,6 +7,7 @@ nonisolated enum NotificationType: String {
     case stepsGoalComplete
     case stepsEvent
     case sleepGoalComplete
+    case weeklyHealthCoaching
 }
 
 nonisolated enum NotificationUserInfoKey {
@@ -16,6 +17,9 @@ nonisolated enum NotificationUserInfoKey {
     static let stepsMilestone = "stepsMilestone"
     static let includesNewBest = "stepsIncludesNewBest"
     static let sleepWakeDay = "sleepWakeDay"
+    static let weeklyIncludesSteps = "weeklyIncludesSteps"
+    static let weeklyIncludesSleep = "weeklyIncludesSleep"
+    static let weeklyWeekStart = "weeklyWeekStart"
 }
 
 final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate {
@@ -147,6 +151,38 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         }
     }
 
+    nonisolated static func deliverWeeklyHealthCoaching(averageSteps: Int?, averageSleepDuration: TimeInterval?, weekStart: Date) async -> Bool {
+        let status = await authorizationStatus()
+        guard status.allowsLocalDelivery else { return false }
+        guard averageSteps != nil || averageSleepDuration != nil else { return false }
+
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["weeklyHealthCoaching"])
+        center.removeDeliveredNotifications(withIdentifiers: ["weeklyHealthCoaching"])
+
+        let content = UNMutableNotificationContent()
+        content.title = "Weekly Health Recap"
+        content.body = weeklyHealthCoachingBody(averageSteps: averageSteps, averageSleepDuration: averageSleepDuration)
+        content.sound = .default
+        content.threadIdentifier = "healthGoals"
+        content.userInfo = [
+            NotificationUserInfoKey.type: NotificationType.weeklyHealthCoaching.rawValue,
+            NotificationUserInfoKey.weeklyIncludesSteps: averageSteps != nil,
+            NotificationUserInfoKey.weeklyIncludesSleep: averageSleepDuration != nil,
+            NotificationUserInfoKey.weeklyWeekStart: weekStart.timeIntervalSince1970
+        ]
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: "weeklyHealthCoaching", content: content, trigger: trigger)
+        do {
+            try await center.add(request)
+            return true
+        } catch {
+            print("Failed to schedule weekly health coaching notification: \(error)")
+            return false
+        }
+    }
+
     nonisolated static func deliverRestTimerCompletionIfNeeded() async {
         let status = await authorizationStatus()
         let canPresentRestTimerCompletionAlert = await MainActor.run {
@@ -209,7 +245,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             let targetSteps = userInfo[NotificationUserInfoKey.targetSteps] as? Int ?? 0
             let stepCount = userInfo[NotificationUserInfoKey.stepCount] as? Int ?? 0
             return .stepsGoalComplete(targetSteps: targetSteps, stepCount: stepCount)
-        case .stepsEvent:
+        case .stepsEvent, .weeklyHealthCoaching:
             return nil
         case .sleepGoalComplete:
             return nil
@@ -224,11 +260,45 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         switch type {
         case .stepsGoalComplete, .stepsEvent:
             return .stepsDistanceHistory
+        case .weeklyHealthCoaching:
+            let includesSteps = userInfo[NotificationUserInfoKey.weeklyIncludesSteps] as? Bool ?? false
+            return includesSteps ? .stepsDistanceHistory : .sleepHistory
         case .sleepGoalComplete:
             return .sleepHistory
         case .restTimerComplete:
             return nil
         }
+    }
+
+    nonisolated private static func weeklyHealthCoachingBody(averageSteps: Int?, averageSleepDuration: TimeInterval?) -> String {
+        switch (averageSteps, averageSleepDuration) {
+        case let (.some(steps), .some(sleepDuration)):
+            return "Last week you averaged \(compactStepsText(steps)) steps and \(formattedDurationText(sleepDuration)) of sleep."
+        case let (.some(steps), .none):
+            return "Last week you averaged \(compactStepsText(steps)) steps."
+        case let (.none, .some(sleepDuration)):
+            return "Last week you averaged \(formattedDurationText(sleepDuration)) of sleep."
+        case (.none, .none):
+            return "Your weekly health recap is ready."
+        }
+    }
+
+    nonisolated private static func compactStepsText(_ steps: Int) -> String {
+        steps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
+    }
+
+    nonisolated private static func formattedDurationText(_ duration: TimeInterval) -> String {
+        let totalMinutes = Int((duration / 60).rounded())
+        let hours = max(totalMinutes / 60, 0)
+        let minutes = max(totalMinutes % 60, 0)
+
+        if minutes == 0 {
+            return "\(hours)h"
+        }
+        if hours == 0 {
+            return "\(minutes)m"
+        }
+        return "\(hours)h \(minutes)m"
     }
 }
 

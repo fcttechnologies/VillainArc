@@ -199,13 +199,14 @@ That is why the ready/settings flow also:
 - reinstalls any missing observers
 - refreshes Health background delivery registration
 - runs a full Health sync and export reconciliation pass
+- refreshes the weekly Health coaching background refresh schedule when notification settings allow it
 
 ## Launch and Readiness
 
 The high-level launch path is:
 
 1. `VillainArcApp` installs the shared model container and forwards Spotlight/Siri handoffs.
-2. The app delegate reinstalls Health observers on process launch.
+2. The app delegate registers the weekly Health coaching background refresh task and reinstalls Health observers on process launch.
 3. `RootView` starts `OnboardingManager`, cleans up abandoned plan-edit copies, and refreshes shortcut parameters.
 4. `OnboardingManager` decides whether this is first bootstrap or a returning launch.
 5. Only after onboarding reaches `.ready` does `RootView`:
@@ -214,6 +215,7 @@ The high-level launch path is:
    - refresh Health background delivery registration
    - run the full Health sync plus export-reconciliation pass
    - request local-notification permission if it has not been requested yet
+   - schedule or cancel the weekly Health coaching background refresh
 
 That ordering matters. VillainArc does not resume unfinished work before setup is valid.
 
@@ -237,6 +239,8 @@ On the first launch, VillainArc takes the full setup path:
 - route into profile onboarding
 
 The wait-before-seed rule prevents duplicate built-in exercises if older cloud data is still importing.
+
+If the first-bootstrap import completion signal is missed or stalls, onboarding fails closed with a retryable error instead of seeding early. The CloudKit import observer stays alive after that retryable error so a late completion event can still be captured before the next retry.
 
 Note:
 

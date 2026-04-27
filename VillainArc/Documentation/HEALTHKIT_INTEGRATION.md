@@ -23,6 +23,7 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Services/App/HealthMetricWidgetReloader.swift`
 - `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`
 - `Data/Services/App/NotificationCoordinator.swift`
+- `Data/Services/App/WeeklyHealthCoachingCoordinator.swift`
 - `Views/Components/Overlays/ToastManager.swift`
 - `Views/Health/Sleep/SleepHistoryView.swift`
 - `Intents/Health/*`
@@ -57,7 +58,7 @@ VillainArc treats Apple Health as an integration layer, not the app’s main sou
 - `HealthEnergy`
   - per-day active/resting energy cache
 - `HealthSyncState`
-  - synced-coverage record for the daily metric caches plus steps-coaching dedupe state
+  - synced-coverage record for the daily metric caches plus notification dedupe state for steps coaching, sleep goals, and weekly coaching
 
 That split keeps HealthKit from owning the app’s training logic while still letting the app reuse Health data everywhere it makes sense.
 
@@ -219,9 +220,10 @@ Weight export follows the same idea:
 
 1. `HealthSyncCoordinator.syncAll()`
 2. `HealthExportCoordinator.reconcilePendingExports()`
-3. `HealthMetricWidgetReloader.reloadAllHealthMetrics()`
 
 That order matters. Sync happens first so already-saved Health data can relink before fallback export tries to create anything.
+
+The app-ready path in `RootView` calls `HealthMetricWidgetReloader.reloadAllHealthMetrics()` after `syncNow()`. Settings-triggered Health syncs use `syncNow()` directly and rely on targeted reloads from the sync paths plus widget timeline cadence.
 
 ### Workout and Weight Sync
 
@@ -237,7 +239,7 @@ Those paths:
 - write through background `ModelContext`s
 - use rerun-on-burst behavior instead of dropping overlapping observer callbacks
 - only advance anchors when the query result or an allowed foreground probe provides enough evidence that reads are truly progressing
-- keep observer/background sync focused on persisted data updates instead of widget reload dispatch
+- keep observer/background sync focused primarily on persisted data updates, with targeted widget reloads only where the current sync paths explicitly dispatch them
 
 ### Daily Metric Sync
 
@@ -264,7 +266,7 @@ The metrics are coalesced into two sync families:
 
 That reduces redundant work when related Health types update together.
 
-Widget reload behavior for these metrics follows user-driven changes (like goal edits) and explicit full reloads after `syncNow()`. Walking/running distance still has no dedicated widget.
+Widget reload behavior for these metrics follows user-driven changes, such as steps-goal edits, and the app-ready full reload after `syncNow()`. The daily steps, distance, and energy sync paths do not directly reload widgets after observer updates. Walking/running distance still has no dedicated widget.
 
 ### Sleep Sync
 
@@ -290,7 +292,7 @@ The sleep design is:
 - deletions still rebuild the broader known synced range because deleted objects do not carry the old sample timestamps
 - raw per-stage intervals still stay in HealthKit for on-demand stage detail loading
 
-Sleep cache rebuilds run in background sync, and widget refresh now comes from the shared reload policy (manual `syncNow()` full reload plus timeline cadence), not from sleep sync directly dispatching widget reloads.
+Sleep cache rebuilds run in background sync. When `HealthSleepSync` rebuilds persisted sleep summaries, it currently dispatches a targeted sleep-widget reload. Sleep widgets also self-correct through timeline cadence and the app-ready full reload after `syncNow()`.
 
 ## Anchor Advancement Guard
 
@@ -343,7 +345,7 @@ Important conventions:
 
 Steps goal and coaching events are resolved from the daily step-sync path and delivered through `NotificationCoordinator`.
 
-The behavior is:
+The steps behavior is:
 
 - the app always attempts to show an in-app toast for a resolved steps event
 - local notification scheduling is gated by `AppSettings.stepsNotificationMode`
@@ -375,12 +377,49 @@ Important rules:
 - goal changes silently reconcile today’s coaching state without scheduling a notification
 - initial step import, deletion rebuilds, and nil recovery recompute the historical best daily steps while excluding today
 
-Rest timer notifications use the same coordinator and the same foreground-toast behavior.
+Sleep goal notifications are resolved from `HealthSleepSync` through `SleepGoalEvaluator`:
+
+- the app always attempts to show an in-app toast for a resolved sleep-goal event
+- local notification scheduling is gated by `AppSettings.sleepNotificationMode`
+- `.off`
+  - no local sleep-goal notification is scheduled
+- `.goalOnly`
+  - sleep-goal completion can schedule a local notification
+- `.coaching`
+  - sleep-goal completion can schedule a local notification
+  - weekly coaching recaps can include sleep averages
+
+Weekly coaching recaps are scheduled and delivered through `WeeklyHealthCoachingCoordinator`:
+
+- the app registers a `BGAppRefreshTask` at launch using `com.villainarc.health.weeklyCoaching`
+- `Info.plist` declares that identifier in `BGTaskSchedulerPermittedIdentifiers`
+- `UIBackgroundModes` includes `fetch`
+- foreground code only schedules or cancels the background refresh request
+- foreground code does not compute or deliver weekly coaching recaps
+- scheduling is refreshed after onboarding reaches ready, after notification permission/settings changes, and when the notification settings view becomes active
+- if both steps and sleep notification modes are not `.coaching`, the pending background task is canceled
+- otherwise any existing pending request for the weekly task is replaced with a new request for the next future Sunday at noon
+- scheduling does not preflight the current Background App Refresh setting; iOS decides whether and when the submitted refresh task can actually run
+- if the user opens the app or changes modes after a missed Sunday noon task, the app schedules the next future Sunday instead of calculating a catch-up recap in the foreground
+- if iOS launches the background task late, the task still evaluates the most recently completed Sunday-Saturday report week
+- the task reschedules the next Sunday refresh before doing the recap work
+- the task requires at least three cached entries for each enabled metric before including that metric:
+  - `HealthStepsDistance` rows for steps
+  - `HealthSleepNight` wake-day rows for sleep
+- if both enabled metrics qualify, one combined notification is scheduled
+- if only one enabled metric qualifies, the notification includes only that metric
+- if no enabled metric has enough cached entries, no notification is scheduled and the week is not marked delivered
+- weekly recaps do not show in-app toasts
+- weekly recap dedupe uses `HealthSyncState.weeklyCoachingLastDeliveredWeekStart`
+- debug console output logs background task registration, system launches, skipped scheduling prerequisites, successful scheduling with the earliest begin date, submit failures, completion, and expiration
+
+Rest timer notifications use the same notification coordinator and foreground-toast behavior.
 
 Important limitation:
 
 - steps notifications still depend on the app actually receiving the Health update in time
 - if the Health observer wake is delayed until foreground, the event is also delayed until foreground
+- weekly coaching recaps depend on iOS launching the scheduled background refresh task; missed tasks are not replayed by foreground catch-up logic
 
 ## Health Widgets
 
@@ -390,8 +429,9 @@ The current design is:
 
 - widget timelines refresh every 30 minutes (`.after`)
 - user-driven edits still trigger targeted widget reloads (for example weight entry/goal changes, steps goal changes, and unit changes that affect widget rendering)
-- `syncNow()` ends with a blanket reload of every Health widget
-- observer/background sync paths focus on data persistence and do not directly dispatch widget reloads
+- the app-ready path runs `syncNow()` and then reloads every Health widget
+- weight and sleep sync paths dispatch targeted widget reloads when they persist relevant changes
+- daily movement and energy observer sync paths focus on data persistence and do not directly dispatch widget reloads
 
 That means the widgets can update quickly on direct user edits, stay aligned after manual full sync, and still self-correct on timeline cadence if background observer timing is delayed.
 
