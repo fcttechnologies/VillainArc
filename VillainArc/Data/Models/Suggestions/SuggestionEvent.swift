@@ -27,7 +27,7 @@ import SwiftData
     var changeReasoning: String?
     var outcomeReason: String?
     @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.event) var changes: [PrescriptionChange]? = [PrescriptionChange]()
-    
+
     init() {}
 
     var currentTargetSetIndex: Int? { targetSetPrescription?.index }

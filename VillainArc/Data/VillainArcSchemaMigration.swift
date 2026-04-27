@@ -476,6 +476,10 @@ enum VillainArcSchemaV1: VersionedSchema {
     }
 }
 
+// V2 adds persisted state for app appearance and sleep notifications, fitness-level onboarding,
+// user profile photo storage, sleep-goal notification tracking, and the new training/sleep goal
+// models. It also matches the relationship definitions used by the live model types after schema
+// versioning was introduced.
 enum VillainArcSchemaV2: VersionedSchema {
     // Public App Store schema for Villain Arc 1.2.1.
     static let versionIdentifier = Schema.Version(2, 0, 0)
@@ -771,6 +775,7 @@ enum VillainArcSchemaV2: VersionedSchema {
         var heightCm: Double?
         var fitnessLevel: FitnessLevel?
         var fitnessLevelSetAt: Date?
+        @Attribute(.externalStorage) var profileImageData: Data?
 
         init() {}
     }
@@ -970,6 +975,8 @@ enum VillainArcSchemaV2: VersionedSchema {
     }
 }
 
+// V3 adds AppSettings.autoFillPlanTargets and
+// HealthSyncState.weeklyCoachingLastDeliveredWeekStart.
 enum VillainArcSchemaV3: VersionedSchema {
     static let versionIdentifier = Schema.Version(3, 0, 0)
 
