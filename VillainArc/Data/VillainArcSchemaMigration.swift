@@ -1037,6 +1037,12 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
         for setting in settings {
             setting.autoFillPlanTargets = true
         }
+
+        let syncStates = try context.fetch(FetchDescriptor<HealthSyncState>())
+        for syncState in syncStates {
+            syncState.weeklyCoachingLastDeliveredWeekStart = nil
+        }
+
         try context.save()
     }
 }
