@@ -172,8 +172,7 @@ struct WorkoutLiveActivity: Widget {
                     }
                     .fontDesign(.rounded)
                 } minimal: {
-                    Image(systemName: "figure.strengthtraining.traditional")
-                        .foregroundStyle(.green)
+                    WorkoutLiveActivityMinimalView(state: context.state)
                 }
             }
         }
@@ -291,6 +290,42 @@ private struct WorkoutLiveActivitySummaryBottomContent: View {
 
     var body: some View {
         WorkoutLiveActivitySummaryStatRow(state: state, isCompact: isSmall)
+    }
+}
+
+private struct WorkoutLiveActivityMinimalView: View {
+    let state: WorkoutActivityAttributes.ContentState
+
+    var body: some View {
+        Group {
+            if state.isTimerRunning, let endDate = state.timerEndDate, let totalSeconds = state.timerStartedSeconds {
+                ProgressView(timerInterval: endDate.addingTimeInterval(-Double(totalSeconds))...endDate, countsDown: true) {
+                    EmptyView()
+                } currentValueLabel: {
+                    EmptyView()
+                }
+                .progressViewStyle(.circular)
+                .accessibilityLabel(String(localized: "Rest timer running"))
+            } else if state.isTimerPaused, let remaining = state.timerPausedRemaining {
+                let total = max(Double(state.timerStartedSeconds ?? remaining), 1)
+                let value = min(max(Double(remaining), 0), total)
+
+                ProgressView(value: value, total: total) {
+                    EmptyView()
+                } currentValueLabel: {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.yellow)
+                }
+                .progressViewStyle(.circular)
+                .tint(.yellow)
+                .accessibilityLabel(WorkoutLiveActivityAccessibilityText.resumeRestTimerLabel)
+                .accessibilityValue(formatSeconds(remaining))
+            } else {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .foregroundStyle(.green)
+            }
+        }
     }
 }
 

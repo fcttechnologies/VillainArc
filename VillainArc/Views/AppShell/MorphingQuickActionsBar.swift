@@ -31,7 +31,6 @@ struct MorphingQuickActionsBar: View {
             MorphingQuickActionsToggleButton(isExpanded: $isExpanded)
         }
         .padding(.horizontal, 15)
-        .padding(.bottom, 5)
     }
 }
 

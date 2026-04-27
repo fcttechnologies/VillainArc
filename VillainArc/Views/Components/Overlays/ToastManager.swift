@@ -48,12 +48,41 @@ final class ToastManager {
 
     var currentToast: Toast?
     private var dismissTask: Task<Void, Never>?
+    private let animation = Animation.snappy(duration: 0.28, extraBounce: 0)
+    private let interactionResumeDuration: Duration = .seconds(2)
 
     func show(_ toast: Toast, duration: Duration = .seconds(3)) {
-        dismissTask?.cancel()
         playHaptic(for: toast.haptic)
-        currentToast = toast
+        withAnimation(animation) {
+            currentToast = toast
+        }
 
+        scheduleAutoDismiss(after: duration, toastID: toast.id)
+    }
+
+    func suspendAutoDismiss(for toastID: UUID) {
+        guard currentToast?.id == toastID else { return }
+        dismissTask?.cancel()
+        dismissTask = nil
+    }
+
+    func resumeAutoDismiss(for toastID: UUID) {
+        guard currentToast?.id == toastID else { return }
+        scheduleAutoDismiss(after: interactionResumeDuration, toastID: toastID)
+    }
+
+    func dismiss(toastID: UUID? = nil) {
+        if let toastID, currentToast?.id != toastID { return }
+
+        dismissTask?.cancel()
+        dismissTask = nil
+        withAnimation(animation) {
+            currentToast = nil
+        }
+    }
+
+    private func scheduleAutoDismiss(after duration: Duration, toastID: UUID) {
+        dismissTask?.cancel()
         dismissTask = Task { [weak self] in
             do {
                 try await Task.sleep(for: duration)
@@ -61,16 +90,10 @@ final class ToastManager {
                 return
             }
 
-            guard let self else { return }
             await MainActor.run {
-                self.currentToast = nil
+                self?.dismiss(toastID: toastID)
             }
         }
-    }
-
-    func dismiss() {
-        dismissTask?.cancel()
-        currentToast = nil
     }
 
     private func playHaptic(for haptic: HapticStyle?) {
@@ -90,6 +113,58 @@ final class ToastManager {
 struct ToastOverlayView: View {
     let toast: ToastManager.Toast
     let reduceMotion: Bool
+    let onInteractionBegan: () -> Void
+    let onInteractionEnded: () -> Void
+    let onDismiss: () -> Void
+    @State private var dragOffset: CGSize = .zero
+    @State private var isDragging = false
+
+    private let dismissTranslationThreshold: CGFloat = 40
+    private let predictedDismissTranslationThreshold: CGFloat = 88
+    private let fullDismissDistance: CGFloat = 120
+
+    private var constrainedDragOffsetY: CGFloat {
+        min(0, dragOffset.height)
+    }
+
+    private var dismissProgress: CGFloat {
+        min(1, max(0, -constrainedDragOffsetY / fullDismissDistance))
+    }
+
+    private var interactiveScaleX: CGFloat {
+        1 - ((1 - ToastCollapseEffect.activeScaleX) * dismissProgress)
+    }
+
+    private var interactiveOpacity: Double {
+        1 - Double(dismissProgress)
+    }
+
+    private var interactiveBlurRadius: CGFloat {
+        reduceMotion ? 0 : ToastCollapseEffect.activeBlurRadius * dismissProgress
+    }
+
+    private var swipeToDismissGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                beginInteractionIfNeeded()
+                dragOffset = CGSize(width: 0, height: min(0, value.translation.height))
+            }
+            .onEnded { value in
+                let translationY = min(0, value.translation.height)
+                let predictedTranslationY = min(0, value.predictedEndTranslation.height)
+
+                if translationY < -dismissTranslationThreshold || predictedTranslationY < -predictedDismissTranslationThreshold {
+                    finishInteraction(shouldResumeAutoDismiss: false)
+                    onDismiss()
+                    return
+                }
+
+                finishInteraction(shouldResumeAutoDismiss: true)
+                withAnimation(reduceMotion ? nil : .snappy(duration: 0.22, extraBounce: 0)) {
+                    dragOffset = .zero
+                }
+            }
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -115,7 +190,59 @@ struct ToastOverlayView: View {
         .padding(12)
         .appCardStyle()
         .shadow(color: .black.opacity(0.12), radius: 20, y: 10)
-        .transition(reduceMotion ? .opacity : .asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .move(edge: .top).combined(with: .opacity)))
+        .scaleEffect(x: interactiveScaleX, y: 1, anchor: .top)
+        .offset(y: constrainedDragOffsetY)
+        .opacity(interactiveOpacity)
+        .blur(radius: interactiveBlurRadius)
+        .contentShape(.rect)
+        .highPriorityGesture(swipeToDismissGesture)
+        .transition(reduceMotion ? .opacity : .toastTopCollapse)
+    }
+
+    private func beginInteractionIfNeeded() {
+        guard !isDragging else { return }
+        isDragging = true
+        onInteractionBegan()
+    }
+
+    private func finishInteraction(shouldResumeAutoDismiss: Bool) {
+        guard isDragging else { return }
+        isDragging = false
+
+        if shouldResumeAutoDismiss {
+            onInteractionEnded()
+        }
+    }
+}
+
+private enum ToastCollapseEffect {
+    static let activeScaleX: CGFloat = 0.1
+    static let activeOffsetY: CGFloat = -80
+    static let activeOpacity: Double = 0
+    static let activeBlurRadius: CGFloat = 10
+}
+
+private struct ToastTopCollapseModifier: ViewModifier {
+    let scaleX: CGFloat
+    let offsetY: CGFloat
+    let opacity: Double
+    let blurRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(x: scaleX, y: 1, anchor: .top)
+            .offset(y: offsetY)
+            .opacity(opacity)
+            .blur(radius: blurRadius)
+    }
+}
+
+private extension AnyTransition {
+    static var toastTopCollapse: AnyTransition {
+        .modifier(
+            active: ToastTopCollapseModifier(scaleX: ToastCollapseEffect.activeScaleX, offsetY: ToastCollapseEffect.activeOffsetY, opacity: ToastCollapseEffect.activeOpacity, blurRadius: ToastCollapseEffect.activeBlurRadius),
+            identity: ToastTopCollapseModifier(scaleX: 1, offsetY: 0, opacity: 1, blurRadius: 0)
+        )
     }
 }
 
@@ -149,9 +276,13 @@ final class ToastOverlayCoordinator {
 }
 
 private final class PassthroughWindow: UIWindow {
+    private let toastInteractionHeight: CGFloat = 220
+
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        let hitView = super.hitTest(point, with: event)
-        return hitView === rootViewController?.view ? nil : hitView
+        guard ToastManager.shared.currentToast != nil else { return nil }
+        guard point.y <= toastInteractionHeight else { return nil }
+
+        return super.hitTest(point, with: event)
     }
 }
 
@@ -162,14 +293,25 @@ struct GlobalToastHost: View {
     var body: some View {
         ZStack(alignment: .top) {
             if let toast = manager.currentToast {
-                ToastOverlayView(toast: toast, reduceMotion: reduceMotion)
+                ToastOverlayView(
+                    toast: toast,
+                    reduceMotion: reduceMotion,
+                    onInteractionBegan: {
+                        manager.suspendAutoDismiss(for: toast.id)
+                    },
+                    onInteractionEnded: {
+                        manager.resumeAutoDismiss(for: toast.id)
+                    },
+                    onDismiss: {
+                        manager.dismiss(toastID: toast.id)
+                    }
+                )
                 .padding(.horizontal, 8)
                 .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .allowsHitTesting(false)
-        .animation(reduceMotion ? nil : .snappy(duration: 0.32, extraBounce: 0), value: manager.currentToast)
+        .animation(reduceMotion ? nil : .snappy, value: manager.currentToast)
     }
 }
 

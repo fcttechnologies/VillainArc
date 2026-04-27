@@ -86,7 +86,6 @@ struct ContentView: View {
         }
         .background {
             ToastOverlaySceneInstaller()
-                .allowsHitTesting(false)
         }
     }
     
