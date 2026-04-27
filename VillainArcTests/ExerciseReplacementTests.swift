@@ -48,6 +48,62 @@ struct ExerciseReplacementTests {
         #expect(snapshot?.sets[1].targetRest == 90)
         #expect(snapshot?.sets[1].targetRPE == 8)
     }
+
+    @Test @MainActor
+    // Users can keep plan targets as references without pre-filling the logging fields.
+    func startFromPlanCanLeaveTargetValuesEmpty() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let plan = WorkoutPlan(title: "Pull Day")
+        context.insert(plan)
+        let row = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
+        let prescription = ExercisePrescription(exercise: row, workoutPlan: plan)
+        prescription.sets = [SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, targetRPE: 8, index: 0)]
+        plan.exercises = [prescription]
+
+        let session = WorkoutSession(from: plan, autoFillPlanTargets: false)
+        context.insert(session)
+
+        let set = try #require(session.sortedExercises.first?.sortedSets.first)
+        #expect(set.prescription?.id == prescription.sortedSets[0].id)
+        #expect(set.originalTargetSetID == prescription.sortedSets[0].id)
+        #expect(set.type == .working)
+        #expect(set.weight == 0)
+        #expect(set.reps == 0)
+        #expect(set.restSeconds == 0)
+        #expect(session.sortedExercises.first?.originalTargetSnapshot?.sets.first?.targetWeight == 135)
+    }
+
+    @Test @MainActor
+    func acceptedDeferredSuggestionDoesNotHydratePendingSessionWhenAutoFillTargetsIsOff() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let plan = WorkoutPlan(title: "Pull Day")
+        context.insert(plan)
+        let row = Exercise(from: ExerciseCatalog.byID["barbell_bent_over_row"]!)
+        let prescription = ExercisePrescription(exercise: row, workoutPlan: plan)
+        let setPrescription = SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, targetRPE: 8, index: 0)
+        prescription.sets = [setPrescription]
+        plan.exercises = [prescription]
+
+        let session = WorkoutSession(from: plan, autoFillPlanTargets: false)
+        session.statusValue = .pending
+        context.insert(session)
+
+        let change = PrescriptionChange(changeType: .increaseWeight, previousValue: 135, newValue: 145)
+        let event = SuggestionEvent(category: .performance, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, trainingStyle: .straightSets, changes: [change])
+        change.event = event
+        context.insert(change)
+        context.insert(event)
+
+        session.applyAcceptedSuggestionEvent(event, weightUnit: .kg, autoFillPlanTargets: false)
+
+        let set = try #require(session.sortedExercises.first?.sortedSets.first)
+        #expect(set.weight == 0)
+        #expect(set.reps == 0)
+        #expect(set.restSeconds == 0)
+    }
+
     @Test @MainActor
     // Freeform exercises should not invent an original target snapshot.
     func freeformExerciseStartsWithoutOriginalTargetSnapshot() throws {

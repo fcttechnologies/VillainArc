@@ -353,6 +353,15 @@ struct OutcomeResolver {
         exercisePerf.modelContext?.insert(evaluation)
 
         let allEvaluations = existingEvaluations + [evaluation]
+        if let earlyDecision = earlyPositiveFinalizationDecision(for: allEvaluations) {
+            if case .finalize(let outcome, let reason) = earlyDecision {
+                event.outcome = outcome
+                event.outcomeReason = reason
+                event.evaluatedAt = Date()
+            }
+            return
+        }
+
         guard allEvaluations.count >= event.requiredEvaluationCount else { return }
 
         switch finalizationDecision(for: allEvaluations, requiredEvaluationCount: event.requiredEvaluationCount) {
@@ -367,6 +376,12 @@ struct OutcomeResolver {
             event.outcomeReason = reason
             event.evaluatedAt = Date()
         }
+    }
+
+    private static func earlyPositiveFinalizationDecision(for evaluations: [SuggestionEvaluation]) -> FinalizationDecision? {
+        guard evaluations.count == 1, let evaluation = evaluations.first, isPositiveOutcome(evaluation.partialOutcome) else { return nil }
+        guard let reason = aggregateReason(for: evaluation.partialOutcome, evaluations: evaluations) else { return nil }
+        return .finalize(outcome: evaluation.partialOutcome, reason: reason)
     }
 
     private static func finalizationDecision(for evaluations: [SuggestionEvaluation], requiredEvaluationCount: Int) -> FinalizationDecision {

@@ -39,11 +39,11 @@ import SwiftUI
     }
 
     // From workout plan
-    init(from plan: WorkoutPlan) {
+    init(from plan: WorkoutPlan, autoFillPlanTargets: Bool = true) {
         title = plan.title
         notes = plan.notes
         workoutPlan = plan
-        exercises = plan.sortedExercises.map { ExercisePerformance(workoutSession: self, exercisePrescription: $0) }
+        exercises = plan.sortedExercises.map { ExercisePerformance(workoutSession: self, exercisePrescription: $0, autoFillTargets: autoFillPlanTargets) }
         plan.lastUsed = .now
     }
 
@@ -141,7 +141,8 @@ extension WorkoutSession {
         return survivingExerciseCount > 0 ? .finished : .workoutDeleted
     }
 
-    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit) {
+    func applyAcceptedSuggestionEvent(_ event: SuggestionEvent, weightUnit: WeightUnit, autoFillPlanTargets: Bool = true) {
+        guard autoFillPlanTargets else { return }
         guard statusValue == .pending else { return }
         guard let targetExerciseID = event.targetExercisePrescription?.id, let performance = sortedExercises.first(where: { $0.prescription?.id == targetExerciseID }) else { return }
 

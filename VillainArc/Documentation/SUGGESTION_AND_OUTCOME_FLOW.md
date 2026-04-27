@@ -201,6 +201,12 @@ The practical effect is:
 - some changes can resolve after one later workout
 - others require two or more later workouts before the app commits to a final outcome
 
+Important shortcut:
+
+- if the first eligible later workout resolves as `good` or `tooEasy`, the event finalizes immediately
+- negative or ambiguous first evaluations such as `tooAggressive`, `insufficient`, or `ignored` still wait for the normal required count
+- once multiple evaluations exist, contradiction handling and confidence-weighted aggregation still decide whether to finalize or collect more evidence
+
 ## Outcome Resolution
 
 Outcome resolution lives in:
@@ -238,7 +244,9 @@ Outcomes are not always finalized after one later workout.
 
 Each eligible later workout can append one `SuggestionEvaluation`. The resolver prevents duplicate evaluations from the same later workout session.
 
-When the event has enough evaluations:
+If the first evaluation is positive, the resolver can finalize immediately as `good` or `tooEasy`.
+
+Otherwise, when the event has enough evaluations:
 
 - the app scores the partial outcomes
 - weights them by confidence

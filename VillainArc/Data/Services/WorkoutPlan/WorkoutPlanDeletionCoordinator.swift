@@ -90,14 +90,29 @@ enum WorkoutPlanDeletionCoordinator {
            planIDs.contains(originalPlan.id),
            let editingCopy = router.activeWorkoutPlan,
            editingCopy.isEditing {
+            let shouldDeferDeletionUntilEditorDismisses = router.isWorkoutPlanCoverPresented
             let existingCleanup = router.pendingWorkoutPlanDismissCleanup
-            router.pendingWorkoutPlanDismissCleanup = {
+            let deletePlansAndEditingCopy = {
                 existingCleanup?()
                 context.delete(editingCopy)
+                deletePlans(plans, linkedSplits: linkedSplits, context: context)
             }
+
+            if shouldDeferDeletionUntilEditorDismisses {
+                router.pendingWorkoutPlanDismissCleanup = deletePlansAndEditingCopy
+                router.activeWorkoutPlan = nil
+                return
+            }
+
+            deletePlansAndEditingCopy()
             router.activeWorkoutPlan = nil
+            return
         }
 
+        deletePlans(plans, linkedSplits: linkedSplits, context: context)
+    }
+
+    private static func deletePlans(_ plans: [WorkoutPlan], linkedSplits: [WorkoutSplit], context: ModelContext) {
         SpotlightIndexer.deleteWorkoutPlans(ids: plans.map(\.id))
         for plan in plans {
             plan.deleteWithSuggestionCleanup(context: context)

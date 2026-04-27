@@ -90,7 +90,9 @@ That method:
 
 - blocks if any other workout/plan flow is active
 - creates a persisted `WorkoutSession(from: plan)`
-- converts set weights from canonical kg into the user’s display unit
+- pre-fills set logging values from plan targets only when `AppSettings.autoFillPlanTargets` is enabled
+- keeps plan targets available as reference data even when auto-fill is disabled
+- converts any pre-filled set weights from canonical kg into the user’s display unit
 - checks the source plan for pending or deferred suggestions
 - starts the session in `.pending` or `.active`
 - saves and presents it
@@ -127,6 +129,7 @@ Available actions:
 Important behavior:
 
 - accept mutates the live plan and hydrates the already-created pending session copy
+- if `autoFillPlanTargets` is disabled, accepted suggestions mutate the live plan but do not fill the pending session’s logging fields
 - reject only changes suggestion decision state
 - skip all marks remaining pending/deferred suggestions as rejected and lets the workout proceed
 

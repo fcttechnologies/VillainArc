@@ -4,6 +4,7 @@ import SwiftData
 @Model final class AppSettings {
     var autoStartRestTimer: Bool = true
     var autoCompleteSetAfterRPE: Bool = false
+    var autoFillPlanTargets: Bool = true
     var promptForPreWorkoutContext: Bool = false
     var promptForPostWorkoutEffort: Bool = true
     var retainPerformancesForLearning: Bool = true
@@ -23,6 +24,7 @@ import SwiftData
 struct AppSettingsSnapshot {
     let autoStartRestTimer: Bool
     let autoCompleteSetAfterRPE: Bool
+    let autoFillPlanTargets: Bool
     let promptForPreWorkoutContext: Bool
     let promptForPostWorkoutEffort: Bool
     let retainPerformancesForLearning: Bool
@@ -39,6 +41,7 @@ struct AppSettingsSnapshot {
     nonisolated init(settings: AppSettings?) {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
         autoCompleteSetAfterRPE = settings?.autoCompleteSetAfterRPE ?? false
+        autoFillPlanTargets = settings?.autoFillPlanTargets ?? true
         promptForPreWorkoutContext = settings?.promptForPreWorkoutContext ?? false
         promptForPostWorkoutEffort = settings?.promptForPostWorkoutEffort ?? true
         retainPerformancesForLearning = settings?.retainPerformancesForLearning ?? true

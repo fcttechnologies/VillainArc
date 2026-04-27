@@ -321,7 +321,7 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
     private func performDeleteWorkoutPlan(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
         deleteWorkoutPlanAssessment = nil
         Haptics.selection()
-        let deletedPlan = plan
+        let deletedPlan = WorkoutPlanEntity(workoutPlan: plan)
         WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()

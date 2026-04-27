@@ -185,7 +185,8 @@ enum HomeQuickAction: String {
         }
     }
 
-    private func weightUnit() -> WeightUnit { (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs }
+    private func appSettings() -> AppSettings? { (try? context.fetch(AppSettings.single))?.first }
+    private func weightUnit() -> WeightUnit { appSettings()?.weightUnit ?? .lbs }
 
     private var hasPresentedFlow: Bool { activeWorkoutSession != nil || activeWorkoutPlan != nil }
 
@@ -668,8 +669,9 @@ enum HomeQuickAction: String {
             return
         }
         Haptics.selection()
-        let workoutSession = WorkoutSession(from: plan)
-        workoutSession.convertSetWeightsFromKg(to: weightUnit())
+        let settings = appSettings()
+        let workoutSession = WorkoutSession(from: plan, autoFillPlanTargets: settings?.autoFillPlanTargets ?? true)
+        workoutSession.convertSetWeightsFromKg(to: settings?.weightUnit ?? .lbs)
 
         // Check for pending/deferred suggestions before starting
         let hasDeferredSuggestions = !pendingSuggestionEvents(for: plan, in: context).isEmpty

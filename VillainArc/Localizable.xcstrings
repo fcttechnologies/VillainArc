@@ -1704,6 +1704,9 @@
         }
       }
     },
+    "Auto Fill Plan Targets" : {
+
+    },
     "Auto Start Rest Timer" : {
       "localizations" : {
         "en" : {
@@ -2552,6 +2555,9 @@
           }
         }
       }
+    },
+    "Controls whether plan workouts prefill set logging fields with prescribed targets." : {
+
     },
     "Copy" : {
       "localizations" : {
@@ -8005,6 +8011,9 @@
         }
       }
     },
+    "Plan Workouts" : {
+
+    },
     "Plate" : {
       "localizations" : {
         "en" : {
@@ -12982,6 +12991,9 @@
           }
         }
       }
+    },
+    "When this is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Turn it off to keep plan targets available as references without filling the logging fields." : {
+
     },
     "When turned off, those prompts stay manual. You can still open pre workout context from the workout title menu." : {
       "extractionState" : "stale",

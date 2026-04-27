@@ -270,6 +270,7 @@ The profile sheet currently owns:
 `AppSettingsView` remains the settings surface for:
 
 - workout-history retention behavior
+- workout logging preferences such as plan-target auto-fill
 - Apple Health access and removed-data retention
 - notifications
 - display units

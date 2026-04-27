@@ -30,6 +30,17 @@ struct WorkoutSettingsView: View {
 
         return Form {
             Section {
+                Toggle("Auto Fill Plan Targets", isOn: $settings.autoFillPlanTargets)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoFillPlanTargetsToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsAutoFillPlanTargetsHint)
+                    .appGroupedListRow(position: .single)
+            } header: {
+                Text("Plan Workouts")
+            } footer: {
+                Text("When this is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Turn it off to keep plan targets available as references without filling the logging fields.")
+            }
+
+            Section {
                 Toggle("Auto Start Rest Timer", isOn: $settings.autoStartRestTimer)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoStartTimerToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsAutoStartTimerHint)
@@ -91,6 +102,9 @@ struct WorkoutSettingsView: View {
             saveContext(context: context)
         }
         .onChange(of: settings.autoCompleteSetAfterRPE) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.autoFillPlanTargets) {
             saveContext(context: context)
         }
         .onChange(of: settings.promptForPreWorkoutContext) {

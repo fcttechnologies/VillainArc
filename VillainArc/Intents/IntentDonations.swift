@@ -60,8 +60,12 @@ enum IntentDonations {
     }
 
     static func donateDeleteWorkoutPlan(workoutPlan: WorkoutPlan) async {
+        await donateDeleteWorkoutPlan(workoutPlan: WorkoutPlanEntity(workoutPlan: workoutPlan))
+    }
+
+    static func donateDeleteWorkoutPlan(workoutPlan: WorkoutPlanEntity) async {
         let intent = DeleteWorkoutPlanIntent()
-        intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
+        intent.workoutPlan = workoutPlan
         _ = try? await intent.donate()
     }
 

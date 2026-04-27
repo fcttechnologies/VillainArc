@@ -154,11 +154,11 @@ struct WorkoutPlansListView: View {
     }
 
     private func performDeleteSelection(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
-        let deletedPlans = assessment.plans
+        let deletedPlanToDonate = assessment.plans.count == 1 ? assessment.plans.first.map(WorkoutPlanEntity.init(workoutPlan:)) : nil
         deleteSelectionAssessment = nil
         WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
-        if deletedPlans.count == 1, let plan = deletedPlans.first {
-            Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: plan) }
+        if let deletedPlanToDonate {
+            Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlanToDonate) }
         }
         if workoutPlans.isEmpty {
             isEditing = false

@@ -126,9 +126,9 @@ import Testing
         #expect(event.latestEvaluation?.performance?.sortedSets.first?.weight == 105)
     }
 
-    // MARK: - Single session does not finalize (requiredCount = 2)
+    // MARK: - Positive first session finalizes early
 
-    @Test @MainActor func singleGoodSession_doesNotFinalize_whenRequiredCountIs2() async throws {
+    @Test @MainActor func singleGoodSession_finalizesEarly_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -136,11 +136,11 @@ import Testing
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         #expect((event.evaluations ?? []).count == 1)
-        #expect(event.outcome == .pending)
-        #expect(event.evaluatedAt == nil)
+        #expect(event.outcome == .good)
+        #expect(event.evaluatedAt != nil)
     }
 
-    @Test @MainActor func singleTooEasySession_doesNotFinalize_whenRequiredCountIs2() async throws {
+    @Test @MainActor func singleTooEasySession_finalizesEarly_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
         // reps=14, range 6-10+2=12 → tooEasy from rule engine
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
@@ -149,9 +149,11 @@ import Testing
         await OutcomeResolver.resolveOutcomes(for: session, context: context)
 
         #expect((event.evaluations ?? []).count == 1)
-        #expect(event.outcome == .pending)
-        #expect(event.evaluatedAt == nil)
+        #expect(event.outcome == .tooEasy)
+        #expect(event.evaluatedAt != nil)
     }
+
+    // MARK: - Non-positive first session still waits for required count
 
     @Test @MainActor func singleIgnoredSession_doesNotFinalize_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()

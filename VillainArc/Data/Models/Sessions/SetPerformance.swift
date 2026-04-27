@@ -53,13 +53,15 @@ import SwiftData
     }
 
     // Adding set from plan
-    init(exercise: ExercisePerformance, setPrescription: SetPrescription) {
+    init(exercise: ExercisePerformance, setPrescription: SetPrescription, autoFillTargets: Bool = true) {
         index = setPrescription.index
         originalTargetSetID = setPrescription.id
         type = setPrescription.type
-        weight = setPrescription.targetWeight
-        reps = setPrescription.targetReps
-        restSeconds = setPrescription.targetRest
+        if autoFillTargets {
+            weight = setPrescription.targetWeight
+            reps = setPrescription.targetReps
+            restSeconds = setPrescription.targetRest
+        }
         self.exercise = exercise
         prescription = setPrescription
     }

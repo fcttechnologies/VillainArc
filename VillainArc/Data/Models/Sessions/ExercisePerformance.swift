@@ -51,7 +51,7 @@ import SwiftData
     }
 
     // Adding exercise from plan
-    init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription) {
+    init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription, autoFillTargets: Bool = true) {
         index = exercisePrescription.index
         catalogID = exercisePrescription.catalogID
         name = exercisePrescription.name
@@ -62,7 +62,7 @@ import SwiftData
         originalTargetSnapshot = ExerciseTargetSnapshot(prescription: exercisePrescription)
         self.workoutSession = workoutSession
         prescription = exercisePrescription
-        sets = exercisePrescription.sortedSets.map { SetPerformance(exercise: self, setPrescription: $0) }
+        sets = exercisePrescription.sortedSets.map { SetPerformance(exercise: self, setPrescription: $0, autoFillTargets: autoFillTargets) }
     }
 
     func effectiveRestSeconds(after set: SetPerformance) -> Int {

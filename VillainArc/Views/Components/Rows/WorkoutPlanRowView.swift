@@ -59,7 +59,7 @@ struct WorkoutPlanRowView: View {
 
     private func performDelete(using assessment: WorkoutPlanDeletionCoordinator.Assessment) {
         deletionAssessment = nil
-        let deletedPlan = workoutPlan
+        let deletedPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
         WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
     }

@@ -53,7 +53,7 @@ This file is the structure map for the app. It answers “where does this respon
 - `Views/Profile/FitnessLevelSelectionViews.swift`
   - reusable fitness-level selection cards used by onboarding and profile editing
 - `Views/Settings/AppSettingsView.swift`
-  - app settings surface, including Apple Health, notifications, and units detail routes
+  - app settings surface, including workout preferences, Apple Health, notifications, and units detail routes
 
 ### `Data/Services/App/AppRouter.swift`
 

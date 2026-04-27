@@ -463,6 +463,7 @@ enum AccessibilityIdentifiers {
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerToggle = "workoutSettingsAutoStartTimerToggle"
     static let workoutSettingsAutoCompleteAfterRPEToggle = "workoutSettingsAutoCompleteAfterRPEToggle"
+    static let workoutSettingsAutoFillPlanTargetsToggle = "workoutSettingsAutoFillPlanTargetsToggle"
     static let workoutSettingsPreWorkoutPromptToggle = "workoutSettingsPreWorkoutPromptToggle"
     static let workoutSettingsPostWorkoutEffortToggle = "workoutSettingsPostWorkoutEffortToggle"
     static let workoutSettingsRetainPerformanceSnapshotsToggle = "workoutSettingsRetainPerformanceSnapshotsToggle"
@@ -540,6 +541,7 @@ enum AccessibilityText {
     static let onboardingFitnessLevelContinueHint = localized("Saves your selected fitness level and continues to the next profile step.")
     static let onboardingTrainingGoalOptionHint = localized("Selects this training goal.")
     static let onboardingTrainingGoalContinueHint = localized("Saves your selected training goal and continues into the app.")
+    static let workoutSettingsAutoFillPlanTargetsHint = localized("Controls whether plan workouts prefill set logging fields with prescribed targets.")
     static let morphingExpandToolbarLabel = localized("Show quick actions")
     static let morphingCollapseToolbarLabel = localized("Hide quick actions")
     static let morphingToolbarHint = localized("Shows or hides the quick action toolbar.")

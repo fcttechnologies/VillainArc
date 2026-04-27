@@ -317,6 +317,7 @@ private func hydratePendingSessionCopy(for event: SuggestionEvent, context: Mode
         return
     }
 
-    let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs
-    workout.applyAcceptedSuggestionEvent(event, weightUnit: weightUnit)
+    let settings = (try? context.fetch(AppSettings.single))?.first
+    let weightUnit = settings?.weightUnit ?? .lbs
+    workout.applyAcceptedSuggestionEvent(event, weightUnit: weightUnit, autoFillPlanTargets: settings?.autoFillPlanTargets ?? true)
 }
