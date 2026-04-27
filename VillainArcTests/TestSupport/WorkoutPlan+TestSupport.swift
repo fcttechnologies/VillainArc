@@ -5,7 +5,7 @@ import SwiftData
 enum TestModelContainer {
     @MainActor static func make() throws -> ModelContainer {
         let configuration = ModelConfiguration(schema: SharedModelContainer.schema, isStoredInMemoryOnly: true)
-        return try ModelContainer(for: SharedModelContainer.schema, configurations: [configuration])
+        return try ModelContainer(for: SharedModelContainer.schema, migrationPlan: VillainArcSchemaMigrationPlan.self, configurations: [configuration])
     }
 }
 

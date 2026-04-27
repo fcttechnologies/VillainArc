@@ -477,6 +477,7 @@ enum VillainArcSchemaV1: VersionedSchema {
 }
 
 enum VillainArcSchemaV2: VersionedSchema {
+    // Public App Store schema for Villain Arc 1.2.1.
     static let versionIdentifier = Schema.Version(2, 0, 0)
 
     static var models: [any PersistentModel.Type] {
@@ -615,7 +616,6 @@ enum VillainArcSchemaV2: VersionedSchema {
         var asleepUnspecifiedDuration: TimeInterval = 0
         var napDuration: TimeInterval = 0
         var isAvailableInHealthKit: Bool = true
-        var calendar = Calendar(identifier: .gregorian)
 
         init() {}
     }
