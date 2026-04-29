@@ -5,8 +5,7 @@ This is the product-level overview for VillainArc. Read this first to understand
 Use these docs in this order:
 
 1. `Documentation/PROJECT_GUIDE.md`
-2. `Documentation/ARCHITECTURE.md`
-3. the specific flow docs for the feature you want to change
+2. the specific flow docs for the feature you want to change
 
 ## What VillainArc Is
 
@@ -259,9 +258,9 @@ Once the exercise-catalog bootstrap marker exists, launch is faster:
 
 ## Profile Hub and Settings
 
-VillainArc now uses a shared profile entry point from both tabs.
+VillainArc uses a shared profile entry point from both tabs.
 
-The profile sheet currently owns:
+The profile sheet owns:
 
 - avatar and profile photo management
 - name, birthday, gender, and height editing
@@ -309,6 +308,10 @@ See:
 
 Splits answer “what should I do today?” and can point to plans. The app supports weekly and rotation scheduling. Home surfaces use split state to show today’s plan or rest status.
 
+See:
+
+- `Documentation/WORKOUT_SPLIT_FLOW.md`
+
 ### Suggestions and Outcomes
 
 Suggestions are persisted coaching events attached to plan structure. Users review them in summary, at the deferred pre-workout gate, or from the plan suggestions sheet. Outcomes are resolved later from future workouts.
@@ -354,7 +357,7 @@ Notification behavior is part of that surface:
 - rest timer completions
 - steps goal and coaching events, including double goal, triple goal, and new-best milestones when the app can observe the Health update in time
 
-Health settings no longer live directly off the Health tab chrome. They now route through the shared profile hub into `AppSettingsView`, where Apple Health has its own detail screen alongside notifications and units.
+Health settings route through the shared profile hub into `AppSettingsView`, where Apple Health has its own detail screen alongside notifications and units.
 
 Home-tab navigation also includes workout-centric history/detail routes such as:
 
@@ -377,6 +380,8 @@ If you are changing:
   - `Documentation/SESSION_LIFECYCLE_FLOW.md`
 - plan authoring or edit-copy behavior:
   - `Documentation/PLAN_EDITING_FLOW.md`
+- workout splits, today's workout, or split scheduling:
+  - `Documentation/WORKOUT_SPLIT_FLOW.md`
 - suggestions or outcome evaluation:
   - `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
 - cached exercise analytics:

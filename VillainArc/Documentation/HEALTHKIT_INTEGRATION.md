@@ -180,7 +180,7 @@ Observer-driven background sync is best-effort. It can be prompt, delayed, or sk
 
 ### `.exportOnFinish`
 
-The original iPhone-owned path uses `HealthLiveWorkoutSessionCoordinator` to start or recover:
+The iPhone-owned live workout path uses `HealthLiveWorkoutSessionCoordinator` to start or recover:
 
 - an `HKWorkoutSession`
 - an `HKLiveWorkoutBuilder`
@@ -196,7 +196,7 @@ That path:
 
 ### Workouts
 
-Workout export is mostly a repair path now.
+Workout export is a repair and reconciliation path.
 
 The normal order is:
 
@@ -287,12 +287,12 @@ The sleep design is:
 - added or edited samples rebuild a padded wake-day range
 - the rebuild fetches overlapping raw sleep samples for that range
 - merged sleep blocks are reconstructed first, then assigned to wake day by the block end date using HealthKit timezone metadata when available
-- the primary overnight block is selected per wake day, but the stored night totals now roll up across all same-day sleep blocks
+- the primary overnight block is selected per wake day, while stored night totals roll up across all same-day sleep blocks
 - non-primary same-day sleep becomes `napDuration`
 - deletions still rebuild the broader known synced range because deleted objects do not carry the old sample timestamps
 - raw per-stage intervals still stay in HealthKit for on-demand stage detail loading
 
-Sleep cache rebuilds run in background sync. When `HealthSleepSync` rebuilds persisted sleep summaries, it currently dispatches a targeted sleep-widget reload. Sleep widgets also self-correct through timeline cadence and the app-ready full reload after `syncNow()`.
+Sleep cache rebuilds run in background sync. When `HealthSleepSync` rebuilds persisted sleep summaries, it dispatches a targeted sleep-widget reload. Sleep widgets also self-correct through timeline cadence and the app-ready full reload after `syncNow()`.
 
 ## Anchor Advancement Guard
 
@@ -423,7 +423,7 @@ Important limitation:
 
 ## Health Widgets
 
-The Health widgets now use a hybrid refresh model.
+Health widgets use a hybrid refresh model.
 
 The current design is:
 
@@ -456,7 +456,7 @@ That means:
 - the card does not run a raw HealthKit detail query on open
 - retained-but-no-longer-available nights can stay visible in cached summary form
 
-The dedicated `SleepHistoryView` now splits into two detail modes:
+The dedicated `SleepHistoryView` splits into range-specific detail modes:
 
 - `day`
   - loads live HealthKit stage intervals for the selected wake day through `HealthSleepHistoryLoader`
@@ -468,7 +468,7 @@ The dedicated `SleepHistoryView` now splits into two detail modes:
   - stay summary-backed from `HealthSleepNight`
   - render grouped windows and rolled-up totals instead of block-level detail
 
-The sleep history surface also now includes:
+The sleep history surface includes:
 
 - weekday average sleep chart
 - monthly and yearly sleep highlights
@@ -482,7 +482,7 @@ Current boundary:
 
 ### Weight, Steps, and Energy Day Views
 
-The non-sleep history views now expose a `day` range too.
+The non-sleep history views expose a `day` range.
 
 - weight:
   - day detail is fully local

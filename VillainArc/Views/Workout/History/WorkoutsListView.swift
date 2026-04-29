@@ -1,7 +1,16 @@
 import SwiftUI
 import SwiftData
+import HealthKit
 
 struct WorkoutsListView: View {
+    private struct WorkoutTypeFilter: Identifiable, Hashable {
+        let id: String
+        let title: String
+        
+        static let all = WorkoutTypeFilter(id: "all", title: "All")
+        static let traditionalStrengthTraining = WorkoutTypeFilter(id: "traditional-strength-training", title: HKWorkoutActivityType.traditionalStrengthTraining.displayName)
+    }
+    
     @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(WorkoutSession.completedSession) private var workouts: [WorkoutSession]
@@ -9,11 +18,12 @@ struct WorkoutsListView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
+    @State private var selectedWorkoutTypeFilterID = WorkoutTypeFilter.all.id
     
     private var editModeBinding: Binding<EditMode> {
         Binding(get: { isEditing ? .active : .inactive }, set: { newValue in isEditing = newValue == .active })
     }
-
+    
     private var items: [WorkoutHistoryItem] {
         let sessionItems = workouts.map { WorkoutHistoryItem(source: .session($0)) }
         let healthItems = healthWorkouts.compactMap { workout -> WorkoutHistoryItem? in
@@ -22,21 +32,55 @@ struct WorkoutsListView: View {
             }
             return WorkoutHistoryItem(source: .health(workout))
         }
-
+        
         return (sessionItems + healthItems).sorted { $0.sortDate > $1.sortDate }
     }
-
+    
+    private var visibleItems: [WorkoutHistoryItem] {
+        guard selectedWorkoutTypeFilterID != WorkoutTypeFilter.all.id else { return items }
+        return items.filter { workoutTypeFilter(for: $0).id == selectedWorkoutTypeFilterID }
+    }
+    
+    private var workoutTypeFilters: [WorkoutTypeFilter] {
+        var seen = Set<String>()
+        var filters = [WorkoutTypeFilter.all]
+        
+        for item in items {
+            let filter = workoutTypeFilter(for: item)
+            if seen.insert(filter.id).inserted {
+                filters.append(filter)
+            }
+        }
+        
+        return filters
+    }
+    
     private var deletableWorkouts: [WorkoutSession] {
         workouts
     }
-
+    
     private var appSettingsSnapshot: AppSettingsSnapshot {
         AppSettingsSnapshot(settings: appSettings.first)
     }
     
     var body: some View {
         List {
-            ForEach(items) { item in
+            if !items.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 8) {
+                        ForEach(workoutTypeFilters) { filter in
+                            workoutTypeFilterChip(filter)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 2)
+                }
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 6, trailing: 0))
+            }
+            
+            ForEach(visibleItems) { item in
                 WorkoutHistoryRowView(item: item, appSettingsSnapshot: appSettingsSnapshot, deletionSettings: appSettings.first)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
@@ -50,6 +94,12 @@ struct WorkoutsListView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutsList)
         .environment(\.editMode, editModeBinding)
         .animation(reduceMotion ? nil : .smooth, value: isEditing)
+        .onChange(of: workoutTypeFilters) { _, filters in
+            guard filters.contains(where: { $0.id == selectedWorkoutTypeFilterID }) else {
+                selectedWorkoutTypeFilterID = WorkoutTypeFilter.all.id
+                return
+            }
+        }
         .navigationTitle("Workouts")
         .toolbarTitleDisplayMode(.inline)
         .listStyle(.plain)
@@ -103,32 +153,78 @@ struct WorkoutsListView: View {
             }
         }
     }
-
+    
+    private func workoutTypeFilterChip(_ filter: WorkoutTypeFilter) -> some View {
+        let isSelected = selectedWorkoutTypeFilterID == filter.id
+        
+        return Button {
+            Haptics.selection()
+            withAnimation(.smooth) {
+                selectedWorkoutTypeFilterID = filter.id
+            }
+        } label: {
+            Text(filter.title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .foregroundStyle(isSelected ? .white : .primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background {
+                    if isSelected {
+                        Capsule()
+                            .fill(.blue.gradient)
+                    } else {
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private func workoutTypeFilter(for item: WorkoutHistoryItem) -> WorkoutTypeFilter {
+        switch item.source {
+        case .session:
+            return .traditionalStrengthTraining
+        case .health(let workout):
+            if workout.activityType == .traditionalStrengthTraining {
+                return .traditionalStrengthTraining
+            }
+            
+            var id = "health-\(workout.activityTypeRawValue)"
+            if let isIndoorWorkout = workout.isIndoorWorkout {
+                id += isIndoorWorkout ? "-indoor" : "-outdoor"
+            }
+            return WorkoutTypeFilter(id: id, title: workout.activityTypeDisplayName)
+        }
+    }
+    
     private func deleteWorkouts(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
-        let workoutsToDelete = offsets.compactMap { items[$0].session }
+        let workoutsToDelete = offsets.compactMap { visibleItems[$0].session }
         guard !workoutsToDelete.isEmpty else { return }
-
+        
         WorkoutDeletionCoordinator.deleteCompletedWorkouts(workoutsToDelete, context: context, settings: appSettings.first)
-
+        
         if workoutsToDelete.count == 1, let workout = workoutsToDelete.first {
             Task { await IntentDonations.donateDeleteWorkout(workout: workout) }
         }
-
+        
         if deletableWorkouts.isEmpty {
             isEditing = false
         }
     }
-
+    
     private func deleteAllWorkouts() {
         Haptics.selection()
         guard !deletableWorkouts.isEmpty else { return }
-
+        
         WorkoutDeletionCoordinator.deleteCompletedWorkouts(deletableWorkouts, context: context, settings: appSettings.first)
-
+        
         Task { await IntentDonations.donateDeleteAllWorkouts() }
-
+        
         isEditing = false
     }
 }

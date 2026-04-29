@@ -124,7 +124,7 @@ Important behavior:
 
 `WorkoutPlanDetailView` can open `WorkoutPlanSuggestionsSheet`.
 
-It currently separates suggestion state into:
+It separates suggestion state into:
 
 - `To Review`
   - pending or deferred user decisions
