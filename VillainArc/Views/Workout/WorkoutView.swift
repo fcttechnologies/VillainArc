@@ -554,7 +554,9 @@ struct WorkoutView: View {
 
     private func deleteWorkout() {
         HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
+        workout.clearPrescriptionLinksForHistoricalUse()
         context.delete(workout)
+        saveContext(context: context)
         Task { await IntentDonations.donateCancelWorkout() }
         endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
     }

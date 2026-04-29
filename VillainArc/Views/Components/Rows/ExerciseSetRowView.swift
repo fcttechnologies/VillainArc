@@ -235,6 +235,7 @@ struct ExerciseSetRowView: View {
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)
+        context.delete(set)
         saveContext(context: context)
         WorkoutActivityManager.update()
     }

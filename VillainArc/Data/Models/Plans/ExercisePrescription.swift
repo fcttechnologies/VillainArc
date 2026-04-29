@@ -98,7 +98,10 @@ import SwiftData
     }
 
     func deleteSet(_ set: SetPrescription) {
+        set.activePerformance?.prescription = nil
+        set.activePerformance = nil
         sets?.removeAll(where: { $0 == set })
+        set.exercise = nil
         reindexSets()
     }
 

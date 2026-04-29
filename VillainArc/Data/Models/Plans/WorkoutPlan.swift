@@ -63,6 +63,21 @@ import SwiftUI
         }
     }
 
+    func clearActivePerformanceReferencesForSessionStart() {
+        for exercise in sortedExercises {
+            exercise.activePerformance?.clearPrescriptionLinksForHistoricalUse()
+            exercise.activePerformance = nil
+
+            for set in exercise.sortedSets {
+                if let activeSet = set.activePerformance {
+                    activeSet.originalTargetSetID = activeSet.originalTargetSetID ?? set.id
+                    activeSet.prescription = nil
+                }
+                set.activePerformance = nil
+            }
+        }
+    }
+
     func musclesTargeted() -> String { ListFormatter.localizedString(byJoining: majorMuscles.map(\.displayName)) }
 
     var musclesArray: [Muscle] {

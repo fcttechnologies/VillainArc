@@ -40,6 +40,7 @@ import SwiftUI
 
     // From workout plan
     init(from plan: WorkoutPlan, autoFillPlanTargets: Bool = true) {
+        plan.clearActivePerformanceReferencesForSessionStart()
         title = plan.title
         notes = plan.notes
         workoutPlan = plan
@@ -58,6 +59,7 @@ import SwiftUI
     }
 
     func deleteExercise(_ exercise: ExercisePerformance) {
+        exercise.detachFromDeletedPlan()
         exercises?.removeAll(where: { $0 == exercise })
         for (index, exercise) in sortedExercises.enumerated() { exercise.index = index }
     }

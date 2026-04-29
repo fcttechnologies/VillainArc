@@ -315,6 +315,7 @@ enum HomeQuickAction: String {
     func cancelWorkoutSession(_ workoutSession: WorkoutSession) {
         RestTimerState.shared.stop()
         HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
+        workoutSession.clearPrescriptionLinksForHistoricalUse()
         context.delete(workoutSession)
         saveContext(context: context)
         if activeWorkoutSession?.id == workoutSession.id { activeWorkoutSession = nil }

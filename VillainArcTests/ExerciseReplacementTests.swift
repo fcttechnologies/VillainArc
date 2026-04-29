@@ -75,6 +75,60 @@ struct ExerciseReplacementTests {
     }
 
     @Test @MainActor
+    // Removing a plan-backed set from a live workout must not leave the plan target
+    // pointing at the removed SetPerformance.
+    func deletingAndRestoringPlanBackedSessionSetClearsStaleTargetLink() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let plan = WorkoutPlan(title: "Push Day")
+        context.insert(plan)
+        let bench = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
+        let prescription = ExercisePrescription(exercise: bench, workoutPlan: plan)
+        let firstTarget = SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: 185, targetReps: 8, targetRest: 120, index: 0)
+        let secondTarget = SetPrescription(exercisePrescription: prescription, setType: .working, targetWeight: 185, targetReps: 8, targetRest: 120, index: 1)
+        prescription.sets = [firstTarget, secondTarget]
+        plan.exercises = [prescription]
+
+        let session = WorkoutSession(from: plan)
+        context.insert(session)
+        let performance = try #require(session.sortedExercises.first)
+        let deletedSet = try #require(performance.sortedSets.last)
+        let deletedTargetID = try #require(deletedSet.prescription?.id)
+
+        performance.deleteSet(deletedSet)
+
+        #expect(deletedSet.prescription == nil)
+        #expect(secondTarget.activePerformance == nil)
+
+        context.delete(deletedSet)
+        try context.save()
+
+        performance.addSet()
+        let restoredSet = try #require(performance.sortedSets.last)
+
+        #expect(performance.sortedSets.count == 2)
+        #expect(restoredSet.prescription?.id == deletedTargetID)
+        #expect(secondTarget.activePerformance?.id == restoredSet.id)
+
+        session.clearPrescriptionLinksForHistoricalUse()
+        context.delete(session)
+        try context.save()
+
+        #expect(prescription.activePerformance == nil)
+        #expect(firstTarget.activePerformance == nil)
+        #expect(secondTarget.activePerformance == nil)
+
+        let restartedSession = WorkoutSession(from: plan)
+        context.insert(restartedSession)
+        try context.save()
+
+        let restartedPerformance = try #require(restartedSession.sortedExercises.first)
+        #expect(restartedPerformance.sortedSets.count == 2)
+        #expect(prescription.activePerformance?.id == restartedPerformance.id)
+        #expect(secondTarget.activePerformance?.id == restartedPerformance.sortedSets[1].id)
+    }
+
+    @Test @MainActor
     func acceptedDeferredSuggestionDoesNotHydratePendingSessionWhenAutoFillTargetsIsOff() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
