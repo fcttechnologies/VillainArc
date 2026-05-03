@@ -17,7 +17,7 @@ struct ExerciseCatalogItem {
 }
 
 enum ExerciseCatalog {
-    nonisolated static let catalogVersion = "1.2.1"
+    nonisolated static let catalogVersion = "1.2.2"
 
     nonisolated static let all: [ExerciseCatalogItem] = [
         // BICEPS
@@ -114,6 +114,7 @@ enum ExerciseCatalog {
         .init(id: "cable_chest_press", name: "Chest Press", musclesTargeted: [.chest, .midChest, .lowerChest, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps, .shoulders, .frontDelt], equipmentType: .cables),
         .init(id: "cable_crossover", name: "Crossover", musclesTargeted: [.chest, .midChest, .lowerChest], equipmentType: .cables),
         .init(id: "cable_decline_bench_chest_fly", name: "Decline Bench Chest Fly", musclesTargeted: [.chest, .lowerChest], equipmentType: .cables),
+        .init(id: "cable_decline_chest_fly", name: "Decline Chest Fly", musclesTargeted: [.chest, .lowerChest], equipmentType: .cables),
         .init(id: "cable_decline_bench_press", name: "Decline Bench Press", musclesTargeted: [.chest, .lowerChest, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps, .shoulders, .frontDelt], equipmentType: .cables),
         .init(id: "cable_decline_single_arm_bench_press", name: "Decline Single Arm Bench Press", musclesTargeted: [.chest, .lowerChest, .triceps, .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps, .shoulders, .frontDelt], equipmentType: .cableSingle),
         .init(id: "cable_high_to_low_crossover", name: "High to Low Crossover", musclesTargeted: [.chest, .lowerChest], equipmentType: .cables),

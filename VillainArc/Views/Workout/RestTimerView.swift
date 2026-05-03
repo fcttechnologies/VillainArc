@@ -322,8 +322,7 @@ struct RestTimerView: View {
         guard let (_, nextSet) = workout.activeExerciseAndSet() else { return }
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(nextSet)
         Haptics.selection()
-        nextSet.complete = true
-        nextSet.completedAt = Date()
+        workout.completeSet(nextSet)
 
         let restSeconds = nextSet.effectiveRestSeconds
         if autoStartRestTimerEnabled {

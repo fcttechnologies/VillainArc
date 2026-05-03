@@ -13,8 +13,7 @@ struct CompleteActiveSetIntent: AppIntent {
         guard let (exercise, set) = workout.activeExerciseAndSet() else { return .result(dialog: "No incomplete sets found.") }
 
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
-        set.complete = true
-        set.completedAt = Date()
+        workout.completeSet(set)
 
         let autoStartRestTimerEnabled = (try? context.fetch(AppSettings.single).first)?.autoStartRestTimer ?? true
         if autoStartRestTimerEnabled {

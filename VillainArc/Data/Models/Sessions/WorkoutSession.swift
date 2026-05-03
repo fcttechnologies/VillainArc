@@ -235,6 +235,23 @@ extension WorkoutSession {
             }
     }
 
+    @discardableResult
+    func completeSet(_ set: SetPerformance, completedAt: Date = Date()) -> Bool {
+        set.complete = true
+        set.completedAt = completedAt
+
+        guard workoutPlan != nil,
+              let exercise = set.exercise,
+              exercise.prescription != nil,
+              exercise.allSetsComplete,
+              activeExercise == nil || activeExercise == exercise
+        else { return false }
+
+        guard let nextExercise = sortedExercises.first(where: { $0.index > exercise.index }) else { return false }
+        activeExercise = nextExercise
+        return true
+    }
+
     func isFinalIncompleteSet(_ candidate: SetPerformance) -> Bool {
         var incompleteSets: [SetPerformance] = []
 

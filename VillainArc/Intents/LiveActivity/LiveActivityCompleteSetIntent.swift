@@ -11,8 +11,7 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
         guard let workout = try? context.fetch(WorkoutSession.incomplete).first, let (_, set) = workout.activeExerciseAndSet() else { return .result() }
 
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
-        set.complete = true
-        set.completedAt = Date()
+        workout.completeSet(set)
 
         let autoStartRestTimerEnabled = (try? context.fetch(AppSettings.single).first)?.autoStartRestTimer ?? true
         if autoStartRestTimerEnabled {

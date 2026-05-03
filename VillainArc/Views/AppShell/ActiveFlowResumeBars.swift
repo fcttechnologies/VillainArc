@@ -182,8 +182,7 @@ struct ActiveWorkoutResumeBarButton: View {
 
         Haptics.selection()
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
-        set.complete = true
-        set.completedAt = .now
+        workout.completeSet(set)
 
         if autoStartRestTimerEnabled {
             let restSeconds = set.effectiveRestSeconds

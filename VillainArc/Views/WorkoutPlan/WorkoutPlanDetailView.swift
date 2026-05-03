@@ -29,6 +29,7 @@ struct WorkoutPlanDetailView: View {
     @State private var showSuggestionsSheet = false
     @State private var suggestionsInitialTab: WorkoutPlanSuggestionsSheet.Tab = .toReview
     @State private var focusedSuggestionExerciseID: UUID?
+    @State private var isDeletingWorkoutPlan = false
 
     private var isSplitAssignmentPreview: Bool {
         splitAssignmentActions != nil
@@ -88,6 +89,17 @@ struct WorkoutPlanDetailView: View {
     }
 
     var body: some View {
+        Group {
+            if isDeletingWorkoutPlan {
+                Color.clear
+                    .modifier(WorkoutPlanDetailBackgroundModifier(showSheetBackground: showSheetBackground))
+            } else {
+                detailContent
+            }
+        }
+    }
+
+    private var detailContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
                 summarySection
@@ -106,18 +118,18 @@ struct WorkoutPlanDetailView: View {
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
-        .quickActionContentBottomInset()
-        .scrollIndicators(.hidden)
-        .modifier(WorkoutPlanDetailBackgroundModifier(showSheetBackground: showSheetBackground))
-        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
-        .navigationTitle(plan.title)
-        .navigationSubtitle(Text(plan.musclesTargeted()))
-        .toolbarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showSuggestionsSheet) {
-            WorkoutPlanSuggestionsSheet(plan: plan, initialTab: suggestionsInitialTab, initialFocusedExerciseID: focusedSuggestionExerciseID)
-                .presentationBackground(Color.sheetBg)
-        }
-        .toolbar {
+            .quickActionContentBottomInset()
+            .scrollIndicators(.hidden)
+            .modifier(WorkoutPlanDetailBackgroundModifier(showSheetBackground: showSheetBackground))
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailList)
+            .navigationTitle(plan.title)
+            .navigationSubtitle(Text(plan.musclesTargeted()))
+            .toolbarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showSuggestionsSheet) {
+                WorkoutPlanSuggestionsSheet(plan: plan, initialTab: suggestionsInitialTab, initialFocusedExerciseID: focusedSuggestionExerciseID)
+                    .presentationBackground(Color.sheetBg)
+            }
+            .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if showsCloseButton {
                     Button("Close", systemImage: "xmark", role: .close) {
@@ -303,8 +315,13 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
             Text("Exercises")
                 .font(.headline)
 
-            ForEach(plan.sortedExercises) { exercise in
-                WorkoutPlanDetailExerciseCard(exercise: exercise, weightUnit: weightUnit, pendingCount: pendingSuggestionCount(for: exercise), showsPendingCount: onSelect == nil, onOpenSuggestions: { openSuggestionsSheet(tab: .toReview, focusedExerciseID: exercise.id) })
+            ForEach(exerciseSnapshots) { exercise in
+                WorkoutPlanDetailExerciseCard(
+                    exercise: exercise,
+                    weightUnit: weightUnit,
+                    showsPendingCount: onSelect == nil,
+                    onOpenSuggestions: { openSuggestionsSheet(tab: .toReview, focusedExerciseID: exercise.id) }
+                )
             }
         }
     }
@@ -322,6 +339,7 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
         deleteWorkoutPlanAssessment = nil
         Haptics.selection()
         let deletedPlan = WorkoutPlanEntity(workoutPlan: plan)
+        isDeletingWorkoutPlan = true
         WorkoutPlanDeletionCoordinator.delete(assessment, context: context)
         Task { await IntentDonations.donateDeleteWorkoutPlan(workoutPlan: deletedPlan) }
         dismiss()
@@ -355,9 +373,19 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
         Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
     }
 
-    private func pendingSuggestionCount(for exercise: ExercisePrescription) -> Int? {
-        let count = toReviewSuggestionSections.first(where: { $0.exercisePrescription.id == exercise.id })?.groups.count ?? 0
-        return count > 0 ? count : nil
+    private var pendingSuggestionCountsByExerciseID: [UUID: Int] {
+        Dictionary(uniqueKeysWithValues: toReviewSuggestionSections.compactMap { section in
+            let count = section.groups.count
+            return count > 0 ? (section.exercisePrescription.id, count) : nil
+        })
+    }
+
+    private var exerciseSnapshots: [WorkoutPlanDetailExerciseSnapshot] {
+        let pendingCounts = pendingSuggestionCountsByExerciseID
+        let planID = plan.id
+        return plan.sortedExercises.map { exercise in
+            WorkoutPlanDetailExerciseSnapshot(exercise: exercise, planID: planID, pendingCount: pendingCounts[exercise.id])
+        }
     }
 
     private func openSuggestionsSheet(tab: WorkoutPlanSuggestionsSheet.Tab, focusedExerciseID: UUID?) {
@@ -367,10 +395,98 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
     }
 }
 
-private struct WorkoutPlanDetailExerciseCard: View {
-    let exercise: ExercisePrescription
-    let weightUnit: WeightUnit
+private struct WorkoutPlanDetailExerciseSnapshot: Identifiable {
+    let id: UUID
+    let planID: UUID
+    let index: Int
+    let catalogID: String
+    let name: String
+    let notes: String
+    let repRangeText: String?
     let pendingCount: Int?
+    let sets: [WorkoutPlanDetailSetSnapshot]
+
+    init(exercise: ExercisePrescription, planID: UUID, pendingCount: Int?) {
+        id = exercise.id
+        self.planID = planID
+        index = exercise.index
+        catalogID = exercise.catalogID
+        name = exercise.name
+        notes = exercise.notes
+        if let repRange = exercise.repRange, repRange.activeMode != .notSet {
+            repRangeText = repRange.displayText
+        } else {
+            repRangeText = nil
+        }
+        self.pendingCount = pendingCount
+        sets = exercise.sortedSets.map(WorkoutPlanDetailSetSnapshot.init(set:))
+    }
+
+    var accessibilityIdentifier: String {
+        "workoutPlanDetailExercise-Optional(\"\(planID.uuidString)\")-\(catalogID)-\(index)"
+    }
+
+    var headerAccessibilityIdentifier: String {
+        "workoutPlanDetailExerciseHeader-Optional(\"\(planID.uuidString)\")-\(catalogID)-\(index)"
+    }
+
+    var notesAccessibilityIdentifier: String {
+        "workoutPlanDetailExerciseNotes-Optional(\"\(planID.uuidString)\")-\(catalogID)-\(index)"
+    }
+
+    var suggestionCountAccessibilityIdentifier: String {
+        "workoutPlanDetailSuggestionCount-\(id.uuidString)"
+    }
+
+    func setAccessibilityIdentifier(_ set: WorkoutPlanDetailSetSnapshot) -> String {
+        "workoutPlanDetailSet-Optional(\"\(planID.uuidString)\")-\(catalogID)-\(index)-\(set.index)"
+    }
+}
+
+private struct WorkoutPlanDetailSetSnapshot: Identifiable {
+    let id: UUID
+    let index: Int
+    let type: ExerciseSetType
+    let targetWeight: Double
+    let targetReps: Int
+    let targetRest: Int
+    let targetRPE: Int
+
+    init(set: SetPrescription) {
+        id = set.id
+        index = set.index
+        type = set.type
+        targetWeight = set.targetWeight
+        targetReps = set.targetReps
+        targetRest = set.targetRest
+        targetRPE = set.targetRPE
+    }
+
+    var visibleTargetRPE: Int? {
+        guard type != .warmup, targetRPE > 0 else { return nil }
+        return targetRPE
+    }
+
+    var accessibilityLabel: String {
+        type == .working ? String(localized: "Set \(index + 1)") : type.displayName
+    }
+
+    func accessibilityValue(unit: WeightUnit) -> String {
+        let hasReps = targetReps > 0
+        let hasWeight = targetWeight > 0
+        let hasTargetRPE = visibleTargetRPE != nil
+        guard hasReps || hasWeight || hasTargetRPE else { return String(localized: "No target set") }
+
+        let repsText = hasReps ? (targetReps == 1 ? String(localized: "1 rep") : String(localized: "\(targetReps) reps")) : String(localized: "No reps target")
+        let weightText = hasWeight ? unit.display(targetWeight) : String(localized: "No weight target")
+        if let visibleTargetRPE { return String(localized: "\(repsText), \(weightText), target RPE \(visibleTargetRPE)") }
+        return String(localized: "\(repsText), \(weightText)")
+    }
+}
+
+private struct WorkoutPlanDetailExerciseCard: View {
+    let exercise: WorkoutPlanDetailExerciseSnapshot
+    let weightUnit: WeightUnit
     let showsPendingCount: Bool
     let onOpenSuggestions: () -> Void
 
@@ -382,14 +498,14 @@ private struct WorkoutPlanDetailExerciseCard: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                         .lineLimit(1)
-                    if let repRange = exercise.repRange, repRange.activeMode != .notSet {
-                        Text(repRange.displayText)
+                    if let repRangeText = exercise.repRangeText {
+                        Text(repRangeText)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
-                if showsPendingCount, let pendingCount {
+                if showsPendingCount, let pendingCount = exercise.pendingCount {
                     Button(action: onOpenSuggestions) {
                         Text("\(pendingCount)")
                             .bold()
@@ -397,34 +513,34 @@ private struct WorkoutPlanDetailExerciseCard: View {
                     }
                     .buttonBorderShape(.circle)
                     .buttonStyle(.glass)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSuggestionCount(exercise))
+                    .accessibilityIdentifier(exercise.suggestionCountAccessibilityIdentifier)
                     .accessibilityLabel(AccessibilityText.workoutPlanDetailSuggestionCountLabel(count: pendingCount))
                 }
             }
-            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseHeader(exercise))
+            .accessibilityIdentifier(exercise.headerAccessibilityIdentifier)
 
             if !exercise.notes.isEmpty {
                 Text(exercise.notes)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExerciseNotes(exercise))
+                    .accessibilityIdentifier(exercise.notesAccessibilityIdentifier)
             }
 
             Divider()
 
-            ExerciseSetTable(rows: exercise.sortedSets, repsText: { $0.targetReps > 0 ? "\($0.targetReps)" : "-" }, weightText: { $0.targetWeight > 0 ? formattedWeightText($0.targetWeight, unit: weightUnit) : "-" }, restText: { $0.targetRest > 0 ? secondsToTime($0.targetRest) : "-" }, rowAccessibilityIdentifier: { AccessibilityIdentifiers.workoutPlanDetailSet(exercise, set: $0) }, rowAccessibilityLabel: { AccessibilityText.exerciseSetLabel(for: $0) }, rowAccessibilityValue: { AccessibilityText.exerciseSetValue(for: $0, unit: weightUnit) }) { set in
+            ExerciseSetTable(rows: exercise.sets, repsText: { $0.targetReps > 0 ? "\($0.targetReps)" : "-" }, weightText: { $0.targetWeight > 0 ? formattedWeightText($0.targetWeight, unit: weightUnit) : "-" }, restText: { $0.targetRest > 0 ? secondsToTime($0.targetRest) : "-" }, rowAccessibilityIdentifier: { exercise.setAccessibilityIdentifier($0) }, rowAccessibilityLabel: { $0.accessibilityLabel }, rowAccessibilityValue: { $0.accessibilityValue(unit: weightUnit) }) { set in
                 WorkoutPlanDetailSetIndicator(set: set)
             }
         }
         .padding(16)
         .appCardStyle()
-        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailExercise(exercise))
+        .accessibilityIdentifier(exercise.accessibilityIdentifier)
     }
 }
 
 private struct WorkoutPlanDetailSetIndicator: View {
-    let set: SetPrescription
+    let set: WorkoutPlanDetailSetSnapshot
 
     var body: some View {
         Text(set.type == .working ? String(set.index + 1) : set.type.shortLabel)

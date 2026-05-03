@@ -259,8 +259,12 @@ struct ExerciseSetRowView: View {
         if playHaptics {
             Haptics.selection()
         }
-        set.complete = true
-        set.completedAt = Date()
+        if let workout = exercise.workoutSession {
+            workout.completeSet(set)
+        } else {
+            set.complete = true
+            set.completedAt = Date()
+        }
         handleAutoStartTimer()
         saveContext(context: context)
         WorkoutActivityManager.update()
