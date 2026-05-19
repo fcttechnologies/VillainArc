@@ -46,20 +46,24 @@ struct ExerciseSetRowView: View {
     @State private var showOverrideTimerAlert = false
     @FocusState private var focusedField: Field?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
+
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
-    
+
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
-    
+
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
     }
-    
+
     private var autoCompleteSetAfterRPEEnabled: Bool {
         appSettingsSnapshot.autoCompleteSetAfterRPE
     }
-    
+
+    private var assumeTargetRPEOnCompleteEnabled: Bool {
+        appSettingsSnapshot.assumeTargetRPEOnComplete
+    }
+
     private var loadFieldLabel: String {
         exercise.equipmentType.loadDisplayName
     }
@@ -153,6 +157,7 @@ struct ExerciseSetRowView: View {
                 }
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
+                .contentShape(Rectangle())
                 .contextMenu {
                     if let referenceData, referenceData.hasActionableValues {
                         Button(referenceData.actionLabel) {
@@ -259,6 +264,7 @@ struct ExerciseSetRowView: View {
         if playHaptics {
             Haptics.selection()
         }
+        applyAssumedTargetRPEIfNeeded()
         if let workout = exercise.workoutSession {
             workout.completeSet(set)
         } else {
@@ -272,6 +278,14 @@ struct ExerciseSetRowView: View {
             FoundationModelPrewarmer.warmup()
         }
         Task { await IntentDonations.donateCompleteActiveSet() }
+    }
+
+    private func applyAssumedTargetRPEIfNeeded() {
+        guard assumeTargetRPEOnCompleteEnabled else { return }
+        guard set.type != .warmup else { return }
+        guard set.rpe == 0 else { return }
+        guard let targetRPE = set.prescription?.visibleTargetRPE else { return }
+        set.rpe = targetRPE
     }
 
     private func toggleCompletionOff() {

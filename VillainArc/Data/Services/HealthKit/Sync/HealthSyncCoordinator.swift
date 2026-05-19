@@ -57,6 +57,10 @@ actor HealthSyncCoordinator {
                 for deletedObject in result.deletedObjects { try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
 
                 try context.save()
+                if !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty {
+                    HealthMetricWidgetReloader.reloadSteps()
+                    HealthMetricWidgetReloader.reloadEnergy()
+                }
                 if shouldAdvanceAnchor {
                     HealthSyncPreferences.workoutAnchor = result.newAnchor
                 }

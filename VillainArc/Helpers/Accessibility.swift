@@ -58,6 +58,7 @@ enum AccessibilityIdentifiers {
     static let healthNewWeightGoalStartWeightField = "healthNewWeightGoalStartWeightField"
     static let healthNewWeightGoalTargetWeightField = "healthNewWeightGoalTargetWeightField"
     static let healthNewWeightGoalTargetRateField = "healthNewWeightGoalTargetRateField"
+    static let healthNewWeightGoalTargetRateSignToggle = "healthNewWeightGoalTargetRateSignToggle"
     static let healthNewWeightGoalTargetDateToggle = "healthNewWeightGoalTargetDateToggle"
     static let healthNewWeightGoalTargetDatePicker = "healthNewWeightGoalTargetDatePicker"
     static let healthWeightHistoryAllEntriesLink = "healthWeightHistoryAllEntriesLink"
@@ -463,7 +464,9 @@ enum AccessibilityIdentifiers {
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerToggle = "workoutSettingsAutoStartTimerToggle"
     static let workoutSettingsAutoCompleteAfterRPEToggle = "workoutSettingsAutoCompleteAfterRPEToggle"
+    static let workoutSettingsAssumeTargetRPEToggle = "workoutSettingsAssumeTargetRPEToggle"
     static let workoutSettingsAutoFillPlanTargetsToggle = "workoutSettingsAutoFillPlanTargetsToggle"
+    static let workoutSettingsPrefersTargetReferenceToggle = "workoutSettingsPrefersTargetReferenceToggle"
     static let workoutSettingsPreWorkoutPromptToggle = "workoutSettingsPreWorkoutPromptToggle"
     static let workoutSettingsPostWorkoutEffortToggle = "workoutSettingsPostWorkoutEffortToggle"
     static let workoutSettingsRetainPerformanceSnapshotsToggle = "workoutSettingsRetainPerformanceSnapshotsToggle"
@@ -1145,6 +1148,8 @@ enum AccessibilityText {
     // MARK: - WorkoutSettingsView
     static let workoutSettingsAutoStartTimerHint = localized("Automatically starts rest timer when a set is marked complete.")
     static let workoutSettingsAutoCompleteAfterRPEHint = localized("Automatically marks a set complete after selecting an RPE rating.")
+    static let workoutSettingsAssumeTargetRPEHint = localized("Fills in the target RPE when you mark a set complete without rating it.")
+    static let workoutSettingsPrefersTargetReferenceHint = localized("When you have a plan, show your last performance in the reference column by default instead of the plan target. Tap the column header during a workout to switch.")
     static let workoutSettingsPreWorkoutPromptHint = localized("Prompts for pre workout context when you open a new workout.")
     static let workoutSettingsPostWorkoutEffortHint = localized("Prompts for post workout effort before summary when the workout is being saved.")
     static let workoutSettingsRetainPerformanceSnapshotsHint = localized("Keeps deleted completed workouts hidden instead of permanently removing the performance snapshots used for suggestion learning.")

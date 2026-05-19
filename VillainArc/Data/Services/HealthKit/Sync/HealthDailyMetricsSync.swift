@@ -141,6 +141,7 @@ actor HealthDailyMetricsSync {
             }
             for notification in notificationsBox.value.values {
                 await NotificationCoordinator.deliverStepsEvent(notification)
+                HealthMetricWidgetReloader.reloadSteps()
             }
             logMetricSyncIfNeeded(named: "steps", refreshedRange: result.refreshedRange)
         } catch {

@@ -5,6 +5,8 @@ import SwiftData
     var autoStartRestTimer: Bool = true
     var autoCompleteSetAfterRPE: Bool = false
     var autoFillPlanTargets: Bool = true
+    var assumeTargetRPEOnComplete: Bool = true
+    var prefersTargetReferenceWhenPlanned: Bool = true
     var promptForPreWorkoutContext: Bool = false
     var promptForPostWorkoutEffort: Bool = true
     var retainPerformancesForLearning: Bool = true
@@ -25,6 +27,8 @@ struct AppSettingsSnapshot {
     let autoStartRestTimer: Bool
     let autoCompleteSetAfterRPE: Bool
     let autoFillPlanTargets: Bool
+    let assumeTargetRPEOnComplete: Bool
+    let prefersTargetReferenceWhenPlanned: Bool
     let promptForPreWorkoutContext: Bool
     let promptForPostWorkoutEffort: Bool
     let retainPerformancesForLearning: Bool
@@ -42,6 +46,8 @@ struct AppSettingsSnapshot {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
         autoCompleteSetAfterRPE = settings?.autoCompleteSetAfterRPE ?? false
         autoFillPlanTargets = settings?.autoFillPlanTargets ?? true
+        assumeTargetRPEOnComplete = settings?.assumeTargetRPEOnComplete ?? true
+        prefersTargetReferenceWhenPlanned = settings?.prefersTargetReferenceWhenPlanned ?? true
         promptForPreWorkoutContext = settings?.promptForPreWorkoutContext ?? false
         promptForPostWorkoutEffort = settings?.promptForPostWorkoutEffort ?? true
         retainPerformancesForLearning = settings?.retainPerformancesForLearning ?? true

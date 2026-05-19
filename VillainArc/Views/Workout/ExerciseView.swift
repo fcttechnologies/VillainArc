@@ -22,23 +22,34 @@ struct ExerciseView: View {
     @State private var restTimeUpdateSeconds = 0
     @State private var restTimeSnapshotBySetID: [UUID: Int] = [:]
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
-    
+    @State private var showsPreviousInstead: Bool?
+
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
-    
+
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
     }
-    
+
     init(exercise: ExercisePerformance, appSettingsSnapshot: AppSettingsSnapshot, onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
         self.appSettingsSnapshot = appSettingsSnapshot
         self.onDeleteExercise = onDeleteExercise
     }
-    
-    private var shouldUseTargetReference: Bool {
+
+    private var hasPrescription: Bool {
         exercise.prescription != nil
     }
-    
+
+    private var shouldUseTargetReference: Bool {
+        guard hasPrescription else { return false }
+        if let showsPreviousInstead { return !showsPreviousInstead }
+        return appSettingsSnapshot.prefersTargetReferenceWhenPlanned
+    }
+
+    private var canToggleReference: Bool {
+        hasPrescription
+    }
+
     private func targetReferenceData(for set: SetPerformance) -> SetReferenceData? {
         guard let prescription = set.prescription else { return nil }
         let reps = prescription.targetReps > 0 ? prescription.targetReps : nil
@@ -47,16 +58,25 @@ struct ExerciseView: View {
         guard reps != nil || weight != nil || targetRPE != nil else { return nil }
         return SetReferenceData(reps: reps, weight: weight, rpe: targetRPE, setType: prescription.type, rpeStyle: .target, actionLabel: "Use Target")
     }
-    
+
     private func previousReferenceData(for set: SetPerformance) -> SetReferenceData? {
         previousReferenceBySetIndex[set.index]
     }
-    
+
     private func referenceData(for set: SetPerformance) -> SetReferenceData? {
         if shouldUseTargetReference {
             return targetReferenceData(for: set)
         }
         return previousReferenceData(for: set)
+    }
+
+    private func toggleReferenceColumn() {
+        guard canToggleReference else { return }
+        Haptics.selection()
+        showsPreviousInstead = shouldUseTargetReference
+        if showsPreviousInstead == true {
+            loadPreviousReferenceDataIfNeeded()
+        }
     }
     
     var body: some View {
@@ -152,7 +172,14 @@ struct ExerciseView: View {
                             .lineLimit(1)
                             .frame(alignment: .leading)
                         Spacer()
-                        Text(shouldUseTargetReference ? "Target" : "Previous")
+                        if canToggleReference {
+                            Button(shouldUseTargetReference ? "Target" : "Previous") {
+                                toggleReferenceColumn()
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Text(shouldUseTargetReference ? "Target" : "Previous")
+                        }
                         Spacer()
                         Text(verbatim: " ")
                         Spacer()
@@ -160,7 +187,7 @@ struct ExerciseView: View {
                     .font(.title3)
                     .bold()
                     .accessibilityHidden(true)
-                    
+
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
                             ExerciseSetRowView(set: set, exercise: exercise, appSettingsSnapshot: appSettingsSnapshot, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
@@ -238,7 +265,7 @@ struct ExerciseView: View {
                     .presentationBackground(Color.sheetBg)
             }
             .task(id: exercise.catalogID) {
-                loadPreviousReferenceData()
+                loadPreviousReferenceDataIfNeeded()
             }
         }
     }
@@ -276,12 +303,8 @@ struct ExerciseView: View {
         pendingRestTimerPromptAction = .startNewTimer(setID: latestCompletedSet.id)
     }
     
-    private func loadPreviousReferenceData() {
-        guard !shouldUseTargetReference else {
-            previousReferenceBySetIndex = [:]
-            return
-        }
-        
+    private func loadPreviousReferenceDataIfNeeded() {
+        guard previousReferenceBySetIndex.isEmpty else { return }
         let previousSets = (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
         previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
             (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, rpe: previousSet.visibleRPE, setType: previousSet.type, rpeStyle: .actual, actionLabel: "Use Previous"))

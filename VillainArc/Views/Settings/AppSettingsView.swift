@@ -159,11 +159,18 @@ private struct WorkoutPreferencesView: View {
                 Toggle("Auto Fill Plan Targets", isOn: $settings.autoFillPlanTargets)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoFillPlanTargetsToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsAutoFillPlanTargetsHint)
-                    .appGroupedListRow(position: .single)
+                    .appGroupedListRow(position: .top)
+                Toggle("Show Previous by Default", isOn: Binding(
+                    get: { !settings.prefersTargetReferenceWhenPlanned },
+                    set: { settings.prefersTargetReferenceWhenPlanned = !$0 }
+                ))
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPrefersTargetReferenceToggle)
+                .accessibilityHint(AccessibilityText.workoutSettingsPrefersTargetReferenceHint)
+                .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Plan Workouts")
             } footer: {
-                Text("When this is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Turn it off to keep plan targets available as references without filling the logging fields.")
+                Text("When Auto Fill Plan Targets is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Show Previous by Default controls whether the reference column shows your last performance instead of the plan target; tap the column header to switch at any time.")
             }
 
             Section {
@@ -174,11 +181,15 @@ private struct WorkoutPreferencesView: View {
                 Toggle("Auto Complete After RPE", isOn: $settings.autoCompleteSetAfterRPE)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAutoCompleteAfterRPEToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsAutoCompleteAfterRPEHint)
+                    .appGroupedListRow(position: .middle)
+                Toggle("Assume Target RPE When Done", isOn: $settings.assumeTargetRPEOnComplete)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsAssumeTargetRPEToggle)
+                    .accessibilityHint(AccessibilityText.workoutSettingsAssumeTargetRPEHint)
                     .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Set Logging")
             } footer: {
-                Text("After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it also starts the timer.")
+                Text("After you pick an RPE, the app can mark the set complete for you. If Auto Start Rest Timer is on, it also starts the timer. Assume Target RPE When Done fills in the target RPE automatically when you mark a set complete without rating it.")
             }
 
             Section {
@@ -230,7 +241,13 @@ private struct WorkoutPreferencesView: View {
         .onChange(of: settings.autoCompleteSetAfterRPE) {
             saveContext(context: context)
         }
+        .onChange(of: settings.assumeTargetRPEOnComplete) {
+            saveContext(context: context)
+        }
         .onChange(of: settings.autoFillPlanTargets) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.prefersTargetReferenceWhenPlanned) {
             saveContext(context: context)
         }
         .onChange(of: settings.promptForPreWorkoutContext) {

@@ -259,12 +259,25 @@ struct NewWeightGoalView: View {
                 .padding([.horizontal, .top])
             }
             .toolbar {
-                ToolbarItem(placement: .keyboard) {
-                    if focusedField == .targetRate, selectedType != .maintain, calculatedTargetRatePerWeek != nil {
-                        Button(estimatedTargetRateButtonTitle) {
-                            applyEstimatedTargetRate()
+                ToolbarItemGroup(placement: .keyboard) {
+                    if focusedField == .targetRate, selectedType != .maintain {
+                        Button {
+                            toggleTargetRateSign()
                             Haptics.selection()
-                            dismissKeyboard()
+                        } label: {
+                            Label("Toggle Sign", systemImage: "plus.forwardslash.minus")
+                                .labelStyle(.iconOnly)
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalTargetRateSignToggle)
+
+                        Spacer()
+
+                        if calculatedTargetRatePerWeek != nil {
+                            Button(estimatedTargetRateButtonTitle) {
+                                applyEstimatedTargetRate()
+                                Haptics.selection()
+                                dismissKeyboard()
+                            }
                         }
                     }
                 }
@@ -351,6 +364,20 @@ struct NewWeightGoalView: View {
     private func applyEstimatedTargetRate() {
         guard let calculatedTargetRatePerWeek else { return }
         targetRateText = formattedWeightValue(calculatedTargetRatePerWeek, unit: weightUnit, fractionDigits: 0...2)
+    }
+
+    private func toggleTargetRateSign() {
+        let trimmed = targetRateText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            targetRateText = "-"
+            return
+        }
+
+        if trimmed.hasPrefix("-") {
+            targetRateText = String(trimmed.dropFirst())
+        } else {
+            targetRateText = "-\(trimmed)"
+        }
     }
 }
 

@@ -116,9 +116,6 @@ struct RuleEngine {
 
     private static func exerciseLevelRepRangeSuggestions(_ context: ExerciseSuggestionContext) -> [SuggestionEventDraft] {
         if let initialRange = suggestInitialRange(context) { return [initialRange] }
-        if let targetToRange = suggestTargetToRange(context) { return [targetToRange] }
-        if let shiftedRangeUp = suggestShiftedRange(context, direction: .up) { return [shiftedRangeUp] }
-        if let shiftedRangeDown = suggestShiftedRange(context, direction: .down) { return [shiftedRangeDown] }
         return []
     }
 
@@ -1179,49 +1176,6 @@ struct RuleEngine {
 
         let reason = "You've trained this exercise consistently for recent sessions without a rep range set. Add a range that matches how you already perform it."
         return makeRepRangeEvent(context: context, ruleID: .suggestInitialRange, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
-    }
-
-    private static func suggestTargetToRange(_ context: ExerciseSuggestionContext) -> SuggestionEventDraft? {
-        let repRange = context.prescription.repRange ?? RepRangePolicy()
-        guard repRange.activeMode == .target else { return nil }
-        guard let evidence = repEvidence(context), evidence.sessionCount >= 3 else { return nil }
-        guard let desiredRange = normalizedRange(evidence: evidence), let representativeMin = evidence.representativeMin, let representativeMax = evidence.representativeMax, let observedBandWidth = evidence.observedBandWidth else { return nil }
-        guard observedBandWidth >= 2 || representativeMin != representativeMax else { return nil }
-        guard desiredRange.lower >= max(1, repRange.targetReps - 1) else { return nil }
-        guard desiredRange.upper >= repRange.targetReps + 1 else { return nil }
-
-        let reason = "You perform this exercise across a rep band rather than one exact target. Switching to a range should better match how you train it."
-        return makeRepRangeEvent(context: context, ruleID: .suggestTargetToRange, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
-    }
-
-    private enum RangeShiftDirection {
-        case up
-        case down
-    }
-
-    private static func suggestShiftedRange(_ context: ExerciseSuggestionContext, direction: RangeShiftDirection) -> SuggestionEventDraft? {
-        let repRange = context.prescription.repRange ?? RepRangePolicy()
-        guard repRange.activeMode == .range else { return nil }
-        guard let evidence = repEvidence(context), evidence.sessionCount >= 3 else { return nil }
-        guard let desiredRange = normalizedRange(evidence: evidence), let representativeMin = evidence.representativeMin, let representativeMax = evidence.representativeMax else { return nil }
-
-        switch direction {
-        case .up:
-            guard representativeMin >= repRange.upperRange - 1 else { return nil }
-            guard representativeMax >= repRange.upperRange + 1 else { return nil }
-            guard desiredRange.lower > repRange.lowerRange || desiredRange.upper > repRange.upperRange else { return nil }
-
-            let reason = "You're consistently performing above your current rep band. Shift the range up so the prescription better matches your training."
-            return makeRepRangeEvent(context: context, ruleID: .suggestShiftedRangeUp, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
-
-        case .down:
-            guard representativeMax <= repRange.lowerRange + 1 else { return nil }
-            guard representativeMin <= repRange.lowerRange - 1 else { return nil }
-            guard desiredRange.lower < repRange.lowerRange || desiredRange.upper < repRange.upperRange else { return nil }
-
-            let reason = "You're consistently performing below your current rep band. Shift the range down so the prescription better matches your training."
-            return makeRepRangeEvent(context: context, ruleID: .suggestShiftedRangeDown, category: .repRangeConfiguration, desiredMode: .range, desiredLower: desiredRange.lower, desiredUpper: desiredRange.upper, desiredTarget: repRange.targetReps, reasoning: reason)
-        }
     }
 
     private static func historicalOrCurrentRepRange(for performance: ExercisePerformance, context: ExerciseSuggestionContext) -> RepRangeSnapshot? {
