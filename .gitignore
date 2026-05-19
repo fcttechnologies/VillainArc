@@ -6,3 +6,8 @@
 build/
 appstore-screenshots/
 .DerivedData/
+
+# AI folders
+.agents/
+.claude/
+skills-lock.json
