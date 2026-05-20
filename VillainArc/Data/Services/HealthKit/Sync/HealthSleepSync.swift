@@ -100,7 +100,7 @@ actor HealthSleepSync {
                     await NotificationCoordinator.deliverSleepGoal(sleepGoalNotification)
                 }
             } catch {
-                print("Failed to sync Apple Health sleep summaries: \(error)")
+                AppLog.error("Failed to sync Apple Health sleep summaries", error: error)
             }
 
             isSyncingSleepNights = false
@@ -404,7 +404,7 @@ actor HealthSleepSync {
 
     private func logSleepSyncIfNeeded(refreshedRange: ClosedRange<Date>?) {
         guard let refreshedRange else { return }
-        print("Synced Apple Health sleep summaries for \(formattedWakeDayRange(refreshedRange)).")
+        AppLog.info("Synced Apple Health sleep summaries for \(formattedWakeDayRange(refreshedRange)).")
     }
 
     private func formattedWakeDayRange(_ range: ClosedRange<Date>) -> String {

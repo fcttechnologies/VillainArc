@@ -42,7 +42,7 @@ actor HealthExportCoordinator {
 
         if let existingWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: session.id) {
             await HealthWorkoutMirrorImporter.shared.importWorkout(existingWorkout, linkedSessionID: session.id)
-            print("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id)")
+            AppLog.info("Linked existing Apple Health workout \(existingWorkout.uuid) to local session \(session.id).")
             return
         }
 
@@ -59,7 +59,7 @@ actor HealthExportCoordinator {
             try await workoutBuilder.endCollection(at: endDate)
 
             guard let workout = try await workoutBuilder.finishWorkout() else {
-                print("HealthKit finished export for \(session.id), but the workout sample was unavailable.")
+                AppLog.error("HealthKit finished export for \(session.id), but the workout sample was unavailable.")
                 return
             }
 
@@ -67,13 +67,13 @@ actor HealthExportCoordinator {
                 do {
                     _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: workout, activity: nil)
                 } catch {
-                    print("Failed to relate workout effort score for \(session.id): \(error)")
+                    AppLog.error("Failed to relate workout effort score for \(session.id)", error: error)
                 }
             }
 
             await HealthWorkoutMirrorImporter.shared.importWorkout(workout, linkedSessionID: session.id)
-            print("Saved workout session \(session.id) to Apple Health as \(workout.uuid)")
-        } catch { print("Failed to export workout \(session.id) to HealthKit: \(error)") }
+            AppLog.info("Saved workout session \(session.id) to Apple Health as \(workout.uuid).")
+        } catch { AppLog.error("Failed to export workout \(session.id) to HealthKit", error: error) }
     }
 
     private func exportLoadedWeightEntry(_ weightEntry: WeightEntry, context: ModelContext) async {
@@ -83,8 +83,8 @@ actor HealthExportCoordinator {
             do {
                 try HealthWeightEntryLinker.upsertWeightEntry(for: existingSample, context: context)
                 try context.save()
-                print("Linked existing Apple Health body mass sample \(existingSample.uuid) to local weight entry \(weightEntry.id)")
-            } catch { print("Failed to link existing Apple Health body mass sample for \(weightEntry.id): \(error)") }
+                AppLog.info("Linked existing Apple Health body mass sample \(existingSample.uuid) to local weight entry \(weightEntry.id).")
+            } catch { AppLog.error("Failed to link existing Apple Health body mass sample for \(weightEntry.id)", error: error) }
             return
         }
 
@@ -96,8 +96,8 @@ actor HealthExportCoordinator {
             try await HealthAuthorizationManager.healthStore.save(sample)
             try HealthWeightEntryLinker.upsertWeightEntry(for: sample, context: context)
             try context.save()
-            print("Saved weight entry \(weightEntry.id) to Apple Health as \(sample.uuid)")
-        } catch { print("Failed to export weight entry \(weightEntry.id) to HealthKit: \(error)") }
+            AppLog.info("Saved weight entry \(weightEntry.id) to Apple Health as \(sample.uuid).")
+        } catch { AppLog.error("Failed to export weight entry \(weightEntry.id) to HealthKit", error: error) }
     }
 
     func reconcilePendingExports() async {

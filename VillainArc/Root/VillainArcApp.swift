@@ -5,8 +5,9 @@ import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        WeeklyHealthCoachingCoordinator.shared.registerBackgroundTask()
-        HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+        if HealthAuthorizationManager.isHealthDataAvailable {
+            HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+        }
         NotificationCoordinator.shared.installDelegate()
         return true
     }
@@ -42,5 +43,8 @@ struct VillainArcApp: App {
                 }
         }
         .modelContainer(SharedModelContainer.container)
+        .backgroundTask(.appRefresh(WeeklyHealthCoachingCoordinator.taskIdentifier)) {
+            await WeeklyHealthCoachingCoordinator.shared.performBackgroundRefresh()
+        }
     }
 }

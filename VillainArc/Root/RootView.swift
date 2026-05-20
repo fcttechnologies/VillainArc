@@ -28,10 +28,12 @@ struct RootView: View {
                 AppRouter.shared.handlePendingWidgetDestinationIfPossible()
                 AppRouter.shared.handlePendingNotificationDestinationIfPossible()
                 Task {
-                    HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
-                    await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
-                    await HealthStoreUpdateCoordinator.shared.syncNow()
-                    HealthMetricWidgetReloader.reloadAllHealthMetrics()
+                    if HealthAuthorizationManager.isHealthDataAvailable {
+                        HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+                        await HealthStoreUpdateCoordinator.shared.refreshBackgroundDeliveryRegistration()
+                        await HealthStoreUpdateCoordinator.shared.syncNow()
+                        HealthMetricWidgetReloader.reloadAllHealthMetrics()
+                    }
                     await NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()
                     await WeeklyHealthCoachingCoordinator.shared.refreshSchedule()
                 }

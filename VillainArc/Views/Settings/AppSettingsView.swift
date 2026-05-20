@@ -6,9 +6,14 @@ import UserNotifications
 struct AppSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @State private var path: [AppSettingsDestination]
+
+    init(initialDestination: AppSettingsDestination? = nil) {
+        _path = State(initialValue: initialDestination.map { [$0] } ?? [])
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if let settings = appSettings.first {
                     AppSettingsFormView(settings: settings)
@@ -20,6 +25,14 @@ struct AppSettingsView: View {
             .listSectionSpacing(20)
             .navigationTitle("Settings")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .navigationDestination(for: AppSettingsDestination.self) { destination in
+                if let settings = appSettings.first {
+                    settingsDestinationView(destination, settings: settings)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close", systemImage: "xmark", role: .close) {
@@ -29,6 +42,26 @@ struct AppSettingsView: View {
                     .fontWeight(.semibold)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func settingsDestinationView(_ destination: AppSettingsDestination, settings: AppSettings) -> some View {
+        switch destination {
+        case .workouts:
+            WorkoutPreferencesView()
+        case .appleHealth:
+            AppleHealthSettingsView(settings: settings)
+        case .notifications:
+            NotificationSettingsView(settings: settings)
+        case .units:
+            UnitSettingsView(settings: settings)
+        case .debug:
+            #if DEBUG
+            DebugSettingsView()
+            #else
+            EmptyView()
+            #endif
         }
     }
 }
@@ -44,9 +77,7 @@ private struct AppSettingsFormView: View {
     var body: some View {
         Form {
             Section {
-                NavigationLink {
-                    WorkoutPreferencesView()
-                } label: {
+                NavigationLink(value: AppSettingsDestination.workouts) {
                     Label("Workouts", systemImage: "figure.strengthtraining.traditional")
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsButton)
@@ -57,9 +88,7 @@ private struct AppSettingsFormView: View {
             }
 
             Section {
-                NavigationLink {
-                    AppleHealthSettingsView(settings: settings)
-                } label: {
+                NavigationLink(value: AppSettingsDestination.appleHealth) {
                     Label("Apple Health", systemImage: "heart.text.square")
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthLink)
@@ -70,26 +99,36 @@ private struct AppSettingsFormView: View {
             }
 
             Section {
-                NavigationLink {
-                    NotificationSettingsView(settings: settings)
-                } label: {
+                NavigationLink(value: AppSettingsDestination.notifications) {
                     Label("Notifications", systemImage: "bell.badge")
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsNotificationsLink)
                 .appGroupedListRow(position: .single)
             } footer: {
                 Text("Manage notification preferences for your health goals.")
             }
 
             Section {
-                NavigationLink {
-                    UnitSettingsView(settings: settings)
-                } label: {
+                NavigationLink(value: AppSettingsDestination.units) {
                     Label("Units", systemImage: "ruler")
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsUnitsLink)
                 .appGroupedListRow(position: .single)
             } footer: {
                 Text("Choose how weight, height, distance, and energy are displayed throughout the app.")
             }
+
+            #if DEBUG
+            Section {
+                NavigationLink(value: AppSettingsDestination.debug) {
+                    Label("Debug", systemImage: "ladybug")
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsDebugLink)
+                .appGroupedListRow(position: .single)
+            } footer: {
+                Text("Testing tools for local debug builds.")
+            }
+            #endif
 
             Section {
                 Picker("Theme", systemImage: "circle.lefthalf.filled", selection: $settings.appearanceMode) {
@@ -546,10 +585,109 @@ private struct NotificationSettingsView: View {
     }
 
     private func openAppSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
 }
+
+#if DEBUG
+private struct DebugSettingsView: View {
+    @State private var isWorking = false
+    @State private var statusMessage = "Ready"
+    @State private var showsResetConfirmation = false
+
+    private var healthStatusText: String {
+        #if targetEnvironment(simulator)
+        return "Unavailable on Simulator"
+        #else
+        return HealthAuthorizationManager.isHealthDataAvailable ? "Available" : "Unavailable"
+        #endif
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("HealthKit", value: healthStatusText)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.debugHealthKitStatusValue)
+                    .appGroupedListRow(position: .single)
+            } footer: {
+                Text("Simulator builds skip HealthKit observers, background delivery, and manual Health resync.")
+            }
+
+            Section {
+                Button("Delete All Data", systemImage: "trash", role: .destructive) {
+                    Haptics.selection()
+                    showsResetConfirmation = true
+                }
+                .disabled(isWorking)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugResetAppDataButton)
+                .appGroupedListRow(position: .top)
+
+                Button("Resync Exercise Catalog", systemImage: "arrow.triangle.2.circlepath") {
+                    runOperation("Exercise catalog resynced.") {
+                        try await DebugOperations.resyncExerciseCatalog()
+                    }
+                }
+                .disabled(isWorking)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugResyncExerciseCatalogButton)
+                .appGroupedListRow(position: .middle)
+
+                Button("Resync Health Data", systemImage: "heart.text.square") {
+                    runOperation("Health resync finished.") {
+                        await DebugOperations.resyncHealthData()
+                    }
+                }
+                .disabled(isWorking || !HealthAuthorizationManager.isHealthDataAvailable)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugResyncHealthDataButton)
+                .appGroupedListRow(position: .middle)
+
+                Button("Reindex Spotlight", systemImage: "magnifyingglass") {
+                    runOperation("Spotlight reindex queued.") {
+                        DebugOperations.reindexSpotlight()
+                    }
+                }
+                .disabled(isWorking)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugReindexSpotlightButton)
+                .appGroupedListRow(position: .bottom)
+            } footer: {
+                Text(statusMessage)
+            }
+        }
+        .navigationTitle("Debug")
+        .toolbarTitleDisplayMode(.inline)
+        .scrollContentBackground(.hidden)
+        .sheetBackground()
+        .alert("Delete All Data?", isPresented: $showsResetConfirmation) {
+            Button("Delete All Data", role: .destructive) {
+                runOperation("App data reset.") {
+                    try await DebugOperations.resetAppData()
+                }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.debugResetAppDataConfirmButton)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This clears local app data and recreates the minimum records needed for testing.")
+        }
+    }
+
+    private func runOperation(_ successMessage: String, operation: @escaping () async throws -> Void) {
+        guard !isWorking else { return }
+        isWorking = true
+        statusMessage = "Working..."
+
+        Task {
+            do {
+                try await operation()
+                statusMessage = successMessage
+            } catch {
+                statusMessage = "Failed: \(error.localizedDescription)"
+                AppLog.error("Debug operation failed", error: error)
+            }
+            isWorking = false
+        }
+    }
+}
+#endif
 
 private struct UnitSettingsView: View {
     @Environment(\.modelContext) private var context

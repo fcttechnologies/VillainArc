@@ -12,6 +12,16 @@ enum HomeQuickAction: String {
     }
 }
 
+enum AppSettingsDestination: String, Hashable, Identifiable {
+    case workouts
+    case appleHealth
+    case notifications
+    case units
+    case debug
+
+    var id: String { rawValue }
+}
+
 @Observable final class AppRouter {
     private static let selectedTabDefaultsKey = "selected_tab"
 
@@ -45,11 +55,21 @@ enum HomeQuickAction: String {
         var id: String { rawValue }
     }
 
-    enum AppSheet: String, Identifiable {
+    enum AppSheet: Identifiable {
         case profile
         case settings
+        case profileSettings(AppSettingsDestination?)
 
-        var id: String { rawValue }
+        var id: String {
+            switch self {
+            case .profile:
+                return "profile"
+            case .settings:
+                return "settings"
+            case let .profileSettings(destination):
+                return "profileSettings.\(destination?.rawValue ?? "root")"
+            }
+        }
     }
 
     enum AdditionalQuickActionContext: Hashable {
@@ -267,6 +287,7 @@ enum HomeQuickAction: String {
 
     func handleIncomingURL(_ url: URL) {
         guard let destination = destination(for: url) else { return }
+        AppLog.info("Widget URL routed to \(destination).")
         pendingWidgetDestination = destination
         handlePendingWidgetDestinationIfPossible()
     }
@@ -281,6 +302,7 @@ enum HomeQuickAction: String {
     }
 
     func handleNotificationDestination(_ destination: Destination) {
+        AppLog.info("Notification routed to \(destination).")
         pendingNotificationDestination = destination
         handlePendingNotificationDestinationIfPossible()
     }
@@ -320,6 +342,7 @@ enum HomeQuickAction: String {
         saveContext(context: context)
         if activeWorkoutSession?.id == workoutSession.id { activeWorkoutSession = nil }
         WorkoutActivityManager.end()
+        AppLog.info("Workout session canceled: \(workoutSession.id).")
     }
     func navigate(to destination: Destination) {
         popToRoot(tab: tab(for: destination))
@@ -347,6 +370,18 @@ enum HomeQuickAction: String {
     func presentAppSheet(_ sheet: AppSheet) {
         Haptics.selection()
         activeAppSheet = sheet
+    }
+
+    func presentNotificationSettingsFromSystem() {
+        AppLog.info("System notification settings request routed to in-app settings.")
+        collapseActiveFlowPresentations()
+        activeAppSheet = .profileSettings(.notifications)
+    }
+
+    func presentSettingsFromSystem(_ destination: AppSettingsDestination? = nil) {
+        AppLog.info("Settings intent routed to \(destination?.rawValue ?? "root").")
+        collapseActiveFlowPresentations()
+        activeAppSheet = .profileSettings(destination)
     }
 
     func presentSplitSheet(_ sheet: SplitSheet) {
@@ -447,6 +482,7 @@ enum HomeQuickAction: String {
     }
 
     func receiveHomeQuickAction(_ action: HomeQuickAction) {
+        AppLog.info("Home screen quick action received: \(action.rawValue).")
         pendingHomeQuickAction = action
         handlePendingHomeQuickActionIfPossible()
     }
@@ -458,16 +494,19 @@ enum HomeQuickAction: String {
         switch action {
         case .addWeightEntry:
             pendingHomeQuickAction = nil
+            AppLog.info("Home screen quick action handled: add weight entry.")
             collapseActiveFlowPresentations()
             presentHealthSheet(.addWeightEntry)
 
         case .startTodaysWorkout:
             if hasActiveFlow() {
                 pendingHomeQuickAction = nil
+                AppLog.info("Home screen quick action blocked: active flow already visible.")
                 handleBlockedHomeQuickAction()
                 return
             }
             pendingHomeQuickAction = nil
+            AppLog.info("Home screen quick action handled: start today's workout.")
             _ = handleStartTodaysWorkoutQuickAction()
         }
     }
@@ -599,6 +638,7 @@ enum HomeQuickAction: String {
         saveContext(context: context)
         activeWorkoutSession = newWorkout
         startWorkoutRuntime(for: newWorkout)
+        AppLog.info("Workout session started: \(newWorkout.id).")
     }
     func createWorkoutPlan() {
         guard !hasActiveFlow() else {
@@ -611,6 +651,7 @@ enum HomeQuickAction: String {
         saveContext(context: context)
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
+        AppLog.info("Workout plan creation started: \(newWorkoutPlan.id).")
     }
 
     func createWorkoutPlan(from workout: WorkoutSession) {
@@ -626,6 +667,7 @@ enum HomeQuickAction: String {
         saveContext(context: context)
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
+        AppLog.info("Workout plan creation started from workout: \(workout.id).")
     }
 
     @discardableResult
@@ -662,6 +704,7 @@ enum HomeQuickAction: String {
         saveContext(context: context)
         activeWorkoutPlanOriginal = plan
         activeWorkoutPlan = editingCopy
+        AppLog.info("Workout plan edit started: \(plan.id).")
     }
 
     func startWorkoutSession(from plan: WorkoutPlan) {
@@ -684,6 +727,7 @@ enum HomeQuickAction: String {
         if workoutSession.statusValue == .active {
             startWorkoutRuntime(for: workoutSession)
         }
+        AppLog.info("Workout session started from plan: \(plan.id), session: \(workoutSession.id), pendingSuggestions=\(hasDeferredSuggestions).")
     }
 
     func isTodaysActiveSplitPlan(_ plan: WorkoutPlan) -> Bool {
@@ -697,11 +741,13 @@ enum HomeQuickAction: String {
         Haptics.selection()
         activeWorkoutSession = workoutSession
         restoreWorkoutRuntime(for: workoutSession)
+        AppLog.info("Workout session resumed: \(workoutSession.id).")
     }
     func resumeWorkoutPlanCreation(_ workoutPlan: WorkoutPlan) {
         Haptics.selection()
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = workoutPlan
+        AppLog.info("Workout plan creation resumed: \(workoutPlan.id).")
     }
     func checkForUnfinishedData() {
         guard !hasPresentedFlow else { return }
@@ -715,12 +761,14 @@ enum HomeQuickAction: String {
     func handleSiriWorkout(_ userActivity: NSUserActivity) {
         guard isReadyForIntentActions() else { return }
         guard !hasActiveFlow() else { return }
+        AppLog.info("Siri activity routed: start workout.")
         startWorkoutSession()
     }
 
     func handleSiriCancelWorkout(_ userActivity: NSUserActivity) {
         guard isReadyForIntentActions() else { return }
         guard let workoutSession = incompleteWorkoutSession() else { return }
+        AppLog.info("Siri activity routed: cancel workout.")
 
         switch workoutSession.statusValue {
         case .pending: cancelWorkoutSession(workoutSession)
@@ -740,6 +788,7 @@ enum HomeQuickAction: String {
         guard let workoutSession = incompleteWorkoutSession() else { return }
         guard workoutSession.statusValue == .active else { return }
         guard !(workoutSession.exercises?.isEmpty ?? true) else { return }
+        AppLog.info("Siri activity routed: end workout.")
         presentFinishWorkoutFlow(for: workoutSession)
     }
 
@@ -765,6 +814,7 @@ enum HomeQuickAction: String {
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
             if let workoutSession = try? context.fetch(descriptor).first {
+                AppLog.info("Spotlight routed to workout session detail.")
                 navigate(to: .workoutSessionDetail(workoutSession))
             }
             return
@@ -777,6 +827,7 @@ enum HomeQuickAction: String {
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
             if let workoutPlan = try? context.fetch(descriptor).first {
+                AppLog.info("Spotlight routed to workout plan detail.")
                 navigate(to: .workoutPlanDetail(workoutPlan, false))
             }
             return
@@ -785,6 +836,7 @@ enum HomeQuickAction: String {
         if identifier.hasPrefix(SpotlightIndexer.exerciseIdentifierPrefix) {
             let catalogID = String(identifier.dropFirst(SpotlightIndexer.exerciseIdentifierPrefix.count))
             guard (try? context.fetch(Exercise.withCatalogID(catalogID)).first) != nil else { return }
+            AppLog.info("Spotlight routed to exercise detail.")
             navigate(to: .exerciseDetail(catalogID))
             return
         }
@@ -796,6 +848,7 @@ enum HomeQuickAction: String {
             var descriptor = FetchDescriptor(predicate: predicate)
             descriptor.fetchLimit = 1
             if let workoutSplit = try? context.fetch(descriptor).first {
+                AppLog.info("Spotlight routed to workout split detail.")
                 navigate(to: .workoutSplitDetail(workoutSplit))
             }
         }

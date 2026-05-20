@@ -48,7 +48,13 @@ nonisolated enum HealthAuthorizationManager {
 
     static let healthStore = HKHealthStore()
 
-    static var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
+    static var isHealthDataAvailable: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        return HKHealthStore.isHealthDataAvailable()
+        #endif
+    }
     static var currentPermissionsVersion: String { HealthKitCatalog.permissionsCatalogVersion }
     static var lastHandledPermissionsVersion: String? { SharedModelContainer.sharedDefaults.string(forKey: lastHandledPermissionsVersionKey) }
 

@@ -186,6 +186,7 @@
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
 				Data/Protocols/RestTimeEditable.swift,
 				Data/Services/AI/Shared/FoundationModelPrewarmer.swift,
+				Data/Services/App/AppLog.swift,
 				Data/Services/App/AppRouter.swift,
 				Data/Services/App/DataManager.swift,
 				Data/Services/App/NotificationCoordinator.swift,

@@ -66,7 +66,7 @@ actor HealthSyncCoordinator {
                 }
                 logWorkoutSyncIfNeeded(result: result)
             } catch {
-                print("Failed to sync Health workouts: \(error)")
+                AppLog.error("Failed to sync Health workouts", error: error)
             }
 
             isSyncingWorkouts = false
@@ -117,7 +117,7 @@ actor HealthSyncCoordinator {
                 }
                 logWeightSyncIfNeeded(result: result)
             } catch {
-                print("Failed to sync Health weight entries: \(error)")
+                AppLog.error("Failed to sync Health weight entries", error: error)
             }
 
             isSyncingWeightEntries = false
@@ -147,17 +147,17 @@ actor HealthSyncCoordinator {
             guard unavailableWorkouts.isEmpty == false || unavailableWeightEntries.isEmpty == false || unavailableSleepNights.isEmpty == false else { return }
 
             try context.save()
-        } catch { print("Failed to apply removed Apple Health data retention setting: \(error)") }
+        } catch { AppLog.error("Failed to apply removed Apple Health data retention setting", error: error) }
     }
 
     private func logWorkoutSyncIfNeeded(result: HKAnchoredObjectQueryDescriptor<HKWorkout>.Result) {
         guard !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty else { return }
-        print("Processed Apple Health workout changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
+        AppLog.info("Processed Apple Health workout changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
     }
 
     private func logWeightSyncIfNeeded(result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result) {
         guard !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty else { return }
-        print("Processed Apple Health weight changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
+        AppLog.info("Processed Apple Health weight changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
     }
 
     private func shouldAdvanceWorkoutAnchor(

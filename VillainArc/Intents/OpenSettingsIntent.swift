@@ -10,8 +10,7 @@ struct OpenSettingsIntent: AppIntent {
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.presentAppSheet(.settings)
+        AppRouter.shared.presentSettingsFromSystem()
         return .result(opensIntent: OpenAppIntent())
     }
 }

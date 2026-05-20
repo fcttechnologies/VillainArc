@@ -304,7 +304,7 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         do {
             let didChange = try await DataManager.seedExercisesIfNeeded()
             if didChange { SpotlightIndexer.reindexAll(context: context) }
-        } catch { print("Returning-launch exercise sync failed: \(error)") }
+        } catch { AppLog.error("Returning-launch exercise sync failed", error: error) }
     }
 
     private func routeFromProfile(_ profile: UserProfile) {
@@ -426,7 +426,7 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
                 restTimeHistories: try context.fetchCount(FetchDescriptor<RestTimeHistory>())
             )
         } catch {
-            print("Unable to inspect bootstrap sync progress: \(error)")
+            AppLog.error("Unable to inspect bootstrap sync progress", error: error)
             return nil
         }
     }

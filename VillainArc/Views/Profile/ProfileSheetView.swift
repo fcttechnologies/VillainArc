@@ -82,7 +82,11 @@ struct ProfileSheetView: View {
     @Query(TrainingGoal.active) private var activeTrainingGoals: [TrainingGoal]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
+    private let initialSettingsDestination: AppSettingsDestination?
+
     @State private var showAppSettings = false
+    @State private var settingsDestination: AppSettingsDestination?
+    @State private var didApplyInitialSettingsDestination = false
     @State private var showBirthdayEditor = false
     @State private var showGenderEditor = false
     @State private var showHeightEditor = false
@@ -101,6 +105,10 @@ struct ProfileSheetView: View {
     private var heightUnit: HeightUnit { appSettings.first?.heightUnit ?? .imperial }
     private let defaultProfileName = String(localized: "Your Name")
 
+    init(initialSettingsDestination: AppSettingsDestination? = nil) {
+        self.initialSettingsDestination = initialSettingsDestination
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -116,7 +124,7 @@ struct ProfileSheetView: View {
             }
             .scrollIndicators(.hidden)
             .sheet(isPresented: $showAppSettings) {
-                AppSettingsView()
+                AppSettingsView(initialDestination: settingsDestination)
                     .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showBirthdayEditor) {
@@ -220,6 +228,7 @@ struct ProfileSheetView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Settings", systemImage: "gearshape") {
                         Haptics.selection()
+                        settingsDestination = nil
                         showAppSettings = true
                         Task { await IntentDonations.donateOpenSettings() }
                     }
@@ -230,6 +239,7 @@ struct ProfileSheetView: View {
             }
             .onAppear {
                 syncEditableName()
+                presentInitialSettingsDestinationIfNeeded()
             }
             .onChange(of: profile?.persistentModelID) { _, _ in
                 syncEditableName()
@@ -253,6 +263,14 @@ struct ProfileSheetView: View {
                 commitNameIfNeeded()
             }
         }
+    }
+
+    private func presentInitialSettingsDestinationIfNeeded() {
+        guard !didApplyInitialSettingsDestination else { return }
+        didApplyInitialSettingsDestination = true
+        guard let initialSettingsDestination else { return }
+        settingsDestination = initialSettingsDestination
+        showAppSettings = true
     }
 
     private var profileSummary: some View {

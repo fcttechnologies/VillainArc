@@ -63,6 +63,9 @@ struct ContentView: View {
             case .settings:
                 AppSettingsView()
                     .presentationBackground(Color.sheetBg)
+            case let .profileSettings(destination):
+                ProfileSheetView(initialSettingsDestination: destination)
+                    .presentationBackground(Color.sheetBg)
             }
         }
         .sheet(isPresented: addWeightEntrySheetBinding) {

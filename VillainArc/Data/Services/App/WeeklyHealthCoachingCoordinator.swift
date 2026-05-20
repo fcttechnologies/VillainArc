@@ -16,43 +16,16 @@ actor WeeklyHealthCoachingCoordinator {
 
     private init() {}
 
-    @discardableResult
-    nonisolated func registerBackgroundTask() -> Bool {
-        let didRegister = BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.taskIdentifier, using: nil) { task in
-            print("Weekly health coaching background task launched: \(Self.taskIdentifier)")
-            guard let appRefreshTask = task as? BGAppRefreshTask else {
-                print("Weekly health coaching background task had unexpected type: \(type(of: task))")
-                task.setTaskCompleted(success: false)
-                return
-            }
-
-            self.handleAppRefresh(task: appRefreshTask)
-        }
-        print("Weekly health coaching background task registration \(didRegister ? "succeeded" : "failed"): \(Self.taskIdentifier)")
-        return didRegister
-    }
-
-    nonisolated private func handleAppRefresh(task: BGAppRefreshTask) {
-        nonisolated(unsafe) let backgroundTask = task
-        let worker = Task {
-            await refreshSchedule()
-            guard !Task.isCancelled else { return }
-            await evaluateAndDeliverWeeklyDigestIfNeeded()
-            guard !Task.isCancelled else { return }
-            print("Weekly health coaching background task completed successfully.")
-            backgroundTask.setTaskCompleted(success: true)
-        }
-
-        backgroundTask.expirationHandler = {
-            print("Weekly health coaching background task expired before completion.")
-            worker.cancel()
-            backgroundTask.setTaskCompleted(success: false)
-        }
+    func performBackgroundRefresh() async {
+        AppLog.info("Weekly health coaching background refresh started.")
+        await refreshSchedule()
+        guard !Task.isCancelled else { return }
+        await evaluateAndDeliverWeeklyDigestIfNeeded()
+        AppLog.info("Weekly health coaching background refresh completed.")
     }
 
     func refreshSchedule() async {
         guard await shouldScheduleWeeklyCoachingRefresh() else {
-            print("Weekly health coaching refresh not scheduled; prerequisites are not currently met.")
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.taskIdentifier)
             return
         }
@@ -63,9 +36,9 @@ actor WeeklyHealthCoachingCoordinator {
         do {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.taskIdentifier)
             try BGTaskScheduler.shared.submit(request)
-            print("Scheduled weekly health coaching refresh for \(request.earliestBeginDate?.formatted(date: .abbreviated, time: .standard) ?? "the next system opportunity").")
+            AppLog.info("Scheduled weekly health coaching refresh for \(request.earliestBeginDate?.formatted(date: .abbreviated, time: .standard) ?? "the next system opportunity").")
         } catch {
-            print("Failed to schedule weekly health coaching refresh: \(error)")
+            AppLog.error("Failed to schedule weekly health coaching refresh", error: error)
         }
     }
 
@@ -81,7 +54,7 @@ actor WeeklyHealthCoachingCoordinator {
         return settings.stepsNotificationMode == .coaching || settings.sleepNotificationMode == .coaching
     }
 
-    private func evaluateAndDeliverWeeklyDigestIfNeeded() async {
+    func evaluateAndDeliverWeeklyDigestIfNeeded() async {
         let context = makeBackgroundContext()
         guard SetupGuard.isReady(context: context) else { return }
         guard let settings = try? context.fetch(AppSettings.single).first else { return }

@@ -32,6 +32,9 @@ import SwiftData
     }
 
     func ensureRunning(for workout: WorkoutSession) async {
+        #if DEBUG
+        return
+        #endif
         guard workout.statusValue == .active else { return }
         guard HealthAuthorizationManager.canWriteWorkouts else { return }
 
@@ -54,7 +57,7 @@ import SwiftData
             try await builder.addMetadata(HealthAuthorizationManager.metadata(for: workout))
         } catch {
             clearLiveWorkoutState()
-            print("Failed to start live Health workout session for \(workout.id): \(error)")
+            AppLog.error("Failed to start live Health workout session for \(workout.id)", error: error)
         }
     }
 

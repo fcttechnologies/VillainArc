@@ -78,10 +78,10 @@ final class CloudKitImportMonitor {
         }
 
         if let error = event.error {
-            print("⚠️ CloudKit import completed with error: \(error)")
+            AppLog.error("CloudKit import completed with error", error: error)
             finish(with: .failed(error.localizedDescription))
         } else {
-            print("✅ CloudKit import complete - safe to seed exercises")
+            AppLog.info("CloudKit import complete; safe to seed exercises.")
             finish(with: .completed)
         }
     }

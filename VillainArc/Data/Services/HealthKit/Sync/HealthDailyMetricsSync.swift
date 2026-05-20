@@ -145,7 +145,7 @@ actor HealthDailyMetricsSync {
             }
             logMetricSyncIfNeeded(named: "steps", refreshedRange: result.refreshedRange)
         } catch {
-            print("Failed to sync Health steps: \(error)")
+            AppLog.error("Failed to sync Health steps", error: error)
         }
     }
 
@@ -165,7 +165,7 @@ actor HealthDailyMetricsSync {
             }
             logMetricSyncIfNeeded(named: "walking/running distance", refreshedRange: result.refreshedRange)
         } catch {
-            print("Failed to sync Health walking/running distance: \(error)")
+            AppLog.error("Failed to sync Health walking/running distance", error: error)
         }
     }
 
@@ -185,7 +185,7 @@ actor HealthDailyMetricsSync {
             }
             logMetricSyncIfNeeded(named: "active energy", refreshedRange: result.refreshedRange)
         } catch {
-            print("Failed to sync Health active energy: \(error)")
+            AppLog.error("Failed to sync Health active energy", error: error)
         }
     }
 
@@ -205,7 +205,7 @@ actor HealthDailyMetricsSync {
             }
             logMetricSyncIfNeeded(named: "resting energy", refreshedRange: result.refreshedRange)
         } catch {
-            print("Failed to sync Health resting energy: \(error)")
+            AppLog.error("Failed to sync Health resting energy", error: error)
         }
     }
 
@@ -296,7 +296,7 @@ actor HealthDailyMetricsSync {
 
     private func logMetricSyncIfNeeded(named metricName: String, refreshedRange: ClosedRange<Date>?) {
         guard let refreshedRange else { return }
-        print("Synced Apple Health \(metricName) for \(formattedDayRange(refreshedRange)).")
+        AppLog.info("Synced Apple Health \(metricName) for \(formattedDayRange(refreshedRange)).")
     }
 
     private func formattedDayRange(_ dayRange: ClosedRange<Date>) -> String {

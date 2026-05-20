@@ -29,7 +29,7 @@ final class DataManager {
         let didChange = try syncExercises(context: context)
         if didChange {
             try context.save()
-            print("Exercises synced.")
+            AppLog.info("Exercises synced.")
         }
         SharedModelContainer.sharedDefaults.set(ExerciseCatalog.catalogVersion, forKey: exerciseCatalogVersionKey)
         return didChange
@@ -73,7 +73,7 @@ func saveContext(context: ModelContext) {
     do {
         try context.save()
     } catch {
-        print("Failed to save context: \(error)")
+        AppLog.error("Failed to save context", error: error)
     }
 }
 

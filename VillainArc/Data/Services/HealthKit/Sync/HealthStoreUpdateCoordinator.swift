@@ -51,7 +51,7 @@ final class HealthStoreUpdateCoordinator {
         ].compactMap(\.self)
 
         guard !initializedObservers.isEmpty else { return }
-        print("Registered Health observer queries: \(initializedObservers.joined(separator: ", ")).")
+        AppLog.info("Registered Health observer queries: \(initializedObservers.joined(separator: ", ")).")
     }
 
     @discardableResult
@@ -67,7 +67,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health workout observer failed: \(error.localizedDescription)")
+            AppLog.error("Health workout observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -99,7 +99,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health weight observer failed: \(error.localizedDescription)")
+            AppLog.error("Health weight observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -131,7 +131,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health step observer failed: \(error.localizedDescription)")
+            AppLog.error("Health step observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -163,7 +163,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health walking/running distance observer failed: \(error.localizedDescription)")
+            AppLog.error("Health walking/running distance observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -195,7 +195,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health active energy observer failed: \(error.localizedDescription)")
+            AppLog.error("Health active energy observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -227,7 +227,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health resting energy observer failed: \(error.localizedDescription)")
+            AppLog.error("Health resting energy observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -259,7 +259,7 @@ final class HealthStoreUpdateCoordinator {
                 return
             }
 
-            print("Health sleep observer failed: \(error.localizedDescription)")
+            AppLog.error("Health sleep observer failed: \(error.localizedDescription)")
 
             nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
@@ -325,43 +325,43 @@ final class HealthStoreUpdateCoordinator {
         if HealthAuthorizationManager.hasRequestedWorkoutAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.workoutType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for workouts: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for workouts", error: error) }
         }
 
         if HealthAuthorizationManager.hasRequestedBodyMassAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.bodyMassType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for body mass: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for body mass", error: error) }
         }
 
         if HealthAuthorizationManager.hasRequestedStepCountAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.stepCountType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for steps: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for steps", error: error) }
         }
 
         if HealthAuthorizationManager.hasRequestedWalkingRunningDistanceAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.walkingRunningDistanceType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for walking/running distance: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for walking/running distance", error: error) }
         }
 
         if HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.activeEnergyBurnedType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for active energy: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for active energy", error: error) }
         }
 
         if HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.restingEnergyBurnedType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for resting energy: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for resting energy", error: error) }
         }
 
         if HealthAuthorizationManager.hasRequestedSleepAnalysisAuthorization {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.sleepAnalysisType, frequency: .immediate)
-            } catch { print("Failed to enable HealthKit background delivery for sleep analysis: \(error)") }
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for sleep analysis", error: error) }
         }
     }
 

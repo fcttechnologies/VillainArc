@@ -537,6 +537,7 @@ struct WorkoutView: View {
         case .finished:
             workout.convertSetWeightsToKg(from: weightUnit)
             saveContext(context: context)
+            AppLog.info("Workout finished: \(workout.id), action=\(action).")
             endWorkoutSession(shouldDismiss: false, endLiveActivity: false)
             WorkoutActivityManager.update(for: workout)
             Task {
@@ -548,6 +549,7 @@ struct WorkoutView: View {
         case .workoutDeleted:
             saveContext(context: context)
             HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workout)
+            AppLog.info("Workout finish deleted empty session: \(workout.id), action=\(action).")
             endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
         }
     }
@@ -558,6 +560,7 @@ struct WorkoutView: View {
         context.delete(workout)
         saveContext(context: context)
         Task { await IntentDonations.donateCancelWorkout() }
+        AppLog.info("Workout deleted from active flow: \(workout.id).")
         endWorkoutSession(shouldDismiss: true, endLiveActivity: true)
     }
 

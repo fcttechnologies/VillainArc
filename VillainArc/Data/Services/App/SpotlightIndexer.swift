@@ -69,12 +69,11 @@ enum SpotlightIndexer {
             + workoutSplits.map(makeSearchableItem(for:))
 
         guard !allItems.isEmpty else {
-            print("ℹ️ Spotlight rebuild skipped indexing (no items found)")
             return
         }
 
         CSSearchableIndex.default().indexSearchableItems(allItems, completionHandler: nil)
-        print("✅ Spotlight rebuild queued: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises, \(workoutSplits.count) splits")
+        AppLog.info("Spotlight rebuild queued: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises, \(workoutSplits.count) splits.")
     }
 
     static func deleteWorkoutSession(id: UUID) {

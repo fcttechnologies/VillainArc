@@ -41,7 +41,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     nonisolated static func requestAuthorizationIfNeededAfterOnboarding() async {
         let status = await authorizationStatus()
         guard status == .notDetermined else { return }
-        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .providesAppNotificationSettings])
     }
 
     nonisolated static func scheduleRestTimer(endDate: Date) async {
@@ -77,7 +77,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         do {
             try await center.add(request)
         } catch {
-            print("Failed to schedule rest timer notification: \(error)")
+            AppLog.error("Failed to schedule rest timer notification", error: error)
         }
     }
 
@@ -117,7 +117,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         do {
             try await center.add(request)
         } catch {
-            print("Failed to schedule steps event notification: \(error)")
+            AppLog.error("Failed to schedule steps event notification", error: error)
         }
     }
 
@@ -147,7 +147,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         do {
             try await center.add(request)
         } catch {
-            print("Failed to schedule sleep goal notification: \(error)")
+            AppLog.error("Failed to schedule sleep goal notification", error: error)
         }
     }
 
@@ -178,7 +178,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             try await center.add(request)
             return true
         } catch {
-            print("Failed to schedule weekly health coaching notification: \(error)")
+            AppLog.error("Failed to schedule weekly health coaching notification", error: error)
             return false
         }
     }
@@ -218,6 +218,12 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
 
         await MainActor.run {
             AppRouter.shared.handleNotificationDestination(destination)
+        }
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
+        Task { @MainActor in
+            AppRouter.shared.presentNotificationSettingsFromSystem()
         }
     }
 

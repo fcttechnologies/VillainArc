@@ -299,16 +299,19 @@ func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     }
     hydratePendingSessionCopy(for: group.event, context: context)
     saveContext(context: context)
+    AppLog.info("Suggestion group accepted. changes=\(group.changes.count)")
 }
 
 func rejectGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .rejected
     saveContext(context: context)
+    AppLog.info("Suggestion group rejected. changes=\(group.changes.count)")
 }
 
 func deferGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .deferred
     saveContext(context: context)
+    AppLog.info("Suggestion group deferred. changes=\(group.changes.count)")
 }
 
 private func hydratePendingSessionCopy(for event: SuggestionEvent, context: ModelContext) {
