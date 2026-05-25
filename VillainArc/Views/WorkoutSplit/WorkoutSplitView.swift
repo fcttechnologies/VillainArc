@@ -23,6 +23,7 @@ struct WorkoutSplitView: View {
     @State private var swapSecondDay: WorkoutSplitDay?
     
     private let autoPresentBuilder: Bool
+    @State private var hasAutoPresentedBuilder = false
     @ScaledMetric(relativeTo: .caption) private var capsuleFontSize: CGFloat = 14
     
     private var isOverride: Bool { overrideSplit != nil }
@@ -111,7 +112,8 @@ struct WorkoutSplitView: View {
             if selectedSplitDay == nil, let split = currentSplit {
                 selectedSplitDay = resolvedCurrentDay(for: split)
             }
-                if autoPresentBuilder && allSplits.isEmpty {
+                if autoPresentBuilder && allSplits.isEmpty && !hasAutoPresentedBuilder {
+                hasAutoPresentedBuilder = true
                 router.presentSplitSheet(.builder)
             }
             refreshRotationIfNeeded()

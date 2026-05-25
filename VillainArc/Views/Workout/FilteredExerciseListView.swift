@@ -7,7 +7,8 @@ struct FilteredExerciseListView: View {
     @Binding var selectedExercises: [Exercise]
     @Binding var selectedExerciseIDs: Set<String>
     @State private var progressionStepExercise: Exercise?
-    
+    @State private var infoExercise: Exercise?
+
     let searchText: String
     let muscleFilters: Set<Muscle>
     let favoritesOnly: Bool
@@ -15,8 +16,9 @@ struct FilteredExerciseListView: View {
     let sortOption: ExerciseSortOption
     let singleSelection: Bool
     let excludedCatalogIDs: Set<String>
+    let onToggle: ((Exercise, Bool) -> Void)?
 
-    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = []) {
+    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = [], onToggle: ((Exercise, Bool) -> Void)? = nil) {
         _selectedExercises = selectedExercises
         _selectedExerciseIDs = selectedExerciseIDs
         self.searchText = searchText
@@ -26,6 +28,7 @@ struct FilteredExerciseListView: View {
         self.sortOption = sortOption
         self.singleSelection = singleSelection
         self.excludedCatalogIDs = excludedCatalogIDs
+        self.onToggle = onToggle
         
         let predicate: Predicate<Exercise>?
         if selectedOnly {
@@ -56,7 +59,7 @@ struct FilteredExerciseListView: View {
             let matchesFavorites = !needsFavoriteFilter || exercise.favorite
             let matchesMuscleFilter = !needsMuscleFilter ||
                 exercise.musclesTargeted.contains(where: { muscleFilters.contains($0) })
-            
+
             return matchesFavorites && matchesMuscleFilter
         } : sourceExercises
 
@@ -70,53 +73,8 @@ struct FilteredExerciseListView: View {
 
         return List {
             ForEach(Array(visibleExercises.enumerated()), id: \.element.catalogID) { index, exercise in
-                if selectedExerciseIDs.contains(exercise.catalogID) {
-                    Button {
-                        Haptics.selection()
-                        selectedExercises.removeAll { $0 == exercise }
-                        selectedExerciseIDs.remove(exercise.catalogID)
-                    } label: {
-                        exerciseRow(for: exercise)
-                    }
-                    .tint(.primary)
-                    .appGroupedListRow(position: rowPosition(for: index, count: visibleExercises.count), fillColor: Color.blue.opacity(0.45))
-                    .swipeActions(edge: .leading) {
-                        favoriteAction(for: exercise)
-                    }
-                    .contextMenu {
-                        progressionStepAction(for: exercise)
-                        favoriteAction(for: exercise)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
-                    .accessibilityLabel(exercise.name)
-                    .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: true))
-                    .accessibilityHint(AccessibilityText.exerciseSelectionRemoveHint)
-                } else {
-                    Button {
-                        Haptics.selection()
-                        if singleSelection {
-                            selectedExercises.removeAll()
-                            selectedExerciseIDs.removeAll()
-                        }
-                        selectedExercises.append(exercise)
-                        selectedExerciseIDs.insert(exercise.catalogID)
-                    } label: {
-                        exerciseRow(for: exercise)
-                    }
-                    .tint(.primary)
-                    .appGroupedListRow(position: rowPosition(for: index, count: visibleExercises.count))
-                    .swipeActions(edge: .leading) {
-                        favoriteAction(for: exercise)
-                    }
-                    .contextMenu {
-                        progressionStepAction(for: exercise)
-                        favoriteAction(for: exercise)
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
-                    .accessibilityLabel(exercise.name)
-                    .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: false))
-                    .accessibilityHint(AccessibilityText.exerciseSelectionAddHint)
-                }
+                let isSelected = selectedExerciseIDs.contains(exercise.catalogID)
+                exerciseListRow(exercise: exercise, isSelected: isSelected, index: index, count: visibleExercises.count)
             }
         }
         .scrollDismissesKeyboard(.immediately)
@@ -124,6 +82,26 @@ struct FilteredExerciseListView: View {
         .sheet(item: $progressionStepExercise) { progressionStepExercise in
             ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
                 .presentationBackground(Color.sheetBg)
+        }
+        .sheet(item: $infoExercise) { exercise in
+            ExerciseInfoView(
+                catalogID: exercise.catalogID,
+                isSelected: selectedExerciseIDs.contains(exercise.catalogID),
+                onToggleSelect: {
+                    if selectedExerciseIDs.contains(exercise.catalogID) {
+                        selectedExercises.removeAll { $0 == exercise }
+                        selectedExerciseIDs.remove(exercise.catalogID)
+                    } else {
+                        if singleSelection {
+                            selectedExercises.removeAll()
+                            selectedExerciseIDs.removeAll()
+                        }
+                        selectedExercises.append(exercise)
+                        selectedExerciseIDs.insert(exercise.catalogID)
+                    }
+                }
+            )
+            .presentationBackground(Color.sheetBg)
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseList)
         .overlay {
@@ -134,30 +112,82 @@ struct FilteredExerciseListView: View {
     }
     
     @ViewBuilder
-    private func exerciseRow(for exercise: Exercise) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack {
-                    Text(exercise.name)
-                    Spacer()
-                    if exercise.favorite {
-                        Image(systemName: "star.fill")
-                            .foregroundStyle(.yellow)
-                            .accessibilityHidden(true)
-                    }
-                }
-                .font(.headline)
-                HStack {
-                    Text(exercise.equipmentType.displayName)
-                    Spacer()
-                    Text(exercise.displayMuscle)
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fontWeight(.semibold)
+    private func exerciseListRow(exercise: Exercise, isSelected: Bool, index: Int, count: Int) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                Haptics.selection()
+                infoExercise = exercise
+            } label: {
+                exerciseRowContent(for: exercise)
             }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+
+            Spacer()
+
+            Button {
+                Haptics.selection()
+                if isSelected {
+                    selectedExercises.removeAll { $0 == exercise }
+                    selectedExerciseIDs.remove(exercise.catalogID)
+                    onToggle?(exercise, false)
+                } else {
+                    if singleSelection {
+                        selectedExercises.removeAll()
+                        selectedExerciseIDs.removeAll()
+                    }
+                    selectedExercises.append(exercise)
+                    selectedExerciseIDs.insert(exercise.catalogID)
+                    onToggle?(exercise, true)
+                }
+            } label: {
+                Image(systemName: isSelected ? "checkmark" : "plus")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? .blue : .primary)
+                    .contentTransition(.symbolEffect(.replace))
+                    .padding(3)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel(isSelected ? "Remove from selection" : "Add to selection")
         }
-        .accessibilityElement(children: .combine)
+        .appGroupedListRow(
+            position: rowPosition(for: index, count: count),
+            fillColor: nil
+        )
+        .swipeActions(edge: .leading) {
+            favoriteAction(for: exercise)
+        }
+        .contextMenu {
+            progressionStepAction(for: exercise)
+            favoriteAction(for: exercise)
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseCatalogRow(exercise))
+        .accessibilityLabel(exercise.name)
+        .accessibilityValue(AccessibilityText.exerciseCatalogValue(for: exercise, isSelected: isSelected))
+    }
+
+    @ViewBuilder
+    private func exerciseRowContent(for exercise: Exercise) -> some View {
+        HStack(spacing: 0) {
+            if exercise.favorite {
+                Image(systemName: "star.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.subheadline)
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(exercise.name)
+                    .font(.headline)
+                Text("\(exercise.equipmentType.displayName) · \(exercise.displayMuscle)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(1)
+            }
+            .accessibilityElement(children: .combine)
+        }
     }
     
     @ViewBuilder

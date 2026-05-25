@@ -18,6 +18,20 @@ import SwiftData
     var newHighStepsLastTriggeredDay: Date?
     var sleepGoalLastNotifiedWakeDay: Date?
     var weeklyCoachingLastDeliveredWeekStart: Date?
+    var heartRateSyncedRangeStart: Date?
+    var heartRateSyncedRangeEnd: Date?
+    var restingHeartRateSyncedRangeStart: Date?
+    var restingHeartRateSyncedRangeEnd: Date?
+    var walkingHeartRateSyncedRangeStart: Date?
+    var walkingHeartRateSyncedRangeEnd: Date?
+    var heartRateVariabilitySyncedRangeStart: Date?
+    var heartRateVariabilitySyncedRangeEnd: Date?
+    var respiratoryRateSyncedRangeStart: Date?
+    var respiratoryRateSyncedRangeEnd: Date?
+    var wristTemperatureSyncedRangeStart: Date?
+    var wristTemperatureSyncedRangeEnd: Date?
+    var dietaryWaterSyncedRangeStart: Date?
+    var dietaryWaterSyncedRangeEnd: Date?
 
     init() {}
 
@@ -58,6 +72,62 @@ import SwiftData
         set {
             sleepWakeDaySyncedRangeStart = newValue?.lowerBound
             sleepWakeDaySyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var heartRateSyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: heartRateSyncedRangeStart, end: heartRateSyncedRangeEnd) }
+        set {
+            heartRateSyncedRangeStart = newValue?.lowerBound
+            heartRateSyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var restingHeartRateSyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: restingHeartRateSyncedRangeStart, end: restingHeartRateSyncedRangeEnd) }
+        set {
+            restingHeartRateSyncedRangeStart = newValue?.lowerBound
+            restingHeartRateSyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var walkingHeartRateSyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: walkingHeartRateSyncedRangeStart, end: walkingHeartRateSyncedRangeEnd) }
+        set {
+            walkingHeartRateSyncedRangeStart = newValue?.lowerBound
+            walkingHeartRateSyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var heartRateVariabilitySyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: heartRateVariabilitySyncedRangeStart, end: heartRateVariabilitySyncedRangeEnd) }
+        set {
+            heartRateVariabilitySyncedRangeStart = newValue?.lowerBound
+            heartRateVariabilitySyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var respiratoryRateSyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: respiratoryRateSyncedRangeStart, end: respiratoryRateSyncedRangeEnd) }
+        set {
+            respiratoryRateSyncedRangeStart = newValue?.lowerBound
+            respiratoryRateSyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var wristTemperatureSyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: wristTemperatureSyncedRangeStart, end: wristTemperatureSyncedRangeEnd) }
+        set {
+            wristTemperatureSyncedRangeStart = newValue?.lowerBound
+            wristTemperatureSyncedRangeEnd = newValue?.upperBound
+        }
+    }
+
+    var dietaryWaterSyncedRange: ClosedRange<Date>? {
+        get { Self.makeRange(start: dietaryWaterSyncedRangeStart, end: dietaryWaterSyncedRangeEnd) }
+        set {
+            dietaryWaterSyncedRangeStart = newValue?.lowerBound
+            dietaryWaterSyncedRangeEnd = newValue?.upperBound
         }
     }
 

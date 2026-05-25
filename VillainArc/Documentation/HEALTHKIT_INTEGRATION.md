@@ -71,6 +71,7 @@ That split keeps HealthKit from owning the app’s training logic while still le
 - active energy burned
 - resting energy burned
 - body mass
+- dietary water
 
 ### Reads
 
@@ -83,9 +84,14 @@ That split keeps HealthKit from owning the app’s training logic while still le
 - step count
 - walking/running distance
 - heart rate
+- resting heart rate
+- walking heart rate average
+- heart rate variability SDNN
 - active energy burned
 - resting energy burned
 - respiratory rate
+- sleeping wrist temperature
+- dietary water
 - flights climbed
 - additional workout-related quantity types used in the workout-detail loader
 
@@ -101,7 +107,7 @@ The app uses both HealthKit request status and an app-defined handled version.
 
 The prompt rule is:
 
-- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write permission catalog
+- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write permission catalog. Version `1.3` adds heart vitals, respiratory rate, sleeping wrist temperature, and dietary water.
 - the app stores the last handled permissions version in shared defaults
 - onboarding or the standalone launch gate prompt only when:
   - the current permissions version differs from the stored handled version
@@ -431,13 +437,16 @@ The current design is:
 - user-driven edits still trigger targeted widget reloads (for example weight entry/goal changes, steps goal changes, and unit changes that affect widget rendering)
 - the app-ready path runs `syncNow()` and then reloads every Health widget
 - weight and sleep sync paths dispatch targeted widget reloads when they persist relevant changes
+- heart, respiratory rate, and wrist temperature sync paths dispatch targeted widget reloads when refreshed cached ranges change
 - daily movement and energy observer sync paths focus on data persistence and do not directly dispatch widget reloads
 
 That means the widgets can update quickly on direct user edits, stay aligned after manual full sync, and still self-correct on timeline cadence if background observer timing is delayed.
 
+The health widget family includes weight, sleep, steps, energy, hydration, heart-rate range, resting heart rate, walking heart rate average, HRV, respiratory-rate range, and wrist temperature widgets. Vitals widgets mirror their Health tab cards: title/date, latest value or range, and a compact seven-day chart.
+
 ## Removed Data and Retention
 
-When Apple Health deletes a workout, body-mass sample, or all backing samples for a cached sleep night, the app can either:
+When Apple Health deletes a workout, body-mass sample, dietary-water sample, or all backing samples for a cached sleep night, the app can either:
 
 - retain the local record but mark it unavailable in HealthKit
 - or delete it from local storage
@@ -501,6 +510,31 @@ Important boundary:
 - the intraday loader warms the latest day during the same history-view cache build so the `day` range is usually already ready or partially ready when selected
 
 Those same cache-backed rows are also what the read-only health intents summarize, so the Health tab and the spoken/shortcut answers stay aligned.
+
+### Vitals History
+
+The vitals surfaces are cache-backed Health tab views with no `day` range.
+
+- heart rate and respiratory rate use floating range-bar charts from persisted daily min/max values
+- resting heart rate, walking heart rate average, HRV, and sleeping wrist temperature use line charts from persisted daily values
+- sleeping wrist temperature is stored in Celsius and displayed through `AppSettings.temperatureUnit` as F or C
+- the cards show a compact title/date row, latest value or range, and a seven-day mini chart
+- the matching small widgets use the same title/date, value, and mini-chart structure
+- history views offer `week`, `month`, `6M`, `year`, and `all`
+- these views do not use `HealthIntradayMetricsLoader`, weekday-average cards, or period-highlight sections
+
+### Hydration
+
+Hydration uses two local layers:
+
+- `HydrationEntry` stores individual water-intake events, including entries created in Villain Arc and entries mirrored from Apple Health dietary water samples
+- `HydrationDay` stores the day aggregate: date, total mL, active goal target for that day, completion timestamp, and linked entries
+
+Manual entries are available from the global Add Water quick action and are exported to Apple Health when the app has permission. HealthKit dietary-water sync upserts imported entries, reconciles the affected `HydrationDay`, and triggers hydration goal completion notifications when the day crosses its goal for the first time.
+
+Hydration goals are historical `HydrationGoal` records. Replacing or deleting a hydration goal reconciles affected hydration days so charts, widgets, notifications, and the profile complete-day heatmap remain date-correct.
+
+The Health tab includes hydration summary, history, goal history, chart, and matching widget surfaces.
 
 ### Workout History
 

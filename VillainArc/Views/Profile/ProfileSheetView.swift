@@ -1,30 +1,57 @@
 import AVFoundation
+import MuscleMap
 import SwiftUI
 import SwiftData
 import UIKit
-import WebKit
 
-private enum ProfileLegalDestination: String, Identifiable {
-    case privacyPolicy
-    case termsOfService
+private struct ProfileCompletionDay: Identifiable {
+    let date: Date
+    let workoutCompleted: Bool
+    let sleepGoalCompleted: Bool
+    let stepsGoalCompleted: Bool
+    let hydrationGoalCompleted: Bool
 
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .privacyPolicy:
-            return String(localized: "Privacy Policy")
-        case .termsOfService:
-            return String(localized: "Terms of Service")
-        }
+    var id: Date { date }
+    var completionCount: Int {
+        [workoutCompleted, sleepGoalCompleted, stepsGoalCompleted, hydrationGoalCompleted].filter { $0 }.count
     }
+}
 
-    var url: URL {
+private extension Muscle {
+    var profileMuscleMapMuscles: [MuscleMap.Muscle] {
         switch self {
-        case .privacyPolicy:
-            return URL(string: "https://fct-technologies.com/projects/villainarc/privacy/")!
-        case .termsOfService:
-            return URL(string: "https://fct-technologies.com/projects/villainarc/terms/")!
+        case .chest: return [.chest]
+        case .back: return [.upperBack, .lowerBack]
+        case .shoulders: return [.deltoids]
+        case .biceps: return [.biceps]
+        case .triceps: return [.triceps]
+        case .abs: return [.abs]
+        case .glutes: return [.gluteal]
+        case .quads: return [.quadriceps]
+        case .hamstrings: return [.hamstring]
+        case .calves: return [.calves]
+        case .forearms: return [.forearm]
+        case .adductors: return [.adductors]
+        case .abductors: return []
+        case .upperChest: return [.upperChest]
+        case .lowerChest: return [.lowerChest]
+        case .midChest: return [.chest]
+        case .lats: return [.upperBack]
+        case .lowerBack: return [.lowerBack]
+        case .upperTraps: return [.upperTrapezius]
+        case .lowerTraps: return [.lowerTrapezius]
+        case .midTraps: return [.trapezius]
+        case .rhomboids: return [.rhomboids]
+        case .frontDelt: return [.frontDeltoid]
+        case .sideDelt: return [.deltoids]
+        case .rearDelt: return [.rearDeltoid]
+        case .rotatorCuff: return [.rotatorCuff]
+        case .longHeadBiceps, .shortHeadBiceps, .brachialis: return [.biceps]
+        case .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps: return [.triceps]
+        case .wrists: return [.forearm]
+        case .upperAbs: return [.upperAbs]
+        case .lowerAbs: return [.lowerAbs]
+        case .obliques: return [.obliques]
         }
     }
 }
@@ -50,7 +77,6 @@ struct ProfileSheetLauncherButton: View {
     @State private var router = AppRouter.shared
 
     let accessibilityIdentifier: String
-    let transitionNamespace: Namespace.ID?
 
     var body: some View {
         Button {
@@ -81,8 +107,15 @@ struct ProfileSheetView: View {
     @Query(UserProfile.single) private var profiles: [UserProfile]
     @Query(TrainingGoal.active) private var activeTrainingGoals: [TrainingGoal]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @Query(WorkoutSession.completedSession) private var completedWorkouts: [WorkoutSession]
+    @Query(HealthSleepNight.history) private var sleepNights: [HealthSleepNight]
+    @Query(HealthStepsDistance.history) private var stepsEntries: [HealthStepsDistance]
+    @Query(HydrationDay.history) private var hydrationDays: [HydrationDay]
+    @Query(SleepGoal.history) private var sleepGoals: [SleepGoal]
+    @Query(StepsGoal.history) private var stepsGoals: [StepsGoal]
 
     private let initialSettingsDestination: AppSettingsDestination?
+    private let showsCloseButton: Bool
 
     @State private var showAppSettings = false
     @State private var settingsDestination: AppSettingsDestination?
@@ -96,17 +129,18 @@ struct ProfileSheetView: View {
     @State private var showCameraAccessAlert = false
     @State private var selectedProfileImage: UIImage?
     @State private var presentedImagePickerSource: ProfileImagePickerSource?
-    @State private var presentedLegalDestination: ProfileLegalDestination?
     @State private var editableName = ""
     @FocusState private var isNameFieldFocused: Bool
 
     private var profile: UserProfile? { profiles.first }
     private var activeTrainingGoal: TrainingGoal? { activeTrainingGoals.first }
     private var heightUnit: HeightUnit { appSettings.first?.heightUnit ?? .imperial }
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private let defaultProfileName = String(localized: "Your Name")
 
-    init(initialSettingsDestination: AppSettingsDestination? = nil) {
+    init(initialSettingsDestination: AppSettingsDestination? = nil, showsCloseButton: Bool = true) {
         self.initialSettingsDestination = initialSettingsDestination
+        self.showsCloseButton = showsCloseButton
     }
 
     var body: some View {
@@ -115,14 +149,19 @@ struct ProfileSheetView: View {
                 VStack(spacing: 50) {
                     VStack(spacing: 28) {
                         profileSummary
+                        trainingSummaryCard
+                        if !profileMuscleDistributionSlices.isEmpty {
+                            profileMuscleDistributionCard
+                        }
+                        workoutHeatmapCard
                         detailsCard
                     }
-                    
-                    supportCard
                 }
                 .padding(.horizontal)
             }
+            .quickActionContentBottomInset()
             .scrollIndicators(.hidden)
+            .appBackground()
             .sheet(isPresented: $showAppSettings) {
                 AppSettingsView(initialDestination: settingsDestination)
                     .presentationBackground(Color.sheetBg)
@@ -182,10 +221,6 @@ struct ProfileSheetView: View {
                 ProfileImagePicker(sourceType: source.uiKitSourceType, image: $selectedProfileImage)
                     .ignoresSafeArea()
             }
-            .sheet(item: $presentedLegalDestination) { destination in
-                ProfileLegalWebSheet(destination: destination)
-                    .presentationBackground(Color.sheetBg)
-            }
             .confirmationDialog("Update Profile Photo", isPresented: $showPhotoOptions, titleVisibility: .visible) {
                 if canUseCamera() {
                     Button("Take Photo") {
@@ -217,13 +252,15 @@ struct ProfileSheetView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .close) {
-                        Haptics.selection()
-                        commitNameIfNeeded()
-                        dismiss()
+                    if showsCloseButton {
+                        Button(role: .close) {
+                            Haptics.selection()
+                            commitNameIfNeeded()
+                            dismiss()
+                        }
+                        .accessibilityHint(AccessibilityText.closeButtonHint)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetCloseButton)
                     }
-                    .accessibilityHint(AccessibilityText.closeButtonHint)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Settings", systemImage: "gearshape") {
@@ -429,81 +466,108 @@ struct ProfileSheetView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetDetailsCard)
     }
 
-    private var supportCard: some View {
-        VStack(spacing: 0) {
-            Button {
-                Haptics.selection()
-                openWriteReviewPage()
-            } label: {
-                supportRowLabel(
-                    title: String(localized: "Rate Villain Arc on the App Store"),
-                    systemImage: "star.bubble"
-                )
+    private var trainingSummaryCard: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 12, alignment: .top)], spacing: 12) {
+            SummaryStatCard(title: "Workouts", text: "\(completedWorkouts.count)")
+            SummaryStatCard(title: "This Week", text: "\(workoutsThisWeek)")
+            SummaryStatCard(title: "Streak", text: currentStreakText)
+            if totalTrainingVolume > 0 {
+                SummaryStatCard(title: "Total Volume", text: formattedWeightText(totalTrainingVolume, unit: weightUnit, fractionDigits: 0...0))
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetReviewRow)
-            .accessibilityHint(AccessibilityText.profileSheetReviewHint)
-
-            Divider()
-                .padding(.horizontal, 16)
-
-            Button {
-                Haptics.selection()
-                presentedLegalDestination = .privacyPolicy
-            } label: {
-                supportRowLabel(
-                    title: String(localized: "Privacy Policy"),
-                    systemImage: "hand.raised"
-                )
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetPrivacyPolicyRow)
-            .accessibilityHint(AccessibilityText.profileSheetPrivacyPolicyHint)
-
-            Divider()
-                .padding(.horizontal, 16)
-
-            Button {
-                Haptics.selection()
-                presentedLegalDestination = .termsOfService
-            } label: {
-                supportRowLabel(
-                    title: String(localized: "Terms of Service"),
-                    systemImage: "doc.text"
-                )
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetTermsOfServiceRow)
-            .accessibilityHint(AccessibilityText.profileSheetTermsOfServiceHint)
         }
-        .appCardStyle()
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetLegalCard)
+        .accessibilityIdentifier("profileSheetTrainingSummaryCard")
     }
 
-    private func supportRowLabel(title: String, systemImage: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .foregroundStyle(.blue)
-                .fontWeight(.semibold)
+    private var profileMuscleDistributionCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Muscle Distribution")
+                .font(.headline)
 
-            Text(title)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.leading)
+            VStack(spacing: 14) {
+                HStack(spacing: 12) {
+                    profileMuscleMapBodyView(side: .front)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 210)
 
-            Spacer()
+                    profileMuscleMapBodyView(side: .back)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 210)
+                }
 
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+                VStack(spacing: 10) {
+                    ForEach(profileMuscleDistributionSlices.prefix(5)) { slice in
+                        HStack(spacing: 10) {
+                            Circle()
+                                .fill(profileMuscleColor(for: slice.percentage))
+                                .frame(width: 10, height: 10)
+                                .accessibilityHidden(true)
+
+                            Text(slice.muscle.displayName)
+                                .font(.subheadline.weight(.semibold))
+
+                            Spacer()
+
+                            Text((slice.percentage / 100).formatted(.percent.precision(.fractionLength(0))))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .appCardStyle()
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("profileSheetMuscleMapCard")
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 18)
+    }
+
+    private var workoutHeatmapCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Complete Days")
+                    .font(.headline)
+                Spacer()
+                Text("Past 2 months")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
+                ForEach(profileCompletionDays) { day in
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(completionHeatmapColor(for: day.completionCount))
+                        .aspectRatio(1, contentMode: .fit)
+                        .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
+                        .accessibilityValue(completionAccessibilityValue(for: day))
+                }
+            }
+            .padding(16)
+            .appCardStyle()
+
+            HStack(spacing: 14) {
+                completionLegendItem(count: 1, label: "1")
+                completionLegendItem(count: 2, label: "2")
+                completionLegendItem(count: 3, label: "3")
+                completionLegendItem(count: 4, label: "4")
+                Spacer()
+                Text("Workout, sleep, steps, water")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func completionLegendItem(count: Int, label: String) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(completionHeatmapColor(for: count))
+                .frame(width: 12, height: 12)
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var trimmedEditableName: String? {
@@ -557,6 +621,152 @@ struct ProfileSheetView: View {
 
     private var trainingGoalText: String {
         activeTrainingGoal?.kind.title ?? String(localized: "Not Set")
+    }
+
+    private var workoutsThisWeek: Int {
+        guard let weekInterval = Calendar.autoupdatingCurrent.dateInterval(of: .weekOfYear, for: .now) else { return 0 }
+        return completedWorkouts.filter { weekInterval.contains($0.startedAt) }.count
+    }
+
+    private var totalTrainingVolume: Double {
+        completedWorkouts.reduce(0) { $0 + $1.totalVolume }
+    }
+
+    private var profileMuscleDistributionSlices: [MuscleDistributionSlice] {
+        var totalsByMuscle: [Muscle: Double] = [:]
+
+        for workout in completedWorkouts {
+            for slice in MuscleDistributionCalculator.slices(for: workout) {
+                totalsByMuscle[slice.muscle, default: 0] += slice.score
+            }
+        }
+
+        let totalScore = totalsByMuscle.values.reduce(0, +)
+        guard totalScore > 0 else { return [] }
+
+        return totalsByMuscle
+            .map { muscle, score in
+                MuscleDistributionSlice(muscle: muscle, score: score, percentage: (score / totalScore) * 100)
+            }
+            .sorted {
+                if $0.score == $1.score {
+                    return $0.muscle.displayName < $1.muscle.displayName
+                }
+                return $0.score > $1.score
+            }
+    }
+
+    private func profileMuscleMapBodyView(side: BodySide) -> BodyView {
+        var view = BodyView(gender: .male, side: side)
+        for slice in profileMuscleDistributionSlices {
+            for mapMuscle in slice.muscle.profileMuscleMapMuscles {
+                view = view.highlight(mapMuscle, color: profileMuscleColor(for: slice.percentage), opacity: profileMuscleOpacity(for: slice.percentage))
+            }
+        }
+        return view
+    }
+
+    private func profileMuscleColor(for percentage: Double) -> Color {
+        switch percentage {
+        case 35...:
+            return .red
+        case 20..<35:
+            return .orange
+        case 10..<20:
+            return .yellow
+        default:
+            return .blue
+        }
+    }
+
+    private func profileMuscleOpacity(for percentage: Double) -> Double {
+        min(max(percentage / 45, 0.28), 0.9)
+    }
+
+    private var profileCompletionDays: [ProfileCompletionDay] {
+        let calendar = Calendar.autoupdatingCurrent
+        let today = calendar.startOfDay(for: .now)
+        let workoutDays = Set(completedWorkouts.map { calendar.startOfDay(for: $0.startedAt) })
+        let sleepByDay = Dictionary(uniqueKeysWithValues: sleepNights.map { (calendar.startOfDay(for: $0.displayWakeDay), $0) })
+        let stepsByDay = Dictionary(uniqueKeysWithValues: stepsEntries.map { (calendar.startOfDay(for: $0.date), $0) })
+        let hydrationByDay = Dictionary(uniqueKeysWithValues: hydrationDays.map { (calendar.startOfDay(for: $0.date), $0) })
+
+        return (0..<60).reversed().compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let sleepNight = sleepByDay[day]
+            let stepsEntry = stepsByDay[day]
+            return ProfileCompletionDay(
+                date: day,
+                workoutCompleted: workoutDays.contains(day),
+                sleepGoalCompleted: sleepGoalCompleted(on: day, sleepNight: sleepNight),
+                stepsGoalCompleted: stepsGoalCompleted(on: day, stepsEntry: stepsEntry),
+                hydrationGoalCompleted: hydrationByDay[day]?.goalCompleted == true
+            )
+        }
+    }
+
+    private func sleepGoalCompleted(on day: Date, sleepNight: HealthSleepNight?) -> Bool {
+        guard let goal = sleepGoals.first(where: { $0.contains(day: day) }),
+              let sleepNight else { return false }
+        return sleepNight.timeAsleep >= goal.targetSleepDuration
+    }
+
+    private func stepsGoalCompleted(on day: Date, stepsEntry: HealthStepsDistance?) -> Bool {
+        guard let goal = stepsGoals.first(where: { $0.contains(day: day) }),
+              let stepsEntry else { return false }
+        return stepsEntry.stepCount >= goal.targetSteps
+    }
+
+    private func completionHeatmapColor(for count: Int) -> Color {
+        switch count {
+        case 0:
+            return Color.secondary.opacity(0.12)
+        case 1:
+            return Color.blue.opacity(0.45)
+        case 2:
+            return Color.mint.opacity(0.75)
+        case 3:
+            return Color.green
+        default:
+            return Color.purple
+        }
+    }
+
+    private func completionAccessibilityValue(for day: ProfileCompletionDay) -> String {
+        guard day.completionCount > 0 else { return String(localized: "No goals completed") }
+        var parts: [String] = []
+        if day.workoutCompleted { parts.append(String(localized: "workout completed")) }
+        if day.sleepGoalCompleted { parts.append(String(localized: "sleep goal completed")) }
+        if day.stepsGoalCompleted { parts.append(String(localized: "steps goal completed")) }
+        if day.hydrationGoalCompleted { parts.append(String(localized: "hydration goal completed")) }
+        return parts.joined(separator: ", ")
+    }
+
+    private var currentStreakText: String {
+        let days = currentWorkoutStreakDays
+        return days == 1 ? "1 day" : "\(days) days"
+    }
+
+    private var currentWorkoutStreakDays: Int {
+        let calendar = Calendar.autoupdatingCurrent
+        let workoutDays = Set(completedWorkouts.map { calendar.startOfDay(for: $0.startedAt) })
+        guard !workoutDays.isEmpty else { return 0 }
+
+        var day = calendar.startOfDay(for: .now)
+        if !workoutDays.contains(day),
+           let yesterday = calendar.date(byAdding: .day, value: -1, to: day),
+           workoutDays.contains(yesterday) {
+            day = yesterday
+        }
+
+        var streak = 0
+        while workoutDays.contains(day) {
+            streak += 1
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previousDay
+        }
+
+        return streak
     }
 
     private var fitnessLevelText: String {
@@ -630,36 +840,8 @@ struct ProfileSheetView: View {
         saveProfilePhoto(data: nil)
     }
 
-    private func openWriteReviewPage() {
-        guard let url = URL(string: "https://apps.apple.com/app/id6759259627?action=write-review") else { return }
-        UIApplication.shared.open(url)
-    }
 }
 
 #Preview(traits: .sampleData) {
     ProfileSheetView()
-}
-
-private struct ProfileLegalWebSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let destination: ProfileLegalDestination
-
-    var body: some View {
-        NavigationStack {
-            WebView(url: destination.url)
-                .webViewBackForwardNavigationGestures(.disabled)
-                .navigationTitle(destination.title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(role: .close) {
-                            Haptics.selection()
-                            dismiss()
-                        }
-                        .accessibilityHint(AccessibilityText.closeButtonHint)
-                    }
-                }
-        }
-    }
 }

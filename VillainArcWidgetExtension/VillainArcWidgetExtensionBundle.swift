@@ -7,6 +7,13 @@ import WidgetKit
         HealthSleepWidget()
         HealthStepsWidget()
         HealthEnergyWidget()
+        HealthHydrationWidget()
+        HealthHeartRateWidget()
+        HealthRestingHeartRateWidget()
+        HealthWalkingHeartRateWidget()
+        HealthHeartRateVariabilityWidget()
+        HealthRespiratoryRateWidget()
+        HealthWristTemperatureWidget()
         WorkoutLiveActivity()
     }
 }

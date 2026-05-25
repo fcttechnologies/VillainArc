@@ -22,42 +22,25 @@ struct ReplaceExerciseView: View {
 
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: false, sortOption: exerciseSort, singleSelection: true, excludedCatalogIDs: [currentCatalogID])
-            .navigationTitle("Replace Exercise")
-            .navigationSubtitle(Text(selectedExercise?.name ?? "Select an exercise"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .close) {
-                        Haptics.selection()
-                        dismiss()
-                    }
-                    .accessibilityLabel(AccessibilityText.replaceExerciseCloseLabel)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseCloseButton)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Replace") {
-                        Haptics.selection()
+            FilteredExerciseListView(
+                selectedExercises: $selectedExercises,
+                selectedExerciseIDs: $selectedExerciseIDs,
+                searchText: searchText,
+                muscleFilters: selectedMuscles,
+                favoritesOnly: favoritesOnly,
+                selectedOnly: false,
+                sortOption: exerciseSort,
+                singleSelection: true,
+                excludedCatalogIDs: [currentCatalogID],
+                onToggle: { _, _ in
+                    if selectedExercises.first != nil {
                         showSetsConfirmation = true
                     }
-                    .disabled(selectedExercise == nil)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseConfirmButton)
-                    .accessibilityHint(AccessibilityText.replaceExerciseConfirmHint)
-                    .confirmationDialog("What about existing sets?", isPresented: $showSetsConfirmation) {
-                        Button("Keep Sets") {
-                            guard let selected = selectedExercise else { return }
-                            Haptics.selection()
-                            onReplace(selected, true)
-                            dismiss()
-                        }
-                        Button("Clear Sets", role: .destructive) {
-                            guard let selected = selectedExercise else { return }
-                            Haptics.selection()
-                            onReplace(selected, false)
-                            dismiss()
-                        }
-                    }
                 }
+            )
+            .navigationTitle("Replace Exercise")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
                 ToolbarItem(placement: .bottomBar) {
                     Menu("Filters", systemImage: "line.3.horizontal.decrease") {
                         Menu("Sort", systemImage: "arrow.up.arrow.down") {
@@ -86,6 +69,24 @@ struct ReplaceExerciseView: View {
             }
             .searchable(text: $searchText)
             .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .confirmationDialog("What about existing sets?", isPresented: $showSetsConfirmation) {
+                Button("Keep Sets") {
+                    guard let selected = selectedExercise else { return }
+                    Haptics.selection()
+                    onReplace(selected, true)
+                    dismiss()
+                }
+                Button("Clear Sets", role: .destructive) {
+                    guard let selected = selectedExercise else { return }
+                    Haptics.selection()
+                    onReplace(selected, false)
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {
+                    selectedExercises.removeAll()
+                    selectedExerciseIDs.removeAll()
+                }
+            }
             .sheet(isPresented: $showMuscleFilterSheet) {
                 MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
                     selectedMuscles = updatedMuscles

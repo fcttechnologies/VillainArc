@@ -14,6 +14,9 @@ struct ExerciseHistoryView: View {
     @Query private var performances: [ExercisePerformance]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var pendingCopyRequest: ExerciseHistoryCopyRequest?
+    #if DEBUG
+    @State private var isSeedingDebugHistory = false
+    #endif
     private let showSheetBackground: Bool
     
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
@@ -58,7 +61,7 @@ struct ExerciseHistoryView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 ForEach(performances) { performance in
-                    ExerciseHistoryPerformanceCard(performance: performance, weightUnit: weightUnit, availableCopyModes: availableCopyModes, onCopy: handleCopySelection)
+                    ExerciseHistoryPerformanceCard(performance: performance, weightUnit: weightUnit, availableCopyModes: availableCopyModes, showSheetBackground: showSheetBackground, onCopy: handleCopySelection)
                 }
             }
             .fontDesign(.rounded)
@@ -78,6 +81,17 @@ struct ExerciseHistoryView: View {
         .navigationTitle(exercise?.name ?? "Exercise History")
         .navigationSubtitle(Text(exercise?.detailSubtitle ?? "Unknown Equipment"))
         .toolbarTitleDisplayMode(.inline)
+        .toolbar {
+            #if DEBUG
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Seed", systemImage: "chart.line.uptrend.xyaxis") {
+                    seedDebugHistory()
+                }
+                .fontWeight(.semibold)
+                .disabled(isSeedingDebugHistory || exercise == nil)
+            }
+            #endif
+        }
         .confirmationDialog(pendingCopyRequest?.confirmationTitle ?? "Update Current Exercise?", isPresented: pendingCopyConfirmationBinding, titleVisibility: .visible) {
             if let request = pendingCopyRequest {
                 ForEach(pendingCopyStrategies, id: \.self) { strategy in
@@ -177,6 +191,22 @@ struct ExerciseHistoryView: View {
         
         return canCopyRemaining ? [.replaceRemaining, .replaceAll] : [.replaceAll]
     }
+
+    #if DEBUG
+    private func seedDebugHistory() {
+        guard let exercise, !isSeedingDebugHistory else { return }
+        Haptics.selection()
+        isSeedingDebugHistory = true
+        Task {
+            do {
+                try DebugOperations.seedExerciseHistory(for: exercise)
+            } catch {
+                AppLog.error("Debug exercise history seed failed", error: error)
+            }
+            isSeedingDebugHistory = false
+        }
+    }
+    #endif
 }
 
 private struct ExerciseHistoryBackgroundModifier: ViewModifier {
@@ -191,10 +221,11 @@ private struct ExerciseHistoryBackgroundModifier: ViewModifier {
     }
 }
 
-private struct ExerciseHistoryPerformanceCard: View {
+struct ExerciseHistoryPerformanceCard: View {
     let performance: ExercisePerformance
     let weightUnit: WeightUnit
     let availableCopyModes: [ExerciseHistoryCopyMode]
+    let showSheetBackground: Bool
     let onCopy: ((ExercisePerformance, ExerciseHistoryCopyMode) -> Void)?
     
     private var exerciseNotes: String {
@@ -210,20 +241,66 @@ private struct ExerciseHistoryPerformanceCard: View {
     }
     
     var body: some View {
+        Group {
+            if let workout = performance.workoutSession {
+                NavigationLink(destination: workoutDestination(for: workout)) {
+                    cardContent
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    NavigationLink {
+                        workoutDestination(for: workout)
+                    } label: {
+                        Label("View Workout", systemImage: "list.bullet.rectangle")
+                    }
+
+                    copyActions
+                }
+            } else {
+                cardContent
+                    .contextMenu {
+                        copyActions
+                    }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var copyActions: some View {
+        if canCopy {
+            ForEach(availableCopyModes) { mode in
+                Button(mode.label, systemImage: "square.on.square") {
+                    onCopy?(performance, mode)
+                }
+            }
+        }
+    }
+
+    private func workoutDestination(for workout: WorkoutSession) -> some View {
+        WorkoutDetailView(
+            workout: workout,
+            showSheetBackground: showSheetBackground,
+            showsCloseButton: false,
+            showsOptionsMenu: !showSheetBackground,
+            scrollToExerciseID: performance.id
+        )
+    }
+
+    private var cardContent: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(formattedDateRange(start: performance.date))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                         if let repRange = performance.repRange, repRange.activeMode != .notSet {
                             Text(repRange.displayText)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    
+
                     if canCopy {
                         Menu {
                             ForEach(availableCopyModes) { mode in
@@ -239,9 +316,16 @@ private struct ExerciseHistoryPerformanceCard: View {
                         }
                         .accessibilityLabel("Copy from history")
                     }
+
+                    if performance.workoutSession != nil {
+                        Image(systemName: "chevron.right")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 2)
+                    }
                 }
                 .fontWeight(.semibold)
-                
+
                 if !exerciseNotes.isEmpty || !workoutNotes.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         if !exerciseNotes.isEmpty {
@@ -250,7 +334,7 @@ private struct ExerciseHistoryPerformanceCard: View {
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.leading)
                         }
-                        
+
                         if !workoutNotes.isEmpty {
                             Text("Workout notes: \(workoutNotes)")
                                 .font(.subheadline)
@@ -260,9 +344,9 @@ private struct ExerciseHistoryPerformanceCard: View {
                     }
                 }
             }
-            
+
             Divider()
-            
+
             ExerciseSetTable(rows: performance.sortedSets, repsText: { $0.reps > 0 ? "\($0.reps)" : "-" }, weightText: { $0.weight > 0 ? formattedWeightText($0.weight, unit: weightUnit) : "-" }, restText: { $0.effectiveRestSeconds > 0 ? secondsToTime($0.effectiveRestSeconds) : "-" }) { set in
                 ExerciseHistorySetIndicator(set: set)
             }

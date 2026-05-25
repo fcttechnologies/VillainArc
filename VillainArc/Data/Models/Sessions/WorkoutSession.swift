@@ -252,6 +252,20 @@ extension WorkoutSession {
         return true
     }
 
+    @discardableResult
+    func completeSet(_ set: SetPerformance, settings: AppSettingsSnapshot, completedAt: Date = Date()) -> Bool {
+        applyAssumedTargetRPEIfNeeded(to: set, settings: settings)
+        return completeSet(set, completedAt: completedAt)
+    }
+
+    private func applyAssumedTargetRPEIfNeeded(to set: SetPerformance, settings: AppSettingsSnapshot) {
+        guard settings.assumeTargetRPEOnComplete else { return }
+        guard set.type != .warmup else { return }
+        guard set.rpe == 0 else { return }
+        guard let targetRPE = set.prescription?.visibleTargetRPE else { return }
+        set.rpe = targetRPE
+    }
+
     func isFinalIncompleteSet(_ candidate: SetPerformance) -> Bool {
         var incompleteSets: [SetPerformance] = []
 

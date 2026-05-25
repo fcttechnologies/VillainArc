@@ -8,34 +8,64 @@ struct WorkoutDetailView: View {
     @Environment(\.modelContext) private var context
     var router = AppRouter.shared
     let workout: WorkoutSession
+    private let showSheetBackground: Bool
+    private let showsCloseButton: Bool
+    private let showsOptionsMenu: Bool
+    private let scrollToExerciseID: UUID?
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     @State private var showDeleteWorkoutConfirmation: Bool = false
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
-    
+
+    init(workout: WorkoutSession, showSheetBackground: Bool = false, showsCloseButton: Bool = false, showsOptionsMenu: Bool = true, scrollToExerciseID: UUID? = nil) {
+        self.workout = workout
+        self.showSheetBackground = showSheetBackground
+        self.showsCloseButton = showsCloseButton
+        self.showsOptionsMenu = showsOptionsMenu
+        self.scrollToExerciseID = scrollToExerciseID
+    }
+
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
                 if workout.healthWorkout != nil { WorkoutLinkedHealthDetailSection(workout: workout, weightUnit: weightUnit, energyUnit: energyUnit) }
 
-                WorkoutSessionDetailContent(workout: workout, weightUnit: weightUnit)
+                WorkoutSessionDetailContent(workout: workout, weightUnit: weightUnit, scrollToExerciseID: scrollToExerciseID)
             }
             .fontDesign(.rounded)
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
+        .onAppear {
+            if let exerciseID = scrollToExerciseID {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    withAnimation { proxy.scrollTo(exerciseID, anchor: .top) }
+                }
+            }
+        }
+        }
         .quickActionContentBottomInset()
         .scrollIndicators(.hidden)
-        .appBackground()
+        .modifier(WorkoutDetailBackgroundModifier(showSheetBackground: showSheetBackground))
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailList)
         .navigationTitle(workout.title)
         .navigationSubtitle(Text(formattedDateRange(start: workout.startedAt, end: workout.endedAt, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if showsCloseButton {
+                    Button("Close", systemImage: "xmark", role: .close) {
+                        Haptics.selection()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu("Options", systemImage: "ellipsis") {
+                if showsOptionsMenu { Menu("Options", systemImage: "ellipsis") {
                     if let linkedPlan = workout.workoutPlan {
                         Button("Open Workout Plan", systemImage: "arrowshape.turn.up.right") {
                             openWorkoutPlan(linkedPlan)
@@ -64,6 +94,7 @@ struct WorkoutDetailView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailConfirmDeleteButton)
                 } message: {
                     Text("Are you sure you want to delete this workout?")
+                }
                 }
             }
         }
@@ -98,6 +129,18 @@ struct WorkoutDetailView: View {
     private func openWorkoutPlan(_ plan: WorkoutPlan) {
         router.navigate(to: .workoutPlanDetail(plan, false))
         Task { await IntentDonations.donateOpenWorkoutPlan(workoutPlan: plan) }
+    }
+}
+
+private struct WorkoutDetailBackgroundModifier: ViewModifier {
+    let showSheetBackground: Bool
+
+    func body(content: Content) -> some View {
+        if showSheetBackground {
+            content.sheetBackground()
+        } else {
+            content.appBackground()
+        }
     }
 }
 
@@ -156,6 +199,7 @@ private struct WorkoutLinkedHealthDetailSection: View {
 private struct WorkoutSessionDetailContent: View {
     let workout: WorkoutSession
     let weightUnit: WeightUnit
+    var scrollToExerciseID: UUID? = nil
 
     private var muscleDistributionSlices: [MuscleDistributionSlice] {
         MuscleDistributionCalculator.slices(for: workout)
@@ -321,6 +365,7 @@ private struct WorkoutSessionDetailContent: View {
 
             ForEach(workout.sortedExercises) { exercise in
                 WorkoutDetailExerciseCard(exercise: exercise, weightUnit: weightUnit)
+                    .id(exercise.id)
             }
         }
     }

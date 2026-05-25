@@ -324,8 +324,9 @@ Reason:
 
 Broaden the Health tab and validate cardio demand cheaply.
 
-- Expanded Health metrics: heart rate, resting heart rate, HRV, walking heart rate, cardio recovery, cardio fitness, wrist temperature, respiratory rate
-- Hydration integration with HealthKit sync plus manual entries
+- The `1.3` Health/profile pass pulls forward heart-rate range, resting heart rate, walking heart rate average, HRV, respiratory-rate range, sleeping wrist temperature, hydration model/sync/history/widgets, profile tab, settings tab, richer exercise detail, sleep timing chart updates, and workout-plan history/insights.
+- Remaining expanded Health metrics: cardio recovery and cardio fitness
+- Remaining hydration work: manual-entry surface polish and deeper trend insights
 - Sleep timing insights: average bedtime, average wake time, weekday sleep timing charts, sleep debt / bedtime recommendation surfaces
 - Desired wake-up time as a sleep preference (not a historical goal)
 - Health trends summaries
@@ -414,7 +415,7 @@ Reason:
 If the roadmap is executed one feature cluster at a time, the cleanest next implementation sequence is:
 
 1. Close out `1.2.x`: dogfood daily, capture the screenshots worth turning into stronger App Store creative, and note which product moments should be highlighted in onboarding.
-2. `1.3` marquee: ship text-to-template-plan and text-to-split on top of existing Foundation Models infrastructure, keeping split-day mutation out of the first release.
+2. `1.3` health/profile foundation: ship read-only heart, respiratory, and wrist-temperature HealthKit mirrors, hydration model/sync/history/widgets, temperature units, profile/settings tabs, richer exercise detail, and sleep timing chart improvements.
 3. `1.4` conversion/education pass: refresh onboarding, ship `What's New`, add Getting Started, add the review prompt, and layer in TipKit once the new assets and flows are ready.
-4. `1.5` health expansion: add the expanded Health metrics set, hydration, sleep timing insights, desired wake-up time, Health trends, first correlation charts, `last synced at` on Health models, and Cardio v1 as a HealthKit-mirror section in the Health tab.
+4. `1.5` health expansion: finish the remaining cardio recovery/fitness metrics, hydration trend insights, sleep timing insights, desired wake-up time, Health trends, first correlation charts, `last synced at` on Health models, and Cardio v1 as a HealthKit-mirror section in the Health tab.
 5. `1.6` coaching bundle: ship pre-workout context, session override, user outcome prompt, and learning-from-good-outcomes together because the pieces depend on each other.

@@ -42,19 +42,31 @@ struct SleepHistoryView: View {
 }
 
 private struct SleepWeekdayChartSection: View {
+    private enum Metric: String, CaseIterable, Identifiable {
+        case sleep = "Sleep"
+        case bedtime = "Bedtime"
+        case wake = "Wake"
+
+        var id: String { rawValue }
+    }
+
     let entries: [HealthSleepNight]
 
     @State private var selectedWeekday: Weekday?
     @State private var points: [WeekdayAveragePoint] = []
+    @State private var selectedMetric: Metric = .sleep
 
     private let tint = Color.indigo
 
     private var cacheKey: Int {
         var hasher = Hasher()
+        hasher.combine(selectedMetric.rawValue)
         hasher.combine(entries.count)
         for entry in entries {
             hasher.combine(entry.wakeDay)
             hasher.combine(entry.timeAsleep.bitPattern)
+            hasher.combine(entry.sleepStart)
+            hasher.combine(entry.sleepEnd)
             hasher.combine(entry.isAvailableInHealthKit)
         }
         return hasher.finalize()
@@ -86,26 +98,148 @@ private struct SleepWeekdayChartSection: View {
             let summaryText = String(localized: "Weekday sleep averages are unavailable")
             return WeekdayAverageChartPresentation(headline: Text(summaryText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: false, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
         }
-        let sleepText = formattedSleepDurationAccessibilityText(displayedWeekdayPoint.averageValue)
-        let valueText = Text(formattedSleepDurationText(displayedWeekdayPoint.averageValue)).foregroundStyle(tint)
+        let sleepText = accessibilityValueText(displayedWeekdayPoint.averageValue)
+        let valueText = Text(valueText(displayedWeekdayPoint.averageValue)).foregroundStyle(tint)
         let weekdayText = displayedWeekdayPoint.weekday.pluralLabel()
         if selectedWeekdayPoint != nil {
-            let summaryText = String(localized: "You sleep \(sleepText) on \(weekdayText).")
-            return WeekdayAverageChartPresentation(headline: Text("You sleep \(valueText) on \(weekdayText)."), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
+            let summaryText = selectedSummaryText(valueText: sleepText, weekdayText: weekdayText)
+            return WeekdayAverageChartPresentation(headline: selectedHeadline(valueText: valueText, weekdayText: weekdayText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
         }
-        let summaryText = String(localized: "You sleep the most on \(weekdayText). \(sleepText).")
-        return WeekdayAverageChartPresentation(headline: Text("You sleep the most on \(weekdayText). \(valueText)."), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
+        let summaryText = strongestSummaryText(valueText: sleepText, weekdayText: weekdayText)
+        return WeekdayAverageChartPresentation(headline: strongestHeadline(valueText: valueText, weekdayText: weekdayText), accessibilityValue: AccessibilityText.healthSleepWeekdayChartValue(summaryText: summaryText), isAvailable: true, unavailableTitle: String(localized: "Need More Data"), unavailableMessage: String(localized: "Sync at least 2 sleep nights for every weekday to unlock averages."))
     }
 
     var body: some View {
-        WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthSleepWeekdayChartLabel, yAxisValueLabel: formattedSleepDurationText)
+        VStack(alignment: .leading, spacing: 12) {
+            Picker("Sleep Metric", selection: $selectedMetric) {
+                ForEach(Metric.allCases) { metric in
+                    Text(metric.rawValue).tag(metric)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthSleepWeekdayChartLabel, yAxisValueLabel: valueText)
+        }
             .padding()
             .appCardStyle()
             .task(id: cacheKey) {
-                let newPoints = makeWeekdayAveragePoints(from: entries.filter { $0.timeAsleep > 0 }, date: \.displayWakeDay, value: \.timeAsleep)
+                let newPoints = makePoints()
                 points = newPoints
                 if !(newPoints.count == 7 && newPoints.allSatisfy { $0.sampleCount >= 2 }) { selectedWeekday = nil }
             }
+    }
+
+    private func makePoints() -> [WeekdayAveragePoint] {
+        let usableEntries = entries.filter { $0.timeAsleep > 0 }
+        switch selectedMetric {
+        case .sleep:
+            return makeWeekdayAveragePoints(from: usableEntries, date: \.displayWakeDay, value: \.timeAsleep)
+        case .bedtime:
+            return makeWeekdayAveragePoints(from: usableEntries.filter(hasSleepTiming), date: \.displayWakeDay, value: bedtimeOffsetMinutes)
+        case .wake:
+            return makeWeekdayAveragePoints(from: usableEntries.filter(hasSleepTiming), date: \.displayWakeDay, value: wakeOffsetMinutes)
+        }
+    }
+
+    private func hasSleepTiming(_ entry: HealthSleepNight) -> Bool {
+        guard let sleepStart = entry.sleepStart, let sleepEnd = entry.sleepEnd else { return false }
+        return sleepStart < sleepEnd
+    }
+
+    private func bedtimeOffsetMinutes(for entry: HealthSleepNight) -> Double {
+        guard let sleepStart = entry.sleepStart else { return 0 }
+        let calendar = Calendar.autoupdatingCurrent
+        let wakeDayStart = calendar.startOfDay(for: entry.displayWakeDay)
+        let anchor = calendar.date(byAdding: .hour, value: -12, to: wakeDayStart) ?? wakeDayStart
+        return max(0, sleepStart.timeIntervalSince(anchor) / 60)
+    }
+
+    private func wakeOffsetMinutes(for entry: HealthSleepNight) -> Double {
+        guard let sleepEnd = entry.sleepEnd else { return 0 }
+        let calendar = Calendar.autoupdatingCurrent
+        let wakeDayStart = calendar.startOfDay(for: entry.displayWakeDay)
+        return max(0, sleepEnd.timeIntervalSince(wakeDayStart) / 60)
+    }
+
+    private func valueText(_ value: Double) -> String {
+        switch selectedMetric {
+        case .sleep:
+            return formattedSleepDurationText(value)
+        case .bedtime:
+            return clockTimeText(minutesAfterNoonPreviousDay: value)
+        case .wake:
+            return clockTimeText(minutesAfterWakeDayStart: value)
+        }
+    }
+
+    private func accessibilityValueText(_ value: Double) -> String {
+        switch selectedMetric {
+        case .sleep:
+            return formattedSleepDurationAccessibilityText(value)
+        case .bedtime, .wake:
+            return valueText(value)
+        }
+    }
+
+    private func clockTimeText(minutesAfterNoonPreviousDay minutes: Double) -> String {
+        let totalMinutes = Int(minutes.rounded()) + 12 * 60
+        return clockTimeText(minutesAfterMidnight: totalMinutes % (24 * 60))
+    }
+
+    private func clockTimeText(minutesAfterWakeDayStart minutes: Double) -> String {
+        clockTimeText(minutesAfterMidnight: Int(minutes.rounded()) % (24 * 60))
+    }
+
+    private func clockTimeText(minutesAfterMidnight minutes: Int) -> String {
+        var components = DateComponents()
+        components.hour = minutes / 60
+        components.minute = minutes % 60
+        let date = Calendar.autoupdatingCurrent.date(from: components) ?? .now
+        return date.formatted(date: .omitted, time: .shortened)
+    }
+
+    private func selectedSummaryText(valueText: String, weekdayText: String) -> String {
+        switch selectedMetric {
+        case .sleep:
+            return String(localized: "You sleep \(valueText) on \(weekdayText).")
+        case .bedtime:
+            return String(localized: "Your average bedtime on \(weekdayText) is \(valueText).")
+        case .wake:
+            return String(localized: "Your average wake-up time on \(weekdayText) is \(valueText).")
+        }
+    }
+
+    private func strongestSummaryText(valueText: String, weekdayText: String) -> String {
+        switch selectedMetric {
+        case .sleep:
+            return String(localized: "You sleep the most on \(weekdayText). \(valueText).")
+        case .bedtime:
+            return String(localized: "Your latest average bedtime is on \(weekdayText). \(valueText).")
+        case .wake:
+            return String(localized: "Your latest average wake-up time is on \(weekdayText). \(valueText).")
+        }
+    }
+
+    private func selectedHeadline(valueText: Text, weekdayText: String) -> Text {
+        switch selectedMetric {
+        case .sleep:
+            return Text("You sleep \(valueText) on \(weekdayText).")
+        case .bedtime:
+            return Text("Average bedtime on \(weekdayText): \(valueText).")
+        case .wake:
+            return Text("Average wake-up on \(weekdayText): \(valueText).")
+        }
+    }
+
+    private func strongestHeadline(valueText: Text, weekdayText: String) -> Text {
+        switch selectedMetric {
+        case .sleep:
+            return Text("You sleep the most on \(weekdayText). \(valueText).")
+        case .bedtime:
+            return Text("Latest average bedtime: \(weekdayText), \(valueText).")
+        case .wake:
+            return Text("Latest average wake-up: \(weekdayText), \(valueText).")
+        }
     }
 }
 

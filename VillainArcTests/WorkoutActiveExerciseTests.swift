@@ -12,14 +12,14 @@ struct WorkoutActiveExerciseTests {
 
         let bench = ExercisePrescription(exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!), workoutPlan: plan)
         bench.sets = [
-            SetPrescription(exercisePrescription: bench, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, index: 0),
-            SetPrescription(exercisePrescription: bench, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, index: 1),
+            SetPrescription(exercisePrescription: bench, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, targetRPE: 8, index: 0),
+            SetPrescription(exercisePrescription: bench, setType: .working, targetWeight: 135, targetReps: 8, targetRest: 90, targetRPE: 9, index: 1),
         ]
 
         let press = ExercisePrescription(exercise: Exercise(from: ExerciseCatalog.byID["barbell_squat"]!), workoutPlan: plan)
         press.index = 1
         press.sets = [
-            SetPrescription(exercisePrescription: press, setType: .working, targetWeight: 95, targetReps: 8, targetRest: 90, index: 0)
+            SetPrescription(exercisePrescription: press, setType: .working, targetWeight: 95, targetReps: 8, targetRest: 90, targetRPE: 7, index: 0)
         ]
 
         plan.exercises = [bench, press]
@@ -63,5 +63,33 @@ struct WorkoutActiveExerciseTests {
         session.completeSet(try #require(bench.sortedSets.first))
 
         #expect(session.activeExercise?.id == bench.id)
+    }
+
+    @Test @MainActor
+    func completingSetWithAssumedTargetRPEEnabledFillsMissingRPE() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let session = makePlanBackedSession(context: context)
+        let set = try #require(session.sortedExercises.first?.sortedSets.first)
+
+        session.completeSet(set, settings: AppSettingsSnapshot(settings: nil))
+
+        #expect(set.complete)
+        #expect(set.rpe == 8)
+    }
+
+    @Test @MainActor
+    func completingSetWithAssumedTargetRPEDisabledLeavesMissingRPEEmpty() throws {
+        let container = try TestModelContainer.make()
+        let context = ModelContext(container)
+        let settings = AppSettings()
+        settings.assumeTargetRPEOnComplete = false
+        let session = makePlanBackedSession(context: context)
+        let set = try #require(session.sortedExercises.first?.sortedSets.first)
+
+        session.completeSet(set, settings: AppSettingsSnapshot(settings: settings))
+
+        #expect(set.complete)
+        #expect(set.rpe == 0)
     }
 }

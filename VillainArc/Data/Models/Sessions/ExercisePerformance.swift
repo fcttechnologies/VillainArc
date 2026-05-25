@@ -50,6 +50,18 @@ import SwiftData
         }
     }
 
+    // Standalone history/sample initializer for imported exercise logs that do not have a full workout.
+    init(exercise: Exercise, date: Date, notes: String = "") {
+        self.date = date
+        catalogID = exercise.catalogID
+        name = exercise.name
+        self.notes = notes
+        musclesTargeted = exercise.musclesTargeted
+        equipmentType = exercise.equipmentType
+        workoutSession = nil
+        activeInSession = nil
+    }
+
     // Adding exercise from plan
     init(workoutSession: WorkoutSession, exercisePrescription: ExercisePrescription, autoFillTargets: Bool = true) {
         index = exercisePrescription.index
@@ -428,9 +440,28 @@ extension ExercisePerformance {
         return descriptor
     }
 
+    static func lastCompletedInSamePlan(for exercise: ExercisePerformance) -> FetchDescriptor<ExercisePerformance> {
+        guard let planID = exercise.workoutSession?.workoutPlan?.id else {
+            return lastCompleted(for: exercise)
+        }
+
+        let catalogID = exercise.catalogID
+        let done = SessionStatus.done.rawValue
+        let predicate = #Predicate<ExercisePerformance> { item in
+            item.catalogID == catalogID &&
+            item.workoutSession?.status == done &&
+            item.workoutSession?.isHidden == false &&
+            item.workoutSession?.workoutPlan?.id == planID
+        }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
+        descriptor.fetchLimit = 1
+        descriptor.relationshipKeyPathsForPrefetching = [\.sets]
+        return descriptor
+    }
+
     static func matching(catalogID: String, includingHidden: Bool = false) -> FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = includingHidden ? #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && item.workoutSession?.status == done } : #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
+        let predicate = includingHidden ? #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && (item.workoutSession?.status == done || item.workoutSession == nil) } : #Predicate<ExercisePerformance> { item in item.catalogID == catalogID && ((item.workoutSession?.status == done && item.workoutSession?.isHidden == false) || item.workoutSession == nil) }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.repRange]
         return descriptor
@@ -438,7 +469,7 @@ extension ExercisePerformance {
 
     static func matching(catalogIDs: [String]) -> FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in catalogIDs.contains(item.catalogID) && item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
+        let predicate = #Predicate<ExercisePerformance> { item in catalogIDs.contains(item.catalogID) && ((item.workoutSession?.status == done && item.workoutSession?.isHidden == false) || item.workoutSession == nil) }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
         descriptor.relationshipKeyPathsForPrefetching = [\.sets, \.workoutSession]
         return descriptor
@@ -465,7 +496,7 @@ extension ExercisePerformance {
 
     static var completedAll: FetchDescriptor<ExercisePerformance> {
         let done = SessionStatus.done.rawValue
-        let predicate = #Predicate<ExercisePerformance> { item in item.workoutSession?.status == done && item.workoutSession?.isHidden == false }
+        let predicate = #Predicate<ExercisePerformance> { item in (item.workoutSession?.status == done && item.workoutSession?.isHidden == false) || item.workoutSession == nil }
         return FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\ExercisePerformance.date, order: .reverse)])
     }
 }

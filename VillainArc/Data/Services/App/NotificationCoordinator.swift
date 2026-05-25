@@ -7,6 +7,7 @@ nonisolated enum NotificationType: String {
     case stepsGoalComplete
     case stepsEvent
     case sleepGoalComplete
+    case hydrationGoalComplete
     case weeklyHealthCoaching
 }
 
@@ -151,6 +152,36 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         }
     }
 
+    nonisolated static func deliverHydrationGoal(_ event: HydrationGoalNotification) async {
+        let settings = currentAppSettingsSnapshot()
+        let status = await authorizationStatus()
+
+        await shared.presentToastIfPossible(.hydrationGoalComplete(event))
+
+        guard let localEvent = event.localNotificationVersion(for: settings.hydrationNotificationMode), status.allowsLocalDelivery else {
+            return
+        }
+
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["hydrationGoalComplete"])
+        center.removeDeliveredNotifications(withIdentifiers: ["hydrationGoalComplete"])
+
+        let content = UNMutableNotificationContent()
+        content.title = localEvent.title
+        content.body = localEvent.body
+        content.sound = .default
+        content.threadIdentifier = "healthGoals"
+        content.userInfo = [NotificationUserInfoKey.type: NotificationType.hydrationGoalComplete.rawValue]
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: "hydrationGoalComplete", content: content, trigger: trigger)
+        do {
+            try await center.add(request)
+        } catch {
+            AppLog.error("Failed to schedule hydration goal notification", error: error)
+        }
+    }
+
     nonisolated static func deliverWeeklyHealthCoaching(averageSteps: Int?, averageSleepDuration: TimeInterval?, weekStart: Date) async -> Bool {
         let status = await authorizationStatus()
         guard status.allowsLocalDelivery else { return false }
@@ -212,6 +243,20 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         center.removeDeliveredNotifications(withIdentifiers: [response.notification.request.identifier])
 
+        if isRestTimerNotification(response.notification.request.content.userInfo) {
+            await MainActor.run {
+                AppRouter.shared.handleRestTimerNotificationTap()
+            }
+            return
+        }
+
+        if isWeeklyHealthCoachingNotification(response.notification.request.content.userInfo) {
+            await MainActor.run {
+                AppRouter.shared.handleWeeklyHealthCoachingNotificationTap()
+            }
+            return
+        }
+
         guard let destination = notificationTapDestination(for: response.notification.request.content.userInfo) else {
             return
         }
@@ -255,7 +300,19 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
             return nil
         case .sleepGoalComplete:
             return nil
+        case .hydrationGoalComplete:
+            return nil
         }
+    }
+
+    private func isRestTimerNotification(_ userInfo: [AnyHashable: Any]) -> Bool {
+        guard let rawValue = userInfo[NotificationUserInfoKey.type] as? String else { return false }
+        return rawValue == NotificationType.restTimerComplete.rawValue
+    }
+
+    private func isWeeklyHealthCoachingNotification(_ userInfo: [AnyHashable: Any]) -> Bool {
+        guard let rawValue = userInfo[NotificationUserInfoKey.type] as? String else { return false }
+        return rawValue == NotificationType.weeklyHealthCoaching.rawValue
     }
 
     private func notificationTapDestination(for userInfo: [AnyHashable: Any]) -> AppRouter.Destination? {
@@ -266,12 +323,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         switch type {
         case .stepsGoalComplete, .stepsEvent:
             return .stepsDistanceHistory
-        case .weeklyHealthCoaching:
-            let includesSteps = userInfo[NotificationUserInfoKey.weeklyIncludesSteps] as? Bool ?? false
-            return includesSteps ? .stepsDistanceHistory : .sleepHistory
         case .sleepGoalComplete:
             return .sleepHistory
-        case .restTimerComplete:
+        case .hydrationGoalComplete:
+            return .hydrationHistory
+        case .weeklyHealthCoaching, .restTimerComplete:
             return nil
         }
     }

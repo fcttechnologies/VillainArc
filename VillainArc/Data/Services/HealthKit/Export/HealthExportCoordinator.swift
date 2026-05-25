@@ -6,8 +6,10 @@ actor HealthExportCoordinator {
     static let shared = HealthExportCoordinator()
     private var inFlightSessionIDs: Set<UUID> = []
     private var inFlightWeightEntryIDs: Set<UUID> = []
+    private var inFlightHydrationEntryIDs: Set<UUID> = []
     private var isReconcilingSessions = false
     private var isReconcilingWeightEntries = false
+    private var isReconcilingHydrationEntries = false
 
     private init() {}
 
@@ -33,6 +35,18 @@ actor HealthExportCoordinator {
         let context = makeBackgroundContext()
         guard let weightEntry = try? context.fetch(WeightEntry.byID(weightEntryID)).first else { return }
         await exportLoadedWeightEntry(weightEntry, context: context)
+    }
+
+    func exportIfEligible(hydrationEntryID: UUID) async {
+        guard HealthAuthorizationManager.canWriteDietaryWater else { return }
+        guard !inFlightHydrationEntryIDs.contains(hydrationEntryID) else { return }
+
+        inFlightHydrationEntryIDs.insert(hydrationEntryID)
+        defer { inFlightHydrationEntryIDs.remove(hydrationEntryID) }
+
+        let context = makeBackgroundContext()
+        guard let hydrationEntry = try? context.fetch(HydrationEntry.byID(hydrationEntryID)).first else { return }
+        await exportLoadedHydrationEntry(hydrationEntry, context: context)
     }
 
     private func exportLoadedSession(_ session: WorkoutSession) async {
@@ -103,6 +117,7 @@ actor HealthExportCoordinator {
     func reconcilePendingExports() async {
         await reconcileCompletedSessions()
         await reconcileWeightEntries()
+        await reconcileHydrationEntries()
     }
 
     func reconcileCompletedSessions() async {
@@ -129,6 +144,43 @@ actor HealthExportCoordinator {
         let weightEntryIDs = ((try? context.fetch(WeightEntry.entriesNeedingHealthExport)) ?? []).map(\.id)
 
         for weightEntryID in weightEntryIDs { await exportIfEligible(weightEntryID: weightEntryID) }
+    }
+
+    func reconcileHydrationEntries() async {
+        guard HealthAuthorizationManager.canWriteDietaryWater else { return }
+        guard !isReconcilingHydrationEntries else { return }
+
+        isReconcilingHydrationEntries = true
+        defer { isReconcilingHydrationEntries = false }
+
+        let context = makeBackgroundContext()
+        let hydrationEntryIDs = ((try? context.fetch(HydrationEntry.entriesNeedingHealthExport)) ?? []).map(\.id)
+
+        for hydrationEntryID in hydrationEntryIDs { await exportIfEligible(hydrationEntryID: hydrationEntryID) }
+    }
+
+    private func exportLoadedHydrationEntry(_ hydrationEntry: HydrationEntry, context: ModelContext) async {
+        guard !hydrationEntry.hasBeenExportedToHealth else { return }
+
+        if let existingSample = try? await HealthMirrorQueries.findSavedHydrationSample(for: hydrationEntry.id) {
+            do {
+                try HealthHydrationEntryLinker.upsertHydrationEntry(for: existingSample, context: context)
+                try context.save()
+                AppLog.info("Linked existing Apple Health dietary water sample \(existingSample.uuid) to local hydration entry \(hydrationEntry.id).")
+            } catch { AppLog.error("Failed to link existing Apple Health dietary water sample for \(hydrationEntry.id)", error: error) }
+            return
+        }
+
+        let sampleDate = hydrationEntry.date
+        let quantity = HKQuantity(unit: HealthKitCatalog.milliliterUnit, doubleValue: hydrationEntry.volume)
+        let sample = HKQuantitySample(type: HealthKitCatalog.dietaryWaterType, quantity: quantity, start: sampleDate, end: sampleDate, metadata: HealthAuthorizationManager.metadata(for: hydrationEntry))
+
+        do {
+            try await HealthAuthorizationManager.healthStore.save(sample)
+            try HealthHydrationEntryLinker.upsertHydrationEntry(for: sample, context: context)
+            try context.save()
+            AppLog.info("Saved hydration entry \(hydrationEntry.id) to Apple Health as \(sample.uuid).")
+        } catch { AppLog.error("Failed to export hydration entry \(hydrationEntry.id) to HealthKit", error: error) }
     }
 
     private func makeBackgroundContext() -> ModelContext {

@@ -7,12 +7,20 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: tabSelectionBinding) {
-            HomeTabView(transitionNamespace: animation)
+            HomeTabView()
                 .tag(AppTab.home)
                 .toolbar(.hidden, for: .tabBar)
             
-            HealthTabView(transitionNamespace: animation)
+            HealthTabView()
                 .tag(AppTab.health)
+                .toolbar(.hidden, for: .tabBar)
+
+            ProfileSheetView(showsCloseButton: false)
+                .tag(AppTab.profile)
+                .toolbar(.hidden, for: .tabBar)
+
+            AppSettingsView(showsCloseButton: false)
+                .tag(AppTab.settings)
                 .toolbar(.hidden, for: .tabBar)
         }
         .safeAreaBar(edge: .bottom) {
@@ -73,6 +81,15 @@ struct ContentView: View {
                 .presentationDetents([.fraction(0.6)])
                 .presentationBackground(Color.sheetBg)
         }
+        .sheet(isPresented: addHydrationEntrySheetBinding) {
+            NewHydrationEntryView()
+                .presentationDetents([.fraction(0.5)])
+                .presentationBackground(Color.sheetBg)
+        }
+        .sheet(isPresented: trainingConditionEditorSheetBinding) {
+            TrainingConditionEditorView()
+                .presentationBackground(Color.sheetBg)
+        }
         .sheet(isPresented: newWeightGoalSheetBinding) {
             NewWeightGoalView()
                 .presentationBackground(Color.sheetBg)
@@ -85,6 +102,11 @@ struct ContentView: View {
         .sheet(isPresented: newSleepGoalSheetBinding) {
             NewSleepGoalView()
                 .presentationDetents([.fraction(0.6)])
+                .presentationBackground(Color.sheetBg)
+        }
+        .sheet(isPresented: newHydrationGoalSheetBinding) {
+            NewHydrationGoalView()
+                .presentationDetents([.fraction(0.4)])
                 .presentationBackground(Color.sheetBg)
         }
         .background {
@@ -145,6 +167,20 @@ struct ContentView: View {
             }
         )
 
+        actions.append(
+            ExpandedAction("Add Water", icon: "drop.fill", accessibilityIdentifier: "morphing_add_water_button", accessibilityHint: "Opens the water intake entry form.") {
+                collapseMorphingTabBar()
+                router.presentHealthSheet(.addHydrationEntry)
+            }
+        )
+
+        actions.append(
+            ExpandedAction("Update Status", icon: "figure.run", accessibilityIdentifier: "morphing_training_condition_button", accessibilityHint: "Opens your training condition editor.") {
+                collapseMorphingTabBar()
+                router.presentHealthSheet(.trainingConditionEditor)
+            }
+        )
+
         if shouldShowStartTodaysWorkoutAction {
             actions.append(ExpandedAction("Start Today's Workout", icon: "figure.strengthtraining.traditional", accessibilityIdentifier: AccessibilityIdentifiers.morphingStartTodaysWorkoutButton, accessibilityHint: AccessibilityText.morphingStartTodaysWorkoutHint) {
                     collapseMorphingTabBar()
@@ -169,12 +205,7 @@ struct ContentView: View {
     }
 
     private var healthExpandedActions: [ExpandedAction] {
-        [
-            ExpandedAction("Status", icon: "figure.run", accessibilityIdentifier: "morphing_training_condition_button", accessibilityHint: "Opens your training condition editor.") {
-                collapseMorphingTabBar()
-                router.presentHealthSheet(.trainingConditionEditor)
-            }
-        ]
+        []
     }
     
     private var workoutSplitExpandedActions: [ExpandedAction] {
@@ -322,6 +353,28 @@ struct ContentView: View {
         )
     }
 
+    private var addHydrationEntrySheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .addHydrationEntry },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .addHydrationEntry {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
+    }
+
+    private var trainingConditionEditorSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .trainingConditionEditor },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .trainingConditionEditor {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
+    }
+
     private var newWeightGoalSheetBinding: Binding<Bool> {
         Binding(
             get: { router.activeHealthSheet == .newWeightGoal },
@@ -349,6 +402,17 @@ struct ContentView: View {
             get: { router.activeHealthSheet == .newSleepGoal },
             set: { isPresented in
                 if !isPresented, router.activeHealthSheet == .newSleepGoal {
+                    router.activeHealthSheet = nil
+                }
+            }
+        )
+    }
+
+    private var newHydrationGoalSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeHealthSheet == .newHydrationGoal },
+            set: { isPresented in
+                if !isPresented, router.activeHealthSheet == .newHydrationGoal {
                     router.activeHealthSheet = nil
                 }
             }

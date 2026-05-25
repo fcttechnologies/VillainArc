@@ -10,6 +10,13 @@ final class HealthStoreUpdateCoordinator {
         case activeEnergy
         case restingEnergy
         case sleep
+        case heartRate
+        case restingHeartRate
+        case walkingHeartRate
+        case heartRateVariability
+        case respiratoryRate
+        case wristTemperature
+        case dietaryWater
 
         var logLabel: String {
             switch self {
@@ -20,6 +27,13 @@ final class HealthStoreUpdateCoordinator {
             case .activeEnergy: return "active energy"
             case .restingEnergy: return "resting energy"
             case .sleep: return "sleep"
+            case .heartRate: return "heart rate"
+            case .restingHeartRate: return "resting heart rate"
+            case .walkingHeartRate: return "walking heart rate"
+            case .heartRateVariability: return "heart rate variability"
+            case .respiratoryRate: return "respiratory rate"
+            case .wristTemperature: return "wrist temperature"
+            case .dietaryWater: return "dietary water"
             }
         }
     }
@@ -33,6 +47,13 @@ final class HealthStoreUpdateCoordinator {
     private var activeEnergyObserverQuery: HKObserverQuery?
     private var restingEnergyObserverQuery: HKObserverQuery?
     private var sleepObserverQuery: HKObserverQuery?
+    private var heartRateObserverQuery: HKObserverQuery?
+    private var restingHeartRateObserverQuery: HKObserverQuery?
+    private var walkingHeartRateObserverQuery: HKObserverQuery?
+    private var heartRateVariabilityObserverQuery: HKObserverQuery?
+    private var respiratoryRateObserverQuery: HKObserverQuery?
+    private var wristTemperatureObserverQuery: HKObserverQuery?
+    private var dietaryWaterObserverQuery: HKObserverQuery?
     private var isRefreshingBackgroundDelivery = false
     private var inFlightRefreshTask: Task<Void, Never>?
 
@@ -47,7 +68,14 @@ final class HealthStoreUpdateCoordinator {
             startWalkingRunningDistanceObserverIfNeeded() ? ObserverKind.walkingRunningDistance.logLabel : nil,
             startActiveEnergyObserverIfNeeded() ? ObserverKind.activeEnergy.logLabel : nil,
             startRestingEnergyObserverIfNeeded() ? ObserverKind.restingEnergy.logLabel : nil,
-            startSleepObserverIfNeeded() ? ObserverKind.sleep.logLabel : nil
+            startSleepObserverIfNeeded() ? ObserverKind.sleep.logLabel : nil,
+            startHeartRateObserverIfNeeded() ? ObserverKind.heartRate.logLabel : nil,
+            startRestingHeartRateObserverIfNeeded() ? ObserverKind.restingHeartRate.logLabel : nil,
+            startWalkingHeartRateObserverIfNeeded() ? ObserverKind.walkingHeartRate.logLabel : nil,
+            startHeartRateVariabilityObserverIfNeeded() ? ObserverKind.heartRateVariability.logLabel : nil,
+            startRespiratoryRateObserverIfNeeded() ? ObserverKind.respiratoryRate.logLabel : nil,
+            startWristTemperatureObserverIfNeeded() ? ObserverKind.wristTemperature.logLabel : nil,
+            startDietaryWaterObserverIfNeeded() ? ObserverKind.dietaryWater.logLabel : nil
         ].compactMap(\.self)
 
         guard !initializedObservers.isEmpty else { return }
@@ -277,6 +305,230 @@ final class HealthStoreUpdateCoordinator {
         return true
     }
 
+    @discardableResult
+    private func startHeartRateObserverIfNeeded() -> Bool {
+        guard heartRateObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.heartRateType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncHeartRate()
+                }
+                return
+            }
+
+            AppLog.error("Health heart rate observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.heartRate, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        heartRateObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    @discardableResult
+    private func startRestingHeartRateObserverIfNeeded() -> Bool {
+        guard restingHeartRateObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.restingHeartRateType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncRestingHeartRate()
+                }
+                return
+            }
+
+            AppLog.error("Health resting heart rate observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.restingHeartRate, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        restingHeartRateObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    @discardableResult
+    private func startWalkingHeartRateObserverIfNeeded() -> Bool {
+        guard walkingHeartRateObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.walkingHeartRateAverageType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncWalkingHeartRate()
+                }
+                return
+            }
+
+            AppLog.error("Health walking heart rate observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.walkingHeartRate, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        walkingHeartRateObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    @discardableResult
+    private func startHeartRateVariabilityObserverIfNeeded() -> Bool {
+        guard heartRateVariabilityObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.heartRateVariabilitySDNNType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncHeartRateVariability()
+                }
+                return
+            }
+
+            AppLog.error("Health heart rate variability observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.heartRateVariability, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        heartRateVariabilityObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    @discardableResult
+    private func startRespiratoryRateObserverIfNeeded() -> Bool {
+        guard respiratoryRateObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.respiratoryRateType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncRespiratoryRate()
+                }
+                return
+            }
+
+            AppLog.error("Health respiratory rate observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.respiratoryRate, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        respiratoryRateObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    @discardableResult
+    private func startWristTemperatureObserverIfNeeded() -> Bool {
+        guard wristTemperatureObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.appleSleepingWristTemperatureType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthDailyMetricsSync.shared.syncWristTemperature()
+                }
+                return
+            }
+
+            AppLog.error("Health wrist temperature observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.wristTemperature, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        wristTemperatureObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
+    @discardableResult
+    private func startDietaryWaterObserverIfNeeded() -> Bool {
+        guard dietaryWaterObserverQuery == nil else { return false }
+
+        let query = HKObserverQuery(sampleType: HealthKitCatalog.dietaryWaterType, predicate: nil) { query, completionHandler, error in
+            guard let error else {
+                nonisolated(unsafe) let completionHandler = completionHandler
+                Task {
+                    defer { completionHandler() }
+                    await HealthSyncCoordinator.shared.syncHydrationEntries()
+                }
+                return
+            }
+
+            AppLog.error("Health dietary water observer failed: \(error.localizedDescription)")
+
+            nonisolated(unsafe) let completionHandler = completionHandler
+            let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
+            let failedQueryID = ObjectIdentifier(query)
+            Task { @MainActor in
+                defer { completionHandler() }
+                if shouldReinstallObserver {
+                    HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.dietaryWater, failedQueryID: failedQueryID)
+                }
+            }
+        }
+
+        dietaryWaterObserverQuery = query
+        HealthAuthorizationManager.healthStore.execute(query)
+        return true
+    }
+
     nonisolated private static func shouldReinstallObserver(after error: Error) -> Bool {
         let nsError = error as NSError
         guard nsError.domain == HKErrorDomain,
@@ -307,6 +559,20 @@ final class HealthStoreUpdateCoordinator {
             clearObserverIfMatching(&restingEnergyObserverQuery, kind: kind, failedQueryID: failedQueryID)
         case .sleep:
             clearObserverIfMatching(&sleepObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .heartRate:
+            clearObserverIfMatching(&heartRateObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .restingHeartRate:
+            clearObserverIfMatching(&restingHeartRateObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .walkingHeartRate:
+            clearObserverIfMatching(&walkingHeartRateObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .heartRateVariability:
+            clearObserverIfMatching(&heartRateVariabilityObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .respiratoryRate:
+            clearObserverIfMatching(&respiratoryRateObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .wristTemperature:
+            clearObserverIfMatching(&wristTemperatureObserverQuery, kind: kind, failedQueryID: failedQueryID)
+        case .dietaryWater:
+            clearObserverIfMatching(&dietaryWaterObserverQuery, kind: kind, failedQueryID: failedQueryID)
         }
     }
 
@@ -362,6 +628,48 @@ final class HealthStoreUpdateCoordinator {
             do {
                 try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.sleepAnalysisType, frequency: .immediate)
             } catch { AppLog.error("Failed to enable HealthKit background delivery for sleep analysis", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedHeartRateAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.heartRateType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for heart rate", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedRestingHeartRateAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.restingHeartRateType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for resting heart rate", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedWalkingHeartRateAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.walkingHeartRateAverageType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for walking heart rate", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedHeartRateVariabilityAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.heartRateVariabilitySDNNType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for heart rate variability", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedRespiratoryRateAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.respiratoryRateType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for respiratory rate", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedWristTemperatureAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.appleSleepingWristTemperatureType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for wrist temperature", error: error) }
+        }
+
+        if HealthAuthorizationManager.hasRequestedDietaryWaterAuthorization {
+            do {
+                try await HealthAuthorizationManager.healthStore.enableBackgroundDelivery(for: HealthKitCatalog.dietaryWaterType, frequency: .immediate)
+            } catch { AppLog.error("Failed to enable HealthKit background delivery for dietary water", error: error) }
         }
     }
 

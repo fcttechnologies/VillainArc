@@ -267,6 +267,10 @@ struct ExerciseView: View {
             .task(id: exercise.catalogID) {
                 loadPreviousReferenceDataIfNeeded()
             }
+            .onChange(of: appSettingsSnapshot.previousSetReferenceSource) {
+                previousReferenceBySetIndex = [:]
+                loadPreviousReferenceDataIfNeeded()
+            }
         }
     }
     
@@ -305,7 +309,14 @@ struct ExerciseView: View {
     
     private func loadPreviousReferenceDataIfNeeded() {
         guard previousReferenceBySetIndex.isEmpty else { return }
-        let previousSets = (try? context.fetch(ExercisePerformance.lastCompleted(for: exercise)).first?.sortedSets) ?? []
+        let descriptor: FetchDescriptor<ExercisePerformance>
+        switch appSettingsSnapshot.previousSetReferenceSource {
+        case .anyWorkout:
+            descriptor = ExercisePerformance.lastCompleted(for: exercise)
+        case .lastPlanUse:
+            descriptor = ExercisePerformance.lastCompletedInSamePlan(for: exercise)
+        }
+        let previousSets = (try? context.fetch(descriptor).first?.sortedSets) ?? []
         previousReferenceBySetIndex = Dictionary(uniqueKeysWithValues: previousSets.map { previousSet in
             (previousSet.index, SetReferenceData(reps: previousSet.reps, weight: previousSet.weight, rpe: previousSet.visibleRPE, setType: previousSet.type, rpeStyle: .actual, actionLabel: "Use Previous"))
         })

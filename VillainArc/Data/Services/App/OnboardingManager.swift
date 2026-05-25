@@ -50,6 +50,10 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
     let healthSleepBlocks: Int
     let healthStepsDistances: Int
     let healthEnergyRecords: Int
+    let healthHeartRecords: Int
+    let healthRespiratoryRateRecords: Int
+    let healthWristTemperatureRecords: Int
+    let hydrationEntries: Int
     let suggestionEvents: Int
     let restTimeHistories: Int
 }
@@ -156,6 +160,7 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         do {
             _ = try await DataManager.seedExercisesForOnboarding()
             SpotlightIndexer.reindexAll(context: context)
+            cleanupIncompleteAuthoringWork()
         } catch {
             guard attemptID == onboardingAttemptID else { return }
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
@@ -186,6 +191,7 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         do {
             // Seed exercises locally only
             _ = try await DataManager.seedExercisesForOnboarding()
+            cleanupIncompleteAuthoringWork()
             _ = try SystemState.ensureAppSettings(context: context)
             _ = try SystemState.ensureHealthSyncState(context: context)
             let profile = try SystemState.ensureUserProfile(context: context)
@@ -239,6 +245,38 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
             return false
         }
     }
+
+#if DEBUG
+    func completeOnboardingWithDebugData() async {
+        do {
+            state = .finishing
+            HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
+            _ = try SystemState.ensureAppSettings(context: context)
+            _ = try SystemState.ensureHealthSyncState(context: context)
+
+            let profile = try SystemState.ensureUserProfile(context: context)
+            profile.name = profile.trimmedName.isEmpty ? "Debug User" : profile.trimmedName
+            profile.birthday = profile.birthday ?? Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
+            if profile.gender == .notSet {
+                profile.gender = .other
+            }
+            profile.heightCm = profile.heightCm ?? 175
+            profile.fitnessLevel = profile.fitnessLevel ?? .intermediate
+            profile.fitnessLevelSetAt = profile.fitnessLevelSetAt ?? .now
+            self.profile = profile
+
+            if try context.fetch(TrainingGoal.active).first == nil {
+                context.insert(TrainingGoal(kind: .generalTraining))
+            }
+
+            try context.save()
+            await syncCatalogIfNeededBeforeReady()
+            transitionToReady()
+        } catch {
+            state = .error("Failed to complete debug onboarding: \(error.localizedDescription)")
+        }
+    }
+#endif
 
     func connectAppleHealthDuringOnboarding() async {
         HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
@@ -422,6 +460,10 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
                 healthSleepBlocks: try context.fetchCount(FetchDescriptor<HealthSleepBlock>()),
                 healthStepsDistances: try context.fetchCount(FetchDescriptor<HealthStepsDistance>()),
                 healthEnergyRecords: try context.fetchCount(FetchDescriptor<HealthEnergy>()),
+                healthHeartRecords: try context.fetchCount(FetchDescriptor<HealthHeart>()),
+                healthRespiratoryRateRecords: try context.fetchCount(FetchDescriptor<HealthRespiratoryRate>()),
+                healthWristTemperatureRecords: try context.fetchCount(FetchDescriptor<HealthWristTemperature>()),
+                hydrationEntries: try context.fetchCount(FetchDescriptor<HydrationEntry>()),
                 suggestionEvents: try context.fetchCount(FetchDescriptor<SuggestionEvent>()),
                 restTimeHistories: try context.fetchCount(FetchDescriptor<RestTimeHistory>())
             )
@@ -460,6 +502,25 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         }
     }
 
+    private func cleanupIncompleteAuthoringWork() {
+        do {
+            let done = SessionStatus.done.rawValue
+            let incompleteWorkoutPredicate = #Predicate<WorkoutSession> { $0.status != done }
+            let incompleteWorkouts = try context.fetch(FetchDescriptor<WorkoutSession>(predicate: incompleteWorkoutPredicate))
+            let incompletePlanPredicate = #Predicate<WorkoutPlan> { !$0.completed || $0.isEditing }
+            let incompletePlans = try context.fetch(FetchDescriptor<WorkoutPlan>(predicate: incompletePlanPredicate))
+
+            guard !incompleteWorkouts.isEmpty || !incompletePlans.isEmpty else { return }
+
+            incompleteWorkouts.forEach(context.delete)
+            incompletePlans.forEach(context.delete)
+            try context.save()
+            AppLog.info("Onboarding cleanup removed \(incompleteWorkouts.count) incomplete workouts and \(incompletePlans.count) incomplete plans.")
+        } catch {
+            AppLog.error("Onboarding cleanup failed for incomplete authoring work", error: error)
+        }
+    }
+
 }
 
 extension UserGender {
@@ -472,4 +533,5 @@ extension UserGender {
         @unknown default: self = .notSet
         }
     }
+
 }

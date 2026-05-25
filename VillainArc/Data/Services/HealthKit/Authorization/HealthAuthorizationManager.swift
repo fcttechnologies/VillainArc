@@ -130,6 +130,46 @@ nonisolated enum HealthAuthorizationManager {
         return healthStore.authorizationStatus(for: HealthKitCatalog.sleepAnalysisType) != .notDetermined
     }
 
+    static var hasRequestedHeartRateAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.heartRateType) != .notDetermined
+    }
+
+    static var hasRequestedRestingHeartRateAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.restingHeartRateType) != .notDetermined
+    }
+
+    static var hasRequestedWalkingHeartRateAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.walkingHeartRateAverageType) != .notDetermined
+    }
+
+    static var hasRequestedHeartRateVariabilityAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.heartRateVariabilitySDNNType) != .notDetermined
+    }
+
+    static var hasRequestedRespiratoryRateAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.respiratoryRateType) != .notDetermined
+    }
+
+    static var hasRequestedWristTemperatureAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.appleSleepingWristTemperatureType) != .notDetermined
+    }
+
+    static var hasRequestedDietaryWaterAuthorization: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.dietaryWaterType) != .notDetermined
+    }
+
+    static var canWriteDietaryWater: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.dietaryWaterType) == .sharingAuthorized
+    }
+
     static func shouldPromptForCurrentPermissionsVersion() async -> Bool {
         guard isHealthDataAvailable else { return false }
         guard currentPermissionsVersion != lastHandledPermissionsVersion else { return false }
@@ -183,13 +223,18 @@ nonisolated enum HealthAuthorizationManager {
         [HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString, HKMetadataKeyWasUserEntered: true]
     }
 
+    static func metadata(for hydrationEntry: HydrationEntry) -> [String: Any] {
+        [HealthMetadataKeys.hydrationEntryID: hydrationEntry.id.uuidString, HKMetadataKeyWasUserEntered: true]
+    }
+
     private static var healthShareTypes: Set<HKSampleType> {
         [
             HealthKitCatalog.workoutType,
             HealthKitCatalog.workoutEffortScoreType,
             HealthKitCatalog.activeEnergyBurnedType,
             HealthKitCatalog.restingEnergyBurnedType,
-            HealthKitCatalog.bodyMassType
+            HealthKitCatalog.bodyMassType,
+            HealthKitCatalog.dietaryWaterType
         ]
     }
 
@@ -202,9 +247,14 @@ nonisolated enum HealthAuthorizationManager {
             HealthKitCatalog.sleepAnalysisType,
             HealthKitCatalog.stepCountType,
             HealthKitCatalog.heartRateType,
+            HealthKitCatalog.restingHeartRateType,
+            HealthKitCatalog.walkingHeartRateAverageType,
+            HealthKitCatalog.heartRateVariabilitySDNNType,
             HealthKitCatalog.activeEnergyBurnedType,
             HealthKitCatalog.restingEnergyBurnedType,
             HealthKitCatalog.respiratoryRateType,
+            HealthKitCatalog.appleSleepingWristTemperatureType,
+            HealthKitCatalog.dietaryWaterType,
             HealthKitCatalog.flightsClimbedType,
             HealthKitCatalog.heightType,
             HealthKitCatalog.bodyMassType,

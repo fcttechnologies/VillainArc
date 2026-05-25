@@ -114,6 +114,12 @@ struct HealthWorkoutDetailContent: View {
         if loader.summary.totalDistance != nil { items.append(SummaryStatItem(title: "Distance", value: distanceText)) }
         items.append(SummaryStatItem(title: "Active Energy", value: activeEnergyText))
         if let totalEnergyText { items.append(SummaryStatItem(title: "Total Energy", value: totalEnergyText)) }
+        if let averageHeartRate = loader.summary.averageHeartRateBPM {
+            items.append(SummaryStatItem(title: "Avg Heart Rate", value: formattedHeartRateValue(averageHeartRate, fractionDigits: 0...0)))
+        }
+        if let maximumHeartRate = loader.summary.maximumHeartRateBPM {
+            items.append(SummaryStatItem(title: "Max Heart Rate", value: formattedHeartRateValue(maximumHeartRate, fractionDigits: 0...0)))
+        }
         items.append(contentsOf: extraSummaryItems)
         return items
     }
@@ -149,7 +155,7 @@ struct HealthWorkoutDetailContent: View {
                 routeSection
             }
 
-            if loader.heartRateSummary.hasContent {
+            if loader.heartRatePoints.count >= 2 {
                 heartRateSection
             }
 
@@ -190,11 +196,7 @@ struct HealthWorkoutDetailContent: View {
                     .accessibilityValue(healthEffortAccessibilityValue)
             }
 
-            if loader.isUsingCachedSummaryOnly {
-                Text("This workout is no longer available in Apple Health. Villain Arc is showing the last synced summary.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else if let loadErrorMessage = loader.loadErrorMessage {
+            if !loader.isUsingCachedSummaryOnly, let loadErrorMessage = loader.loadErrorMessage {
                 Text(loadErrorMessage)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -231,12 +233,10 @@ struct HealthWorkoutDetailContent: View {
             Text("Heart Rate")
                 .font(.headline)
 
-            if loader.heartRatePoints.count >= 2 {
-                HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(AccessibilityText.healthWorkoutHeartRateChartLabel)
-                    .accessibilityValue(AccessibilityText.healthWorkoutHeartRateChartValue(summary: chartAccessibilitySummary))
-            }
+            HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(AccessibilityText.healthWorkoutHeartRateChartLabel)
+                .accessibilityValue(AccessibilityText.healthWorkoutHeartRateChartValue(summary: chartAccessibilitySummary))
         }
     }
 

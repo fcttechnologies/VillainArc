@@ -49,4 +49,50 @@ struct SchemaMigrationTests {
         #expect(migratedSyncState.weeklyCoachingLastDeliveredWeekStart == nil)
         #expect(migratedProfile.profileImageData == originalImageData)
     }
+
+    @Test @MainActor
+    func migratingV4StoreToV5InitializesNewSyncStateFields() throws {
+        let storeURL = FileManager.default.temporaryDirectory.appendingPathComponent("VillainArcMigration-\(UUID().uuidString).store")
+        defer {
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: storeURL.path + "-shm"))
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: storeURL.path + "-wal"))
+        }
+
+        let v4Schema = Schema(versionedSchema: VillainArcSchemaV4.self)
+
+        do {
+            let configuration = ModelConfiguration(nil, schema: v4Schema, url: storeURL, allowsSave: true)
+            let container = try ModelContainer(for: v4Schema, configurations: [configuration])
+            let context = ModelContext(container)
+
+            let settings = VillainArcSchemaV4.AppSettings()
+            let syncState = VillainArcSchemaV4.HealthSyncState()
+
+            context.insert(settings)
+            context.insert(syncState)
+            try context.save()
+        }
+
+        let migratedConfiguration = ModelConfiguration(nil, schema: SharedModelContainer.schema, url: storeURL, allowsSave: true)
+        let migratedContainer = try ModelContainer(
+            for: SharedModelContainer.schema,
+            migrationPlan: VillainArcSchemaMigrationPlan.self,
+            configurations: [migratedConfiguration]
+        )
+        let migratedContext = ModelContext(migratedContainer)
+
+        let migratedSettings = try #require(try migratedContext.fetch(AppSettings.single).first)
+        let migratedSyncState = try #require(try migratedContext.fetch(HealthSyncState.single).first)
+
+        #expect(migratedSettings.assumeTargetRPEOnComplete)
+        #expect(migratedSettings.prefersTargetReferenceWhenPlanned)
+        #expect(migratedSettings.temperatureUnit == .systemDefault)
+        #expect(migratedSettings.hydrationDailyGoalML == 3000)
+        #expect(migratedSyncState.heartRateSyncedRangeStart == nil)
+        #expect(migratedSyncState.heartRateSyncedRangeEnd == nil)
+        #expect(migratedSyncState.latestHeartRate == nil)
+        #expect(migratedSyncState.respiratoryRateSyncedRangeStart == nil)
+        #expect(migratedSyncState.dietaryWaterSyncedRangeStart == nil)
+    }
 }

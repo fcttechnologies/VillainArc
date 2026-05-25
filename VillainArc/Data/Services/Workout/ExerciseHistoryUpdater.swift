@@ -77,7 +77,10 @@ struct ExerciseHistoryUpdater {
         let descriptor = ExercisePerformance.forCatalogIDs(ids)
         let allPerformances = (try? context.fetch(descriptor)) ?? []
         let visibleCompleted = allPerformances.filter { performance in
-            performance.workoutSession?.status == done && performance.workoutSession?.isHidden == false
+            if performance.workoutSession == nil {
+                return performance.allSetsComplete
+            }
+            return performance.workoutSession?.status == done && performance.workoutSession?.isHidden == false
         }
 
         return Dictionary(grouping: visibleCompleted, by: \.catalogID)

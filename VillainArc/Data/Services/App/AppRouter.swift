@@ -40,10 +40,12 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
 
     enum HealthSheet: String, Identifiable {
         case addWeightEntry
+        case addHydrationEntry
         case trainingConditionEditor
         case newWeightGoal
         case newStepsGoal
         case newSleepGoal
+        case newHydrationGoal
 
         var id: String { rawValue }
     }
@@ -175,6 +177,14 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case stepsDistanceHistory
         case stepsGoalHistory
         case energyHistory
+        case hydrationHistory
+        case hydrationGoalHistory
+        case heartRateHistory
+        case restingHeartRateHistory
+        case walkingHeartRateHistory
+        case heartRateVariabilityHistory
+        case respiratoryRateHistory
+        case wristTemperatureHistory
         case allWeightEntriesList
         case weightGoalHistory
         case workoutPlansList
@@ -202,6 +212,10 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             return additionalQuickActionContext(for: homeTabPath.last)
         case .health:
             return additionalQuickActionContext(for: healthTabPath.last)
+        case .profile:
+            return nil
+        case .settings:
+            return nil
         }
     }
 
@@ -307,6 +321,20 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         handlePendingNotificationDestinationIfPossible()
     }
 
+    func handleRestTimerNotificationTap() {
+        AppLog.info("Rest timer notification routed to active workout.")
+        guard activeWorkoutSession != nil else { return }
+        isWorkoutSessionCoverPresented = true
+        noteNavigationStateChanged()
+    }
+
+    func handleWeeklyHealthCoachingNotificationTap() {
+        AppLog.info("Weekly health coaching notification routed to health tab.")
+        collapseActiveFlowPresentations()
+        popToRoot(tab: .health)
+        tabSelection = .health
+    }
+
     func handlePendingNotificationDestinationIfPossible() {
         guard let destination = pendingNotificationDestination else { return }
         guard isReadyForIntentActions() else { return }
@@ -329,6 +357,20 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             return .stepsDistanceHistory
         case "/energy-history":
             return .energyHistory
+        case "/hydration-history":
+            return .hydrationHistory
+        case "/heart-rate-history":
+            return .heartRateHistory
+        case "/resting-heart-rate-history":
+            return .restingHeartRateHistory
+        case "/walking-heart-rate-history":
+            return .walkingHeartRateHistory
+        case "/heart-rate-variability-history":
+            return .heartRateVariabilityHistory
+        case "/respiratory-rate-history":
+            return .respiratoryRateHistory
+        case "/wrist-temperature-history":
+            return .wristTemperatureHistory
         default:
             return nil
         }
@@ -358,6 +400,10 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case .home:
             tabSelection = .home
             homeTabPath.append(destination)
+        case .profile:
+            tabSelection = .profile
+        case .settings:
+            tabSelection = .settings
         }
         noteNavigationStateChanged()
     }
@@ -448,6 +494,10 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             if healthTabPath.isEmpty { return }
             healthTabPath = []
             healthTabResetToken = UUID()
+        case .profile:
+            return
+        case .settings:
+            return
         }
         noteNavigationStateChanged()
     }
@@ -470,6 +520,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             return .sleepGoalHistory
         case .stepsDistanceHistory, .stepsGoalHistory:
             return .stepsGoalHistory
+        case .hydrationHistory, .hydrationGoalHistory, .heartRateHistory, .restingHeartRateHistory, .walkingHeartRateHistory, .heartRateVariabilityHistory, .respiratoryRateHistory, .wristTemperatureHistory:
+            return .healthRoot
         default:
             return nil
         }
@@ -863,6 +915,14 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
              .stepsDistanceHistory,
              .stepsGoalHistory,
              .energyHistory,
+             .hydrationHistory,
+             .hydrationGoalHistory,
+             .heartRateHistory,
+             .restingHeartRateHistory,
+             .walkingHeartRateHistory,
+             .heartRateVariabilityHistory,
+             .respiratoryRateHistory,
+             .wristTemperatureHistory,
              .allWeightEntriesList,
              .weightGoalHistory:
             return .health

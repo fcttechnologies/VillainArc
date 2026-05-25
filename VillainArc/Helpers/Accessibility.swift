@@ -476,6 +476,7 @@ enum AccessibilityIdentifiers {
     static let workoutSettingsAssumeTargetRPEToggle = "workoutSettingsAssumeTargetRPEToggle"
     static let workoutSettingsAutoFillPlanTargetsToggle = "workoutSettingsAutoFillPlanTargetsToggle"
     static let workoutSettingsPrefersTargetReferenceToggle = "workoutSettingsPrefersTargetReferenceToggle"
+    static let workoutSettingsPreviousReferenceSourcePicker = "workoutSettingsPreviousReferenceSourcePicker"
     static let workoutSettingsPreWorkoutPromptToggle = "workoutSettingsPreWorkoutPromptToggle"
     static let workoutSettingsPostWorkoutEffortToggle = "workoutSettingsPostWorkoutEffortToggle"
     static let workoutSettingsRetainPerformanceSnapshotsToggle = "workoutSettingsRetainPerformanceSnapshotsToggle"
@@ -1159,6 +1160,7 @@ enum AccessibilityText {
     static let workoutSettingsAutoCompleteAfterRPEHint = localized("Automatically marks a set complete after selecting an RPE rating.")
     static let workoutSettingsAssumeTargetRPEHint = localized("Fills in the target RPE when you mark a set complete without rating it.")
     static let workoutSettingsPrefersTargetReferenceHint = localized("When you have a plan, show your last performance in the reference column by default instead of the plan target. Tap the column header during a workout to switch.")
+    static let workoutSettingsPreviousReferenceSourceHint = localized("Chooses whether previous values come from any workout or from the last completed session for the same plan.")
     static let workoutSettingsPreWorkoutPromptHint = localized("Prompts for pre workout context when you open a new workout.")
     static let workoutSettingsPostWorkoutEffortHint = localized("Prompts for post workout effort before summary when the workout is being saved.")
     static let workoutSettingsRetainPerformanceSnapshotsHint = localized("Keeps deleted completed workouts hidden instead of permanently removing the performance snapshots used for suggestion learning.")

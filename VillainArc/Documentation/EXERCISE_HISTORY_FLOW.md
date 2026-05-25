@@ -22,6 +22,8 @@ VillainArc separates:
 - raw workout data in `ExercisePerformance` and `SetPerformance`
 - cached per-exercise analytics in `ExerciseHistory`
 
+`ExercisePerformance` can come from either a completed workout or a standalone/imported exercise log. Standalone performances have no `WorkoutSession`; they still count as completed exercise history when all sets are complete.
+
 `ExerciseHistory` is the read-optimized layer used for:
 
 - completed-workout recency
@@ -71,6 +73,7 @@ For completed workouts, the updater:
 
 - collects affected exercise `catalogID`s
 - batch-fetches matching completed performances
+- includes standalone all-sets-complete performances for those exercises
 - batch-fetches existing history rows
 - batch-fetches matching catalog exercises
 - rebuilds each affected history from scratch

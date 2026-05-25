@@ -60,10 +60,6 @@ struct ExerciseSetRowView: View {
         appSettingsSnapshot.autoCompleteSetAfterRPE
     }
 
-    private var assumeTargetRPEOnCompleteEnabled: Bool {
-        appSettingsSnapshot.assumeTargetRPEOnComplete
-    }
-
     private var loadFieldLabel: String {
         exercise.equipmentType.loadDisplayName
     }
@@ -264,9 +260,8 @@ struct ExerciseSetRowView: View {
         if playHaptics {
             Haptics.selection()
         }
-        applyAssumedTargetRPEIfNeeded()
         if let workout = exercise.workoutSession {
-            workout.completeSet(set)
+            workout.completeSet(set, settings: appSettingsSnapshot)
         } else {
             set.complete = true
             set.completedAt = Date()
@@ -278,14 +273,6 @@ struct ExerciseSetRowView: View {
             FoundationModelPrewarmer.warmup()
         }
         Task { await IntentDonations.donateCompleteActiveSet() }
-    }
-
-    private func applyAssumedTargetRPEIfNeeded() {
-        guard assumeTargetRPEOnCompleteEnabled else { return }
-        guard set.type != .warmup else { return }
-        guard set.rpe == 0 else { return }
-        guard let targetRPE = set.prescription?.visibleTargetRPE else { return }
-        set.rpe = targetRPE
     }
 
     private func toggleCompletionOff() {

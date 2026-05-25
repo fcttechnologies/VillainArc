@@ -3,6 +3,46 @@ import SwiftData
 import Charts
 import AppIntents
 import CoreSpotlight
+import MuscleMap
+
+private extension Muscle {
+    var detailMuscleMapMuscles: [MuscleMap.Muscle] {
+        switch self {
+        case .chest: return [.chest]
+        case .back: return [.upperBack, .lowerBack]
+        case .shoulders: return [.deltoids]
+        case .biceps: return [.biceps]
+        case .triceps: return [.triceps]
+        case .abs: return [.abs]
+        case .glutes: return [.gluteal]
+        case .quads: return [.quadriceps]
+        case .hamstrings: return [.hamstring]
+        case .calves: return [.calves]
+        case .forearms: return [.forearm]
+        case .adductors: return [.adductors]
+        case .abductors: return []
+        case .upperChest: return [.upperChest]
+        case .lowerChest: return [.lowerChest]
+        case .midChest: return [.chest]
+        case .lats: return [.upperBack]
+        case .lowerBack: return [.lowerBack]
+        case .upperTraps: return [.upperTrapezius]
+        case .lowerTraps: return [.lowerTrapezius]
+        case .midTraps: return [.trapezius]
+        case .rhomboids: return [.rhomboids]
+        case .frontDelt: return [.frontDeltoid]
+        case .sideDelt: return [.deltoids]
+        case .rearDelt: return [.rearDeltoid]
+        case .rotatorCuff: return [.rotatorCuff]
+        case .longHeadBiceps, .shortHeadBiceps, .brachialis: return [.biceps]
+        case .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps: return [.triceps]
+        case .wrists: return [.forearm]
+        case .upperAbs: return [.upperAbs]
+        case .lowerAbs: return [.lowerAbs]
+        case .obliques: return [.obliques]
+        }
+    }
+}
 
 struct ExerciseDetailView: View {
     private enum ChartMetric: String, CaseIterable, Identifiable {
@@ -69,19 +109,24 @@ struct ExerciseDetailView: View {
 
     @Query private var exercises: [Exercise]
     @Query private var histories: [ExerciseHistory]
+    @Query private var performances: [ExercisePerformance]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private let appRouter = AppRouter.shared
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
-    @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
+    @State private var selectedMetric: ChartMetric = .topWeight
     @State private var suggestionSettingsExercise: Exercise?
+    #if DEBUG
+    @State private var isSeedingDebugHistory = false
+    #endif
 
     init(catalogID: String) {
         self.catalogID = catalogID
         _exercises = Query(Exercise.withCatalogID(catalogID))
         _histories = Query(ExerciseHistory.forCatalogID(catalogID))
+        _performances = Query(ExercisePerformance.matching(catalogID: catalogID))
     }
 
     private var exercise: Exercise? {
@@ -181,6 +226,14 @@ struct ExerciseDetailView: View {
         history?.chronologicalProgressionPoints ?? []
     }
 
+    private var recentPerformances: [ExercisePerformance] {
+        Array(performances.prefix(3))
+    }
+
+    private var howToSteps: [String] {
+        ExerciseCatalog.byID[catalogID]?.steps ?? []
+    }
+
     private var estimatedOneRepMaxPoints: [ExerciseMetricPoint] {
         progressionPoints
             .compactMap { point in
@@ -229,10 +282,30 @@ struct ExerciseDetailView: View {
         return activeMetric.formattedValueText(latestValue, weightUnit: weightUnit)
     }
 
+    private func bestMetricTitle(for metric: ChartMetric) -> String {
+        switch metric {
+        case .estimatedOneRepMax, .topWeight:
+            return "Highest"
+        case .volume:
+            return "Best"
+        case .reps:
+            return "Max"
+        }
+    }
+
+    private func bestMetricValueText(for metric: ChartMetric) -> String {
+        guard let bestValue = points(for: metric).map(\.value).max() else { return "" }
+        return metric.formattedValueText(bestValue, weightUnit: weightUnit)
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 44) {
                 if hasContent {
+                    if let exercise, !exercise.musclesTargeted.isEmpty {
+                        muscleMapSection(for: exercise)
+                    }
+
                     if !statItems.isEmpty {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(statItems) { item in
@@ -242,16 +315,13 @@ struct ExerciseDetailView: View {
                     }
 
                     if let activeMetric {
-                        VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 16) {
                             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                                Text(activeMetric.displayName)
-                                    .font(.headline)
-                                Spacer()
-                                Text("Latest")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(latestMetricValueText)
-                                    .font(.headline)
+                                ExerciseMetricHeaderValue(title: "Latest", value: latestMetricValueText)
+
+                                Spacer(minLength: 16)
+
+                                ExerciseMetricHeaderValue(title: bestMetricTitle(for: activeMetric), value: bestMetricValueText(for: activeMetric), alignment: .trailing, frameAlignment: .trailing)
                             }
 
                             ExerciseMetricChartCard(
@@ -260,6 +330,8 @@ struct ExerciseDetailView: View {
                                 aggregation: aggregation(for: activeMetric),
                                 formatValueText: { activeMetric.formattedValueText($0, weightUnit: weightUnit) }
                             )
+                            .id(activeMetric.id)
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
 
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {
@@ -270,11 +342,22 @@ struct ExerciseDetailView: View {
                                 .pickerStyle(.segmented)
                             }
                         }
+                        .padding(16)
+                        .appCardStyle()
+                        .animation(.smooth(duration: 0.22), value: activeMetric.id)
                     } else if totalSessions > 0 {
                         chartUnavailableCard
                     }
                 } else if exercise != nil {
                     noHistoryCard
+                }
+
+                if !howToSteps.isEmpty {
+                    howToSection
+                }
+
+                if !recentPerformances.isEmpty {
+                    recentPerformancesSection
                 }
 
                 if let exercise {
@@ -322,6 +405,13 @@ struct ExerciseDetailView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if let exercise {
+                    #if DEBUG
+                    Button("Seed", systemImage: "chart.line.uptrend.xyaxis") {
+                        seedDebugHistory(for: exercise)
+                    }
+                    .disabled(isSeedingDebugHistory)
+                    #endif
+
                     if let addLabel = activeFlowAddLabel {
                         Button(addLabel, systemImage: "plus") {
                             _ = appRouter.addExerciseToActiveFlow(exercise)
@@ -350,6 +440,93 @@ struct ExerciseDetailView: View {
         .padding()
         .frame(maxWidth: .infinity)
         .appCardStyle()
+    }
+
+    private func muscleMapSection(for exercise: Exercise) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Muscles Targeted")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                highlightedBodyView(for: exercise, side: .front)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 200)
+
+                highlightedBodyView(for: exercise, side: .back)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 200)
+            }
+            .padding(12)
+            .appCardStyle()
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(exercise.musclesTargeted.enumerated()), id: \.element) { index, muscle in
+                        Text(muscle.displayName)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background((index == 0 ? Color.red : Color.orange).opacity(index == 0 ? 0.2 : 0.15), in: Capsule())
+                    }
+                }
+            }
+        }
+    }
+
+    private func highlightedBodyView(for exercise: Exercise, side: BodySide) -> BodyView {
+        var view = BodyView(gender: .male, side: side)
+        for (index, appMuscle) in exercise.musclesTargeted.enumerated() {
+            let color: Color = index == 0 ? .red : .orange
+            let opacity: Double = index == 0 ? 0.85 : 0.55
+            for mapMuscle in appMuscle.detailMuscleMapMuscles {
+                view = view.highlight(mapMuscle, color: color, opacity: opacity)
+            }
+        }
+        return view
+    }
+
+    private var howToSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("How To")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(howToSteps.enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 10) {
+                        Text("\(index + 1)")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 22, height: 22)
+                            .background(.blue, in: Circle())
+                        Text(step)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+            }
+            .padding(16)
+            .appCardStyle()
+        }
+    }
+
+    private var recentPerformancesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Recent Performances")
+                    .font(.headline)
+                Spacer()
+                Button("See All") {
+                    appRouter.push(to: .exerciseHistory(catalogID))
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+
+            ForEach(recentPerformances) { performance in
+                ExerciseHistoryPerformanceCard(performance: performance, weightUnit: weightUnit, availableCopyModes: [], showSheetBackground: false, onCopy: nil)
+            }
+        }
     }
 
     private var noHistoryCard: some View {
@@ -430,12 +607,48 @@ struct ExerciseDetailView: View {
             return .sum
         }
     }
+
+    #if DEBUG
+    private func seedDebugHistory(for exercise: Exercise) {
+        guard !isSeedingDebugHistory else { return }
+        Haptics.selection()
+        isSeedingDebugHistory = true
+        Task {
+            do {
+                try DebugOperations.seedExerciseHistory(for: exercise)
+            } catch {
+                AppLog.error("Debug exercise history seed failed", error: error)
+            }
+            isSeedingDebugHistory = false
+        }
+    }
+    #endif
 }
 
 private struct ExerciseStatItem: Identifiable {
     let id = UUID()
     let title: String
     let value: String
+}
+
+private struct ExerciseMetricHeaderValue: View {
+    let title: String
+    let value: String
+    var alignment: HorizontalAlignment = .leading
+    var frameAlignment: Alignment = .leading
+
+    var body: some View {
+        VStack(alignment: alignment, spacing: 3) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.headline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: frameAlignment)
+    }
 }
 
 private struct ExerciseMetricChartCard: View {
@@ -558,8 +771,6 @@ private struct ExerciseMetricChartCard: View {
                 }
             }
         }
-        .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
         .onChange(of: points) { _, newPoints in
             if let selectedDate {
                 self.selectedDate = selectedTimeSeriesPoint(in: newPoints.map { TimeSeriesBucketedPoint(date: $0.date, value: $0.value) }, for: selectedDate)?.date

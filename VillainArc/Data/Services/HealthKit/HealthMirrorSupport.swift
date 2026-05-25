@@ -5,6 +5,7 @@ import SwiftData
 nonisolated enum HealthMetadataKeys {
     static let workoutSessionID = "com.villainarc.workoutsession.id"
     static let weightEntryID = "com.villainarc.weightentry.id"
+    static let hydrationEntryID = "com.villainarc.hydrationentry.id"
 
     static func workoutSessionID(from workout: HKWorkout) -> UUID? {
         guard let rawValue = workout.metadata?[workoutSessionID] as? String else { return nil }
@@ -13,6 +14,11 @@ nonisolated enum HealthMetadataKeys {
 
     static func weightEntryID(from sample: HKSample) -> UUID? {
         guard let rawValue = sample.metadata?[weightEntryID] as? String else { return nil }
+        return UUID(uuidString: rawValue)
+    }
+
+    static func hydrationEntryID(from sample: HKSample) -> UUID? {
+        guard let rawValue = sample.metadata?[hydrationEntryID] as? String else { return nil }
         return UUID(uuidString: rawValue)
     }
 }
@@ -46,6 +52,12 @@ nonisolated enum HealthMirrorQueries {
     static func findSavedWeightSample(for entryID: UUID) async throws -> HKQuantitySample? {
         let predicate = HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.weightEntryID, operatorType: .equalTo, value: entryID.uuidString)
         let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.bodyMassType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
+        return try await descriptor.result(for: HealthAuthorizationManager.healthStore).first
+    }
+
+    static func findSavedHydrationSample(for entryID: UUID) async throws -> HKQuantitySample? {
+        let predicate = HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.hydrationEntryID, operatorType: .equalTo, value: entryID.uuidString)
+        let descriptor = HKSampleQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.dietaryWaterType, predicate: predicate)], sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)], limit: 1)
         return try await descriptor.result(for: HealthAuthorizationManager.healthStore).first
     }
 }

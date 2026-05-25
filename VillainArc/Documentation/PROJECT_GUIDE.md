@@ -36,7 +36,7 @@ The main product areas are:
 
 After onboarding is ready, `Views/AppShell/ContentView.swift` owns:
 
-- the root `TabView` (`Home`, `Health`)
+- the root `TabView` (`Home`, `Health`, `Profile`, `Settings`)
 - global profile/settings sheets
 - full-screen workout flow
 - full-screen workout-plan flow
@@ -76,11 +76,12 @@ For routing intents and deep links:
 - foreground navigation intents and widget deep links can temporarily collapse active workout/plan covers so navigation can proceed
 - workout/plan lifecycle state remains active underneath that temporary presentation collapse
 
-Top-level tab chrome also follows a shared profile/settings convention:
+Top-level tab chrome separates profile identity from app configuration:
 
-- `Home` and `Health` both surface the same profile launcher instead of separate per-tab settings buttons
-- the profile sheet owns profile fields, fitness-level editing/review, training goal editing, profile photo actions, and a review entry point
-- deeper settings continue through `AppSettingsView`
+- `Profile` is a dedicated tab and still supports the legacy profile sheet presentation path for deep links and sheets
+- `Profile` owns profile fields, fitness-level editing/review, training goal editing, profile photo actions, training summary, muscle-map distribution, and the complete-day heatmap
+- `Settings` is a dedicated tab and still supports sheet presentation from legacy routes
+- `Settings` owns app settings, support/legal links, App Store review entry, and uses the shared quick-action bottom inset when shown as a tab
 
 ### Persist Real Drafts, Not Temporary State
 
@@ -173,6 +174,8 @@ This means all of these require a new schema version:
 - renaming or removing a field
 - changing relationship structure
 
+**Exception: unpublished schema versions can be edited in-place.** If the current schema version has not shipped to the App Store yet, changes to it can be made directly — no new schema version, no migration stage needed. Just edit the model, delete the app and its data from the simulator (`xcrun simctl uninstall booted com.fcttechnologies.VillainArc`), and rebuild clean. Only freeze a schema version and write a migration once it has been distributed publicly.
+
 ### Apple Health Is an Integration Layer
 
 Apple Health is not the app’s primary source of truth.
@@ -185,7 +188,14 @@ The split is:
 - `HealthSleepNight` is a per-wake-day Apple Health sleep rollup cache
 - `HealthSleepBlock` is the persisted per-block sleep detail layer for naps and same-day secondary sleep blocks
 - `HealthStepsDistance` and `HealthEnergy` are per-day Health caches
-- `WeightGoal` and `StepsGoal` are local app models
+- `HealthHeart` is the grouped per-day heart cache for heart-rate range, resting heart rate, walking heart rate average, and HRV
+- `HealthRespiratoryRate` and `HealthWristTemperature` are per-day Health caches for respiratory range and sleeping wrist temperature
+- `HydrationEntry` is the app’s local water-intake model, which can also link to Apple Health dietary water samples
+- `HydrationDay` is the per-day hydration aggregate that owns the day total, goal target, completion timestamp, and linked entries
+- `HydrationGoal` is the historical local goal model for water-intake targets
+- `AppSettings.temperatureUnit` controls whether wrist temperature displays in F or C while HealthKit values stay stored in Celsius
+- Health widgets mirror the Health tab summary cards for weight, sleep, steps, energy, hydration, heart vitals, respiratory rate, and wrist temperature
+- `WeightGoal`, `StepsGoal`, `SleepGoal`, `HydrationGoal`, and `TrainingGoal` are local app models
 
 This keeps the app’s own domain logic independent from HealthKit while still letting Health data enrich the app.
 

@@ -11,19 +11,35 @@ final class ToastManager {
     }
 
     struct Toast: Identifiable, Equatable {
+        static func == (lhs: Toast, rhs: Toast) -> Bool { lhs.id == rhs.id }
+
         let id = UUID()
         let title: String
         let message: String
         let systemImage: String
         let tint: Color
         let haptic: HapticStyle?
+        let action: (() -> Void)?
 
-        static let restTimerComplete = Toast(title: String(localized: "Rest time done"), message: String(localized: "Time to lift again."), systemImage: "bell.badge.fill", tint: .orange, haptic: .success)
+        init(title: String, message: String, systemImage: String, tint: Color, haptic: HapticStyle?, action: (() -> Void)? = nil) {
+            self.title = title
+            self.message = message
+            self.systemImage = systemImage
+            self.tint = tint
+            self.haptic = haptic
+            self.action = action
+        }
+
+        static let restTimerComplete = Toast(title: String(localized: "Rest time done"), message: String(localized: "Time to lift again."), systemImage: "bell.badge.fill", tint: .orange, haptic: .success, action: {
+            AppRouter.shared.handleRestTimerNotificationTap()
+        })
 
         static func stepsGoalComplete(targetSteps: Int, stepCount: Int) -> Toast {
             let compactStepCount = stepCount.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
             let compactTargetSteps = targetSteps.formatted(.number.notation(.compactName).precision(.fractionLength(0...1))).lowercased()
-            return Toast(title: String(localized: "Steps goal reached"), message: String(localized: "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) step target."), systemImage: "figure.walk", tint: .red, haptic: .success)
+            return Toast(title: String(localized: "Steps goal reached"), message: String(localized: "You hit \(compactStepCount) steps and cleared your \(compactTargetSteps) step target."), systemImage: "figure.walk", tint: .red, haptic: .success, action: {
+                AppRouter.shared.navigate(to: .stepsDistanceHistory)
+            })
         }
 
         static func stepsEvent(_ event: StepsEventNotification) -> Toast {
@@ -36,11 +52,21 @@ final class ToastManager {
                 "rosette"
             }
 
-            return Toast(title: event.title, message: event.body, systemImage: systemImage, tint: .red, haptic: .success)
+            return Toast(title: event.title, message: event.body, systemImage: systemImage, tint: .red, haptic: .success, action: {
+                AppRouter.shared.navigate(to: .stepsDistanceHistory)
+            })
         }
 
         static func sleepGoalComplete(_ event: SleepGoalNotification) -> Toast {
-            Toast(title: event.title, message: event.body, systemImage: "bed.double.fill", tint: .indigo, haptic: .success)
+            Toast(title: event.title, message: event.body, systemImage: "bed.double.fill", tint: .indigo, haptic: .success, action: {
+                AppRouter.shared.navigate(to: .sleepHistory)
+            })
+        }
+
+        static func hydrationGoalComplete(_ event: HydrationGoalNotification) -> Toast {
+            Toast(title: event.title, message: event.body, systemImage: "drop.fill", tint: .blue, haptic: .success, action: {
+                AppRouter.shared.navigate(to: .hydrationHistory)
+            })
         }
     }
 
@@ -116,6 +142,7 @@ struct ToastOverlayView: View {
     let onInteractionBegan: () -> Void
     let onInteractionEnded: () -> Void
     let onDismiss: () -> Void
+    let onTap: (() -> Void)?
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
 
@@ -150,6 +177,15 @@ struct ToastOverlayView: View {
                 dragOffset = CGSize(width: 0, height: min(0, value.translation.height))
             }
             .onEnded { value in
+                if abs(value.translation.width) < 5 && abs(value.translation.height) < 5 {
+                    finishInteraction(shouldResumeAutoDismiss: false)
+                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.22, extraBounce: 0)) {
+                        dragOffset = .zero
+                    }
+                    if let onTap { onDismiss(); onTap() }
+                    return
+                }
+
                 let translationY = min(0, value.translation.height)
                 let predictedTranslationY = min(0, value.predictedEndTranslation.height)
 
@@ -304,7 +340,8 @@ struct GlobalToastHost: View {
                     },
                     onDismiss: {
                         manager.dismiss(toastID: toast.id)
-                    }
+                    },
+                    onTap: toast.action
                 )
                 .padding(.horizontal, 8)
                 .padding(.top, 2)

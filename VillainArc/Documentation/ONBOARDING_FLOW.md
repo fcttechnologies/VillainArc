@@ -133,7 +133,7 @@ VillainArc treats Health as optional from a product perspective, but the launch 
 
 The prompt rule is versioned:
 
-- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write type set
+- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write type set. Version `1.3` requests the added heart vitals, respiratory rate, sleeping wrist temperature, and dietary water permissions.
 - the app stores the last handled Health permissions version in shared defaults
 - onboarding and the standalone launch gate prompt only when:
   - the current permissions version differs from the stored handled version

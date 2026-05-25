@@ -1,8 +1,8 @@
+import SwiftData
 import SwiftUI
 
 struct HomeTabView: View {
     @State private var router = AppRouter.shared
-    let transitionNamespace: Namespace.ID?
 
     var body: some View {
         NavigationStack(path: Binding(get: { router.homeTabPath }, set: { router.homeTabPath = $0; router.noteNavigationStateChanged() })) {
@@ -32,9 +32,7 @@ struct HomeTabView: View {
             }
             .quickActionContentBottomInset()
             .appBackground()
-            .navBar(title: "Workout", includePadding: false) {
-                ProfileSheetLauncherButton(accessibilityIdentifier: AccessibilityIdentifiers.homeProfileButton, transitionNamespace: transitionNamespace)
-            }
+            .navBar(title: "Workout", includePadding: false)
             .scrollIndicators(.hidden)
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
@@ -68,5 +66,5 @@ struct HomeTabView: View {
 }
 
 #Preview(traits: .sampleData) {
-    HomeTabView(transitionNamespace: nil)
+    HomeTabView()
 }

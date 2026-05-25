@@ -40,11 +40,19 @@ struct WorkoutSettingsView: View {
                 ))
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPrefersTargetReferenceToggle)
                 .accessibilityHint(AccessibilityText.workoutSettingsPrefersTargetReferenceHint)
+                .appGroupedListRow(position: .middle)
+                Picker("Previous Source", selection: $settings.previousSetReferenceSource) {
+                    ForEach(PreviousSetReferenceSource.allCases) { source in
+                        Text(source.displayName).tag(source)
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPreviousReferenceSourcePicker)
+                .accessibilityHint(AccessibilityText.workoutSettingsPreviousReferenceSourceHint)
                 .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Plan Workouts")
             } footer: {
-                Text("When Auto Fill Plan Targets is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Show Previous by Default controls whether the reference column shows your last performance instead of the plan target; tap the column header to switch at any time.")
+                Text("When Auto Fill Plan Targets is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Show Previous by Default controls whether the reference column starts on previous performance instead of the plan target; Previous Source chooses either your last matching workout or the last completed session from the same plan.")
             }
 
             Section {
@@ -122,6 +130,9 @@ struct WorkoutSettingsView: View {
             saveContext(context: context)
         }
         .onChange(of: settings.prefersTargetReferenceWhenPlanned) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.previousSetReferenceSource) {
             saveContext(context: context)
         }
         .onChange(of: settings.promptForPreWorkoutContext) {

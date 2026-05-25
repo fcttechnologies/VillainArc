@@ -20,18 +20,29 @@ actor HealthDailyMetricsSync {
 
     private var isSyncingMovementMetrics = false
     private var isSyncingEnergyMetrics = false
+    private var isSyncingHeartMetrics = false
     private var needsAnotherMovementMetricsSync = false
     private var needsAnotherEnergyMetricsSync = false
+    private var needsAnotherHeartMetricsSync = false
     private var pendingStepSync = false
     private var pendingWalkingRunningDistanceSync = false
     private var pendingActiveEnergySync = false
     private var pendingRestingEnergySync = false
+    private var pendingHeartRateSync = false
+    private var pendingRestingHeartRateSync = false
+    private var pendingWalkingHeartRateSync = false
+    private var pendingHeartRateVariabilitySync = false
+    private var pendingRespiratoryRateSync = false
+    private var pendingWristTemperatureSync = false
 
     private init() {}
 
     func syncAll() async {
         await syncMovementMetrics()
         await syncEnergyMetrics()
+        await syncHeartMetrics()
+        await syncRespiratoryRateIfNeeded()
+        await syncWristTemperatureIfNeeded()
     }
 
     func syncSteps() async {
@@ -62,6 +73,48 @@ actor HealthDailyMetricsSync {
         await syncEnergyMetricsIfNeeded()
     }
 
+    func syncHeartRate() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedHeartRateAuthorization else { return }
+        pendingHeartRateSync = true
+        await syncHeartMetricsIfNeeded()
+    }
+
+    func syncRestingHeartRate() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedRestingHeartRateAuthorization else { return }
+        pendingRestingHeartRateSync = true
+        await syncHeartMetricsIfNeeded()
+    }
+
+    func syncWalkingHeartRate() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedWalkingHeartRateAuthorization else { return }
+        pendingWalkingHeartRateSync = true
+        await syncHeartMetricsIfNeeded()
+    }
+
+    func syncHeartRateVariability() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedHeartRateVariabilityAuthorization else { return }
+        pendingHeartRateVariabilitySync = true
+        await syncHeartMetricsIfNeeded()
+    }
+
+    func syncRespiratoryRate() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedRespiratoryRateAuthorization else { return }
+        pendingRespiratoryRateSync = true
+        await syncRespiratoryRateIfNeeded()
+    }
+
+    func syncWristTemperature() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        guard HealthAuthorizationManager.hasRequestedWristTemperatureAuthorization else { return }
+        pendingWristTemperatureSync = true
+        await syncWristTemperatureIfNeeded()
+    }
+
     private func syncMovementMetrics() async {
         guard HealthAuthorizationManager.isHealthDataAvailable else { return }
         if HealthAuthorizationManager.hasRequestedStepCountAuthorization { pendingStepSync = true }
@@ -74,6 +127,33 @@ actor HealthDailyMetricsSync {
         if HealthAuthorizationManager.hasRequestedActiveEnergyBurnedAuthorization { pendingActiveEnergySync = true }
         if HealthAuthorizationManager.hasRequestedRestingEnergyBurnedAuthorization { pendingRestingEnergySync = true }
         await syncEnergyMetricsIfNeeded()
+    }
+
+    private func syncHeartMetrics() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        if HealthAuthorizationManager.hasRequestedHeartRateAuthorization { pendingHeartRateSync = true }
+        if HealthAuthorizationManager.hasRequestedRestingHeartRateAuthorization { pendingRestingHeartRateSync = true }
+        if HealthAuthorizationManager.hasRequestedWalkingHeartRateAuthorization { pendingWalkingHeartRateSync = true }
+        if HealthAuthorizationManager.hasRequestedHeartRateVariabilityAuthorization { pendingHeartRateVariabilitySync = true }
+        await syncHeartMetricsIfNeeded()
+    }
+
+    private func syncRespiratoryRateIfNeeded() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        if HealthAuthorizationManager.hasRequestedRespiratoryRateAuthorization { pendingRespiratoryRateSync = true }
+        if pendingRespiratoryRateSync {
+            pendingRespiratoryRateSync = false
+            await syncRespiratoryRatePass()
+        }
+    }
+
+    private func syncWristTemperatureIfNeeded() async {
+        guard HealthAuthorizationManager.isHealthDataAvailable else { return }
+        if HealthAuthorizationManager.hasRequestedWristTemperatureAuthorization { pendingWristTemperatureSync = true }
+        if pendingWristTemperatureSync {
+            pendingWristTemperatureSync = false
+            await syncWristTemperaturePass()
+        }
     }
 
     private func syncMovementMetricsIfNeeded() async {
@@ -120,6 +200,36 @@ actor HealthDailyMetricsSync {
 
             isSyncingEnergyMetrics = false
             guard !needsAnotherEnergyMetricsSync else { continue }
+            return
+        }
+    }
+
+    private func syncHeartMetricsIfNeeded() async {
+        if isSyncingHeartMetrics {
+            needsAnotherHeartMetricsSync = true
+            return
+        }
+
+        while true {
+            isSyncingHeartMetrics = true
+            needsAnotherHeartMetricsSync = false
+
+            let shouldSyncHR = pendingHeartRateSync
+            let shouldSyncRestingHR = pendingRestingHeartRateSync
+            let shouldSyncWalkingHR = pendingWalkingHeartRateSync
+            let shouldSyncHRV = pendingHeartRateVariabilitySync
+            pendingHeartRateSync = false
+            pendingRestingHeartRateSync = false
+            pendingWalkingHeartRateSync = false
+            pendingHeartRateVariabilitySync = false
+
+            if shouldSyncHR { await syncHeartRatePass() }
+            if shouldSyncRestingHR { await syncRestingHeartRatePass() }
+            if shouldSyncWalkingHR { await syncWalkingHeartRatePass() }
+            if shouldSyncHRV { await syncHeartRateVariabilityPass() }
+
+            isSyncingHeartMetrics = false
+            guard !needsAnotherHeartMetricsSync else { continue }
             return
         }
     }
@@ -420,6 +530,310 @@ actor HealthDailyMetricsSync {
         if let event = try StepsCoachingEvaluator.reconcileToday(summary: todaySummary, syncState: syncState, context: context, goalJustAchieved: goalJustAchievedToday, trigger: .syncUpdate) {
             notificationsBox.value[today] = event
         }
+    }
+
+    private func syncHeartRatePass() async {
+        let context = makeBackgroundContext()
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
+        let syncedRange = syncState.heartRateSyncedRange
+        let anchor = syncedRange == nil ? nil : HealthSyncPreferences.heartRateAnchor
+
+        do {
+            let result = try await syncDiscreteMetric(
+                type: HealthKitCatalog.heartRateType,
+                unit: HealthKitCatalog.bpmUnit,
+                anchor: anchor,
+                syncedRange: syncedRange,
+                context: context,
+                applyValues: { try self.upsertHeartRateMinMax(for: $0, min: $1, max: $2, context: $4) }
+            )
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.heartRateAnchor = result.newAnchor
+                syncState.heartRateSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "heart rate", refreshedRange: result.refreshedRange)
+            if result.refreshedRange != nil { HealthMetricWidgetReloader.reloadHeart() }
+        } catch {
+            AppLog.error("Failed to sync Health heart rate", error: error)
+        }
+    }
+
+    private func syncRestingHeartRatePass() async {
+        let context = makeBackgroundContext()
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
+        let syncedRange = syncState.restingHeartRateSyncedRange
+        let anchor = syncedRange == nil ? nil : HealthSyncPreferences.restingHeartRateAnchor
+
+        do {
+            let result = try await syncDiscreteMetric(
+                type: HealthKitCatalog.restingHeartRateType,
+                unit: HealthKitCatalog.bpmUnit,
+                anchor: anchor,
+                syncedRange: syncedRange,
+                context: context,
+                applyValues: { try self.upsertRestingHeartRate(for: $0, avg: $3, context: $4) }
+            )
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.restingHeartRateAnchor = result.newAnchor
+                syncState.restingHeartRateSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "resting heart rate", refreshedRange: result.refreshedRange)
+            if result.refreshedRange != nil { HealthMetricWidgetReloader.reloadHeart() }
+        } catch {
+            AppLog.error("Failed to sync Health resting heart rate", error: error)
+        }
+    }
+
+    private func syncWalkingHeartRatePass() async {
+        let context = makeBackgroundContext()
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
+        let syncedRange = syncState.walkingHeartRateSyncedRange
+        let anchor = syncedRange == nil ? nil : HealthSyncPreferences.walkingHeartRateAnchor
+
+        do {
+            let result = try await syncDiscreteMetric(
+                type: HealthKitCatalog.walkingHeartRateAverageType,
+                unit: HealthKitCatalog.bpmUnit,
+                anchor: anchor,
+                syncedRange: syncedRange,
+                context: context,
+                applyValues: { try self.upsertWalkingHeartRate(for: $0, avg: $3, context: $4) }
+            )
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.walkingHeartRateAnchor = result.newAnchor
+                syncState.walkingHeartRateSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "walking heart rate", refreshedRange: result.refreshedRange)
+            if result.refreshedRange != nil { HealthMetricWidgetReloader.reloadHeart() }
+        } catch {
+            AppLog.error("Failed to sync Health walking heart rate", error: error)
+        }
+    }
+
+    private func syncHeartRateVariabilityPass() async {
+        let context = makeBackgroundContext()
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
+        let syncedRange = syncState.heartRateVariabilitySyncedRange
+        let anchor = syncedRange == nil ? nil : HealthSyncPreferences.heartRateVariabilityAnchor
+
+        do {
+            let result = try await syncDiscreteMetric(
+                type: HealthKitCatalog.heartRateVariabilitySDNNType,
+                unit: HealthKitCatalog.millisecondUnit,
+                anchor: anchor,
+                syncedRange: syncedRange,
+                context: context,
+                applyValues: { try self.upsertHeartRateVariability(for: $0, avg: $3, context: $4) }
+            )
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.heartRateVariabilityAnchor = result.newAnchor
+                syncState.heartRateVariabilitySyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "heart rate variability", refreshedRange: result.refreshedRange)
+            if result.refreshedRange != nil { HealthMetricWidgetReloader.reloadHeart() }
+        } catch {
+            AppLog.error("Failed to sync Health heart rate variability", error: error)
+        }
+    }
+
+    private func syncRespiratoryRatePass() async {
+        let context = makeBackgroundContext()
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
+        let syncedRange = syncState.respiratoryRateSyncedRange
+        let anchor = syncedRange == nil ? nil : HealthSyncPreferences.respiratoryRateAnchor
+
+        do {
+            let result = try await syncDiscreteMetric(
+                type: HealthKitCatalog.respiratoryRateType,
+                unit: HKUnit.count().unitDivided(by: .minute()),
+                anchor: anchor,
+                syncedRange: syncedRange,
+                context: context,
+                applyValues: { try self.upsertRespiratoryRate(for: $0, min: $1, max: $2, context: $4) }
+            )
+            if result.shouldAdvanceSyncState {
+                HealthSyncPreferences.respiratoryRateAnchor = result.newAnchor
+                syncState.respiratoryRateSyncedRange = result.newSyncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "respiratory rate", refreshedRange: result.refreshedRange)
+            if result.refreshedRange != nil { HealthMetricWidgetReloader.reloadRespiratoryRate() }
+        } catch {
+            AppLog.error("Failed to sync Health respiratory rate", error: error)
+        }
+    }
+
+    private func syncWristTemperaturePass() async {
+        let context = makeBackgroundContext()
+        guard let syncState = try? SystemState.healthSyncState(context: context) else { return }
+        let syncedRange = syncState.wristTemperatureSyncedRange
+        let anchor = syncedRange == nil ? nil : HealthSyncPreferences.wristTemperatureAnchor
+
+        do {
+            let result = try await anchoredResult(for: HealthKitCatalog.appleSleepingWristTemperatureType, anchor: anchor)
+            let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: HealthKitCatalog.appleSleepingWristTemperatureType, result: result)
+            let refreshRange = refreshRange(addedDays: Set(result.addedSamples.map(dayStart(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
+
+            if let refreshRange {
+                try await refreshWristTemperatureRange(dayRange: refreshRange, context: context)
+                try context.save()
+            }
+
+            if shouldAdvanceSyncState {
+                HealthSyncPreferences.wristTemperatureAnchor = result.newAnchor
+                syncState.wristTemperatureSyncedRange = refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange
+                try context.save()
+            }
+            logMetricSyncIfNeeded(named: "wrist temperature", refreshedRange: refreshRange)
+            if refreshRange != nil { HealthMetricWidgetReloader.reloadWristTemperature() }
+        } catch {
+            AppLog.error("Failed to sync Health wrist temperature", error: error)
+        }
+    }
+
+    private func syncDiscreteMetric(type: HKQuantityType, unit: HKUnit, anchor: HKQueryAnchor?, syncedRange: ClosedRange<Date>?, context: ModelContext, applyValues: @escaping (Date, Double?, Double?, Double?, ModelContext) throws -> Void) async throws -> MetricSyncResult {
+        let result = try await anchoredResult(for: type, anchor: anchor)
+        let shouldAdvanceSyncState = await shouldAdvanceSyncState(for: type, result: result)
+        let refreshRange = refreshRange(addedDays: Set(result.addedSamples.map(dayStart(for:))), syncedRange: syncedRange, hasDeletions: !result.deletedObjects.isEmpty)
+
+        if let refreshRange {
+            try await refreshDiscreteMetricRange(dayRange: refreshRange, type: type, unit: unit, context: context, applyValues: applyValues)
+            try context.save()
+        }
+
+        return MetricSyncResult(newAnchor: result.newAnchor, newSyncedRange: refreshRange.map { expandedSyncedRange(afterRefreshing: $0, existingRange: syncedRange) } ?? syncedRange, refreshedRange: refreshRange, shouldAdvanceSyncState: shouldAdvanceSyncState)
+    }
+
+    private func refreshDiscreteMetricRange(dayRange: ClosedRange<Date>, type: HKQuantityType, unit: HKUnit, context: ModelContext, applyValues: @escaping (Date, Double?, Double?, Double?, ModelContext) throws -> Void) async throws {
+        let lowerDayStart = calendar.startOfDay(for: dayRange.lowerBound)
+        let upperDayStart = calendar.startOfDay(for: dayRange.upperBound)
+        let upperDayExclusive = calendar.date(byAdding: .day, value: 1, to: upperDayStart) ?? upperDayStart
+        let statsByDay = try await dailyDiscreteStatsByDay(for: type, unit: unit, rangeStart: lowerDayStart, rangeEndExclusive: upperDayExclusive)
+
+        var currentDay = lowerDayStart
+        while currentDay < upperDayExclusive {
+            let stats = statsByDay[currentDay]
+            try applyValues(currentDay, stats?.min, stats?.max, stats?.avg, context)
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
+            currentDay = nextDay
+        }
+    }
+
+    private func dailyDiscreteStatsByDay(for type: HKQuantityType, unit: HKUnit, rangeStart: Date, rangeEndExclusive: Date) async throws -> [Date: (min: Double?, max: Double?, avg: Double?)] {
+        let predicate = HKQuery.predicateForSamples(withStart: rangeStart, end: rangeEndExclusive)
+        let samplePredicate = HKSamplePredicate.quantitySample(type: type, predicate: predicate)
+        let descriptor = HKStatisticsCollectionQueryDescriptor(predicate: samplePredicate, options: [.discreteMin, .discreteMax, .discreteAverage], anchorDate: rangeStart, intervalComponents: DateComponents(day: 1))
+
+        let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+        let statsByDay = TotalsByDayBox<(min: Double?, max: Double?, avg: Double?)>()
+        let calendar = self.calendar
+
+        result.enumerateStatistics(from: rangeStart, to: rangeEndExclusive) { statistics, _ in
+            let dayStart = calendar.startOfDay(for: statistics.startDate)
+            let minVal = statistics.minimumQuantity()?.doubleValue(for: unit)
+            let maxVal = statistics.maximumQuantity()?.doubleValue(for: unit)
+            let avgVal = statistics.averageQuantity()?.doubleValue(for: unit)
+            if minVal != nil || maxVal != nil || avgVal != nil {
+                statsByDay.value[dayStart] = (minVal, maxVal, avgVal)
+            }
+        }
+
+        return statsByDay.value
+    }
+
+    private func refreshWristTemperatureRange(dayRange: ClosedRange<Date>, context: ModelContext) async throws {
+        let lowerDayStart = calendar.startOfDay(for: dayRange.lowerBound)
+        let upperDayStart = calendar.startOfDay(for: dayRange.upperBound)
+        let upperDayExclusive = calendar.date(byAdding: .day, value: 1, to: upperDayStart) ?? upperDayStart
+
+        let predicate = HKQuery.predicateForSamples(withStart: lowerDayStart, end: upperDayExclusive)
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HealthKitCatalog.appleSleepingWristTemperatureType, predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.endDate)]
+        )
+        let samples = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+
+        var latestByDay: [Date: Double] = [:]
+        for sample in samples {
+            let day = calendar.startOfDay(for: sample.endDate)
+            latestByDay[day] = sample.quantity.doubleValue(for: HealthKitCatalog.celsiusUnit)
+        }
+
+        var currentDay = lowerDayStart
+        while currentDay < upperDayExclusive {
+            if let tempC = latestByDay[currentDay] {
+                let existing = try context.fetch(HealthWristTemperature.forDay(currentDay)).first
+                if let existing {
+                    existing.temperature = tempC
+                } else {
+                    let entry = HealthWristTemperature(date: currentDay, temperature: tempC)
+                    context.insert(entry)
+                }
+            } else if let existing = try context.fetch(HealthWristTemperature.forDay(currentDay)).first {
+                context.delete(existing)
+            }
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDay) else { break }
+            currentDay = nextDay
+        }
+    }
+
+    private func upsertHeartRateMinMax(for dayStart: Date, min: Double?, max: Double?, context: ModelContext) throws {
+        let heart = try fetchOrCreateHeart(for: dayStart, context: context, shouldCreate: min != nil || max != nil)
+        heart?.minHeartRate = min
+        heart?.maxHeartRate = max
+        deleteHeartIfEmpty(heart, context: context)
+    }
+
+    private func upsertRestingHeartRate(for dayStart: Date, avg: Double?, context: ModelContext) throws {
+        let heart = try fetchOrCreateHeart(for: dayStart, context: context, shouldCreate: avg != nil)
+        heart?.restingHeartRate = avg
+        deleteHeartIfEmpty(heart, context: context)
+    }
+
+    private func upsertWalkingHeartRate(for dayStart: Date, avg: Double?, context: ModelContext) throws {
+        let heart = try fetchOrCreateHeart(for: dayStart, context: context, shouldCreate: avg != nil)
+        heart?.walkingHeartRateAverage = avg
+        deleteHeartIfEmpty(heart, context: context)
+    }
+
+    private func upsertHeartRateVariability(for dayStart: Date, avg: Double?, context: ModelContext) throws {
+        let heart = try fetchOrCreateHeart(for: dayStart, context: context, shouldCreate: avg != nil)
+        heart?.heartRateVariabilitySDNN = avg
+        deleteHeartIfEmpty(heart, context: context)
+    }
+
+    private func upsertRespiratoryRate(for dayStart: Date, min: Double?, max: Double?, context: ModelContext) throws {
+        let existing = try context.fetch(HealthRespiratoryRate.forDay(dayStart)).first
+        guard min != nil || max != nil else {
+            if let existing { context.delete(existing) }
+            return
+        }
+
+        let rate = existing ?? { let newRate = HealthRespiratoryRate(date: dayStart); context.insert(newRate); return newRate }()
+        rate.minRate = min
+        rate.maxRate = max
+    }
+
+    private func fetchOrCreateHeart(for dayStart: Date, context: ModelContext, shouldCreate: Bool = true) throws -> HealthHeart? {
+        if let existing = try context.fetch(HealthHeart.forDay(dayStart)).first { return existing }
+        guard shouldCreate else { return nil }
+        let heart = HealthHeart(date: dayStart)
+        context.insert(heart)
+        return heart
+    }
+
+    private func deleteHeartIfEmpty(_ heart: HealthHeart?, context: ModelContext) {
+        guard let heart else { return }
+        guard heart.minHeartRate == nil,
+              heart.maxHeartRate == nil,
+              heart.restingHeartRate == nil,
+              heart.walkingHeartRateAverage == nil,
+              heart.heartRateVariabilitySDNN == nil else { return }
+        context.delete(heart)
     }
 
     private func makeBackgroundContext() -> ModelContext {

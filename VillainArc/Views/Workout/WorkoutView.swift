@@ -117,7 +117,6 @@ struct WorkoutView: View {
             }
             .sheet(isPresented: addExerciseSheetBinding, onDismiss: handleAddExerciseSheetDismiss) {
                 AddExerciseView(workout: workout)
-                    .interactiveDismissDisabled()
                     .presentationBackground(Color.sheetBg)
                     .task {
                         prepareForAddExerciseSheet()

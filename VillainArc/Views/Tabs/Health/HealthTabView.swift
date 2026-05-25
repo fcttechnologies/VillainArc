@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HealthTabView: View {
     @State private var router = AppRouter.shared
-    let transitionNamespace: Namespace.ID?
     
     var body: some View {
         NavigationStack(path: Binding(get: { router.healthTabPath }, set: { router.healthTabPath = $0; router.noteNavigationStateChanged() })) {
@@ -13,19 +12,22 @@ struct HealthTabView: View {
                     HealthSleepSectionCard()
                     HealthStepsSectionCard()
                     HealthEnergySectionCard()
+                    HealthHydrationSectionCard()
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        HealthHeartRateSectionCard()
+                        HealthRestingHeartRateSectionCard()
+                        HealthWalkingHeartRateSectionCard()
+                        HealthHeartRateVariabilitySectionCard()
+                        HealthRespiratoryRateSectionCard()
+                        HealthWristTemperatureSectionCard()
+                    }
                 }
                 .padding()
             }
             .quickActionContentBottomInset()
             .appBackground()
-            .navBar(title: "Health", includePadding: false) {
-                ProfileSheetLauncherButton(accessibilityIdentifier: AccessibilityIdentifiers.healthProfileButton, transitionNamespace: transitionNamespace)
-            }
+            .navBar(title: "Health", includePadding: false)
             .scrollIndicators(.hidden)
-            .sheet(isPresented: Binding(get: { router.activeHealthSheet == .trainingConditionEditor }, set: { if !$0, router.activeHealthSheet == .trainingConditionEditor { router.activeHealthSheet = nil } })) {
-                TrainingConditionEditorView()
-                    .presentationBackground(Color.sheetBg)
-            }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .trainingConditionHistory:
@@ -42,6 +44,22 @@ struct HealthTabView: View {
                     StepsGoalHistoryView()
                 case .energyHistory:
                     HealthEnergyHistoryView()
+                case .hydrationHistory:
+                    HealthHydrationHistoryView()
+                case .hydrationGoalHistory:
+                    HydrationGoalHistoryView()
+                case .heartRateHistory:
+                    HealthHeartRateHistoryView()
+                case .restingHeartRateHistory:
+                    HealthRestingHeartRateHistoryView()
+                case .walkingHeartRateHistory:
+                    HealthWalkingHeartRateHistoryView()
+                case .heartRateVariabilityHistory:
+                    HealthHeartRateVariabilityHistoryView()
+                case .respiratoryRateHistory:
+                    HealthRespiratoryRateHistoryView()
+                case .wristTemperatureHistory:
+                    HealthWristTemperatureHistoryView()
                 case .allWeightEntriesList:
                     AllWeightEntriesListView()
                 case .weightGoalHistory:
@@ -56,9 +74,9 @@ struct HealthTabView: View {
 }
 
 #Preview(traits: .sampleData) {
-    HealthTabView(transitionNamespace: nil)
+    HealthTabView()
 }
 
 #Preview("No Data") {
-    HealthTabView(transitionNamespace: nil)
+    HealthTabView()
 }

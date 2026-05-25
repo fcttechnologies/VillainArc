@@ -88,6 +88,38 @@ struct WorkoutPlanDetailView: View {
         MuscleDistributionCalculator.slices(for: plan)
     }
 
+    private var trainingInsight: WorkoutPlanTrainingInsight? {
+        guard completedSessions.count >= 2, let latestSession = completedSessions.first else { return nil }
+
+        let priorSessions = Array(completedSessions.dropFirst())
+        let priorAverageVolume = average(priorSessions.map(\.totalVolume).filter { $0 > 0 })
+        let priorAverageDuration = average(priorSessions.map(\.totalDuration).filter { $0 > 0 })
+
+        if latestSession.totalVolume > 0, let priorAverageVolume, priorAverageVolume > 0 {
+            let percentChange = ((latestSession.totalVolume - priorAverageVolume) / priorAverageVolume) * 100
+            return WorkoutPlanTrainingInsight(
+                title: percentChange >= 0 ? "Volume Trending Up" : "Volume Trending Down",
+                value: signedPercentText(percentChange),
+                description: "Your latest run of this plan was \(trendDirectionText(percentChange)) your prior average volume.",
+                systemImage: percentChange >= 0 ? "chart.line.uptrend.xyaxis" : "chart.line.downtrend.xyaxis",
+                tint: percentChange >= 0 ? .green : .orange
+            )
+        }
+
+        if latestSession.totalDuration > 0, let priorAverageDuration, priorAverageDuration > 0 {
+            let percentChange = ((latestSession.totalDuration - priorAverageDuration) / priorAverageDuration) * 100
+            return WorkoutPlanTrainingInsight(
+                title: percentChange >= 0 ? "Session Running Longer" : "Session Running Shorter",
+                value: signedPercentText(percentChange),
+                description: "Your latest run of this plan was \(trendDirectionText(percentChange)) your prior average duration.",
+                systemImage: "clock.arrow.circlepath",
+                tint: .blue
+            )
+        }
+
+        return nil
+    }
+
     var body: some View {
         Group {
             if isDeletingWorkoutPlan {
@@ -112,7 +144,15 @@ struct WorkoutPlanDetailView: View {
                     muscleDistributionSection
                 }
 
+                if let trainingInsight {
+                    trainingInsightSection(trainingInsight)
+                }
+
                 exercisesSection
+
+                if !completedSessions.isEmpty {
+                    sessionHistorySection
+                }
             }
             .fontDesign(.rounded)
             .padding(.horizontal)
@@ -310,6 +350,80 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
         }
     }
 
+    private func trainingInsightSection(_ insight: WorkoutPlanTrainingInsight) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Training Insight")
+                .font(.headline)
+
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: insight.systemImage)
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(insight.tint)
+                    .frame(width: 34)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(insight.title)
+                            .font(.headline)
+                        Spacer()
+                        Text(insight.value)
+                            .font(.headline)
+                            .foregroundStyle(insight.tint)
+                    }
+
+                    Text(insight.description)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding(16)
+            .appCardStyle()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(insight.title)
+            .accessibilityValue("\(insight.value). \(insight.description)")
+        }
+    }
+
+    private var sessionHistorySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Plan History")
+                        .font(.headline)
+                    Text("\(completedSessions.count) completed \(completedSessions.count == 1 ? "session" : "sessions")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if completedSessions.count > 5 {
+                    NavigationLink {
+                        WorkoutPlanAllSessionsView(plan: plan, sessions: completedSessions, showSheetBackground: showSheetBackground)
+                    } label: {
+                        Text("See All")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
+
+            VStack(spacing: 12) {
+                ForEach(completedSessions.prefix(5)) { workout in
+                    NavigationLink {
+                        WorkoutDetailView(workout: workout, showSheetBackground: showSheetBackground, showsCloseButton: false, showsOptionsMenu: false)
+                    } label: {
+                        WorkoutRowCard(workout: workout)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .accessibilityIdentifier("workoutPlanDetailPlanHistory")
+        }
+    }
+
     private var exercisesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Exercises")
@@ -392,6 +506,70 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
         suggestionsInitialTab = tab
         focusedSuggestionExerciseID = focusedExerciseID
         showSuggestionsSheet = true
+    }
+
+    private func average(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    private func signedPercentText(_ value: Double) -> String {
+        let rounded = abs(value).formatted(.number.precision(.fractionLength(0...0)))
+        return value >= 0 ? "+\(rounded)%" : "-\(rounded)%"
+    }
+
+    private func trendDirectionText(_ value: Double) -> String {
+        let percent = abs(value).formatted(.number.precision(.fractionLength(0...0)))
+        return value >= 0 ? "\(percent)% above" : "\(percent)% below"
+    }
+}
+
+private struct WorkoutPlanTrainingInsight {
+    let title: String
+    let value: String
+    let description: String
+    let systemImage: String
+    let tint: Color
+}
+
+private struct WorkoutRowCard: View {
+    let workout: WorkoutSession
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(workout.title)
+                        .font(.title3)
+                        .lineLimit(1)
+                    Text(formattedRecentDay(workout.startedAt))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(workout.sortedExercises) { exercise in
+                    HStack(alignment: .center, spacing: 3) {
+                        Text(verbatim: "\(exercise.sets?.count ?? 0)x")
+                        Text(exercise.name)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+        .padding()
+        .appCardStyle()
+        .tint(.primary)
+        .fontDesign(.rounded)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AccessibilityText.workoutRowLabel(for: workout))
+        .accessibilityValue(AccessibilityText.workoutRowValue(for: workout))
+        .accessibilityHint(AccessibilityText.workoutRowHint)
     }
 }
 
@@ -551,6 +729,39 @@ private struct WorkoutPlanDetailSetIndicator: View {
                         .offset(x: 7, y: -7)
                 }
             }
+    }
+}
+
+private struct ConditionalBackgroundModifier: ViewModifier {
+    let showSheetBackground: Bool
+    func body(content: Content) -> some View {
+        if showSheetBackground { content.sheetBackground() } else { content.appBackground() }
+    }
+}
+
+private struct WorkoutPlanAllSessionsView: View {
+    let plan: WorkoutPlan
+    let sessions: [WorkoutSession]
+    let showSheetBackground: Bool
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(sessions) { workout in
+                    NavigationLink {
+                        WorkoutDetailView(workout: workout, showSheetBackground: showSheetBackground, showsCloseButton: false, showsOptionsMenu: false)
+                    } label: {
+                        WorkoutRowCard(workout: workout)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding()
+        }
+        .modifier(ConditionalBackgroundModifier(showSheetBackground: showSheetBackground))
+        .navigationTitle("Plan History")
+        .navigationSubtitle(Text(plan.title))
+        .toolbarTitleDisplayMode(.inline)
     }
 }
 

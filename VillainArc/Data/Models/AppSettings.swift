@@ -1,12 +1,27 @@
 import Foundation
 import SwiftData
 
+enum PreviousSetReferenceSource: String, Codable, CaseIterable, Identifiable {
+    case anyWorkout
+    case lastPlanUse
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .anyWorkout: "Any Workout"
+        case .lastPlanUse: "Last Plan Use"
+        }
+    }
+}
+
 @Model final class AppSettings {
     var autoStartRestTimer: Bool = true
     var autoCompleteSetAfterRPE: Bool = false
     var autoFillPlanTargets: Bool = true
     var assumeTargetRPEOnComplete: Bool = true
     var prefersTargetReferenceWhenPlanned: Bool = true
+    var previousSetReferenceSource: PreviousSetReferenceSource = PreviousSetReferenceSource.anyWorkout
     var promptForPreWorkoutContext: Bool = false
     var promptForPostWorkoutEffort: Bool = true
     var retainPerformancesForLearning: Bool = true
@@ -19,6 +34,9 @@ import SwiftData
     var heightUnit: HeightUnit = HeightUnit.systemDefault
     var distanceUnit: DistanceUnit = DistanceUnit.systemDefault
     var energyUnit: EnergyUnit = EnergyUnit.systemDefault
+    var temperatureUnit: TemperatureUnit = TemperatureUnit.systemDefault
+    var hydrationUnit: HydrationUnit = HydrationUnit.systemDefault
+    var hydrationNotificationMode: HydrationEventNotificationMode = HydrationEventNotificationMode.goalOnly
 
     init() {}
 }
@@ -29,6 +47,7 @@ struct AppSettingsSnapshot {
     let autoFillPlanTargets: Bool
     let assumeTargetRPEOnComplete: Bool
     let prefersTargetReferenceWhenPlanned: Bool
+    let previousSetReferenceSource: PreviousSetReferenceSource
     let promptForPreWorkoutContext: Bool
     let promptForPostWorkoutEffort: Bool
     let retainPerformancesForLearning: Bool
@@ -41,6 +60,9 @@ struct AppSettingsSnapshot {
     let heightUnit: HeightUnit
     let distanceUnit: DistanceUnit
     let energyUnit: EnergyUnit
+    let temperatureUnit: TemperatureUnit
+    let hydrationUnit: HydrationUnit
+    let hydrationNotificationMode: HydrationEventNotificationMode
 
     nonisolated init(settings: AppSettings?) {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
@@ -48,6 +70,7 @@ struct AppSettingsSnapshot {
         autoFillPlanTargets = settings?.autoFillPlanTargets ?? true
         assumeTargetRPEOnComplete = settings?.assumeTargetRPEOnComplete ?? true
         prefersTargetReferenceWhenPlanned = settings?.prefersTargetReferenceWhenPlanned ?? true
+        previousSetReferenceSource = settings?.previousSetReferenceSource ?? .anyWorkout
         promptForPreWorkoutContext = settings?.promptForPreWorkoutContext ?? false
         promptForPostWorkoutEffort = settings?.promptForPostWorkoutEffort ?? true
         retainPerformancesForLearning = settings?.retainPerformancesForLearning ?? true
@@ -60,6 +83,9 @@ struct AppSettingsSnapshot {
         heightUnit = settings?.heightUnit ?? .systemDefault
         distanceUnit = settings?.distanceUnit ?? .systemDefault
         energyUnit = settings?.energyUnit ?? .systemDefault
+        temperatureUnit = settings?.temperatureUnit ?? .systemDefault
+        hydrationUnit = settings?.hydrationUnit ?? .systemDefault
+        hydrationNotificationMode = settings?.hydrationNotificationMode ?? .goalOnly
     }
 }
 

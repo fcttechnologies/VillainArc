@@ -2,21 +2,50 @@ import SwiftUI
 import SwiftData
 import UIKit
 import UserNotifications
+import WebKit
+
+private enum SettingsLegalDestination: String, Identifiable {
+    case privacyPolicy
+    case termsOfService
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .privacyPolicy:
+            return String(localized: "Privacy Policy")
+        case .termsOfService:
+            return String(localized: "Terms of Service")
+        }
+    }
+
+    var url: URL {
+        switch self {
+        case .privacyPolicy:
+            return URL(string: "https://fct-technologies.com/projects/villainarc/privacy/")!
+        case .termsOfService:
+            return URL(string: "https://fct-technologies.com/projects/villainarc/terms/")!
+        }
+    }
+}
 
 struct AppSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var path: [AppSettingsDestination]
+    @State private var presentedLegalDestination: SettingsLegalDestination?
+    private let showsCloseButton: Bool
 
-    init(initialDestination: AppSettingsDestination? = nil) {
+    init(initialDestination: AppSettingsDestination? = nil, showsCloseButton: Bool = true) {
         _path = State(initialValue: initialDestination.map { [$0] } ?? [])
+        self.showsCloseButton = showsCloseButton
     }
 
     var body: some View {
         NavigationStack(path: $path) {
             Group {
                 if let settings = appSettings.first {
-                    AppSettingsFormView(settings: settings)
+                    AppSettingsFormView(settings: settings, includeQuickActionInset: !showsCloseButton, presentedLegalDestination: $presentedLegalDestination)
                 } else {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -35,13 +64,19 @@ struct AppSettingsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark", role: .close) {
-                        Haptics.selection()
-                        dismiss()
+                    if showsCloseButton {
+                        Button("Close", systemImage: "xmark", role: .close) {
+                            Haptics.selection()
+                            dismiss()
+                        }
+                        .fontWeight(.semibold)
                     }
-                    .fontWeight(.semibold)
                 }
             }
+        }
+        .sheet(item: $presentedLegalDestination) { destination in
+            SettingsLegalWebSheet(destination: destination)
+                .presentationBackground(Color.sheetBg)
         }
     }
 
@@ -73,6 +108,8 @@ struct AppSettingsView: View {
 private struct AppSettingsFormView: View {
     @Environment(\.modelContext) private var context
     @Bindable var settings: AppSettings
+    let includeQuickActionInset: Bool
+    @Binding var presentedLegalDestination: SettingsLegalDestination?
 
     var body: some View {
         Form {
@@ -115,7 +152,7 @@ private struct AppSettingsFormView: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.settingsUnitsLink)
                 .appGroupedListRow(position: .single)
             } footer: {
-                Text("Choose how weight, height, distance, and energy are displayed throughout the app.")
+                Text("Choose how weight, height, distance, energy, and temperature are displayed throughout the app.")
             }
 
             #if DEBUG
@@ -141,12 +178,65 @@ private struct AppSettingsFormView: View {
             } footer: {
                 Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
             }
+
+            Section {
+                Button {
+                    Haptics.selection()
+                    openWriteReviewPage()
+                } label: {
+                    Label("Rate Villain Arc on the App Store", systemImage: "star.bubble")
+                }
+                .foregroundStyle(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetReviewRow)
+                .accessibilityHint(AccessibilityText.profileSheetReviewHint)
+                .appGroupedListRow(position: .top)
+
+                Button {
+                    Haptics.selection()
+                    presentedLegalDestination = .privacyPolicy
+                } label: {
+                    Label("Privacy Policy", systemImage: "hand.raised")
+                }
+                .foregroundStyle(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetPrivacyPolicyRow)
+                .accessibilityHint(AccessibilityText.profileSheetPrivacyPolicyHint)
+                .appGroupedListRow(position: .middle)
+
+                Button {
+                    Haptics.selection()
+                    presentedLegalDestination = .termsOfService
+                } label: {
+                    Label("Terms of Service", systemImage: "doc.text")
+                }
+                .foregroundStyle(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetTermsOfServiceRow)
+                .accessibilityHint(AccessibilityText.profileSheetTermsOfServiceHint)
+                .appGroupedListRow(position: .bottom)
+            }
         }
         .scrollContentBackground(.hidden)
+        .modifier(SettingsQuickActionInsetModifier(isEnabled: includeQuickActionInset))
         .sheetBackground()
         .onChange(of: settings.appearanceMode) {
             saveContext(context: context)
             dismissAllPresentedSheets()
+        }
+    }
+
+    private func openWriteReviewPage() {
+        guard let url = URL(string: "https://apps.apple.com/app/id6759259627?action=write-review") else { return }
+        UIApplication.shared.open(url)
+    }
+}
+
+private struct SettingsQuickActionInsetModifier: ViewModifier {
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.quickActionContentBottomInset()
+        } else {
+            content
         }
     }
 }
@@ -205,11 +295,19 @@ private struct WorkoutPreferencesView: View {
                 ))
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPrefersTargetReferenceToggle)
                 .accessibilityHint(AccessibilityText.workoutSettingsPrefersTargetReferenceHint)
+                .appGroupedListRow(position: .middle)
+                Picker("Previous Source", selection: $settings.previousSetReferenceSource) {
+                    ForEach(PreviousSetReferenceSource.allCases) { source in
+                        Text(source.displayName).tag(source)
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsPreviousReferenceSourcePicker)
+                .accessibilityHint(AccessibilityText.workoutSettingsPreviousReferenceSourceHint)
                 .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Plan Workouts")
             } footer: {
-                Text("When Auto Fill Plan Targets is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Show Previous by Default controls whether the reference column shows your last performance instead of the plan target; tap the column header to switch at any time.")
+                Text("When Auto Fill Plan Targets is on, workouts started from a plan prefill each set with its prescribed weight, reps, and rest. Show Previous by Default controls whether the reference column starts on previous performance instead of the plan target; Previous Source chooses either your last matching workout or the last completed session from the same plan.")
             }
 
             Section {
@@ -289,6 +387,9 @@ private struct WorkoutPreferencesView: View {
         .onChange(of: settings.prefersTargetReferenceWhenPlanned) {
             saveContext(context: context)
         }
+        .onChange(of: settings.previousSetReferenceSource) {
+            saveContext(context: context)
+        }
         .onChange(of: settings.promptForPreWorkoutContext) {
             saveContext(context: context)
         }
@@ -365,6 +466,7 @@ private struct AppleHealthSettingsView: View {
             } footer: {
                 Text("When this is off, data removed from Apple Health is also removed from this app.")
             }
+
         }
         .navigationTitle("Apple Health")
         .toolbarTitleDisplayMode(.inline)
@@ -493,6 +595,27 @@ private struct NotificationSettingsView: View {
                 }
             }
 
+            Section {
+                Picker("Mode", selection: $settings.hydrationNotificationMode) {
+                    ForEach(HydrationEventNotificationMode.allCases, id: \.self) { mode in
+                        Text(mode.title)
+                            .tag(mode)
+                    }
+                }
+                .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+                .appGroupedListRow(position: .single)
+            } header: {
+                Text("Hydration")
+            } footer: {
+                if !notificationsAreAllowedBySystem {
+                    Text("Enable notifications in system settings to change this. You can still see in app toasts while using the app.")
+                } else if backgroundRefreshStatus != .available {
+                    Text("Background App Refresh is off, so hydration notifications may be delayed while the app is closed.")
+                } else {
+                    Text("Choose whether you receive a notification when you reach your hydration goal, or also receive coaching notifications for surpassing your goal.")
+                }
+            }
+
         }
         .navigationTitle("Notifications")
         .toolbarTitleDisplayMode(.inline)
@@ -515,6 +638,9 @@ private struct NotificationSettingsView: View {
         .onChange(of: settings.sleepNotificationMode) {
             saveContext(context: context)
             Task { await WeeklyHealthCoachingCoordinator.shared.refreshSchedule() }
+        }
+        .onChange(of: settings.hydrationNotificationMode) {
+            saveContext(context: context)
         }
     }
 
@@ -648,9 +774,41 @@ private struct DebugSettingsView: View {
                 }
                 .disabled(isWorking)
                 .accessibilityIdentifier(AccessibilityIdentifiers.debugReindexSpotlightButton)
+                .appGroupedListRow(position: .middle)
+
+                Button("Touch All Models", systemImage: "square.stack.3d.up") {
+                    runOperation("All model tables touched.") {
+                        try DebugOperations.touchAllModels()
+                    }
+                }
+                .disabled(isWorking)
+                .appGroupedListRow(position: .middle)
+
+                Button("Seed Workout Data", systemImage: "dumbbell") {
+                    runOperation("Workout data seeded.") {
+                        try DebugOperations.seedWorkoutData()
+                    }
+                }
+                .disabled(isWorking)
                 .appGroupedListRow(position: .bottom)
             } footer: {
                 Text(statusMessage)
+            }
+
+            Section {
+                ForEach(DebugOperations.HealthSampleScenario.allCases) { scenario in
+                    Button(scenario.title, systemImage: "chart.line.uptrend.xyaxis") {
+                        runOperation("\(scenario.title) samples seeded.") {
+                            try DebugOperations.seedHealthSamples(scenario: scenario)
+                        }
+                    }
+                    .disabled(isWorking)
+                    .appGroupedListRow(position: rowPosition(for: scenario))
+                }
+            } header: {
+                Text("Health Sample Data")
+            } footer: {
+                Text("Replaces local Health-style sample rows with 35 days of weight, steps, energy, sleep, heart, respiratory, wrist temperature, and hydration data.")
             }
         }
         .navigationTitle("Debug")
@@ -685,6 +843,14 @@ private struct DebugSettingsView: View {
             }
             isWorking = false
         }
+    }
+
+    private func rowPosition(for scenario: DebugOperations.HealthSampleScenario) -> AppGroupedListRowPosition {
+        let cases = DebugOperations.HealthSampleScenario.allCases
+        if cases.count == 1 { return .single }
+        if scenario == cases.first { return .top }
+        if scenario == cases.last { return .bottom }
+        return .middle
     }
 }
 #endif
@@ -726,9 +892,17 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .appGroupedListRow(position: .middle)
+
+                Picker("Temperature", selection: $settings.temperatureUnit) {
+                    ForEach(TemperatureUnit.allCases, id: \.self) { unit in
+                        Text(unit.unitLabel)
+                            .tag(unit)
+                    }
+                }
                 .appGroupedListRow(position: .bottom)
             } footer: {
-                Text("These units control how weight, height, distance, and energy are displayed throughout the app.")
+                Text("These units control how weight, height, distance, energy, and temperature are displayed throughout the app.")
             }
         }
         .navigationTitle("Units")
@@ -751,6 +925,9 @@ private struct UnitSettingsView: View {
             saveContext(context: context)
             HealthMetricWidgetReloader.reloadEnergy()
         }
+        .onChange(of: settings.temperatureUnit) {
+            saveContext(context: context)
+        }
     }
 
     private func migrateInProgressWeightValues(from oldUnit: WeightUnit, to newUnit: WeightUnit) {
@@ -764,6 +941,30 @@ private struct UnitSettingsView: View {
         if let plan = try? context.fetch(WorkoutPlan.incomplete).first {
             plan.convertTargetWeightsToKg(from: oldUnit)
             plan.convertTargetWeightsFromKg(to: newUnit)
+        }
+    }
+}
+
+private struct SettingsLegalWebSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let destination: SettingsLegalDestination
+
+    var body: some View {
+        NavigationStack {
+            WebView(url: destination.url)
+                .webViewBackForwardNavigationGestures(.disabled)
+                .navigationTitle(destination.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .close) {
+                            Haptics.selection()
+                            dismiss()
+                        }
+                        .accessibilityHint(AccessibilityText.closeButtonHint)
+                    }
+                }
         }
     }
 }

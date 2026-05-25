@@ -7,16 +7,20 @@ actor HealthSyncCoordinator {
 
     private var isSyncingWorkouts = false
     private var isSyncingWeightEntries = false
+    private var isSyncingHydrationEntries = false
     private var needsAnotherWorkoutSync = false
     private var needsAnotherWeightEntriesSync = false
+    private var needsAnotherHydrationEntriesSync = false
     private var pendingWorkoutSyncAllowsReadProbe = false
     private var pendingWeightEntriesSyncAllowsReadProbe = false
+    private var pendingHydrationEntriesSyncAllowsReadProbe = false
 
     private init() {}
 
     func syncAll() async {
         await syncWorkouts(allowsReadProbe: true)
         await syncWeightEntries(allowsReadProbe: true)
+        await syncHydrationEntries(allowsReadProbe: true)
         await HealthDailyMetricsSync.shared.syncAll()
         await HealthSleepSync.shared.syncAll()
     }
@@ -127,8 +131,85 @@ actor HealthSyncCoordinator {
         }
     }
 
+    func syncHydrationEntries(allowsReadProbe: Bool = false) async {
+        guard HealthAuthorizationManager.hasRequestedDietaryWaterAuthorization else { return }
+        if isSyncingHydrationEntries {
+            needsAnotherHydrationEntriesSync = true
+            pendingHydrationEntriesSyncAllowsReadProbe = pendingHydrationEntriesSyncAllowsReadProbe || allowsReadProbe
+            return
+        }
+
+        var nextPassAllowsReadProbe = allowsReadProbe
+        while true {
+            isSyncingHydrationEntries = true
+            needsAnotherHydrationEntriesSync = false
+            let currentPassAllowsReadProbe = nextPassAllowsReadProbe
+            nextPassAllowsReadProbe = false
+
+            let context = makeBackgroundContext()
+            guard SetupGuard.isReady(context: context) else {
+                isSyncingHydrationEntries = false
+                return
+            }
+
+            let retainRemovedHealthData = currentKeepRemovedHealthDataSetting(context: context)
+            let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: HealthKitCatalog.dietaryWaterType)], anchor: HealthSyncPreferences.dietaryWaterAnchor)
+
+            do {
+                let result = try await descriptor.result(for: HealthAuthorizationManager.healthStore)
+                let shouldAdvanceAnchor = await shouldAdvanceHydrationAnchor(for: result, allowsReadProbe: currentPassAllowsReadProbe, context: context)
+                let syncState = try SystemState.healthSyncState(context: context)
+
+                var changedHydrationDays: Set<Date> = []
+                var hydrationGoalNotifications: [HydrationGoalNotification] = []
+                let calendar = Calendar.autoupdatingCurrent
+
+                for sample in result.addedSamples {
+                    let entry = try upsertHydrationEntry(for: sample, context: context)
+                    changedHydrationDays.insert(calendar.startOfDay(for: entry.date))
+                }
+
+                for deletedObject in result.deletedObjects {
+                    if let changedDay = try handleDeletedHydrationEntry(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) {
+                        changedHydrationDays.insert(changedDay)
+                    }
+                }
+
+                for changedDay in changedHydrationDays {
+                    let reconciliation = try HydrationDay.reconcile(for: changedDay, context: context)
+                    if reconciliation.didCompleteGoal, let targetML = reconciliation.day.goalTargetML {
+                        hydrationGoalNotifications.append(HydrationGoalNotification(date: reconciliation.day.date, totalVolume: reconciliation.day.totalVolume, targetML: targetML))
+                    }
+                }
+
+                if let syncState, let newRange = dietaryWaterSyncedRange(after: result, existingRange: syncState.dietaryWaterSyncedRange) {
+                    syncState.dietaryWaterSyncedRange = newRange
+                }
+
+                try context.save()
+                for notification in hydrationGoalNotifications {
+                    await NotificationCoordinator.deliverHydrationGoal(notification)
+                }
+                if shouldAdvanceAnchor {
+                    HealthSyncPreferences.dietaryWaterAnchor = result.newAnchor
+                }
+                logHydrationSyncIfNeeded(result: result)
+                if !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty {
+                    HealthMetricWidgetReloader.reloadHydration()
+                }
+            } catch {
+                AppLog.error("Failed to sync Health hydration entries", error: error)
+            }
+
+            isSyncingHydrationEntries = false
+            guard needsAnotherHydrationEntriesSync else { return }
+            nextPassAllowsReadProbe = pendingHydrationEntriesSyncAllowsReadProbe
+            pendingHydrationEntriesSyncAllowsReadProbe = false
+        }
+    }
+
     func applyRemovedHealthDataRetentionSetting() async {
-        guard !isSyncingWorkouts, !isSyncingWeightEntries else { return }
+        guard !isSyncingWorkouts, !isSyncingWeightEntries, !isSyncingHydrationEntries else { return }
 
         let context = makeBackgroundContext()
         guard currentKeepRemovedHealthDataSetting(context: context) == false else { return }
@@ -136,15 +217,20 @@ actor HealthSyncCoordinator {
         do {
             let unavailableWorkouts = try context.fetch(HealthWorkout.unavailableHealthWorkouts)
             let unavailableWeightEntries = try context.fetch(WeightEntry.unavailableEntries)
+            let unavailableHydrationEntries = try context.fetch(HydrationEntry.unavailableEntries)
             let unavailableSleepNights = try context.fetch(HealthSleepNight.unavailableHealthSleepNights)
+            let hydrationDaysToReconcile = Set(unavailableHydrationEntries.map { Calendar.autoupdatingCurrent.startOfDay(for: $0.date) })
 
             for workout in unavailableWorkouts { context.delete(workout) }
-
             for entry in unavailableWeightEntries { context.delete(entry) }
-
+            for entry in unavailableHydrationEntries { context.delete(entry) }
             for night in unavailableSleepNights { context.delete(night) }
 
-            guard unavailableWorkouts.isEmpty == false || unavailableWeightEntries.isEmpty == false || unavailableSleepNights.isEmpty == false else { return }
+            guard unavailableWorkouts.isEmpty == false || unavailableWeightEntries.isEmpty == false || unavailableHydrationEntries.isEmpty == false || unavailableSleepNights.isEmpty == false else { return }
+
+            for day in hydrationDaysToReconcile {
+                try HydrationDay.reconcile(for: day, context: context)
+            }
 
             try context.save()
         } catch { AppLog.error("Failed to apply removed Apple Health data retention setting", error: error) }
@@ -158,6 +244,57 @@ actor HealthSyncCoordinator {
     private func logWeightSyncIfNeeded(result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result) {
         guard !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty else { return }
         AppLog.info("Processed Apple Health weight changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
+    }
+
+    private func shouldAdvanceHydrationAnchor(
+        for result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result,
+        allowsReadProbe: Bool,
+        context: ModelContext
+    ) async -> Bool {
+        if result.addedSamples.contains(where: { HealthMetadataKeys.hydrationEntryID(from: $0) == nil }) { return true }
+        if containsExternallyOwnedHydrationDeletion(result.deletedObjects, context: context) { return true }
+        guard allowsReadProbe else { return false }
+        return await HealthReadProbe.hasReadableQuantitySample(for: HealthKitCatalog.dietaryWaterType)
+    }
+
+    private func containsExternallyOwnedHydrationDeletion(_ deletedObjects: [HKDeletedObject], context: ModelContext) -> Bool {
+        deletedObjects.contains { deletedObject in
+            let existing = try? context.fetch(HydrationEntry.byHealthSampleUUID(deletedObject.uuid)).first
+            guard let existing else { return false }
+            return existing.hasBeenExportedToHealth == false
+        }
+    }
+
+    private func upsertHydrationEntry(for sample: HKQuantitySample, context: ModelContext) throws -> HydrationEntry {
+        try HealthHydrationEntryLinker.upsertHydrationEntry(for: sample, context: context)
+    }
+
+    private func handleDeletedHydrationEntry(id: UUID, retainRemovedHealthData: Bool, context: ModelContext) throws -> Date? {
+        guard let existing = try context.fetch(HydrationEntry.byHealthSampleUUID(id)).first else { return nil }
+        let changedDay = Calendar.autoupdatingCurrent.startOfDay(for: existing.date)
+
+        if retainRemovedHealthData {
+            existing.isAvailableInHealthKit = false
+        } else {
+            context.delete(existing)
+        }
+        return changedDay
+    }
+
+    private func logHydrationSyncIfNeeded(result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result) {
+        guard !result.addedSamples.isEmpty || !result.deletedObjects.isEmpty else { return }
+        AppLog.info("Processed Apple Health hydration changes: \(result.addedSamples.count) added or updated, \(result.deletedObjects.count) deleted.")
+    }
+
+    private func dietaryWaterSyncedRange(after result: HKAnchoredObjectQueryDescriptor<HKQuantitySample>.Result, existingRange: ClosedRange<Date>?) -> ClosedRange<Date>? {
+        let calendar = Calendar.autoupdatingCurrent
+        let addedDays = result.addedSamples.map { calendar.startOfDay(for: $0.endDate) }
+        guard let lower = addedDays.min(), let upper = addedDays.max() else {
+            return existingRange
+        }
+
+        guard let existingRange else { return lower...upper }
+        return min(existingRange.lowerBound, lower)...max(existingRange.upperBound, upper)
     }
 
     private func shouldAdvanceWorkoutAnchor(
@@ -246,6 +383,38 @@ extension HealthSleepNight {
     fileprivate static var unavailableHealthSleepNights: FetchDescriptor<HealthSleepNight> {
         let predicate = #Predicate<HealthSleepNight> { !$0.isAvailableInHealthKit }
         return FetchDescriptor(predicate: predicate)
+    }
+}
+
+nonisolated enum HealthHydrationEntryLinker {
+    static func samplePredicate(for entryID: UUID) -> NSPredicate {
+        HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.hydrationEntryID, operatorType: .equalTo, value: entryID.uuidString)
+    }
+
+    @discardableResult static func upsertHydrationEntry(for sample: HKQuantitySample, context: ModelContext) throws -> HydrationEntry {
+        let existing = try fetchExistingEntry(for: sample, context: context)
+        let volumeML = sample.quantity.doubleValue(for: HealthKitCatalog.milliliterUnit)
+        let isAppOwnedEntry = HealthMetadataKeys.hydrationEntryID(from: sample) != nil
+
+        if let existing {
+            existing.date = sample.endDate
+            existing.volume = volumeML
+            existing.hasBeenExportedToHealth = isAppOwnedEntry
+            existing.healthSampleUUID = sample.uuid
+            existing.isAvailableInHealthKit = true
+            return existing
+        }
+
+        let entry = HydrationEntry(date: sample.endDate, volume: volumeML, hasBeenExportedToHealth: isAppOwnedEntry, healthSampleUUID: sample.uuid, isAvailableInHealthKit: true)
+        context.insert(entry)
+        return entry
+    }
+
+    private static func fetchExistingEntry(for sample: HKQuantitySample, context: ModelContext) throws -> HydrationEntry? {
+        if let existing = try context.fetch(HydrationEntry.byHealthSampleUUID(sample.uuid)).first { return existing }
+
+        guard let entryID = HealthMetadataKeys.hydrationEntryID(from: sample) else { return nil }
+        return try context.fetch(HydrationEntry.byID(entryID)).first
     }
 }
 

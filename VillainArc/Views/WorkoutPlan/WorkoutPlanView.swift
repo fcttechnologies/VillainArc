@@ -157,7 +157,6 @@ struct WorkoutPlanView: View {
             }
                 .sheet(isPresented: $showAddExerciseSheet) {
                     AddExerciseView(plan: plan)
-                        .interactiveDismissDisabled()
                         .presentationBackground(Color.sheetBg)
                 }
                 .sheet(isPresented: $showNotesEditorSheet) {

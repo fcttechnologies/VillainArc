@@ -14,8 +14,6 @@ struct AddExerciseView: View {
     @State private var selectedMuscles: Set<Muscle> = []
     @State private var showMuscleFilterSheet = false
     @State private var favoritesOnly = false
-    @State private var selectedOnly = false
-    @State private var showCancelConfirmation = false
     @State private var exerciseSort: ExerciseSortOption = .mostRecent
 
     init(workout: WorkoutSession) {
@@ -30,119 +28,93 @@ struct AddExerciseView: View {
 
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(selectedExercises: $selectedExercises, selectedExerciseIDs: $selectedExerciseIDs, searchText: searchText, muscleFilters: selectedMuscles, favoritesOnly: favoritesOnly, selectedOnly: selectedOnly, sortOption: exerciseSort)
-                .navigationTitle("Exercises")
-                .navigationSubtitle(Text(localizedCountText(selectedExercises.count, singular: "selected exercise", plural: "selected exercises")))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(role: .close) {
-                            if selectedExercises.isEmpty {
-                                Haptics.selection()
-                                dismiss()
-                            } else {
-                                showCancelConfirmation = true
+            FilteredExerciseListView(
+                selectedExercises: $selectedExercises,
+                selectedExerciseIDs: $selectedExerciseIDs,
+                searchText: searchText,
+                muscleFilters: selectedMuscles,
+                favoritesOnly: favoritesOnly,
+                selectedOnly: false,
+                sortOption: exerciseSort,
+                onToggle: { exercise, added in
+                    if added {
+                        if let workout { workout.addExercise(exercise) }
+                        else if let plan { plan.addExercise(exercise) }
+                    } else {
+                        if let workout {
+                            if let performance = workout.sortedExercises.last(where: { $0.catalogID == exercise.catalogID }) {
+                                workout.deleteExercise(performance)
+                            }
+                        } else if let plan {
+                            if let prescription = plan.sortedExercises.last(where: { $0.catalogID == exercise.catalogID }) {
+                                plan.deleteExercise(prescription)
                             }
                         }
-                        .accessibilityLabel(AccessibilityText.addExerciseCloseLabel)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseCloseButton)
-                        .confirmationDialog("Discard selected exercises?", isPresented: $showCancelConfirmation) {
-                            Button("Discard Selections", role: .destructive) {
-                                Haptics.selection()
-                                dismiss()
-                            }
-                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseDiscardSelectionsButton)
-                        } message: {
-                            Text(workout != nil ? String(localized: "If you leave now, the selected exercises will not be added to your workout.") : String(localized: "If you leave now, the selected exercises will not be added to your plan."))
-                        }
                     }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(role: .confirm) {
-                            Haptics.selection()
-                            addSelectedExercises()
-                        }
-                        .accessibilityLabel(AccessibilityText.addExerciseConfirmLabel)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseConfirmButton)
-                        .accessibilityHint(workout != nil ? String(localized: "Adds the selected exercises to your workout.") : String(localized: "Adds the selected exercises to your plan."))
-                    }
-                    ToolbarItem(placement: .bottomBar) {
-                        Menu("Filters", systemImage: "line.3.horizontal.decrease") {
-                            Menu("Sort", systemImage: "arrow.up.arrow.down") {
-                                Picker("Sort Options", selection: $exerciseSort) {
-                                    ForEach(ExerciseSortOption.allCases, id: \.self) { option in
-                                        Text(option.displayName)
-                                            .tag(option)
-                                    }
+                    saveContext(context: context)
+                }
+            )
+            .navigationTitle("Exercises")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    Menu("Filters", systemImage: "line.3.horizontal.decrease") {
+                        Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                            Picker("Sort Options", selection: $exerciseSort) {
+                                ForEach(ExerciseSortOption.allCases, id: \.self) { option in
+                                    Text(option.displayName)
+                                        .tag(option)
                                 }
                             }
-                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseSortMenu)
-                            Divider()
-                            Toggle("Selected", systemImage: "checkmark.circle", isOn: $selectedOnly)
-                                .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseSelectedToggle)
-                            Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
-                                .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFavoritesToggle)
-                            Button("Muscle Filters", systemImage: "figure") {
-                                Haptics.selection()
-                                showMuscleFilterSheet = true
-                            }
-                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseMuscleFiltersButton)
-                            .accessibilityHint(AccessibilityText.addExerciseMuscleFiltersHint)
                         }
-                        .labelStyle(.iconOnly)
-                        .menuOrder(.fixed)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFiltersMenu)
-                        .accessibilityHint(AccessibilityText.addExerciseFiltersHint)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseSortMenu)
+                        Divider()
+                        Toggle("Favorites", systemImage: "star", isOn: $favoritesOnly)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFavoritesToggle)
+                        Button("Muscle Filters", systemImage: "figure") {
+                            Haptics.selection()
+                            showMuscleFilterSheet = true
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseMuscleFiltersButton)
+                        .accessibilityHint(AccessibilityText.addExerciseMuscleFiltersHint)
                     }
-                    ToolbarSpacer(.fixed, placement: .bottomBar)
-                    DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                    .labelStyle(.iconOnly)
+                    .menuOrder(.fixed)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseFiltersMenu)
+                    .accessibilityHint(AccessibilityText.addExerciseFiltersHint)
                 }
-                .searchable(text: $searchText)
-                .searchPresentationToolbarBehavior(.avoidHidingContent)
-                .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseListContainer)
-                .sheet(isPresented: $showMuscleFilterSheet) {
-                    MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
-                        selectedMuscles = updatedMuscles
+                ToolbarSpacer(.fixed, placement: .bottomBar)
+                DefaultToolbarItem(kind: .search, placement: .bottomBar)
+            }
+            .searchable(text: $searchText)
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .accessibilityIdentifier(AccessibilityIdentifiers.addExerciseListContainer)
+            .sheet(isPresented: $showMuscleFilterSheet) {
+                MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in
+                    selectedMuscles = updatedMuscles
+                }
+                .presentationBackground(Color.sheetBg)
+                .presentationDetents([.fraction(0.3)])
+            }
+            .onChange(of: favoritesOnly) {
+                Haptics.selection()
+            }
+            .onChange(of: exerciseSort) {
+                Haptics.selection()
+            }
+            .onDisappear {
+                let added = selectedExercises
+                for exercise in added { exercise.updateLastAddedAt() }
+                saveContext(context: context)
+                Task {
+                    if added.count == 1, let exercise = added.first {
+                        await IntentDonations.donateAddExercise(exercise: exercise)
+                    } else if added.count > 1 {
+                        await IntentDonations.donateAddExercises(exercises: added)
                     }
-                    .presentationBackground(Color.sheetBg)
-                    .presentationDetents([.fraction(0.3)])
                 }
-                .onChange(of: favoritesOnly) {
-                    Haptics.selection()
-                }
-                .onChange(of: selectedOnly) {
-                    Haptics.selection()
-                }
-                .onChange(of: exerciseSort) {
-                    Haptics.selection()
-                }
-        }
-    }
-
-    private func addSelectedExercises() {
-        if let workout {
-            for exercise in selectedExercises {
-                workout.addExercise(exercise)
-                exercise.updateLastAddedAt()
-            }
-        } else if let plan {
-            for exercise in selectedExercises {
-                plan.addExercise(exercise)
-                exercise.updateLastAddedAt()
             }
         }
-        let donatedExercises = selectedExercises
-        selectedExercises.removeAll()
-        selectedExerciseIDs.removeAll()
-        saveContext(context: context)
-        Task {
-            guard !donatedExercises.isEmpty else { return }
-            if donatedExercises.count == 1, let exercise = donatedExercises.first {
-                await IntentDonations.donateAddExercise(exercise: exercise)
-            } else {
-                await IntentDonations.donateAddExercises(exercises: donatedExercises)
-            }
-        }
-        dismiss()
     }
 }
 

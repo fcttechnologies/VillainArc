@@ -523,6 +523,9 @@ private struct ProfileNameStepView: View {
         .navigationTitle("What's your name?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+#if DEBUG
+            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
+#endif
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .confirm) {
                     Haptics.selection()
@@ -570,6 +573,9 @@ private struct ProfileBirthdayStepView: View {
         .navigationTitle("When's your birthday?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+#if DEBUG
+            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
+#endif
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .confirm) {
                     Haptics.selection()
@@ -648,6 +654,9 @@ private struct ProfileGenderStepView: View {
         .navigationTitle("What's your gender?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+#if DEBUG
+            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
+#endif
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .confirm) {
                     Haptics.selection()
@@ -732,6 +741,9 @@ private struct ProfileHeightStepView: View {
         .navigationTitle("What's your height?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+#if DEBUG
+            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
+#endif
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .confirm) {
                     Haptics.selection()
@@ -785,6 +797,9 @@ private struct ProfileFitnessLevelStepView: View {
         .navigationTitle("What's your fitness level?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+#if DEBUG
+            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
+#endif
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .confirm) {
                     guard let selectedLevel else { return }
@@ -838,6 +853,9 @@ private struct ProfileTrainingGoalStepView: View {
         .navigationTitle("How do you like to train?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+#if DEBUG
+            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
+#endif
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .confirm) {
                     guard let selectedGoal else { return }
@@ -856,3 +874,23 @@ private struct ProfileTrainingGoalStepView: View {
         }
     }
 }
+
+#if DEBUG
+private struct DebugSkipOnboardingToolbarItem: ToolbarContent {
+    let manager: OnboardingManager
+    @Binding var path: [OnboardingStep]
+
+    var body: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button("Skip", systemImage: "forward.end.fill") {
+                Haptics.selection()
+                Task {
+                    path.removeAll()
+                    await manager.completeOnboardingWithDebugData()
+                }
+            }
+            .fontWeight(.semibold)
+        }
+    }
+}
+#endif

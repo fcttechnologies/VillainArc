@@ -16,6 +16,7 @@ final class PreviewDataContainer {
             loadWeightEntries()
             loadCompletedPlan()
             loadCompletedSession()
+            loadPushWorkoutPlanWithHistory()
             loadSampleSplits()
             if includeIncompleteData {
                 loadIncompleteSession()
@@ -33,7 +34,7 @@ final class PreviewDataContainer {
     private func loadWeightEntries() {
         let weights: [(Int, Int, Int, Double)] = [(2026, 1, 4, 82.8), (2026, 1, 7, 82.4), (2026, 1, 10, 82.2), (2026, 1, 13, 82.5), (2026, 1, 16, 81.9), (2026, 1, 20, 81.7), (2026, 1, 24, 81.8), (2026, 1, 28, 81.4), (2026, 2, 1, 81.2), (2026, 2, 5, 81.5), (2026, 2, 9, 80.9), (2026, 2, 12, 80.7)]
 
-        for (year, month, day, weight) in weights { context.insert(WeightEntry(date: date(year, month, day, 7, 30), weight: weight)) }
+        for (year, month, day, weight) in weights { context.insert(WeightEntry(date: date(year, month, day, 7, 30), weight: weight, hasBeenExportedToHealth: true)) }
     }
 
     @discardableResult private func insertSuggestionEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], session: WorkoutSession? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
@@ -120,6 +121,78 @@ final class PreviewDataContainer {
             }
 
             session.exercises?.append(performance)
+        }
+    }
+
+    // MARK: - Push Workout Plan with History
+
+    private func loadPushWorkoutPlanWithHistory() {
+        let plan = WorkoutPlan(title: "Push Workout", notes: "Chest, shoulders, triceps", favorite: false, completed: true, lastUsed: date(2026, 4, 28, 8, 0))
+        context.insert(plan)
+
+        let planExercises: [(id: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int, rest: Int, targetRPE: Int)])] = [
+            ("barbell_bench_press", [(.warmup, 45, 12, 60, 0), (.working, 145, 8, 120, 8), (.working, 145, 8, 120, 8), (.working, 145, 8, 120, 9)]),
+            ("dumbbell_incline_bench_press", [(.warmup, 30, 12, 60, 0), (.working, 60, 10, 90, 8), (.working, 60, 10, 90, 8), (.working, 60, 10, 90, 9)]),
+            ("cable_bench_chest_fly", [(.working, 30, 12, 90, 8), (.working, 30, 12, 90, 8), (.working, 30, 12, 90, 9)]),
+            ("cable_bar_pushdown", [(.working, 55, 12, 60, 8), (.working, 55, 12, 60, 8), (.working, 55, 12, 60, 9)]),
+        ]
+
+        for ex in planExercises {
+            let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+            let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)
+            clearSeededSets(from: prescription)
+            for s in ex.sets {
+                let set = SetPrescription(exercisePrescription: prescription, setType: s.type, targetWeight: s.weight, targetReps: s.reps, targetRest: s.rest, targetRPE: s.targetRPE)
+                prescription.sets?.append(set)
+            }
+            plan.exercises?.append(prescription)
+        }
+
+        let historyDates: [(start: Date, end: Date)] = [
+            (date(2026, 4, 14, 8, 0), date(2026, 4, 14, 9, 10)),
+            (date(2026, 4, 21, 8, 0), date(2026, 4, 21, 9, 5)),
+            (date(2026, 4, 28, 8, 0), date(2026, 4, 28, 9, 15)),
+        ]
+
+        let sessionExercises: [[(id: String, sets: [(type: ExerciseSetType, weight: Double, reps: Int)])]] = [
+            [
+                ("barbell_bench_press", [(.warmup, 45, 12), (.working, 135, 8), (.working, 135, 8), (.working, 135, 7)]),
+                ("dumbbell_incline_bench_press", [(.warmup, 30, 12), (.working, 55, 10), (.working, 55, 10), (.working, 55, 9)]),
+                ("cable_bench_chest_fly", [(.working, 27.5, 12), (.working, 27.5, 12), (.working, 27.5, 11)]),
+                ("cable_bar_pushdown", [(.working, 50, 12), (.working, 50, 12), (.working, 50, 11)]),
+            ],
+            [
+                ("barbell_bench_press", [(.warmup, 45, 12), (.working, 140, 8), (.working, 140, 8), (.working, 140, 8)]),
+                ("dumbbell_incline_bench_press", [(.warmup, 30, 12), (.working, 57.5, 10), (.working, 57.5, 10), (.working, 57.5, 10)]),
+                ("cable_bench_chest_fly", [(.working, 30, 12), (.working, 30, 12), (.working, 30, 12)]),
+                ("cable_bar_pushdown", [(.working, 52.5, 12), (.working, 52.5, 12), (.working, 52.5, 12)]),
+            ],
+            [
+                ("barbell_bench_press", [(.warmup, 45, 12), (.working, 145, 8), (.working, 145, 8), (.working, 145, 8)]),
+                ("dumbbell_incline_bench_press", [(.warmup, 30, 12), (.working, 60, 10), (.working, 60, 10), (.working, 60, 10)]),
+                ("cable_bench_chest_fly", [(.working, 30, 12), (.working, 30, 12), (.working, 30, 12)]),
+                ("cable_bar_pushdown", [(.working, 55, 12), (.working, 55, 12), (.working, 55, 12)]),
+            ],
+        ]
+
+        for (sessionIndex, dates) in historyDates.enumerated() {
+            let session = WorkoutSession(title: "Push Workout", status: .done, startedAt: dates.start, endedAt: dates.end)
+            session.workoutPlan = plan
+            context.insert(session)
+
+            for (exerciseIndex, ex) in sessionExercises[sessionIndex].enumerated() {
+                let exercise = Exercise(from: ExerciseCatalog.byID[ex.id]!)
+                let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
+                clearSeededSets(from: performance)
+
+                for (setIndex, s) in ex.sets.enumerated() {
+                    let completedAt = dates.start.addingTimeInterval(Double((exerciseIndex * 4 + setIndex + 1) * 120))
+                    let setPerf = SetPerformance(exercise: performance, setType: s.type, weight: s.weight, reps: s.reps, restSeconds: s.type == .warmup ? 60 : 90, index: setIndex, complete: true, completedAt: completedAt)
+                    performance.sets?.append(setPerf)
+                }
+
+                session.exercises?.append(performance)
+            }
         }
     }
 

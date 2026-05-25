@@ -89,6 +89,10 @@ struct ActiveWorkoutResumeBarButton: View {
         appSettings.first?.autoStartRestTimer ?? true
     }
 
+    private var appSettingsSnapshot: AppSettingsSnapshot {
+        AppSettingsSnapshot(settings: appSettings.first)
+    }
+
     private var activeSetInfo: (exercise: ExercisePerformance, set: SetPerformance)? {
         workout.activeExerciseAndSet()
     }
@@ -182,7 +186,7 @@ struct ActiveWorkoutResumeBarButton: View {
 
         Haptics.selection()
         let shouldPrewarmSuggestions = workout.workoutPlan != nil && workout.isFinalIncompleteSet(set)
-        workout.completeSet(set)
+        workout.completeSet(set, settings: appSettingsSnapshot)
 
         if autoStartRestTimerEnabled {
             let restSeconds = set.effectiveRestSeconds

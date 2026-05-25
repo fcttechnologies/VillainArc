@@ -10,6 +10,13 @@ nonisolated enum HealthSyncPreferences {
     private static let activeEnergyBurnedAnchorKey = "health_active_energy_burned_anchor"
     private static let restingEnergyBurnedAnchorKey = "health_resting_energy_burned_anchor"
     private static let sleepAnalysisAnchorKey = "health_sleep_analysis_anchor"
+    private static let heartRateAnchorKey = "health_heart_rate_anchor"
+    private static let restingHeartRateAnchorKey = "health_resting_heart_rate_anchor"
+    private static let walkingHeartRateAnchorKey = "health_walking_heart_rate_anchor"
+    private static let heartRateVariabilityAnchorKey = "health_heart_rate_variability_anchor"
+    private static let respiratoryRateAnchorKey = "health_respiratory_rate_anchor"
+    private static let wristTemperatureAnchorKey = "health_wrist_temperature_anchor"
+    private static let dietaryWaterAnchorKey = "health_dietary_water_anchor"
 
     nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
 
@@ -46,6 +53,41 @@ nonisolated enum HealthSyncPreferences {
     static var sleepAnalysisAnchor: HKQueryAnchor? {
         get { anchor(forKey: sleepAnalysisAnchorKey) }
         set { setAnchor(newValue, forKey: sleepAnalysisAnchorKey) }
+    }
+
+    static var heartRateAnchor: HKQueryAnchor? {
+        get { anchor(forKey: heartRateAnchorKey) }
+        set { setAnchor(newValue, forKey: heartRateAnchorKey) }
+    }
+
+    static var restingHeartRateAnchor: HKQueryAnchor? {
+        get { anchor(forKey: restingHeartRateAnchorKey) }
+        set { setAnchor(newValue, forKey: restingHeartRateAnchorKey) }
+    }
+
+    static var walkingHeartRateAnchor: HKQueryAnchor? {
+        get { anchor(forKey: walkingHeartRateAnchorKey) }
+        set { setAnchor(newValue, forKey: walkingHeartRateAnchorKey) }
+    }
+
+    static var heartRateVariabilityAnchor: HKQueryAnchor? {
+        get { anchor(forKey: heartRateVariabilityAnchorKey) }
+        set { setAnchor(newValue, forKey: heartRateVariabilityAnchorKey) }
+    }
+
+    static var respiratoryRateAnchor: HKQueryAnchor? {
+        get { anchor(forKey: respiratoryRateAnchorKey) }
+        set { setAnchor(newValue, forKey: respiratoryRateAnchorKey) }
+    }
+
+    static var wristTemperatureAnchor: HKQueryAnchor? {
+        get { anchor(forKey: wristTemperatureAnchorKey) }
+        set { setAnchor(newValue, forKey: wristTemperatureAnchorKey) }
+    }
+
+    static var dietaryWaterAnchor: HKQueryAnchor? {
+        get { anchor(forKey: dietaryWaterAnchorKey) }
+        set { setAnchor(newValue, forKey: dietaryWaterAnchorKey) }
     }
 
     private static func anchor(forKey key: String) -> HKQueryAnchor? {

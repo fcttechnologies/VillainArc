@@ -1,7 +1,7 @@
 import HealthKit
 
 nonisolated enum HealthKitCatalog {
-    static let permissionsCatalogVersion = "1.1.1"
+    static let permissionsCatalogVersion = "1.3"
 
     static let workoutType = HKObjectType.workoutType()
     static let workoutRoute = HKSeriesType.workoutRoute()
@@ -17,7 +17,12 @@ nonisolated enum HealthKitCatalog {
     static let stepCountType = HKQuantityType(.stepCount)
     static let walkingRunningDistanceType = HKQuantityType(.distanceWalkingRunning)
     static let heartRateType = HKQuantityType(.heartRate)
+    static let restingHeartRateType = HKQuantityType(.restingHeartRate)
+    static let walkingHeartRateAverageType = HKQuantityType(.walkingHeartRateAverage)
+    static let heartRateVariabilitySDNNType = HKQuantityType(.heartRateVariabilitySDNN)
     static let respiratoryRateType = HKQuantityType(.respiratoryRate)
+    static let appleSleepingWristTemperatureType = HKQuantityType(.appleSleepingWristTemperature)
+    static let dietaryWaterType = HKQuantityType(.dietaryWater)
     static let flightsClimbedType = HKQuantityType(.flightsClimbed)
     static let heightType = HKQuantityType(.height)
     static let distanceCyclingType = HKQuantityType(.distanceCycling)
@@ -45,4 +50,8 @@ nonisolated enum HealthKitCatalog {
     static let bpmUnit = HKUnit.count().unitDivided(by: .minute())
     static let appleEffortScoreUnit = HKUnit.appleEffortScore()
     static let centimeterUnit = HKUnit.meterUnit(with: .centi)
+    static let millisecondUnit = HKUnit.secondUnit(with: .milli)
+    static let celsiusUnit = HKUnit.degreeCelsius()
+    static let literUnit = HKUnit.liter()
+    static let milliliterUnit = HKUnit.literUnit(with: .milli)
 }

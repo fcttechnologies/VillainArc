@@ -6,13 +6,15 @@ struct ExerciseCatalogItem {
     let musclesTargeted: [Muscle]
     let aliases: [String]
     let equipmentType: EquipmentType
+    let steps: [String]
 
-    nonisolated init(id: String, name: String, musclesTargeted: [Muscle], aliases: [String] = [], equipmentType: EquipmentType) {
+    nonisolated init(id: String, name: String, musclesTargeted: [Muscle], aliases: [String] = [], equipmentType: EquipmentType, steps: [String] = []) {
         self.id = id
         self.name = name
         self.musclesTargeted = musclesTargeted
         self.aliases = aliases
         self.equipmentType = equipmentType
+        self.steps = steps
     }
 }
 
