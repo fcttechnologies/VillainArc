@@ -140,6 +140,10 @@ struct CardioTabView: View {
                     }
                     .buttonStyle(.plain)
                     .appSurfaceStyle(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .accessibilityIdentifier("cardio_start_\(kind.rawValue)_button")
+                    .accessibilityLabel(Text("Start \(kind.title)"))
+                    .accessibilityHint(Text(kind.isOutdoor ? "Starts an outdoor cardio session with GPS route recording." : "Starts a treadmill cardio session with manual interval entry."))
+                    .accessibilityAddTraits(isFavorite ? [.isButton] : [.isButton])
                     .contextMenu {
                         if isFavorite {
                             Button(role: .destructive) {

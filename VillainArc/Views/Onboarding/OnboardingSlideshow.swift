@@ -89,6 +89,8 @@ struct OnboardingSlideshowView: View {
                 .buttonSizing(.flexible)
                 .padding(.horizontal, 24)
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .accessibilityIdentifier("onboarding_slideshow_get_started_button")
+                .accessibilityHint(Text("Finishes the feature tour and enters the app."))
             } else {
                 Button {
                     withAnimation(.smooth(duration: 0.3)) {
@@ -104,6 +106,8 @@ struct OnboardingSlideshowView: View {
                 .buttonSizing(.flexible)
                 .padding(.horizontal, 24)
                 .transition(.opacity)
+                .accessibilityIdentifier("onboarding_slideshow_next_button")
+                .accessibilityHint(Text("Shows the next feature slide."))
             }
 
             Button("Skip") {
@@ -112,6 +116,8 @@ struct OnboardingSlideshowView: View {
             .foregroundStyle(.secondary)
             .font(.subheadline)
             .padding(.bottom, 8)
+            .accessibilityIdentifier("onboarding_slideshow_skip_button")
+            .accessibilityHint(Text("Skips the feature tour and enters the app."))
         }
         .padding(.bottom, 24)
         .animation(.smooth(duration: 0.2), value: currentIndex)
@@ -126,6 +132,8 @@ struct OnboardingSlideshowView: View {
                     .animation(.smooth(duration: 0.3), value: currentIndex)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Slide \(currentIndex + 1) of \(slides.count)"))
     }
 }
 
@@ -164,6 +172,7 @@ private struct SlideView: View {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFill()
+                .accessibilityHidden(true)
         } else {
             // Placeholder used until real screenshots are added to Resources/Onboarding/
             ZStack {

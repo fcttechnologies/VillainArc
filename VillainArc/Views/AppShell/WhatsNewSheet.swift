@@ -39,8 +39,11 @@ struct WhatsNewSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { onDismiss() }
                         .fontWeight(.semibold)
+                        .accessibilityIdentifier("whats_new_done_button")
+                        .accessibilityHint(Text("Closes the What's New sheet."))
                 }
             }
+            .accessibilityIdentifier("whats_new_sheet")
         }
     }
 
@@ -87,6 +90,8 @@ struct WhatsNewSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("\(feature.title). \(feature.description)"))
     }
 
     private var continueButton: some View {
@@ -100,6 +105,8 @@ struct WhatsNewSheet: View {
         }
         .buttonStyle(.glassProminent)
         .buttonSizing(.flexible)
+        .accessibilityIdentifier("whats_new_continue_button")
+        .accessibilityHint(Text("Closes the What's New sheet and continues to the app."))
     }
 }
 
