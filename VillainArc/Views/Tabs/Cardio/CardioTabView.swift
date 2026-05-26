@@ -114,6 +114,7 @@ struct CardioTabView: View {
                         } else {
                             router.requestManualCardioSession(kind: kind)
                         }
+                        Task { await IntentDonations.donateStartCardioSession(kind: kind) }
                     } label: {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {

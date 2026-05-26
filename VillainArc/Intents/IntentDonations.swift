@@ -174,4 +174,21 @@ enum IntentDonations {
         intent.exercise = ExerciseEntity(exercise: exercise)
         _ = try? await intent.donate()
     }
+
+    static func donateStartCardioSession(kind: CardioSessionKind) async {
+        guard donationsEnabled else { return }
+        let intent = StartCardioSessionIntent()
+        intent.kind = CardioKindAppEnum(kind)
+        _ = try? await intent.donate()
+    }
+
+    static func donateOpenActiveCardioSession() async {
+        guard donationsEnabled else { return }
+        _ = try? await OpenActiveCardioSessionIntent().donate()
+    }
+
+    static func donateShowCardioHistory() async {
+        guard donationsEnabled else { return }
+        _ = try? await ShowCardioHistoryIntent().donate()
+    }
 }

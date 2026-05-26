@@ -121,12 +121,14 @@ struct ContentView: View {
         .sheet(item: $router.pendingOutdoorCardioKind) { kind in
             CardioOutdoorPermissionView(kind: kind) {
                 router.startCardioSession(kind: kind)
+                Task { await IntentDonations.donateStartCardioSession(kind: kind) }
             }
             .presentationBackground(Color.sheetBg)
         }
         .sheet(item: $router.pendingManualCardioKind) { kind in
             CardioOutdoorPermissionView(kind: kind, showsLocation: false) {
                 router.startCardioSession(kind: kind)
+                Task { await IntentDonations.donateStartCardioSession(kind: kind) }
             }
             .presentationBackground(Color.sheetBg)
         }
@@ -219,6 +221,7 @@ struct ContentView: View {
                 } else {
                     router.requestManualCardioSession(kind: favoriteKind)
                 }
+                Task { await IntentDonations.donateStartCardioSession(kind: favoriteKind) }
             })
         }
 
