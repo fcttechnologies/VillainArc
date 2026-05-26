@@ -56,7 +56,10 @@ actor HealthSyncCoordinator {
                 let linkedSessionIDs = Dictionary(uniqueKeysWithValues: result.addedSamples.compactMap { workout in
                     HealthMetadataKeys.workoutSessionID(from: workout).map { (workout.uuid, $0) }
                 })
-                await HealthWorkoutMirrorImporter.shared.importWorkouts(result.addedSamples, linkedSessionIDsByWorkout: linkedSessionIDs)
+                let linkedCardioSessionIDs = Dictionary(uniqueKeysWithValues: result.addedSamples.compactMap { workout in
+                    HealthMetadataKeys.cardioSessionID(from: workout).map { (workout.uuid, $0) }
+                })
+                await HealthWorkoutMirrorImporter.shared.importWorkouts(result.addedSamples, linkedSessionIDsByWorkout: linkedSessionIDs, linkedCardioSessionIDsByWorkout: linkedCardioSessionIDs)
 
                 for deletedObject in result.deletedObjects { try handleDeletedHealthWorkout(id: deletedObject.uuid, retainRemovedHealthData: retainRemovedHealthData, context: context) }
 

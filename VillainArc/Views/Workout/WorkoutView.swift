@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import AppIntents
+import TipKit
 import UniformTypeIdentifiers
 
 struct WorkoutView: View {
@@ -8,6 +9,7 @@ struct WorkoutView: View {
     private let restTimer = RestTimerState.shared
     @State private var router = AppRouter.shared
     
+    private let workoutOptionsTip = WorkoutOptionsTip()
     @State private var showExerciseEditSheet = false
     @State private var showLiveHealthSheet = false
     @State private var showTitleEditorSheet = false
@@ -26,6 +28,14 @@ struct WorkoutView: View {
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
     private var shouldPromptForPreWorkoutContext: Bool { appSettingsSnapshot.promptForPreWorkoutContext }
     private var shouldPromptForPostWorkoutEffort: Bool { appSettingsSnapshot.promptForPostWorkoutEffort }
+    private var preferredAddExerciseMuscles: Set<Muscle> {
+        if let resolvedMuscles = SplitScheduleResolver.resolveActive(at: workout.startedAt, context: context)?.splitDay?.resolvedMuscles,
+           !resolvedMuscles.isEmpty {
+            return Set(resolvedMuscles)
+        }
+
+        return Set(workout.workoutPlan?.musclesArray ?? [])
+    }
 
     private var unfinishedSetSummary: UnfinishedSetSummary {
         workout.unfinishedSetSummary
@@ -116,7 +126,7 @@ struct WorkoutView: View {
                 finishExerciseReorder()
             }
             .sheet(isPresented: addExerciseSheetBinding, onDismiss: handleAddExerciseSheetDismiss) {
-                AddExerciseView(workout: workout)
+                AddExerciseView(workout: workout, preferredMuscles: preferredAddExerciseMuscles)
                     .presentationBackground(Color.sheetBg)
                     .task {
                         prepareForAddExerciseSheet()
@@ -433,6 +443,7 @@ struct WorkoutView: View {
                 .labelStyle(.iconOnly)
                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutOptionsMenu)
                 .accessibilityHint(AccessibilityText.workoutOptionsMenuHint)
+                .popoverTip(workoutOptionsTip)
             }
         }
         .confirmationDialog("Cancel Workout", isPresented: cancelWorkoutDialogBinding) {

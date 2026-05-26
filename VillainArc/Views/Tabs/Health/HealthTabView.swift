@@ -26,7 +26,6 @@ struct HealthTabView: View {
             }
             .quickActionContentBottomInset()
             .appBackground()
-            .navBar(title: "Health", includePadding: false)
             .scrollIndicators(.hidden)
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {

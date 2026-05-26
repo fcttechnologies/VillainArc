@@ -12,6 +12,7 @@ Beta testing (iOS 26+ target).
 - Build and manage workout plans.
 - Create weekly or rotation-based workout splits.
 - Log workouts with set-level detail (reps, weight, set type, rest, RPE).
+- Track outdoor and treadmill cardio sessions with routes, intervals, and optional Apple Health metrics.
 - Review post-workout summaries and progression suggestions.
 - Use Siri / Shortcuts / Spotlight to trigger key workflows faster.
 - Use rest timer controls with Live Activities and widget support.
@@ -21,6 +22,7 @@ Beta testing (iOS 26+ target).
 ### Training workflow
 - Split planning with day-level plan assignment.
 - Session lifecycle management (`pending -> active -> summary -> done`).
+- Dedicated cardio flow for outdoor run/walk route recording and manual treadmill intervals.
 - Rep-range and rest-time policy editing.
 - Exercise filtering by muscle groups.
 
@@ -35,6 +37,7 @@ Beta testing (iOS 26+ target).
 - App Intents + App Shortcuts.
 - Spotlight indexing.
 - Widget + Live Activity extensions.
+- MapKit and Core Location for app-owned cardio routes.
 
 ## Tech stack
 

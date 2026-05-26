@@ -4,11 +4,17 @@ import SwiftData
 
 nonisolated enum HealthMetadataKeys {
     static let workoutSessionID = "com.villainarc.workoutsession.id"
+    static let cardioSessionID = "com.villainarc.cardiosession.id"
     static let weightEntryID = "com.villainarc.weightentry.id"
     static let hydrationEntryID = "com.villainarc.hydrationentry.id"
 
     static func workoutSessionID(from workout: HKWorkout) -> UUID? {
         guard let rawValue = workout.metadata?[workoutSessionID] as? String else { return nil }
+        return UUID(uuidString: rawValue)
+    }
+
+    static func cardioSessionID(from workout: HKWorkout) -> UUID? {
+        guard let rawValue = workout.metadata?[cardioSessionID] as? String else { return nil }
         return UUID(uuidString: rawValue)
     }
 
@@ -28,16 +34,25 @@ nonisolated enum HealthWorkoutLinker {
         HKQuery.predicateForObjects(withMetadataKey: HealthMetadataKeys.workoutSessionID, operatorType: .equalTo, value: sessionID.uuidString)
     }
 
-    @discardableResult static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, context: ModelContext) throws -> HealthWorkout {
+    @discardableResult static func upsertHealthWorkout(for workout: HKWorkout, linkedTo workoutSession: WorkoutSession?, cardioSession: CardioSession? = nil, context: ModelContext) throws -> HealthWorkout {
         if let workoutSession { workoutSession.hasBeenExportedToHealth = true }
 
         if let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(workout.uuid)).first {
             existing.update(from: workout)
             if let workoutSession { existing.workoutSession = workoutSession }
+            if let cardioSession {
+                existing.cardioSession = cardioSession
+                cardioSession.healthWorkout = existing
+                cardioSession.healthWorkoutUUID = workout.uuid
+            }
             return existing
         }
 
-        let healthWorkout = HealthWorkout(workout: workout, workoutSession: workoutSession)
+        let healthWorkout = HealthWorkout(workout: workout, workoutSession: workoutSession, cardioSession: cardioSession)
+        if let cardioSession {
+            cardioSession.healthWorkout = healthWorkout
+            cardioSession.healthWorkoutUUID = workout.uuid
+        }
         context.insert(healthWorkout)
         return healthWorkout
     }
@@ -90,7 +105,7 @@ actor HealthWorkoutMirrorImporter {
 
     private init() {}
 
-    func importWorkout(_ workout: HKWorkout, linkedSessionID: UUID?) {
+    func importWorkout(_ workout: HKWorkout, linkedSessionID: UUID? = nil, linkedCardioSessionID: UUID? = nil) {
         guard beginImport(for: workout.uuid) else { return }
         defer { endImport(for: workout.uuid) }
 
@@ -99,14 +114,15 @@ actor HealthWorkoutMirrorImporter {
 
         do {
             let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: linkedSessionID, context: context)
-            _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
+            let linkedCardioSession = try fetchLinkedCardioSession(for: linkedCardioSessionID, context: context)
+            _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, cardioSession: linkedCardioSession, context: context)
             try context.save()
         } catch {
             print("Failed to import mirrored Health workout \(workout.uuid): \(error)")
         }
     }
 
-    func importWorkouts(_ workouts: [HKWorkout], linkedSessionIDsByWorkout: [UUID: UUID]) {
+    func importWorkouts(_ workouts: [HKWorkout], linkedSessionIDsByWorkout: [UUID: UUID], linkedCardioSessionIDsByWorkout: [UUID: UUID] = [:]) {
         let eligible = workouts.filter { beginImport(for: $0.uuid) }
         guard !eligible.isEmpty else { return }
         defer { eligible.forEach { endImport(for: $0.uuid) } }
@@ -117,7 +133,8 @@ actor HealthWorkoutMirrorImporter {
         do {
             for workout in eligible {
                 let linkedWorkoutSession = try fetchLinkedWorkoutSession(for: linkedSessionIDsByWorkout[workout.uuid], context: context)
-                _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, context: context)
+                let linkedCardioSession = try fetchLinkedCardioSession(for: linkedCardioSessionIDsByWorkout[workout.uuid], context: context)
+                _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, cardioSession: linkedCardioSession, context: context)
             }
             try context.save()
         } catch {
@@ -128,6 +145,11 @@ actor HealthWorkoutMirrorImporter {
     private func fetchLinkedWorkoutSession(for workoutSessionID: UUID?, context: ModelContext) throws -> WorkoutSession? {
         guard let workoutSessionID else { return nil }
         return try context.fetch(WorkoutSession.byID(workoutSessionID)).first
+    }
+
+    private func fetchLinkedCardioSession(for cardioSessionID: UUID?, context: ModelContext) throws -> CardioSession? {
+        guard let cardioSessionID else { return nil }
+        return try context.fetch(CardioSession.byID(cardioSessionID)).first
     }
 
     private func beginImport(for healthWorkoutUUID: UUID) -> Bool {

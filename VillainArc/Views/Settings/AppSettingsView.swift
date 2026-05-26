@@ -900,9 +900,17 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .appGroupedListRow(position: .middle)
+
+                Picker("Speed", selection: $settings.speedUnit) {
+                    ForEach(SpeedUnit.allCases, id: \.self) { unit in
+                        Text(unit.unitLabel)
+                            .tag(unit)
+                    }
+                }
                 .appGroupedListRow(position: .bottom)
             } footer: {
-                Text("These units control how weight, height, distance, energy, and temperature are displayed throughout the app.")
+                Text("These units control how weight, height, distance, energy, temperature, and speed are displayed throughout the app.")
             }
         }
         .navigationTitle("Units")
@@ -926,6 +934,9 @@ private struct UnitSettingsView: View {
             HealthMetricWidgetReloader.reloadEnergy()
         }
         .onChange(of: settings.temperatureUnit) {
+            saveContext(context: context)
+        }
+        .onChange(of: settings.speedUnit) {
             saveContext(context: context)
         }
     }

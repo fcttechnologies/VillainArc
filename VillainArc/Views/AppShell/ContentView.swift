@@ -1,14 +1,20 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     @State private var router = AppRouter.shared
     @State private var isMorphingTabBarExpanded = false
     @Namespace private var animation
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
     
     var body: some View {
         TabView(selection: tabSelectionBinding) {
             HomeTabView()
                 .tag(AppTab.home)
+                .toolbar(.hidden, for: .tabBar)
+
+            CardioTabView()
+                .tag(AppTab.cardio)
                 .toolbar(.hidden, for: .tabBar)
             
             HealthTabView()
@@ -19,9 +25,6 @@ struct ContentView: View {
                 .tag(AppTab.profile)
                 .toolbar(.hidden, for: .tabBar)
 
-            AppSettingsView(showsCloseButton: false)
-                .tag(AppTab.settings)
-                .toolbar(.hidden, for: .tabBar)
         }
         .safeAreaBar(edge: .bottom) {
             if !router.isQuickActionsBarHidden {
@@ -57,6 +60,12 @@ struct ContentView: View {
         }) {
             if let plan = router.activeWorkoutPlan {
                 WorkoutPlanView(plan: plan, originalPlan: router.activeWorkoutPlanOriginal)
+                    .navigationTransition(.zoom(sourceID: TransitionSourceID.toolbar, in: animation))
+            }
+        }
+        .fullScreenCover(isPresented: cardioSessionCoverBinding) {
+            if let session = router.activeCardioSession {
+                CardioSessionContainer(session: session)
                     .navigationTransition(.zoom(sourceID: TransitionSourceID.toolbar, in: animation))
             }
         }
@@ -108,6 +117,18 @@ struct ContentView: View {
             NewHydrationGoalView()
                 .presentationDetents([.fraction(0.4)])
                 .presentationBackground(Color.sheetBg)
+        }
+        .sheet(item: $router.pendingOutdoorCardioKind) { kind in
+            CardioOutdoorPermissionView(kind: kind) {
+                router.startCardioSession(kind: kind)
+            }
+            .presentationBackground(Color.sheetBg)
+        }
+        .sheet(item: $router.pendingManualCardioKind) { kind in
+            CardioOutdoorPermissionView(kind: kind, showsLocation: false) {
+                router.startCardioSession(kind: kind)
+            }
+            .presentationBackground(Color.sheetBg)
         }
         .background {
             ToastOverlaySceneInstaller()
@@ -188,6 +209,17 @@ struct ContentView: View {
                         Task { await IntentDonations.donateStartTodaysWorkout() }
                     }
                 })
+        }
+
+        if let favoriteKind = appSettings.first?.favoriteCardioKind, !router.hasActiveAuthoringFlow {
+            actions.append(ExpandedAction("Start \(favoriteKind.shortTitle)", icon: favoriteKind.systemImage, accessibilityIdentifier: "morphing_start_favorite_cardio_button", accessibilityHint: "Starts a \(favoriteKind.title) cardio session.") {
+                collapseMorphingTabBar()
+                if favoriteKind.isOutdoor {
+                    router.requestOutdoorCardioSession(kind: favoriteKind)
+                } else {
+                    router.requestManualCardioSession(kind: favoriteKind)
+                }
+            })
         }
 
         return actions
@@ -313,6 +345,10 @@ struct ContentView: View {
                 router.presentActiveWorkoutPlanIfPossible()
                 Task { await IntentDonations.donateOpenActiveWorkoutPlan() }
             }
+        } else if let session = router.activeCardioSession, !router.isCardioSessionCoverPresented {
+            ActiveCardioResumeBarButton(session: session, isCollapsed: isMorphingTabBarExpanded) {
+                router.presentActiveCardioSessionIfPossible()
+            }
         }
     }
 
@@ -337,6 +373,19 @@ struct ContentView: View {
                     router.presentActiveWorkoutPlanIfPossible()
                 } else {
                     router.dismissActiveWorkoutPlanPresentation()
+                }
+            }
+        )
+    }
+
+    private var cardioSessionCoverBinding: Binding<Bool> {
+        Binding(
+            get: { router.activeCardioSession != nil && router.isCardioSessionCoverPresented },
+            set: { isPresented in
+                if isPresented {
+                    router.presentActiveCardioSessionIfPossible()
+                } else {
+                    router.dismissActiveCardioSessionPresentation()
                 }
             }
         )

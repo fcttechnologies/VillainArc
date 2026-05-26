@@ -95,11 +95,11 @@ These decisions should guide the roadmap unless a future release proves they nee
   - User outcome prompts, session overrides, and more contextual suggestion data should arrive before model personalization work.
 - Monetization should follow feature proof, not lead it.
   - The app should first earn 2 to 3 obviously premium-worthy capabilities.
-- Cardio should ship in two phases, not one.
-  - Cardio v1 is HealthKit-mirror only. Reuse `HealthWorkout`, surface mirrored runs/walks/rides inside the Health tab, no new model, no GPS. This validates demand cheaply.
-  - Cardio v2 is the full device-tracked experience with `CLLocationManager`, MapKit route rendering, `HKWorkoutSession` on iPhone, heart rate, splits, indoor cardio with manual treadmill correction, and a new app-owned `CardioSession` model.
-  - The "Cardio" tab and the "Workout" → "Lifting" tab rename are v2 decisions. v1 lives as a section.
-- Text-to-plan generation can pull ahead of deeper foundation work.
+- Cardio is now a first-class app-owned surface in `1.3`.
+  - The app ships a dedicated Cardio tab, `CardioSession` model, outdoor route recording, treadmill interval entry, HealthKit live workout support when available, and a separate cardio Live Activity.
+  - Follow-up work should deepen insights, route/split polish, and imported-cardio surfacing rather than re-deciding whether cardio belongs in the app.
+  - Keep the existing Home/Workout language stable until there is a broader navigation pass; the Cardio tab can stand on its own for now.
+- Text-to-plan generation remains the strongest authoring candidate after the foundation release.
   - Foundation Models infrastructure already exists (`AITrainingStyleClassifier`, `AIOutcomeInferrer`, `FoundationModelPrewarmer`).
   - It is the most screenshot- and share-worthy way to prove the on-device AI claim the store listing now leads with.
   - Scope tight: template-plan generation first, split generation second, targeted split-day updates third. Defer chat/critique.
@@ -247,18 +247,11 @@ These decisions should guide the roadmap unless a future release proves they nee
 - Shortcuts and system surfaces polish
   - Add any missing App Intents.
   - Wire donation coverage across all high-value actions and validate that surfaced suggestions stay aligned with the current navigation model.
-- Cardio v1: HealthKit mirror only
-  - Surface mirrored cardio `HealthWorkout` rows (runs, walks, rides from Watch, Strava, Nike Run Club, etc.) inside an existing surface.
-  - No new persisted model, no GPS, no device tracking.
-  - Ships as a Health tab section, not a new tab.
-  - Purpose is to validate how often VillainArc users actually want cardio surfaced before committing to v2.
-- Cardio v2: device-tracked
-  - New app-owned `CardioSession` model parallel to `WorkoutSession`.
-  - `CLLocationManager` + MapKit route rendering.
-  - `HKWorkoutSession` on iPhone for live cardio.
-  - Heart rate, pace, splits, HR zones.
-  - Indoor cardio support with manual treadmill correction input.
-  - At this point, add a dedicated Cardio tab and rename the current Workout tab to Lifting.
+- Cardio follow-up
+  - Improve route review, splits/laps, pace charts, and heart-rate zones.
+  - Surface imported third-party cardio workouts clearly when they are not already represented by a local `CardioSession`.
+  - Add deeper cardio trend cards once enough local sessions exist.
+  - Consider a broader Home/Workout naming pass only after strength and cardio navigation have both settled.
 - More general workout tracking beyond strength
   - Especially useful for run-focused or hybrid users.
 - Monetization
@@ -271,7 +264,7 @@ These decisions should guide the roadmap unless a future release proves they nee
 
 ## Suggested Release Order
 
-This is the recommended shipping order based on current architecture, product leverage, and implementation risk. The order now assumes the immediate next release is the text-authoring push, followed by a screenshot/onboarding/education pass once fresh assets are ready.
+This is the recommended shipping order based on current architecture, product leverage, and implementation risk. The order now assumes `1.3` is the health/profile/cardio foundation release, followed by a screenshot/onboarding/education pass once fresh assets are ready.
 
 ### `1.2.x` — Current focus
 
@@ -281,20 +274,22 @@ Use the current build for dogfooding and asset capture before the next feature r
 - Identify the best product moments to turn into improved App Store creative
 - Keep onboarding/image refresh scoped for the follow-up release once the new assets exist
 
-### `1.3` — Marquee: Text authoring AI
+### `1.3` — Health, Profile, Hydration, and Cardio Foundation
 
-The next release should be the first visible on-device AI authoring push.
+The next release should turn VillainArc from strength-only into a broader training and health companion.
 
-- Template-plan generation from natural-language text (Foundation Models)
-- Workout-split generation from natural-language text
-- Keep the UX centered on creation, not mutation
-- Targeted split-day updates stay in follow-on scope once create-from-text feels solid
+- Expanded HealthKit mirrors for heart-rate range, resting heart rate, walking heart rate average, HRV, respiratory-rate range, and sleeping wrist temperature
+- Hydration model/sync/history/widgets with `HydrationDay`, manual entries, Health dietary-water import/export, goal completion, and notifications
+- Dedicated Profile tab with profile editing, muscle-map distribution, workout streak, and complete-day heatmap
+- Expanded Settings surface with legal/support/review/settings actions reachable from Profile and settings routes
+- Dedicated Cardio tab with app-owned `CardioSession`s, outdoor route recording, treadmill interval entry, optional HealthKit live metrics, Health workout linking, and separate cardio Live Activity
+- Exercise detail, exercise history, workout-plan history, sleep timing chart, and training insight improvements carried forward from the same foundation pass
 
 Reason:
 
-- Foundation Models infrastructure already exists, so this is more UX/prompt/integration work than a brand-new platform bet.
-- It is the most screenshot-worthy feature currently available to back the AI positioning.
-- It creates better raw material for the App Store refresh and onboarding refresh that should follow.
+- This release expands the everyday utility of the app without making Apple Health the only source of truth.
+- Profile, Settings, Hydration, and Cardio create stronger first-run and returning-user surfaces for screenshots and onboarding refresh work.
+- The app now has enough non-strength signals to make later coaching and AI authoring feel grounded instead of decorative.
 
 ### `1.4` — Conversion + education pass
 
@@ -320,25 +315,24 @@ Reason:
 - Announcement surfaces (`What's New`, onboarding refresh, Getting Started, TipKit, review prompt) earn their keep here rather than shipping as disconnected polish.
 - This is the right moment to improve both App Store conversion and returning-user comprehension.
 
-### `1.5` — Health depth + Cardio v1
+### `1.5` — Health Depth + Cardio Polish
 
-Broaden the Health tab and validate cardio demand cheaply.
+Broaden the Health tab and deepen the new cardio surface.
 
-- The `1.3` Health/profile pass pulls forward heart-rate range, resting heart rate, walking heart rate average, HRV, respiratory-rate range, sleeping wrist temperature, hydration model/sync/history/widgets, profile tab, settings tab, richer exercise detail, sleep timing chart updates, and workout-plan history/insights.
 - Remaining expanded Health metrics: cardio recovery and cardio fitness
-- Remaining hydration work: manual-entry surface polish and deeper trend insights
+- Remaining hydration work: manual-entry polish and deeper trend insights
 - Sleep timing insights: average bedtime, average wake time, weekday sleep timing charts, sleep debt / bedtime recommendation surfaces
 - Desired wake-up time as a sleep preference (not a historical goal)
 - Health trends summaries
 - First combined metric / correlation charts
 - `Last synced at` visibility on Health models
-- Cardio v1 — HealthKit mirror surface in the Health tab (no new model, no GPS)
+- Cardio route review, splits/laps, pace charts, heart-rate zones, and clearer imported-cardio handling for Health workouts not created by VillainArc
 
 Reason:
 
 - Sync infrastructure for daily metric caches already exists; new metrics mostly add display and model work.
-- Shipping Cardio v1 here lets the broader health expansion carry it without needing a dedicated cardio release.
-- Creates the signal set that the next release will actually use.
+- Cardio now has a real local model, so the next useful work is interpretation, polish, and imported-data handling.
+- Creates the signal set that the coaching loop will actually use.
 
 ### `1.6` — Coaching loop bundle
 
@@ -387,15 +381,13 @@ Harder or larger work best done after the earlier foundations are stable.
 
 ### `2.0`
 
-- Cardio v2 — device-tracked with new `CardioSession` model, `CLLocationManager`, MapKit routes, `HKWorkoutSession` on iPhone, heart rate, splits, and indoor cardio correction
-- Rename the current Workout tab to Lifting and introduce a dedicated Cardio tab
 - Broader workout tracking expansion beyond strength-first
+- Navigation/naming pass once strength, cardio, health, profile, and settings all have enough usage signal
 - Premium packaging and monetization structure around the most differentiated coaching features
 
 Reason:
 
-- Cardio v2 is a real surface-area expansion, not an incremental sheet.
-- By this point `1.5` should have answered whether users actually want cardio in VillainArc, so the v2 investment is justified or declined based on real data.
+- Cardio is no longer the 2.0 gating item. The larger question becomes whether VillainArc should package broader training modes, coaching, and premium value into a clearer app-level structure.
 
 ## Defer Until There Is A Better Product Reason
 
@@ -404,8 +396,7 @@ Reason:
 - Aggressive full auto-updating fitness level with no user confirmation
 - Core ML personalization before richer user feedback and session-override labels exist
 - Monetization before premium features feel essential
-- Cardio v2 (device-tracked) before Cardio v1 (HealthKit mirror) has validated demand
-- A dedicated Cardio tab and the Workout → Lifting rename before Cardio v2 is ready to ship
+- Renaming Workout/Home navigation before the dedicated Cardio tab has real usage signal
 - Weight-log reminders until there is evidence they materially improve retention or goal adherence
 - A global notifications toggle before there is a stronger product reason than simple settings completeness
 - Request Feature and Report Bug until there is a website backend to receive and triage submissions
@@ -415,7 +406,7 @@ Reason:
 If the roadmap is executed one feature cluster at a time, the cleanest next implementation sequence is:
 
 1. Close out `1.2.x`: dogfood daily, capture the screenshots worth turning into stronger App Store creative, and note which product moments should be highlighted in onboarding.
-2. `1.3` health/profile foundation: ship read-only heart, respiratory, and wrist-temperature HealthKit mirrors, hydration model/sync/history/widgets, temperature units, profile/settings tabs, richer exercise detail, and sleep timing chart improvements.
+2. `1.3` health/profile/cardio foundation: ship read-only heart, respiratory, and wrist-temperature HealthKit mirrors, hydration model/sync/history/widgets, temperature units, profile tab, settings surface, richer exercise detail, sleep timing chart improvements, and app-owned Cardio sessions with routes, treadmill intervals, HealthKit metrics, and Live Activity support.
 3. `1.4` conversion/education pass: refresh onboarding, ship `What's New`, add Getting Started, add the review prompt, and layer in TipKit once the new assets and flows are ready.
-4. `1.5` health expansion: finish the remaining cardio recovery/fitness metrics, hydration trend insights, sleep timing insights, desired wake-up time, Health trends, first correlation charts, `last synced at` on Health models, and Cardio v1 as a HealthKit-mirror section in the Health tab.
+4. `1.5` health/cardio expansion: finish the remaining cardio recovery/fitness metrics, hydration trend insights, sleep timing insights, desired wake-up time, Health trends, first correlation charts, `last synced at` on Health models, and cardio route/split/pace/heart-rate polish.
 5. `1.6` coaching bundle: ship pre-workout context, session override, user outcome prompt, and learning-from-good-outcomes together because the pieces depend on each other.

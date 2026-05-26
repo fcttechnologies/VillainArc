@@ -154,6 +154,8 @@ All paths enforce the same practical gates:
 
 When those checks pass, the app starts a normal plan-backed `WorkoutSession` through `AppRouter.startWorkoutSession(from:)`. That means deferred suggestion gates, plan-target auto-fill, weight-unit conversion, Live Activities, and Health live-workout startup all follow the same session path as starting from a plan detail screen.
 
+During an active session, the Add Exercise sheet asks `SplitScheduleResolver` for the active split day at the workout start date. If the day has resolved muscles, those muscles are passed into the exercise picker and matching catalog exercises are sorted first while the user's explicit filters and search still win. If no active split-day muscles are available, the sheet falls back to the attached workout plan's muscles.
+
 ## App Intents and Spotlight
 
 Split intents use fresh `ModelContext`s and the shared setup guards.

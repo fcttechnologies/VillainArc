@@ -1,6 +1,7 @@
 import CoreSpotlight
 import SwiftUI
 import SwiftData
+import TipKit
 import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
@@ -22,6 +23,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct VillainArcApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    init() {
+        try? Tips.configure([.datastoreLocation(.applicationDefault)])
+    }
 
     var body: some Scene {
         WindowGroup {

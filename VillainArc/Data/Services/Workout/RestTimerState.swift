@@ -16,6 +16,7 @@ import Observation
     var endDate: Date?
     var pausedRemainingSeconds: Int
     var isPaused: Bool
+    var completionCount: Int = 0
     @ObservationIgnored var startedFromSetID: UUID?
     @ObservationIgnored var startedSeconds: Int
     init() {
@@ -204,6 +205,7 @@ import Observation
     private func stopIfStillScheduled(_ scheduledEndDate: Date) {
         if endDate == scheduledEndDate {
             stopInternal(cancelNotification: false, updateLiveActivity: false)
+            completionCount += 1
             if WorkoutActivityManager.canPresentRestTimerCompletionAlert {
                 NotificationCoordinator.cancelRestTimer()
                 Task {

@@ -4,6 +4,8 @@ import SwiftData
 
 struct RootView: View {
     @State private var onboardingManager = OnboardingManager()
+    @State private var showWhatsNew = false
+    @State private var showOnboardingSlideshow = false
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var onboardingBinding: Binding<Bool> {
@@ -37,6 +39,11 @@ struct RootView: View {
                     await NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()
                     await WeeklyHealthCoachingCoordinator.shared.refreshSchedule()
                 }
+                if !OnboardingSlideshowPreferences.hasSeenSlideshow {
+                    showOnboardingSlideshow = true
+                } else if WhatsNewPreferences.shouldShowWhatsNew {
+                    showWhatsNew = true
+                }
             }
             .sheet(isPresented: onboardingBinding) {
                 OnboardingView(manager: onboardingManager)
@@ -44,6 +51,23 @@ struct RootView: View {
                     .presentationBackground(Color.sheetBg)
                     .interactiveDismissDisabled(true)
                     .presentationDragIndicator(.hidden)
+            }
+            .sheet(isPresented: $showWhatsNew) {
+                WhatsNewSheet(version: WhatsNewPreferences.currentVersion) {
+                    WhatsNewPreferences.markCurrentVersionSeen()
+                    showWhatsNew = false
+                }
+                .presentationBackground(Color.sheetBg)
+                .presentationDetents([.large])
+            }
+            .fullScreenCover(isPresented: $showOnboardingSlideshow) {
+                OnboardingSlideshowView {
+                    OnboardingSlideshowPreferences.hasSeenSlideshow = true
+                    showOnboardingSlideshow = false
+                    if WhatsNewPreferences.shouldShowWhatsNew {
+                        showWhatsNew = true
+                    }
+                }
             }
     }
 

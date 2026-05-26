@@ -6,6 +6,7 @@ import SwiftData
     #Index<HealthWorkout>([\.healthWorkoutUUID])
     var healthWorkoutUUID: UUID = UUID()
     var workoutSession: WorkoutSession?
+    var cardioSession: CardioSession?
     var startDate: Date = Date()
     var endDate: Date = Date()
     var duration: TimeInterval = 0
@@ -18,9 +19,10 @@ import SwiftData
     var totalDistance: Double?
     var isAvailableInHealthKit: Bool = true
 
-    init(workout: HKWorkout, workoutSession: WorkoutSession? = nil) {
+    init(workout: HKWorkout, workoutSession: WorkoutSession? = nil, cardioSession: CardioSession? = nil) {
         healthWorkoutUUID = workout.uuid
         self.workoutSession = workoutSession
+        self.cardioSession = cardioSession
         startDate = workout.startDate
         endDate = workout.endDate
         duration = workout.duration
@@ -84,13 +86,26 @@ extension HealthWorkout {
     static var history: FetchDescriptor<HealthWorkout> { FetchDescriptor(sortBy: [SortDescriptor(\.startDate, order: .reverse)]) }
 
     static func recentStandaloneWorkouts(limit: Int? = nil) -> FetchDescriptor<HealthWorkout> {
-        let predicate = #Predicate<HealthWorkout> { $0.workoutSession == nil || $0.workoutSession?.isHidden == true }
+        let predicate = #Predicate<HealthWorkout> {
+            ($0.workoutSession == nil || $0.workoutSession?.isHidden == true) && $0.cardioSession == nil
+        }
         var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startDate, order: .reverse)])
         if let limit { descriptor.fetchLimit = limit }
         return descriptor
     }
 
     static var recentStandalone: FetchDescriptor<HealthWorkout> { recentStandaloneWorkouts(limit: 1) }
+
+    static func recentRunWalk(limit: Int) -> FetchDescriptor<HealthWorkout> {
+        let runRaw = HKWorkoutActivityType.running.rawValue
+        let walkRaw = HKWorkoutActivityType.walking.rawValue
+        let predicate = #Predicate<HealthWorkout> { hw in
+            hw.activityTypeRawValue == runRaw || hw.activityTypeRawValue == walkRaw
+        }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startDate, order: .reverse)])
+        descriptor.fetchLimit = limit
+        return descriptor
+    }
 
     var activityTypeDisplayName: String { activityType.displayName(indoorWorkout: isIndoorWorkout) }
 }

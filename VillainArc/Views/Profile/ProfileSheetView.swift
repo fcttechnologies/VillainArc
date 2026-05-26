@@ -108,6 +108,7 @@ struct ProfileSheetView: View {
     @Query(TrainingGoal.active) private var activeTrainingGoals: [TrainingGoal]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(WorkoutSession.completedSession) private var completedWorkouts: [WorkoutSession]
+    @Query(CardioSession.history) private var completedCardioSessions: [CardioSession]
     @Query(HealthSleepNight.history) private var sleepNights: [HealthSleepNight]
     @Query(HealthStepsDistance.history) private var stepsEntries: [HealthStepsDistance]
     @Query(HydrationDay.history) private var hydrationDays: [HydrationDay]
@@ -686,7 +687,7 @@ struct ProfileSheetView: View {
     private var profileCompletionDays: [ProfileCompletionDay] {
         let calendar = Calendar.autoupdatingCurrent
         let today = calendar.startOfDay(for: .now)
-        let workoutDays = Set(completedWorkouts.map { calendar.startOfDay(for: $0.startedAt) })
+        let workoutDays = completedTrainingDays(calendar: calendar)
         let sleepByDay = Dictionary(uniqueKeysWithValues: sleepNights.map { (calendar.startOfDay(for: $0.displayWakeDay), $0) })
         let stepsByDay = Dictionary(uniqueKeysWithValues: stepsEntries.map { (calendar.startOfDay(for: $0.date), $0) })
         let hydrationByDay = Dictionary(uniqueKeysWithValues: hydrationDays.map { (calendar.startOfDay(for: $0.date), $0) })
@@ -749,7 +750,7 @@ struct ProfileSheetView: View {
 
     private var currentWorkoutStreakDays: Int {
         let calendar = Calendar.autoupdatingCurrent
-        let workoutDays = Set(completedWorkouts.map { calendar.startOfDay(for: $0.startedAt) })
+        let workoutDays = completedTrainingDays(calendar: calendar)
         guard !workoutDays.isEmpty else { return 0 }
 
         var day = calendar.startOfDay(for: .now)
@@ -767,6 +768,12 @@ struct ProfileSheetView: View {
         }
 
         return streak
+    }
+
+    private func completedTrainingDays(calendar: Calendar) -> Set<Date> {
+        let strengthDays = completedWorkouts.map { calendar.startOfDay(for: $0.startedAt) }
+        let cardioDays = completedCardioSessions.compactMap { $0.startedAt }.map { calendar.startOfDay(for: $0) }
+        return Set(strengthDays + cardioDays)
     }
 
     private var fitnessLevelText: String {

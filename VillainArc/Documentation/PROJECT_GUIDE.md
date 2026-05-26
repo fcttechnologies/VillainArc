@@ -17,6 +17,7 @@ VillainArc is a SwiftUI + SwiftData strength-training app built around:
 - plan suggestions and later outcome evaluation
 - cached exercise analytics
 - Apple Health integration for workouts, weight, sleep, daily steps, daily distance, and daily energy
+- app-owned cardio sessions with outdoor routes, treadmill intervals, and optional Apple Health metrics
 - Shortcuts, home-screen quick actions, Spotlight, widgets, and Live Activities that reuse the same app state
 
 The main product areas are:
@@ -25,6 +26,7 @@ The main product areas are:
 - profile hub and app settings
 - home navigation and active-flow routing
 - workout sessions
+- cardio sessions
 - workout plans and plan editing
 - workout splits
 - training condition status and history
@@ -36,11 +38,12 @@ The main product areas are:
 
 After onboarding is ready, `Views/AppShell/ContentView.swift` owns:
 
-- the root `TabView` (`Home`, `Health`, `Profile`, `Settings`)
+- the root `TabView` (`Home`, `Cardio`, `Health`, `Profile`)
 - global profile/settings sheets
 - full-screen workout flow
+- full-screen cardio flow
 - full-screen workout-plan flow
-- active workout/plan resume bars when those flows are minimized
+- active workout/cardio/plan resume bars when those flows are minimized
 - full-screen weight-goal-completion flow
 
 ## App-Wide Conventions
@@ -49,13 +52,15 @@ These rules are important because they shape most of the codebase.
 
 ### One Active Authoring Flow
 
-VillainArc allows only one active workout-or-plan flow at a time.
+VillainArc allows only one active workout, cardio, or plan flow at a time.
 
-Starting a new workout or plan is blocked when any of these exist:
+Starting a new workout, cardio session, or plan is blocked when any of these exist:
 
 - a presented workout session
+- a presented cardio session
 - a presented plan flow
 - a persisted incomplete `WorkoutSession`
+- a persisted incomplete `CardioSession`
 - a persisted incomplete `WorkoutPlan`
 
 This keeps UI flows, intents, Spotlight entry points, and resume behavior aligned.
@@ -63,18 +68,18 @@ This keeps UI flows, intents, Spotlight entry points, and resume behavior aligne
 Important nuance:
 
 - active flow lifecycle is separate from full-screen presentation
-- users can temporarily dismiss workout/plan full-screen covers, access the rest of the app, and reopen from the active-flow resume bar
-- while minimized, the workout/plan still counts as active work and still blocks creating a second workout/plan
+- users can temporarily dismiss workout/cardio/plan full-screen covers, access the rest of the app, and reopen from the active-flow resume bar
+- while minimized, the workout/cardio/plan still counts as active work and still blocks creating a second active flow
 
 Quick actions follow the same rule too:
 
-- `Start Today's Workout` only runs when no workout or plan flow is already active
+- `Start Today's Workout` only runs when no workout, cardio, or plan flow is already active
 - `Add Weight Entry` routes into the Health tab and presents the same sheet the foreground UI uses
 
 For routing intents and deep links:
 
 - foreground navigation intents and widget deep links can temporarily collapse active workout/plan covers so navigation can proceed
-- workout/plan lifecycle state remains active underneath that temporary presentation collapse
+- workout/cardio/plan lifecycle state remains active underneath that temporary presentation collapse
 
 Top-level tab chrome separates profile identity from app configuration:
 
@@ -193,6 +198,7 @@ The split is:
 - `HydrationEntry` is the app’s local water-intake model, which can also link to Apple Health dietary water samples
 - `HydrationDay` is the per-day hydration aggregate that owns the day total, goal target, completion timestamp, and linked entries
 - `HydrationGoal` is the historical local goal model for water-intake targets
+- `CardioSession` is the app-owned cardio record, with `CardioRoutePoint` for outdoor route tracking and `CardioTreadmillInterval` for manual treadmill distance
 - `AppSettings.temperatureUnit` controls whether wrist temperature displays in F or C while HealthKit values stay stored in Celsius
 - Health widgets mirror the Health tab summary cards for weight, sleep, steps, energy, hydration, heart vitals, respiratory rate, and wrist temperature
 - `WeightGoal`, `StepsGoal`, `SleepGoal`, `HydrationGoal`, and `TrainingGoal` are local app models
@@ -268,17 +274,16 @@ Once the exercise-catalog bootstrap marker exists, launch is faster:
 
 ## Profile Hub and Settings
 
-VillainArc uses a shared profile entry point from both tabs.
+VillainArc uses a dedicated top-level Profile tab. Settings remains an `AppSettingsView` surface reached from Profile, app intents, and legacy settings routes; Home and Health no longer need profile buttons in their headers.
 
-The profile sheet owns:
+The profile surface owns:
 
 - avatar and profile photo management
 - name, birthday, gender, and height editing
 - fitness-level editing
 - a fitness-level review cue when the current level has exceeded its time threshold (`beginner: 1 year`, `novice: 2 years`, `intermediate: 2 years`, `advanced: no cue`)
 - active training-goal editing
-- a manual App Store review entry point
-- a route into app settings
+- training summary stats, muscle-map distribution, workout streak, and complete-day heatmap
 
 `AppSettingsView` remains the settings surface for:
 
@@ -287,6 +292,8 @@ The profile sheet owns:
 - Apple Health access and removed-data retention
 - notifications
 - display units
+- support/legal links
+- manual App Store review entry point
 
 ## Main Product Areas
 
@@ -305,6 +312,21 @@ See:
 
 - `Documentation/SESSION_LIFECYCLE_FLOW.md`
 - `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
+
+### Cardio Sessions
+
+Cardio sessions are app-owned run/walk records separate from strength workout logging. The dedicated Cardio tab starts four session kinds:
+
+- outdoor run
+- outdoor walk
+- treadmill run
+- treadmill walk
+
+Outdoor sessions use foreground When In Use location access to record `CardioRoutePoint`s and render routes with MapKit. Treadmill sessions use manual speed, duration, and incline intervals to calculate distance without GPS.
+
+When Apple Health workout write access is available, cardio sessions also start an `HKWorkoutSession` to collect live heart rate, active energy, and walking/running distance, then save a linked Health workout mirror on finish. Without Apple Health access, the same full-screen flow still works with route data or manual treadmill intervals.
+
+Cardio has its own Live Activity and resume bar. It participates in the same one-active-flow rule as strength workouts and plan creation.
 
 ### Workout Plans
 
@@ -367,12 +389,13 @@ Notification behavior is part of that surface:
 - rest timer completions
 - steps goal and coaching events, including double goal, triple goal, and new-best milestones when the app can observe the Health update in time
 
-Health settings route through the shared profile hub into `AppSettingsView`, where Apple Health has its own detail screen alongside notifications and units.
+Health settings route through `AppSettingsView`, where Apple Health has its own detail screen alongside notifications and units.
 
 Home-tab navigation also includes workout-centric history/detail routes such as:
 
 - completed workout history (`WorkoutsListView`)
 - Apple Health workout detail (`HealthWorkoutDetailView`)
+- completed cardio history and detail routes in the Cardio tab
 
 See:
 

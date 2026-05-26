@@ -145,12 +145,23 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             }
         }
     }
+    var activeCardioSession: CardioSession? {
+        didSet {
+            if activeCardioSession == nil {
+                isCardioSessionCoverPresented = false
+            } else {
+                isCardioSessionCoverPresented = true
+            }
+        }
+    }
     var activeWeightGoalCompletion: WeightGoalCompletionRoute?
     @ObservationIgnored var activeWorkoutPlanOriginal: WorkoutPlan?
     @ObservationIgnored var pendingWorkoutPlanDismissCleanup: (() -> Void)?
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
     @ObservationIgnored var pendingWidgetDestination: Destination?
     @ObservationIgnored var pendingNotificationDestination: Destination?
+    var pendingOutdoorCardioKind: CardioSessionKind?
+    var pendingManualCardioKind: CardioSessionKind?
     var activeAppSheet: AppSheet?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
@@ -159,16 +170,19 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     var isQuickActionsBarHidden = false
     var isWorkoutSessionCoverPresented = false
     var isWorkoutPlanCoverPresented = false
+    var isCardioSessionCoverPresented = false
     var tabSelection: AppTab = .home {
         didSet { SharedModelContainer.sharedDefaults.set(tabSelection.rawValue, forKey: Self.selectedTabDefaultsKey) }
     }
     var navigationEventToken = 0
     var homeTabResetToken = UUID()
     var healthTabResetToken = UUID()
+    var cardioTabResetToken = UUID()
 
     enum Destination: Hashable {
         case workoutSessionsList
         case workoutSessionDetail(WorkoutSession)
+        case cardioSessionDetail(CardioSession)
         case healthWorkoutDetail(HealthWorkout)
         case trainingConditionHistory
         case weightHistory
@@ -194,9 +208,123 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case exerciseHistory(String)
         case workoutSplit(autoPresentBuilder: Bool)
         case workoutSplitDetail(WorkoutSplit)
+
+        static func == (lhs: Destination, rhs: Destination) -> Bool {
+            switch (lhs, rhs) {
+            case (.workoutSessionsList, .workoutSessionsList),
+                (.trainingConditionHistory, .trainingConditionHistory),
+                (.weightHistory, .weightHistory),
+                (.sleepHistory, .sleepHistory),
+                (.sleepGoalHistory, .sleepGoalHistory),
+                (.stepsDistanceHistory, .stepsDistanceHistory),
+                (.stepsGoalHistory, .stepsGoalHistory),
+                (.energyHistory, .energyHistory),
+                (.hydrationHistory, .hydrationHistory),
+                (.hydrationGoalHistory, .hydrationGoalHistory),
+                (.heartRateHistory, .heartRateHistory),
+                (.restingHeartRateHistory, .restingHeartRateHistory),
+                (.walkingHeartRateHistory, .walkingHeartRateHistory),
+                (.heartRateVariabilityHistory, .heartRateVariabilityHistory),
+                (.respiratoryRateHistory, .respiratoryRateHistory),
+                (.wristTemperatureHistory, .wristTemperatureHistory),
+                (.allWeightEntriesList, .allWeightEntriesList),
+                (.weightGoalHistory, .weightGoalHistory),
+                (.workoutPlansList, .workoutPlansList),
+                (.exercisesList, .exercisesList):
+                return true
+            case let (.workoutSessionDetail(lhsSession), .workoutSessionDetail(rhsSession)):
+                return lhsSession.id == rhsSession.id
+            case let (.cardioSessionDetail(lhsSession), .cardioSessionDetail(rhsSession)):
+                return lhsSession.id == rhsSession.id
+            case let (.healthWorkoutDetail(lhsWorkout), .healthWorkoutDetail(rhsWorkout)):
+                return lhsWorkout.healthWorkoutUUID == rhsWorkout.healthWorkoutUUID
+            case let (.workoutPlanDetail(lhsPlan, lhsShowEditor), .workoutPlanDetail(rhsPlan, rhsShowEditor)):
+                return lhsPlan.id == rhsPlan.id && lhsShowEditor == rhsShowEditor
+            case let (.exerciseDetail(lhsCatalogID), .exerciseDetail(rhsCatalogID)),
+                let (.exerciseHistory(lhsCatalogID), .exerciseHistory(rhsCatalogID)):
+                return lhsCatalogID == rhsCatalogID
+            case let (.workoutSplit(lhsAutoPresentBuilder), .workoutSplit(rhsAutoPresentBuilder)):
+                return lhsAutoPresentBuilder == rhsAutoPresentBuilder
+            case let (.workoutSplitDetail(lhsSplit), .workoutSplitDetail(rhsSplit)):
+                return lhsSplit.id == rhsSplit.id
+            default:
+                return false
+            }
+        }
+
+        func hash(into hasher: inout Hasher) {
+            switch self {
+            case .workoutSessionsList:
+                hasher.combine("workoutSessionsList")
+            case let .workoutSessionDetail(session):
+                hasher.combine("workoutSessionDetail")
+                hasher.combine(session.id)
+            case let .cardioSessionDetail(session):
+                hasher.combine("cardioSessionDetail")
+                hasher.combine(session.id)
+            case let .healthWorkoutDetail(workout):
+                hasher.combine("healthWorkoutDetail")
+                hasher.combine(workout.healthWorkoutUUID)
+            case .trainingConditionHistory:
+                hasher.combine("trainingConditionHistory")
+            case .weightHistory:
+                hasher.combine("weightHistory")
+            case .sleepHistory:
+                hasher.combine("sleepHistory")
+            case .sleepGoalHistory:
+                hasher.combine("sleepGoalHistory")
+            case .stepsDistanceHistory:
+                hasher.combine("stepsDistanceHistory")
+            case .stepsGoalHistory:
+                hasher.combine("stepsGoalHistory")
+            case .energyHistory:
+                hasher.combine("energyHistory")
+            case .hydrationHistory:
+                hasher.combine("hydrationHistory")
+            case .hydrationGoalHistory:
+                hasher.combine("hydrationGoalHistory")
+            case .heartRateHistory:
+                hasher.combine("heartRateHistory")
+            case .restingHeartRateHistory:
+                hasher.combine("restingHeartRateHistory")
+            case .walkingHeartRateHistory:
+                hasher.combine("walkingHeartRateHistory")
+            case .heartRateVariabilityHistory:
+                hasher.combine("heartRateVariabilityHistory")
+            case .respiratoryRateHistory:
+                hasher.combine("respiratoryRateHistory")
+            case .wristTemperatureHistory:
+                hasher.combine("wristTemperatureHistory")
+            case .allWeightEntriesList:
+                hasher.combine("allWeightEntriesList")
+            case .weightGoalHistory:
+                hasher.combine("weightGoalHistory")
+            case .workoutPlansList:
+                hasher.combine("workoutPlansList")
+            case let .workoutPlanDetail(plan, showEditor):
+                hasher.combine("workoutPlanDetail")
+                hasher.combine(plan.id)
+                hasher.combine(showEditor)
+            case .exercisesList:
+                hasher.combine("exercisesList")
+            case let .exerciseDetail(catalogID):
+                hasher.combine("exerciseDetail")
+                hasher.combine(catalogID)
+            case let .exerciseHistory(catalogID):
+                hasher.combine("exerciseHistory")
+                hasher.combine(catalogID)
+            case let .workoutSplit(autoPresentBuilder):
+                hasher.combine("workoutSplit")
+                hasher.combine(autoPresentBuilder)
+            case let .workoutSplitDetail(split):
+                hasher.combine("workoutSplitDetail")
+                hasher.combine(split.id)
+            }
+        }
     }
 
     var homeTabPath: [Destination] = []
+    var cardioTabPath: [Destination] = []
     var healthTabPath: [Destination] = []
     private init() {
         if let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
@@ -210,11 +338,11 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         switch tabSelection {
         case .home:
             return additionalQuickActionContext(for: homeTabPath.last)
+        case .cardio:
+            return nil
         case .health:
             return additionalQuickActionContext(for: healthTabPath.last)
         case .profile:
-            return nil
-        case .settings:
             return nil
         }
     }
@@ -222,19 +350,22 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     private func appSettings() -> AppSettings? { (try? context.fetch(AppSettings.single))?.first }
     private func weightUnit() -> WeightUnit { appSettings()?.weightUnit ?? .lbs }
 
-    private var hasPresentedFlow: Bool { activeWorkoutSession != nil || activeWorkoutPlan != nil }
+    private var hasPresentedFlow: Bool { activeWorkoutSession != nil || activeWorkoutPlan != nil || activeCardioSession != nil }
 
     private func hasPersistedIncompleteWorkoutSession() -> Bool { (try? context.fetch(WorkoutSession.incomplete).first) != nil }
 
+    private func hasPersistedIncompleteCardioSession() -> Bool { (try? context.fetch(CardioSession.incomplete).first) != nil }
+
     private func hasPersistedActivePlanWork() -> Bool { (try? context.fetch(WorkoutPlan.incomplete).first) != nil }
 
-    private func hasActiveFlow() -> Bool { hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedActivePlanWork() }
+    private func hasActiveFlow() -> Bool { hasPresentedFlow || hasPersistedIncompleteWorkoutSession() || hasPersistedIncompleteCardioSession() || hasPersistedActivePlanWork() }
 
     var hasActiveAuthoringFlow: Bool { hasActiveFlow() }
 
     private enum ActiveFlowBlockKind {
         case workout
         case plan
+        case cardio
     }
 
     private func activeFlowBlockKind() -> ActiveFlowBlockKind? {
@@ -243,6 +374,9 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         }
         if activeWorkoutPlan != nil || hasPersistedActivePlanWork() {
             return .plan
+        }
+        if activeCardioSession != nil || hasPersistedIncompleteCardioSession() {
+            return .cardio
         }
         return nil
     }
@@ -253,14 +387,17 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             showQuickActionToast(title: "Workout In Progress", message: "Finish, cancel, or resume your current workout first.")
         case .plan:
             showQuickActionToast(title: "Plan In Progress", message: "Finish, discard, or resume your current plan first.")
+        case .cardio:
+            showQuickActionToast(title: "Cardio In Progress", message: "Finish, cancel, or resume your current cardio session first.")
         case nil:
-            showQuickActionToast(title: "Flow In Progress", message: "Finish your current workout or plan first.")
+            showQuickActionToast(title: "Flow In Progress", message: "Finish your current workout, cardio session, or plan first.")
         }
     }
 
     var hasHiddenActiveFlowPresentation: Bool {
         (activeWorkoutSession != nil && !isWorkoutSessionCoverPresented) ||
-        (activeWorkoutPlan != nil && !isWorkoutPlanCoverPresented)
+        (activeWorkoutPlan != nil && !isWorkoutPlanCoverPresented) ||
+        (activeCardioSession != nil && !isCardioSessionCoverPresented)
     }
 
     private func isReadyForIntentActions() -> Bool {
@@ -386,6 +523,16 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         WorkoutActivityManager.end()
         AppLog.info("Workout session canceled: \(workoutSession.id).")
     }
+
+    func cancelCardioSession(_ cardioSession: CardioSession) {
+        CardioRouteRecorder.shared.stopRecording(sessionID: cardioSession.id)
+        CardioHealthWorkoutCoordinator.shared.discardIfRunning(for: cardioSession)
+        context.delete(cardioSession)
+        saveContext(context: context)
+        if activeCardioSession?.id == cardioSession.id { activeCardioSession = nil }
+        CardioActivityManager.end()
+        AppLog.info("Cardio session canceled: \(cardioSession.id).")
+    }
     func navigate(to destination: Destination) {
         popToRoot(tab: tab(for: destination))
         push(to: destination)
@@ -397,13 +544,14 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case .health:
             tabSelection = .health
             healthTabPath.append(destination)
+        case .cardio:
+            tabSelection = .cardio
+            cardioTabPath.append(destination)
         case .home:
             tabSelection = .home
             homeTabPath.append(destination)
         case .profile:
             tabSelection = .profile
-        case .settings:
-            tabSelection = .settings
         }
         noteNavigationStateChanged()
     }
@@ -460,6 +608,9 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         if activeWorkoutPlan != nil {
             isWorkoutPlanCoverPresented = false
         }
+        if activeCardioSession != nil {
+            isCardioSessionCoverPresented = false
+        }
     }
 
     func presentActiveWorkoutSessionIfPossible() {
@@ -484,19 +635,31 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         isWorkoutPlanCoverPresented = false
     }
 
+    func presentActiveCardioSessionIfPossible() {
+        guard activeCardioSession != nil else { return }
+        Haptics.selection()
+        isCardioSessionCoverPresented = true
+    }
+
+    func dismissActiveCardioSessionPresentation() {
+        isCardioSessionCoverPresented = false
+    }
+
     func popToRoot(tab: AppTab) {
         switch tab {
         case .home:
             if homeTabPath.isEmpty { return }
             homeTabPath = []
             homeTabResetToken = UUID()
+        case .cardio:
+            if cardioTabPath.isEmpty { return }
+            cardioTabPath = []
+            cardioTabResetToken = UUID()
         case .health:
             if healthTabPath.isEmpty { return }
             healthTabPath = []
             healthTabResetToken = UUID()
         case .profile:
-            return
-        case .settings:
             return
         }
         noteNavigationStateChanged()
@@ -510,6 +673,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             return .healthRoot
         case .workoutSessionDetail(let workout):
             return .workoutDetail(workout)
+        case .cardioSessionDetail:
+            return nil
         case .workoutSplit, .workoutSplitDetail:
             return .workoutSplit
         case .workoutPlanDetail(let plan, let showsUseOnly):
@@ -579,6 +744,18 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         if let activeWorkoutPlan {
             self.activeWorkoutPlan = activeWorkoutPlan
             showQuickActionToast(title: "Plan In Progress", message: "Finish or discard your current plan first.")
+            return
+        }
+
+        if let activeCardioSession {
+            self.activeCardioSession = activeCardioSession
+            showQuickActionToast(title: "Cardio In Progress", message: "Finish or cancel your current cardio session first.")
+            return
+        }
+
+        if let unfinishedCardioSession = try? context.fetch(CardioSession.incomplete).first {
+            resumeCardioSession(unfinishedCardioSession)
+            showQuickActionToast(title: "Cardio In Progress", message: "Finish or cancel your current cardio session first.")
             return
         }
 
@@ -675,6 +852,34 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         }
     }
 
+    private func startCardioRuntime(for cardioSession: CardioSession) {
+        guard cardioSession.statusValue == .active else { return }
+        guard cardioSession.startedAt != nil else {
+            Task {
+                await CardioHealthWorkoutCoordinator.shared.prepareForSession(cardioSession)
+            }
+            return
+        }
+        CardioActivityManager.start(session: cardioSession)
+        Task {
+            await CardioHealthWorkoutCoordinator.shared.ensureRunning(for: cardioSession)
+        }
+    }
+
+    private func restoreCardioRuntime(for cardioSession: CardioSession) {
+        guard cardioSession.statusValue == .active else { return }
+        guard cardioSession.startedAt != nil else {
+            Task {
+                await CardioHealthWorkoutCoordinator.shared.prepareForSession(cardioSession)
+            }
+            return
+        }
+        CardioActivityManager.restoreIfNeeded(session: cardioSession)
+        Task {
+            await CardioHealthWorkoutCoordinator.shared.ensureRunning(for: cardioSession)
+        }
+    }
+
     func activatePendingWorkoutSession(_ workoutSession: WorkoutSession) {
         startWorkoutRuntime(for: workoutSession)
     }
@@ -692,6 +897,40 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         startWorkoutRuntime(for: newWorkout)
         AppLog.info("Workout session started: \(newWorkout.id).")
     }
+
+    func requestManualCardioSession(kind: CardioSessionKind) {
+        let healthNeedsPrompt = HealthAuthorizationManager.isHealthDataAvailable && !HealthAuthorizationManager.hasRequestedWorkoutAuthorization
+        if healthNeedsPrompt {
+            pendingManualCardioKind = kind
+        } else {
+            startCardioSession(kind: kind)
+        }
+    }
+
+    func requestOutdoorCardioSession(kind: CardioSessionKind) {
+        let locationGranted = CardioRouteRecorder.shared.canRecord
+        let healthNeedsPrompt = HealthAuthorizationManager.isHealthDataAvailable && !HealthAuthorizationManager.hasRequestedWorkoutAuthorization
+        if locationGranted && !healthNeedsPrompt {
+            startCardioSession(kind: kind)
+        } else {
+            pendingOutdoorCardioKind = kind
+        }
+    }
+
+    func startCardioSession(kind: CardioSessionKind) {
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
+        Haptics.selection()
+        let newSession = CardioSession(kind: kind)
+        context.insert(newSession)
+        saveContext(context: context)
+        activeCardioSession = newSession
+        startCardioRuntime(for: newSession)
+        AppLog.info("Cardio session started: \(newSession.id), kind=\(kind.rawValue).")
+    }
+
     func createWorkoutPlan() {
         guard !hasActiveFlow() else {
             showActiveFlowBlockedToast()
@@ -795,6 +1034,12 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         restoreWorkoutRuntime(for: workoutSession)
         AppLog.info("Workout session resumed: \(workoutSession.id).")
     }
+    func resumeCardioSession(_ cardioSession: CardioSession) {
+        Haptics.selection()
+        activeCardioSession = cardioSession
+        restoreCardioRuntime(for: cardioSession)
+        AppLog.info("Cardio session resumed: \(cardioSession.id).")
+    }
     func resumeWorkoutPlanCreation(_ workoutPlan: WorkoutPlan) {
         Haptics.selection()
         activeWorkoutPlanOriginal = nil
@@ -805,6 +1050,10 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         guard !hasPresentedFlow else { return }
         if let unfinishedWorkoutSession = try? context.fetch(WorkoutSession.incomplete).first {
             resumeWorkoutSession(unfinishedWorkoutSession)
+            return
+        }
+        if let unfinishedCardioSession = try? context.fetch(CardioSession.incomplete).first {
+            resumeCardioSession(unfinishedCardioSession)
             return
         }
         if let unfinishedWorkoutPlan = try? context.fetch(WorkoutPlan.resumableIncomplete).first { resumeWorkoutPlanCreation(unfinishedWorkoutPlan) }
@@ -908,6 +1157,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
 
     private func tab(for destination: Destination) -> AppTab {
         switch destination {
+        case .cardioSessionDetail:
+            return .cardio
         case .trainingConditionHistory,
              .weightHistory,
              .sleepHistory,

@@ -37,6 +37,7 @@ import FoundationModels
 
 @Generable enum AIMoodLevel: String {
     case tired = "Tired"
+    case sore = "Sore"
     case okay = "Okay"
     case good = "Good"
     case great = "Great"
@@ -44,6 +45,7 @@ import FoundationModels
     init?(from mood: MoodLevel) {
         switch mood {
         case .tired: self = .tired
+        case .sore: self = .sore
         case .okay: self = .okay
         case .good: self = .good
         case .great: self = .great

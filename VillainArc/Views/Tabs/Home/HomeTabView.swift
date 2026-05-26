@@ -32,7 +32,6 @@ struct HomeTabView: View {
             }
             .quickActionContentBottomInset()
             .appBackground()
-            .navBar(title: "Workout", includePadding: false)
             .scrollIndicators(.hidden)
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {

@@ -1,5 +1,6 @@
-import SwiftUI
+import CoreLocation
 import SwiftData
+import SwiftUI
 
 private func normalizedOnboardingImperialHeightComponents(from centimeters: Double) -> (feet: Int, inches: Int) {
     let roundedTotalInches = Int((centimeters / 2.54).rounded())
@@ -10,6 +11,7 @@ private func normalizedOnboardingImperialHeightComponents(from centimeters: Doub
 
 private enum OnboardingStep: Hashable {
     case healthPermissions
+    case locationPermissions
     case birthday
     case gender
     case height
@@ -95,6 +97,8 @@ struct OnboardingView: View {
                     switch step {
                     case .healthPermissions:
                         OnboardingHealthPermissionStepView(manager: manager, path: $path)
+                    case .locationPermissions:
+                        OnboardingLocationPermissionStepView(manager: manager, path: $path)
                     case .birthday:
                         ProfileBirthdayStepView(manager: manager, path: $path)
                     case .gender:
@@ -483,6 +487,66 @@ private struct OnboardingHealthPermissionStepView: View {
     }
 
     private func pushNextProfileStep() {
+        path.append(.locationPermissions)
+    }
+}
+
+private struct OnboardingLocationPermissionStepView: View {
+    @Bindable var manager: OnboardingManager
+    @Binding var path: [OnboardingStep]
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 60
+    @State private var locationManager = CLLocationManager()
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Spacer()
+
+            Image(systemName: "location.fill")
+                .font(.system(size: iconSize))
+                .accessibilityHidden(true)
+                .foregroundStyle(.blue)
+
+            Text("Location for Outdoor Runs")
+                .font(.title)
+                .bold()
+
+            Text("Villain Arc uses your location to record GPS routes for outdoor runs, walks, and hikes. Your location is only used while a cardio session is active.")
+                .multilineTextAlignment(.leading)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+
+            Spacer()
+
+            VStack(spacing: 12) {
+                Button {
+                    locationManager.requestWhenInUseAuthorization()
+                    pushNextStep()
+                } label: {
+                    Text("Allow Location")
+                        .padding(.vertical, 8)
+                        .fontWeight(.semibold)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glassProminent)
+
+                Button {
+                    pushNextStep()
+                } label: {
+                    Text("Not Now")
+                        .padding(.vertical, 8)
+                        .fontWeight(.semibold)
+                }
+                .buttonSizing(.flexible)
+                .buttonStyle(.glass)
+            }
+        }
+        .padding(.horizontal)
+        .navigationTitle("Location")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func pushNextStep() {
         guard let nextStep = manager.nextRequiredStep else { return }
         if let onboardingStep = OnboardingStep(profileStep: nextStep) {
             path.append(onboardingStep)
@@ -533,10 +597,8 @@ private struct ProfileNameStepView: View {
                         guard await manager.saveName(name) else { return }
                         if manager.shouldInsertHealthPermissionsStep {
                             path.append(.healthPermissions)
-                        } else if let nextStep = manager.nextRequiredStep {
-                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                                path.append(onboardingStep)
-                            }
+                        } else {
+                            path.append(.locationPermissions)
                         }
                     }
                 }

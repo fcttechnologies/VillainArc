@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct WorkoutSummaryView: View {
     private enum PRType: String, CaseIterable {
@@ -30,6 +31,7 @@ struct WorkoutSummaryView: View {
     @Environment(\.modelContext) private var context
     @Query private var sessionSuggestionEvents: [SuggestionEvent]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @Environment(\.requestReview) private var requestReview
     @State private var router = AppRouter.shared
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
@@ -159,6 +161,10 @@ struct WorkoutSummaryView: View {
                         effortSection
                     }
 
+                    if let hardDayFeeling {
+                        hardDaySection(feeling: hardDayFeeling)
+                    }
+
                     planSaveSection
 
                     if shouldShowSuggestions {
@@ -260,6 +266,31 @@ struct WorkoutSummaryView: View {
                 .accessibilityLabel(AccessibilityText.workoutSummaryEffortCardLabel)
                 .accessibilityValue(AccessibilityText.workoutSummaryEffortCardValue(score: workout.postEffort, description: workoutEffortDescription(workout.postEffort)))
         }
+    }
+
+    private var hardDayFeeling: MoodLevel? {
+        guard let feeling = workout.preWorkoutContext?.feeling, feeling.isHardDay else { return nil }
+        return feeling
+    }
+
+    private func hardDaySection(feeling: MoodLevel) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "flame.fill")
+                .font(.title2)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Hard Day Logged")
+                    .font(.headline)
+                Text("You showed up while feeling \(feeling.displayName.lowercased()).")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .appCardStyle()
     }
 
     @ViewBuilder
@@ -468,6 +499,11 @@ struct WorkoutSummaryView: View {
         }
         WorkoutActivityManager.end()
         SpotlightIndexer.index(workoutSession: workout)
+        AppReviewPreferences.incrementCompletedSessionCount()
+        if AppReviewPreferences.shouldRequestReview {
+            AppReviewPreferences.hasRequestedReview = true
+            requestReview()
+        }
         if router.activeWorkoutSession?.id == workout.id {
             router.activeWorkoutSession = nil
         } else {

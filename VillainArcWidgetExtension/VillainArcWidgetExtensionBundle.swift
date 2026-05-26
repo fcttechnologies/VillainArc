@@ -15,5 +15,6 @@ import WidgetKit
         HealthRespiratoryRateWidget()
         HealthWristTemperatureWidget()
         WorkoutLiveActivity()
+        CardioLiveActivity()
     }
 }

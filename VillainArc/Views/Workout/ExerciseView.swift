@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct ExerciseView: View {
     private enum RestTimerPromptAction {
@@ -23,6 +24,7 @@ struct ExerciseView: View {
     @State private var restTimeSnapshotBySetID: [UUID: Int] = [:]
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
     @State private var showsPreviousInstead: Bool?
+    private let exerciseContextMenuTip = ExerciseContextMenuTip()
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
 
@@ -131,6 +133,7 @@ struct ExerciseView: View {
                 }
                 .padding()
                 .appCardStyle()
+                .popoverTip(exerciseContextMenuTip)
                 .contextMenu {
                     Button {
                         openProgressionStepEditor()

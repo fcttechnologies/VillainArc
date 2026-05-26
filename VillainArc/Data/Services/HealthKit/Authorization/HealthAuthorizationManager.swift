@@ -85,6 +85,11 @@ nonisolated enum HealthAuthorizationManager {
         return healthStore.authorizationStatus(for: HealthKitCatalog.activeEnergyBurnedType) == .sharingAuthorized
     }
 
+    static var canWriteWalkingRunningDistance: Bool {
+        guard isHealthDataAvailable else { return false }
+        return healthStore.authorizationStatus(for: HealthKitCatalog.walkingRunningDistanceType) == .sharingAuthorized
+    }
+
     static var canWriteRestingEnergyBurned: Bool {
         guard isHealthDataAvailable else { return false }
         return healthStore.authorizationStatus(for: HealthKitCatalog.restingEnergyBurnedType) == .sharingAuthorized
@@ -219,6 +224,14 @@ nonisolated enum HealthAuthorizationManager {
         ["Workout Title": session.title, HKMetadataKeyIndoorWorkout: true, HealthMetadataKeys.workoutSessionID: session.id.uuidString]
     }
 
+    static func metadata(for session: CardioSession) -> [String: Any] {
+        [
+            "Workout Title": session.displayTitle,
+            HKMetadataKeyIndoorWorkout: session.kind.isManual,
+            HealthMetadataKeys.cardioSessionID: session.id.uuidString
+        ]
+    }
+
     static func metadata(for weightEntry: WeightEntry) -> [String: Any] {
         [HealthMetadataKeys.weightEntryID: weightEntry.id.uuidString, HKMetadataKeyWasUserEntered: true]
     }
@@ -233,6 +246,7 @@ nonisolated enum HealthAuthorizationManager {
             HealthKitCatalog.workoutEffortScoreType,
             HealthKitCatalog.activeEnergyBurnedType,
             HealthKitCatalog.restingEnergyBurnedType,
+            HealthKitCatalog.walkingRunningDistanceType,
             HealthKitCatalog.bodyMassType,
             HealthKitCatalog.dietaryWaterType
         ]

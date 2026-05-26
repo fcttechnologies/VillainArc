@@ -10,6 +10,8 @@ This document explains VillainArc’s Apple Health integration: what the app rea
 - `Data/Models/Health/HealthSleepNight.swift`
 - `Data/Services/HealthKit/HealthMirrorSupport.swift`
 - `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`
+- `Data/Services/Cardio/CardioHealthWorkoutCoordinator.swift`
+- `Data/Services/Cardio/CardioRouteRecorder.swift`
 - `Data/Services/HealthKit/Sync/HealthPreferences.swift`
 - `Data/Services/HealthKit/Sync/HealthDailyMetricsSync.swift`
 - `Data/Services/HealthKit/Sync/HealthSleepSync.swift`
@@ -38,6 +40,12 @@ VillainArc treats Apple Health as an integration layer, not the app’s main sou
 
 - `WorkoutSession`
   - the app’s real workout record
+- `CardioSession`
+  - the app’s real cardio record for outdoor run/walk sessions and treadmill run/walk sessions
+- `CardioRoutePoint`
+  - local route points captured from foreground location updates during outdoor cardio sessions
+- `CardioTreadmillInterval`
+  - manual treadmill speed/duration/incline intervals used to calculate indoor distance
 - `WeightEntry`
   - the app’s local weight history record, optionally linked to HealthKit
 - `WeightGoal`
@@ -72,6 +80,7 @@ That split keeps HealthKit from owning the app’s training logic while still le
 - resting energy burned
 - body mass
 - dietary water
+- walking/running distance
 
 ### Reads
 
@@ -107,7 +116,7 @@ The app uses both HealthKit request status and an app-defined handled version.
 
 The prompt rule is:
 
-- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write permission catalog. Version `1.3` adds heart vitals, respiratory rate, sleeping wrist temperature, and dietary water.
+- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write permission catalog. Version `1.3` adds heart vitals, respiratory rate, sleeping wrist temperature, dietary water, and walking/running distance writes.
 - the app stores the last handled permissions version in shared defaults
 - onboarding or the standalone launch gate prompt only when:
   - the current permissions version differs from the stored handled version
@@ -197,6 +206,24 @@ That path:
 - stores the local `WorkoutSession.id` in Health metadata
 - ends when local logging moves to summary
 - tries to link the finished `HKWorkout` back into the local `HealthWorkout` mirror immediately
+
+### Cardio Sessions
+
+The app-owned cardio path uses `CardioHealthWorkoutCoordinator` when Health write access is available.
+
+That path:
+
+- starts an `HKWorkoutSession` for outdoor run, outdoor walk, treadmill run, or treadmill walk
+- stores the local `CardioSession.id` in Health metadata
+- collects live heart rate, active energy, and walking/running distance when the device and permissions support those samples
+- adds the app-calculated manual treadmill or route distance before finishing when walking/running distance writes are available
+- links the finished `HKWorkout` back to both `CardioSession.healthWorkout` and the local `HealthWorkout` mirror
+
+When Health access is unavailable or incomplete, the local cardio flow still works. Outdoor sessions use foreground When In Use location updates through `CardioRouteRecorder`; treadmill sessions use manual intervals.
+
+### Pre-Workout Readiness
+
+`PreWorkoutContextView` reads the latest persisted `HealthSleepNight` and `HealthHeart` rows through SwiftData queries. When cached data exists, the pre-session prompt surfaces last night's sleep duration and the latest resting heart rate next to the feeling choices. These values are read-only context; the session stores the user's readiness response in `PreWorkoutContext.feeling`.
 
 ## Export and Reconciliation
 
@@ -543,7 +570,9 @@ The Health tab includes hydration summary, history, goal history, chart, and mat
 - visible completed `WorkoutSession`s
 - mirrored `HealthWorkout`s
 
-It only shows a `HealthWorkout` row when that Health workout is not already represented by a visible linked `WorkoutSession`.
+It only shows a `HealthWorkout` row when that Health workout is not already represented by a visible linked `WorkoutSession` or a linked `CardioSession`.
+
+The dedicated Cardio tab owns `CardioSession` history and detail screens. Apple Health workouts linked to cardio remain available as mirrors for metrics and Health detail, but the app-owned cardio row is the primary user-facing record.
 
 ### Health Workout Detail
 

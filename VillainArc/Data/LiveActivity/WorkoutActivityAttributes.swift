@@ -59,3 +59,20 @@ nonisolated struct WorkoutActivityAttributes: ActivityAttributes, Sendable {
         }
     }
 }
+
+nonisolated struct CardioActivityAttributes: ActivityAttributes, Sendable {
+    var startDate: Date
+    var kindTitle: String
+    var isOutdoor: Bool
+
+    struct ContentState: Codable, Hashable, Sendable {
+        var title: String
+        var distanceMeters: Double
+        var paceSecondsPerKilometer: Double?
+        var liveHeartRateBPM: Double?
+        var activeEnergyBurned: Double?
+        var routePointCount: Int
+        var treadmillIntervalCount: Int
+        var statusText: String?
+    }
+}

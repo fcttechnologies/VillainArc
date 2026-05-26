@@ -40,6 +40,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func requestAuthorizationIfNeededAfterOnboarding() async {
+#if DEBUG
+        // Suppressed in DEBUG to allow simulator screenshot capture without the system dialog blocking.
+        // Remove this guard before shipping.
+        return
+#endif
         let status = await authorizationStatus()
         guard status == .notDetermined else { return }
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .providesAppNotificationSettings])

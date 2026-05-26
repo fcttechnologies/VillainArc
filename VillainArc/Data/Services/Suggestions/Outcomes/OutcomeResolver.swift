@@ -324,7 +324,7 @@ struct OutcomeResolver {
 
         if let feeling = workout?.preWorkoutContext?.feeling {
             switch feeling {
-            case .tired: if isNegative { adjusted *= 0.85 }
+            case .tired, .sore: if isNegative { adjusted *= 0.85 }
             case .good, .great: if isNegative { adjusted *= 1.05 }
             case .okay, .notSet: break
             }

@@ -112,6 +112,7 @@
 		FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Data/LiveActivity/CardioActivityManager.swift,
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/AppSettings.swift,
@@ -150,6 +151,7 @@
 				Data/Models/Enums/Units/EnergyUnit.swift,
 				Data/Models/Enums/Units/HeightUnit.swift,
 				Data/Models/Enums/Units/HydrationUnit.swift,
+				Data/Models/Enums/Units/SpeedUnit.swift,
 				Data/Models/Enums/Units/TemperatureUnit.swift,
 				Data/Models/Enums/Units/WeightUnit.swift,
 				Data/Models/Exercise/Exercise.swift,
@@ -180,6 +182,7 @@
 				Data/Models/Plans/WorkoutPlan.swift,
 				"Data/Models/Plans/WorkoutPlan+Editing.swift",
 				Data/Models/RestTimeHistory.swift,
+				Data/Models/Sessions/CardioSession.swift,
 				Data/Models/Sessions/ExercisePerformance.swift,
 				Data/Models/Sessions/PreWorkoutContext.swift,
 				Data/Models/Sessions/SetPerformance.swift,
@@ -202,6 +205,8 @@
 				Data/Services/App/NotificationCoordinator.swift,
 				Data/Services/App/SetupGuard.swift,
 				Data/Services/App/SpotlightIndexer.swift,
+				Data/Services/Cardio/CardioHealthWorkoutCoordinator.swift,
+				Data/Services/Cardio/CardioRouteRecorder.swift,
 				Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift,
 				Data/Services/HealthKit/HealthMirrorSupport.swift,
 				Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift,

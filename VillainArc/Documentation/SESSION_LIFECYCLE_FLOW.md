@@ -160,7 +160,11 @@ Important runtime rules:
 
 - `activeExercise` tracks pager focus
 - rest timer state is shared app-wide
+- rest timer completion increments a state token so the visible timer sheet can play a success haptic exactly when a scheduled rest ends
+- the rest timer sheet keeps Skip, Extend, and Pause/Resume controls visible while a rest is active; the +/- adjustment controls mutate the shared timer state without touching set data
 - pre-workout context prompting is settings-driven
+- the pre-workout context prompt records one of the active readiness states: great, good, tired, or sore
+- completed tired/sore sessions are flagged on the summary as hard-day sessions
 - live activities mirror the active incomplete workout
 - router-driven workout sheets and dialogs are keyed off typed `AppRouter` presentation routes, not view-local intent booleans
 - workout intents that open workout sheets (rest timer, workout settings, pre-workout context, add exercise) first ensure the active workout cover is presented so sheet routing still targets the live workout flow

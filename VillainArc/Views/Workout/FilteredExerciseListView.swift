@@ -16,9 +16,10 @@ struct FilteredExerciseListView: View {
     let sortOption: ExerciseSortOption
     let singleSelection: Bool
     let excludedCatalogIDs: Set<String>
+    let preferredMuscles: Set<Muscle>
     let onToggle: ((Exercise, Bool) -> Void)?
 
-    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = [], onToggle: ((Exercise, Bool) -> Void)? = nil) {
+    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = [], preferredMuscles: Set<Muscle> = [], onToggle: ((Exercise, Bool) -> Void)? = nil) {
         _selectedExercises = selectedExercises
         _selectedExerciseIDs = selectedExerciseIDs
         self.searchText = searchText
@@ -28,6 +29,7 @@ struct FilteredExerciseListView: View {
         self.sortOption = sortOption
         self.singleSelection = singleSelection
         self.excludedCatalogIDs = excludedCatalogIDs
+        self.preferredMuscles = preferredMuscles
         self.onToggle = onToggle
         
         let predicate: Predicate<Exercise>?
@@ -238,6 +240,14 @@ struct FilteredExerciseListView: View {
     }
 
     private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
+        if muscleFilters.isEmpty && !preferredMuscles.isEmpty {
+            let leftPreferred = matchesPreferredMuscles(left)
+            let rightPreferred = matchesPreferredMuscles(right)
+            if leftPreferred != rightPreferred {
+                return leftPreferred
+            }
+        }
+
         switch sortOption {
         case .mostRecent:
             let leftDate = left.lastAddedAt ?? .distantPast
@@ -255,6 +265,10 @@ struct FilteredExerciseListView: View {
             let rightDate = right.lastAddedAt ?? .distantPast
             return leftDate > rightDate
         }
+    }
+
+    private func matchesPreferredMuscles(_ exercise: Exercise) -> Bool {
+        exercise.musclesTargeted.contains { preferredMuscles.contains($0) }
     }
 
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {

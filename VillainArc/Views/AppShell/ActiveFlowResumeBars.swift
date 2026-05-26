@@ -263,6 +263,70 @@ struct ActivePlanResumeBarButton: View {
     }
 }
 
+struct ActiveCardioResumeBarButton: View {
+    @Bindable var session: CardioSession
+    let isCollapsed: Bool
+    let openAction: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @State private var healthCoordinator = CardioHealthWorkoutCoordinator.shared
+
+    private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
+    private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
+
+    private var liveHeartRate: Double? {
+        healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : session.healthWorkout?.averageHeartRateBPM
+    }
+    private var liveEnergy: Double? {
+        healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned
+    }
+
+    var body: some View {
+        Button(action: openAction) {
+            HStack(spacing: 12) {
+                Image(systemName: session.kind.systemImage)
+                    .font(.title3)
+                    .foregroundStyle(.green)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(session.displayTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+
+                    HStack(spacing: 8) {
+                        if session.totalDistanceMeters > 0 {
+                            Label(formattedDistanceText(session.totalDistanceMeters, unit: distanceUnit), systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                        }
+                        if let hr = liveHeartRate {
+                            Label(formattedHeartRateText(hr), systemImage: "heart.fill")
+                                .foregroundStyle(.red)
+                        }
+                        if let energy = liveEnergy {
+                            Label(formattedEnergyText(energy, unit: energyUnit), systemImage: "flame.fill")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+
+                Text(session.startedAt ?? .now, style: .timer)
+                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.green)
+            }
+            .contentShape(.rect)
+            .accessibilityElement(children: .combine)
+        }
+        .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
+        .accessibilityLabel("Cardio in progress. \(session.displayTitle).")
+        .accessibilityHint("Opens the active cardio session.")
+    }
+}
+
 private extension View {
     func activeFlowResumeBarChrome(isCollapsed: Bool, reduceMotion: Bool) -> some View {
         self

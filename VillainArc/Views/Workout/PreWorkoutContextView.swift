@@ -6,13 +6,27 @@ struct PreWorkoutContextView: View {
     @Bindable var preWorkoutContext: PreWorkoutContext
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query(HealthSleepNight.latest) private var latestSleepNights: [HealthSleepNight]
+    @Query(HealthHeart.latest) private var latestHeartDays: [HealthHeart]
+
+    private let promptMoodOptions: [MoodLevel] = [.great, .good, .tired, .sore]
+
+    private var latestSleepNight: HealthSleepNight? { latestSleepNights.first }
+    private var latestHeartDay: HealthHeart? { latestHeartDays.first }
+    private var hasReadinessMetrics: Bool {
+        latestSleepNight?.timeAsleep ?? 0 > 0 || latestHeartDay?.restingHeartRate != nil
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 30) {
+                    if hasReadinessMetrics {
+                        readinessMetricsSection
+                    }
+
                     HStack(spacing: 12) {
-                        ForEach(MoodLevel.allCases.filter { $0 != .notSet }, id: \.self) { level in
+                        ForEach(promptMoodOptions, id: \.self) { level in
                             moodCard(for: level)
                         }
                     }
@@ -58,6 +72,13 @@ struct PreWorkoutContextView: View {
         }
     }
 
+    private var readinessMetricsSection: some View {
+        HStack(spacing: 12) {
+            SummaryStatCard(title: "Sleep", text: formattedSleepText(latestSleepNight))
+            SummaryStatCard(title: "Resting HR", text: formattedHeartRateText(latestHeartDay?.restingHeartRate))
+        }
+    }
+
     private func moodCard(for level: MoodLevel) -> some View {
         let isSelected = preWorkoutContext.feeling == level
 
@@ -85,6 +106,19 @@ struct PreWorkoutContextView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutMoodOption(level))
         .accessibilityLabel(level.displayName)
         .accessibilityHint(AccessibilityText.preWorkoutMoodHint)
+    }
+
+    private func formattedSleepText(_ sleepNight: HealthSleepNight?) -> String {
+        guard let sleepNight, sleepNight.timeAsleep > 0 else { return "-" }
+
+        let totalMinutes = Int((sleepNight.timeAsleep / 60).rounded())
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if minutes == 0 {
+            return String(localized: "\(hours)h")
+        }
+
+        return String(localized: "\(hours)h \(minutes)m")
     }
 }
 

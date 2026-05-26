@@ -14,6 +14,9 @@ enum VillainArcSchemaV1: VersionedSchema {
     static var models: [any PersistentModel.Type] {
         [
             WorkoutSession.self,
+            CardioSession.self,
+            CardioRoutePoint.self,
+            CardioTreadmillInterval.self,
             HealthWorkout.self,
             WeightEntry.self,
             HealthStepsDistance.self,
@@ -2080,6 +2083,7 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
             setting.previousSetReferenceSource = .anyWorkout
             setting.hydrationUnit = .systemDefault
             setting.hydrationNotificationMode = .goalOnly
+            setting.speedUnit = .systemDefault
         }
 
         let syncStates = try context.fetch(FetchDescriptor<HealthSyncState>())

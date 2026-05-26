@@ -7,6 +7,7 @@ struct AddExerciseView: View {
     
     private let workout: WorkoutSession?
     private let plan: WorkoutPlan?
+    private let preferredMuscles: Set<Muscle>
     
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
@@ -16,14 +17,16 @@ struct AddExerciseView: View {
     @State private var favoritesOnly = false
     @State private var exerciseSort: ExerciseSortOption = .mostRecent
 
-    init(workout: WorkoutSession) {
+    init(workout: WorkoutSession, preferredMuscles: Set<Muscle> = []) {
         self.workout = workout
         self.plan = nil
+        self.preferredMuscles = preferredMuscles
     }
 
     init(plan: WorkoutPlan) {
         self.workout = nil
         self.plan = plan
+        self.preferredMuscles = Set(plan.musclesArray)
     }
 
     var body: some View {
@@ -36,6 +39,7 @@ struct AddExerciseView: View {
                 favoritesOnly: favoritesOnly,
                 selectedOnly: false,
                 sortOption: exerciseSort,
+                preferredMuscles: preferredMuscles,
                 onToggle: { exercise, added in
                     if added {
                         if let workout { workout.addExercise(exercise) }

@@ -4,6 +4,7 @@ import Charts
 import AppIntents
 import CoreSpotlight
 import MuscleMap
+import TipKit
 
 private extension Muscle {
     var detailMuscleMapMuscles: [MuscleMap.Muscle] {
@@ -118,6 +119,7 @@ struct ExerciseDetailView: View {
 
     @State private var selectedMetric: ChartMetric = .topWeight
     @State private var suggestionSettingsExercise: Exercise?
+    private let exerciseHistoryChartTip = ExerciseHistoryChartTip()
     #if DEBUG
     @State private var isSeedingDebugHistory = false
     #endif
@@ -332,6 +334,7 @@ struct ExerciseDetailView: View {
                             )
                             .id(activeMetric.id)
                             .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                            .popoverTip(exerciseHistoryChartTip)
 
                             if availableMetrics.count > 1 {
                                 Picker("Metric", selection: $selectedMetric) {

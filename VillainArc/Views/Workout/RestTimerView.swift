@@ -14,6 +14,22 @@ struct RestTimerView: View {
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
     private var autoStartRestTimerEnabled: Bool { appSettingsSnapshot.autoStartRestTimer }
+    private var currentRestSeconds: Int {
+        if restTimer.isRunning, let endDate = restTimer.endDate {
+            return max(0, Int(endDate.timeIntervalSinceNow.rounded(.up)))
+        }
+        if restTimer.isPaused {
+            return restTimer.pausedRemainingSeconds
+        }
+        return selectedSeconds
+    }
+
+    private var restProgress: Double {
+        guard restTimer.isActive else { return 0 }
+        let started = max(restTimer.startedSeconds, currentRestSeconds, 1)
+        let elapsed = max(0, started - currentRestSeconds)
+        return min(max(Double(elapsed) / Double(started), 0), 1)
+    }
     
     var body: some View {
         NavigationStack {
@@ -97,6 +113,9 @@ struct RestTimerView: View {
                     selectedSeconds = recent.seconds
                 }
             }
+            .onChange(of: restTimer.completionCount) {
+                Haptics.success()
+            }
         }
     }
 
@@ -110,14 +129,14 @@ struct RestTimerView: View {
     @ViewBuilder
     private var controls: some View {
         if restTimer.isRunning {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Button {
                     Haptics.selection()
                     restTimer.stop()
                     Task { await IntentDonations.donateStopRestTimer() }
                 } label: {
-                    Text("Stop")
-                        .font(.title3)
+                    Label("Skip", systemImage: "forward.fill")
+                        .font(.headline)
                         .fontWeight(.semibold)
                         .padding(.vertical, 5)
                 }
@@ -126,14 +145,16 @@ struct RestTimerView: View {
                 .tint(.red)
                 .accessibilityIdentifier(AccessibilityIdentifiers.restTimerStopButton)
                 .accessibilityHint(AccessibilityText.restTimerStopHint)
+
+                extendButton(deltaSeconds: 30)
                 
                 Button {
                     Haptics.selection()
                     restTimer.pause()
                     Task { await IntentDonations.donatePauseRestTimer() }
                 } label: {
-                    Text("Pause")
-                        .font(.title3)
+                    Label("Pause", systemImage: "pause.fill")
+                        .font(.headline)
                         .fontWeight(.semibold)
                         .padding(.vertical, 5)
                 }
@@ -144,14 +165,14 @@ struct RestTimerView: View {
                 .accessibilityHint(AccessibilityText.restTimerPauseHint)
             }
         } else if restTimer.isPaused {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Button {
                     Haptics.selection()
                     restTimer.stop()
                     Task { await IntentDonations.donateStopRestTimer() }
                 } label: {
-                    Text("Stop")
-                        .font(.title3)
+                    Label("Skip", systemImage: "forward.fill")
+                        .font(.headline)
                         .fontWeight(.semibold)
                         .padding(.vertical, 5)
                 }
@@ -160,14 +181,16 @@ struct RestTimerView: View {
                 .tint(.red)
                 .accessibilityIdentifier(AccessibilityIdentifiers.restTimerStopButton)
                 .accessibilityHint(AccessibilityText.restTimerStopHint)
+
+                extendButton(deltaSeconds: 30)
                 
                 Button {
                     Haptics.selection()
                     restTimer.resume()
                     Task { await IntentDonations.donateResumeRestTimer() }
                 } label: {
-                    Text("Resume")
-                        .font(.title3)
+                    Label("Resume", systemImage: "play.fill")
+                        .font(.headline)
                         .fontWeight(.semibold)
                         .padding(.vertical, 5)
                 }
@@ -200,48 +223,74 @@ struct RestTimerView: View {
 
     @ViewBuilder
     private var timerDisplay: some View {
-        if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
-            VStack(spacing: 6) {
-                Label {
-                    Text(endDate, format: .dateTime.hour().minute())
-                } icon: {
-                    Image(systemName: "bell")
-                }
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-                HStack(spacing: 12) {
-                    adjustButton(deltaSeconds: -15)
-
-                    Text(timerInterval: .now...endDate, countsDown: true)
-                        .font(.system(size: timerFontSize, weight: .bold))
-                        .minimumScaleFactor(0.7)
-
-                    adjustButton(deltaSeconds: 15)
-                }
-                .lineLimit(1)
-            }
-        } else {
-            let displayText = secondsToTime(restTimer.isPaused ? restTimer.pausedRemainingSeconds : selectedSeconds)
-
-            if restTimer.isPaused {
-                HStack(spacing: 12) {
-                    adjustButton(deltaSeconds: -15)
-
-                    Text(displayText)
-                        .font(.system(size: timerFontSize, weight: .bold))
-                        .minimumScaleFactor(0.7)
-                        .contentTransition(.numericText(value: Double(restTimer.pausedRemainingSeconds)))
-
-                    adjustButton(deltaSeconds: 15)
-                }
-                .lineLimit(1)
+        VStack(spacing: 14) {
+            if restTimer.isActive {
+                Text(restTimer.isPaused ? "Rest Paused" : "Rest")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
             } else {
-                Text(displayText)
-                    .font(.system(size: timerFontSize, weight: .bold))
-                    .contentTransition(.numericText(value: Double(selectedSeconds)))
+                Text("Rest Length")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
             }
+
+            ZStack {
+                Circle()
+                    .stroke(.secondary.opacity(0.18), lineWidth: 12)
+                if restTimer.isActive {
+                    Circle()
+                        .trim(from: 0, to: restProgress)
+                        .stroke(.blue, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(reduceMotion ? nil : .smooth, value: restProgress)
+                }
+
+                VStack(spacing: 2) {
+                    timerText
+
+                    if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
+                        Label {
+                            Text(endDate, format: .dateTime.hour().minute())
+                        } icon: {
+                            Image(systemName: "bell")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    } else if restTimer.isPaused {
+                        Text("Paused")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.yellow)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .frame(width: 230, height: 230)
+
+            if restTimer.isActive {
+                HStack(spacing: 12) {
+                    adjustButton(deltaSeconds: -15)
+                    adjustButton(deltaSeconds: 15)
+                    adjustButton(deltaSeconds: 60)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var timerText: some View {
+        if restTimer.isRunning, let endDate = restTimer.endDate, endDate > Date() {
+            Text(timerInterval: .now...endDate, countsDown: true)
+                .font(.system(size: timerFontSize, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.62)
+                .lineLimit(1)
+        } else {
+            let displayText = secondsToTime(currentRestSeconds)
+
+            Text(displayText)
+                .font(.system(size: timerFontSize, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.62)
+                .lineLimit(1)
+                .contentTransition(.numericText(value: Double(currentRestSeconds)))
         }
     }
 
@@ -252,7 +301,7 @@ struct RestTimerView: View {
                 restTimer.adjust(by: deltaSeconds)
             }
         } label: {
-            Text(verbatim: "\(deltaSeconds < 0 ? "-" : "+")15")
+            Text(verbatim: "\(deltaSeconds < 0 ? "-" : "+")\(abs(deltaSeconds))")
                 .fontWeight(.semibold)
                 .padding(5)
                 .font(.subheadline)
@@ -260,6 +309,26 @@ struct RestTimerView: View {
         .buttonBorderShape(.circle)
         .buttonStyle(.glass)
         .tint(deltaSeconds < 0 ? .red : .blue)
+        .accessibilityIdentifier(AccessibilityIdentifiers.restTimerAdjustButton(deltaSeconds: deltaSeconds))
+        .accessibilityLabel(AccessibilityText.restTimerAdjustLabel(deltaSeconds: deltaSeconds))
+        .accessibilityHint(AccessibilityText.restTimerAdjustHint)
+    }
+
+    private func extendButton(deltaSeconds: Int) -> some View {
+        Button {
+            Haptics.selection()
+            withAnimation(reduceMotion ? nil : .smooth) {
+                restTimer.adjust(by: deltaSeconds)
+            }
+        } label: {
+            Label("+\(deltaSeconds)s", systemImage: "plus")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .padding(.vertical, 5)
+        }
+        .buttonSizing(.flexible)
+        .buttonStyle(.glassProminent)
+        .tint(.blue)
         .accessibilityIdentifier(AccessibilityIdentifiers.restTimerAdjustButton(deltaSeconds: deltaSeconds))
         .accessibilityLabel(AccessibilityText.restTimerAdjustLabel(deltaSeconds: deltaSeconds))
         .accessibilityHint(AccessibilityText.restTimerAdjustHint)

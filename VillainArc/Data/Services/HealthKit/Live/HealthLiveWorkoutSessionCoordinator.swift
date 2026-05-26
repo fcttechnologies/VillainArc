@@ -34,7 +34,7 @@ import SwiftData
     func ensureRunning(for workout: WorkoutSession) async {
         #if DEBUG
         return
-        #endif
+        #else
         guard workout.statusValue == .active else { return }
         guard HealthAuthorizationManager.canWriteWorkouts else { return }
 
@@ -59,6 +59,7 @@ import SwiftData
             clearLiveWorkoutState()
             AppLog.error("Failed to start live Health workout session for \(workout.id)", error: error)
         }
+        #endif
     }
 
     func finishIfRunning(for workout: WorkoutSession, context: ModelContext) async {

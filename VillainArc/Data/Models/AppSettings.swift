@@ -37,8 +37,15 @@ enum PreviousSetReferenceSource: String, Codable, CaseIterable, Identifiable {
     var temperatureUnit: TemperatureUnit = TemperatureUnit.systemDefault
     var hydrationUnit: HydrationUnit = HydrationUnit.systemDefault
     var hydrationNotificationMode: HydrationEventNotificationMode = HydrationEventNotificationMode.goalOnly
+    var speedUnit: SpeedUnit = SpeedUnit.systemDefault
+    var favoriteCardioKindRawValue: String?
 
     init() {}
+
+    var favoriteCardioKind: CardioSessionKind? {
+        get { favoriteCardioKindRawValue.flatMap { CardioSessionKind(rawValue: $0) } }
+        set { favoriteCardioKindRawValue = newValue?.rawValue }
+    }
 }
 
 struct AppSettingsSnapshot {
@@ -63,6 +70,7 @@ struct AppSettingsSnapshot {
     let temperatureUnit: TemperatureUnit
     let hydrationUnit: HydrationUnit
     let hydrationNotificationMode: HydrationEventNotificationMode
+    let speedUnit: SpeedUnit
 
     nonisolated init(settings: AppSettings?) {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
@@ -86,6 +94,7 @@ struct AppSettingsSnapshot {
         temperatureUnit = settings?.temperatureUnit ?? .systemDefault
         hydrationUnit = settings?.hydrationUnit ?? .systemDefault
         hydrationNotificationMode = settings?.hydrationNotificationMode ?? .goalOnly
+        speedUnit = settings?.speedUnit ?? .systemDefault
     }
 }
 

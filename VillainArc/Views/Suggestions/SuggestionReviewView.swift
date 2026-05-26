@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct SuggestionReviewView: View {
     let sections: [ExerciseSuggestionSection]
@@ -10,6 +11,7 @@ struct SuggestionReviewView: View {
     var actionableDecisions: Set<Decision> = [.pending]
     var emptyState: SuggestionEmptyState?
     var fromSheet: Bool = false
+    private let suggestionReviewTip = SuggestionReviewTip()
     
     var body: some View {
         if sections.isEmpty {
@@ -27,6 +29,7 @@ struct SuggestionReviewView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 16) {
+                TipView(suggestionReviewTip)
                 ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.exerciseName)

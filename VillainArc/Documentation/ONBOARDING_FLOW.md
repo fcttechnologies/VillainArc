@@ -2,7 +2,7 @@
 
 This document explains how VillainArc gets from process launch to a ready app state. It covers first bootstrap, returning launch, profile onboarding, the required fitness-level and training-goal steps, the Apple Health permission prompt, and why the app waits for CloudKit import before seeding the exercise catalog.
 
-This file is only about launch readiness. Ongoing profile editing after setup lives in the shared profile hub (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
+This file is only about launch readiness. Ongoing profile editing after setup lives in the dedicated Profile surface (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
 
 ## Main Files
 
