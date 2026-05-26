@@ -4,8 +4,8 @@ struct WhatsNewFeature: Identifiable {
     let id = UUID()
     let icon: String
     let iconColor: Color
-    let title: String
-    let description: String
+    let title: LocalizedStringResource
+    let description: LocalizedStringResource
 }
 
 struct WhatsNewSheet: View {
@@ -91,7 +91,6 @@ struct WhatsNewSheet: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("\(feature.title). \(feature.description)"))
     }
 
     private var continueButton: some View {
