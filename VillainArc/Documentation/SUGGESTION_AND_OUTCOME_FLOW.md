@@ -253,6 +253,34 @@ Otherwise, when the event has enough evaluations:
 - combines them across sessions
 - and only then chooses the final outcome
 
+## Post-Session Outcome Rating
+
+`WorkoutSummaryView` also captures a post-session subjective outcome alongside the suggestion review flow. This is a parallel signal to the per-suggestion outcome state — it scores the whole session, not individual prescription changes.
+
+The model:
+
+- `WorkoutSession.postOutcome` stores a `SessionOutcome` raw value (`great`, `good`, `ok`, `tough`, `notSet`)
+- `WorkoutSession.postOutcomeNotes` stores an optional user note
+
+The UI:
+
+- inline "How'd it go?" section on `WorkoutSummaryView` with four cards
+- selecting a card persists immediately
+- once a rating is set, an optional notes button is revealed
+
+Pattern surface:
+
+- `OutcomePatternsAnalyzer.analyze(context:)` scans completed rated sessions and emits one `OutcomePatternInsight` when a strong correlation exists
+- current correlations: sleep ≥ 7 hours (joined from `HealthSleepNight` by wake-day key) and average set RPE ≤ 8
+- a correlation requires ≥ 5 rated sessions, ≥ 3 positive sessions, ≥ 60% of positives in the correlated bucket, and a ≥ 20% gap vs. negative sessions
+- the insight card renders below the suggestion review when the just-rated session is positive (`great` or `good`)
+
+Relationship to the suggestion system:
+
+- post-session outcome is a session-level rating, not a suggestion outcome
+- `Outcome` (per-suggestion) and `SessionOutcome` (per-session) are independent state machines
+- the analyzer reads from `WorkoutSession` directly and does not touch `SuggestionEvent` state
+
 ## Relationship to Manual Plan Editing
 
 Manual editing does not review suggestions. It establishes a new plan source of truth.
