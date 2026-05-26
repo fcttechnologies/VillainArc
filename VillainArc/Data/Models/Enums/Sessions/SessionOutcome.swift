@@ -1,6 +1,12 @@
 import Foundation
 
-enum SessionOutcome: String, Codable, CaseIterable {
+/// User-facing post-session feedback options.
+///
+/// Lives only on the summary view as the prompt picker. The selected value
+/// translates into `UserFeedback` and is written to each accepted
+/// `SuggestionEvent` that drove this session's planned work; nothing is
+/// persisted on `WorkoutSession` itself.
+enum SessionOutcome: String, CaseIterable {
     case notSet
     case great
     case good
@@ -27,8 +33,15 @@ enum SessionOutcome: String, Codable, CaseIterable {
         }
     }
 
-    var isPositive: Bool {
-        self == .great || self == .good
+    /// How this session-level rating should be recorded on each accepted
+    /// suggestion event that drove this session's planned work.
+    var userFeedback: UserFeedback? {
+        switch self {
+        case .great, .good: return .feltGood
+        case .ok: return .noChange
+        case .tough: return .tooHard
+        case .notSet: return nil
+        }
     }
 
     static var promptOptions: [SessionOutcome] {

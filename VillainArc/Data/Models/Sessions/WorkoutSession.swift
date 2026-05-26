@@ -18,21 +18,14 @@ import SwiftUI
     @Relationship(deleteRule: .nullify, inverse: \SuggestionEvent.sessionFrom) var createdSuggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
     var hasBeenExportedToHealth: Bool = false
     var healthWorkout: HealthWorkout?
-    var postOutcome: String = SessionOutcome.notSet.rawValue
-    var postOutcomeNotes: String = ""
 
     init() {}
-    
+
     var sortedExercises: [ExercisePerformance] { (exercises ?? []).sorted { $0.index < $1.index } }
-    
+
     var statusValue: SessionStatus {
         get { SessionStatus(rawValue: status) ?? .active }
         set { status = newValue.rawValue }
-    }
-
-    var postOutcomeValue: SessionOutcome {
-        get { SessionOutcome(rawValue: postOutcome) ?? .notSet }
-        set { postOutcome = newValue.rawValue }
     }
 
     // Test/sample initializer to reduce setup boilerplate.

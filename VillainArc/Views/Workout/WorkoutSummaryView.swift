@@ -8,6 +8,15 @@ struct WorkoutSummaryView: View {
         case maxWeight = "Max Weight"
         case maxReps = "Max Reps"
         case totalVolume = "Total Volume"
+
+        var shortLabel: String {
+            switch self {
+            case .estimated1RM: return String(localized: "1RM")
+            case .maxWeight: return String(localized: "max weight")
+            case .maxReps: return String(localized: "max reps")
+            case .totalVolume: return String(localized: "total volume")
+            }
+        }
     }
 
     private struct PRItem: Identifiable {
@@ -39,14 +48,15 @@ struct WorkoutSummaryView: View {
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
-    @State private var showOutcomeNotesSheet = false
     @State private var prEntries: [PRItem] = []
+    @State private var prTypesByCatalogID: [String: Set<PRType>] = [:]
     @State private var workoutHealthSummaryItems: [SummaryStatItem] = []
     @State private var isGeneratingSuggestions = false
     @State private var isSaving = false
     @State private var didSaveWorkoutAsPlan = false
-    @State private var showPRSection = false
-    @State private var outcomeInsight: OutcomePatternInsight?
+    @State private var showPRSection = true
+    @State private var sessionOutcomeSelection: SessionOutcome = .notSet
+    @State private var hasRateableSuggestionEvents = false
 
     private var formattedTotalVolume: String {
         formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...1)
@@ -167,7 +177,11 @@ struct WorkoutSummaryView: View {
                         hardDaySection(feeling: hardDayFeeling)
                     }
 
-                    outcomeSection
+                    exerciseRecapSection
+
+                    if hasRateableSuggestionEvents {
+                        outcomeSection
+                    }
 
                     planSaveSection
 
@@ -191,10 +205,6 @@ struct WorkoutSummaryView: View {
                                 }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "Not enough data to create suggestions yet. Keep using this plan and we'll suggest changes once we have enough workout data."))
                             }
                         }
-                    }
-
-                    if let outcomeInsight, workout.postOutcomeValue.isPositive {
-                        patternsCard(outcomeInsight)
                     }
 
                     if !prEntries.isEmpty {
@@ -229,7 +239,7 @@ struct WorkoutSummaryView: View {
                 if workout.workoutPlan == nil {
                     FoundationModelPrewarmer.warmup()
                 }
-                await loadOutcomeInsightIfNeeded()
+                refreshRateableSuggestionEvents()
                 await generateSuggestionsIfNeeded()
             }
             .task(id: workout.healthWorkout?.healthWorkoutUUID) {
@@ -244,18 +254,6 @@ struct WorkoutSummaryView: View {
                     }
                     .onDisappear {
                         workout.notes = workout.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                        saveContext(context: context)
-                    }
-            }
-            .sheet(isPresented: $showOutcomeNotesSheet) {
-                TextEntryEditorView(title: "Outcome Notes", promptText: "How did this workout feel?", text: $workout.postOutcomeNotes, accessibilityIdentifier: AccessibilityIdentifiers.workoutSummaryOutcomeNotesField)
-                    .presentationDetents([.fraction(0.4)])
-                    .presentationBackground(Color.sheetBg)
-                    .onChange(of: workout.postOutcomeNotes) {
-                        scheduleSave(context: context)
-                    }
-                    .onDisappear {
-                        workout.postOutcomeNotes = workout.postOutcomeNotes.trimmingCharacters(in: .whitespacesAndNewlines)
                         saveContext(context: context)
                     }
             }
@@ -289,42 +287,119 @@ struct WorkoutSummaryView: View {
         }
     }
 
+    private var exerciseRecapSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Exercise Recap")
+                .font(.headline)
+            VStack(spacing: 10) {
+                ForEach(workout.sortedExercises, id: \.id) { exercise in
+                    exerciseRecapCard(exercise)
+                }
+            }
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryExerciseRecapSection)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(AccessibilityText.workoutSummaryExerciseRecapSectionLabel)
+    }
+
+    private func exerciseRecapCard(_ exercise: ExercisePerformance) -> some View {
+        let workingSets = exercise.sortedSets.filter { $0.complete && $0.type != .warmup }
+        let prTypes = prTypesByCatalogID[exercise.catalogID] ?? []
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(exercise.name)
+                    .font(.headline)
+                    .lineLimit(2)
+                Spacer()
+                if !prTypes.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "trophy.fill")
+                            .font(.caption)
+                        Text(prTypes.count == 1 ? "PR" : "\(prTypes.count) PRs")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.yellow.opacity(0.25), in: Capsule())
+                    .foregroundStyle(.primary)
+                }
+            }
+            if workingSets.isEmpty {
+                Text("No working sets logged.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(workingSets, id: \.id) { set in
+                        recapSetRow(set, isPR: setEarnsPR(set, in: workingSets, prTypes: prTypes))
+                    }
+                }
+            }
+            if !prTypes.isEmpty {
+                Text(prSummaryText(for: prTypes))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .appCardStyle()
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryExerciseRecapCard(exercise.catalogID))
+    }
+
+    private func recapSetRow(_ set: SetPerformance, isPR: Bool) -> some View {
+        let setNumber = (set.exercise?.sortedSets.firstIndex(where: { $0.id == set.id }) ?? 0) + 1
+        let weightText = formattedWeightText(set.weight, unit: weightUnit)
+        var pieces: [String] = ["\(setNumber).", "\(weightText) × \(set.reps)"]
+        if let rpe = set.visibleRPE {
+            pieces.append("@ \(rpe)")
+        }
+        return HStack(spacing: 6) {
+            if isPR {
+                Image(systemName: "trophy.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.yellow)
+                    .accessibilityHidden(true)
+            }
+            Text(pieces.joined(separator: " "))
+                .font(.subheadline)
+                .fontWeight(isPR ? .semibold : .regular)
+                .foregroundStyle(isPR ? .primary : .secondary)
+        }
+    }
+
+    private func setEarnsPR(_ set: SetPerformance, in workingSets: [SetPerformance], prTypes: Set<PRType>) -> Bool {
+        guard !prTypes.isEmpty else { return false }
+        if prTypes.contains(.estimated1RM), let topSet = workingSets.max(by: { ($0.estimated1RM ?? 0) < ($1.estimated1RM ?? 0) }), topSet.id == set.id {
+            return true
+        }
+        if prTypes.contains(.maxWeight), let topWeight = workingSets.map(\.weight).max(), set.weight == topWeight && set.weight > 0 {
+            return true
+        }
+        if prTypes.contains(.maxReps), let topReps = workingSets.map(\.reps).max(), set.reps == topReps && set.reps > 0 {
+            return true
+        }
+        return false
+    }
+
+    private func prSummaryText(for prTypes: Set<PRType>) -> String {
+        let labels = PRType.allCases.compactMap { prTypes.contains($0) ? $0.shortLabel : nil }
+        return String(localized: "New \(ListFormatter.localizedString(byJoining: labels))")
+    }
+
     private var outcomeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("How'd it go?")
                 .font(.headline)
+            Text("This rates the suggestions you used in this workout.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack(spacing: 12) {
                 ForEach(SessionOutcome.promptOptions, id: \.self) { option in
                     outcomeCard(option)
                 }
-            }
-            if workout.postOutcomeValue != .notSet {
-                Button {
-                    Haptics.selection()
-                    showOutcomeNotesSheet = true
-                } label: {
-                    HStack {
-                        Image(systemName: "note.text")
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                        if workout.postOutcomeNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Text("Add a note")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text(workout.postOutcomeNotes)
-                                .lineLimit(2)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                        }
-                        Spacer()
-                    }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .appCardStyle()
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryOutcomeNotesButton)
-                .accessibilityHint(AccessibilityText.workoutSummaryOutcomeNotesHint)
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryOutcomeSection)
@@ -333,12 +408,11 @@ struct WorkoutSummaryView: View {
     }
 
     private func outcomeCard(_ outcome: SessionOutcome) -> some View {
-        let isSelected = workout.postOutcomeValue == outcome
+        let isSelected = sessionOutcomeSelection == outcome
         return Button {
             Haptics.selection()
-            workout.postOutcomeValue = outcome
-            saveContext(context: context)
-            Task { await loadOutcomeInsightIfNeeded() }
+            sessionOutcomeSelection = outcome
+            applyOutcomeToSuggestionEvents(outcome)
         } label: {
             VStack(spacing: 6) {
                 Text(outcome.emoji)
@@ -355,38 +429,10 @@ struct WorkoutSummaryView: View {
             .scaleEffect(isSelected ? 1.1 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(.bouncy, value: workout.postOutcomeValue)
+        .animation(.bouncy, value: sessionOutcomeSelection)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryOutcomeOption(outcome))
         .accessibilityLabel(outcome.displayName)
         .accessibilityHint(AccessibilityText.workoutSummaryOutcomeOptionHint)
-    }
-
-    private func patternsCard(_ insight: OutcomePatternInsight) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.title2)
-                .foregroundStyle(.yellow)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(insight.headline)
-                    .font(.headline)
-                Text(insight.detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .appCardStyle()
-        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPatternsCard)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(AccessibilityText.workoutSummaryPatternsCardLabel)
-        .accessibilityValue(Text("\(insight.headline). \(insight.detail)"))
-    }
-
-    private func loadOutcomeInsightIfNeeded() async {
-        outcomeInsight = OutcomePatternsAnalyzer.analyze(context: context)
     }
 
     private var hardDayFeeling: MoodLevel? {
@@ -504,9 +550,55 @@ struct WorkoutSummaryView: View {
         let historyMap = ExerciseHistoryUpdater.batchFetchHistories(for: catalogIDs, context: context)
         let prSummaries = combinedPRSummaries(from: exercises)
 
-        prEntries = prSummaries.compactMap { summary in
-            prEntry(for: summary, history: historyMap[summary.catalogID])
+        var entries: [PRItem] = []
+        var typesByCatalog: [String: Set<PRType>] = [:]
+        for summary in prSummaries {
+            guard let entry = prEntry(for: summary, history: historyMap[summary.catalogID]) else { continue }
+            entries.append(entry)
+            typesByCatalog[summary.catalogID] = Set(entry.types)
         }
+        prEntries = entries
+        prTypesByCatalogID = typesByCatalog
+    }
+
+    private func refreshRateableSuggestionEvents() {
+        hasRateableSuggestionEvents = !rateableSuggestionEvents().isEmpty
+    }
+
+    /// Suggestion events whose accepted prescription changes drove the planned
+    /// work in this session. The session-level outcome rating is written to
+    /// `userFeedback` on each of these.
+    ///
+    /// Eligibility:
+    /// - decision == .accepted
+    /// - userFeedback == nil (not yet rated)
+    /// - target prescription belongs to this session's plan
+    /// - sessionFrom != this workout (events generated by this summary are
+    ///   tested by a future workout, not this one)
+    private func rateableSuggestionEvents() -> [SuggestionEvent] {
+        guard let plan = workout.workoutPlan else { return [] }
+        let workoutID = workout.id
+        var result: [SuggestionEvent] = []
+        for prescription in plan.sortedExercises {
+            for event in prescription.suggestionEvents ?? [] {
+                guard event.decision == .accepted else { continue }
+                guard event.userFeedback == nil else { continue }
+                guard event.sessionFrom?.id != workoutID else { continue }
+                result.append(event)
+            }
+        }
+        return result
+    }
+
+    private func applyOutcomeToSuggestionEvents(_ outcome: SessionOutcome) {
+        guard let feedback = outcome.userFeedback else { return }
+        let events = rateableSuggestionEvents()
+        guard !events.isEmpty else { return }
+        for event in events {
+            event.userFeedback = feedback
+        }
+        saveContext(context: context)
+        refreshRateableSuggestionEvents()
     }
 
     private func combinedPRSummaries(from exercises: [ExercisePerformance]) -> [WorkoutExercisePRSummary] {
