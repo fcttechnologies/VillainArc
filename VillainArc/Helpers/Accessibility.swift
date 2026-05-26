@@ -419,6 +419,12 @@ enum AccessibilityIdentifiers {
 
     static func workoutSummaryEffortCard(_ value: Int) -> String { "workoutSummaryEffortCard-\(value)" }
 
+    static let workoutSummaryOutcomeSection = "workoutSummaryOutcomeSection"
+    static let workoutSummaryOutcomeNotesButton = "workoutSummaryOutcomeNotesButton"
+    static let workoutSummaryOutcomeNotesField = "workoutSummaryOutcomeNotesField"
+    static let workoutSummaryPatternsCard = "workoutSummaryPatternsCard"
+    static func workoutSummaryOutcomeOption(_ outcome: SessionOutcome) -> String { "workoutSummaryOutcomeOption-\(slug(outcome.rawValue))" }
+
     static let workoutTitleEditorField = "workoutTitleEditorField"
     static let workoutNotesEditorField = "workoutNotesEditorField"
     static let workoutPlanTitleEditorField = "workoutPlanTitleEditorField"
@@ -1015,6 +1021,10 @@ enum AccessibilityText {
 
     static func workoutSummaryPRSectionValue(count: Int) -> String { count == 1 ? localized("1 personal record") : localized("\(count) personal records") }
     static func workoutSummaryEffortCardValue(score: Int, description: String) -> String { localized("\(score)/10. \(description)") }
+    static let workoutSummaryOutcomeSectionLabel = localized("Post-workout outcome")
+    static let workoutSummaryOutcomeOptionHint = localized("Records how this workout felt.")
+    static let workoutSummaryOutcomeNotesHint = localized("Adds an optional note about how this workout went.")
+    static let workoutSummaryPatternsCardLabel = localized("Outcome pattern insight")
 
     static func workoutLiveHealthValue(heartRate: String, activeEnergy: String, totalEnergy: String) -> String { localized("Heart rate \(heartRate), active energy \(activeEnergy), total energy \(totalEnergy)") }
 

@@ -39,12 +39,14 @@ struct WorkoutSummaryView: View {
 
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
+    @State private var showOutcomeNotesSheet = false
     @State private var prEntries: [PRItem] = []
     @State private var workoutHealthSummaryItems: [SummaryStatItem] = []
     @State private var isGeneratingSuggestions = false
     @State private var isSaving = false
     @State private var didSaveWorkoutAsPlan = false
     @State private var showPRSection = false
+    @State private var outcomeInsight: OutcomePatternInsight?
 
     private var formattedTotalVolume: String {
         formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...1)
@@ -165,6 +167,8 @@ struct WorkoutSummaryView: View {
                         hardDaySection(feeling: hardDayFeeling)
                     }
 
+                    outcomeSection
+
                     planSaveSection
 
                     if shouldShowSuggestions {
@@ -187,6 +191,10 @@ struct WorkoutSummaryView: View {
                                 }, showDecisionState: true, emptyState: SuggestionEmptyState(title: "No Suggestions Yet", message: "Not enough data to create suggestions yet. Keep using this plan and we'll suggest changes once we have enough workout data."))
                             }
                         }
+                    }
+
+                    if let outcomeInsight, workout.postOutcomeValue.isPositive {
+                        patternsCard(outcomeInsight)
                     }
 
                     if !prEntries.isEmpty {
@@ -221,6 +229,7 @@ struct WorkoutSummaryView: View {
                 if workout.workoutPlan == nil {
                     FoundationModelPrewarmer.warmup()
                 }
+                await loadOutcomeInsightIfNeeded()
                 await generateSuggestionsIfNeeded()
             }
             .task(id: workout.healthWorkout?.healthWorkoutUUID) {
@@ -235,6 +244,18 @@ struct WorkoutSummaryView: View {
                     }
                     .onDisappear {
                         workout.notes = workout.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        saveContext(context: context)
+                    }
+            }
+            .sheet(isPresented: $showOutcomeNotesSheet) {
+                TextEntryEditorView(title: "Outcome Notes", promptText: "How did this workout feel?", text: $workout.postOutcomeNotes, accessibilityIdentifier: AccessibilityIdentifiers.workoutSummaryOutcomeNotesField)
+                    .presentationDetents([.fraction(0.4)])
+                    .presentationBackground(Color.sheetBg)
+                    .onChange(of: workout.postOutcomeNotes) {
+                        scheduleSave(context: context)
+                    }
+                    .onDisappear {
+                        workout.postOutcomeNotes = workout.postOutcomeNotes.trimmingCharacters(in: .whitespacesAndNewlines)
                         saveContext(context: context)
                     }
             }
@@ -266,6 +287,106 @@ struct WorkoutSummaryView: View {
                 .accessibilityLabel(AccessibilityText.workoutSummaryEffortCardLabel)
                 .accessibilityValue(AccessibilityText.workoutSummaryEffortCardValue(score: workout.postEffort, description: workoutEffortDescription(workout.postEffort)))
         }
+    }
+
+    private var outcomeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("How'd it go?")
+                .font(.headline)
+            HStack(spacing: 12) {
+                ForEach(SessionOutcome.promptOptions, id: \.self) { option in
+                    outcomeCard(option)
+                }
+            }
+            if workout.postOutcomeValue != .notSet {
+                Button {
+                    Haptics.selection()
+                    showOutcomeNotesSheet = true
+                } label: {
+                    HStack {
+                        Image(systemName: "note.text")
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        if workout.postOutcomeNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("Add a note")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(workout.postOutcomeNotes)
+                                .lineLimit(2)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer()
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .appCardStyle()
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryOutcomeNotesButton)
+                .accessibilityHint(AccessibilityText.workoutSummaryOutcomeNotesHint)
+            }
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryOutcomeSection)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(AccessibilityText.workoutSummaryOutcomeSectionLabel)
+    }
+
+    private func outcomeCard(_ outcome: SessionOutcome) -> some View {
+        let isSelected = workout.postOutcomeValue == outcome
+        return Button {
+            Haptics.selection()
+            workout.postOutcomeValue = outcome
+            saveContext(context: context)
+            Task { await loadOutcomeInsightIfNeeded() }
+        } label: {
+            VStack(spacing: 6) {
+                Text(outcome.emoji)
+                    .font(.title)
+                Text(outcome.displayName)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 8)
+            .appCardStyle()
+            .opacity(isSelected ? 1.0 : 0.6)
+            .scaleEffect(isSelected ? 1.1 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .animation(.bouncy, value: workout.postOutcomeValue)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryOutcomeOption(outcome))
+        .accessibilityLabel(outcome.displayName)
+        .accessibilityHint(AccessibilityText.workoutSummaryOutcomeOptionHint)
+    }
+
+    private func patternsCard(_ insight: OutcomePatternInsight) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "sparkles")
+                .font(.title2)
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(insight.headline)
+                    .font(.headline)
+                Text(insight.detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .appCardStyle()
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPatternsCard)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AccessibilityText.workoutSummaryPatternsCardLabel)
+        .accessibilityValue(Text("\(insight.headline). \(insight.detail)"))
+    }
+
+    private func loadOutcomeInsightIfNeeded() async {
+        outcomeInsight = OutcomePatternsAnalyzer.analyze(context: context)
     }
 
     private var hardDayFeeling: MoodLevel? {
