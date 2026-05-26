@@ -17,9 +17,10 @@ struct FilteredExerciseListView: View {
     let singleSelection: Bool
     let excludedCatalogIDs: Set<String>
     let preferredMuscles: Set<Muscle>
+    let preferredEquipmentType: EquipmentType?
     let onToggle: ((Exercise, Bool) -> Void)?
 
-    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = [], preferredMuscles: Set<Muscle> = [], onToggle: ((Exercise, Bool) -> Void)? = nil) {
+    init(selectedExercises: Binding<[Exercise]>, selectedExerciseIDs: Binding<Set<String>>, searchText: String, muscleFilters: Set<Muscle>, favoritesOnly: Bool, selectedOnly: Bool, sortOption: ExerciseSortOption, singleSelection: Bool = false, excludedCatalogIDs: Set<String> = [], preferredMuscles: Set<Muscle> = [], preferredEquipmentType: EquipmentType? = nil, onToggle: ((Exercise, Bool) -> Void)? = nil) {
         _selectedExercises = selectedExercises
         _selectedExerciseIDs = selectedExerciseIDs
         self.searchText = searchText
@@ -30,6 +31,7 @@ struct FilteredExerciseListView: View {
         self.singleSelection = singleSelection
         self.excludedCatalogIDs = excludedCatalogIDs
         self.preferredMuscles = preferredMuscles
+        self.preferredEquipmentType = preferredEquipmentType
         self.onToggle = onToggle
         
         let predicate: Predicate<Exercise>?
@@ -241,10 +243,18 @@ struct FilteredExerciseListView: View {
 
     private func isOrderedBefore(_ left: Exercise, _ right: Exercise) -> Bool {
         if muscleFilters.isEmpty && !preferredMuscles.isEmpty {
-            let leftPreferred = matchesPreferredMuscles(left)
-            let rightPreferred = matchesPreferredMuscles(right)
-            if leftPreferred != rightPreferred {
-                return leftPreferred
+            let leftOverlap = preferredMuscleOverlap(left)
+            let rightOverlap = preferredMuscleOverlap(right)
+            if leftOverlap != rightOverlap {
+                return leftOverlap > rightOverlap
+            }
+        }
+
+        if let preferredEquipmentType, muscleFilters.isEmpty {
+            let leftMatchesEquipment = left.equipmentType == preferredEquipmentType
+            let rightMatchesEquipment = right.equipmentType == preferredEquipmentType
+            if leftMatchesEquipment != rightMatchesEquipment {
+                return leftMatchesEquipment
             }
         }
 
@@ -269,6 +279,11 @@ struct FilteredExerciseListView: View {
 
     private func matchesPreferredMuscles(_ exercise: Exercise) -> Bool {
         exercise.musclesTargeted.contains { preferredMuscles.contains($0) }
+    }
+
+    private func preferredMuscleOverlap(_ exercise: Exercise) -> Int {
+        guard !preferredMuscles.isEmpty else { return 0 }
+        return exercise.musclesTargeted.reduce(0) { $0 + (preferredMuscles.contains($1) ? 1 : 0) }
     }
 
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {

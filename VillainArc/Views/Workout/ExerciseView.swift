@@ -248,7 +248,7 @@ struct ExerciseView: View {
                     }
             }
             .sheet(isPresented: $showReplaceExerciseSheet) {
-                ReplaceExerciseView(currentCatalogID: exercise.catalogID) { newExercise, keepSets in
+                ReplaceExerciseView(currentCatalogID: exercise.catalogID, sourceMuscles: Set(exercise.musclesTargeted), sourceEquipmentType: exercise.equipmentType) { newExercise, keepSets in
                     exercise.replaceWith(newExercise, keepSets: keepSets, context: context)
                     saveContext(context: context)
                     WorkoutActivityManager.update()

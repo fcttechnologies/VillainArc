@@ -5,7 +5,16 @@ struct ReplaceExerciseView: View {
     @Environment(\.dismiss) private var dismiss
 
     let currentCatalogID: String
+    let sourceMuscles: Set<Muscle>
+    let sourceEquipmentType: EquipmentType?
     let onReplace: (Exercise, Bool) -> Void
+
+    init(currentCatalogID: String, sourceMuscles: Set<Muscle> = [], sourceEquipmentType: EquipmentType? = nil, onReplace: @escaping (Exercise, Bool) -> Void) {
+        self.currentCatalogID = currentCatalogID
+        self.sourceMuscles = sourceMuscles
+        self.sourceEquipmentType = sourceEquipmentType
+        self.onReplace = onReplace
+    }
 
     @State private var searchText = ""
     @State private var selectedExercises: [Exercise] = []
@@ -32,6 +41,8 @@ struct ReplaceExerciseView: View {
                 sortOption: exerciseSort,
                 singleSelection: true,
                 excludedCatalogIDs: [currentCatalogID],
+                preferredMuscles: sourceMuscles,
+                preferredEquipmentType: sourceEquipmentType,
                 onToggle: { _, _ in
                     if selectedExercises.first != nil {
                         showSetsConfirmation = true
