@@ -13,11 +13,11 @@ struct WhatsNewSheet: View {
     let onDismiss: () -> Void
 
     private let features: [WhatsNewFeature] = [
-        WhatsNewFeature(icon: "figure.run.treadmill", iconColor: .orange, title: "Cardio Sessions", description: "Track outdoor runs, walks, and treadmill sessions with route maps and interval data."),
-        WhatsNewFeature(icon: "chart.line.uptrend.xyaxis", iconColor: .blue, title: "Progression Charts", description: "View your 1RM, max weight, reps, and volume history with rich per-exercise charts."),
-        WhatsNewFeature(icon: "drop.fill", iconColor: .cyan, title: "Hydration Tracking", description: "Log daily water intake and set hydration goals synced with Apple Health."),
-        WhatsNewFeature(icon: "waveform.path.ecg", iconColor: .red, title: "Heart & Health Vitals", description: "Monitor resting heart rate, HRV, respiratory rate, and wrist temperature trends."),
-        WhatsNewFeature(icon: "lightbulb.fill", iconColor: .yellow, title: "Smart Suggestions", description: "Villain Arc analyzes your logs and suggests load or rep adjustments to keep you progressing.")
+        WhatsNewFeature(icon: "figure.run.treadmill", iconColor: .orange, title: "Cardio Sessions", description: "Track outdoor runs and walks with route maps, log treadmill intervals, and follow it live on the Lock Screen."),
+        WhatsNewFeature(icon: "heart.text.square.fill", iconColor: .red, title: "Pre-Workout Check-In", description: "Log how you're feeling before each session and bring last night's sleep and resting heart rate along."),
+        WhatsNewFeature(icon: "timer.circle.fill", iconColor: .blue, title: "Rest Timer Redesign", description: "A circular countdown with skip, extend, and pause controls always within reach."),
+        WhatsNewFeature(icon: "line.3.horizontal.decrease.circle.fill", iconColor: .purple, title: "Smarter Exercise Picker", description: "Today's split surfaces relevant exercises first when you add or replace, with muscle and equipment matches up top."),
+        WhatsNewFeature(icon: "sparkles", iconColor: .yellow, title: "Workout Outcome & Patterns", description: "Rate how each session went and watch Villain Arc highlight what's making your best workouts click.")
     ]
 
     var body: some View {
