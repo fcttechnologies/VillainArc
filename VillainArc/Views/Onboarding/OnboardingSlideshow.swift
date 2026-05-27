@@ -9,8 +9,8 @@ struct OnboardingSlide: Identifiable {
     let imageName: String
     let icon: String
     let iconColor: Color
-    let title: String
-    let description: String
+    let title: LocalizedStringResource
+    let description: LocalizedStringResource
 }
 
 struct OnboardingSlideshowView: View {
