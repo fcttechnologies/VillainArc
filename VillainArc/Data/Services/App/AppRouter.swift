@@ -171,6 +171,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     var isWorkoutSessionCoverPresented = false
     var isWorkoutPlanCoverPresented = false
     var isCardioSessionCoverPresented = false
+    var isPlanBuilderSheetPresented = false
     var tabSelection: AppTab = .home {
         didSet { SharedModelContainer.sharedDefaults.set(tabSelection.rawValue, forKey: Self.selectedTabDefaultsKey) }
     }
@@ -957,6 +958,31 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
         AppLog.info("Workout plan creation started: \(newWorkoutPlan.id).")
+    }
+
+    /// Presents the unified "Create Plan" sheet (scratch / template / AI). The sheet itself
+    /// builds the chosen plan via the materializer and then calls `activatePreBuiltPlan`.
+    func presentPlanBuilder() {
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
+        Haptics.selection()
+        isPlanBuilderSheetPresented = true
+    }
+
+    /// Activates an already-inserted, incomplete WorkoutPlan as the editable active plan. Used by
+    /// PlanBuilderSheet after building a draft from a template or AI generation.
+    func activatePreBuiltPlan(_ plan: WorkoutPlan) {
+        guard !hasActiveFlow() else {
+            showActiveFlowBlockedToast()
+            return
+        }
+        Haptics.selection()
+        saveContext(context: context)
+        activeWorkoutPlanOriginal = nil
+        activeWorkoutPlan = plan
+        AppLog.info("Workout plan creation started from pre-built draft: \(plan.id).")
     }
 
     func createWorkoutPlan(from workout: WorkoutSession) {

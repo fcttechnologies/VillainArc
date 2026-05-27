@@ -105,6 +105,8 @@
 				Documentation/PROJECT_GUIDE.md,
 				Documentation/SESSION_LIFECYCLE_FLOW.md,
 				Documentation/SUGGESTION_AND_OUTCOME_FLOW.md,
+				Documentation/TEMPLATES_FLOW.md,
+				Documentation/WORKOUT_SPLIT_FLOW.md,
 				Info.plist,
 			);
 			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;

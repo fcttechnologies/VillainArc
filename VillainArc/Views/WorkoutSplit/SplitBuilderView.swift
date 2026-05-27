@@ -11,9 +11,11 @@ struct SplitBuilderView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            SelectTypeView(config: config, path: $path, showScratchPicker: $showScratchPicker) {
+            SelectTypeView(config: config, path: $path, showScratchPicker: $showScratchPicker, onCreateScratch: {
                 createScratchSplit(mode: $0)
-            }
+            }, onProgramSelected: { template in
+                createProgramFromTemplate(template)
+            })
             .navigationTitle("Create Split")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -36,6 +38,23 @@ struct SplitBuilderView: View {
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderSheet)
+    }
+
+    private func createProgramFromTemplate(_ template: PlanTemplate) {
+        Haptics.selection()
+        let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: true, context: context)
+        saveContext(context: context)
+        ToastManager.shared.show(
+            ToastManager.Toast(
+                title: String(localized: "Program ready"),
+                message: String(localized: "Created \(split.sortedDays.filter { !$0.isRestDay }.count) plans and activated the \(template.name) split."),
+                systemImage: "calendar.badge.checkmark",
+                tint: .blue,
+                haptic: .success
+            )
+        )
+        onSplitCreated(split)
+        dismiss()
     }
     
     // MARK: - Create Split
@@ -108,7 +127,8 @@ private struct SelectTypeView: View {
     @Binding var path: [BuilderNavStep]
     @Binding var showScratchPicker: Bool
     let onCreateScratch: (SplitMode) -> Void
-    
+    let onProgramSelected: (PlanTemplate) -> Void
+
     var body: some View {
         List {
             Section {
@@ -135,7 +155,43 @@ private struct SelectTypeView: View {
                     Text("What type of split do you want to create?")
                 }
             }
-            
+
+            Section {
+                ForEach(Array(PlanTemplateRegistry.all.enumerated()), id: \.element.id) { index, template in
+                    Button {
+                        Haptics.selection()
+                        onProgramSelected(template)
+                    } label: {
+                        HStack {
+                            Image(systemName: template.icon)
+                                .frame(width: 24)
+                                .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(template.name)
+                                    .font(.headline)
+                                Text(template.summary)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
+                        }
+                        .tint(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .appGroupedListRow(position: rowPosition(for: index, count: PlanTemplateRegistry.all.count))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderProgram(template.id))
+                }
+            } header: {
+                Text("Or pick a full program")
+            } footer: {
+                Text("Creates a plan per training day and activates a matching split.")
+            }
+
             Section {
                 ForEach(Array(SplitPresetType.allCases.enumerated()), id: \.element.id) { index, type in
                     Button {
@@ -168,9 +224,9 @@ private struct SelectTypeView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderType(type))
                 }
             } header: {
-                Text("Or pick a template")
+                Text("Or pick a schedule shape")
             } footer: {
-                Text("Templates are just a starting point. You can adjust the split to fit your needs after you create it.")
+                Text("Just the schedule shape — pick this if you'll wire up plans yourself.")
             }
         }
         .scrollContentBackground(.hidden)

@@ -125,6 +125,23 @@ struct ContentView: View {
             }
             .presentationBackground(Color.sheetBg)
         }
+        .sheet(isPresented: planBuilderSheetBinding) {
+            PlanBuilderSheet(
+                onScratchSelected: {
+                    router.createWorkoutPlan()
+                },
+                onTemplateDaySelected: { template, day in
+                    handleTemplateDaySelection(template: template, day: day)
+                },
+                onProgramSelected: { template in
+                    handleProgramSelection(template: template)
+                },
+                onAIGenerated: { result in
+                    handleAIGenerated(result: result)
+                }
+            )
+            .presentationBackground(Color.sheetBg)
+        }
         .sheet(item: $router.pendingManualCardioKind) { kind in
             CardioOutdoorPermissionView(kind: kind, showsLocation: false) {
                 router.startCardioSession(kind: kind)
@@ -177,7 +194,7 @@ struct ContentView: View {
             actions.append(
                 ExpandedAction("Create Plan", icon: "list.clipboard", accessibilityIdentifier: AccessibilityIdentifiers.morphingCreatePlanButton, accessibilityHint: AccessibilityText.morphingCreatePlanHint) {
                     collapseMorphingTabBar()
-                    router.createWorkoutPlan()
+                    router.presentPlanBuilder()
                     Task { await IntentDonations.donateCreateWorkoutPlan() }
                 }
             )
@@ -392,6 +409,70 @@ struct ContentView: View {
                 }
             }
         )
+    }
+
+    private var planBuilderSheetBinding: Binding<Bool> {
+        Binding(
+            get: { router.isPlanBuilderSheetPresented },
+            set: { isPresented in
+                if !isPresented {
+                    router.isPlanBuilderSheetPresented = false
+                }
+            }
+        )
+    }
+
+    private func handleTemplateDaySelection(template: PlanTemplate, day: PlanTemplateDay) {
+        guard !router.hasActiveAuthoringFlow else {
+            return
+        }
+        let context = SharedModelContainer.container.mainContext
+        let plan = PlanTemplateMaterializer.makeIncompletePlan(template: template, day: day, context: context)
+        router.activatePreBuiltPlan(plan)
+    }
+
+    private func handleProgramSelection(template: PlanTemplate) {
+        let context = SharedModelContainer.container.mainContext
+        let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: true, context: context)
+        saveContext(context: context)
+        ToastManager.shared.show(
+            ToastManager.Toast(
+                title: String(localized: "Program ready"),
+                message: String(localized: "Created \(split.sortedDays.filter { !$0.isRestDay }.count) plans and activated the \(template.name) split."),
+                systemImage: "calendar.badge.checkmark",
+                tint: .blue,
+                haptic: .success
+            )
+        )
+    }
+
+    private func handleAIGenerated(result: AIGeneratedPlanResult) {
+        let context = SharedModelContainer.container.mainContext
+        if result.days.count <= 1, let onlyDay = result.days.first {
+            let plan = PlanTemplateMaterializer.makeIncompletePlan(
+                aiDay: onlyDay,
+                planTitle: result.name,
+                planSummary: result.summary,
+                context: context
+            )
+            router.activatePreBuiltPlan(plan)
+        } else {
+            let split = PlanTemplateMaterializer.materializeProgram(aiResult: result, activate: true, context: context)
+            saveContext(context: context)
+            ToastManager.shared.show(
+                ToastManager.Toast(
+                    title: String(localized: "AI plan ready"),
+                    message: String(localized: "Created \(split.sortedDays.count) plans and activated the \(result.name) split."),
+                    systemImage: "sparkles",
+                    tint: .purple,
+                    haptic: .success
+                )
+            )
+        }
+
+        if !result.unresolvedExerciseNames.isEmpty {
+            AppLog.info("AI generation: \(result.unresolvedExerciseNames.count) exercise names did not resolve to the catalog and were skipped.")
+        }
     }
 
     private var addWeightEntrySheetBinding: Binding<Bool> {

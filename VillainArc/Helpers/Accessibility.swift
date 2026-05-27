@@ -379,6 +379,21 @@ enum AccessibilityIdentifiers {
 
     static func splitBuilderDays(_ days: Int) -> String { "splitBuilderDays-\(days)" }
 
+    // MARK: - PlanBuilderSheet
+    static let planBuilderSheet = "planBuilderSheet"
+    static let planBuilderScratchButton = "planBuilderScratchButton"
+    static let planBuilderAIButton = "planBuilderAIButton"
+    static let aiPlanPromptField = "aiPlanPromptField"
+    static let aiPlanGenerateButton = "aiPlanGenerateButton"
+    static let aiPlanGeneratingOverlay = "aiPlanGeneratingOverlay"
+
+    static func planBuilderTemplate(_ id: String) -> String { "planBuilderTemplate-\(id)" }
+    static func planTemplateDay(_ templateID: String, _ dayID: String) -> String { "planTemplateDay-\(templateID)-\(dayID)" }
+    static func planTemplateBuildProgram(_ templateID: String) -> String { "planTemplateBuildProgram-\(templateID)" }
+    static func aiPlanQuickPick(_ value: String) -> String { "aiPlanQuickPick-\(value.replacingOccurrences(of: " ", with: "_"))" }
+    static func splitBuilderProgram(_ id: String) -> String { "splitBuilderProgram-\(id)" }
+    static func aiReplacementSuggestion(_ catalogID: String) -> String { "aiReplacementSuggestion-\(catalogID)" }
+
     static func workoutPlanDetailSet(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanDetailSet-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
     static func exerciseSetUsePreviousButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetUsePreviousButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }

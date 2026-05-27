@@ -15,6 +15,8 @@ struct WorkoutPlanPickerView: View {
         return workoutPlans.filter { $0.id != selectedPlan.id }
     }
 
+    @State private var showPlanBuilder = false
+
     init(selectedPlan: Binding<WorkoutPlan?>, showsClearButton: Bool = true) {
         _selectedPlan = selectedPlan
         self.showsClearButton = showsClearButton
@@ -58,7 +60,8 @@ struct WorkoutPlanPickerView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Create", systemImage: "plus") {
-                        createWorkoutPlan()
+                        Haptics.selection()
+                        showPlanBuilder = true
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerCreateButton)
                     .accessibilityHint(AccessibilityText.workoutPlanPickerCreateHint)
@@ -73,6 +76,61 @@ struct WorkoutPlanPickerView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showPlanBuilder) {
+            PlanBuilderSheet(
+                onScratchSelected: {
+                    createWorkoutPlan()
+                },
+                onTemplateDaySelected: { template, day in
+                    let plan = PlanTemplateMaterializer.makeIncompletePlan(template: template, day: day, context: context)
+                    saveContext(context: context)
+                    newWorkoutPlanID = plan.id
+                    newWorkoutPlan = plan
+                },
+                onProgramSelected: { template in
+                    let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: true, context: context)
+                    saveContext(context: context)
+                    if let firstPlan = split.sortedDays.compactMap(\.workoutPlan).first {
+                        selectedPlan = firstPlan
+                    }
+                    ToastManager.shared.show(
+                        ToastManager.Toast(
+                            title: String(localized: "Program ready"),
+                            message: String(localized: "Created \(split.sortedDays.filter { !$0.isRestDay }.count) plans and activated the \(template.name) split."),
+                            systemImage: "calendar.badge.checkmark",
+                            tint: .blue,
+                            haptic: .success
+                        )
+                    )
+                    dismiss()
+                },
+                onAIGenerated: { result in
+                    if result.days.count <= 1, let onlyDay = result.days.first {
+                        let plan = PlanTemplateMaterializer.makeIncompletePlan(aiDay: onlyDay, planTitle: result.name, planSummary: result.summary, context: context)
+                        saveContext(context: context)
+                        newWorkoutPlanID = plan.id
+                        newWorkoutPlan = plan
+                    } else {
+                        let split = PlanTemplateMaterializer.materializeProgram(aiResult: result, activate: true, context: context)
+                        saveContext(context: context)
+                        if let firstPlan = split.sortedDays.compactMap(\.workoutPlan).first {
+                            selectedPlan = firstPlan
+                        }
+                        ToastManager.shared.show(
+                            ToastManager.Toast(
+                                title: String(localized: "AI plan ready"),
+                                message: String(localized: "Created \(split.sortedDays.count) plans and activated the \(result.name) split."),
+                                systemImage: "sparkles",
+                                tint: .purple,
+                                haptic: .success
+                            )
+                        )
+                        dismiss()
+                    }
+                }
+            )
+            .presentationBackground(Color.sheetBg)
         }
         .fullScreenCover(item: $newWorkoutPlan, onDismiss: {
             defer {
