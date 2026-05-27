@@ -22,9 +22,9 @@ Window: 2026-05-27
 | Critical | 0 | — |
 | High | 0 | — |
 | Medium | 1 | Fixed (M1) |
-| Low | 3 | Documented (L1, L2, L3) |
+| Low | 3 | Two fixed (L1, L3), one tracked (L2) |
 
-No critical or high findings. One medium issue around unbounded AI prompt length is fixed. Remaining low items are pre-existing patterns documented here for tracking; they are not v1.3 regressions.
+No critical or high findings. One medium issue around unbounded AI prompt length is fixed. The pre-submission pass also resolved L1 (residual `print()` calls on the live workout coordinator) and reworded the stale L3 comment.
 
 ---
 
@@ -48,13 +48,13 @@ No critical or high findings. One medium issue around unbounded AI prompt length
 - New `sanitize(userPrompt:)` helper trims whitespace, strips control characters and default-ignorable code points, and truncates at a word boundary.
 - `GeneratePlanAIPromptView` clamps the `TextEditor` binding in `onChange(of: userPrompt)` so the cap is also visible to the user (not silently dropped at submit).
 
-### L1 — `print()` calls in `HealthLiveWorkoutSessionCoordinator` log workout UUIDs to stdout — pre-existing
+### L1 — `print()` calls across services and views log identifiers to stdout — FIXED
 
-**Location:** `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift` (lines 69, 95, 101, 103, 106, 136, 249)
+**Location (now resolved):** `Data/Services/HealthKit/Live/HealthLiveWorkoutSessionCoordinator.swift`, `Data/Services/HealthKit/Detail/HealthWorkoutDetailLoader.swift`, `Data/Services/HealthKit/Detail/HealthIntradayMetricsLoader.swift`, `Data/Services/HealthKit/Detail/HealthSleepHistoryLoader.swift`, `Data/Services/HealthKit/HealthMirrorSupport.swift`, `Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift`, `Data/Services/Workout/ExerciseHistoryUpdater.swift`, `Data/Services/Workout/WorkoutDeletionCoordinator.swift`, `Data/LiveActivity/WorkoutActivityManager.swift`, `Views/Health/Training/TrainingConditionEditorView.swift`, `Views/Profile/ProfileSheetView.swift`, `Helpers/CloudKitStatusChecker.swift`.
 
-**Issue:** Mixed `print(...)` and `AppLog` usage. `print()` goes to the standard console without OSLog's privacy controls. Messages include workout UUIDs and HealthKit sample UUIDs — not PII, but still data that should flow through the unified logger so it can be audited consistently.
+**Original issue:** Mixed `print(...)` and `AppLog` usage. `print()` goes to the standard console without OSLog's privacy controls.
 
-**Status:** Pre-existing (predates `fb11b2f`). Not a v1.3 regression. Replace with `AppLog.info` / `AppLog.error` in a follow-up cleanup pass.
+**Fix:** Every remaining `print(...)` call replaced with `AppLog.info` or `AppLog.error` so device logs flow through the unified OSLog channel. Emoji prefixes were dropped from `ExerciseHistoryUpdater` log lines. Verified by `grep -rn "print(" VillainArc/` returning zero hits.
 
 ### L2 — `AppLog` privacy is `.public` for all interpolated values — pre-existing
 
@@ -64,13 +64,13 @@ No critical or high findings. One medium issue around unbounded AI prompt length
 
 **Status:** Pre-existing. Tracked as a follow-up cleanup; not changing in v1.3 because the logger interface is used across the codebase and a broad refactor is out of scope for the submission window.
 
-### L3 — `DEBUG`-only suppression of notification permission prompt is still present — intentional, scheduled for removal
+### L3 — `DEBUG`-only suppression of notification permission prompt is still present — intentional, comment clarified
 
 **Location:** `Data/Services/App/NotificationCoordinator.swift` (`requestAuthorizationIfNeededAfterOnboarding`)
 
-**Issue:** The body has a `#if DEBUG return #endif` guard with a comment that says "Remove this guard before shipping." Release builds are unaffected (compile-time exclusion), but the comment promises a follow-up that has not happened.
+**Original issue:** The body had a `#if DEBUG return #endif` guard with a comment that promised follow-up ("Remove this guard before shipping.") that wasn't intended.
 
-**Status:** Already gated to DEBUG and learnings (`projects/villain-arc/learnings.md`, 2026-05-26) explain the cached-system-dialog reason. Behavior is correct in Release. Leave the guard; remove the "Remove this guard before shipping" comment in a follow-up so the TODO doesn't drift.
+**Fix:** Reworded the comment to make the DEBUG-only intent explicit and added an `#else` branch so Release behavior is structurally obvious. Compile-time guard means Release builds always prompt; learnings (`projects/villain-arc/learnings.md`, 2026-05-26) explain the cached-system-dialog reason. Behavior was already correct in Release.
 
 ---
 

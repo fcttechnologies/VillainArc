@@ -215,6 +215,17 @@ That means reinstall behaves like:
 
 The app takes the first-bootstrap path again, waits for cloud import, then seeds/syncs against the imported store.
 
+## Post-Ready Education Surfaces
+
+After the post-ready Health pass, `RootView` decides whether to present a one-time education surface:
+
+- **Onboarding slideshow** (`OnboardingSlideshowView`): shown on first launch after `.ready` if `OnboardingSlideshowPreferences.hasSeenSlideshow == false`. Four-screenshot paging TabView. Marks `hasSeenSlideshow = true` on dismiss.
+- **What's New sheet** (`WhatsNewSheet`): shown after a version bump if `WhatsNewPreferences.shouldShowWhatsNew == true`. Apple-style modal listing the v1.3 features. Marks the current marketing version seen on dismiss.
+
+If both apply on the same launch (first-time user on a new version), the slideshow runs first and the What's New sheet is queued for after dismissal.
+
+These surfaces are gating decisions, not state machine states. They do not block `.ready`; they layer on top of it via SwiftUI sheets.
+
 ## Why `SetupGuard` Exists
 
 App Intents can run before the foreground app has completed the current launch’s onboarding path.

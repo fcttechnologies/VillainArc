@@ -419,5 +419,5 @@ If you are changing:
   - `Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`
 - cached exercise analytics:
   - `Documentation/EXERCISE_HISTORY_FLOW.md`
-- future feature planning or release sequencing:
-  - `Documentation/PRODUCT_ROADMAP.md`
+- plan templates and AI plan generation:
+  - `Documentation/TEMPLATES_FLOW.md`
