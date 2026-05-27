@@ -59,7 +59,8 @@ struct AIWorkoutPlanGenerator {
 
     /// Trim, cap length, and strip control characters before the prompt reaches the model.
     /// Long inputs are truncated at a word boundary when possible so the request still reads cleanly.
-    private static func sanitize(userPrompt: String) -> String {
+    /// `internal` so the unit-test target can call it directly without standing up FoundationModels.
+    static func sanitize(userPrompt: String) -> String {
         let trimmed = userPrompt
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .unicodeScalars
@@ -135,13 +136,18 @@ struct AIWorkoutPlanGenerator {
     }
 
     private static func resolveCatalogID(for exercise: AIGeneratedPlanExercise) -> String? {
-        let queryName = exercise.exerciseName.lowercased()
-        let queryEquipment = exercise.equipment
-        let normalized = normalize(queryName)
+        resolveCatalogID(name: exercise.exerciseName, equipment: exercise.equipment)
+    }
+
+    /// Fuzzy-match an AI-suggested exercise name + equipment to a real catalog item.
+    /// `internal` so unit tests can exercise the five-strategy resolution without standing
+    /// up the @Generable AIGeneratedPlanExercise.
+    static func resolveCatalogID(name: String, equipment: EquipmentType) -> String? {
+        let normalized = normalize(name.lowercased())
 
         // 1. Exact name + equipment match.
         if let exact = ExerciseCatalog.all.first(where: { item in
-            item.equipmentType == queryEquipment && normalize(item.name) == normalized
+            item.equipmentType == equipment && normalize(item.name) == normalized
         }) {
             return exact.id
         }
@@ -159,7 +165,7 @@ struct AIWorkoutPlanGenerator {
         }
 
         // 4. Equipment prefix + name (e.g. "Barbell Bench Press" → barbell_bench_press).
-        for item in ExerciseCatalog.all where item.equipmentType == queryEquipment {
+        for item in ExerciseCatalog.all where item.equipmentType == equipment {
             for prefix in item.equipmentType.systemAlternateNamePrefixes {
                 let full = normalize("\(prefix) \(item.name)")
                 if full == normalized { return item.id }
@@ -174,7 +180,7 @@ struct AIWorkoutPlanGenerator {
             let itemName = normalize(item.name)
             var score = 0
             for token in tokens where itemName.contains(token) { score += 1 }
-            if item.equipmentType == queryEquipment { score += 2 }
+            if item.equipmentType == equipment { score += 2 }
             return (item.id, score)
         }
         .sorted { $0.1 > $1.1 }

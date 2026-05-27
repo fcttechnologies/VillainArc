@@ -88,10 +88,13 @@ struct SchemaMigrationTests {
         #expect(migratedSettings.assumeTargetRPEOnComplete)
         #expect(migratedSettings.prefersTargetReferenceWhenPlanned)
         #expect(migratedSettings.temperatureUnit == .systemDefault)
-        #expect(migratedSettings.hydrationDailyGoalML == 3000)
+        // `hydrationDailyGoalML` was removed from AppSettings before v1.3 began (hydration now
+        // uses HydrationGoal records). The original assertion no longer compiles; the broader
+        // migration coverage above is what matters.
         #expect(migratedSyncState.heartRateSyncedRangeStart == nil)
         #expect(migratedSyncState.heartRateSyncedRangeEnd == nil)
-        #expect(migratedSyncState.latestHeartRate == nil)
+        // `latestHeartRate` moved off HealthSyncState and now lives on the live-session
+        // coordinators (HealthLiveWorkoutSessionCoordinator, CardioHealthWorkoutCoordinator).
         #expect(migratedSyncState.respiratoryRateSyncedRangeStart == nil)
         #expect(migratedSyncState.dietaryWaterSyncedRangeStart == nil)
     }
