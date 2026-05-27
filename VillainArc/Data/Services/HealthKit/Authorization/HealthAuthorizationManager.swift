@@ -182,7 +182,7 @@ nonisolated enum HealthAuthorizationManager {
         do {
             return try await authorizationRequestStatus() == .shouldRequest
         } catch {
-            print("Failed to determine whether HealthKit permissions should prompt again: \(error)")
+            AppLog.error("Failed to determine whether HealthKit permissions should prompt again", error: error)
             return currentAuthorizationState == .notDetermined
         }
     }
@@ -203,7 +203,7 @@ nonisolated enum HealthAuthorizationManager {
             @unknown default: return state == .authorized ? .manageInSettings : .openSettings
             }
         } catch {
-            print("Failed to determine HealthKit authorization request status: \(error)")
+            AppLog.error("Failed to determine HealthKit authorization request status", error: error)
             return state == .notDetermined ? .requestAccess : .openSettings
         }
     }
@@ -214,7 +214,7 @@ nonisolated enum HealthAuthorizationManager {
         do {
             try await healthStore.requestAuthorization(toShare: healthShareTypes, read: healthReadTypes)
         } catch {
-            print("HealthKit authorization request failed: \(error)")
+            AppLog.error("HealthKit authorization request failed", error: error)
         }
 
         return currentAuthorizationState

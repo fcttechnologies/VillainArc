@@ -31,8 +31,8 @@ enum WorkoutDeletionCoordinator {
             guard !hiddenWorkouts.isEmpty else { return }
 
             deleteCompletedWorkouts(hiddenWorkouts, context: context, settings: settings)
-            print("Removed \(hiddenWorkouts.count) retained hidden workouts after disabling performance snapshot retention.")
-        } catch { print("Failed to apply performance snapshot retention setting: \(error)") }
+            AppLog.info("Removed \(hiddenWorkouts.count) retained hidden workouts after disabling performance snapshot retention.")
+        } catch { AppLog.error("Failed to apply performance snapshot retention setting", error: error) }
     }
 
     private static func currentRetentionSetting(context: ModelContext) -> Bool { (try? context.fetch(AppSettings.single).first?.retainPerformancesForLearning) ?? true }

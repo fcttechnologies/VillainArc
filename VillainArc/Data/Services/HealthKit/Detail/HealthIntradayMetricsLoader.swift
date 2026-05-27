@@ -49,7 +49,7 @@ struct HealthEnergyDaySamples: Sendable {
             loadedMovementDays.insert(dayStart)
         } catch {
             movementLoadErrorMessage = "Unable to load Apple Health intraday movement right now."
-            print("Failed to load Apple Health intraday movement: \(error)")
+            AppLog.error("Failed to load Apple Health intraday movement", error: error)
         }
     }
 
@@ -74,7 +74,7 @@ struct HealthEnergyDaySamples: Sendable {
             loadedEnergyDays.insert(dayStart)
         } catch {
             energyLoadErrorMessage = "Unable to load Apple Health intraday energy right now."
-            print("Failed to load Apple Health intraday energy: \(error)")
+            AppLog.error("Failed to load Apple Health intraday energy", error: error)
         }
     }
 

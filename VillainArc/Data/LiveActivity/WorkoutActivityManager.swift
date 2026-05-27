@@ -123,7 +123,7 @@ enum WorkoutActivityManager {
             let activity = try Activity.request(attributes: attributes, content: .init(state: state, staleDate: nil), pushType: nil)
             recordDeliveredState(state, forActivityID: activity.id)
         } catch {
-            print("Failed to start Live Activity: \(error)")
+            AppLog.error("Failed to start Live Activity", error: error)
         }
     }
 

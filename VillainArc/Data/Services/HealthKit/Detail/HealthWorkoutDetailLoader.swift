@@ -170,7 +170,7 @@ enum HealthWorkoutSummaryStatsLoader {
             let liveSummary = HealthWorkoutDetailSummary(workout: liveWorkout)
             return HealthWorkoutSummaryStats(averageHeartRate: liveSummary.averageHeartRateBPM, totalEnergyBurned: liveSummary.totalCalories ?? workout.totalEnergyBurned)
         } catch {
-            print("Failed to load summary Health stats for \(workout.healthWorkoutUUID): \(error)")
+            AppLog.error("Failed to load summary Health stats for \(workout.healthWorkoutUUID)", error: error)
             return cachedStats
         }
     }
@@ -257,7 +257,7 @@ enum HealthWorkoutSummaryStatsLoader {
             isUsingCachedSummaryOnly = true
             loadErrorMessage = "Unable to load live Apple Health details right now."
             refreshDerivedData(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
-            print("Failed to load Health workout details for \(cachedWorkout.healthWorkoutUUID): \(error)")
+            AppLog.error("Failed to load Health workout details for \(cachedWorkout.healthWorkoutUUID)", error: error)
         }
     }
     private func loadEffort(for workout: HKWorkout) async -> HealthWorkoutEffortSummary? {
@@ -267,7 +267,7 @@ enum HealthWorkoutSummaryStatsLoader {
             let result = try await descriptor.result(for: healthStore)
             let relatedSamples = result.relationships.filter { $0.workout.uuid == workout.uuid }.flatMap { $0.samples ?? [] }
             if let summary = makeEffortSummary(from: relatedSamples) { return summary }
-        } catch { print("Failed to load workout effort relationship for \(cachedWorkout.healthWorkoutUUID): \(error)") }
+        } catch { AppLog.error("Failed to load workout effort relationship for \(cachedWorkout.healthWorkoutUUID)", error: error) }
         return fallbackEffortSummary(from: workout)
     }
     func refreshDerivedData(distanceUnit: DistanceUnit, estimatedMaxHeartRate: Double?) {

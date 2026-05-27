@@ -358,7 +358,7 @@ struct TrainingConditionEditorView: View {
             Haptics.selection()
             dismiss()
         } catch {
-            print("Failed to save training condition period: \(error)")
+            AppLog.error("Failed to save training condition period", error: error)
         }
     }
 }

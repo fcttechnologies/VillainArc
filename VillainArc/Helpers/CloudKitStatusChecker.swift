@@ -37,7 +37,7 @@ class CloudKitStatusChecker {
             @unknown default: return .unavailable
             }
         } catch {
-            print("CloudKit availability check failed: \(error)")
+            AppLog.error("CloudKit availability check failed", error: error)
             return .unavailable
         }
     }

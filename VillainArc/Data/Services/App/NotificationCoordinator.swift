@@ -41,13 +41,14 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
 
     nonisolated static func requestAuthorizationIfNeededAfterOnboarding() async {
 #if DEBUG
-        // Suppressed in DEBUG to allow simulator screenshot capture without the system dialog blocking.
-        // Remove this guard before shipping.
+        // DEBUG-only: suppress the system permission dialog during simulator development
+        // and screenshot capture. Compile-time guard, so Release builds always prompt.
         return
-#endif
+#else
         let status = await authorizationStatus()
         guard status == .notDetermined else { return }
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .providesAppNotificationSettings])
+#endif
     }
 
     nonisolated static func scheduleRestTimer(endDate: Date) async {

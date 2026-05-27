@@ -118,7 +118,7 @@ actor HealthWorkoutMirrorImporter {
             _ = try HealthWorkoutLinker.upsertHealthWorkout(for: workout, linkedTo: linkedWorkoutSession, cardioSession: linkedCardioSession, context: context)
             try context.save()
         } catch {
-            print("Failed to import mirrored Health workout \(workout.uuid): \(error)")
+            AppLog.error("Failed to import mirrored Health workout \(workout.uuid)", error: error)
         }
     }
 
@@ -138,7 +138,7 @@ actor HealthWorkoutMirrorImporter {
             }
             try context.save()
         } catch {
-            print("Failed to batch import \(eligible.count) mirrored Health workouts: \(error)")
+            AppLog.error("Failed to batch import \(eligible.count) mirrored Health workouts", error: error)
         }
     }
 

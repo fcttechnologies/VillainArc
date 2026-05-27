@@ -79,7 +79,7 @@ struct HealthSleepStageInterval: Identifiable, Hashable, Sendable {
             onSuccess()
         } catch {
             loadErrorMessage = "Unable to load Apple Health sleep stages right now."
-            print("Failed to load Apple Health sleep history intervals: \(error)")
+            AppLog.error("Failed to load Apple Health sleep history intervals", error: error)
         }
     }
 

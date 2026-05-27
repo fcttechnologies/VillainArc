@@ -66,7 +66,7 @@ import SwiftData
         if workout.healthWorkout == nil, let savedWorkout = try? await HealthMirrorQueries.findSavedWorkout(for: workout.id) {
             await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedSessionID: workout.id)
             refreshLinkedHealthWorkout(for: workout, healthWorkoutUUID: savedWorkout.uuid, context: context)
-            print("Linked existing Apple Health workout \(savedWorkout.uuid) to live session \(workout.id)")
+            AppLog.info("Linked existing Apple Health workout \(savedWorkout.uuid) to live session \(workout.id)")
             return
         }
 
@@ -92,18 +92,18 @@ import SwiftData
                     do {
                         _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(workoutEffortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
                     } catch {
-                        print("Failed to relate workout effort score for \(workout.id): \(error)")
+                        AppLog.error("Failed to relate workout effort score for \(workout.id)", error: error)
                     }
                 }
 
                 await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedSessionID: workout.id)
                 refreshLinkedHealthWorkout(for: workout, healthWorkoutUUID: savedWorkout.uuid, context: context)
-                print("Saved live workout session \(workout.id) to Apple Health as \(savedWorkout.uuid)")
+                AppLog.info("Saved live workout session \(workout.id) to Apple Health as \(savedWorkout.uuid)")
             } else {
-                print("HealthKit finished live workout for \(workout.id), but the workout sample was unavailable.")
+                AppLog.error("HealthKit finished live workout for \(workout.id), but the workout sample was unavailable.")
             }
         } catch {
-            print("Failed to finish live Health workout session for \(workout.id): \(error)")
+            AppLog.error("Failed to finish live Health workout session for \(workout.id)", error: error)
         }
 
         liveWorkoutSession.end()
@@ -133,7 +133,7 @@ import SwiftData
         let recoveredSessionID = recoveredBuilder.metadata[HealthMetadataKeys.workoutSessionID] as? String
 
         if let recoveredSessionID, recoveredSessionID != workout.id.uuidString {
-            print("Recovered Health workout session metadata mismatch. Expected \(workout.id.uuidString), got \(recoveredSessionID).")
+            AppLog.error("Recovered Health workout session metadata mismatch. Expected \(workout.id.uuidString), got \(recoveredSessionID).")
             return false
         }
 
@@ -246,7 +246,7 @@ extension HealthLiveWorkoutSessionCoordinator: HKWorkoutSessionDelegate {
                     await NotificationCoordinator.scheduleRestTimer(endDate: endDate)
                 }
             }
-            print("Live Health workout session failed: \(error)")
+            AppLog.error("Live Health workout session failed", error: error)
         }
     }
 }

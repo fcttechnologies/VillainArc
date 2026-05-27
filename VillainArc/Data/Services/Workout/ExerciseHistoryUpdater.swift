@@ -135,7 +135,7 @@ struct ExerciseHistoryUpdater {
             guard !performances.isEmpty else {
                 if let history = historyMap[catalogID] {
                     context.delete(history)
-                    print("🗑️ ExerciseHistoryUpdater: Deleted history for \(catalogID) (no performances)")
+                    AppLog.info("ExerciseHistoryUpdater: deleted history for \(catalogID) (no performances)")
                 }
                 SpotlightIndexer.deleteExercise(catalogID: catalogID)
                 continue
@@ -154,7 +154,7 @@ struct ExerciseHistoryUpdater {
                 SpotlightIndexer.index(exercise: exercise, history: history)
             }
 
-            print("✅ ExerciseHistoryUpdater: Updated history for \(catalogID) - \(history.totalSessions) sessions")
+            AppLog.info("ExerciseHistoryUpdater: updated history for \(catalogID) — \(history.totalSessions) sessions")
         }
 
         if save {

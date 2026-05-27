@@ -212,7 +212,7 @@ struct ProfileSheetView: View {
                             saveContext(context: context)
                         }
                     } catch {
-                        print("Failed to save training goal: \(error)")
+                        AppLog.error("Failed to save training goal", error: error)
                     }
                 }
                 .presentationDetents([.fraction(0.8)])
