@@ -285,6 +285,25 @@ Relationship to the suggestion outcome state machine:
 - `Outcome` is the deterministic / AI-resolved outcome computed by `OutcomeResolver` over later workouts
 - the two coexist on the same `SuggestionEvent` and are independent — `userFeedback` is the user's take, `outcome` is the evidence-based resolution
 
+## Downstream Surface: Correlation Insights
+
+`CorrelationInsightsView` (Health tab → Trends → Performance Correlations) is the read-only analysis surface that consumes accumulated `userFeedback` ratings.
+
+For each completed `WorkoutSession` that has a `workoutPlan`:
+
+- gather every `SuggestionEvent` reachable through `plan.sortedExercises[*].suggestionEvents` where `userFeedback != nil`, `decision == .accepted`, and `sessionFrom?.startedAt < session.startedAt`
+- map each feedback to a 0...1 quality score: `feltGood`/`tooEasy` → 1.0, `noChange` → 0.5, `tooHard` → 0.0
+- the session's `qualityScore` is the mean of those values
+
+The view pairs the per-session `qualityScore` with:
+
+- `HealthSleepNight.timeAsleep / 3600` for the session's `startedAt` wake day, when present
+- the session's average completed-set RPE (sets where `complete == true && rpe > 0`)
+
+Two Swift Charts scatter plots are rendered (sleep vs quality, RPE vs quality) with a simple closed-form linear regression line. A minimum of 8 rated sessions is required before the view leaves its empty state. An auto-generated headline insight is surfaced when sleep ≥7h and average RPE ≤8 both align with high quality, or when Pearson correlation magnitude crosses 0.3.
+
+This is an analysis surface only — it does not write back to `SuggestionEvent` and does not influence the outcome state machine.
+
 ## Relationship to Manual Plan Editing
 
 Manual editing does not review suggestions. It establishes a new plan source of truth.

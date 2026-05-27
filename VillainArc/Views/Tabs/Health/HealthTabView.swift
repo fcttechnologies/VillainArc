@@ -64,6 +64,8 @@ struct HealthTabView: View {
                     HealthTrendsView()
                 case .sleepTimingInsights:
                     SleepTimingInsightsView()
+                case .correlationInsights:
+                    CorrelationInsightsView()
                 case .allWeightEntriesList:
                     AllWeightEntriesListView()
                 case .weightGoalHistory:

@@ -110,6 +110,30 @@ struct HealthTrendsView: View {
                     HealthTrendCard(metric: .workoutVolume, range: range)
                 }
 
+                NavigationLink(value: AppRouter.Destination.correlationInsights) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chart.dots.scatter")
+                            .foregroundStyle(.purple.gradient)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Performance Correlations")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Text("How sleep & RPE shape session quality")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .appCardStyle()
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthCorrelationLink)
+
                 NavigationLink(value: AppRouter.Destination.sleepTimingInsights) {
                     HStack(spacing: 8) {
                         Image(systemName: "moon.stars.fill")

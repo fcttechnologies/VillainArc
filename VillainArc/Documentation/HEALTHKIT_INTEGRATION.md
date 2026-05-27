@@ -505,6 +505,18 @@ That is controlled by `AppSettings.keepRemovedHealthData`.
 
 All metrics are computed on-device from cached `HealthSleepNight` rows; no live HealthKit reads are issued. The donation for `ShowSleepInsightsIntent` fires when the view appears.
 
+## Correlation Insights
+
+`CorrelationInsightsView` (linked from the Trends surface) pairs Health context with subjective session ratings. See `SUGGESTION_AND_OUTCOME_FLOW.md` for the full data model; the Health side of the join is:
+
+- session quality is derived from accumulated `SuggestionEvent.userFeedback` rated through the post-session "How'd it go?" picker on `WorkoutSummaryView`
+- the X axes are `HealthSleepNight.timeAsleep / 3600` (joined by `wakeDayKey(for:)` against the session's `startedAt`) and the session's average completed-set `rpe`
+- the view gates correlations behind a minimum of 8 rated sessions and falls back to an empty state below that
+- when enough data is present, a simple closed-form linear regression line is overlaid on each scatter plot and a Pearson correlation coefficient is reported below the chart
+- an auto-generated headline insight is surfaced when sleep ≥7h and average RPE ≤8 both align with high quality, or when correlation magnitude crosses 0.3
+
+`ShowCorrelationInsightsIntent` routes to `AppRouter.Destination.correlationInsights`; the donation fires when the view appears. This surface reads from local caches and the app-owned suggestion store only — it does not write back to any `SuggestionEvent` and does not influence the outcome state machine.
+
 ## History and Detail Surfaces
 
 ### Sleep Summary and History

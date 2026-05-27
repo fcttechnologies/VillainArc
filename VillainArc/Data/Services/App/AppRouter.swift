@@ -201,6 +201,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case wristTemperatureHistory
         case healthTrends
         case sleepTimingInsights
+        case correlationInsights
         case allWeightEntriesList
         case weightGoalHistory
         case workoutPlansList
@@ -231,6 +232,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 (.wristTemperatureHistory, .wristTemperatureHistory),
                 (.healthTrends, .healthTrends),
                 (.sleepTimingInsights, .sleepTimingInsights),
+                (.correlationInsights, .correlationInsights),
                 (.allWeightEntriesList, .allWeightEntriesList),
                 (.weightGoalHistory, .weightGoalHistory),
                 (.workoutPlansList, .workoutPlansList),
@@ -303,6 +305,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 hasher.combine("healthTrends")
             case .sleepTimingInsights:
                 hasher.combine("sleepTimingInsights")
+            case .correlationInsights:
+                hasher.combine("correlationInsights")
             case .allWeightEntriesList:
                 hasher.combine("allWeightEntriesList")
             case .weightGoalHistory:
@@ -695,7 +699,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             return .stepsGoalHistory
         case .hydrationHistory, .hydrationGoalHistory, .heartRateHistory, .restingHeartRateHistory, .walkingHeartRateHistory, .heartRateVariabilityHistory, .respiratoryRateHistory, .wristTemperatureHistory:
             return .healthRoot
-        case .healthTrends, .sleepTimingInsights:
+        case .healthTrends, .sleepTimingInsights, .correlationInsights:
             return .healthRoot
         default:
             return nil
@@ -1186,6 +1190,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
              .wristTemperatureHistory,
              .healthTrends,
              .sleepTimingInsights,
+             .correlationInsights,
              .allWeightEntriesList,
              .weightGoalHistory:
             return .health
