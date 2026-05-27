@@ -110,6 +110,7 @@ private struct AppSettingsFormView: View {
     @Bindable var settings: AppSettings
     let includeQuickActionInset: Bool
     @Binding var presentedLegalDestination: SettingsLegalDestination?
+    @State private var latestDiagnostic: DiagnosticDescriptor?
 
     var body: some View {
         Form {
@@ -179,6 +180,8 @@ private struct AppSettingsFormView: View {
                 Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
             }
 
+            supportSection
+
             Section {
                 Button {
                     Haptics.selection()
@@ -217,15 +220,101 @@ private struct AppSettingsFormView: View {
         .scrollContentBackground(.hidden)
         .modifier(SettingsQuickActionInsetModifier(isEnabled: includeQuickActionInset))
         .sheetBackground()
+        .task {
+            refreshLatestDiagnostic()
+        }
         .onChange(of: settings.appearanceMode) {
             saveContext(context: context)
             dismissAllPresentedSheets()
         }
     }
 
+    @ViewBuilder
+    private var supportSection: some View {
+        Section {
+            if let descriptor = latestDiagnostic {
+                Button {
+                    Haptics.selection()
+                    sendDiagnostic(descriptor)
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Send Last Diagnostic")
+                            Text("Crash report from \(descriptor.relativeReceivedAt)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "arrow.up.heart.fill")
+                    }
+                }
+                .foregroundStyle(.primary)
+                .appGroupedListRow(position: .top)
+            }
+
+            Button {
+                Haptics.selection()
+                openMailto(SupportContact.mailtoForBugReport())
+            } label: {
+                Label("Report an Issue", systemImage: "ladybug.fill")
+            }
+            .foregroundStyle(.primary)
+            .appGroupedListRow(position: latestDiagnostic == nil ? .top : .middle)
+
+            Button {
+                Haptics.selection()
+                openMailto(SupportContact.mailtoForFeatureRequest())
+            } label: {
+                Label("Request a Feature", systemImage: "lightbulb.max.fill")
+            }
+            .foregroundStyle(.primary)
+            .appGroupedListRow(position: .middle)
+
+            Button {
+                Haptics.selection()
+                UIApplication.shared.open(SupportContact.supportPageURL)
+            } label: {
+                Label("Visit Support Page", systemImage: "safari")
+            }
+            .foregroundStyle(.primary)
+            .appGroupedListRow(position: .bottom)
+        } footer: {
+            Text("Send diagnostics, report issues, or request features. Diagnostics are stored on your device until you tap Send.")
+        }
+    }
+
     private func openWriteReviewPage() {
         guard let url = URL(string: "https://apps.apple.com/app/id6759259627?action=write-review") else { return }
         UIApplication.shared.open(url)
+    }
+
+    private func openMailto(_ url: URL?) {
+        guard let url else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func sendDiagnostic(_ descriptor: DiagnosticDescriptor) {
+        guard let url = SupportContact.mailtoForDiagnostic(json: descriptor.json, receivedAt: descriptor.receivedAt) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func refreshLatestDiagnostic() {
+        if let payload = MetricsService.shared.latestDiagnostic() {
+            latestDiagnostic = DiagnosticDescriptor(json: payload.json, receivedAt: payload.receivedAt)
+        } else {
+            latestDiagnostic = nil
+        }
+    }
+}
+
+private struct DiagnosticDescriptor: Equatable {
+    let json: String
+    let receivedAt: Date
+
+    var relativeReceivedAt: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: receivedAt, relativeTo: Date())
     }
 }
 

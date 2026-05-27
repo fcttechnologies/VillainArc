@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         if !NotificationCoordinator.isUITestRun {
             NotificationCoordinator.shared.installDelegate()
         }
+        MetricsService.shared.register()
         return true
     }
 

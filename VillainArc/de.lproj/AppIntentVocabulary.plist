@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ParameterVocabularies</key>
+	<array/>
+	<key>IntentPhrases</key>
+	<array>
+		<dict>
+			<key>IntentName</key>
+			<string>INStartWorkoutIntent</string>
+			<key>IntentExamples</key>
+			<array>
+				<string>Training starten in Villain Arc</string>
+				<string>Mein Training beginnen mit Villain Arc</string>
+				<string>Workout starten in Villain Arc</string>
+			</array>
+		</dict>
+		<dict>
+			<key>IntentName</key>
+			<string>INCancelWorkoutIntent</string>
+			<key>IntentExamples</key>
+			<array>
+				<string>Training abbrechen in Villain Arc</string>
+				<string>Mein Training stoppen in Villain Arc</string>
+			</array>
+		</dict>
+		<dict>
+			<key>IntentName</key>
+			<string>INEndWorkoutIntent</string>
+			<key>IntentExamples</key>
+			<array>
+				<string>Training beenden in Villain Arc</string>
+				<string>Mein Training abschließen in Villain Arc</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
