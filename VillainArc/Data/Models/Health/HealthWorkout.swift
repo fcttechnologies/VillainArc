@@ -5,8 +5,8 @@ import SwiftData
 @Model final class HealthWorkout {
     #Index<HealthWorkout>([\.healthWorkoutUUID])
     var healthWorkoutUUID: UUID = UUID()
-    var workoutSession: WorkoutSession?
-    var cardioSession: CardioSession?
+    @Relationship(inverse: \WorkoutSession.healthWorkout) var workoutSession: WorkoutSession?
+    @Relationship(inverse: \CardioSession.healthWorkout) var cardioSession: CardioSession?
     var startDate: Date = Date()
     var endDate: Date = Date()
     var duration: TimeInterval = 0
