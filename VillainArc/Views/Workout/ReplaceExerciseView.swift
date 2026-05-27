@@ -3,6 +3,7 @@ import SwiftData
 
 struct ReplaceExerciseView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
 
     let currentCatalogID: String
     let sourceMuscles: Set<Muscle>
@@ -24,31 +25,52 @@ struct ReplaceExerciseView: View {
     @State private var favoritesOnly = false
     @State private var exerciseSort: ExerciseSortOption = .mostRecent
     @State private var showSetsConfirmation = false
+    @State private var aiSuggestions: [AIResolvedReplacementSuggestion] = []
+    @State private var aiSuggestionsLoaded = false
+    @State private var aiSuggestionsLoading = false
+    @Query(UserProfile.single) private var userProfiles: [UserProfile]
+    @Query(TrainingGoal.active) private var activeGoals: [TrainingGoal]
 
     private var selectedExercise: Exercise? {
         selectedExercises.first
     }
 
+    private var showAISection: Bool {
+        AIExerciseReplacementSuggester.isAvailable && (aiSuggestionsLoading || aiSuggestionsLoaded)
+    }
+
     var body: some View {
         NavigationStack {
-            FilteredExerciseListView(
-                selectedExercises: $selectedExercises,
-                selectedExerciseIDs: $selectedExerciseIDs,
-                searchText: searchText,
-                muscleFilters: selectedMuscles,
-                favoritesOnly: favoritesOnly,
-                selectedOnly: false,
-                sortOption: exerciseSort,
-                singleSelection: true,
-                excludedCatalogIDs: [currentCatalogID],
-                preferredMuscles: sourceMuscles,
-                preferredEquipmentType: sourceEquipmentType,
-                onToggle: { _, _ in
-                    if selectedExercises.first != nil {
-                        showSetsConfirmation = true
-                    }
+            VStack(spacing: 0) {
+                if showAISection {
+                    AIReplacementSuggestionsSection(
+                        suggestions: aiSuggestions,
+                        isLoading: aiSuggestionsLoading,
+                        onSelectCatalogID: { catalogID in
+                            handleAISelection(catalogID: catalogID)
+                        }
+                    )
                 }
-            )
+
+                FilteredExerciseListView(
+                    selectedExercises: $selectedExercises,
+                    selectedExerciseIDs: $selectedExerciseIDs,
+                    searchText: searchText,
+                    muscleFilters: selectedMuscles,
+                    favoritesOnly: favoritesOnly,
+                    selectedOnly: false,
+                    sortOption: exerciseSort,
+                    singleSelection: true,
+                    excludedCatalogIDs: [currentCatalogID],
+                    preferredMuscles: sourceMuscles,
+                    preferredEquipmentType: sourceEquipmentType,
+                    onToggle: { _, _ in
+                        if selectedExercises.first != nil {
+                            showSetsConfirmation = true
+                        }
+                    }
+                )
+            }
             .navigationTitle("Replace Exercise")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -111,7 +133,41 @@ struct ReplaceExerciseView: View {
             .onChange(of: exerciseSort) {
                 Haptics.selection()
             }
+            .task {
+                await loadAISuggestionsIfNeeded()
+            }
         }
+    }
+
+    private func handleAISelection(catalogID: String) {
+        guard let exercise = try? context.fetch(Exercise.withCatalogID(catalogID)).first else { return }
+        selectedExercises = [exercise]
+        selectedExerciseIDs = [exercise.catalogID]
+        showSetsConfirmation = true
+    }
+
+    @MainActor
+    private func loadAISuggestionsIfNeeded() async {
+        guard AIExerciseReplacementSuggester.isAvailable, !aiSuggestionsLoaded, !aiSuggestionsLoading else { return }
+        aiSuggestionsLoading = true
+
+        let currentCatalogItem = ExerciseCatalog.all.first { $0.id == currentCatalogID }
+        let currentName = currentCatalogItem?.name ?? String(localized: "Exercise")
+        let currentEquipment = sourceEquipmentType ?? currentCatalogItem?.equipmentType ?? .bodyweight
+
+        let input = AIExerciseReplacementSuggester.Input(
+            currentExerciseName: currentName,
+            currentMuscles: Array(sourceMuscles).isEmpty ? (currentCatalogItem?.musclesTargeted ?? []) : Array(sourceMuscles),
+            currentEquipment: currentEquipment,
+            fitnessLevelDisplay: userProfiles.first?.fitnessLevel?.title,
+            trainingGoalDisplay: activeGoals.first?.kind.title,
+            excludedCatalogID: currentCatalogID
+        )
+
+        let suggestions = await AIExerciseReplacementSuggester.suggest(input: input)
+        aiSuggestions = suggestions
+        aiSuggestionsLoading = false
+        aiSuggestionsLoaded = true
     }
 }
 

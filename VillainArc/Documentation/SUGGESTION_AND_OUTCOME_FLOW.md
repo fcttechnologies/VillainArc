@@ -312,6 +312,25 @@ If an unresolved suggestion no longer matches that source of truth, `WorkoutPlan
 
 That keeps coaching state aligned with the user’s explicit plan edits instead of trying to preserve outdated events.
 
+## AI Exercise Replacement Suggestions
+
+`ReplaceExerciseView` augments the deterministic muscle-overlap + equipment-match ranker with a top-of-list "AI Suggestions" section when on-device Apple Intelligence is available.
+
+The flow:
+
+- On view appear, `AIExerciseReplacementSuggester` is queried with the current exercise (name, muscles, equipment), the user's fitness level, and the active training goal.
+- The service sends a short `Prompt` to `SystemLanguageModel.default` and asks for a `@Generable AIReplacementSuggestionList` of 3–5 `AIReplacementSuggestion` rows (`exerciseName`, `equipment`, `reasoning`).
+- Each suggestion is fuzzy-matched against the catalog via the same 5-strategy resolver used by `AIWorkoutPlanGenerator` (exact name+equipment, exact name, alias, equipment-prefixed name, token-overlap score).
+- Resolved suggestions render in a horizontal scroll above the existing list. Tapping one selects that exercise and triggers the same Keep Sets / Clear Sets confirmation dialog as a tap in the main list.
+
+Fallback behavior:
+
+- `SystemLanguageModel.default.availability != .available` → the AI section never renders; the existing rank-based list is the only surface.
+- AI returns zero resolvable suggestions → the AI section renders a "no matches" caption but doesn't block the main list.
+- AI errors → silently swallowed (logged in service code); the user still sees the deterministic list.
+
+The AI suggestions are surfaced as an additional ranked source, not a replacement for the deterministic ranker. The deterministic logic still feeds the rest of the picker through `FilteredExerciseListView.preferredMuscles` + `preferredEquipmentType`.
+
 ## Exercise-Level Suggestion Settings
 
 VillainArc also supports a global exercise-catalog setting through `ExerciseSuggestionSettingsSheet`.

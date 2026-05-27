@@ -394,6 +394,8 @@ enum AccessibilityIdentifiers {
     static func splitBuilderProgram(_ id: String) -> String { "splitBuilderProgram-\(id)" }
     static func aiReplacementSuggestion(_ catalogID: String) -> String { "aiReplacementSuggestion-\(catalogID)" }
 
+    static let aiReplacementLoading = "aiReplacementLoading"
+
     static func workoutPlanDetailSet(_ exercise: ExercisePrescription, set: SetPrescription) -> String { "workoutPlanDetailSet-\(String(describing: exercise.workoutPlan?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
 
     static func exerciseSetUsePreviousButton(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "exerciseSetUsePreviousButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
