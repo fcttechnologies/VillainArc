@@ -13,8 +13,8 @@ struct OpenWorkoutPreferencesIntent: AppIntent {
 }
 
 struct OpenAppleHealthSettingsIntent: AppIntent {
-    static let title: LocalizedStringResource = "Open Apple Health Settings"
-    static let description = IntentDescription("Opens Apple Health settings.")
+    static let title: LocalizedStringResource = "Open Health Settings"
+    static let description = IntentDescription("Opens Health integration settings.")
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
