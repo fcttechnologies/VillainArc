@@ -105,6 +105,16 @@ enum AccessibilityIdentifiers {
 
     static func healthTrendCard(_ metricRawValue: String) -> String { "healthTrendCard-\(metricRawValue)" }
 
+    // MARK: - CardioTabView / CardioActiveSessionView
+    static func cardioStart(kindRawValue: String) -> String { "cardioStart-\(kindRawValue)" }
+    static let cardioActiveCancel = "cardioActiveCancel"
+    static let cardioActiveFinish = "cardioActiveFinish"
+    static let cardioActivePause = "cardioActivePause"
+    static let cardioActiveResume = "cardioActiveResume"
+    static let cardioTreadmillIntervalAdd = "cardioTreadmillIntervalAdd"
+    static func cardioMetricTile(_ metricTitle: String) -> String { "cardioMetricTile-\(slug(metricTitle))" }
+    static func cardioHistoryRow(sessionID: String) -> String { "cardioHistoryRow-\(sessionID)" }
+
     static func healthTrainingConditionRow(_ period: TrainingConditionPeriod) -> String { "healthTrainingConditionRow-\(period.persistentModelID)" }
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }

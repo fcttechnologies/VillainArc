@@ -41,6 +41,17 @@
                ReferencedContainer = "container:VillainArc.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EC8DFBAEDAFE40A9DE190C0C"
+               BuildableName = "VillainArcUITests.xctest"
+               BlueprintName = "VillainArcUITests"
+               ReferencedContainer = "container:VillainArc.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -441,12 +441,11 @@ private struct HealthTrendDetailSheet: View {
                     }
                     .accessibilityLabel(Text("\(String(localized: metric.title)) trend chart"))
                 } else {
-                    Text("Not enough data in this range yet")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .appCardStyle()
+                    ContentUnavailableView {
+                        Label(LocalizedStringResource("Not Enough Data"), systemImage: "chart.line.uptrend.xyaxis")
+                    } description: {
+                        Text(LocalizedStringResource("Try a different time range or add more trend data."))
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 6) {

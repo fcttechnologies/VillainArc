@@ -30,6 +30,11 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         super.init()
     }
 
+    /// True when the app was launched by an XCUITest with `-UITestRun YES`. In test runs all
+    /// notification work (auth request, scheduling, delivering) is suppressed so the system
+    /// permission dialog never appears mid-capture and never blocks the screenshot flow.
+    nonisolated static let isUITestRun: Bool = ProcessInfo.processInfo.arguments.contains("-UITestRun")
+
     func installDelegate() {
         UNUserNotificationCenter.current().delegate = self
     }
@@ -40,6 +45,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func requestAuthorizationIfNeededAfterOnboarding() async {
+        guard !isUITestRun else { return }
 #if DEBUG
         // DEBUG-only: suppress the system permission dialog during simulator development
         // and screenshot capture. Compile-time guard, so Release builds always prompt.
@@ -52,6 +58,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func scheduleRestTimer(endDate: Date) async {
+        guard !isUITestRun else { return }
         let canPresentRestTimerCompletionAlert = await MainActor.run {
             WorkoutActivityManager.canPresentRestTimerCompletionAlert
         }
@@ -99,6 +106,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func deliverStepsEvent(_ event: StepsEventNotification) async {
+        guard !isUITestRun else { return }
         let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
 
@@ -129,6 +137,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func deliverSleepGoal(_ event: SleepGoalNotification) async {
+        guard !isUITestRun else { return }
         let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
 
@@ -159,6 +168,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func deliverHydrationGoal(_ event: HydrationGoalNotification) async {
+        guard !isUITestRun else { return }
         let settings = currentAppSettingsSnapshot()
         let status = await authorizationStatus()
 
@@ -189,6 +199,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
     }
 
     nonisolated static func deliverWeeklyHealthCoaching(averageSteps: Int?, averageSleepDuration: TimeInterval?, weekStart: Date) async -> Bool {
+        guard !isUITestRun else { return false }
         let status = await authorizationStatus()
         guard status.allowsLocalDelivery else { return false }
         guard averageSteps != nil || averageSleepDuration != nil else { return false }

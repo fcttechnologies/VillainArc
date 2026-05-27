@@ -56,11 +56,6 @@ struct AIReplacementSuggestionsSection: View {
                 }
             }
         }
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.purple.opacity(0.06))
-                .padding(.horizontal, 8)
-        }
         .padding(.horizontal, 8)
         .padding(.top, 6)
     }
@@ -93,11 +88,7 @@ struct AIReplacementSuggestionsSection: View {
         }
         .frame(width: 200, height: 130, alignment: .topLeading)
         .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.purple.opacity(0.25), lineWidth: 1)
-        )
+        .appCardStyle()
     }
 
     @ViewBuilder
@@ -106,6 +97,6 @@ struct AIReplacementSuggestionsSection: View {
             ProgressView()
         }
         .frame(width: 200, height: 130)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .appCardStyle()
     }
 }

@@ -9,7 +9,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         if HealthAuthorizationManager.isHealthDataAvailable {
             HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
         }
-        NotificationCoordinator.shared.installDelegate()
+        if !NotificationCoordinator.isUITestRun {
+            NotificationCoordinator.shared.installDelegate()
+        }
         return true
     }
 

@@ -88,6 +88,7 @@ struct CardioActiveSessionView: View {
                     } message: {
                         Text("This deletes the active cardio session and stops route and Health recording.")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioActiveCancel)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Finish", systemImage: "checkmark", role: .confirm) {
@@ -100,6 +101,7 @@ struct CardioActiveSessionView: View {
                     } message: {
                         Text("Villain Arc will save the cardio session and any Health metrics or route data captured so far.")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioActiveFinish)
                 }
             }
             .task {
@@ -212,6 +214,7 @@ struct CardioActiveSessionView: View {
             }
             .buttonStyle(.glassProminent)
             .frame(maxWidth: .infinity)
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioTreadmillIntervalAdd)
 
             if !session.sortedTreadmillIntervals.isEmpty {
                 VStack(spacing: 0) {
@@ -457,7 +460,7 @@ private struct CardioMetricGrid: View {
 
     var body: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            CardioMetricTile(title: "Time", value: session.statusValue == .active ? "" : secondsToTimeWithHours(Int(session.duration.rounded())), systemImage: "timer") {
+            MetricTile(title: "Time", value: session.statusValue == .active ? "" : secondsToTimeWithHours(Int(session.duration.rounded())), systemImage: "timer") {
                 if session.statusValue == .active {
                     if let startedAt = session.startedAt {
                         Text(startedAt, style: .timer)
@@ -468,11 +471,17 @@ private struct CardioMetricGrid: View {
                     }
                 }
             }
-            CardioMetricTile(title: "Distance", value: formattedDistanceText(displayDistance, unit: distanceUnit), systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-            CardioMetricTile(title: "Pace", value: formattedPaceText(duration: session.duration, distanceMeters: displayDistance, distanceUnit: distanceUnit) ?? "-", systemImage: "speedometer")
-            CardioMetricTile(title: "Heart", value: heartRate.map { formattedHeartRateText($0) } ?? "-", systemImage: "heart.fill")
-            CardioMetricTile(title: "Energy", value: energy.map { formattedEnergyText($0, unit: energyUnit) } ?? "-", systemImage: "flame.fill")
-            CardioMetricTile(title: "Source", value: sourceText, systemImage: "waveform.path.ecg")
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioMetricTile("Time"))
+            MetricTile(title: "Distance", value: formattedDistanceText(displayDistance, unit: distanceUnit), systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioMetricTile("Distance"))
+            MetricTile(title: "Pace", value: formattedPaceText(duration: session.duration, distanceMeters: displayDistance, distanceUnit: distanceUnit) ?? "-", systemImage: "speedometer")
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioMetricTile("Pace"))
+            MetricTile(title: "Heart", value: heartRate.map { formattedHeartRateText($0) } ?? "-", systemImage: "heart.fill")
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioMetricTile("Heart"))
+            MetricTile(title: "Energy", value: energy.map { formattedEnergyText($0, unit: energyUnit) } ?? "-", systemImage: "flame.fill")
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioMetricTile("Energy"))
+            MetricTile(title: "Source", value: sourceText, systemImage: "waveform.path.ecg")
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioMetricTile("Source"))
         }
     }
 
@@ -482,44 +491,6 @@ private struct CardioMetricGrid: View {
         case .manual: return "Manual"
         case .appleHealth: return "Health"
         }
-    }
-}
-
-private struct CardioMetricTile<Accessory: View>: View {
-    let title: String
-    let value: String
-    let systemImage: String
-    let accessory: Accessory
-
-    init(title: String, value: String, systemImage: String, @ViewBuilder accessory: () -> Accessory = { EmptyView() }) {
-        self.title = title
-        self.value = value
-        self.systemImage = systemImage
-        self.accessory = accessory()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                Text(title)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            if value.isEmpty {
-                accessory
-                    .font(.title3.bold())
-            } else {
-                Text(value)
-                    .font(.title3.bold())
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .appSurfaceStyle(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

@@ -151,16 +151,11 @@ struct CorrelationInsightsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if samples.count < Self.minimumSamples {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Keep rating your sessions")
-                            .font(.headline)
+                    ContentUnavailableView {
+                        Label(LocalizedStringResource("Keep Rating Your Sessions"), systemImage: "chart.dots.scatter")
+                    } description: {
                         Text("You have \(samples.count) of \(Self.minimumSamples) rated sessions needed to surface correlations. Rate workouts on the summary screen — \"Great\", \"Good\", \"OK\", or \"Tough\" — to feed this view.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .appCardStyle()
                 } else {
                     if let summary = autoInsight() {
                         InsightHeroCard(text: summary)

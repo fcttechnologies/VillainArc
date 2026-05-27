@@ -141,28 +141,30 @@ private struct SlideView: View {
     let slide: OnboardingSlide
 
     var body: some View {
-        VStack(spacing: 0) {
-            slideImage
-                .frame(maxWidth: .infinity)
-                .frame(height: UIScreen.main.bounds.height * 0.52)
-                .clipped()
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                slideImage
+                    .frame(maxWidth: .infinity)
+                    .frame(height: geo.size.height * 0.52)
+                    .clipped()
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text(slide.title)
-                    .font(.title2)
-                    .bold()
-                    .fontDesign(.rounded)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(slide.title)
+                        .font(.title2)
+                        .bold()
+                        .fontDesign(.rounded)
 
-                Text(slide.description)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text(slide.description)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer()
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer()
         }
     }
 

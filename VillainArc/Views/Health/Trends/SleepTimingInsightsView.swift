@@ -57,22 +57,17 @@ struct SleepTimingInsightsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if windowEntries.count < 3 {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Need a few more nights")
-                            .font(.headline)
-                        Text("Log or sync at least 3 nights of sleep to see your timing patterns.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                    ContentUnavailableView {
+                        Label(LocalizedStringResource("Need a Few More Nights"), systemImage: "bed.double")
+                    } description: {
+                        Text(LocalizedStringResource("Log or sync at least 3 nights of sleep to see your timing patterns."))
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .appCardStyle()
                 } else {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        TimingStatTile(title: String(localized: "Avg Bedtime"), value: formattedTime(bedTimeStats?.meanMinutes), spread: bedTimeStats?.stdDevMinutes, tint: .indigo, systemImage: "moon.fill")
-                        TimingStatTile(title: String(localized: "Avg Wake"), value: formattedTime(wakeTimeStats?.meanMinutes, isWake: true), spread: wakeTimeStats?.stdDevMinutes, tint: .yellow, systemImage: "sun.max.fill")
-                        TimingStatTile(title: String(localized: "Avg Sleep"), value: avgSleepHours.map { formatHours($0) } ?? "—", spread: nil, tint: .teal, systemImage: "bed.double.fill")
-                        TimingStatTile(title: String(localized: "Consistency"), value: consistencyScore.map { "\($0)" } ?? "—", spread: nil, tint: .purple, systemImage: "waveform.path.ecg")
+                        MetricTile(title: String(localized: "Avg Bedtime"), value: formattedTime(bedTimeStats?.meanMinutes), systemImage: "moon.fill", tint: .indigo, subCaption: bedTimeStats.map { "± \(Int($0.stdDevMinutes.rounded())) min" } ?? " ")
+                        MetricTile(title: String(localized: "Avg Wake"), value: formattedTime(wakeTimeStats?.meanMinutes, isWake: true), systemImage: "sun.max.fill", tint: .yellow, subCaption: wakeTimeStats.map { "± \(Int($0.stdDevMinutes.rounded())) min" } ?? " ")
+                        MetricTile(title: String(localized: "Avg Sleep"), value: avgSleepHours.map { formatHours($0) } ?? "—", systemImage: "bed.double.fill", tint: .teal, subCaption: " ")
+                        MetricTile(title: String(localized: "Consistency"), value: consistencyScore.map { "\($0)" } ?? "—", systemImage: "waveform.path.ecg", tint: .purple, subCaption: " ")
                     }
 
                     if let efficiency = sleepEfficiency {
@@ -172,45 +167,6 @@ private struct InsightCard: View {
             Spacer()
         }
         .padding()
-        .appCardStyle()
-    }
-}
-
-private struct TimingStatTile: View {
-    let title: String
-    let value: String
-    let spread: Double?
-    let tint: Color
-    let systemImage: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 3) {
-                Image(systemName: systemImage)
-                    .font(.caption)
-                    .foregroundStyle(tint.gradient)
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(tint.gradient)
-            }
-            Text(value)
-                .font(.title3)
-                .fontWeight(.bold)
-                .fontDesign(.rounded)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            if let spread {
-                Text("± \(Int(spread.rounded())) min")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text(" ")
-                    .font(.caption2)
-            }
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
         .appCardStyle()
     }
 }
