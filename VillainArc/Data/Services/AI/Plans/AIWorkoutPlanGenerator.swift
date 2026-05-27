@@ -18,16 +18,22 @@ struct AIWorkoutPlanGenerator {
         return false
     }
 
+    /// Hard cap on the user-supplied free-text portion of the prompt. Long inputs
+    /// don't add information value, slow generation, and give a larger surface for
+    /// off-topic or adversarial content reaching the on-device model.
+    static let maxUserPromptLength = 500
+
     static func generate(userPrompt: String, profileContext: AIPlanProfileContext) async -> Result<AIGeneratedPlanResult, GenerationError> {
         guard isAvailable else { return .failure(.modelUnavailable) }
 
         let session = LanguageModelSession(instructions: instructions)
+        let safePrompt = sanitize(userPrompt: userPrompt)
 
         let prompt = Prompt {
             "Design a structured strength-training plan for this user."
             ""
             "User request:"
-            userPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            safePrompt
             ""
             "User context:"
             profileContext.summary
@@ -49,6 +55,24 @@ struct AIWorkoutPlanGenerator {
         } catch {
             return .failure(.modelFailed)
         }
+    }
+
+    /// Trim, cap length, and strip control characters before the prompt reaches the model.
+    /// Long inputs are truncated at a word boundary when possible so the request still reads cleanly.
+    private static func sanitize(userPrompt: String) -> String {
+        let trimmed = userPrompt
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .unicodeScalars
+            .filter { !$0.properties.isDefaultIgnorableCodePoint && $0.value >= 0x20 || $0 == "\n" || $0 == "\t" }
+            .map(Character.init)
+        let normalized = String(trimmed)
+        guard normalized.count > maxUserPromptLength else { return normalized }
+        let cutIndex = normalized.index(normalized.startIndex, offsetBy: maxUserPromptLength)
+        let head = normalized[..<cutIndex]
+        if let lastSpace = head.lastIndex(where: { $0.isWhitespace }) {
+            return String(head[..<lastSpace])
+        }
+        return String(head)
     }
 
     private static var instructions: String {

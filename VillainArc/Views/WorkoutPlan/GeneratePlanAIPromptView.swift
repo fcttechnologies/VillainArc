@@ -43,6 +43,11 @@ struct GeneratePlanAIPromptView: View {
                                     .allowsHitTesting(false)
                             }
                         }
+                        .onChange(of: userPrompt) { _, newValue in
+                            if newValue.count > AIWorkoutPlanGenerator.maxUserPromptLength {
+                                userPrompt = String(newValue.prefix(AIWorkoutPlanGenerator.maxUserPromptLength))
+                            }
+                        }
                         .appGroupedListRow(position: .single)
                 } header: {
                     Text("What kind of plan do you want?")
