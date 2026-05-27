@@ -8,6 +8,7 @@ struct HealthTabView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     TrainingConditionSectionCard()
+                    HealthTrendsSectionCard()
                     WeightSectionCard()
                     HealthSleepSectionCard()
                     HealthStepsSectionCard()
@@ -59,6 +60,8 @@ struct HealthTabView: View {
                     HealthRespiratoryRateHistoryView()
                 case .wristTemperatureHistory:
                     HealthWristTemperatureHistoryView()
+                case .healthTrends:
+                    HealthTrendsView()
                 case .allWeightEntriesList:
                     AllWeightEntriesListView()
                 case .weightGoalHistory:

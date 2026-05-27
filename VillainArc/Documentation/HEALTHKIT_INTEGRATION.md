@@ -480,6 +480,18 @@ When Apple Health deletes a workout, body-mass sample, dietary-water sample, or 
 
 That is controlled by `AppSettings.keepRemovedHealthData`.
 
+## Trends
+
+`HealthTrendsView` is a v1.3 read-only dashboard that summarizes the key Health metrics already tracked elsewhere in the app:
+
+- sparkline cards for weight, sleep duration, resting heart rate, total daily energy, daily steps, and per-session workout volume
+- a time-range picker covering 7D / 30D / 90D / 1Y, defaulting to 30D
+- tapping a card opens a full-screen detail sheet with a larger Swift Charts line + area chart, axis labels, the same range picker, and a one-line auto-generated insight that compares the start and end of the visible range
+- data is sourced from `WeightEntry`, `HealthSleepNight`, `HealthHeart.restingHeartRate`, `HealthEnergy.totalEnergyBurned`, `HealthStepsDistance.stepCount`, and `WorkoutSession.totalVolume`
+- no new HealthKit queries are issued; everything reads through the existing SwiftData caches and the app-owned `WorkoutSession` store
+
+`HealthTrendsSectionCard` is the entry point on the Health tab between the training-condition row and the weight section card. `ShowHealthTrendsIntent` is the corresponding App Intent and routes to `AppRouter.Destination.healthTrends`; the donation fires from the foreground section card tap.
+
 ## History and Detail Surfaces
 
 ### Sleep Summary and History

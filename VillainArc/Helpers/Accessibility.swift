@@ -97,6 +97,9 @@ enum AccessibilityIdentifiers {
     static let healthTrainingConditionEndDatePicker = "healthTrainingConditionEndDatePicker"
     static let healthTrainingConditionAffectedMusclesButton = "healthTrainingConditionAffectedMusclesButton"
     static let muscleDistributionChart = "muscleDistributionChart"
+    static let healthTrendsSectionCard = "healthTrendsSectionCard"
+
+    static func healthTrendCard(_ metricRawValue: String) -> String { "healthTrendCard-\(metricRawValue)" }
 
     static func healthTrainingConditionRow(_ period: TrainingConditionPeriod) -> String { "healthTrainingConditionRow-\(period.persistentModelID)" }
 

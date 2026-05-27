@@ -199,6 +199,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case heartRateVariabilityHistory
         case respiratoryRateHistory
         case wristTemperatureHistory
+        case healthTrends
         case allWeightEntriesList
         case weightGoalHistory
         case workoutPlansList
@@ -227,6 +228,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 (.heartRateVariabilityHistory, .heartRateVariabilityHistory),
                 (.respiratoryRateHistory, .respiratoryRateHistory),
                 (.wristTemperatureHistory, .wristTemperatureHistory),
+                (.healthTrends, .healthTrends),
                 (.allWeightEntriesList, .allWeightEntriesList),
                 (.weightGoalHistory, .weightGoalHistory),
                 (.workoutPlansList, .workoutPlansList),
@@ -295,6 +297,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 hasher.combine("respiratoryRateHistory")
             case .wristTemperatureHistory:
                 hasher.combine("wristTemperatureHistory")
+            case .healthTrends:
+                hasher.combine("healthTrends")
             case .allWeightEntriesList:
                 hasher.combine("allWeightEntriesList")
             case .weightGoalHistory:
@@ -686,6 +690,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case .stepsDistanceHistory, .stepsGoalHistory:
             return .stepsGoalHistory
         case .hydrationHistory, .hydrationGoalHistory, .heartRateHistory, .restingHeartRateHistory, .walkingHeartRateHistory, .heartRateVariabilityHistory, .respiratoryRateHistory, .wristTemperatureHistory:
+            return .healthRoot
+        case .healthTrends:
             return .healthRoot
         default:
             return nil
@@ -1174,6 +1180,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
              .heartRateVariabilityHistory,
              .respiratoryRateHistory,
              .wristTemperatureHistory,
+             .healthTrends,
              .allWeightEntriesList,
              .weightGoalHistory:
             return .health
