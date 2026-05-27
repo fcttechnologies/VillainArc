@@ -492,6 +492,19 @@ That is controlled by `AppSettings.keepRemovedHealthData`.
 
 `HealthTrendsSectionCard` is the entry point on the Health tab between the training-condition row and the weight section card. `ShowHealthTrendsIntent` is the corresponding App Intent and routes to `AppRouter.Destination.healthTrends`; the donation fires from the foreground section card tap.
 
+## Sleep Timing Insights
+
+`SleepTimingInsightsView` (linked from inside the Trends surface) summarizes the user's sleep schedule patterns:
+
+- average bedtime and wake-time means with `± minutes` spread derived from the standard deviation of `HealthSleepNight.sleepStart` / `sleepEnd` over the trailing 30 days
+- average total sleep over the same window
+- a 0...100 consistency score where higher is steadier — `100 - (avgStdDevMinutes / 120) * 100`, clamped to 0...100, computed against bedtime and wake-time variance together
+- a sleep efficiency tile (`timeAsleep / timeInBed`) when both totals are available
+- a 14-day scatter chart of bedtime/wake points to make schedule drift visible
+- a one-line insight on bedtime shift comparing the first half vs second half of the trailing 14 days when the magnitude is ≥ 5 minutes, with a steady-week fallback when ≥ 7 nights are available
+
+All metrics are computed on-device from cached `HealthSleepNight` rows; no live HealthKit reads are issued. The donation for `ShowSleepInsightsIntent` fires when the view appears.
+
 ## History and Detail Surfaces
 
 ### Sleep Summary and History

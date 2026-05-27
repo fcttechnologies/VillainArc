@@ -110,6 +110,29 @@ struct HealthTrendsView: View {
                     HealthTrendCard(metric: .workoutVolume, range: range)
                 }
 
+                NavigationLink(value: AppRouter.Destination.sleepTimingInsights) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "moon.stars.fill")
+                            .foregroundStyle(.indigo.gradient)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Sleep Timing Insights")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Text("Bed & wake patterns, consistency score")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .appCardStyle()
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthSleepTimingLink)
             }
             .padding()
         }

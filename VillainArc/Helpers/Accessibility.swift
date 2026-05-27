@@ -98,6 +98,8 @@ enum AccessibilityIdentifiers {
     static let healthTrainingConditionAffectedMusclesButton = "healthTrainingConditionAffectedMusclesButton"
     static let muscleDistributionChart = "muscleDistributionChart"
     static let healthTrendsSectionCard = "healthTrendsSectionCard"
+    static let healthSleepTimingLink = "healthSleepTimingLink"
+    static let sleepTimingInsightsRoot = "sleepTimingInsightsRoot"
 
     static func healthTrendCard(_ metricRawValue: String) -> String { "healthTrendCard-\(metricRawValue)" }
 

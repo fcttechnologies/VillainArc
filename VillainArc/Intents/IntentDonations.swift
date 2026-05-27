@@ -193,4 +193,5 @@ enum IntentDonations {
     }
 
     static func donateShowHealthTrends() async { guard donationsEnabled else { return }; _ = try? await ShowHealthTrendsIntent().donate() }
+    static func donateShowSleepInsights() async { guard donationsEnabled else { return }; _ = try? await ShowSleepInsightsIntent().donate() }
 }

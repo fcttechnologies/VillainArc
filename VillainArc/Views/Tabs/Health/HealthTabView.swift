@@ -62,6 +62,8 @@ struct HealthTabView: View {
                     HealthWristTemperatureHistoryView()
                 case .healthTrends:
                     HealthTrendsView()
+                case .sleepTimingInsights:
+                    SleepTimingInsightsView()
                 case .allWeightEntriesList:
                     AllWeightEntriesListView()
                 case .weightGoalHistory:

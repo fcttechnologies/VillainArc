@@ -200,6 +200,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case respiratoryRateHistory
         case wristTemperatureHistory
         case healthTrends
+        case sleepTimingInsights
         case allWeightEntriesList
         case weightGoalHistory
         case workoutPlansList
@@ -229,6 +230,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 (.respiratoryRateHistory, .respiratoryRateHistory),
                 (.wristTemperatureHistory, .wristTemperatureHistory),
                 (.healthTrends, .healthTrends),
+                (.sleepTimingInsights, .sleepTimingInsights),
                 (.allWeightEntriesList, .allWeightEntriesList),
                 (.weightGoalHistory, .weightGoalHistory),
                 (.workoutPlansList, .workoutPlansList),
@@ -299,6 +301,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 hasher.combine("wristTemperatureHistory")
             case .healthTrends:
                 hasher.combine("healthTrends")
+            case .sleepTimingInsights:
+                hasher.combine("sleepTimingInsights")
             case .allWeightEntriesList:
                 hasher.combine("allWeightEntriesList")
             case .weightGoalHistory:
@@ -691,7 +695,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             return .stepsGoalHistory
         case .hydrationHistory, .hydrationGoalHistory, .heartRateHistory, .restingHeartRateHistory, .walkingHeartRateHistory, .heartRateVariabilityHistory, .respiratoryRateHistory, .wristTemperatureHistory:
             return .healthRoot
-        case .healthTrends:
+        case .healthTrends, .sleepTimingInsights:
             return .healthRoot
         default:
             return nil
@@ -1181,6 +1185,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
              .respiratoryRateHistory,
              .wristTemperatureHistory,
              .healthTrends,
+             .sleepTimingInsights,
              .allWeightEntriesList,
              .weightGoalHistory:
             return .health
