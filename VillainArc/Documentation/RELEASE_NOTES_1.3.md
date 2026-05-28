@@ -144,6 +144,20 @@ This file is the internal change log. The customer-facing "What's New" copy live
 
 See `SECURITY_REVIEW_v1.3.md`. No critical or high findings. One medium (`M1`: unbounded user free text reaching the on-device model) is fixed. Pre-existing low items (`L1`–`L3`) are tracked; `L1` (residual `print()` calls on the live workout coordinator) was cleaned up in the pre-submission pass.
 
+## Villain Arc Pro
+
+Added the Villain Arc Pro subscription tier via StoreKit 2.
+
+- Monthly plan: $4.99 USD with a 7-day free trial.
+- Yearly plan: $39.99 USD with a 7-day free trial.
+- Family Sharing enabled on both tiers.
+- Five features gated behind Pro: AI Plan Generation, AI Exercise Replacement, Health Trends, Sleep Timing Insights, Correlation Insights.
+- All other features — plans, templates, logging, cardio, hydration, widgets, shortcuts — remain free.
+- Paywall is a full-screen sheet triggered via `SubscriptionGate.require(.feature) { action }` at each call site. The sheet spotlights the triggering feature.
+- Subscription state is cached to the App Group so the widget can read `isPro` without a StoreKit query, and cold-launch avoids a paywall flash for known-Pro users.
+- Restore Purchases available in Settings → Subscription.
+- Implementation: `Data/Services/Subscription/SubscriptionStore.swift`, `SubscriptionGate.swift`, `Views/Subscription/PaywallView.swift`, `Views/Subscription/PremiumLockedView.swift`. Flow documented in `SUBSCRIPTION_FLOW.md`.
+
 ## Tests
 
 - Added unit coverage on plan template materialization and the FoundationModels resolver paths (`VillainArcTests/PlanTemplatesTests.swift`, `VillainArcTests/AIWorkoutPlanGeneratorTests.swift`).

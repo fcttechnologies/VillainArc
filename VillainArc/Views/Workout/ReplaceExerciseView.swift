@@ -39,10 +39,16 @@ struct ReplaceExerciseView: View {
         AIExerciseReplacementSuggester.isAvailable && (aiSuggestionsLoading || aiSuggestionsLoaded)
     }
 
+    private var showAILockedTeaser: Bool {
+        AIExerciseReplacementSuggester.isAvailable && !SubscriptionGate.isPro
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if showAISection {
+                if showAILockedTeaser {
+                    aiLockedTeaser
+                } else if showAISection {
                     AIReplacementSuggestionsSection(
                         suggestions: aiSuggestions,
                         isLoading: aiSuggestionsLoading,
@@ -146,9 +152,45 @@ struct ReplaceExerciseView: View {
         showSetsConfirmation = true
     }
 
+    @ViewBuilder
+    private var aiLockedTeaser: some View {
+        Button {
+            Haptics.selection()
+            PaywallPresenter.shared.present(for: .aiExerciseReplacement)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(.purple.gradient)
+                    .font(.subheadline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Unlock AI Suggestions with Pro")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Text("On-device AI ranks swaps tuned to your goal.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "lock.fill")
+                    .foregroundStyle(.purple)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.purple.opacity(0.08))
+            .overlay(alignment: .bottom) {
+                Divider()
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.aiReplacementLockedRow)
+    }
+
     @MainActor
     private func loadAISuggestionsIfNeeded() async {
-        guard AIExerciseReplacementSuggester.isAvailable, !aiSuggestionsLoaded, !aiSuggestionsLoading else { return }
+        guard SubscriptionGate.isPro, AIExerciseReplacementSuggester.isAvailable, !aiSuggestionsLoaded, !aiSuggestionsLoading else { return }
         aiSuggestionsLoading = true
 
         let currentCatalogItem = ExerciseCatalog.all.first { $0.id == currentCatalogID }

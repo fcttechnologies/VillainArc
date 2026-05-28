@@ -111,6 +111,9 @@ private struct AppSettingsFormView: View {
     let includeQuickActionInset: Bool
     @Binding var presentedLegalDestination: SettingsLegalDestination?
     @State private var latestDiagnostic: DiagnosticDescriptor?
+    @State private var subscriptionStore = SubscriptionStore.shared
+    @State private var isRestoringSubscription = false
+    @State private var restoreMessage: String?
 
     var body: some View {
         Form {
@@ -180,6 +183,8 @@ private struct AppSettingsFormView: View {
                 Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
             }
 
+            subscriptionSection
+
             supportSection
 
             Section {
@@ -226,6 +231,160 @@ private struct AppSettingsFormView: View {
         .onChange(of: settings.appearanceMode) {
             saveContext(context: context)
             dismissAllPresentedSheets()
+        }
+    }
+
+    @ViewBuilder
+    private var subscriptionSection: some View {
+        Section {
+            if subscriptionStore.status.isPro {
+                proStatusRow
+                    .appGroupedListRow(position: .top)
+                Button {
+                    Haptics.selection()
+                    UIApplication.shared.open(SubscriptionStore.manageSubscriptionsURL)
+                } label: {
+                    Label("Manage Subscription", systemImage: "creditcard")
+                }
+                .foregroundStyle(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionManageButton)
+                .appGroupedListRow(position: .bottom)
+            } else {
+                Button {
+                    Haptics.selection()
+                    PaywallPresenter.shared.present(for: .aiPlanGeneration)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.purple.gradient)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Get Villain Arc Pro")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Text("Unlock AI plan generation, Health Trends, and more.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .foregroundStyle(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionGetProButton)
+                .appGroupedListRow(position: .top)
+
+                Button {
+                    Task { await handleRestore() }
+                } label: {
+                    HStack {
+                        Label("Restore Purchases", systemImage: "arrow.clockwise")
+                        Spacer()
+                        if isRestoringSubscription {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                }
+                .foregroundStyle(.primary)
+                .disabled(isRestoringSubscription)
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionRestoreButton)
+                .appGroupedListRow(position: .bottom)
+            }
+        } header: {
+            Text("Subscription")
+        } footer: {
+            if let restoreMessage {
+                Text(restoreMessage)
+            } else if subscriptionStore.status.isPro {
+                Text(proFooterText)
+            } else {
+                Text("Villain Arc Pro unlocks AI features and advanced health insights. Cancel anytime in Settings.")
+            }
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionRow)
+    }
+
+    @ViewBuilder
+    private var proStatusRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(.purple.gradient)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Villain Arc Pro")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Text(subscriptionPlanLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+
+    private var subscriptionPlanLabel: String {
+        switch subscriptionStore.status {
+        case let .subscribed(productID, _, _):
+            return planName(for: productID)
+        case let .inFreeTrial(productID, _):
+            return String(localized: "Free trial — \(planName(for: productID))")
+        case let .inGracePeriod(productID, _):
+            return String(localized: "Grace period — \(planName(for: productID))")
+        default:
+            return String(localized: "Active")
+        }
+    }
+
+    private var proFooterText: String {
+        switch subscriptionStore.status {
+        case let .subscribed(_, expirationDate, willAutoRenew):
+            if let date = expirationDate {
+                let label = willAutoRenew
+                    ? String(localized: "Renews \(formattedDate(date)).")
+                    : String(localized: "Ends \(formattedDate(date)).")
+                return label
+            }
+            return String(localized: "Manage your subscription in the App Store.")
+        case let .inFreeTrial(_, trialEnd):
+            return String(localized: "Trial ends \(formattedDate(trialEnd)).")
+        case let .inGracePeriod(_, expirationDate):
+            return String(localized: "Renewal failed — billing retry until \(formattedDate(expirationDate)).")
+        default:
+            return String(localized: "Manage your subscription in the App Store.")
+        }
+    }
+
+    private func planName(for productID: String) -> String {
+        switch productID {
+        case SubscriptionStore.monthlyProductID: return String(localized: "Monthly")
+        case SubscriptionStore.yearlyProductID: return String(localized: "Yearly")
+        default: return String(localized: "Pro")
+        }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        date.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func handleRestore() async {
+        restoreMessage = nil
+        isRestoringSubscription = true
+        defer { isRestoringSubscription = false }
+        do {
+            try await subscriptionStore.restore()
+            if subscriptionStore.status.isPro {
+                Haptics.success()
+                restoreMessage = String(localized: "Subscription restored.")
+            } else {
+                Haptics.warning()
+                restoreMessage = String(localized: "No active subscription was found on this Apple ID.")
+            }
+        } catch {
+            Haptics.error()
+            restoreMessage = String(localized: "Restore failed. Try again later.")
+            AppLog.error("Settings restore failed", error: error)
         }
     }
 

@@ -61,11 +61,23 @@ struct HealthTabView: View {
                 case .wristTemperatureHistory:
                     HealthWristTemperatureHistoryView()
                 case .healthTrends:
-                    HealthTrendsView()
+                    if SubscriptionGate.isPro {
+                        HealthTrendsView()
+                    } else {
+                        PremiumLockedView(feature: .healthTrends)
+                    }
                 case .sleepTimingInsights:
-                    SleepTimingInsightsView()
+                    if SubscriptionGate.isPro {
+                        SleepTimingInsightsView()
+                    } else {
+                        PremiumLockedView(feature: .sleepTimingInsights)
+                    }
                 case .correlationInsights:
-                    CorrelationInsightsView()
+                    if SubscriptionGate.isPro {
+                        CorrelationInsightsView()
+                    } else {
+                        PremiumLockedView(feature: .correlationInsights)
+                    }
                 case .allWeightEntriesList:
                     AllWeightEntriesListView()
                 case .weightGoalHistory:

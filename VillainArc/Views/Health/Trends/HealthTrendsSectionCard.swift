@@ -5,8 +5,10 @@ struct HealthTrendsSectionCard: View {
 
     var body: some View {
         Button {
-            router.push(to: .healthTrends)
-            Task { await IntentDonations.donateShowHealthTrends() }
+            SubscriptionGate.require(.healthTrends) {
+                router.push(to: .healthTrends)
+                Task { await IntentDonations.donateShowHealthTrends() }
+            }
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
@@ -25,6 +27,11 @@ struct HealthTrendsSectionCard: View {
                         .lineLimit(1)
                 }
                 Spacer()
+                if !SubscriptionGate.isPro {
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.purple)
+                }
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundStyle(.secondary)

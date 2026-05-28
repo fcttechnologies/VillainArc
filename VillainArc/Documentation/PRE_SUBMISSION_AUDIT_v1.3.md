@@ -47,13 +47,14 @@ Status legend: ✅ verified · ⚠️ risk to mitigate before submit · 🛠️ 
 
 ## Guideline 3.1 — In-App Purchase Compliance
 
-VA 1.3 ships without IAP. The 5/29 subscription work in `v1.3-plan.md` was deferred to a 1.3.x point release. No paid digital content in 1.3.
+Villain Arc Pro ships in 1.3 as an auto-renewing subscription via StoreKit 2. Two tiers: monthly ($4.99 USD) and yearly ($39.99 USD), both with a 7-day free trial and Family Sharing enabled. Five premium features gated: AI Plan Generation, AI Exercise Replacement, Health Trends, Sleep Timing Insights, Correlation Insights. All other features are free.
 
 | Check | Status | Notes |
 |---|---|---|
-| Digital content uses Apple IAP | n/a | No paid content in 1.3. |
-| Restore Purchases | n/a | Not applicable until subscriptions ship. |
-| No external payment direction | ✅ | Description does not direct users to any payment surface. |
+| Digital content uses Apple IAP | ✅ | Villain Arc Pro auto-renewing subscription. Both tiers go through StoreKit 2 `product.purchase()`. |
+| Restore Purchases | ✅ | Settings → Subscription → Restore Purchases calls `AppStore.sync()` then refreshes status. |
+| No external payment direction | ✅ | Description does not direct users to any external payment surface. |
+| Subscription metadata accurately described | ✅ | App Review notes include the full In-App Purchase section. |
 
 ## Guideline 4.0 — Design Quality
 
@@ -146,9 +147,9 @@ Notes describe every prompt the reviewer will see (HealthKit Share + Read, Locat
 
 The URL `https://fct-technologies.com/projects/villainarc/privacy/` is set in metadata. **Fernando: open the URL in a browser before submitting to confirm it renders a real privacy policy.** A 404 here causes a 5.1.1 rejection.
 
-### 5. ⏭️ Subscriptions deferred to a follow-up release
+### 5. ✅ Subscriptions ship in 1.3
 
-The `v1.3-plan.md` "Subscriptions setup" item is unchecked. No StoreKit code ships in 1.3. This is correct — IAP is not required for 1.3 and adding it now creates new review surface without justification. Subscriptions ship in a 1.3.x point release per plan.
+Villain Arc Pro (monthly $4.99, yearly $39.99, 7-day free trial, Family Sharing ON) ships in 1.3. StoreKit 2 code is in place and the build is clean. ASC products are created and priced. App Review notes include the In-App Purchase section. Guideline 3.1 is fully satisfied.
 
 ### 6. ✅ App Privacy publish state
 

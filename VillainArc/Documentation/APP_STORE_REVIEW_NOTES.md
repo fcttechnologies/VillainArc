@@ -89,6 +89,10 @@ Both features are gated on `SystemLanguageModel.default.availability == .availab
 - **Live cardio Health workout.** When the user has HealthKit workout write permission and starts an outdoor or treadmill cardio session, an `HKWorkoutSession` is started in parallel to collect live heart rate and active energy. Without permission, the local cardio flow still works.
 - **iCloud is optional.** Users can choose "Continue Without iCloud" during onboarding; the app seeds locally and continues without sync. CloudKit blocking states (no account, restricted) surface retry-able onboarding states.
 
+## In-App Purchase
+
+Villain Arc Pro is an auto-renewing subscription with monthly ($4.99 USD) and yearly ($39.99 USD) tiers. Both include a 7-day free trial. Family Sharing is enabled. Users can subscribe via the Settings → Subscription section or by tapping any of the 5 premium features (AI Plan Generation, AI Exercise Replacement, Health Trends, Sleep Timing Insights, Correlation Insights). Restore Purchases is available in Settings. All other features remain free.
+
 ## Contact
 
 Email: villain-arc@fct-technologies.com

@@ -37,7 +37,9 @@ struct PlanBuilderSheet: View {
                     Section {
                         Button {
                             Haptics.selection()
-                            showAIPrompt = true
+                            SubscriptionGate.require(.aiPlanGeneration) {
+                                showAIPrompt = true
+                            }
                         } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: "sparkles")
@@ -53,6 +55,11 @@ struct PlanBuilderSheet: View {
                                         .multilineTextAlignment(.leading)
                                 }
                                 Spacer()
+                                if !SubscriptionGate.isPro {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundStyle(.purple)
+                                        .accessibilityHidden(true)
+                                }
                                 Image(systemName: "chevron.right")
                                     .foregroundStyle(.tertiary)
                                     .accessibilityHidden(true)

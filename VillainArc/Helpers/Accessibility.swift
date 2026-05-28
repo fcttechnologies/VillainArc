@@ -2,6 +2,20 @@ import Foundation
 import SwiftData
 
 enum AccessibilityIdentifiers {
+    // MARK: - Subscription / Paywall
+    static let paywallRoot = "paywallRoot"
+    static let paywallCloseButton = "paywallCloseButton"
+    static let paywallMonthlyOption = "paywallMonthlyOption"
+    static let paywallYearlyOption = "paywallYearlyOption"
+    static let paywallSubscribeButton = "paywallSubscribeButton"
+    static let paywallRestoreButton = "paywallRestoreButton"
+    static let paywallPlansLoading = "paywallPlansLoading"
+    static let settingsSubscriptionRow = "settingsSubscriptionRow"
+    static let settingsSubscriptionGetProButton = "settingsSubscriptionGetProButton"
+    static let settingsSubscriptionManageButton = "settingsSubscriptionManageButton"
+    static let settingsSubscriptionRestoreButton = "settingsSubscriptionRestoreButton"
+    static let aiReplacementLockedRow = "aiReplacementLockedRow"
+
     // MARK: - ContentView
     static let homeWorkoutSplitSection = "homeWorkoutSplitSection"
     static let homeRecentWorkoutSection = "homeRecentWorkoutSection"

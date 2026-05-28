@@ -5,6 +5,7 @@ import TipKit
 struct ContentView: View {
     @State private var router = AppRouter.shared
     @State private var isMorphingTabBarExpanded = false
+    @State private var paywallPresenter = PaywallPresenter.shared
     @Namespace private var animation
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     
@@ -149,6 +150,9 @@ struct ContentView: View {
                 Task { await IntentDonations.donateStartCardioSession(kind: kind) }
             }
             .presentationBackground(Color.sheetBg)
+        }
+        .fullScreenCover(item: $paywallPresenter.trigger) { feature in
+            PaywallView(triggeringFeature: feature)
         }
         .background {
             ToastOverlaySceneInstaller()
