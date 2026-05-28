@@ -23,41 +23,30 @@ struct WhatsNewSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 32) {
-                    headerSection
+                VStack(alignment: .leading, spacing: 28) {
+                    versionHeader
                     featuresSection
-                    Spacer(minLength: 16)
-                    continueButton
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 32)
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .scrollContentBackground(.hidden)
             .sheetBackground()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { onDismiss() }
-                        .fontWeight(.semibold)
-                        .accessibilityIdentifier("whats_new_done_button")
-                        .accessibilityHint(Text("Closes the What's New sheet."))
-                }
+            .navigationTitle("What's New")
+            .toolbarTitleDisplayMode(.inlineLarge)
+            .safeAreaInset(edge: .bottom) {
+                continueBar
             }
             .accessibilityIdentifier("whats_new_sheet")
         }
     }
 
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("What's New")
-                .font(.largeTitle)
-                .bold()
-                .fontDesign(.rounded)
-            Text("Version \(version)")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .fontDesign(.rounded)
-        }
+    private var versionHeader: some View {
+        Text("Version \(version)")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .fontDesign(.rounded)
     }
 
     private var featuresSection: some View {
@@ -93,7 +82,7 @@ struct WhatsNewSheet: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var continueButton: some View {
+    private var continueBar: some View {
         Button {
             onDismiss()
         } label: {
@@ -104,6 +93,9 @@ struct WhatsNewSheet: View {
         }
         .buttonStyle(.glassProminent)
         .buttonSizing(.flexible)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(.regularMaterial)
         .accessibilityIdentifier("whats_new_continue_button")
         .accessibilityHint(Text("Closes the What's New sheet and continues to the app."))
     }

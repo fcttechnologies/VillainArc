@@ -23,3 +23,15 @@ struct ExerciseHistoryChartTip: Tip {
     var message: Text? { Text("Tap any data point on the chart to see the exact value and date.") }
     var image: Image? { Image(systemName: "chart.line.uptrend.xyaxis") }
 }
+
+struct CardioFavoriteTip: Tip {
+    @Parameter static var appLaunchCount: Int = 0
+
+    var title: Text { Text("Set Your Go-To Cardio") }
+    var message: Text? { Text("Long-press the cardio button to choose your favorite cardio type as the default.") }
+    var image: Image? { Image(systemName: "star") }
+
+    var rules: [Rule] {
+        #Rule(Self.$appLaunchCount) { $0 >= 2 }
+    }
+}

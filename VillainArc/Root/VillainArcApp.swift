@@ -29,6 +29,7 @@ struct VillainArcApp: App {
 
     init() {
         try? Tips.configure([.datastoreLocation(.applicationDefault)])
+        CardioFavoriteTip.appLaunchCount = min(CardioFavoriteTip.appLaunchCount + 1, 100)
     }
 
     var body: some Scene {

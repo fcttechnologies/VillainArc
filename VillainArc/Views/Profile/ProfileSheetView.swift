@@ -529,45 +529,66 @@ struct ProfileSheetView: View {
                 Text("Complete Days")
                     .font(.headline)
                 Spacer()
-                Text("Past 2 months")
+                Text("Past 6 months")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
-                ForEach(profileCompletionDays) { day in
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(completionHeatmapColor(for: day.completionCount))
-                        .aspectRatio(1, contentMode: .fit)
-                        .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
-                        .accessibilityValue(completionAccessibilityValue(for: day))
-                }
+            ScrollView(.horizontal, showsIndicators: false) {
+                profileHeatmapGrid
+                    .padding(.vertical, 2)
             }
             .padding(16)
             .appCardStyle()
 
-            HStack(spacing: 14) {
-                completionLegendItem(count: 1, label: "1")
-                completionLegendItem(count: 2, label: "2")
-                completionLegendItem(count: 3, label: "3")
-                completionLegendItem(count: 4, label: "4")
-                Spacer()
-                Text("Workout, sleep, steps, water")
+            HStack(spacing: 6) {
+                Text(completeDaysCounterText)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text("Less")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 3) {
+                    ForEach(0..<5, id: \.self) { count in
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(completionHeatmapColor(for: count))
+                            .frame(width: 12, height: 12)
+                    }
+                }
+                .accessibilityHidden(true)
+
+                Text("More")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
         }
     }
 
-    private func completionLegendItem(count: Int, label: String) -> some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(completionHeatmapColor(for: count))
-                .frame(width: 12, height: 12)
-            Text(label)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+    private var profileHeatmapGrid: some View {
+        let weeks = profileHeatmapWeeks
+        return HStack(alignment: .top, spacing: 3) {
+            ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
+                VStack(spacing: 3) {
+                    ForEach(0..<7, id: \.self) { dayOfWeek in
+                        if let day = week[dayOfWeek] {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(completionHeatmapColor(for: day.completionCount))
+                                .frame(width: 12, height: 12)
+                                .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
+                                .accessibilityValue(completionAccessibilityValue(for: day))
+                        } else {
+                            Color.clear
+                                .frame(width: 12, height: 12)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -692,7 +713,7 @@ struct ProfileSheetView: View {
         let stepsByDay = Dictionary(uniqueKeysWithValues: stepsEntries.map { (calendar.startOfDay(for: $0.date), $0) })
         let hydrationByDay = Dictionary(uniqueKeysWithValues: hydrationDays.map { (calendar.startOfDay(for: $0.date), $0) })
 
-        return (0..<60).reversed().compactMap { offset in
+        return (0..<profileHeatmapTotalDays).reversed().compactMap { offset in
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
             let sleepNight = sleepByDay[day]
             let stepsEntry = stepsByDay[day]
@@ -704,6 +725,36 @@ struct ProfileSheetView: View {
                 hydrationGoalCompleted: hydrationByDay[day]?.goalCompleted == true
             )
         }
+    }
+
+    private let profileHeatmapTotalDays = 26 * 7
+
+    private var profileHeatmapWeeks: [[ProfileCompletionDay?]] {
+        let calendar = Calendar.autoupdatingCurrent
+        let days = profileCompletionDays
+        guard let firstDay = days.first else { return [] }
+
+        let firstWeekday = calendar.component(.weekday, from: firstDay.date)
+        let weekdayIndex = (firstWeekday + 5) % 7
+
+        var allCells: [ProfileCompletionDay?] = Array(repeating: nil, count: weekdayIndex)
+        allCells.append(contentsOf: days.map { Optional($0) })
+
+        let weekCount = Int((Double(allCells.count) / 7).rounded(.up))
+        let paddedCount = weekCount * 7
+        if allCells.count < paddedCount {
+            allCells.append(contentsOf: Array(repeating: nil, count: paddedCount - allCells.count))
+        }
+
+        return stride(from: 0, to: allCells.count, by: 7).map { weekStart in
+            Array(allCells[weekStart..<min(weekStart + 7, allCells.count)])
+        }
+    }
+
+    private var completeDaysCounterText: String {
+        let count = profileCompletionDays.filter { $0.completionCount == 4 }.count
+        let prefix = count == 1 ? "1 complete day" : "\(count) complete days"
+        return "\(prefix) in the last 6 months"
     }
 
     private func sleepGoalCompleted(on day: Date, sleepNight: HealthSleepNight?) -> Bool {
@@ -721,15 +772,15 @@ struct ProfileSheetView: View {
     private func completionHeatmapColor(for count: Int) -> Color {
         switch count {
         case 0:
-            return Color.secondary.opacity(0.12)
+            return Color.secondary.opacity(0.15)
         case 1:
-            return Color.blue.opacity(0.45)
+            return Color.red.opacity(0.3)
         case 2:
-            return Color.mint.opacity(0.75)
+            return Color.red.opacity(0.55)
         case 3:
-            return Color.green
+            return Color.red.opacity(0.8)
         default:
-            return Color.purple
+            return Color.red
         }
     }
 

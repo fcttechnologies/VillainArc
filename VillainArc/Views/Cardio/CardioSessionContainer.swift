@@ -342,65 +342,6 @@ struct CardioActiveSessionView: View {
     }
 }
 
-struct CardioSessionDetailView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Bindable var session: CardioSession
-    let showsCloseButton: Bool
-    @Query(AppSettings.single) private var appSettings: [AppSettings]
-
-    private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
-    private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
-    private var speedUnit: SpeedUnit { appSettings.first?.speedUnit ?? .systemDefault }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                if session.kind.isOutdoor {
-                    CardioRouteMapView(sessions: [session], showsUserLocation: false)
-                        .frame(height: 360)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-
-                CardioMetricGrid(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit)
-
-                if session.kind.isManual {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Intervals")
-                            .font(.title3.bold())
-                        if session.sortedTreadmillIntervals.isEmpty {
-                            Text("No treadmill intervals were saved.")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            VStack(spacing: 0) {
-                                ForEach(Array(session.sortedTreadmillIntervals.enumerated()), id: \.element.id) { index, interval in
-                                    CardioTreadmillIntervalRow(interval: interval, duration: session.intervalDuration(for: interval), distanceUnit: distanceUnit, speedUnit: speedUnit, onDelete: nil)
-                                        .appGroupedStackRow(position: rowPosition(for: index, count: session.sortedTreadmillIntervals.count))
-                                }
-                            }
-                        }
-                    }
-                    .padding()
-                    .appSurfaceStyle(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-            }
-            .padding()
-        }
-        .appBackground()
-        .navigationTitle(session.displayTitle)
-        .navigationSubtitle(session.startedAt.map { Text($0, style: .date) } ?? Text(""))
-        .toolbarTitleDisplayMode(.inline)
-        .toolbar {
-            if showsCloseButton {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark", role: .close) {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
-
 struct CardioRouteMapView: View {
     let sessions: [CardioSession]
     let showsUserLocation: Bool

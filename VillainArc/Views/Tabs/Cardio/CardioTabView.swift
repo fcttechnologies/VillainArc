@@ -29,7 +29,14 @@ struct CardioTabView: View {
     @Environment(\.modelContext) private var context
 
     private var routeSessions: [CardioSession] {
-        recentSessions.filter { $0.kind.isOutdoor && $0.sortedRoutePoints.count > 1 }
+        recentSessions.filter { session in
+            guard session.kind.isOutdoor else { return false }
+            return (session.routePoints?.count ?? 0) >= 2
+        }
+    }
+
+    private var hasAnyCompletedOutdoorSession: Bool {
+        recentSessions.contains { $0.kind.isOutdoor }
     }
 
     private var standaloneOutdoorWorkouts: [HealthWorkout] {
@@ -51,9 +58,13 @@ struct CardioTabView: View {
                         .blur(radius: routeSessions.isEmpty ? 6 : 0)
                         .overlay {
                             if routeSessions.isEmpty {
-                                ContentUnavailableView("No Routes Yet", systemImage: "map", description: Text("Complete an outdoor run or walk to build your route map."))
-                                    .padding()
-                                    .foregroundStyle(.white)
+                                ContentUnavailableView {
+                                    Label("No Routes Yet", systemImage: "map")
+                                } description: {
+                                    Text(hasAnyCompletedOutdoorSession ? "Your recent outdoor sessions didn't record a route. Start a new one with location enabled." : "Complete an outdoor run or walk to build your route map.")
+                                }
+                                .padding()
+                                .foregroundStyle(.white)
                             }
                         }
                         .overlay(alignment: .topLeading) {
@@ -92,6 +103,8 @@ struct CardioTabView: View {
                 switch destination {
                 case .cardioSessionDetail(let session):
                     CardioSessionDetailView(session: session, showsCloseButton: false)
+                case .healthWorkoutDetail(let workout):
+                    HealthWorkoutDetailView(workout: workout)
                 default:
                     EmptyView()
                 }
@@ -194,7 +207,14 @@ struct CardioTabView: View {
                             .buttonStyle(.plain)
                             .accessibilityIdentifier(AccessibilityIdentifiers.cardioHistoryRow(sessionID: session.id.uuidString))
                         case .healthWorkout(let hw):
-                            CardioHealthWorkoutHistoryRow(workout: hw)
+                            Button {
+                                router.cardioTabPath.append(.healthWorkoutDetail(hw))
+                                router.noteNavigationStateChanged()
+                                Haptics.selection()
+                            } label: {
+                                CardioHealthWorkoutHistoryRow(workout: hw)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .appGroupedStackRow(position: rowPosition(for: index, count: mergedHistory.count))

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import TipKit
 
 struct ContentView: View {
     @State private var router = AppRouter.shared
@@ -230,19 +231,63 @@ struct ContentView: View {
                 })
         }
 
-        if let favoriteKind = appSettings.first?.favoriteCardioKind, !router.hasActiveAuthoringFlow {
-            actions.append(ExpandedAction("Start \(favoriteKind.shortTitle)", icon: favoriteKind.systemImage, accessibilityIdentifier: "morphing_start_favorite_cardio_button", accessibilityHint: "Starts a \(favoriteKind.title) cardio session.") {
+        if !router.hasActiveAuthoringFlow {
+            let favoriteKind = appSettings.first?.favoriteCardioKind
+            let cardioTitle = favoriteKind.map { "Start \($0.shortTitle)" } ?? "Start Cardio"
+            let cardioIcon = favoriteKind?.systemImage ?? "figure.run.motion"
+            let cardioHint = favoriteKind.map { "Starts a \($0.title) cardio session. Long press to change your favorite." } ?? "Opens the cardio tab. Long press to set a favorite cardio type."
+            actions.append(ExpandedAction(
+                cardioTitle,
+                icon: cardioIcon,
+                accessibilityIdentifier: "morphing_start_cardio_button",
+                accessibilityHint: cardioHint,
+                kind: .cardio,
+                contextMenu: AnyView(cardioFavoriteContextMenu()),
+                showsCardioFavoriteTip: favoriteKind == nil
+            ) {
                 collapseMorphingTabBar()
-                if favoriteKind.isOutdoor {
-                    router.requestOutdoorCardioSession(kind: favoriteKind)
+                if let favoriteKind {
+                    if favoriteKind.isOutdoor {
+                        router.requestOutdoorCardioSession(kind: favoriteKind)
+                    } else {
+                        router.requestManualCardioSession(kind: favoriteKind)
+                    }
+                    Task { await IntentDonations.donateStartCardioSession(kind: favoriteKind) }
                 } else {
-                    router.requestManualCardioSession(kind: favoriteKind)
+                    router.selectTab(.cardio)
                 }
-                Task { await IntentDonations.donateStartCardioSession(kind: favoriteKind) }
             })
         }
 
         return actions
+    }
+
+    @ViewBuilder
+    private func cardioFavoriteContextMenu() -> some View {
+        let currentFavorite = appSettings.first?.favoriteCardioKind
+        ForEach(CardioSessionKind.allCases) { kind in
+            Button {
+                setFavoriteCardioKind(kind)
+            } label: {
+                Label(kind.title, systemImage: currentFavorite == kind ? "star.fill" : kind.systemImage)
+            }
+        }
+        if currentFavorite != nil {
+            Divider()
+            Button(role: .destructive) {
+                setFavoriteCardioKind(nil)
+            } label: {
+                Label("Clear Favorite", systemImage: "star.slash")
+            }
+        }
+    }
+
+    private func setFavoriteCardioKind(_ kind: CardioSessionKind?) {
+        guard let settings = appSettings.first else { return }
+        settings.favoriteCardioKind = kind
+        saveContext(context: SharedModelContainer.container.mainContext)
+        Haptics.selection()
+        CardioFavoriteTip().invalidate(reason: .actionPerformed)
     }
 
     private var shouldShowStartTodaysWorkoutAction: Bool {

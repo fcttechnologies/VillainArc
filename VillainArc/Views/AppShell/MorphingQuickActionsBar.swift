@@ -1,4 +1,10 @@
 import SwiftUI
+import TipKit
+
+enum ExpandedActionKind {
+    case generic
+    case cardio
+}
 
 struct ExpandedAction: Identifiable {
     let id = UUID()
@@ -6,13 +12,19 @@ struct ExpandedAction: Identifiable {
     let icon: String
     let accessibilityIdentifier: String
     let accessibilityHint: String
+    let kind: ExpandedActionKind
+    let contextMenu: AnyView?
+    let showsCardioFavoriteTip: Bool
     let action: () -> Void
 
-    init(_ title: String, icon: String, accessibilityIdentifier: String, accessibilityHint: String, action: @escaping () -> Void) {
+    init(_ title: String, icon: String, accessibilityIdentifier: String, accessibilityHint: String, kind: ExpandedActionKind = .generic, contextMenu: AnyView? = nil, showsCardioFavoriteTip: Bool = false, action: @escaping () -> Void) {
         self.title = title
         self.icon = icon
         self.accessibilityIdentifier = accessibilityIdentifier
         self.accessibilityHint = accessibilityHint
+        self.kind = kind
+        self.contextMenu = contextMenu
+        self.showsCardioFavoriteTip = showsCardioFavoriteTip
         self.action = action
     }
 }
@@ -36,26 +48,13 @@ struct MorphingQuickActionsBar: View {
 
 private struct MorphingQuickActionsGrid: View {
     let actions: [ExpandedAction]
+    private let cardioFavoriteTip = CardioFavoriteTip()
 
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 4), alignment: .leading, spacing: 10) {
             ForEach(actions) { action in
                 VStack(alignment: .leading, spacing: 6) {
-                    Button {
-                        Haptics.selection()
-                        action.action()
-                    } label: {
-                        Image(systemName: action.icon)
-                            .font(.title3)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .foregroundStyle(Color.primary)
-                            .background(.gray.opacity(0.09), in: .rect(cornerRadius: 16))
-                    }
-                    .buttonStyle(PlainGlassButtonEffect(shape: .rect(cornerRadius: 16)))
-                    .accessibilityLabel(action.title)
-                    .accessibilityHint(action.accessibilityHint)
-                    .accessibilityIdentifier(action.accessibilityIdentifier)
+                    actionButton(for: action)
 
                     Text(action.title)
                         .font(.system(size: 9))
@@ -70,6 +69,38 @@ private struct MorphingQuickActionsGrid: View {
             }
         }
         .padding(10)
+    }
+
+    @ViewBuilder
+    private func actionButton(for action: ExpandedAction) -> some View {
+        let button = Button {
+            Haptics.selection()
+            action.action()
+        } label: {
+            Image(systemName: action.icon)
+                .font(.title3)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .foregroundStyle(Color.primary)
+                .background(.gray.opacity(0.09), in: .rect(cornerRadius: 16))
+        }
+        .buttonStyle(PlainGlassButtonEffect(shape: .rect(cornerRadius: 16)))
+        .accessibilityLabel(action.title)
+        .accessibilityHint(action.accessibilityHint)
+        .accessibilityIdentifier(action.accessibilityIdentifier)
+
+        if let contextMenu = action.contextMenu {
+            if action.showsCardioFavoriteTip {
+                button
+                    .contextMenu { contextMenu }
+                    .popoverTip(cardioFavoriteTip)
+            } else {
+                button
+                    .contextMenu { contextMenu }
+            }
+        } else {
+            button
+        }
     }
 }
 
