@@ -74,7 +74,7 @@ struct VillainArcShortcuts: AppShortcutsProvider {
                 "Show me today's health summary in \(.applicationName)",
                 "How am I doing today in \(.applicationName)",
                 "Summarize today in \(.applicationName)",
-                "Give me today's health summary in \(.applicationName)"
+                "What are my health stats today in \(.applicationName)"
             ], shortTitle: "Today's Summary", systemImageName: "heart.text.square")
 
         AppShortcut(intent: GetSleepIntent(), phrases: [

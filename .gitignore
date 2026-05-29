@@ -11,3 +11,4 @@ appstore-screenshots/
 .agents/
 .claude/
 skills-lock.json
+.asc/

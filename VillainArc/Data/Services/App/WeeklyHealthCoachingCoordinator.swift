@@ -81,7 +81,11 @@ actor WeeklyHealthCoachingCoordinator {
 
         guard didScheduleNotification else { return }
         syncState.weeklyCoachingLastDeliveredWeekStart = reportWeek.start
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            AppLog.error("WeeklyHealthCoachingCoordinator failed to persist last-delivered week", error: error)
+        }
     }
 
     private func weeklyAverageSteps(in week: ReportWeek, context: ModelContext) -> Int? {

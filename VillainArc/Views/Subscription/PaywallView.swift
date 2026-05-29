@@ -14,6 +14,9 @@ struct PaywallView: View {
     @State private var isPurchasing = false
     @State private var isRestoring = false
     @State private var errorMessage: String?
+    @State private var productsState: ProductsLoadState = .loading
+
+    private enum ProductsLoadState: Equatable { case loading, loaded, failed }
 
     private var monthly: Product? { store.monthlyProduct }
     private var yearly: Product? { store.yearlyProduct }
@@ -25,6 +28,16 @@ struct PaywallView: View {
 
     private var canPurchase: Bool {
         selectedProduct != nil && !isPurchasing && !isRestoring
+    }
+
+    /// Yearly savings vs paying monthly for a year, derived from live prices (no hardcoded percent).
+    private var yearlySavingsPercent: Int? {
+        guard let monthly = store.monthlyProduct, let yearly = store.yearlyProduct else { return nil }
+        let annualizedMonthly = monthly.price * 12
+        guard annualizedMonthly > 0 else { return nil }
+        let fraction = (annualizedMonthly - yearly.price) / annualizedMonthly
+        let percent = Int((NSDecimalNumber(decimal: fraction).doubleValue * 100).rounded())
+        return percent > 0 ? percent : nil
     }
 
     private var ctaTitle: LocalizedStringResource {
@@ -71,10 +84,7 @@ struct PaywallView: View {
             }
         }
         .task {
-            if store.products.isEmpty { await store.loadProducts() }
-            if selectedProductID == nil {
-                selectedProductID = (yearly ?? monthly)?.id
-            }
+            await loadProducts()
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.paywallRoot)
     }
@@ -95,7 +105,7 @@ struct PaywallView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .fontDesign(.rounded)
-                    Text("Plus 4 more premium features.")
+                    Text("Plus \(PremiumFeature.allCases.count - 1) more premium features.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -138,7 +148,30 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var planCards: some View {
-        if store.products.isEmpty {
+        if !store.products.isEmpty {
+            VStack(spacing: 12) {
+                if let yearly {
+                    planCard(for: yearly, isYearly: true)
+                }
+                if let monthly {
+                    planCard(for: monthly, isYearly: false)
+                }
+            }
+        } else if productsState == .failed {
+            VStack(spacing: 10) {
+                Text("Couldn't load subscription options.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Try Again") {
+                    Task { await loadProducts() }
+                }
+                .buttonStyle(.bordered)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding()
+            .appCardStyle()
+        } else {
             HStack {
                 ProgressView()
                 Text("Loading plans…")
@@ -149,15 +182,6 @@ struct PaywallView: View {
             .padding()
             .appCardStyle()
             .accessibilityIdentifier(AccessibilityIdentifiers.paywallPlansLoading)
-        } else {
-            VStack(spacing: 12) {
-                if let yearly {
-                    planCard(for: yearly, isYearly: true)
-                }
-                if let monthly {
-                    planCard(for: monthly, isYearly: false)
-                }
-            }
         }
     }
 
@@ -186,8 +210,8 @@ struct PaywallView: View {
                         Text(isYearly ? LocalizedStringResource("Yearly") : LocalizedStringResource("Monthly"))
                             .font(.headline)
                             .fontDesign(.rounded)
-                        if isYearly {
-                            Text("Save 33%")
+                        if isYearly, let savingsPercent = yearlySavingsPercent {
+                            Text("Save \(savingsPercent)%")
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .padding(.horizontal, 8)
@@ -229,7 +253,7 @@ struct PaywallView: View {
         .accessibilityIdentifier(isYearly ? AccessibilityIdentifiers.paywallYearlyOption : AccessibilityIdentifiers.paywallMonthlyOption)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(isYearly ? LocalizedStringResource("Yearly plan") : LocalizedStringResource("Monthly plan")))
-        .accessibilityValue(Text(product.displayPrice))
+        .accessibilityValue(Text(planAccessibilityValue(for: product, isYearly: isYearly)))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -251,6 +275,14 @@ struct PaywallView: View {
         case .year: return 365 * period.value
         @unknown default: return period.value
         }
+    }
+
+    private func planAccessibilityValue(for product: Product, isYearly: Bool) -> String {
+        var parts = [product.displayPrice, periodSubtitle(for: product, isYearly: isYearly)]
+        if isYearly, let savingsPercent = yearlySavingsPercent {
+            parts.append(String(localized: "Save \(savingsPercent)%"))
+        }
+        return parts.joined(separator: ". ")
     }
 
     // MARK: - Trial footer
@@ -331,6 +363,17 @@ struct PaywallView: View {
     }
 
     // MARK: - Actions
+
+    private func loadProducts() async {
+        if store.products.isEmpty {
+            productsState = .loading
+            await store.loadProducts()
+        }
+        productsState = store.products.isEmpty ? .failed : .loaded
+        if selectedProductID == nil {
+            selectedProductID = (yearly ?? monthly)?.id
+        }
+    }
 
     private func handlePurchase() async {
         guard let product = selectedProduct else { return }

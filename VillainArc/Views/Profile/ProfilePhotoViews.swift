@@ -25,10 +25,13 @@ struct ProfileAvatarBadge: View {
     let imageData: Data?
     let size: CGFloat
 
+    @Environment(\.displayScale) private var displayScale
+    @State private var decodedImage: UIImage?
+
     var body: some View {
         ZStack {
-            if let uiImage {
-                Image(uiImage: uiImage)
+            if let decodedImage {
+                Image(uiImage: decodedImage)
                     .resizable()
                     .scaledToFill()
             } else {
@@ -49,11 +52,21 @@ struct ProfileAvatarBadge: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
+        // Decode + downsample once, off the main thread, keyed by the image data — avoids
+        // re-decoding the full-size (up to 1024pt) JPEG into a bitmap on every body pass.
+        .task(id: imageData) { await decodeThumbnail() }
     }
 
-    private var uiImage: UIImage? {
-        guard let imageData else { return nil }
-        return UIImage(data: imageData)
+    private func decodeThumbnail() async {
+        guard let imageData else {
+            decodedImage = nil
+            return
+        }
+        let pixelSize = CGSize(width: size * displayScale, height: size * displayScale)
+        let thumbnail = await Task.detached(priority: .userInitiated) {
+            UIImage(data: imageData)?.preparingThumbnail(of: pixelSize)
+        }.value
+        decodedImage = thumbnail
     }
 
     private var initials: String? {

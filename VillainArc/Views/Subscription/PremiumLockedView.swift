@@ -7,6 +7,12 @@ import SwiftUI
 struct PremiumLockedView: View {
     let feature: PremiumFeature
 
+    @State private var store = SubscriptionStore.shared
+
+    private var ctaTitle: LocalizedStringResource {
+        store.isEligibleForIntroOffer ? "Start Free Trial" : "Unlock Pro"
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .center, spacing: 18) {
@@ -34,7 +40,7 @@ struct PremiumLockedView: View {
                     Haptics.selection()
                     PaywallPresenter.shared.present(for: feature)
                 } label: {
-                    Text("Start Free Trial")
+                    Text(ctaTitle)
                         .fontWeight(.semibold)
                         .font(.headline)
                         .padding(.vertical, 4)
@@ -43,7 +49,7 @@ struct PremiumLockedView: View {
                 .buttonSizing(.flexible)
                 .padding(.horizontal, 24)
 
-                Text("Plus 4 more premium features.")
+                Text("Plus \(PremiumFeature.allCases.count - 1) more premium features.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

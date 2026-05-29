@@ -8,7 +8,14 @@ import UIKit
 /// MetricKit payloads are sanitized by Apple (no PII, symbolicated stack traces). We persist on receipt
 /// but never upload anywhere automatically — the user must explicitly tap "Send Diagnostic" in Settings
 /// to email the latest payload.
-final class MetricsService: NSObject, MXMetricManagerSubscriber {
+///
+/// `nonisolated` is required: MetricKit delivers the `didReceive(_:)` callbacks on a background queue, but
+/// the target's default actor isolation is MainActor. Without this, the `@objc` subscriber callback asserts
+/// the main-actor executor off-main and traps (`dispatch_assert_queue`) before its body even runs. All work
+/// here is background-safe file I/O, so the whole type opts out of MainActor like `AppLog`. The type holds
+/// only immutable `let` state, so it is `@unchecked Sendable` (needed because the `NSObject` base is not
+/// Sendable); that keeps the `shared` singleton usable from both the main thread and MetricKit's queue.
+nonisolated final class MetricsService: NSObject, MXMetricManagerSubscriber, @unchecked Sendable {
 
     static let shared = MetricsService()
 

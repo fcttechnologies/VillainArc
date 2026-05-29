@@ -64,9 +64,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <StoreKitConfigurationFileReference
-         identifier = "VillainArc/VillainArc.storekit">
-      </StoreKitConfigurationFileReference>
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
@@ -83,6 +80,9 @@
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
+      <StoreKitConfigurationFileReference
+         identifier = "VillainArc/VillainArc.storekit">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

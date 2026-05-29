@@ -73,7 +73,11 @@ import SwiftData
             didUpdate = true
         }
         if didUpdate {
-            try? context.save()
+            do {
+                try context.save()
+            } catch {
+                AppLog.error("WorkoutSplit failed to persist rotation update", error: error)
+            }
         }
     }
 

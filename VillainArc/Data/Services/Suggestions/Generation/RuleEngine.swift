@@ -513,7 +513,8 @@ struct RuleEngine {
 
             // Stability filter: skip if weights are trending (spread wider than one increment
             // indicates active progression rather than a stable calibration discrepancy).
-            let spread = weights.max()! - weights.min()!
+            guard let lowestWeight = weights.min(), let highestWeight = weights.max() else { continue }
+            let spread = highestWeight - lowestWeight
             guard spread <= increment else { continue }
 
             let newWeight = roundSuggestedWeight(median(of: weights), context: context)

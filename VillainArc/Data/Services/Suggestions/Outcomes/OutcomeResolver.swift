@@ -101,7 +101,11 @@ struct OutcomeResolver {
         }
 
         // Step 6: Persist
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            AppLog.error("OutcomeResolver failed to persist outcome resolution", error: error)
+        }
     }
 
     // MARK: - Gather Eligible Events

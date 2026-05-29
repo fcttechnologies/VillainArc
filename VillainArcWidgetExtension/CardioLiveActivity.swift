@@ -104,7 +104,7 @@ private struct CardioLiveActivityExpandedView: View {
 private struct CardioLiveActivityMetricView: View {
     let systemImage: String
     let value: String
-    let title: String
+    let title: LocalizedStringKey
     var alignment: HorizontalAlignment = .leading
 
     var body: some View {

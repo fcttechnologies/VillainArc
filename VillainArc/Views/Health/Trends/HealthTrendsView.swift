@@ -39,7 +39,7 @@ enum HealthTrendRange: String, CaseIterable, Identifiable {
 }
 
 struct HealthTrendPoint: Identifiable, Equatable {
-    let id = UUID()
+    var id: Date { date }
     let date: Date
     let value: Double
 }

@@ -98,7 +98,11 @@ enum SplitScheduleResolver {
             let lastUpdatedDay = split.rotationLastUpdatedDate.map(calendar.startOfDay(for:))
             guard lastUpdatedDay != startToday else { return }
             split.rotationLastUpdatedDate = startToday
-            try? context.save()
+            do {
+                try context.save()
+            } catch {
+                AppLog.error("SplitScheduleResolver failed to persist paused rotation update", error: error)
+            }
             return
         }
 

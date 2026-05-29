@@ -1410,7 +1410,7 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower || $0.changeType == .decreaseRepRangeLower } == false)
     }
 
-    @Test @MainActor func targetRepRangeSuggestsRangeWhenRecentSessionsSpanABand() throws {
+    @Test @MainActor func targetRepRange_doesNotSuggestModeChange_whenRecentSessionsSpanABand() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian (median) can be >= target-1 even if one set is below.
         // This ensures confirmedProgressionTarget (allSatisfy reps >= target-1) doesn't fire
@@ -1436,13 +1436,11 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
 
-        #expect(suggestions.contains { $0.targetSetPrescription == nil })
-        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
-        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 7 })
-        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil } == false)
+        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
     }
 
-    @Test @MainActor func targetRepRangeSuggestsRangeFromRepeatedWithinSessionBand() throws {
+    @Test @MainActor func targetRepRange_doesNotSuggestModeChange_fromRepeatedWithinSessionBand() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian (median of set reps) can be >= target-1 even if the
         // lowest set is below target-1, preventing confirmedProgressionTarget from firing.
@@ -1467,13 +1465,11 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
 
-        #expect(suggestions.contains { $0.targetSetPrescription == nil })
-        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode })
-        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
-        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 7 })
+        #expect(suggestions.contains { $0.targetSetPrescription == nil } == false)
+        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
     }
 
-    @Test @MainActor func targetRepRangeRobustFittingIgnoresSingleHighOutlierSet() throws {
+    @Test @MainActor func targetRepRange_doesNotSuggestRangeReconfiguration_forSingleHighOutlierSet() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian can be >= target-1 even when one set is below,
         // preventing confirmedProgressionTarget from firing (same strategy as the other range tests).
@@ -1498,9 +1494,8 @@ struct SuggestionSystemTests {
         let suggestions = RuleEngine.evaluate(context: suggestionContext)
         let exerciseChanges = exerciseLevelChanges(from: suggestions)
 
-        #expect(suggestions.contains { $0.targetSetPrescription == nil })
-        #expect(exerciseChanges.contains { $0.changeType == .decreaseRepRangeUpper && $0.newValue == 10 })
-        #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeUpper && $0.newValue == 15 } == false)
+        #expect(suggestions.contains { $0.targetSetPrescription == nil } == false)
+        #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
     }
     @Test @MainActor func setLevelSuggestionBlocksExerciseLevelRepRangeSuggestion() throws {
         let context = try TestDataFactory.makeContext()

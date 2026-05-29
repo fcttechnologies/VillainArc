@@ -98,4 +98,12 @@ struct SchemaMigrationTests {
         #expect(migratedSyncState.respiratoryRateSyncedRangeStart == nil)
         #expect(migratedSyncState.dietaryWaterSyncedRangeStart == nil)
     }
+
+    /// Tripwire for the build-2 crash class (a new `@Model` added to the codebase but missing
+    /// from the active schema's `models` array silently breaks fetches/migration). Update this
+    /// count deliberately whenever a new `@Model` ships in the active (V5) schema.
+    @Test @MainActor
+    func v5SchemaIncludesEveryActiveModel() {
+        #expect(VillainArcSchemaV5.models.count == 40)
+    }
 }

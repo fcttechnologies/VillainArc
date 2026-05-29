@@ -283,7 +283,7 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         }
     }
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
         Task { @MainActor in
             AppRouter.shared.presentNotificationSettingsFromSystem()
         }
