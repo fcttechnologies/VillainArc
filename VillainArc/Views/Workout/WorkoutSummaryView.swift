@@ -1,26 +1,19 @@
 import SwiftUI
 import SwiftData
 import StoreKit
+import TipKit
 
 struct WorkoutSummaryView: View {
-    private enum PRType: String, CaseIterable {
+    private enum PRType: String {
         case estimated1RM = "1RM"
         case maxWeight = "Max Weight"
         case maxReps = "Max Reps"
         case totalVolume = "Total Volume"
-
-        var shortLabel: String {
-            switch self {
-            case .estimated1RM: return String(localized: "1RM")
-            case .maxWeight: return String(localized: "max weight")
-            case .maxReps: return String(localized: "max reps")
-            case .totalVolume: return String(localized: "total volume")
-            }
-        }
     }
 
     private struct PRItem: Identifiable {
         let id = UUID()
+        let catalogID: String
         let exerciseName: String
         let types: [PRType]
         let values: [PRType: Double]
@@ -49,15 +42,15 @@ struct WorkoutSummaryView: View {
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
     @State private var prEntries: [PRItem] = []
-    @State private var prTypesByCatalogID: [String: Set<PRType>] = [:]
+    @State private var prItemsByCatalogID: [String: PRItem] = [:]
     @State private var workoutHealthSummaryItems: [SummaryStatItem] = []
     @State private var isGeneratingSuggestions = false
     @State private var isSaving = false
     @State private var didSaveWorkoutAsPlan = false
-    @State private var showPRSection = true
     @State private var sessionOutcomeSelection: SessionOutcome = .notSet
     @State private var hasRateableSuggestionEvents = false
     @State private var appliedFeedbackEventIDs: Set<UUID> = []
+    private let suggestionDeferTip = SuggestionDeferTip()
 
     private var formattedTotalVolume: String {
         formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...1)
@@ -84,6 +77,10 @@ struct WorkoutSummaryView: View {
 
     private var suggestionSections: [ExerciseSuggestionSection] {
         groupSuggestions(sessionSuggestionEvents)
+    }
+
+    private var pendingSuggestionCount: Int {
+        sessionSuggestionEvents.filter { $0.decision == .pending }.count
     }
 
     init(workout: WorkoutSession) {
@@ -178,8 +175,6 @@ struct WorkoutSummaryView: View {
                         hardDaySection(feeling: hardDayFeeling)
                     }
 
-                    exerciseRecapSection
-
                     if hasRateableSuggestionEvents {
                         outcomeSection
                     }
@@ -208,9 +203,7 @@ struct WorkoutSummaryView: View {
                         }
                     }
 
-                    if !prEntries.isEmpty {
-                        prDisclosureSection
-                    }
+                    exerciseRecapSection
                 }
                 .fontDesign(.rounded)
                 .padding(.horizontal)
@@ -230,10 +223,14 @@ struct WorkoutSummaryView: View {
                         }
                     }
                     .disabled(isGeneratingSuggestions || isSaving)
+                    .popoverTip(suggestionDeferTip)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryDoneButton)
                     .accessibilityLabel(AccessibilityText.workoutSummaryDoneLabel)
                     .accessibilityHint(AccessibilityText.workoutSummaryDoneHint)
                 }
+            }
+            .onChange(of: pendingSuggestionCount, initial: true) { _, newValue in
+                SuggestionDeferTip.hasPendingSuggestions = newValue > 0
             }
             .task(id: workout.id) {
                 loadPRs()
@@ -304,90 +301,60 @@ struct WorkoutSummaryView: View {
     }
 
     private func exerciseRecapCard(_ exercise: ExercisePerformance) -> some View {
-        let workingSets = exercise.sortedSets.filter { $0.complete && $0.type != .warmup }
-        let prTypes = prTypesByCatalogID[exercise.catalogID] ?? []
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
+        let prItem = prItemsByCatalogID[exercise.catalogID]
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
                 Text(exercise.name)
                     .font(.headline)
                     .lineLimit(2)
-                Spacer()
-                if !prTypes.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "trophy.fill")
-                            .font(.caption)
-                        Text(prTypes.count == 1 ? "PR" : "\(prTypes.count) PRs")
-                            .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if let prItem, !prItem.types.isEmpty {
+                    prCapsule(count: prItem.types.count)
+                }
+            }
+
+            Divider()
+
+            ExerciseSetTable(
+                rows: exercise.sortedSets,
+                repsText: { $0.reps > 0 ? "\($0.reps)" : "-" },
+                weightText: { $0.weight > 0 ? formattedWeightText($0.weight, unit: weightUnit) : "-" },
+                restText: { $0.effectiveRestSeconds > 0 ? secondsToTime($0.effectiveRestSeconds) : "-" }
+            ) { set in
+                ExerciseHistorySetIndicator(set: set)
+            }
+
+            if let prItem, !prItem.types.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(prItem.types, id: \.self) { type in
+                        Text(prValueText(type: type, value: prItem.values[type] ?? 0))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.yellow.opacity(0.25), in: Capsule())
-                    .foregroundStyle(.primary)
                 }
-            }
-            if workingSets.isEmpty {
-                Text("No working sets logged.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(workingSets, id: \.id) { set in
-                        recapSetRow(set, isPR: setEarnsPR(set, in: workingSets, prTypes: prTypes))
-                    }
-                }
-            }
-            if !prTypes.isEmpty {
-                Text(prSummaryText(for: prTypes))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(12)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .appCardStyle()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryExerciseRecapCard(exercise.catalogID))
     }
 
-    private func recapSetRow(_ set: SetPerformance, isPR: Bool) -> some View {
-        let setNumber = (set.exercise?.sortedSets.firstIndex(where: { $0.id == set.id }) ?? 0) + 1
-        let weightText = formattedWeightText(set.weight, unit: weightUnit)
-        var pieces: [String] = ["\(setNumber).", "\(weightText) × \(set.reps)"]
-        if let rpe = set.visibleRPE {
-            pieces.append("@ \(rpe)")
+    private func prCapsule(count: Int) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "trophy.fill")
+                .font(.caption)
+            Text(count == 1 ? "PR" : "\(count) PRs")
+                .font(.caption)
+                .fontWeight(.semibold)
         }
-        return HStack(spacing: 6) {
-            if isPR {
-                Image(systemName: "trophy.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.yellow)
-                    .accessibilityHidden(true)
-            }
-            Text(pieces.joined(separator: " "))
-                .font(.subheadline)
-                .fontWeight(isPR ? .semibold : .regular)
-                .foregroundStyle(isPR ? .primary : .secondary)
-        }
-    }
-
-    private func setEarnsPR(_ set: SetPerformance, in workingSets: [SetPerformance], prTypes: Set<PRType>) -> Bool {
-        guard !prTypes.isEmpty else { return false }
-        if prTypes.contains(.estimated1RM), let topSet = workingSets.max(by: { ($0.estimated1RM ?? 0) < ($1.estimated1RM ?? 0) }), topSet.id == set.id {
-            return true
-        }
-        if prTypes.contains(.maxWeight), let topWeight = workingSets.map(\.weight).max(), set.weight == topWeight && set.weight > 0 {
-            return true
-        }
-        if prTypes.contains(.maxReps), let topReps = workingSets.map(\.reps).max(), set.reps == topReps && set.reps > 0 {
-            return true
-        }
-        return false
-    }
-
-    private func prSummaryText(for prTypes: Set<PRType>) -> String {
-        let labels = PRType.allCases.compactMap { prTypes.contains($0) ? $0.shortLabel : nil }
-        return String(localized: "New \(ListFormatter.localizedString(byJoining: labels))")
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.yellow.opacity(0.25), in: Capsule())
+        .foregroundStyle(.primary)
+        .accessibilityLabel(count == 1 ? "1 personal record" : "\(count) personal records")
     }
 
     private var outcomeSection: some View {
@@ -497,52 +464,6 @@ struct WorkoutSummaryView: View {
         }
     }
 
-    private var prDisclosureSection: some View {
-        DisclosureGroup(isExpanded: $showPRSection) {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(prEntries) { entry in
-                    prRow(entry)
-                }
-            }
-            .padding(.top, 10)
-        } label: {
-            HStack(spacing: 8) {
-                Text("Personal Records")
-                    .font(.headline)
-                Spacer()
-                Text("\(prCount)")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(12)
-        .appCardStyle()
-        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryPRSection)
-        .accessibilityLabel(AccessibilityText.workoutSummaryPRSectionLabel)
-        .accessibilityValue(AccessibilityText.workoutSummaryPRSectionValue(count: prCount))
-    }
-
-    private func prRow(_ entry: PRItem) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(entry.exerciseName)
-                .font(.headline)
-                .lineLimit(1)
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(entry.types, id: \.self) { type in
-                    Text(prValueText(type: type, value: entry.values[type] ?? 0))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fontWeight(.semibold)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fontDesign(.rounded)
-        .padding(10)
-        .appCardStyle()
-    }
-
     private func loadPRs() {
         let exercises = workout.sortedExercises
         let catalogIDs = Set(exercises.map { $0.catalogID })
@@ -552,14 +473,14 @@ struct WorkoutSummaryView: View {
         let prSummaries = combinedPRSummaries(from: exercises)
 
         var entries: [PRItem] = []
-        var typesByCatalog: [String: Set<PRType>] = [:]
+        var itemsByCatalog: [String: PRItem] = [:]
         for summary in prSummaries {
             guard let entry = prEntry(for: summary, history: historyMap[summary.catalogID]) else { continue }
             entries.append(entry)
-            typesByCatalog[summary.catalogID] = Set(entry.types)
+            itemsByCatalog[summary.catalogID] = entry
         }
         prEntries = entries
-        prTypesByCatalogID = typesByCatalog
+        prItemsByCatalogID = itemsByCatalog
     }
 
     private func refreshRateableSuggestionEvents() {
@@ -625,7 +546,7 @@ struct WorkoutSummaryView: View {
     private func prEntry(for summary: WorkoutExercisePRSummary, history: ExerciseHistory?) -> PRItem? {
         let (types, values) = prTypesAndValues(for: summary, history: history)
         guard !types.isEmpty else { return nil }
-        return PRItem(exerciseName: summary.exerciseName, types: types.sorted { $0.rawValue < $1.rawValue }, values: values)
+        return PRItem(catalogID: summary.catalogID, exerciseName: summary.exerciseName, types: types.sorted { $0.rawValue < $1.rawValue }, values: values)
     }
 
     private func prTypesAndValues(for summary: WorkoutExercisePRSummary, history: ExerciseHistory?) -> (types: [PRType], values: [PRType: Double]) {

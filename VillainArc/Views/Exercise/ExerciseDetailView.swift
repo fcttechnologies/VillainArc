@@ -119,6 +119,7 @@ struct ExerciseDetailView: View {
 
     @State private var selectedMetric: ChartMetric = .topWeight
     @State private var suggestionSettingsExercise: Exercise?
+    @State private var addedConfirmationDestination: ActiveFlowAddDestination?
     private let exerciseHistoryChartTip = ExerciseHistoryChartTip()
     #if DEBUG
     @State private var isSeedingDebugHistory = false
@@ -139,12 +140,38 @@ struct ExerciseDetailView: View {
         histories.first
     }
 
-    private var activeFlowAddLabel: String? {
+    private enum ActiveFlowAddDestination {
+        case workout
+        case plan
+
+        var addLabel: String {
+            switch self {
+            case .workout: return String(localized: "Add to Workout")
+            case .plan: return String(localized: "Add to Plan")
+            }
+        }
+
+        var confirmationTitle: String {
+            switch self {
+            case .workout: return String(localized: "Added to Workout")
+            case .plan: return String(localized: "Added to Plan")
+            }
+        }
+
+        func confirmationMessage(exerciseName: String) -> String {
+            switch self {
+            case .workout: return String(localized: "\(exerciseName) was added to your active workout.")
+            case .plan: return String(localized: "\(exerciseName) was added to your active plan.")
+            }
+        }
+    }
+
+    private var activeFlowAddDestination: ActiveFlowAddDestination? {
         if appRouter.activeWorkoutSession?.statusValue == .active {
-            return "Add to Workout"
+            return .workout
         }
         if appRouter.activeWorkoutPlan != nil {
-            return "Add to Plan"
+            return .plan
         }
         return nil
     }
@@ -377,6 +404,15 @@ struct ExerciseDetailView: View {
             ExerciseSuggestionSettingsSheet(exercise: exercise)
                 .presentationBackground(Color.sheetBg)
         }
+        .alert(addedConfirmationDestination?.confirmationTitle ?? "", isPresented: addedConfirmationBinding) {
+            Button("OK", role: .cancel) {
+                addedConfirmationDestination = nil
+            }
+        } message: {
+            if let destination = addedConfirmationDestination {
+                Text(destination.confirmationMessage(exerciseName: displayName))
+            }
+        }
         .overlay {
             if exercise == nil {
                 ContentUnavailableView("No Exercise History", systemImage: "chart.line.uptrend.xyaxis", description: Text("Complete this exercise in a workout to see progress and personal records."))
@@ -415,12 +451,14 @@ struct ExerciseDetailView: View {
                     .disabled(isSeedingDebugHistory)
                     #endif
 
-                    if let addLabel = activeFlowAddLabel {
-                        Button(addLabel, systemImage: "plus") {
-                            _ = appRouter.addExerciseToActiveFlow(exercise)
+                    if let destination = activeFlowAddDestination {
+                        Button(destination.addLabel, systemImage: "plus") {
+                            if appRouter.addExerciseToActiveFlow(exercise) {
+                                addedConfirmationDestination = destination
+                            }
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailAddToActiveFlowButton)
-                        .accessibilityLabel(addLabel)
+                        .accessibilityLabel(destination.addLabel)
                     }
 
                     if totalSessions > 0 {
@@ -432,6 +470,17 @@ struct ExerciseDetailView: View {
                 }
             }
         }
+    }
+
+    private var addedConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { addedConfirmationDestination != nil },
+            set: { isPresented in
+                if !isPresented {
+                    addedConfirmationDestination = nil
+                }
+            }
+        )
     }
 
     private var hasContent: Bool {

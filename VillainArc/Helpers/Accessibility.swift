@@ -286,6 +286,10 @@ enum AccessibilityIdentifiers {
     static let exerciseProgressionStepValueField = "exerciseProgressionStepValueField"
     static let exerciseSuggestionSettingsSaveButton = "exerciseSuggestionSettingsSaveButton"
 
+    // MARK: - ExerciseInfoView
+    static let exerciseInfoFavoriteButton = "exerciseInfoFavoriteButton"
+    static let exerciseInfoSuggestionSettingsButton = "exerciseInfoSuggestionSettingsButton"
+
     // MARK: - ExerciseHistoryView
     static let exerciseHistoryEmptyState = "exerciseHistoryEmptyState"
     static let exerciseHistoryList = "exerciseHistoryList"

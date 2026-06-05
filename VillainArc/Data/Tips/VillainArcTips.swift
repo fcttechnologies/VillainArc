@@ -12,10 +12,16 @@ struct ExerciseContextMenuTip: Tip {
     var image: Image? { Image(systemName: "hand.tap") }
 }
 
-struct SuggestionReviewTip: Tip {
-    var title: Text { Text("Review Suggestions") }
-    var message: Text? { Text("Swipe a suggestion to accept or reject it, or tap to see the full detail.") }
-    var image: Image? { Image(systemName: "arrow.left.arrow.right") }
+struct SuggestionDeferTip: Tip {
+    @Parameter static var hasPendingSuggestions: Bool = false
+
+    var title: Text { Text("Decide Later") }
+    var message: Text? { Text("Tap Done to save your workout. Any suggestions you haven't accepted or rejected are deferred for you to review later.") }
+    var image: Image? { Image(systemName: "checkmark.circle") }
+
+    var rules: [Rule] {
+        #Rule(Self.$hasPendingSuggestions) { $0 == true }
+    }
 }
 
 struct ExerciseHistoryChartTip: Tip {

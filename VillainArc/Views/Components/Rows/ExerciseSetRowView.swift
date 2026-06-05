@@ -49,8 +49,21 @@ struct ExerciseSetRowView: View {
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
+    var preferredWeightChangeKg: Double? = nil
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
+
+    /// The exercise's preferred progression step, in the user's display unit.
+    /// `nil` when no preferred step is set, which hides the weight +/- controls.
+    private var weightStepDisplay: Double? {
+        guard let preferredWeightChangeKg, preferredWeightChangeKg > 0 else { return nil }
+        let value = roundedDisplayValue(weightUnit.fromKg(preferredWeightChangeKg), fractionDigits: 2)
+        return value > 0 ? value : nil
+    }
+
+    private var weightStepLabel: String {
+        (weightStepDisplay ?? 0).formatted(.number.precision(.fractionLength(0...2)))
+    }
 
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
@@ -201,6 +214,11 @@ struct ExerciseSetRowView: View {
             Spacer()
         }
         .animation(reduceMotion ? .none : .bouncy, value: set.complete)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                keyboardToolbarContent
+            }
+        }
         .onChange(of: focusedField) { _, field in
             guard field != nil else { return }
             selectAllFocusedText()
@@ -233,6 +251,40 @@ struct ExerciseSetRowView: View {
         }
     }
     
+    @ViewBuilder
+    private var keyboardToolbarContent: some View {
+        if focusedField == .weight, let step = weightStepDisplay {
+            Button("−\(weightStepLabel)") { adjustWeight(by: -step) }
+            Button("+\(weightStepLabel)") { adjustWeight(by: step) }
+        } else if focusedField == .reps {
+            Button("−1") { adjustReps(by: -1) }
+            Button("+1") { adjustReps(by: 1) }
+        }
+
+        Spacer()
+
+        Button {
+            dismissKeyboard()
+            focusedField = nil
+        } label: {
+            Image(systemName: "keyboard.chevron.compact.down")
+        }
+        .accessibilityLabel("Dismiss Keyboard")
+    }
+
+    private func adjustReps(by delta: Int) {
+        Haptics.selection()
+        set.reps = max(0, set.reps + delta)
+    }
+
+    private func adjustWeight(by delta: Double) {
+        Haptics.selection()
+        // The step already reflects each equipment type's weight semantics (per-side,
+        // assistance, or added bodyweight load), so bump the entered value directly and
+        // clamp at 0 to keep assisted/bodyweight loads from going negative.
+        set.weight = max(0, roundedDisplayValue(set.weight + delta, fractionDigits: 2))
+    }
+
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)

@@ -53,6 +53,7 @@ struct ExerciseInfoView: View {
     let onToggleSelect: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @Query private var exercises: [Exercise]
     @Query private var histories: [ExerciseHistory]
     @Query private var performances: [ExercisePerformance]
@@ -61,6 +62,7 @@ struct ExerciseInfoView: View {
     private let appRouter = AppRouter.shared
 
     @State private var selectedMetric: ChartMetric = .estimatedOneRepMax
+    @State private var suggestionSettingsExercise: Exercise?
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private var exercise: Exercise? { exercises.first }
@@ -92,6 +94,9 @@ struct ExerciseInfoView: View {
                         howToSection
                     }
                     recentSection
+                    if let exercise {
+                        suggestionSettingsSection(for: exercise)
+                    }
                 }
                 .padding([.horizontal, .bottom])
                 .padding(.top, 12)
@@ -102,6 +107,22 @@ struct ExerciseInfoView: View {
             .navigationSubtitle(Text(exercise?.detailSubtitle ?? ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if let exercise {
+                        Button {
+                            Haptics.selection()
+                            exercise.toggleFavorite()
+                            saveContext(context: context)
+                            Task { await IntentDonations.donateToggleExerciseFavorite(exercise: exercise) }
+                        } label: {
+                            Image(systemName: exercise.favorite ? "star.fill" : "star")
+                                .foregroundStyle(exercise.favorite ? .yellow : .primary)
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseInfoFavoriteButton)
+                        .accessibilityLabel(exercise.favorite ? "Unfavorite Exercise" : "Favorite Exercise")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         Haptics.selection()
@@ -109,15 +130,15 @@ struct ExerciseInfoView: View {
                         if !isSelected { dismiss() }
                     } label: {
                         Image(systemName: isSelected ? "checkmark" : "plus")
-                            .font(.title3)
                             .foregroundStyle(isSelected ? .blue : .primary)
                             .contentTransition(.symbolEffect(.replace))
-                            .padding(3)
                     }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
                     .accessibilityLabel(isSelected ? "Remove from Workout" : "Add to Workout")
                 }
+            }
+            .sheet(item: $suggestionSettingsExercise) { exercise in
+                ExerciseSuggestionSettingsSheet(exercise: exercise)
+                    .presentationBackground(Color.sheetBg)
             }
         }
         .task(id: availableMetrics.map(\.rawValue).joined(separator: ",")) {
@@ -345,12 +366,14 @@ struct ExerciseInfoView: View {
                 Text("Recent Sessions")
                     .font(.headline)
                 Spacer()
-                NavigationLink {
-                    ExerciseHistoryView(catalogID: catalogID)
-                } label: {
-                    Text("See All")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                if !recentPerformances.isEmpty {
+                    NavigationLink {
+                        ExerciseHistoryView(catalogID: catalogID)
+                    } label: {
+                        Text("See All")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
                 }
             }
 
@@ -370,6 +393,57 @@ struct ExerciseInfoView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Suggestion Settings
+
+    private func suggestionSettingsSection(for exercise: Exercise) -> some View {
+        Button {
+            Haptics.selection()
+            suggestionSettingsExercise = exercise
+        } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(suggestionSettingsTitle(for: exercise))
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+
+                Text(suggestionSettingsDescription(for: exercise))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .appCardStyle()
+            .tint(.primary)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseInfoSuggestionSettingsButton)
+        .accessibilityHint(AccessibilityText.exerciseDetailSuggestionSettingsHint)
+    }
+
+    private func suggestionSettingsTitle(for exercise: Exercise) -> String {
+        if exercise.suggestionsEnabled {
+            return "Exercise Suggestions (\(exercise.equipmentType.progressionStepValueText(preferredWeightChange: exercise.preferredWeightChange, unit: weightUnit)))"
+        }
+
+        return "Exercise Suggestions (Off)"
+    }
+
+    private func suggestionSettingsDescription(for exercise: Exercise) -> String {
+        if exercise.suggestionsEnabled {
+            return exercise.equipmentType.progressionStepCardDescription
+        }
+
+        return "Villain Arc will not generate suggestions for this exercise until you turn them back on."
     }
 }
 

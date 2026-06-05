@@ -403,7 +403,7 @@ private struct ExerciseHistoryCopyRequest {
     }
 }
 
-private struct ExerciseHistorySetIndicator: View {
+struct ExerciseHistorySetIndicator: View {
     let set: SetPerformance
     
     var body: some View {

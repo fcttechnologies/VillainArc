@@ -24,6 +24,7 @@ struct ExerciseView: View {
     @State private var restTimeSnapshotBySetID: [UUID: Int] = [:]
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
     @State private var showsPreviousInstead: Bool?
+    @State private var preferredWeightChangeKg: Double?
     private let exerciseContextMenuTip = ExerciseContextMenuTip()
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
@@ -193,7 +194,7 @@ struct ExerciseView: View {
 
                     ForEach(exercise.sortedSets) { set in
                         GridRow {
-                            ExerciseSetRowView(set: set, exercise: exercise, appSettingsSnapshot: appSettingsSnapshot, referenceData: referenceData(for: set), fieldWidth: fieldWidth)
+                            ExerciseSetRowView(set: set, exercise: exercise, appSettingsSnapshot: appSettingsSnapshot, referenceData: referenceData(for: set), fieldWidth: fieldWidth, preferredWeightChangeKg: preferredWeightChangeKg)
                         }
                         .font(.title3)
                         .fontWeight(.semibold)
@@ -269,6 +270,7 @@ struct ExerciseView: View {
             }
             .task(id: exercise.catalogID) {
                 loadPreviousReferenceDataIfNeeded()
+                loadPreferredWeightChange()
             }
             .onChange(of: appSettingsSnapshot.previousSetReferenceSource) {
                 previousReferenceBySetIndex = [:]
@@ -329,6 +331,10 @@ struct ExerciseView: View {
         guard let sourceExercise = try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first else { return }
         progressionStepExercise = sourceExercise
         Haptics.selection()
+    }
+
+    private func loadPreferredWeightChange() {
+        preferredWeightChangeKg = (try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first)?.preferredWeightChange
     }
     
     private func captureRestTimeSnapshot() {

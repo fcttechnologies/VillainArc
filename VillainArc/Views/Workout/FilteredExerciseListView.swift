@@ -173,7 +173,7 @@ struct FilteredExerciseListView: View {
 
     @ViewBuilder
     private func exerciseRowContent(for exercise: Exercise) -> some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 8) {
             if exercise.favorite {
                 Image(systemName: "star.fill")
                     .foregroundStyle(.yellow)
