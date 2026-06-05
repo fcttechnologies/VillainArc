@@ -386,12 +386,12 @@ struct ExerciseDetailView: View {
                     howToSection
                 }
 
-                if !recentPerformances.isEmpty {
-                    recentPerformancesSection
-                }
-
                 if let exercise {
                     suggestionSettingsSection(for: exercise)
+                }
+
+                if !recentPerformances.isEmpty {
+                    recentPerformancesSection
                 }
             }
             .padding([.horizontal, .bottom])
@@ -459,13 +459,6 @@ struct ExerciseDetailView: View {
                         }
                         .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailAddToActiveFlowButton)
                         .accessibilityLabel(destination.addLabel)
-                    }
-
-                    if totalSessions > 0 {
-                        Button("View Exercise History", systemImage: "clock.arrow.circlepath") {
-                            appRouter.push(to: .exerciseHistory(catalogID))
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailHistoryButton)
                     }
                 }
             }

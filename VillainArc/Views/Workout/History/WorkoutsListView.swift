@@ -6,16 +6,24 @@ struct WorkoutsListView: View {
     private struct WorkoutTypeFilter: Identifiable, Hashable {
         let id: String
         let title: String
-        
-        static let all = WorkoutTypeFilter(id: "all", title: "All")
-        static let traditionalStrengthTraining = WorkoutTypeFilter(id: "traditional-strength-training", title: HKWorkoutActivityType.traditionalStrengthTraining.displayName)
+
+        static let all = WorkoutTypeFilter(id: "all", title: String(localized: "All"))
+        static let strength = WorkoutTypeFilter(id: "strength", title: String(localized: "Strength"))
+        static let outdoorCardio = WorkoutTypeFilter(id: "outdoor-cardio", title: String(localized: "Outdoor Cardio"))
+        static let indoorCardio = WorkoutTypeFilter(id: "indoor-cardio", title: String(localized: "Indoor Cardio"))
     }
-    
+
+    /// Sentinel an external entry point (the cardio tab's "View All") can stash in
+    /// `AppRouter.pendingWorkoutHistoryFilterID` so the list resolves to whichever cardio capsule
+    /// actually has items, preferring outdoor.
+    static let cardioFilterRequestID = "cardio"
+
     @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(WorkoutSession.completedSession) private var workouts: [WorkoutSession]
     @Query(HealthWorkout.history) private var healthWorkouts: [HealthWorkout]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @State private var router = AppRouter.shared
     @State private var showDeleteAllConfirmation = false
     @State private var isEditing = false
     @State private var selectedWorkoutTypeFilterID = WorkoutTypeFilter.all.id
@@ -42,16 +50,22 @@ struct WorkoutsListView: View {
     }
     
     private var workoutTypeFilters: [WorkoutTypeFilter] {
-        var seen = Set<String>()
-        var filters = [WorkoutTypeFilter.all]
-        
+        let presentIDs = Set(items.map { workoutTypeFilter(for: $0).id })
+
+        // Canonical order: All, Strength, then the two cardio capsules, then one capsule per sport
+        // (in first-seen order). Only categories that actually have items are shown.
+        var filters: [WorkoutTypeFilter] = [.all]
+        for category in [WorkoutTypeFilter.strength, .outdoorCardio, .indoorCardio] where presentIDs.contains(category.id) {
+            filters.append(category)
+        }
+
+        var seenSport = Set<String>()
         for item in items {
             let filter = workoutTypeFilter(for: item)
-            if seen.insert(filter.id).inserted {
-                filters.append(filter)
-            }
+            guard filter.id.hasPrefix("sport-"), seenSport.insert(filter.id).inserted else { continue }
+            filters.append(filter)
         }
-        
+
         return filters
     }
     
@@ -99,6 +113,9 @@ struct WorkoutsListView: View {
                 selectedWorkoutTypeFilterID = WorkoutTypeFilter.all.id
                 return
             }
+        }
+        .onAppear {
+            applyPendingFilterRequest()
         }
         .navigationTitle("Workouts")
         .toolbarTitleDisplayMode(.inline)
@@ -186,17 +203,38 @@ struct WorkoutsListView: View {
     private func workoutTypeFilter(for item: WorkoutHistoryItem) -> WorkoutTypeFilter {
         switch item.source {
         case .session:
-            return .traditionalStrengthTraining
+            return .strength
         case .health(let workout):
-            if workout.activityType == .traditionalStrengthTraining {
-                return .traditionalStrengthTraining
+            switch workout.activityType {
+            case .traditionalStrengthTraining, .functionalStrengthTraining:
+                return .strength
+            case .running, .walking:
+                // Run/walk are the app's "cardio"; split them by indoor vs outdoor. Treat an
+                // unknown indoor flag as outdoor (the common GPS-route case).
+                return workout.isIndoorWorkout == true ? .indoorCardio : .outdoorCardio
+            default:
+                // Everything else (cycling, HIIT, yoga, rowing, …) is a per-sport capsule.
+                return WorkoutTypeFilter(id: "sport-\(workout.activityTypeRawValue)", title: workout.activityTypeDisplayName)
             }
-            
-            var id = "health-\(workout.activityTypeRawValue)"
-            if let isIndoorWorkout = workout.isIndoorWorkout {
-                id += isIndoorWorkout ? "-indoor" : "-outdoor"
-            }
-            return WorkoutTypeFilter(id: id, title: workout.activityTypeDisplayName)
+        }
+    }
+
+    /// Resolves a requested filter id (from `AppRouter.pendingWorkoutHistoryFilterID`) to a capsule
+    /// that actually exists, then selects it. The `cardio` sentinel prefers outdoor, then indoor.
+    private func applyPendingFilterRequest() {
+        guard let requested = router.pendingWorkoutHistoryFilterID else { return }
+        router.pendingWorkoutHistoryFilterID = nil
+
+        let availableIDs = Set(workoutTypeFilters.map(\.id))
+        let resolvedID: String?
+        if requested == Self.cardioFilterRequestID {
+            resolvedID = [WorkoutTypeFilter.outdoorCardio.id, WorkoutTypeFilter.indoorCardio.id].first(where: availableIDs.contains)
+        } else {
+            resolvedID = availableIDs.contains(requested) ? requested : nil
+        }
+
+        if let resolvedID {
+            selectedWorkoutTypeFilterID = resolvedID
         }
     }
     

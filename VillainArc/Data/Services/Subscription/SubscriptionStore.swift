@@ -142,7 +142,7 @@ final class SubscriptionStore {
     private func deriveStatus(from transaction: Transaction) async -> SubscriptionStatus {
         let productID = transaction.productID
         let expirationDate = transaction.expirationDate
-        let isInTrial = transaction.offerType == .introductory
+        let isInTrial = transaction.offer?.type == .introductory
 
         if let product = products.first(where: { $0.id == productID }),
            let subscription = product.subscription,

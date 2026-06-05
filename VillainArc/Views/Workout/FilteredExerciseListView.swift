@@ -92,17 +92,7 @@ struct FilteredExerciseListView: View {
                 catalogID: exercise.catalogID,
                 isSelected: selectedExerciseIDs.contains(exercise.catalogID),
                 onToggleSelect: {
-                    if selectedExerciseIDs.contains(exercise.catalogID) {
-                        selectedExercises.removeAll { $0 == exercise }
-                        selectedExerciseIDs.remove(exercise.catalogID)
-                    } else {
-                        if singleSelection {
-                            selectedExercises.removeAll()
-                            selectedExerciseIDs.removeAll()
-                        }
-                        selectedExercises.append(exercise)
-                        selectedExerciseIDs.insert(exercise.catalogID)
-                    }
+                    toggleSelection(for: exercise)
                 }
             )
             .presentationBackground(Color.sheetBg)
@@ -131,19 +121,7 @@ struct FilteredExerciseListView: View {
 
             Button {
                 Haptics.selection()
-                if isSelected {
-                    selectedExercises.removeAll { $0 == exercise }
-                    selectedExerciseIDs.remove(exercise.catalogID)
-                    onToggle?(exercise, false)
-                } else {
-                    if singleSelection {
-                        selectedExercises.removeAll()
-                        selectedExerciseIDs.removeAll()
-                    }
-                    selectedExercises.append(exercise)
-                    selectedExerciseIDs.insert(exercise.catalogID)
-                    onToggle?(exercise, true)
-                }
+                toggleSelection(for: exercise)
             } label: {
                 Image(systemName: isSelected ? "checkmark" : "plus")
                     .font(.title3)
@@ -284,6 +262,26 @@ struct FilteredExerciseListView: View {
     private func preferredMuscleOverlap(_ exercise: Exercise) -> Int {
         guard !preferredMuscles.isEmpty else { return 0 }
         return exercise.musclesTargeted.reduce(0) { $0 + (preferredMuscles.contains($1) ? 1 : 0) }
+    }
+
+    /// Single source of truth for selection toggling so the row "+" button and the exercise-info
+    /// sheet's add button stay in lockstep — both must notify `onToggle` so the workout/plan
+    /// actually gains or loses the exercise (the info-sheet path previously only updated the
+    /// selection set, animating to a checkmark without ever adding the exercise).
+    private func toggleSelection(for exercise: Exercise) {
+        if selectedExerciseIDs.contains(exercise.catalogID) {
+            selectedExercises.removeAll { $0 == exercise }
+            selectedExerciseIDs.remove(exercise.catalogID)
+            onToggle?(exercise, false)
+        } else {
+            if singleSelection {
+                selectedExercises.removeAll()
+                selectedExerciseIDs.removeAll()
+            }
+            selectedExercises.append(exercise)
+            selectedExerciseIDs.insert(exercise.catalogID)
+            onToggle?(exercise, true)
+        }
     }
 
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {

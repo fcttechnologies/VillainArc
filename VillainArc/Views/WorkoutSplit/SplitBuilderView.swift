@@ -42,12 +42,18 @@ struct SplitBuilderView: View {
 
     private func createProgramFromTemplate(_ template: PlanTemplate) {
         Haptics.selection()
-        let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: true, context: context)
+        let activeSplits = try? context.fetch(WorkoutSplit.active)
+        let shouldActivate = activeSplits?.isEmpty ?? true
+        let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: shouldActivate, context: context)
         saveContext(context: context)
+        let planCount = split.sortedDays.filter { !$0.isRestDay }.count
+        let message = shouldActivate
+            ? String(localized: "Created \(planCount) plans and activated the \(template.name) split.")
+            : String(localized: "Created \(planCount) plans and added the \(template.name) split. Your active split is unchanged.")
         ToastManager.shared.show(
             ToastManager.Toast(
                 title: String(localized: "Program ready"),
-                message: String(localized: "Created \(split.sortedDays.filter { !$0.isRestDay }.count) plans and activated the \(template.name) split."),
+                message: message,
                 systemImage: "calendar.badge.checkmark",
                 tint: .blue,
                 haptic: .success

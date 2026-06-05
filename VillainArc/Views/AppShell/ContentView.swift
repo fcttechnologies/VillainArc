@@ -235,31 +235,25 @@ struct ContentView: View {
                 })
         }
 
-        if !router.hasActiveAuthoringFlow {
-            let favoriteKind = appSettings.first?.favoriteCardioKind
-            let cardioTitle = favoriteKind.map { "Start \($0.shortTitle)" } ?? "Start Cardio"
-            let cardioIcon = favoriteKind?.systemImage ?? "figure.run.motion"
-            let cardioHint = favoriteKind.map { "Starts a \($0.title) cardio session. Long press to change your favorite." } ?? "Opens the cardio tab. Long press to set a favorite cardio type."
+        // Only surface the cardio quick action when the user has actually favorited a cardio mode.
+        // Without a favorite there is no concrete action to start, so the slot is omitted entirely
+        // rather than rendered as an iconless "Start Cardio" button.
+        if !router.hasActiveAuthoringFlow, let favoriteKind = appSettings.first?.favoriteCardioKind {
             actions.append(ExpandedAction(
-                cardioTitle,
-                icon: cardioIcon,
+                "Start \(favoriteKind.shortTitle)",
+                icon: favoriteKind.systemImage,
                 accessibilityIdentifier: "morphing_start_cardio_button",
-                accessibilityHint: cardioHint,
+                accessibilityHint: "Starts a \(favoriteKind.title) cardio session. Long press to change your favorite.",
                 kind: .cardio,
-                contextMenu: AnyView(cardioFavoriteContextMenu()),
-                showsCardioFavoriteTip: favoriteKind == nil
+                contextMenu: AnyView(cardioFavoriteContextMenu())
             ) {
                 collapseMorphingTabBar()
-                if let favoriteKind {
-                    if favoriteKind.isOutdoor {
-                        router.requestOutdoorCardioSession(kind: favoriteKind)
-                    } else {
-                        router.requestManualCardioSession(kind: favoriteKind)
-                    }
-                    Task { await IntentDonations.donateStartCardioSession(kind: favoriteKind) }
+                if favoriteKind.isOutdoor {
+                    router.requestOutdoorCardioSession(kind: favoriteKind)
                 } else {
-                    router.selectTab(.cardio)
+                    router.requestManualCardioSession(kind: favoriteKind)
                 }
+                Task { await IntentDonations.donateStartCardioSession(kind: favoriteKind) }
             })
         }
 

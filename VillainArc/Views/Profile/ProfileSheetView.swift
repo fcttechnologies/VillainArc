@@ -534,12 +534,9 @@ struct ProfileSheetView: View {
                     .foregroundStyle(.secondary)
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                profileHeatmapGrid
-                    .padding(.vertical, 2)
-            }
-            .padding(16)
-            .appCardStyle()
+            profileHeatmapGrid
+                .padding(16)
+                .appCardStyle()
 
             HStack(spacing: 6) {
                 Text(completeDaysCounterText)
@@ -571,25 +568,34 @@ struct ProfileSheetView: View {
 
     private var profileHeatmapGrid: some View {
         let weeks = profileHeatmapWeeks
-        return HStack(alignment: .top, spacing: 3) {
-            ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
-                VStack(spacing: 3) {
-                    ForEach(0..<7, id: \.self) { dayOfWeek in
-                        if let day = week[dayOfWeek] {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(completionHeatmapColor(for: day.completionCount))
-                                .frame(width: 12, height: 12)
-                                .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
-                                .accessibilityValue(completionAccessibilityValue(for: day))
-                        } else {
-                            Color.clear
-                                .frame(width: 12, height: 12)
-                                .accessibilityHidden(true)
+        let columns = max(weeks.count, 1)
+        let spacing: CGFloat = 3
+        // A fixed (non-scrolling) 7×~26 grid that fits the card width: oldest week on the left,
+        // current week as the rightmost (partially filled) column. The cell size is derived from the
+        // available width so all ~26 columns are always visible at once.
+        return GeometryReader { geometry in
+            let cell = max(0, min(
+                (geometry.size.width - spacing * CGFloat(columns - 1)) / CGFloat(columns),
+                (geometry.size.height - spacing * 6) / 7
+            ))
+            HStack(alignment: .top, spacing: spacing) {
+                ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
+                    VStack(spacing: spacing) {
+                        ForEach(0..<7, id: \.self) { dayOfWeek in
+                            let day = dayOfWeek < week.count ? week[dayOfWeek] : nil
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(day.map { completionHeatmapColor(for: $0.completionCount) } ?? Color.clear)
+                                .frame(width: cell, height: cell)
+                                .accessibilityLabel(day.map { $0.date.formatted(date: .abbreviated, time: .omitted) } ?? "")
+                                .accessibilityValue(day.map { completionAccessibilityValue(for: $0) } ?? "")
+                                .accessibilityHidden(day == nil)
                         }
                     }
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
         }
+        .aspectRatio(CGFloat(columns) / 7, contentMode: .fit)
     }
 
     private var trimmedEditableName: String? {
@@ -734,8 +740,10 @@ struct ProfileSheetView: View {
         let days = profileCompletionDays
         guard let firstDay = days.first else { return [] }
 
+        // GitHub-style layout: Sunday is the top row (index 0), Saturday the bottom (index 6).
+        // `weekday` is 1=Sunday…7=Saturday, so the oldest day's row is simply `weekday - 1`.
         let firstWeekday = calendar.component(.weekday, from: firstDay.date)
-        let weekdayIndex = (firstWeekday + 5) % 7
+        let weekdayIndex = firstWeekday - 1
 
         var allCells: [ProfileCompletionDay?] = Array(repeating: nil, count: weekdayIndex)
         allCells.append(contentsOf: days.map { Optional($0) })

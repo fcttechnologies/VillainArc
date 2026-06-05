@@ -339,6 +339,10 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     var homeTabPath: [Destination] = []
     var cardioTabPath: [Destination] = []
     var healthTabPath: [Destination] = []
+    /// A workout-history filter the All-Workouts list should auto-select the next time it appears.
+    /// Set by entry points like the cardio tab's "View All" (which requests `cardio`) right before
+    /// navigating to `.workoutSessionsList`; consumed and cleared by `WorkoutsListView`.
+    var pendingWorkoutHistoryFilterID: String?
     private init() {
         if let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
            let storedTab = AppTab(rawValue: storedRawValue) {

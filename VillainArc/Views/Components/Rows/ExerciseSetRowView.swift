@@ -215,7 +215,7 @@ struct ExerciseSetRowView: View {
         }
         .animation(reduceMotion ? .none : .bouncy, value: set.complete)
         .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
+            ToolbarItem(placement: .keyboard) {
                 keyboardToolbarContent
             }
         }
@@ -251,25 +251,38 @@ struct ExerciseSetRowView: View {
         }
     }
     
+    /// Renders as a single full-width row only for the field that is actually focused. Every set
+    /// row installs a `.keyboard` toolbar, so anything emitted here while the row is unfocused would
+    /// be merged into the accessory and show up as duplicated controls — gating on `focusedField`
+    /// keeps exactly one clean HStack: adaptive +/- control(s) on the left, dismiss on the right.
     @ViewBuilder
     private var keyboardToolbarContent: some View {
-        if focusedField == .weight, let step = weightStepDisplay {
-            Button("−\(weightStepLabel)") { adjustWeight(by: -step) }
-            Button("+\(weightStepLabel)") { adjustWeight(by: step) }
-        } else if focusedField == .reps {
-            Button("−1") { adjustReps(by: -1) }
-            Button("+1") { adjustReps(by: 1) }
-        }
+        if let focusedField {
+            HStack(spacing: 12) {
+                switch focusedField {
+                case .weight:
+                    if let step = weightStepDisplay {
+                        Button("−\(weightStepLabel)") { adjustWeight(by: -step) }
+                        Button("+\(weightStepLabel)") { adjustWeight(by: step) }
+                    }
+                case .reps:
+                    Button("−1") { adjustReps(by: -1) }
+                    Button("+1") { adjustReps(by: 1) }
+                }
 
-        Spacer()
+                Spacer()
 
-        Button {
-            dismissKeyboard()
-            focusedField = nil
-        } label: {
-            Image(systemName: "keyboard.chevron.compact.down")
+                Button {
+                    dismissKeyboard()
+                    self.focusedField = nil
+                } label: {
+                    Image(systemName: "keyboard.chevron.compact.down")
+                }
+                .accessibilityLabel("Dismiss Keyboard")
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 4)
         }
-        .accessibilityLabel("Dismiss Keyboard")
     }
 
     private func adjustReps(by delta: Int) {

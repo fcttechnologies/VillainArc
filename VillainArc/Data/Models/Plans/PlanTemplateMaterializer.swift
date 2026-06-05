@@ -152,7 +152,9 @@ enum PlanTemplateMaterializer {
             }
 
             plan.exercises?.append(prescription)
-            exercise.updateLastAddedAt()
+            // Materializing a template does not count as the user "adding" the exercise — leaving
+            // lastAddedAt untouched keeps recents ordering driven by real manual adds, and falls
+            // back to name ordering when timestamps tie.
         }
     }
 
@@ -193,7 +195,7 @@ enum PlanTemplateMaterializer {
             }
 
             plan.exercises?.append(prescription)
-            exercise.updateLastAddedAt()
+            // See note in `attach` — materialization must not bump lastAddedAt.
         }
     }
 }

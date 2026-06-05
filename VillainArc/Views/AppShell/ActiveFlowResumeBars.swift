@@ -32,7 +32,22 @@ struct ActiveWorkoutResumeBarButton: View {
                     }
                     .fontWeight(.semibold)
                     .foregroundStyle(.yellow)
-                } else if activeSetInfo != nil {
+                } else if workout.statusValue == .pending {
+                    // While suggestions are still pending the workout isn't logging yet, so the bar
+                    // must not offer a "complete set" control. Surface an Accept affordance that opens
+                    // the suggestion review instead.
+                    Button {
+                        openAction()
+                    } label: {
+                        Text("Accept")
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.regular)
+                    .accessibilityIdentifier("active_workout_resume_accept_button")
+                    .accessibilityLabel(Text("Review suggestions"))
+                } else if workout.statusValue == .active, activeSetInfo != nil {
                     Button {
                         completeNextSet()
                     } label: {
@@ -182,6 +197,9 @@ struct ActiveWorkoutResumeBarButton: View {
     }
 
     private func completeNextSet() {
+        // A set is only completable once the workout is actually live — never while it's still
+        // pending its pre-workout suggestion review.
+        guard workout.statusValue == .active else { return }
         guard let (_, set) = activeSetInfo else { return }
 
         Haptics.selection()
@@ -282,6 +300,18 @@ struct ActiveCardioResumeBarButton: View {
         healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned
     }
 
+    /// Distance is the resume bar's primary metric. Miles users see feet until they cross 0.1 mi
+    /// (so a just-started run reads "120 ft" rather than "0.00 mi"), then it switches to miles.
+    private var resumeDistanceText: String {
+        let meters = session.totalDistanceMeters
+        let tenthOfAMileInMeters = 0.1 * 1_609.344
+        if distanceUnit == .mi, meters < tenthOfAMileInMeters {
+            let feet = meters * 3.280_839_895
+            return "\(Int(feet.rounded())) ft"
+        }
+        return formattedDistanceText(meters, unit: distanceUnit)
+    }
+
     var body: some View {
         Button(action: openAction) {
             HStack(spacing: 12) {
@@ -295,9 +325,9 @@ struct ActiveCardioResumeBarButton: View {
                         .lineLimit(1)
 
                     HStack(spacing: 8) {
-                        if session.totalDistanceMeters > 0 {
-                            Label(formattedDistanceText(session.totalDistanceMeters, unit: distanceUnit), systemImage: "point.topleft.down.curvedto.point.bottomright.up")
-                        }
+                        Label(resumeDistanceText, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
                         if let hr = liveHeartRate {
                             Label(formattedHeartRateText(hr), systemImage: "heart.fill")
                                 .foregroundStyle(.red)

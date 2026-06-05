@@ -1,3 +1,4 @@
+import CoreLocation
 import SwiftData
 import SwiftUI
 import HealthKit
@@ -23,10 +24,13 @@ private enum CardioHistoryItem: Identifiable {
 
 struct CardioTabView: View {
     @State private var router = AppRouter.shared
+    @State private var routeLoader = CardioHealthRouteLoader()
     @Query(CardioSession.recentCompleted(limit: 12)) private var recentSessions: [CardioSession]
     @Query(HealthWorkout.recentRunWalk(limit: 20)) private var recentRunWalkWorkouts: [HealthWorkout]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Environment(\.modelContext) private var context
+
+    private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
 
     private var routeSessions: [CardioSession] {
         recentSessions.filter { session in
@@ -43,6 +47,54 @@ struct CardioTabView: View {
         recentRunWalkWorkouts.filter { $0.cardioSession == nil && $0.isIndoorWorkout == false }
     }
 
+    /// App-owned outdoor routes plus cached Apple Health outdoor routes, newest first, capped so the
+    /// map never draws more than ~10 overlapping routes at once.
+    private var mapRoutes: [CardioMapRoute] {
+        var result: [CardioMapRoute] = []
+
+        for session in routeSessions {
+            let coordinates = session.sortedRoutePoints.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+            guard coordinates.count >= 2 else { continue }
+            result.append(CardioMapRoute(
+                id: "session-\(session.id.uuidString)",
+                coordinates: coordinates,
+                isActive: session.statusValue == .active,
+                title: session.displayTitle,
+                distanceMeters: session.totalDistanceMeters,
+                duration: session.duration,
+                date: session.startedAt ?? .distantPast,
+                target: .appSession(session)
+            ))
+        }
+
+        for workout in standaloneOutdoorWorkouts {
+            guard let coordinates = routeLoader.routesByWorkoutID[workout.healthWorkoutUUID], coordinates.count >= 2 else { continue }
+            result.append(CardioMapRoute(
+                id: "health-\(workout.healthWorkoutUUID.uuidString)",
+                coordinates: coordinates,
+                isActive: false,
+                title: workout.activityTypeDisplayName,
+                distanceMeters: workout.totalDistance ?? 0,
+                duration: workout.duration,
+                date: workout.startDate,
+                target: .healthWorkout(workout)
+            ))
+        }
+
+        return Array(result.sorted { $0.date > $1.date }.prefix(10))
+    }
+
+    private func openRouteDetail(_ route: CardioMapRoute) {
+        switch route.target {
+        case .appSession(let session):
+            router.push(to: .cardioSessionDetail(session))
+        case .healthWorkout(let workout):
+            router.cardioTabPath.append(.healthWorkoutDetail(workout))
+            router.noteNavigationStateChanged()
+            Haptics.selection()
+        }
+    }
+
     private var mergedHistory: [CardioHistoryItem] {
         let sessions = recentSessions.map { CardioHistoryItem.session($0) }
         let hkWorkouts = standaloneOutdoorWorkouts.map { CardioHistoryItem.healthWorkout($0) }
@@ -53,11 +105,12 @@ struct CardioTabView: View {
         NavigationStack(path: Binding(get: { router.cardioTabPath }, set: { router.cardioTabPath = $0; router.noteNavigationStateChanged() })) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    CardioRouteMapView(sessions: Array(routeSessions.prefix(8)), showsUserLocation: true)
+                    let routes = mapRoutes
+                    CardioRoutesMapView(routes: routes, distanceUnit: distanceUnit, onViewFully: openRouteDetail)
                         .frame(height: 430)
-                        .blur(radius: routeSessions.isEmpty ? 6 : 0)
+                        .blur(radius: routes.isEmpty ? 6 : 0)
                         .overlay {
-                            if routeSessions.isEmpty {
+                            if routes.isEmpty {
                                 ContentUnavailableView {
                                     Label("No Routes Yet", systemImage: "map")
                                 } description: {
@@ -68,11 +121,11 @@ struct CardioTabView: View {
                             }
                         }
                         .overlay(alignment: .topLeading) {
-                            if !routeSessions.isEmpty {
+                            if !routes.isEmpty {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Recent Routes")
                                         .font(.headline)
-                                    Text("Last \(min(routeSessions.count, 8)) outdoor sessions")
+                                    Text("Last \(routes.count) routes")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -80,6 +133,9 @@ struct CardioTabView: View {
                                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 .padding(12)
                             }
+                        }
+                        .task(id: standaloneOutdoorWorkouts.map(\.healthWorkoutUUID)) {
+                            await routeLoader.load(workouts: standaloneOutdoorWorkouts)
                         }
 
                     VStack(alignment: .leading, spacing: 16) {
@@ -140,13 +196,8 @@ struct CardioTabView: View {
                                         .foregroundStyle(.yellow)
                                 }
                             }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(kind.title)
-                                    .font(.headline)
-                                Text(kind.isOutdoor ? "GPS route" : (HealthAuthorizationManager.canWriteWorkouts ? "Apple Health workout" : "Manual intervals"))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                            Text(kind.title)
+                                .font(.headline)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
@@ -183,19 +234,31 @@ struct CardioTabView: View {
         saveContext(context: context)
     }
 
+    private var recentCardio: [CardioHistoryItem] {
+        Array(mergedHistory.prefix(5))
+    }
+
+    private func openAllCardioHistory() {
+        Haptics.selection()
+        router.pendingWorkoutHistoryFilterID = WorkoutsListView.cardioFilterRequestID
+        router.navigate(to: .workoutSessionsList)
+    }
+
     private var recentHistorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Recent Cardio")
                     .font(.title3.bold())
                 Spacer()
-                Text("\(mergedHistory.count)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Button("View All") {
+                    openAllCardioHistory()
+                }
+                .font(.subheadline.weight(.semibold))
+                .accessibilityHint(Text("Opens all cardio history filtered to your cardio workouts."))
             }
 
             VStack(spacing: 0) {
-                ForEach(Array(mergedHistory.enumerated()), id: \.element.id) { index, item in
+                ForEach(Array(recentCardio.enumerated()), id: \.element.id) { index, item in
                     Group {
                         switch item {
                         case .session(let session):
@@ -217,7 +280,7 @@ struct CardioTabView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .appGroupedStackRow(position: rowPosition(for: index, count: mergedHistory.count))
+                    .appGroupedStackRow(position: rowPosition(for: index, count: recentCardio.count))
                 }
             }
         }
