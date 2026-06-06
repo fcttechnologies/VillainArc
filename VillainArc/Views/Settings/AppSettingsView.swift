@@ -981,6 +981,15 @@ private struct DebugSettingsView: View {
     var body: some View {
         Form {
             Section {
+                NavigationLink {
+                    ScreenshotStudioGalleryView()
+                } label: {
+                    Label("Screenshot Studio", systemImage: "camera.viewfinder")
+                }
+                .appGroupedListRow(position: .single)
+            }
+
+            Section {
                 LabeledContent("HealthKit", value: healthStatusText)
                     .accessibilityIdentifier(AccessibilityIdentifiers.debugHealthKitStatusValue)
                     .appGroupedListRow(position: .single)

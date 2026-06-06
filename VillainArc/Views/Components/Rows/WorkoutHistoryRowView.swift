@@ -16,6 +16,8 @@ struct WorkoutHistoryRowView: View {
                 Task { await IntentDonations.donateOpenWorkout(workout: workout) }
             case .health(let workout):
                 appRouter.push(to: .healthWorkoutDetail(workout))
+            case .cardio(let session):
+                appRouter.push(to: .cardioSessionDetail(session))
             }
         } label: {
             content
@@ -82,7 +84,43 @@ struct WorkoutHistoryRowView: View {
                 MetadataChipRow(items: healthMetadataChipItems(for: workout))
                     .fontWeight(.semibold)
             }
+        case .cardio(let session):
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(session.displayTitle)
+                            .font(.title3)
+                            .lineLimit(1)
+                        if let startedAt = session.startedAt {
+                            Text(formattedRecentDay(startedAt))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+                MetadataChipRow(items: cardioMetadataChipItems(for: session))
+                    .fontWeight(.semibold)
+            }
         }
+    }
+
+    private func cardioMetadataChipItems(for session: CardioSession) -> [MetadataChipItem] {
+        var items: [MetadataChipItem] = []
+
+        items.append(.init(systemImage: "clock", text: secondsToTime(Int(session.duration.rounded())), tint: .secondary))
+
+        if session.totalDistanceMeters > 0 {
+            items.append(.init(systemImage: "point.topleft.down.curvedto.point.bottomright.up", text: appSettingsSnapshot.distanceUnit.display(session.totalDistanceMeters), tint: .blue))
+        }
+
+        if let pace = formattedPaceText(duration: session.duration, distanceMeters: session.totalDistanceMeters, distanceUnit: appSettingsSnapshot.distanceUnit) {
+            items.append(.init(systemImage: "speedometer", text: pace, tint: .green))
+        }
+
+        return items
     }
 
     private func healthMetadataChipItems(for workout: HealthWorkout) -> [MetadataChipItem] {

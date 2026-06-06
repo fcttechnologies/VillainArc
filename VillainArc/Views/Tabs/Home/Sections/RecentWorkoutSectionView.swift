@@ -50,7 +50,7 @@ struct RecentWorkoutSectionView: View {
                                 Task { await IntentDonations.donateViewLastWorkout() }
                             }
                         )
-                case .health:
+                case .health, .cardio:
                     WorkoutHistoryRowView(item: recentItem, appSettingsSnapshot: appSettingsSnapshot, deletionSettings: appSettings.first)
                         .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutRow)
                         .accessibilityHint(AccessibilityText.recentWorkoutRowHint)

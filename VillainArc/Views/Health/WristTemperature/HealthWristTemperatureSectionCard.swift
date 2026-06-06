@@ -21,10 +21,12 @@ struct HealthWristTemperatureSectionCard: View {
                     Image(systemName: "thermometer.medium")
                         .font(.subheadline)
                         .foregroundStyle(Color.cyan.gradient)
-                    Text("Wrist Temp")
+                    Text("Wrist Temperature")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.cyan.gradient)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     Spacer()
                     if let latestEntry {
                         Text(formattedRecentDay(latestEntry.date))

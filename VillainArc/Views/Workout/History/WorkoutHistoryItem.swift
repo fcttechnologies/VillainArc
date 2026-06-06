@@ -4,6 +4,7 @@ struct WorkoutHistoryItem: Identifiable, Hashable {
     enum Source: Hashable {
         case session(WorkoutSession)
         case health(HealthWorkout)
+        case cardio(CardioSession)
     }
 
     let source: Source
@@ -14,6 +15,8 @@ struct WorkoutHistoryItem: Identifiable, Hashable {
             return "session-\(workout.id.uuidString)"
         case .health(let workout):
             return "health-\(workout.healthWorkoutUUID.uuidString)"
+        case .cardio(let session):
+            return "cardio-\(session.id.uuidString)"
         }
     }
 
@@ -23,6 +26,8 @@ struct WorkoutHistoryItem: Identifiable, Hashable {
             return workout.startedAt
         case .health(let workout):
             return workout.startDate
+        case .cardio(let session):
+            return session.startedAt ?? .distantPast
         }
     }
 
@@ -30,17 +35,26 @@ struct WorkoutHistoryItem: Identifiable, Hashable {
         switch source {
         case .session(let workout):
             return workout
-        case .health:
+        case .health, .cardio:
             return nil
         }
     }
 
     var healthWorkout: HealthWorkout? {
         switch source {
-        case .session:
-            return nil
         case .health(let workout):
             return workout
+        case .session, .cardio:
+            return nil
+        }
+    }
+
+    var cardioSession: CardioSession? {
+        switch source {
+        case .cardio(let session):
+            return session
+        case .session, .health:
+            return nil
         }
     }
 }

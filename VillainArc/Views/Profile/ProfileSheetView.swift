@@ -109,6 +109,7 @@ struct ProfileSheetView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(WorkoutSession.completedSession) private var completedWorkouts: [WorkoutSession]
     @Query(CardioSession.history) private var completedCardioSessions: [CardioSession]
+    @Query(HealthWorkout.history) private var completedHealthWorkouts: [HealthWorkout]
     @Query(HealthSleepNight.history) private var sleepNights: [HealthSleepNight]
     @Query(HealthStepsDistance.history) private var stepsEntries: [HealthStepsDistance]
     @Query(HydrationDay.history) private var hydrationDays: [HydrationDay]
@@ -832,7 +833,8 @@ struct ProfileSheetView: View {
     private func completedTrainingDays(calendar: Calendar) -> Set<Date> {
         let strengthDays = completedWorkouts.map { calendar.startOfDay(for: $0.startedAt) }
         let cardioDays = completedCardioSessions.compactMap { $0.startedAt }.map { calendar.startOfDay(for: $0) }
-        return Set(strengthDays + cardioDays)
+        let healthWorkoutDays = completedHealthWorkouts.map { calendar.startOfDay(for: $0.startDate) }
+        return Set(strengthDays + cardioDays + healthWorkoutDays)
     }
 
     private var fitnessLevelText: String {

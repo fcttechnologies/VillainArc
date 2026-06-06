@@ -22,6 +22,7 @@ struct WorkoutsListView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(WorkoutSession.completedSession) private var workouts: [WorkoutSession]
     @Query(HealthWorkout.history) private var healthWorkouts: [HealthWorkout]
+    @Query(CardioSession.history) private var cardioSessions: [CardioSession]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
     @State private var showDeleteAllConfirmation = false
@@ -34,14 +35,19 @@ struct WorkoutsListView: View {
     
     private var items: [WorkoutHistoryItem] {
         let sessionItems = workouts.map { WorkoutHistoryItem(source: .session($0)) }
+        let cardioItems = cardioSessions.map { WorkoutHistoryItem(source: .cardio($0)) }
         let healthItems = healthWorkouts.compactMap { workout -> WorkoutHistoryItem? in
             if let linkedSession = workout.workoutSession, !linkedSession.isHidden {
                 return nil
             }
+            // App cardio sessions surface as their richer CardioSession row, not their Health mirror.
+            if workout.cardioSession != nil {
+                return nil
+            }
             return WorkoutHistoryItem(source: .health(workout))
         }
-        
-        return (sessionItems + healthItems).sorted { $0.sortDate > $1.sortDate }
+
+        return (sessionItems + cardioItems + healthItems).sorted { $0.sortDate > $1.sortDate }
     }
     
     private var visibleItems: [WorkoutHistoryItem] {
@@ -204,6 +210,8 @@ struct WorkoutsListView: View {
         switch item.source {
         case .session:
             return .strength
+        case .cardio(let session):
+            return session.kind.isOutdoor ? .outdoorCardio : .indoorCardio
         case .health(let workout):
             switch workout.activityType {
             case .traditionalStrengthTraining, .functionalStrengthTraining:

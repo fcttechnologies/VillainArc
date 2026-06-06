@@ -613,3 +613,16 @@ extension PreviewTrait where T == Preview.ViewTraits {
     static var sampleDataSuggestions: Self { .modifier(SampleDataSuggestionsPreviewModifier()) }
     static var sampleDataSuggestionGeneration: Self { .modifier(SampleDataSuggestionGenerationPreviewModifier()) }
 }
+
+// MARK: - Screenshot Studio Containers (DEBUG)
+
+#if DEBUG
+/// Exposes the in-memory sample containers to the DEBUG Screenshot Studio so it can
+/// inject the same store its sample objects live in. Mirrors `PreviewSampleDataContextFactory`.
+enum ScreenshotStudioContainers {
+    static var standard: ModelContainer { sampleContainer.modelContainer }
+    static var incomplete: ModelContainer { sampleContainerWithIncomplete.modelContainer }
+    static var suggestions: ModelContainer { sampleContainerWithSuggestions.modelContainer }
+    static var suggestionGeneration: ModelContainer { sampleContainerSuggestionGeneration.modelContainer }
+}
+#endif

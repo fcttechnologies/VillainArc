@@ -98,13 +98,14 @@ struct CardioRoutesMapView: View {
         Map(position: $position) {
             UserAnnotation()
 
-            ForEach(routes) { route in
+            ForEach(Array(routes.enumerated()), id: \.element.id) { index, route in
+                let color = routeColor(for: route, index: index)
                 MapPolyline(coordinates: route.coordinates)
-                    .stroke(route.isActive ? .green : .blue, lineWidth: route.isActive ? 5 : 3)
+                    .stroke(color.gradient, style: StrokeStyle(lineWidth: route.isActive ? 6 : 4, lineCap: .round, lineJoin: .round))
 
                 if let mid = route.midCoordinate {
                     Annotation(route.title, coordinate: mid) {
-                        routeMarker(for: route)
+                        routeMarker(for: route, color: color)
                     }
                     .annotationTitles(.hidden)
                 }
@@ -113,16 +114,23 @@ struct CardioRoutesMapView: View {
         .mapControls {
             MapCompass()
         }
+        .ignoresSafeArea(edges: .top)
     }
 
-    private func routeMarker(for route: CardioMapRoute) -> some View {
+    private static let routeColors: [Color] = [.blue, .orange, .purple, .pink, .teal, .indigo, .red, .cyan, .mint, .brown]
+
+    private func routeColor(for route: CardioMapRoute, index: Int) -> Color {
+        route.isActive ? .green : Self.routeColors[index % Self.routeColors.count]
+    }
+
+    private func routeMarker(for route: CardioMapRoute, color: Color) -> some View {
         Button {
             Haptics.selection()
             selectedRoute = route
         } label: {
             Image(systemName: route.isActive ? "figure.run.circle.fill" : "mappin.circle.fill")
                 .font(.title3)
-                .foregroundStyle(route.isActive ? .green : .blue)
+                .foregroundStyle(color)
                 .padding(4)
                 .background(.regularMaterial, in: Circle())
         }

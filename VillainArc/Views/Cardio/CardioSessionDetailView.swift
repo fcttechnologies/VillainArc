@@ -30,15 +30,20 @@ struct CardioSessionDetailView: View {
                     .padding(.top, 8)
                 Spacer()
             }
-
-            VStack {
-                Spacer()
-                CardioMetricsSheet(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, onOpenHealthWorkout: openHealthHandler)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
-            }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: .constant(true)) {
+            ScrollView {
+                CardioMetricsSheet(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, onOpenHealthWorkout: openHealthHandler)
+                    .padding(.top, 12)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .presentationDetents([.medium, .large])
+            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+            .presentationDragIndicator(.hidden)
+            .interactiveDismissDisabled(true)
+            .presentationBackground(.regularMaterial)
+        }
         .task(id: session.id) {
             updateInitialCameraPosition()
         }
@@ -60,14 +65,12 @@ struct CardioSessionDetailView: View {
             Spacer()
 
             ShareLink(item: shareableSummary) {
-                Label("Share", systemImage: "square.and.arrow.up")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                Image(systemName: "square.and.arrow.up")
+                    .font(.headline.weight(.semibold))
+                    .frame(width: 36, height: 36)
             }
-            .buttonStyle(.glassProminent)
-            .buttonBorderShape(.capsule)
-            .tint(.orange)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             .accessibilityLabel(Text("Share session"))
         }
     }
@@ -90,29 +93,20 @@ struct CardioSessionDetailView: View {
 
                 if let start = coordinates.first {
                     Annotation("Start", coordinate: start) {
-                        Circle()
-                            .fill(.green)
-                            .frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(.white, lineWidth: 2))
+                        CardioRouteMarker(systemImage: "figure.run", tint: .green)
                     }
                     .annotationTitles(.hidden)
                 }
 
                 if let end = coordinates.last {
                     Annotation("Finish", coordinate: end) {
-                        Circle()
-                            .fill(.purple)
-                            .frame(width: 16, height: 16)
-                            .overlay(Circle().stroke(.white, lineWidth: 2))
+                        CardioRouteMarker(systemImage: "flag.checkered", tint: .red)
                     }
                     .annotationTitles(.hidden)
                 }
             } else if let only = coordinates.first {
                 Annotation("Location", coordinate: only) {
-                    Circle()
-                        .fill(.purple)
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().stroke(.white, lineWidth: 2))
+                    CardioRouteMarker(systemImage: "mappin", tint: .orange)
                 }
                 .annotationTitles(.hidden)
             }
@@ -135,10 +129,7 @@ struct CardioSessionDetailView: View {
         Map(position: $cameraPosition, interactionModes: [.pan, .zoom, .rotate]) {
             if let coordinate = sessionLocation {
                 Annotation("Location", coordinate: coordinate) {
-                    Circle()
-                        .fill(.purple)
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().stroke(.white, lineWidth: 2))
+                    CardioRouteMarker(systemImage: "mappin", tint: .orange)
                 }
                 .annotationTitles(.hidden)
             } else {
@@ -175,8 +166,12 @@ struct CardioSessionDetailView: View {
         let maxLat = latitudes.max() ?? 0
         let minLon = longitudes.min() ?? 0
         let maxLon = longitudes.max() ?? 0
-        let center = CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLon + maxLon) / 2)
-        let span = MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.45, 0.002), longitudeDelta: max((maxLon - minLon) * 1.45, 0.002))
+        // Zoom out a little, and shift the center south so the route sits in the upper half,
+        // clear of the medium metrics sheet covering the bottom.
+        let latSpan = max((maxLat - minLat) * 1.9, 0.004)
+        let lonSpan = max((maxLon - minLon) * 1.9, 0.004)
+        let center = CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2 - latSpan * 0.3, longitude: (minLon + maxLon) / 2)
+        let span = MKCoordinateSpan(latitudeDelta: latSpan, longitudeDelta: lonSpan)
         return MKCoordinateRegion(center: center, span: span)
     }
 
@@ -239,8 +234,9 @@ struct CardioMetricsSheet: View {
                 .accessibilityIdentifier("cardio_detail_open_health_workout")
             }
         }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var headerRow: some View {
@@ -320,6 +316,25 @@ struct CardioMetricsSheet: View {
         return items
     }
 
+}
+
+/// A circular map marker badge with an SF Symbol icon, used for cardio route start/finish/location points.
+struct CardioRouteMarker: View {
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(tint.gradient)
+                .frame(width: 28, height: 28)
+                .overlay(Circle().stroke(.white, lineWidth: 2))
+                .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+            Image(systemName: systemImage)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+        }
+    }
 }
 
 #Preview(traits: .sampleData) {

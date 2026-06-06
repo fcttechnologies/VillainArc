@@ -76,6 +76,9 @@ enum SubscriptionGate {
     /// When `status == .unknown` (first launch, products not yet fetched), trusts the App Group
     /// `cachedIsPro` flag so a known-Pro user doesn't see a flash of paywall on cold launch.
     static var isPro: Bool {
+        #if DEBUG
+        if DebugSubscriptionOverride.forcePro { return true }
+        #endif
         let live = SubscriptionStore.shared.status
         if live.isPro { return true }
         if live == .unknown { return SubscriptionStore.cachedIsPro }

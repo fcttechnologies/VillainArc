@@ -22,9 +22,35 @@ private enum CardioHistoryItem: Identifiable {
     }
 }
 
+private enum CardioRouteRange: String, CaseIterable, Identifiable {
+    case day, week, month, sixMonths
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .day: return "Day"
+        case .week: return "Week"
+        case .month: return "Month"
+        case .sixMonths: return "6M"
+        }
+    }
+
+    var startDate: Date {
+        let cal = Calendar.autoupdatingCurrent
+        switch self {
+        case .day: return cal.date(byAdding: .day, value: -1, to: .now) ?? .distantPast
+        case .week: return cal.date(byAdding: .day, value: -7, to: .now) ?? .distantPast
+        case .month: return cal.date(byAdding: .month, value: -1, to: .now) ?? .distantPast
+        case .sixMonths: return cal.date(byAdding: .month, value: -6, to: .now) ?? .distantPast
+        }
+    }
+}
+
 struct CardioTabView: View {
     @State private var router = AppRouter.shared
     @State private var routeLoader = CardioHealthRouteLoader()
+    @State private var routeRange: CardioRouteRange = .month
     @Query(CardioSession.recentCompleted(limit: 12)) private var recentSessions: [CardioSession]
     @Query(HealthWorkout.recentRunWalk(limit: 20)) private var recentRunWalkWorkouts: [HealthWorkout]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -81,7 +107,8 @@ struct CardioTabView: View {
             ))
         }
 
-        return Array(result.sorted { $0.date > $1.date }.prefix(10))
+        let cutoff = routeRange.startDate
+        return Array(result.filter { $0.date >= cutoff }.sorted { $0.date > $1.date }.prefix(10))
     }
 
     private func openRouteDetail(_ route: CardioMapRoute) {
@@ -120,19 +147,17 @@ struct CardioTabView: View {
                                 .foregroundStyle(.white)
                             }
                         }
-                        .overlay(alignment: .topLeading) {
-                            if !routes.isEmpty {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Recent Routes")
-                                        .font(.headline)
-                                    Text("Last \(routes.count) routes")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                        .overlay(alignment: .top) {
+                            Picker("Range", selection: $routeRange) {
+                                ForEach(CardioRouteRange.allCases) { range in
+                                    Text(range.title).tag(range)
                                 }
-                                .padding(10)
-                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .padding(12)
                             }
+                            .pickerStyle(.segmented)
+                            .padding(6)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .padding(.horizontal)
+                            .padding(.top, 10)
                         }
                         .task(id: standaloneOutdoorWorkouts.map(\.healthWorkoutUUID)) {
                             await routeLoader.load(workouts: standaloneOutdoorWorkouts)
@@ -155,6 +180,7 @@ struct CardioTabView: View {
             .quickActionContentBottomInset()
             .appBackground()
             .scrollIndicators(.hidden)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .cardioSessionDetail(let session):
