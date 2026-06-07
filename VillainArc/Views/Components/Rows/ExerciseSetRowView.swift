@@ -32,38 +32,30 @@ struct SetReferenceData {
     }
 }
 
+/// Identifies which set's which field currently owns keyboard focus. Lives at file scope so the
+/// parent `ExerciseView` can own a single `@FocusState` and render ONE shared keyboard toolbar.
+/// If each set row installed its own `.keyboard` toolbar, every realized row would contribute a
+/// keyboard-accessory item and they stack/duplicate when the keyboard appears — gating per-row
+/// content isn't enough, so there must be exactly one toolbar in the hierarchy.
+enum SetFieldFocus: Hashable {
+    case reps(UUID)
+    case weight(UUID)
+}
+
 struct ExerciseSetRowView: View {
-    private enum Field {
-        case reps
-        case weight
-    }
-    
     @Bindable var set: SetPerformance
     @Bindable var exercise: ExercisePerformance
     @Environment(\.modelContext) private var context
     let appSettingsSnapshot: AppSettingsSnapshot
     private let restTimer = RestTimerState.shared
     @State private var showOverrideTimerAlert = false
-    @FocusState private var focusedField: Field?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let referenceData: SetReferenceData?
     let fieldWidth: CGFloat
-    var preferredWeightChangeKg: Double? = nil
+    var focusedField: FocusState<SetFieldFocus?>.Binding
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
-
-    /// The exercise's preferred progression step, in the user's display unit.
-    /// `nil` when no preferred step is set, which hides the weight +/- controls.
-    private var weightStepDisplay: Double? {
-        guard let preferredWeightChangeKg, preferredWeightChangeKg > 0 else { return nil }
-        let value = roundedDisplayValue(weightUnit.fromKg(preferredWeightChangeKg), fractionDigits: 2)
-        return value > 0 ? value : nil
-    }
-
-    private var weightStepLabel: String {
-        (weightStepDisplay ?? 0).formatted(.number.precision(.fractionLength(0...2)))
-    }
 
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
@@ -135,7 +127,7 @@ struct ExerciseSetRowView: View {
             Spacer()
             TextField("Reps", value: $set.reps, format: .number)
                 .keyboardType(.numberPad)
-                .focused($focusedField, equals: .reps)
+                .focused(focusedField, equals: .reps(set.id))
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetRepsField(exercise, set: set))
@@ -143,7 +135,7 @@ struct ExerciseSetRowView: View {
             Spacer()
             TextField(loadFieldLabel, value: $set.weight, format: .number)
                 .keyboardType(.decimalPad)
-                .focused($focusedField, equals: .weight)
+                .focused(focusedField, equals: .weight(set.id))
                 .frame(maxWidth: fieldWidth)
                 .opacity(set.complete ? 0.4 : 1)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetWeightField(exercise, set: set))
@@ -214,15 +206,6 @@ struct ExerciseSetRowView: View {
             Spacer()
         }
         .animation(reduceMotion ? .none : .bouncy, value: set.complete)
-        .toolbar {
-            ToolbarItem(placement: .keyboard) {
-                keyboardToolbarContent
-            }
-        }
-        .onChange(of: focusedField) { _, field in
-            guard field != nil else { return }
-            selectAllFocusedText()
-        }
         .onChange(of: set.reps) {
             scheduleSave(context: context)
             WorkoutActivityManager.update()
@@ -251,53 +234,6 @@ struct ExerciseSetRowView: View {
         }
     }
     
-    /// Renders as a single full-width row only for the field that is actually focused. Every set
-    /// row installs a `.keyboard` toolbar, so anything emitted here while the row is unfocused would
-    /// be merged into the accessory and show up as duplicated controls — gating on `focusedField`
-    /// keeps exactly one clean HStack: adaptive +/- control(s) on the left, dismiss on the right.
-    @ViewBuilder
-    private var keyboardToolbarContent: some View {
-        if let focusedField {
-            HStack(spacing: 12) {
-                switch focusedField {
-                case .weight:
-                    if let step = weightStepDisplay {
-                        Button("−\(weightStepLabel)") { adjustWeight(by: -step) }
-                        Button("+\(weightStepLabel)") { adjustWeight(by: step) }
-                    }
-                case .reps:
-                    Button("−1") { adjustReps(by: -1) }
-                    Button("+1") { adjustReps(by: 1) }
-                }
-
-                Spacer()
-
-                Button {
-                    dismissKeyboard()
-                    self.focusedField = nil
-                } label: {
-                    Image(systemName: "keyboard.chevron.compact.down")
-                }
-                .accessibilityLabel("Dismiss Keyboard")
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 4)
-        }
-    }
-
-    private func adjustReps(by delta: Int) {
-        Haptics.selection()
-        set.reps = max(0, set.reps + delta)
-    }
-
-    private func adjustWeight(by delta: Double) {
-        Haptics.selection()
-        // The step already reflects each equipment type's weight semantics (per-side,
-        // assistance, or added bodyweight load), so bump the entered value directly and
-        // clamp at 0 to keep assisted/bodyweight loads from going negative.
-        set.weight = max(0, roundedDisplayValue(set.weight + delta, fractionDigits: 2))
-    }
-
     private func deleteSet() {
         Haptics.selection()
         exercise.deleteSet(set)
@@ -309,7 +245,7 @@ struct ExerciseSetRowView: View {
     private func updateRPE(to value: Int) {
         guard set.rpe != value else { return }
         dismissKeyboard()
-        focusedField = nil
+        focusedField.wrappedValue = nil
         Haptics.selection()
         set.rpe = value
         if autoCompleteSetAfterRPEEnabled, !set.complete, value > 0 {

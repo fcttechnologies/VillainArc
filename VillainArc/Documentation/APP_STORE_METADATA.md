@@ -102,48 +102,20 @@ Support: villain-arc@fct-technologies.com
 ### What's New (≤ 4000 chars)
 
 ```
-Welcome to Villain Arc 1.3 — the biggest release since launch.
+Villain Arc 1.3 grows from a strength tracker into your full training companion.
 
-NEW: AI workout coach. Describe what you want and Villain Arc generates the program. Smart exercise swaps recommend replacements based on muscle overlap and your training goal. Powered by Apple Intelligence on supported hardware. Everything runs on-device.
+• Cardio, built in. Track outdoor runs and walks with live maps and routes, or log treadmill intervals by hand — with live heart rate, pace, and distance on your Lock Screen and Dynamic Island.
+• Plan with AI. Generate a full program from a sentence, and get smart exercise swaps tuned to your goal and level. (Pro)
+• See your trends. New Health Trends, Sleep Timing, and Correlation insights connect your sleep, effort, and results. (Pro)
+• Hydration tracking. Log water, set a daily goal, and see it on widgets and your Lock Screen.
+• New Profile tab. Your stats, muscle map, workout streak, and a complete-day heatmap in one place.
+• Six ready-made programs. Push/Pull/Legs, Upper/Lower, Full Body, Stronglifts 5×5, 5/3/1 BBB, and Bro Split — start in a tap.
+• Plus expanded Apple Health (heart, respiratory rate, wrist temperature), a redesigned rest timer, and a sharper workout summary.
 
-NEW: Six ready-made programs. Push/Pull/Legs, Upper/Lower, Full Body, Stronglifts 5x5, 5/3/1 BBB, and a Bro Split. Materialize a full split or just a single day into your editor.
-
-NEW: Cardio tab. Outdoor run, outdoor walk, treadmill run, treadmill walk — each with routes or manual intervals, live Apple Health metrics, Live Activities, and Dynamic Island.
-
-NEW: Health Trends. Weight, sleep, resting heart rate, energy, steps, and workout volume across 7-, 30-, 90-day, and 1-year windows.
-
-NEW: Sleep Timing Insights. Average bedtime, wake time, consistency score, and a 14-day scatter so you can see your schedule drift.
-
-NEW: Correlation Insights. Rate your sessions and see which sleep durations and RPE ranges produce the workouts you rated highest.
-
-NEW: Hydration tracking. Manual entries, Apple Health two-way sync, goal history, charts, and widgets.
-
-NEW: Heart, respiratory, and temperature surfaces. Heart-rate range, resting HR, walking HR, HRV, respiratory rate, and sleeping wrist temperature now have Health cards, history screens, and widgets.
-
-NEW: Profile tab. Streak, muscle-map distribution, complete-day heatmap, and time-threshold fitness-level review cues.
-
-NEW: Pre-workout context. Session condition prompt (great / good / tired / sore) with last night's sleep and resting heart rate surfaced before the session begins.
-
-POLISHED
-
-— Rest timer with circular countdown, skip / extend / pause, and a completion haptic.
-— What's New sheet, onboarding slideshow, four TipKit tips on suggestion review and history charts.
-— Split-aware Add Exercise picker — emphasizes the muscles you are training today.
-— Workout summary rating that stays visible after you tap and supports re-rating.
-— Outcome learning from positive feedback so the suggestion engine improves with the sessions you mark as great.
-
-FIXED
-
-— Cardio-linked Apple Health workouts no longer duplicate in history.
-— Active flows are protected from being started on top of each other.
-— Health workout detail handles deleted Apple Health workouts without showing broken sections.
-— Settings bottom content is no longer hidden behind the quick-action bar.
-— Multiple onboarding and resume edge cases for unfinished cardio sessions.
-
-Requires iOS 26. Apple Intelligence features require Apple Intelligence-eligible hardware.
+Core lifting, logging, cardio, and hydration stay free. Villain Arc Pro unlocks the AI and insight features.
 ```
 
-2 320 chars.
+Approved 2026-06-07 customer-facing copy (Fernando), kept verbatim; this is the text for the ASC "What's New in this Version" field on upload.
 
 ### Category
 

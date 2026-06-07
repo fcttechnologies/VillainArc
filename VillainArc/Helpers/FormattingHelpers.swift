@@ -58,6 +58,36 @@ nonisolated func formattedRecentDay(_ date: Date, relativeTo referenceDate: Date
 
 nonisolated func formattedRecentDayAndTime(_ date: Date) -> String { "\(formattedRecentDay(date)) • \(date.formatted(date: .omitted, time: .shortened))" }
 
+/// A compact variant of `formattedRecentDay` for tight layouts (the small Health vital cards):
+/// keeps the relative "Today"/"Yesterday" for the most recent days, but uses an abbreviated weekday
+/// ("Wed") for the past few days and a year-less short date ("Jun 3") beyond, so the date never
+/// crowds the card title.
+nonisolated func formattedCompactRecentDay(_ date: Date) -> String {
+    formattedCompactRecentDay(date, relativeTo: .now)
+}
+
+nonisolated func formattedCompactRecentDay(_ date: Date, relativeTo referenceDate: Date, calendar: Calendar = .autoupdatingCurrent, locale: Locale = .autoupdatingCurrent) -> String {
+    let startOfDate = calendar.startOfDay(for: date)
+    let startOfReferenceDate = calendar.startOfDay(for: referenceDate)
+    let dayOffset = calendar.dateComponents([.day], from: startOfDate, to: startOfReferenceDate).day ?? .min
+
+    if dayOffset == 0 || dayOffset == 1 {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.doesRelativeDateFormatting = true
+        return formatter.string(from: date)
+    }
+
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.calendar = calendar
+    formatter.setLocalizedDateFormatFromTemplate((2...6).contains(dayOffset) ? "EEE" : "MMMd")
+    return formatter.string(from: date)
+}
+
 nonisolated func localizedCountText(_ count: Int, singular: String.LocalizationValue, plural: String.LocalizationValue) -> String {
     let noun = count == 1 ? String(localized: singular) : String(localized: plural)
     return "\(count) \(noun)"

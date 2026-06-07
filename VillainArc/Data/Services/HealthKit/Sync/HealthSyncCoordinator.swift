@@ -347,6 +347,13 @@ actor HealthSyncCoordinator {
     private func handleDeletedHealthWorkout(id: UUID, retainRemovedHealthData: Bool, context: ModelContext) throws {
         guard let existing = try context.fetch(HealthWorkout.byHealthWorkoutUUID(id)).first else { return }
 
+        // A freshly-finished, app-owned mirror (linked to a workout or cardio session) can briefly
+        // appear as added-then-deleted while HealthKit and Watch↔iPhone reconciliation settle. Don't
+        // poison or delete it on that transient event — the live sample is still ours and a re-import
+        // or heal-on-open reconciles it. Only honor deletions for older or non-app-owned mirrors.
+        let isAppOwnedMirror = existing.workoutSession != nil || existing.cardioSession != nil
+        if isAppOwnedMirror, Date().timeIntervalSince(existing.endDate) < 48 * 60 * 60 { return }
+
         if retainRemovedHealthData {
             existing.isAvailableInHealthKit = false
         } else {

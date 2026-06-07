@@ -13,11 +13,12 @@ struct WhatsNewSheet: View {
     let onDismiss: () -> Void
 
     private let features: [WhatsNewFeature] = [
-        WhatsNewFeature(icon: "figure.run.treadmill", iconColor: .orange, title: "Cardio Sessions", description: "Track outdoor runs and walks with route maps, log treadmill intervals, and follow it live on the Lock Screen."),
-        WhatsNewFeature(icon: "heart.text.square.fill", iconColor: .red, title: "Pre-Workout Check-In", description: "Log how you're feeling before each session and bring last night's sleep and resting heart rate along."),
-        WhatsNewFeature(icon: "timer.circle.fill", iconColor: .blue, title: "Rest Timer Redesign", description: "A circular countdown with skip, extend, and pause controls always within reach."),
-        WhatsNewFeature(icon: "line.3.horizontal.decrease.circle.fill", iconColor: .purple, title: "Smarter Exercise Picker", description: "Today's split surfaces relevant exercises first when you add or replace, with muscle and equipment matches up top."),
-        WhatsNewFeature(icon: "sparkles", iconColor: .yellow, title: "Workout Outcome & Patterns", description: "Rate how each session went and watch Villain Arc highlight what's making your best workouts click.")
+        WhatsNewFeature(icon: "figure.run.treadmill", iconColor: .orange, title: "Cardio with Routes", description: "Run, walk, or treadmill, mapped live."),
+        WhatsNewFeature(icon: "sparkles", iconColor: .yellow, title: "AI Plan Generation", description: "Build a full program from a sentence. (Pro)"),
+        WhatsNewFeature(icon: "arrow.triangle.2.circlepath", iconColor: .blue, title: "AI Exercise Swaps", description: "Smart replacements for your goal and level. (Pro)"),
+        WhatsNewFeature(icon: "chart.xyaxis.line", iconColor: .pink, title: "Health Insights", description: "Trends, sleep timing, and correlations. (Pro)"),
+        WhatsNewFeature(icon: "drop.fill", iconColor: .cyan, title: "Hydration Tracking", description: "Log water and hit a daily goal."),
+        WhatsNewFeature(icon: "person.crop.circle.fill", iconColor: .indigo, title: "Profile & Streaks", description: "Stats, muscle map, and a complete-day heatmap.")
     ]
 
     var body: some View {

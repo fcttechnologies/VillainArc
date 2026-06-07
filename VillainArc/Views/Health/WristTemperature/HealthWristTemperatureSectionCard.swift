@@ -29,7 +29,7 @@ struct HealthWristTemperatureSectionCard: View {
                         .minimumScaleFactor(0.75)
                     Spacer()
                     if let latestEntry {
-                        Text(formattedRecentDay(latestEntry.date))
+                        Text(formattedCompactRecentDay(latestEntry.date))
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
@@ -60,6 +60,7 @@ struct HealthWristTemperatureSectionCard: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .healthVitalCardSizing()
             .padding()
             .appCardStyle()
             .tint(.primary)

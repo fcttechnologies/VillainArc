@@ -24,7 +24,7 @@ struct HealthHeartRateSectionCard: View {
                 return "\(Int(low.rounded()))-\(Int(high.rounded()))"
             },
             unitText: "bpm",
-            dateText: latestEntry.map { formattedRecentDay($0.date) },
+            dateText: latestEntry.map { formattedCompactRecentDay($0.date) },
             emptyText: "Heart rate ranges will show up here after Apple Health syncs.",
             destination: .heartRateHistory
         ) {
@@ -48,7 +48,7 @@ struct HealthRestingHeartRateSectionCard: View {
             tint: .pink,
             valueText: latestEntry?.restingHeartRate.map { "\(Int($0.rounded()))" },
             unitText: "bpm",
-            dateText: latestEntry.map { formattedRecentDay($0.date) },
+            dateText: latestEntry.map { formattedCompactRecentDay($0.date) },
             emptyText: "Resting heart rate will show up here after Apple Health syncs.",
             destination: .restingHeartRateHistory
         ) {
@@ -72,7 +72,7 @@ struct HealthWalkingHeartRateSectionCard: View {
             tint: .orange,
             valueText: latestEntry?.walkingHeartRateAverage.map { "\(Int($0.rounded()))" },
             unitText: "bpm",
-            dateText: latestEntry.map { formattedRecentDay($0.date) },
+            dateText: latestEntry.map { formattedCompactRecentDay($0.date) },
             emptyText: "Walking heart rate will show up here after Apple Health syncs.",
             destination: .walkingHeartRateHistory
         ) {
@@ -96,7 +96,7 @@ struct HealthHeartRateVariabilitySectionCard: View {
             tint: .purple,
             valueText: latestEntry?.heartRateVariabilitySDNN.map { "\(Int($0.rounded()))" },
             unitText: "ms",
-            dateText: latestEntry.map { formattedRecentDay($0.date) },
+            dateText: latestEntry.map { formattedCompactRecentDay($0.date) },
             emptyText: "Heart rate variability will show up here after Apple Health syncs.",
             destination: .heartRateVariabilityHistory
         ) {
@@ -165,6 +165,7 @@ private struct HealthVitalMetricCard<ChartContent: View>: View {
                         .multilineTextAlignment(.leading)
                 }
             }
+            .healthVitalCardSizing()
             .padding()
             .appCardStyle()
             .tint(.primary)

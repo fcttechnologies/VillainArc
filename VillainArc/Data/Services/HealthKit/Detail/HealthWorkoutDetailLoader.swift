@@ -178,6 +178,11 @@ enum HealthWorkoutSummaryStatsLoader {
 
 @Observable final class HealthWorkoutDetailLoader {
     private static let chartMaxPoints = 180
+    /// A freshly-finished workout's HealthKit sample can be briefly unqueryable (save settle,
+    /// Watch↔iPhone reconciliation). Within this window after the workout ends we retry the live
+    /// fetch and refuse to poison the cached mirror's availability, so a recent workout that just
+    /// isn't queryable *yet* still self-heals on a later open instead of being stuck on cached-only.
+    private static let healthKitGraceWindow: TimeInterval = 48 * 60 * 60
     private let cachedWorkout: HealthWorkout
     private let healthStore = HealthAuthorizationManager.healthStore
     var summary: HealthWorkoutDetailSummary
@@ -219,18 +224,34 @@ enum HealthWorkoutSummaryStatsLoader {
             isLoading = false
             hasLoaded = true
         }
-        guard cachedWorkout.isAvailableInHealthKit else {
+        // A mirror previously marked unavailable normally short-circuits to cached-only. Within the
+        // grace window we still attempt a live fetch (a recent workout may have been poisoned by a
+        // transient miss before its sample was queryable) and heal on success; older unavailable
+        // mirrors stay cached-only and rely on the anchored re-import to heal them.
+        guard cachedWorkout.isAvailableInHealthKit || isWithinHealthKitGraceWindow else {
             isUsingCachedSummaryOnly = true
             refreshDerivedData(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
             return
         }
         do {
-            guard let workout = try await fetchWorkout() else {
+            var fetchedWorkout = try await fetchWorkout()
+            if fetchedWorkout == nil, isWithinHealthKitGraceWindow {
+                // The just-saved sample may not be independently queryable yet; retry once.
+                try? await Task.sleep(for: .seconds(1.5))
+                fetchedWorkout = try await fetchWorkout()
+            }
+            guard let workout = fetchedWorkout else {
                 isUsingCachedSummaryOnly = true
                 loadErrorMessage = "This workout is no longer available in Apple Health."
                 markCachedWorkoutUnavailable()
                 refreshDerivedData(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
                 return
+            }
+            // Heal-on-open: a successful live fetch proves the mirror is available, so clear any
+            // earlier poisoning that would otherwise keep future opens stuck on cached-only.
+            if !cachedWorkout.isAvailableInHealthKit {
+                cachedWorkout.isAvailableInHealthKit = true
+                if let context = cachedWorkout.modelContext { saveContext(context: context) }
             }
             loadedWorkout = workout
             let liveSummary = HealthWorkoutDetailSummary(workout: workout)
@@ -530,7 +551,14 @@ enum HealthWorkoutSummaryStatsLoader {
     }
     private func markCachedWorkoutUnavailable() {
         guard cachedWorkout.isAvailableInHealthKit else { return }
+        // Don't poison a freshly-finished mirror whose sample may just not be queryable yet —
+        // staying available lets a later open re-query and heal. Misses outside the window are real.
+        guard !isWithinHealthKitGraceWindow else { return }
         cachedWorkout.isAvailableInHealthKit = false
         if let context = cachedWorkout.modelContext { saveContext(context: context) }
+    }
+
+    private var isWithinHealthKitGraceWindow: Bool {
+        Date().timeIntervalSince(cachedWorkout.endDate) < Self.healthKitGraceWindow
     }
 }

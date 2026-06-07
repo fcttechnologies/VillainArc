@@ -2,6 +2,20 @@ import Charts
 import Foundation
 import SwiftUI
 
+/// Shared minimum content height for the small Health vital cards in the two-column grid, so empty
+/// and populated cards render at the same size instead of leaving the grid ragged. A minimum (not a
+/// hard fixed height) keeps every card equal at default Dynamic Type while still growing without
+/// clipping at larger accessibility sizes.
+let healthVitalCardMinContentHeight: CGFloat = 132
+
+extension View {
+    /// Pins a small Health vital card to uniform width and a shared minimum height, top-aligned,
+    /// so the two-column grid stays even regardless of whether a card has data yet.
+    func healthVitalCardSizing() -> some View {
+        frame(maxWidth: .infinity, minHeight: healthVitalCardMinContentHeight, alignment: .topLeading)
+    }
+}
+
 struct HealthRangeChartPoint: Identifiable {
     let id: UUID
     let date: Date

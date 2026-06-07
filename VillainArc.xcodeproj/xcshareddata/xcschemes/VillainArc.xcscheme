@@ -81,7 +81,7 @@
          </CommandLineArgument>
       </CommandLineArguments>
       <StoreKitConfigurationFileReference
-         identifier = "VillainArc/VillainArc.storekit">
+         identifier = "../../VillainArc/VillainArc.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
