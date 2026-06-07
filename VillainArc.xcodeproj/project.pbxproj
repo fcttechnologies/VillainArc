@@ -106,6 +106,7 @@
 		FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Documentation/APP_INTENTS_AUDIT.md,
 				Documentation/EXERCISE_HISTORY_FLOW.md,
 				Documentation/HEALTHKIT_INTEGRATION.md,
 				Documentation/ONBOARDING_FLOW.md,
@@ -658,7 +659,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -687,7 +688,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -715,7 +716,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -742,7 +743,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -770,7 +771,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcIntentsExtension/VillainArcIntentsExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
@@ -807,7 +808,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcIntentsExtension/VillainArcIntentsExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
@@ -846,7 +847,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
@@ -885,7 +886,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
@@ -1052,7 +1053,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArc/VillainArc.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1101,7 +1102,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArc/VillainArc.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
