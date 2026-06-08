@@ -120,6 +120,7 @@ enum AccessibilityIdentifiers {
     static func healthTrendCard(_ metricRawValue: String) -> String { "healthTrendCard-\(metricRawValue)" }
 
     // MARK: - CardioTabView / CardioActiveSessionView
+    static let cardioRouteRangeMenu = "cardioRouteRangeMenu"
     static func cardioStart(kindRawValue: String) -> String { "cardioStart-\(kindRawValue)" }
     static let cardioActiveCancel = "cardioActiveCancel"
     static let cardioActiveFinish = "cardioActiveFinish"

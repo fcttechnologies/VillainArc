@@ -38,6 +38,29 @@ private extension OnboardingStep {
     }
 }
 
+// The onboarding sheet sizes itself to the step currently on screen by measuring
+// that step's natural content height at runtime — Dynamic Type and localization
+// aware — instead of using hardcoded detent fractions.
+private extension View {
+    /// Reports the receiver's natural height into the manager so the sheet's detent
+    /// can follow it. `chrome` accounts for surrounding sheet / navigation-bar space
+    /// the measured content itself doesn't include.
+    func reportsOnboardingHeight(to manager: OnboardingManager, chrome: CGFloat) -> some View {
+        onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            guard height > 0 else { return }
+            manager.sheetHeight = height + chrome
+        }
+    }
+}
+
+// Sheet chrome added on top of the measured content height.
+private enum OnboardingChrome {
+    /// A pushed profile / permission step (inline navigation bar + sheet top inset).
+    static let navStep: CGFloat = 100
+    /// A root state shown without a navigation bar (bootstrap, finishing, health).
+    static let plain: CGFloat = 56
+}
+
 struct OnboardingView: View {
     @Bindable var manager: OnboardingManager
     @Environment(\.scenePhase) private var scenePhase
@@ -71,6 +94,8 @@ struct OnboardingView: View {
             guard manager.state == .noiCloud || manager.state == .cloudKitAccountIssue || manager.state == .cloudKitUnavailable else { return }
             Task { await manager.retry() }
         }
+        .presentationDetents([.height(max(280, manager.sheetHeight))])
+        .animation(.easeInOut(duration: 0.25), value: manager.sheetHeight)
     }
 
     private var bootstrapView: some View {
@@ -482,6 +507,8 @@ private struct OnboardingHealthPermissionStepView: View {
             }
         }
         .padding(.horizontal)
+        .fixedSize(horizontal: false, vertical: true)
+        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         .navigationTitle("Apple Health")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -542,6 +569,8 @@ private struct OnboardingLocationPermissionStepView: View {
             }
         }
         .padding(.horizontal)
+        .fixedSize(horizontal: false, vertical: true)
+        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         .navigationTitle("Location")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -579,6 +608,8 @@ private struct ProfileNameStepView: View {
             Spacer()
         }
         .padding()
+        .fixedSize(horizontal: false, vertical: true)
+        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         .simultaneousGesture(
             TapGesture().onEnded {
                 dismissKeyboard()
@@ -632,6 +663,8 @@ private struct ProfileBirthdayStepView: View {
             Spacer()
         }
         .padding()
+        .fixedSize(horizontal: false, vertical: true)
+        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         .navigationTitle("When's your birthday?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -712,6 +745,8 @@ private struct ProfileGenderStepView: View {
             Spacer()
         }
         .padding()
+        .fixedSize(horizontal: false, vertical: true)
+        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         .animation(reduceMotion ? nil : .bouncy, value: gender)
         .navigationTitle("What's your gender?")
         .navigationBarTitleDisplayMode(.inline)
@@ -800,6 +835,8 @@ private struct ProfileHeightStepView: View {
             Spacer()
         }
         .padding()
+        .fixedSize(horizontal: false, vertical: true)
+        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         .navigationTitle("What's your height?")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -853,6 +890,7 @@ private struct ProfileFitnessLevelStepView: View {
                 FitnessLevelSelectionList(selection: $selectedLevel)
             }
             .padding()
+            .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         }
         .scrollIndicators(.hidden)
         .animation(reduceMotion ? nil : .bouncy, value: selectedLevel)
@@ -909,6 +947,7 @@ private struct ProfileTrainingGoalStepView: View {
                 TrainingGoalSelectionList(selection: $selectedGoal)
             }
             .padding()
+            .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
         }
         .scrollIndicators(.hidden)
         .animation(reduceMotion ? nil : .bouncy, value: selectedGoal)

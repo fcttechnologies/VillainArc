@@ -1,65 +1,44 @@
 {
-  "identifier" : "VillainArc",
-  "nonRenewingSubscriptions" : [],
-  "products" : [],
-  "settings" : {
-    "_failTransactionsEnabled" : false,
-    "_locale" : "en_US",
-    "_storefront" : "USA",
-    "_storeKitErrors" : [
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
       {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_UNKNOWN"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_CLIENTINVALID"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_PAYMENTCANCELLED"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_PAYMENTINVALID"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_PAYMENTNOTALLOWED"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_STOREPRODUCTUNAVAILABLE"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_CLOUDSERVICEPERMISSIONDENIED"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_CLOUDSERVICENETWORKCONNECTIONFAILED"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "error" : "SKERR_CLOUDSERVICEREVOKED"
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
       }
     ]
   },
+  "identifier" : "221D6260",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6759259627",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "X26SC78YDG",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 802579331.49622703,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
   "subscriptionGroups" : [
     {
-      "id" : "89F4F66A-986B-4090-ACA5-DCA8EE3AB501",
+      "id" : "22118154",
       "localizations" : [
         {
-          "description" : "Villain Arc Pro",
+          "description" : "",
           "displayName" : "Villain Arc Pro",
           "locale" : "en_US"
         }
@@ -67,19 +46,44 @@
       "name" : "Villain Arc Pro",
       "subscriptions" : [
         {
-          "adHocOfferCodesEnabled" : false,
+          "adHocOffers" : [
+
+          ],
+          "billingPlans" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "commitmentDisplayPrice" : "4.99",
+              "displayPrice" : "4.99",
+              "internalID" : "6773965177_BILLED_UPFRONT",
+              "isEnabled" : true
+            }
+          ],
+          "codeOffers" : [
+
+          ],
           "displayPrice" : "4.99",
-          "familySharable" : true,
+          "familyShareable" : true,
           "groupNumber" : 1,
-          "internalID" : "F0469ECA-5D44-4274-A4C4-FBECE223FD03",
+          "internalID" : "6773965177",
           "introductoryOffer" : {
-            "duration" : "P1W",
-            "offerMode" : "freeTrial",
-            "offerIdentifier" : "600BD63B-D3D1-4768-B54C-B256AE39EF11"
+            "billingPlanType" : "BILLED_UPFRONT",
+            "internalID" : "5D812D78",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
           },
+          "introductoryOffers" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "internalID" : "5D812D78",
+              "numberOfPeriods" : 1,
+              "paymentMode" : "free",
+              "subscriptionPeriod" : "P1W"
+            }
+          ],
           "localizations" : [
             {
-              "description" : "Unlock AI plan generation, AI exercise replacement, Health Trends, Sleep Timing Insights, and Correlation Insights.",
+              "description" : "Unlock all Villain Arc Pro features.",
               "displayName" : "Villain Arc Pro (Monthly)",
               "locale" : "en_US"
             }
@@ -87,23 +91,51 @@
           "productID" : "com.fcttechnologies.VillainArc.Pro.Monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Pro Monthly",
-          "subscriptionGroupID" : "89F4F66A-986B-4090-ACA5-DCA8EE3AB501",
-          "type" : "RecurringSubscription"
+          "subscriptionGroupID" : "22118154",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
-          "adHocOfferCodesEnabled" : false,
+          "adHocOffers" : [
+
+          ],
+          "billingPlans" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "commitmentDisplayPrice" : "39.99",
+              "displayPrice" : "39.99",
+              "internalID" : "6773965537_BILLED_UPFRONT",
+              "isEnabled" : true
+            }
+          ],
+          "codeOffers" : [
+
+          ],
           "displayPrice" : "39.99",
-          "familySharable" : true,
+          "familyShareable" : true,
           "groupNumber" : 2,
-          "internalID" : "4537D0B2-B57D-4060-9976-E1A5DE7A7237",
+          "internalID" : "6773965537",
           "introductoryOffer" : {
-            "duration" : "P1W",
-            "offerMode" : "freeTrial",
-            "offerIdentifier" : "916ECF3F-3EFD-4B4E-A3BA-E90A101FE407"
+            "billingPlanType" : "BILLED_UPFRONT",
+            "internalID" : "D4CCAD13",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
           },
+          "introductoryOffers" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "internalID" : "D4CCAD13",
+              "numberOfPeriods" : 1,
+              "paymentMode" : "free",
+              "subscriptionPeriod" : "P1W"
+            }
+          ],
           "localizations" : [
             {
-              "description" : "Unlock AI plan generation, AI exercise replacement, Health Trends, Sleep Timing Insights, and Correlation Insights.",
+              "description" : "Unlock all Villain Arc Pro features.",
               "displayName" : "Villain Arc Pro (Yearly)",
               "locale" : "en_US"
             }
@@ -111,14 +143,17 @@
           "productID" : "com.fcttechnologies.VillainArc.Pro.Yearly",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Pro Yearly",
-          "subscriptionGroupID" : "89F4F66A-986B-4090-ACA5-DCA8EE3AB501",
-          "type" : "RecurringSubscription"
+          "subscriptionGroupID" : "22118154",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }
   ],
   "version" : {
-    "major" : 2,
+    "major" : 5,
     "minor" : 0
   }
 }

@@ -83,6 +83,70 @@ enum CorrelationDataBuilder {
     }
 }
 
+// MARK: - Auto-captured session metrics
+
+/// A single completed session reduced to the signals the app captures automatically — no manual
+/// session rating required. This is what lets Correlations be useful from day one.
+struct SessionMetricsSample: Identifiable, Equatable {
+    let id: UUID
+    let date: Date
+    let sleepHours: Double?       // night before the session
+    let averageRPE: Double?       // mean RPE over completed, rated sets
+    let totalVolumeKg: Double     // Σ weight × reps (weights are kg on completed sessions)
+    let topEstimated1RMKg: Double? // best estimated 1RM across completed working sets
+    let durationMinutes: Double?  // wall-clock session length
+}
+
+extension CorrelationDataBuilder {
+    /// Reduce completed sessions to auto-captured metric samples. `sleepByWakeDay` is prebuilt once
+    /// (no per-session fetch) keyed by `HealthSleepNight.wakeDay`.
+    static func buildSessionMetrics(sessions: [WorkoutSession], sleepByWakeDay: [Date: Double]) -> [SessionMetricsSample] {
+        sessions.map { session in
+            let sleepKey = HealthSleepNight.wakeDayKey(for: session.startedAt)
+            let sleep = (sleepByWakeDay[sleepKey]).flatMap { $0 > 0 ? $0 : nil }
+
+            let completedSets = session.sortedExercises.flatMap(\.sortedSets).filter(\.complete)
+            let rpes = completedSets.filter { $0.rpe > 0 }.map { Double($0.rpe) }
+            let averageRPE = rpes.isEmpty ? nil : rpes.reduce(0, +) / Double(rpes.count)
+            let top1RM = completedSets.compactMap(\.estimated1RM).max()
+            let duration = session.totalDuration > 0 ? session.totalDuration / 60 : nil
+
+            return SessionMetricsSample(
+                id: session.id,
+                date: session.startedAt,
+                sleepHours: sleep,
+                averageRPE: averageRPE,
+                totalVolumeKg: session.totalVolume,
+                topEstimated1RMKg: top1RM,
+                durationMinutes: duration
+            )
+        }
+    }
+}
+
+/// One (x, y) observation for a scatter correlation.
+struct CorrelationPoint: Identifiable, Equatable {
+    let id: UUID
+    let x: Double
+    let y: Double
+}
+
+/// A fully-prepared correlation chart: points, optional fitted line, axis labels, and the headline
+/// sentences to use if this turns out to be the strongest relationship.
+struct CorrelationMetric: Identifiable {
+    let id = UUID()
+    let title: String
+    let xAxisLabel: String
+    let yAxisLabel: String
+    let points: [CorrelationPoint]
+    let fit: LinearFit?
+    let tint: Color
+    let caption: String?
+    let emptyStateText: String
+    let insightUp: String
+    let insightDown: String
+}
+
 struct LinearFit {
     let slope: Double
     let intercept: Double
@@ -118,70 +182,45 @@ struct LinearFit {
 struct CorrelationInsightsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(WorkoutSession.completedSession) private var sessions: [WorkoutSession]
+    @Query(HealthSleepNight.history) private var sleepNights: [HealthSleepNight]
+    @Query(AppSettings.single) private var appSettings: [AppSettings]
 
-    private static let minimumSamples = 8
+    // Built off the body-render path in `.task` (per the perf learning: no O(table) reduction or
+    // SwiftData walking inside a body-read computed var).
+    @State private var metrics: [CorrelationMetric] = []
+    @State private var heroInsight: String?
+    @State private var ratedSleepPoints: [(CorrelationSample, Double, Double)] = []
+    @State private var ratedRPEPoints: [(CorrelationSample, Double, Double)] = []
+    @State private var hasRatedData = false
 
-    private var samples: [CorrelationSample] {
-        CorrelationDataBuilder.build(sessions: sessions, context: modelContext)
-    }
+    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
-    private var sleepPoints: [(CorrelationSample, Double, Double)] {
-        samples.compactMap { sample in
-            guard let sleep = sample.sleepHours else { return nil }
-            return (sample, sleep, sample.qualityScore)
-        }
-    }
-
-    private var rpePoints: [(CorrelationSample, Double, Double)] {
-        samples.compactMap { sample in
-            guard let rpe = sample.averageRPE else { return nil }
-            return (sample, rpe, sample.qualityScore)
-        }
-    }
-
-    private var sleepFit: LinearFit? {
-        LinearFit.fit(sleepPoints.map { ($0.1, $0.2) })
-    }
-
-    private var rpeFit: LinearFit? {
-        LinearFit.fit(rpePoints.map { ($0.1, $0.2) })
+    // Cheap signature so the heavy rebuild only re-runs when the inputs actually change.
+    private var rebuildSignature: String {
+        "\(sessions.count)-\(sleepNights.count)-\(weightUnit.rawValue)"
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if samples.count < Self.minimumSamples {
+                if let heroInsight {
+                    InsightHeroCard(text: heroInsight)
+                }
+
+                if metrics.isEmpty && !hasRatedData {
                     ContentUnavailableView {
-                        Label(LocalizedStringResource("Keep Rating Your Sessions"), systemImage: "chart.dots.scatter")
+                        Label(LocalizedStringResource("Building Your Correlations"), systemImage: "chart.dots.scatter")
                     } description: {
-                        Text("You have \(samples.count) of \(Self.minimumSamples) rated sessions needed to surface correlations. Rate workouts on the summary screen — \"Great\", \"Good\", \"OK\", or \"Tough\" — to feed this view.")
+                        Text("Log a few more workouts and Villain Arc will chart how your sleep, effort, and training line up. Sync Apple Health sleep to unlock even more.")
                     }
+                    .padding(.top, 40)
                 } else {
-                    if let summary = autoInsight() {
-                        InsightHeroCard(text: summary)
+                    ForEach(metrics) { metric in
+                        MetricScatterCard(metric: metric)
                     }
-
-                    CorrelationScatterCard(
-                        title: String(localized: "Sleep vs Session Quality"),
-                        xAxis: String(localized: "Hours slept"),
-                        yAxis: String(localized: "Session quality"),
-                        xDomain: domain(for: sleepPoints.map(\.1), padding: 0.5, fallback: 5...10),
-                        points: sleepPoints,
-                        fit: sleepFit,
-                        tint: .indigo,
-                        emptyStateText: emptyState(forCount: sleepPoints.count, kind: .sleep)
-                    )
-
-                    CorrelationScatterCard(
-                        title: String(localized: "RPE vs Session Quality"),
-                        xAxis: String(localized: "Average RPE"),
-                        yAxis: String(localized: "Session quality"),
-                        xDomain: domain(for: rpePoints.map(\.1), padding: 0.5, fallback: 5...10),
-                        points: rpePoints,
-                        fit: rpeFit,
-                        tint: .orange,
-                        emptyStateText: emptyState(forCount: rpePoints.count, kind: .rpe)
-                    )
+                    if hasRatedData {
+                        ratedQualityCard
+                    }
                 }
             }
             .padding()
@@ -191,44 +230,181 @@ struct CorrelationInsightsView: View {
         .navigationTitle("Correlations")
         .toolbarTitleDisplayMode(.inline)
         .accessibilityIdentifier(AccessibilityIdentifiers.correlationInsightsRoot)
+        .task(id: rebuildSignature) { rebuild() }
         .task { await IntentDonations.donateShowCorrelationInsights() }
+    }
+
+    private var ratedQualityCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("From Your Session Ratings")
+                    .font(.headline)
+                Text("How sleep and effort line up with how each session felt — from the ratings you give on the workout summary.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            CorrelationScatterCard(
+                title: String(localized: "Sleep vs Session Quality"),
+                xAxis: String(localized: "Hours slept"),
+                yAxis: String(localized: "Session quality"),
+                xDomain: domain(for: ratedSleepPoints.map(\.1), padding: 0.5, fallback: 5...10),
+                points: ratedSleepPoints,
+                fit: LinearFit.fit(ratedSleepPoints.map { ($0.1, $0.2) }),
+                tint: .indigo,
+                emptyStateText: String(localized: "Rate a few more sessions with sleep synced to chart this. (\(ratedSleepPoints.count) data points so far.)")
+            )
+
+            Divider()
+
+            CorrelationScatterCard(
+                title: String(localized: "RPE vs Session Quality"),
+                xAxis: String(localized: "Average RPE"),
+                yAxis: String(localized: "Session quality"),
+                xDomain: domain(for: ratedRPEPoints.map(\.1), padding: 0.5, fallback: 5...10),
+                points: ratedRPEPoints,
+                fit: LinearFit.fit(ratedRPEPoints.map { ($0.1, $0.2) }),
+                tint: .orange,
+                emptyStateText: String(localized: "Rate a few more sessions with RPE logged to chart this. (\(ratedRPEPoints.count) data points so far.)")
+            )
+        }
+        .padding()
+        .appCardStyle()
+    }
+
+    // MARK: - Build
+
+    private func rebuild() {
+        let unit = weightUnit
+        let sleepByWakeDay = Dictionary(
+            sleepNights.map { ($0.wakeDay, $0.timeAsleep / 3600) },
+            uniquingKeysWith: { Swift.max($0, $1) }
+        )
+        let samples = CorrelationDataBuilder.buildSessionMetrics(sessions: sessions, sleepByWakeDay: sleepByWakeDay)
+
+        let volumeLabel = "\(String(localized: "Volume")) (\(unit.rawValue))"
+        let oneRMLabel = "\(String(localized: "Top set 1RM")) (\(unit.rawValue))"
+
+        let built: [CorrelationMetric] = [
+            makeMetric(
+                title: String(localized: "Session Length vs Volume"),
+                xLabel: String(localized: "Duration (min)"),
+                yLabel: volumeLabel,
+                tint: .blue,
+                needs: String(localized: "Finish a few more workouts to chart this."),
+                insightUp: String(localized: "Your longer sessions pack in more total volume."),
+                insightDown: String(localized: "You squeeze more volume into your shorter sessions — efficient training."),
+                samples: samples,
+                x: { $0.durationMinutes },
+                y: { volumeDisplay($0.totalVolumeKg, unit: unit) }
+            ),
+            makeMetric(
+                title: String(localized: "Effort vs Volume"),
+                xLabel: String(localized: "Average RPE"),
+                yLabel: volumeLabel,
+                tint: .orange,
+                needs: String(localized: "Log RPE on more sessions to chart this."),
+                insightUp: String(localized: "Higher-effort sessions track with more total volume."),
+                insightDown: String(localized: "Your biggest-volume sessions actually feel easier — strength is paying off."),
+                samples: samples,
+                x: { $0.averageRPE },
+                y: { volumeDisplay($0.totalVolumeKg, unit: unit) }
+            ),
+            makeMetric(
+                title: String(localized: "Sleep vs Volume"),
+                xLabel: String(localized: "Hours slept"),
+                yLabel: volumeLabel,
+                tint: .indigo,
+                needs: String(localized: "Sync Apple Health sleep to chart this."),
+                insightUp: String(localized: "You train with more volume after better sleep."),
+                insightDown: String(localized: "Your highest-volume days don't depend on a long night's sleep."),
+                samples: samples,
+                x: { $0.sleepHours },
+                y: { volumeDisplay($0.totalVolumeKg, unit: unit) }
+            ),
+            makeMetric(
+                title: String(localized: "Sleep vs Top-Set Strength"),
+                xLabel: String(localized: "Hours slept"),
+                yLabel: oneRMLabel,
+                tint: .teal,
+                needs: String(localized: "Sync Apple Health sleep to chart this."),
+                insightUp: String(localized: "Your top sets are stronger after more sleep."),
+                insightDown: String(localized: "Your top-set strength holds up even on shorter sleep."),
+                samples: samples,
+                x: { $0.sleepHours },
+                y: { oneRMDisplay($0.topEstimated1RMKg, unit: unit) }
+            )
+        ]
+
+        metrics = built.filter { !$0.points.isEmpty }
+        heroInsight = makeHeroInsight(from: built)
+
+        let rated = CorrelationDataBuilder.build(sessions: sessions, context: modelContext)
+        ratedSleepPoints = rated.compactMap { sample in sample.sleepHours.map { (sample, $0, sample.qualityScore) } }
+        ratedRPEPoints = rated.compactMap { sample in sample.averageRPE.map { (sample, $0, sample.qualityScore) } }
+        hasRatedData = !rated.isEmpty
+    }
+
+    private func makeMetric(
+        title: String,
+        xLabel: String,
+        yLabel: String,
+        tint: Color,
+        needs: String,
+        insightUp: String,
+        insightDown: String,
+        samples: [SessionMetricsSample],
+        x: (SessionMetricsSample) -> Double?,
+        y: (SessionMetricsSample) -> Double?
+    ) -> CorrelationMetric {
+        let points = samples.compactMap { sample -> CorrelationPoint? in
+            guard let xv = x(sample), let yv = y(sample) else { return nil }
+            return CorrelationPoint(id: sample.id, x: xv, y: yv)
+        }.sorted { $0.x < $1.x }
+
+        let fit = LinearFit.fit(points.map { ($0.x, $0.y) })
+        let caption = fit.map { String(localized: "Correlation r = \(String(format: "%.2f", $0.pearson)) · \(points.count) sessions") }
+        let emptyText = "\(needs) \(String(localized: "(\(points.count) data points so far.)"))"
+
+        return CorrelationMetric(
+            title: title,
+            xAxisLabel: xLabel,
+            yAxisLabel: yLabel,
+            points: points,
+            fit: fit,
+            tint: tint,
+            caption: caption,
+            emptyStateText: emptyText,
+            insightUp: insightUp,
+            insightDown: insightDown
+        )
+    }
+
+    /// Surface the single strongest, well-supported relationship as the hero line.
+    private func makeHeroInsight(from metrics: [CorrelationMetric]) -> String? {
+        let strongest = metrics
+            .compactMap { metric -> (CorrelationMetric, Double)? in
+                guard let fit = metric.fit, metric.points.count >= 5, abs(fit.pearson) >= 0.35 else { return nil }
+                return (metric, fit.pearson)
+            }
+            .max(by: { abs($0.1) < abs($1.1) })
+        guard let (metric, pearson) = strongest else { return nil }
+        return pearson >= 0 ? metric.insightUp : metric.insightDown
+    }
+
+    private func volumeDisplay(_ kg: Double, unit: WeightUnit) -> Double? {
+        guard kg > 0 else { return nil }
+        return unit.fromKg(kg).rounded()
+    }
+
+    private func oneRMDisplay(_ kg: Double?, unit: WeightUnit) -> Double? {
+        guard let kg, kg > 0 else { return nil }
+        return roundedDisplayValue(unit.fromKg(kg), fractionDigits: 1)
     }
 
     private func domain(for values: [Double], padding: Double, fallback: ClosedRange<Double>) -> ClosedRange<Double> {
         guard let lo = values.min(), let hi = values.max(), lo < hi else { return fallback }
         return (lo - padding)...(hi + padding)
-    }
-
-    private enum EmptyKind { case sleep, rpe }
-    private func emptyState(forCount count: Int, kind: EmptyKind) -> String {
-        switch kind {
-        case .sleep:
-            return String(localized: "Sync more sleep data to chart this correlation. (\(count) data points so far.)")
-        case .rpe:
-            return String(localized: "Log RPE on completed sets to chart this correlation. (\(count) data points so far.)")
-        }
-    }
-
-    private func autoInsight() -> String? {
-        let goodSleep = sleepPoints.filter { $0.1 >= 7.0 }
-        let lowRPE = rpePoints.filter { $0.1 <= 8.0 }
-        let both = sleepPoints.filter { sleep in
-            sleep.1 >= 7.0 && rpePoints.contains(where: { $0.0.id == sleep.0.id && $0.1 <= 8.0 })
-        }
-        if both.count >= 3 {
-            let avgQuality = both.map(\.2).reduce(0, +) / Double(both.count)
-            if avgQuality >= 0.7 {
-                let pct = Int((avgQuality * 100).rounded())
-                return String(localized: "You feel best when you sleep 7+ hours and keep average RPE at 8 or lower — \(pct)% session-quality on those days.")
-            }
-        }
-        if let fit = sleepFit, fit.pearson >= 0.3, goodSleep.count >= 3 {
-            return String(localized: "Sleep is moving the needle: more sleep tracks with better-rated sessions.")
-        }
-        if let fit = rpeFit, fit.pearson <= -0.3, lowRPE.count >= 3 {
-            return String(localized: "Intensity matters: sessions feel better when average RPE stays controlled.")
-        }
-        return nil
     }
 }
 
@@ -247,6 +423,77 @@ private struct InsightHeroCard: View {
         }
         .padding()
         .appCardStyle()
+    }
+}
+
+/// Generic scatter card for an auto-captured correlation: numeric axes, dynamic domains, and a
+/// dashed fitted line when there are enough points.
+private struct MetricScatterCard: View {
+    let metric: CorrelationMetric
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(metric.title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+
+            if metric.points.count < 3 {
+                Text(metric.emptyStateText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                chart
+                if let caption = metric.caption {
+                    Text(caption)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .appCardStyle()
+    }
+
+    private var chart: some View {
+        let xDomain = domain(for: metric.points.map(\.x))
+        let yDomain = domain(for: metric.points.map(\.y))
+        return Chart {
+            ForEach(metric.points) { point in
+                PointMark(x: .value(metric.xAxisLabel, point.x), y: .value(metric.yAxisLabel, point.y))
+                    .foregroundStyle(metric.tint.gradient)
+                    .symbolSize(70)
+            }
+            if let fit = metric.fit {
+                let lo = xDomain.lowerBound
+                let hi = xDomain.upperBound
+                LineMark(x: .value(metric.xAxisLabel, lo), y: .value(metric.yAxisLabel, clamp(fit.y(at: lo), to: yDomain)))
+                    .foregroundStyle(metric.tint.opacity(0.4))
+                    .lineStyle(.init(lineWidth: 2, dash: [4, 4]))
+                LineMark(x: .value(metric.xAxisLabel, hi), y: .value(metric.yAxisLabel, clamp(fit.y(at: hi), to: yDomain)))
+                    .foregroundStyle(metric.tint.opacity(0.4))
+                    .lineStyle(.init(lineWidth: 2, dash: [4, 4]))
+            }
+        }
+        .chartXScale(domain: xDomain)
+        .chartYScale(domain: yDomain)
+        .chartXAxisLabel(metric.xAxisLabel)
+        .chartYAxisLabel(metric.yAxisLabel)
+        .frame(height: 200)
+        .accessibilityLabel(Text("\(metric.title) scatter chart with fitted line"))
+    }
+
+    private func domain(for values: [Double]) -> ClosedRange<Double> {
+        guard let lo = values.min(), let hi = values.max(), lo < hi else {
+            let v = values.first ?? 0
+            return (v - 1)...(v + 1)
+        }
+        let pad = (hi - lo) * 0.1
+        return (lo - pad)...(hi + pad)
+    }
+
+    private func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {
+        min(max(value, range.lowerBound), range.upperBound)
     }
 }
 
@@ -317,8 +564,6 @@ private struct CorrelationScatterCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .appCardStyle()
     }
 }
 

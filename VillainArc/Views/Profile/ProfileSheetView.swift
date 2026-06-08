@@ -17,6 +17,15 @@ private struct ProfileCompletionDay: Identifiable {
     }
 }
 
+/// One cell of the heatmap grid. Every column is a full Sun–Sat week, so the current (partial) week
+/// renders all 7 cells: days within the 6-month window carry their completion data, days after today
+/// render as visible-but-uncolored `.future` cells, and days before the window are `.blank` (clear).
+private enum ProfileHeatmapCell {
+    case day(ProfileCompletionDay)
+    case future
+    case blank
+}
+
 private extension Muscle {
     var profileMuscleMapMuscles: [MuscleMap.Muscle] {
         switch self {
@@ -571,11 +580,12 @@ struct ProfileSheetView: View {
         let weeks = profileHeatmapWeeks
         let columns = max(weeks.count, 1)
         let spacing: CGFloat = 3
+        let today = Calendar.autoupdatingCurrent.startOfDay(for: .now)
         // A fixed (non-scrolling) 7×~26 grid that fits the card width: oldest week on the left,
-        // current week as the rightmost (partially filled) column. The cell size is derived from the
+        // current week as the rightmost (full 7-cell) column. The cell size is derived from the
         // available width so all ~26 columns are always visible at once.
         return GeometryReader { geometry in
-            let cell = max(0, min(
+            let cellSize = max(0, min(
                 (geometry.size.width - spacing * CGFloat(columns - 1)) / CGFloat(columns),
                 (geometry.size.height - spacing * 6) / 7
             ))
@@ -583,13 +593,7 @@ struct ProfileSheetView: View {
                 ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                     VStack(spacing: spacing) {
                         ForEach(0..<7, id: \.self) { dayOfWeek in
-                            let day = dayOfWeek < week.count ? week[dayOfWeek] : nil
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(day.map { completionHeatmapColor(for: $0.completionCount) } ?? Color.clear)
-                                .frame(width: cell, height: cell)
-                                .accessibilityLabel(day.map { $0.date.formatted(date: .abbreviated, time: .omitted) } ?? "")
-                                .accessibilityValue(day.map { completionAccessibilityValue(for: $0) } ?? "")
-                                .accessibilityHidden(day == nil)
+                            heatmapCellView(dayOfWeek < week.count ? week[dayOfWeek] : .blank, size: cellSize, today: today)
                         }
                     }
                 }
@@ -597,6 +601,53 @@ struct ProfileSheetView: View {
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
         }
         .aspectRatio(CGFloat(columns) / 7, contentMode: .fit)
+    }
+
+    @ViewBuilder
+    private func heatmapCellView(_ cell: ProfileHeatmapCell, size: CGFloat, today: Date) -> some View {
+        let isToday: Bool = {
+            if case .day(let day) = cell { return day.date == today }
+            return false
+        }()
+        RoundedRectangle(cornerRadius: 2)
+            .fill(heatmapCellColor(cell))
+            .frame(width: size, height: size)
+            .overlay {
+                if isToday {
+                    RoundedRectangle(cornerRadius: 2)
+                        .strokeBorder(Color.primary, lineWidth: 1.5)
+                }
+            }
+            .accessibilityLabel(heatmapCellAccessibilityLabel(cell))
+            .accessibilityValue(heatmapCellAccessibilityValue(cell))
+            .accessibilityHidden(heatmapCellIsDecorative(cell))
+    }
+
+    private func heatmapCellColor(_ cell: ProfileHeatmapCell) -> Color {
+        switch cell {
+        case .day(let day): return completionHeatmapColor(for: day.completionCount)
+        case .future: return completionHeatmapColor(for: 0) // present but uncolored
+        case .blank: return Color.clear // before the 6-month window
+        }
+    }
+
+    private func heatmapCellAccessibilityLabel(_ cell: ProfileHeatmapCell) -> String {
+        if case .day(let day) = cell {
+            return day.date.formatted(date: .abbreviated, time: .omitted)
+        }
+        return ""
+    }
+
+    private func heatmapCellAccessibilityValue(_ cell: ProfileHeatmapCell) -> String {
+        if case .day(let day) = cell {
+            return completionAccessibilityValue(for: day)
+        }
+        return ""
+    }
+
+    private func heatmapCellIsDecorative(_ cell: ProfileHeatmapCell) -> Bool {
+        if case .day = cell { return false }
+        return true
     }
 
     private var trimmedEditableName: String? {
@@ -736,32 +787,43 @@ struct ProfileSheetView: View {
 
     private let profileHeatmapTotalDays = 26 * 7
 
-    private var profileHeatmapWeeks: [[ProfileCompletionDay?]] {
+    private var profileHeatmapWeeks: [[ProfileHeatmapCell]] {
         let calendar = Calendar.autoupdatingCurrent
         let days = profileCompletionDays
-        guard let firstDay = days.first else { return [] }
+        guard let windowStart = days.first?.date, let today = days.last?.date else { return [] }
+        let completionByDay = Dictionary(uniqueKeysWithValues: days.map { ($0.date, $0) })
 
-        // GitHub-style layout: Sunday is the top row (index 0), Saturday the bottom (index 6).
-        // `weekday` is 1=Sunday…7=Saturday, so the oldest day's row is simply `weekday - 1`.
-        let firstWeekday = calendar.component(.weekday, from: firstDay.date)
-        let weekdayIndex = firstWeekday - 1
+        // GitHub-style layout: Sunday is the top row (index 0), Saturday the bottom (index 6), so
+        // every column is a full 7-cell week. The grid spans from the Sunday of the window-start's
+        // week through the Saturday of the current week — that's why the current week always shows
+        // all 7 cells, with not-yet-occurred days rendered as visible-but-uncolored `.future` cells.
+        let leadingPad = calendar.component(.weekday, from: windowStart) - 1 // 1=Sun…7=Sat
+        let trailingPad = 7 - calendar.component(.weekday, from: today)
+        guard let gridStart = calendar.date(byAdding: .day, value: -leadingPad, to: windowStart) else { return [] }
+        let totalCells = leadingPad + days.count + trailingPad
 
-        var allCells: [ProfileCompletionDay?] = Array(repeating: nil, count: weekdayIndex)
-        allCells.append(contentsOf: days.map { Optional($0) })
-
-        let weekCount = Int((Double(allCells.count) / 7).rounded(.up))
-        let paddedCount = weekCount * 7
-        if allCells.count < paddedCount {
-            allCells.append(contentsOf: Array(repeating: nil, count: paddedCount - allCells.count))
+        var cells: [ProfileHeatmapCell] = []
+        cells.reserveCapacity(totalCells)
+        for offset in 0..<totalCells {
+            guard let date = calendar.date(byAdding: .day, value: offset, to: gridStart) else { continue }
+            if let day = completionByDay[date] {
+                cells.append(.day(day))
+            } else if date < windowStart {
+                cells.append(.blank)
+            } else {
+                cells.append(.future)
+            }
         }
 
-        return stride(from: 0, to: allCells.count, by: 7).map { weekStart in
-            Array(allCells[weekStart..<min(weekStart + 7, allCells.count)])
+        return stride(from: 0, to: cells.count, by: 7).map { weekStart in
+            Array(cells[weekStart..<min(weekStart + 7, cells.count)])
         }
     }
 
     private var completeDaysCounterText: String {
-        let count = profileCompletionDays.filter { $0.completionCount == 4 }.count
+        // Count must match the days the grid actually colors: any day with at least one completed
+        // goal/workout (completionCount > 0), not only days where all four goals were met.
+        let count = profileCompletionDays.filter { $0.completionCount > 0 }.count
         let prefix = count == 1 ? "1 complete day" : "\(count) complete days"
         return "\(prefix) in the last 6 months"
     }

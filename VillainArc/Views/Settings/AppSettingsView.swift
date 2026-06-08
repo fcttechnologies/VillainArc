@@ -969,6 +969,8 @@ private struct DebugSettingsView: View {
     @State private var isWorking = false
     @State private var statusMessage = "Ready"
     @State private var showsResetConfirmation = false
+    @State private var showsWhatsNewPreview = false
+    @State private var showsOnboardingTour = false
 
     private var healthStatusText: String {
         #if targetEnvironment(simulator)
@@ -987,6 +989,22 @@ private struct DebugSettingsView: View {
                     Label("Screenshot Studio", systemImage: "camera.viewfinder")
                 }
                 .appGroupedListRow(position: .single)
+            }
+
+            Section {
+                Button("Show What's New", systemImage: "sparkles") {
+                    Haptics.selection()
+                    showsWhatsNewPreview = true
+                }
+                .appGroupedListRow(position: .top)
+
+                Button("Show Onboarding Tour", systemImage: "rectangle.stack.fill") {
+                    Haptics.selection()
+                    showsOnboardingTour = true
+                }
+                .appGroupedListRow(position: .bottom)
+            } header: {
+                Text("Intro Flows")
             }
 
             Section {
@@ -1082,6 +1100,18 @@ private struct DebugSettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This clears local app data and recreates the minimum records needed for testing.")
+        }
+        .sheet(isPresented: $showsWhatsNewPreview) {
+            WhatsNewSheet(version: WhatsNewPreferences.currentVersion) {
+                showsWhatsNewPreview = false
+            }
+            .presentationBackground(Color.sheetBg)
+            .presentationDetents([.large])
+        }
+        .fullScreenCover(isPresented: $showsOnboardingTour) {
+            OnboardingSlideshowView {
+                showsOnboardingTour = false
+            }
         }
     }
 

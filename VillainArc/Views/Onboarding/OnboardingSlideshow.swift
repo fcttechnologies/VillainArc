@@ -4,128 +4,96 @@ import SwiftUI
 // Storage: SharedModelContainer.sharedDefaults, key "has_seen_onboarding_slideshow".
 // Show by setting shouldShow = true in ContentView/RootView when state reaches .ready and key is missing.
 
-struct OnboardingSlide: Identifiable {
-    let id = UUID()
-    let imageName: String
-    let icon: String
-    let iconColor: Color
-    let title: LocalizedStringResource
-    let description: LocalizedStringResource
-}
-
 struct OnboardingSlideshowView: View {
     let onGetStarted: () -> Void
 
-    private let slides: [OnboardingSlide] = [
-        OnboardingSlide(
-            imageName: "onboarding_01_home",
-            icon: "dumbbell.fill",
-            iconColor: .orange,
-            title: "Plan Your Training",
-            description: "Build reusable workout plans and weekly splits. Villain Arc keeps your program consistent and your progress visible."
-        ),
-        OnboardingSlide(
-            imageName: "onboarding_02_workout",
-            icon: "figure.strengthtraining.traditional",
-            iconColor: .blue,
-            title: "Log Every Set",
-            description: "Fast set-level logging with auto-fill from your plan. Rest timer, exercise notes, and previous session reference built in."
-        ),
-        OnboardingSlide(
-            imageName: "onboarding_03_history",
-            icon: "chart.line.uptrend.xyaxis",
-            iconColor: .green,
-            title: "See Your Progress",
-            description: "Estimated 1RM, max weight, reps, and volume charts for every exercise. Watch your numbers climb over time."
-        ),
-        OnboardingSlide(
-            imageName: "onboarding_04_health",
-            icon: "heart.fill",
-            iconColor: .red,
-            title: "Health at a Glance",
-            description: "Sync with Apple Health to track sleep, weight, steps, energy, hydration, and heart vitals all in one place."
-        ),
-        OnboardingSlide(
-            imageName: "onboarding_05_suggestions",
-            icon: "lightbulb.fill",
-            iconColor: .yellow,
-            title: "Smart Suggestions",
-            description: "Villain Arc studies your logs and recommends load or rep adjustments to keep you progressing safely."
-        )
+    // Full-bleed marketing slides — each image is self-contained with its own caption.
+    private let slideImages = [
+        "onboarding_slide_1",
+        "onboarding_slide_2",
+        "onboarding_slide_3",
+        "onboarding_slide_4",
+        "onboarding_slide_5"
     ]
 
     @State private var currentIndex = 0
 
+    private var isLastSlide: Bool { currentIndex == slideImages.count - 1 }
+
     var body: some View {
-        ZStack(alignment: .bottom) {
+        NavigationStack {
             TabView(selection: $currentIndex) {
-                ForEach(Array(slides.enumerated()), id: \.offset) { index, slide in
-                    SlideView(slide: slide)
+                ForEach(Array(slideImages.enumerated()), id: \.offset) { index, name in
+                    slideImage(name)
                         .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
-
-            bottomControls
+            .background(Color.sheetBg)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        onGetStarted()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel(Text("Skip"))
+                    .accessibilityIdentifier("onboarding_slideshow_skip_button")
+                    .accessibilityHint(Text("Skips the feature tour and enters the app."))
+                }
+            }
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .safeAreaBar(edge: .bottom) {
+                bottomBar
+            }
         }
-        .appBackground()
     }
 
-    private var bottomControls: some View {
-        VStack(spacing: 20) {
+    @ViewBuilder
+    private func slideImage(_ name: String) -> some View {
+        if let uiImage = UIImage(named: name) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
+        } else {
+            Color.sheetBg
+        }
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 16) {
             pageIndicator
 
-            if currentIndex == slides.count - 1 {
-                Button {
+            Button {
+                if isLastSlide {
                     onGetStarted()
-                } label: {
-                    Text("Get Started")
-                        .fontWeight(.semibold)
-                        .font(.title3)
-                        .padding(.vertical, 5)
-                }
-                .buttonStyle(.glassProminent)
-                .buttonSizing(.flexible)
-                .padding(.horizontal, 24)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .accessibilityIdentifier("onboarding_slideshow_get_started_button")
-                .accessibilityHint(Text("Finishes the feature tour and enters the app."))
-            } else {
-                Button {
+                } else {
                     withAnimation(.smooth(duration: 0.3)) {
-                        currentIndex = min(currentIndex + 1, slides.count - 1)
+                        currentIndex += 1
                     }
-                } label: {
-                    Text("Next")
-                        .fontWeight(.semibold)
-                        .font(.title3)
-                        .padding(.vertical, 5)
                 }
-                .buttonStyle(.glassProminent)
-                .buttonSizing(.flexible)
-                .padding(.horizontal, 24)
-                .transition(.opacity)
-                .accessibilityIdentifier("onboarding_slideshow_next_button")
-                .accessibilityHint(Text("Shows the next feature slide."))
+            } label: {
+                Text(isLastSlide ? "Get Started" : "Next")
+                    .fontWeight(.semibold)
+                    .font(.title3)
+                    .padding(.vertical, 5)
             }
-
-            Button("Skip") {
-                onGetStarted()
-            }
-            .foregroundStyle(.secondary)
-            .font(.subheadline)
-            .padding(.bottom, 8)
-            .accessibilityIdentifier("onboarding_slideshow_skip_button")
-            .accessibilityHint(Text("Skips the feature tour and enters the app."))
+            .buttonStyle(.glassProminent)
+            .buttonSizing(.flexible)
+            .animation(.smooth(duration: 0.2), value: currentIndex)
+            .accessibilityIdentifier(isLastSlide ? "onboarding_slideshow_get_started_button" : "onboarding_slideshow_next_button")
+            .accessibilityHint(Text(isLastSlide ? "Finishes the feature tour and enters the app." : "Shows the next feature slide."))
         }
-        .padding(.bottom, 24)
-        .animation(.smooth(duration: 0.2), value: currentIndex)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
     }
 
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<slides.count, id: \.self) { index in
+            ForEach(0..<slideImages.count, id: \.self) { index in
                 Capsule()
                     .fill(index == currentIndex ? Color.primary : Color.secondary.opacity(0.3))
                     .frame(width: index == currentIndex ? 20 : 8, height: 8)
@@ -133,72 +101,7 @@ struct OnboardingSlideshowView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Slide \(currentIndex + 1) of \(slides.count)"))
-    }
-}
-
-private struct SlideView: View {
-    let slide: OnboardingSlide
-
-    var body: some View {
-        GeometryReader { geo in
-            VStack(spacing: 0) {
-                slideImage
-                    .frame(maxWidth: .infinity)
-                    .frame(height: geo.size.height * 0.52)
-                    .clipped()
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(slide.title)
-                        .font(.title2)
-                        .bold()
-                        .fontDesign(.rounded)
-
-                    Text(slide.description)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.horizontal, 28)
-                .padding(.top, 28)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Spacer()
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var slideImage: some View {
-        if let uiImage = UIImage(named: slide.imageName) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .accessibilityHidden(true)
-        } else {
-            // Placeholder used until real screenshots are added to Resources/Onboarding/
-            ZStack {
-                LinearGradient(
-                    colors: [slide.iconColor.opacity(0.18), slide.iconColor.opacity(0.05)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(slide.iconColor.opacity(0.15))
-                            .frame(width: 100, height: 100)
-                        Image(systemName: slide.icon)
-                            .font(.system(size: 48))
-                            .foregroundStyle(slide.iconColor)
-                    }
-                    Text(slide.title)
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                        .fontDesign(.rounded)
-                }
-            }
-        }
+        .accessibilityLabel(Text("Slide \(currentIndex + 1) of \(slideImages.count)"))
     }
 }
 

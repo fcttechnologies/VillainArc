@@ -147,18 +147,6 @@ struct CardioTabView: View {
                                 .foregroundStyle(.white)
                             }
                         }
-                        .overlay(alignment: .top) {
-                            Picker("Range", selection: $routeRange) {
-                                ForEach(CardioRouteRange.allCases) { range in
-                                    Text(range.title).tag(range)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .padding(6)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .padding(.horizontal)
-                            .padding(.top, 10)
-                        }
                         .task(id: standaloneOutdoorWorkouts.map(\.healthWorkoutUUID)) {
                             await routeLoader.load(workouts: standaloneOutdoorWorkouts)
                         }
@@ -180,7 +168,29 @@ struct CardioTabView: View {
             .quickActionContentBottomInset()
             .appBackground()
             .scrollIndicators(.hidden)
-            .toolbar(.hidden, for: .navigationBar)
+            .toolbarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Route Range", selection: $routeRange) {
+                            ForEach(CardioRouteRange.allCases) { range in
+                                Text(range.title).tag(range)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(routeRange.title)
+                            Image(systemName: "chevron.down")
+                                .font(.caption2.weight(.bold))
+                        }
+                        .font(.subheadline.weight(.semibold))
+                    }
+                    .accessibilityLabel(Text("Route time range"))
+                    .accessibilityValue(Text(routeRange.title))
+                    .accessibilityHint(Text("Filters the route map by time range."))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioRouteRangeMenu)
+                }
+            }
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .cardioSessionDetail(let session):

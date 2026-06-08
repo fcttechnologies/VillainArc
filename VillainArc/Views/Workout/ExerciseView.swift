@@ -369,8 +369,8 @@ struct ExerciseView: View {
             switch focus {
             case .weight:
                 if let step = weightStepDisplay {
-                    Button("−\(weightStepLabel)") { adjustFocusedWeight(by: -step) }
-                    Button("+\(weightStepLabel)") { adjustFocusedWeight(by: step) }
+                    Button("−\(weightStepLabel) \(weightUnit.unitLabel)") { adjustFocusedWeight(by: -step) }
+                    Button("+\(weightStepLabel) \(weightUnit.unitLabel)") { adjustFocusedWeight(by: step) }
                 }
             case .reps:
                 Button("−1") { adjustFocusedReps(by: -1) }

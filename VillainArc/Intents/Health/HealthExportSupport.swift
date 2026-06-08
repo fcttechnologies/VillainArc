@@ -90,6 +90,15 @@ nonisolated func healthExportJSONEncoder() -> JSONEncoder {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
     encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+    // A single non-finite Double (e.g. a NaN average computed over zero samples)
+    // anywhere in the full-history export would otherwise make the default encoder
+    // throw and fail the entire export. Emit a marker string for those rare values
+    // instead of throwing, so the export always succeeds.
+    encoder.nonConformingFloatEncodingStrategy = .convertToString(
+        positiveInfinity: "+Infinity",
+        negativeInfinity: "-Infinity",
+        nan: "NaN"
+    )
     return encoder
 }
 

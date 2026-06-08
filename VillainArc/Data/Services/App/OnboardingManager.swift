@@ -68,6 +68,10 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
 
     var state: OnboardingState = .launching
     var profile: UserProfile?
+    /// Measured natural height of the onboarding step currently on screen. The sheet's
+    /// presentation detent follows this so each step is sized from its real content
+    /// (Dynamic Type + localization aware) instead of a hardcoded fraction.
+    var sheetHeight: CGFloat = 480
     private(set) var shouldInsertHealthPermissionsStep = false
     private(set) var prefetchedBirthday: Date?
     private(set) var prefetchedGender: UserGender?

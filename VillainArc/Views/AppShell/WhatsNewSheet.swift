@@ -24,11 +24,11 @@ struct WhatsNewSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 32) {
                     versionHeader
                     featuresSection
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
@@ -36,7 +36,7 @@ struct WhatsNewSheet: View {
             .sheetBackground()
             .navigationTitle("What's New")
             .toolbarTitleDisplayMode(.inlineLarge)
-            .safeAreaInset(edge: .bottom) {
+            .safeAreaBar(edge: .bottom) {
                 continueBar
             }
             .accessibilityIdentifier("whats_new_sheet")
@@ -45,13 +45,13 @@ struct WhatsNewSheet: View {
 
     private var versionHeader: some View {
         Text("Version \(version)")
-            .font(.subheadline.weight(.semibold))
+            .font(.headline.weight(.semibold))
             .foregroundStyle(.secondary)
             .fontDesign(.rounded)
     }
 
     private var featuresSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 28) {
             ForEach(features) { feature in
                 featureRow(feature)
             }
@@ -59,23 +59,23 @@ struct WhatsNewSheet: View {
     }
 
     private func featureRow(_ feature: WhatsNewFeature) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .center, spacing: 18) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .fill(feature.iconColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
+                    .frame(width: 60, height: 60)
                 Image(systemName: feature.icon)
-                    .font(.system(size: 22))
+                    .font(.system(size: 30))
                     .foregroundStyle(feature.iconColor)
             }
             .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(feature.title)
-                    .font(.headline)
+                    .font(.title3.weight(.semibold))
                     .fontDesign(.rounded)
                 Text(feature.description)
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -94,9 +94,8 @@ struct WhatsNewSheet: View {
         }
         .buttonStyle(.glassProminent)
         .buttonSizing(.flexible)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(.regularMaterial)
         .accessibilityIdentifier("whats_new_continue_button")
         .accessibilityHint(Text("Closes the What's New sheet and continues to the app."))
     }
