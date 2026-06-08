@@ -330,11 +330,12 @@ struct ExerciseDetailView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 44) {
-                if hasContent {
-                    if let exercise, !exercise.musclesTargeted.isEmpty {
-                        muscleMapSection(for: exercise)
-                    }
+                // Muscle map is intrinsic to the exercise — always show it, even with no history.
+                if let exercise, !exercise.musclesTargeted.isEmpty {
+                    muscleMapSection(for: exercise)
+                }
 
+                if hasContent {
                     if !statItems.isEmpty {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(statItems) { item in

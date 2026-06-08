@@ -32,9 +32,10 @@ struct TextEntryEditorView: View {
 
     var body: some View {
         ScrollView {
-            TextField(promptText, text: $text)
+            TextField(promptText, text: $text, axis: isTitle ? .horizontal : .vertical)
                 .font(.title3)
                 .fontWeight(.semibold)
+                .multilineTextAlignment(.leading)
                 .focused($isFocused)
                 .accessibilityIdentifier(accessibilityIdentifier ?? AccessibilityIdentifiers.textEntryEditorField)
                 .autocorrectionDisabled()
