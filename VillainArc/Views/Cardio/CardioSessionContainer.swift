@@ -379,9 +379,16 @@ struct CardioActiveSessionView: View {
     }
 
     private func startWithCountdown() async {
-        // Already started — returning from background or resume bar tap
+        // Already started — returning from background, an app relaunch (e.g. a
+        // TestFlight update mid-session), or a resume-bar tap. Re-attach the live
+        // HealthKit workout builder so heart-rate/energy collection resumes:
+        // ensureRunning() first recovers the still-active HKWorkoutSession from
+        // HealthKit and falls back to restarting collection at the original start.
+        // Without this the coordinator stops tracking the session and every live
+        // metric (Live Activity + in-app grid) reads nil after a relaunch.
         if session.startedAt != nil {
             CardioActivityManager.restoreIfNeeded(session: session)
+            await healthCoordinator.ensureRunning(for: session)
             if session.kind.isOutdoor {
                 routeRecorder.startRecording(session: session, context: context)
             }

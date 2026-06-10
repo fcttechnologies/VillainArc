@@ -45,17 +45,12 @@ private struct CardioLiveActivityExpandedView: View {
 
         VStack(alignment: .leading, spacing: isSmall ? 6 : 10) {
             HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(state.title)
-                        .font(isSmall ? .caption : .title2)
-                        .lineLimit(1)
-                    Text(attributes.kindTitle)
-                        .font(isSmall ? .caption2 : .headline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .fontDesign(.rounded)
-                .fontWeight(.semibold)
+                CardioLiveActivityTitleView(
+                    title: state.title,
+                    kindTitle: attributes.kindTitle,
+                    titleFont: isSmall ? .caption : .title2,
+                    subtitleFont: isSmall ? .caption2 : .headline
+                )
 
                 Spacer(minLength: 8)
 
@@ -109,17 +104,12 @@ private struct CardioLiveActivityIslandBottomView: View {
 
     var body: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(state.title)
-                    .font(.headline)
-                    .lineLimit(1)
-                Text(attributes.kindTitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .fontDesign(.rounded)
-            .fontWeight(.semibold)
+            CardioLiveActivityTitleView(
+                title: state.title,
+                kindTitle: attributes.kindTitle,
+                titleFont: .headline,
+                subtitleFont: .caption
+            )
 
             Spacer(minLength: 8)
 
@@ -168,7 +158,33 @@ private struct CardioLiveActivityCompactLeadingView: View {
     }
 }
 
-// MARK: - Shared metric views
+// MARK: - Shared views
+
+// Title + kind subtitle. The kind line is shown only when it differs from the
+// title — an unnamed session's `displayTitle` falls back to `kind.title`, so
+// showing both would print e.g. "Treadmill Walk" twice.
+private struct CardioLiveActivityTitleView: View {
+    let title: String
+    let kindTitle: String
+    var titleFont: Font = .title2
+    var subtitleFont: Font = .headline
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(titleFont)
+                .lineLimit(1)
+            if kindTitle != title {
+                Text(kindTitle)
+                    .font(subtitleFont)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .fontDesign(.rounded)
+        .fontWeight(.semibold)
+    }
+}
 
 private struct CardioLiveActivityTrailingMetricView: View {
     let attributes: CardioActivityAttributes
@@ -252,6 +268,7 @@ private struct CardioLiveActivityElapsedTimerView: View {
             .font(font)
             .fontWeight(.bold)
             .fontDesign(.rounded)
+            .monospacedDigit()
             .lineLimit(1)
             .frame(maxWidth: maxWidth, alignment: .trailing)
     }
