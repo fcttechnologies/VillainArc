@@ -829,7 +829,7 @@ private struct NotificationSettingsView: View {
                             .tag(mode)
                     }
                 }
-                .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+                .disabled(!notificationsAreAllowedBySystem)
                 .appGroupedListRow(position: .single)
             } header: {
                 Text("Steps")
@@ -850,7 +850,7 @@ private struct NotificationSettingsView: View {
                             .tag(mode)
                     }
                 }
-                .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+                .disabled(!notificationsAreAllowedBySystem)
                 .appGroupedListRow(position: .single)
             } header: {
                 Text("Sleep")
@@ -871,7 +871,7 @@ private struct NotificationSettingsView: View {
                             .tag(mode)
                     }
                 }
-                .disabled(!notificationsAreAllowedBySystem || backgroundRefreshStatus != .available)
+                .disabled(!notificationsAreAllowedBySystem)
                 .appGroupedListRow(position: .single)
             } header: {
                 Text("Hydration")

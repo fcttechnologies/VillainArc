@@ -31,18 +31,8 @@ struct OnboardingSlideshowView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
             .background(Color.sheetBg)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        onGetStarted()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("Skip"))
-                    .accessibilityIdentifier("onboarding_slideshow_skip_button")
-                    .accessibilityHint(Text("Skips the feature tour and enters the app."))
-                }
-            }
+            // No top-trailing close/skip control: the onboarding tour and the marketing/screenshot
+            // capture of these slides should read clean — the user advances with Next / Get Started.
             .toolbarBackground(.hidden, for: .navigationBar)
             .safeAreaBar(edge: .bottom) {
                 bottomBar

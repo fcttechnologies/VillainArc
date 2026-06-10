@@ -17,7 +17,7 @@ enum PreviousSetReferenceSource: String, Codable, CaseIterable, Identifiable {
 
 @Model final class AppSettings {
     var autoStartRestTimer: Bool = true
-    var autoCompleteSetAfterRPE: Bool = false
+    var autoCompleteSetAfterRPE: Bool = true
     var autoFillPlanTargets: Bool = true
     var assumeTargetRPEOnComplete: Bool = true
     var prefersTargetReferenceWhenPlanned: Bool = true
@@ -74,7 +74,7 @@ struct AppSettingsSnapshot {
 
     nonisolated init(settings: AppSettings?) {
         autoStartRestTimer = settings?.autoStartRestTimer ?? true
-        autoCompleteSetAfterRPE = settings?.autoCompleteSetAfterRPE ?? false
+        autoCompleteSetAfterRPE = settings?.autoCompleteSetAfterRPE ?? true
         autoFillPlanTargets = settings?.autoFillPlanTargets ?? true
         assumeTargetRPEOnComplete = settings?.assumeTargetRPEOnComplete ?? true
         prefersTargetReferenceWhenPlanned = settings?.prefersTargetReferenceWhenPlanned ?? true

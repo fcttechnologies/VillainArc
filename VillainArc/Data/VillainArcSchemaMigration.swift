@@ -2084,6 +2084,7 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
             setting.hydrationUnit = .systemDefault
             setting.hydrationNotificationMode = .goalOnly
             setting.speedUnit = .systemDefault
+            setting.autoCompleteSetAfterRPE = true
         }
 
         let syncStates = try context.fetch(FetchDescriptor<HealthSyncState>())
