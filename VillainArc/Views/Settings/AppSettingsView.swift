@@ -496,6 +496,7 @@ private struct WorkoutPreferencesView: View {
     @Environment(\.modelContext) private var context
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(WorkoutSession.incomplete) private var incompleteWorkouts: [WorkoutSession]
+    @Query(CardioSession.incomplete) private var incompleteCardioSessions: [CardioSession]
 
     private var systemLiveActivitiesAvailable: Bool {
         WorkoutActivityManager.areActivitiesAvailable
@@ -503,6 +504,24 @@ private struct WorkoutPreferencesView: View {
 
     private var activeWorkout: WorkoutSession? {
         incompleteWorkouts.first
+    }
+
+    private var activeCardio: CardioSession? {
+        incompleteCardioSessions.first
+    }
+
+    // The Live Activity toggle is global (workout + cardio share it), so the restart
+    // affordance applies whenever either kind of session is in progress.
+    private var hasActiveLiveActivitySession: Bool {
+        activeWorkout != nil || activeCardio != nil
+    }
+
+    private func restartActiveLiveActivity() {
+        if let activeWorkout {
+            WorkoutActivityManager.restart(workout: activeWorkout)
+        } else if let activeCardio {
+            CardioActivityManager.restart(session: activeCardio)
+        }
     }
 
     var body: some View {
@@ -599,12 +618,12 @@ private struct WorkoutPreferencesView: View {
                 Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
-                    .appGroupedListRow(position: settings.liveActivitiesEnabled && systemLiveActivitiesAvailable && activeWorkout != nil ? .top : .single)
+                    .appGroupedListRow(position: settings.liveActivitiesEnabled && systemLiveActivitiesAvailable && hasActiveLiveActivitySession ? .top : .single)
 
-                if settings.liveActivitiesEnabled && systemLiveActivitiesAvailable, let activeWorkout {
+                if settings.liveActivitiesEnabled && systemLiveActivitiesAvailable, hasActiveLiveActivitySession {
                     Button("Restart Live Activity", systemImage: "arrow.clockwise") {
                         Haptics.selection()
-                        WorkoutActivityManager.restart(workout: activeWorkout)
+                        restartActiveLiveActivity()
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsRestartLiveActivityButton)
                     .accessibilityHint(AccessibilityText.workoutSettingsRestartLiveActivityHint)
@@ -651,11 +670,10 @@ private struct WorkoutPreferencesView: View {
             saveContext(context: context)
 
             if settings.liveActivitiesEnabled {
-                if let activeWorkout {
-                    WorkoutActivityManager.restart(workout: activeWorkout)
-                }
+                restartActiveLiveActivity()
             } else {
                 WorkoutActivityManager.end()
+                CardioActivityManager.end()
             }
 
             let restTimer = RestTimerState.shared

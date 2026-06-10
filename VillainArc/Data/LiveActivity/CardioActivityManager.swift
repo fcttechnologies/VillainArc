@@ -21,6 +21,14 @@ enum CardioActivityManager {
         requestActivity(for: session)
     }
 
+    // Rebuild the cardio Live Activity from scratch for an in-progress session
+    // (Settings "Restart Live Activity"). start() already ends any existing activity
+    // and requests a fresh one at the session's original startedAt, so restart is its
+    // alias — kept for call-site parity with WorkoutActivityManager.restart(workout:).
+    static func restart(session: CardioSession) {
+        start(session: session)
+    }
+
     static func restoreIfNeeded(session: CardioSession) {
         guard liveActivitiesEnabled else {
             endAllActivities()
