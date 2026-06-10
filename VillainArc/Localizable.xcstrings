@@ -9566,6 +9566,9 @@
         }
       }
     },
+    "Cancels and deletes the current cardio session." : {
+
+    },
     "Cancels and deletes the current workout session." : {
       "localizations" : {
         "de" : {
@@ -9726,6 +9729,12 @@
           }
         }
       }
+    },
+    "Cardio session cancelled." : {
+
+    },
+    "Cardio session finished." : {
+
     },
     "Cardio Sessions" : {
       "extractionState" : "manual",
@@ -19248,6 +19257,9 @@
           }
         }
       }
+    },
+    "Finishes and saves the current cardio session, including any route or Health data captured." : {
+
     },
     "Finishes and saves the workout." : {
       "localizations" : {
@@ -29394,6 +29406,12 @@
         }
       }
     },
+    "No current cardio session to cancel." : {
+
+    },
+    "No current cardio session to finish." : {
+
+    },
     "No current workout session or workout plan found." : {
       "localizations" : {
         "de" : {
@@ -36276,9 +36294,6 @@
         }
       }
     },
-    "Past %lld weeks" : {
-
-    },
     "Past 6 months" : {
       "comment" : "A label displayed under the workout heatmap.",
       "extractionState" : "stale",
@@ -41379,7 +41394,7 @@
         }
       }
     },
-    "Returns your full tracked Villain Arc health history as JSON — weight, sleep, steps and distance, energy, heart, respiratory rate, wrist temperature, and hydration." : {
+    "Returns your full tracked Villain Arc health history as a JSON file — weight, sleep, steps and distance, energy, heart, respiratory rate, wrist temperature, and hydration. Save the file to sync it elsewhere." : {
 
     },
     "Review suggestions" : {
@@ -54995,6 +55010,9 @@
           }
         }
       }
+    },
+    "Touch and hold to complete this set with an RPE." : {
+
     },
     "Tough" : {
       "extractionState" : "manual",
