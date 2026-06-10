@@ -108,6 +108,25 @@ Real-world testing of build 17's first indoor walk surfaced these:
 
 **Follow-up (confirm with Fernando):** route *all* finished-cardio detail through `HealthWorkoutDetailView` (full navigation change), and the configurable Live Activity metrics + HealthKit-preferred capture default.
 
+## Build 19 — capture-mode choice (the keystone) + cardio UX (Fernando, 2026-06-10)
+
+**Capture mode is now a user choice at start, not just a default.** The model already has `CardioCaptureMode` (gpsRoute / machineIntervals / healthKitOnly); the start flow must let the user pick **Manual vs Apple Health**, so a HealthKit-only session needs no route/interval input to begin. Cover *all* cases:
+
+- **Outdoor** (run/walk/hike/cycle): **Track Route** (`gpsRoute`, app records GPS) **vs Apple Health** (`healthKitOnly`).
+- **Indoor** (treadmill/bike/stair): **Log Intervals** (`machineIntervals`) **vs Apple Health** (`healthKitOnly`).
+- **Apple Health** is offered only when `HealthAuthorizationManager.canWriteWorkouts`; otherwise only the Manual option. When Health is available it is the recommended/default (Fernando's HealthKit-preferred direction).
+- **`healthKitOnly`:** the session starts immediately (no map, no interval section). `CardioHealthWorkoutCoordinator` already runs the live `HKLiveWorkoutBuilder` → live HR/energy/distance; finish reads the saved HK workout's distance/HR/energy into the session summary. The active view shows just the live metrics.
+
+**Distance source — one source per mode (this is the pace bug fix).** `CardioActivityManager.contentState` currently does `distance = max(session.totalDistanceMeters, healthCoordinator.distanceMeters ?? 0)` and `pace = duration/distance` — mixing the manual-interval distance with the Watch's HK estimate gives a *different* pace in the Live Activity than the in-app interval view. Fix: each mode uses ONLY its own source everywhere (Live Activity + `CardioMetricGrid` + detail): `gpsRoute` → route distance; `machineIntervals` → interval distance (`session.totalDistanceMeters`); `healthKitOnly` → HK distance. Never `max()` across sources.
+
+**Active-session view by mode:** `gpsRoute` → map + live metrics; `machineIntervals` → interval input + live metrics; `healthKitOnly` → live metrics only (no map, no interval section).
+
+### Cardio UX fixes (build 19)
+- **Recent cardio in the Cardio tab shows ALL cardio**, not just outdoor (`CardioTabView` recent list filters `isOutdoor` — drop that filter). The **route map** stays outdoor-only.
+- **The routes map must not be interactive when there are no routes for the selected range** (disable pan/zoom/rotate when the filtered route set is empty).
+- **Block saving a 0-distance indoor session** — a `machineIntervals` session with no intervals (0 distance) can't be finished/saved (the finish action is disabled / shows a guard). `healthKitOnly` indoor is exempt (HK provides distance).
+- **The cardio detail share button:** today it shares plain text. Either remove it, or (preferred) make it **something nice** — a shareable summary card/image (Strava-style), not bare text.
+
 ## Execution order
 
 1. Models + enums (`CardioSession.swift`): add `CardioActivity`/`CardioEnvironment`/`CardioCaptureMode`, rebuild `CardioSession`, add altitude to `CardioRoutePoint`, rename+generalize `CardioMachineInterval`, add the `CardioCapture` domain accessor.
