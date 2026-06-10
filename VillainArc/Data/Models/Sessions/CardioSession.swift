@@ -2,56 +2,176 @@ import Foundation
 import HealthKit
 import SwiftData
 
-nonisolated enum CardioSessionKind: String, CaseIterable, Codable, Hashable, Identifiable {
-    case outdoorRun
-    case outdoorWalk
-    case treadmillRun
-    case treadmillWalk
+// MARK: - Taxonomy
+//
+// Cardio is modeled on two axes (activity × environment) plus a stored capture
+// mode (how the session's detail is recorded), instead of a flat named-type enum.
+// This represents any cardio session; types VillainArc can't natively record fall
+// back to `.healthKitOnly`. See Documentation/CARDIO_MODEL_REDESIGN.md.
+
+nonisolated enum CardioActivity: String, CaseIterable, Codable, Hashable, Identifiable {
+    case run
+    case walk
+    case hike
+    case cycle
+    case row
+    case elliptical
+    case stairStepper
+    case swim
+    case other
 
     nonisolated var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .outdoorRun: return "Outdoor Run"
-        case .outdoorWalk: return "Outdoor Walk"
-        case .treadmillRun: return "Treadmill Run"
-        case .treadmillWalk: return "Treadmill Walk"
+        case .run: return "Run"
+        case .walk: return "Walk"
+        case .hike: return "Hike"
+        case .cycle: return "Cycle"
+        case .row: return "Row"
+        case .elliptical: return "Elliptical"
+        case .stairStepper: return "Stair Stepper"
+        case .swim: return "Swim"
+        case .other: return "Cardio"
         }
     }
 
     var shortTitle: String {
         switch self {
-        case .outdoorRun, .treadmillRun: return "Run"
-        case .outdoorWalk, .treadmillWalk: return "Walk"
+        case .run: return "Run"
+        case .walk: return "Walk"
+        case .hike: return "Hike"
+        case .cycle: return "Cycle"
+        case .row: return "Row"
+        case .elliptical: return "Elliptical"
+        case .stairStepper: return "Stairs"
+        case .swim: return "Swim"
+        case .other: return "Cardio"
         }
     }
 
     var systemImage: String {
         switch self {
-        case .outdoorRun, .treadmillRun: return "figure.run"
-        case .outdoorWalk, .treadmillWalk: return "figure.walk"
+        case .run: return "figure.run"
+        case .walk: return "figure.walk"
+        case .hike: return "figure.hiking"
+        case .cycle: return "figure.outdoor.cycle"
+        case .row: return "figure.rower"
+        case .elliptical: return "figure.elliptical"
+        case .stairStepper: return "figure.stair.stepper"
+        case .swim: return "figure.pool.swim"
+        case .other: return "figure.mixed.cardio"
         }
     }
-
-    var isOutdoor: Bool {
-        switch self {
-        case .outdoorRun, .outdoorWalk: return true
-        case .treadmillRun, .treadmillWalk: return false
-        }
-    }
-
-    var isManual: Bool { !isOutdoor }
 
     var healthActivityType: HKWorkoutActivityType {
         switch self {
-        case .outdoorRun, .treadmillRun: return .running
-        case .outdoorWalk, .treadmillWalk: return .walking
+        case .run: return .running
+        case .walk: return .walking
+        case .hike: return .hiking
+        case .cycle: return .cycling
+        case .row: return .rowing
+        case .elliptical: return .elliptical
+        case .stairStepper: return .stairClimbing
+        case .swim: return .swimming
+        case .other: return .mixedCardio
         }
     }
 
-    var healthLocationType: HKWorkoutSessionLocationType {
-        isOutdoor ? .outdoor : .indoor
+    var supportsOutdoor: Bool {
+        switch self {
+        case .run, .walk, .hike, .cycle, .swim: return true
+        case .row, .elliptical, .stairStepper, .other: return false
+        }
     }
+
+    var supportsIndoor: Bool {
+        self != .hike
+    }
+
+    // The natural way to capture this activity's detail in a given environment.
+    func defaultCaptureMode(in environment: CardioEnvironment) -> CardioCaptureMode {
+        switch environment {
+        case .outdoor:
+            switch self {
+            case .run, .walk, .hike, .cycle: return .gpsRoute
+            default: return .healthKitOnly
+            }
+        case .indoor:
+            switch self {
+            case .run, .walk, .cycle, .stairStepper: return .machineIntervals
+            default: return .healthKitOnly
+            }
+        }
+    }
+
+    // Display label that folds in the environment, e.g. "Treadmill Walk", "Outdoor Run".
+    func title(in environment: CardioEnvironment) -> String {
+        switch (self, environment) {
+        case (.run, .outdoor): return "Outdoor Run"
+        case (.run, .indoor): return "Treadmill Run"
+        case (.walk, .outdoor): return "Outdoor Walk"
+        case (.walk, .indoor): return "Treadmill Walk"
+        case (.cycle, .outdoor): return "Outdoor Cycle"
+        case (.cycle, .indoor): return "Indoor Cycle"
+        case (.swim, .outdoor): return "Open Water Swim"
+        case (.swim, .indoor): return "Pool Swim"
+        case (.hike, _): return "Hike"
+        default: return title
+        }
+    }
+}
+
+nonisolated enum CardioEnvironment: String, CaseIterable, Codable, Hashable {
+    case outdoor
+    case indoor
+
+    var title: String { self == .outdoor ? "Outdoor" : "Indoor" }
+    var healthLocationType: HKWorkoutSessionLocationType { self == .outdoor ? .outdoor : .indoor }
+}
+
+// How a session's per-sample detail is recorded. Only the matching relationship on
+// CardioSession is populated; `.healthKitOnly` records none (metrics come from the
+// linked HealthKit workout).
+nonisolated enum CardioCaptureMode: String, Codable, Hashable {
+    case gpsRoute
+    case machineIntervals
+    case healthKitOnly
+}
+
+// A pickable cardio preset (activity + environment) for the start UI, the start
+// API, the stored favorite, and Shortcuts — a thin presentation layer over the
+// axes model. Encodes as "activity|environment" for AppSettings storage.
+nonisolated struct CardioSessionType: Codable, Hashable, Identifiable, Sendable {
+    var activity: CardioActivity
+    var environment: CardioEnvironment
+
+    init(activity: CardioActivity, environment: CardioEnvironment) {
+        self.activity = activity
+        self.environment = environment
+    }
+
+    nonisolated var id: String { "\(activity.rawValue)|\(environment.rawValue)" }
+    var title: String { activity.title(in: environment) }
+    var systemImage: String { activity.systemImage }
+    var isOutdoor: Bool { environment == .outdoor }
+
+    var rawValue: String { id }
+    init?(rawValue: String) {
+        let parts = rawValue.split(separator: "|")
+        guard parts.count == 2,
+              let activity = CardioActivity(rawValue: String(parts[0])),
+              let environment = CardioEnvironment(rawValue: String(parts[1])) else { return nil }
+        self.init(activity: activity, environment: environment)
+    }
+
+    // Parity with the four legacy kinds the start UI offers today.
+    static let presets: [CardioSessionType] = [
+        CardioSessionType(activity: .run, environment: .outdoor),
+        CardioSessionType(activity: .walk, environment: .outdoor),
+        CardioSessionType(activity: .run, environment: .indoor),
+        CardioSessionType(activity: .walk, environment: .indoor)
+    ]
 }
 
 nonisolated enum CardioSessionStatus: String, Codable, Hashable {
@@ -71,31 +191,68 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
     var id: UUID = UUID()
     var title: String = ""
     var notes: String = ""
-    var kindRawValue: String = CardioSessionKind.outdoorRun.rawValue
+    var postEffort: Int = 0
+    var activityRawValue: String = CardioActivity.run.rawValue
+    var environmentRawValue: String = CardioEnvironment.outdoor.rawValue
+    var captureModeRawValue: String = CardioCaptureMode.gpsRoute.rawValue
     var status: String = CardioSessionStatus.active.rawValue
     var sourceRawValue: String = CardioSessionSource.location.rawValue
     var startedAt: Date?
     var endedAt: Date?
     var totalDistanceMeters: Double = 0
+    var averageHeartRateBPM: Double?
+    var activeEnergyKilocalories: Double?
+    var elevationGainMeters: Double?
     var healthWorkoutUUID: UUID?
     var healthWorkout: HealthWorkout?
     @Relationship(deleteRule: .cascade, inverse: \CardioRoutePoint.session) var routePoints: [CardioRoutePoint]? = [CardioRoutePoint]()
-    @Relationship(deleteRule: .cascade, inverse: \CardioTreadmillInterval.session) var treadmillIntervals: [CardioTreadmillInterval]? = [CardioTreadmillInterval]()
+    @Relationship(deleteRule: .cascade, inverse: \CardioMachineInterval.session) var machineIntervals: [CardioMachineInterval]? = [CardioMachineInterval]()
 
-    init(kind: CardioSessionKind = .outdoorRun) {
-        self.kindRawValue = kind.rawValue
-        self.sourceRawValue = kind.isOutdoor ? CardioSessionSource.location.rawValue : CardioSessionSource.manual.rawValue
-        self.title = kind.title
+    init(activity: CardioActivity = .run, environment: CardioEnvironment = .outdoor, captureMode: CardioCaptureMode? = nil) {
+        let mode = captureMode ?? activity.defaultCaptureMode(in: environment)
+        self.activityRawValue = activity.rawValue
+        self.environmentRawValue = environment.rawValue
+        self.captureModeRawValue = mode.rawValue
+        self.sourceRawValue = Self.defaultSource(for: mode).rawValue
+        self.title = activity.title(in: environment)
     }
 
-    var kind: CardioSessionKind {
-        get { CardioSessionKind(rawValue: kindRawValue) ?? .outdoorRun }
-        set {
-            kindRawValue = newValue.rawValue
-            if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || CardioSessionKind.allCases.map(\.title).contains(title) {
-                title = newValue.title
+    convenience init(type: CardioSessionType, captureMode: CardioCaptureMode? = nil) {
+        self.init(activity: type.activity, environment: type.environment, captureMode: captureMode)
+    }
+
+    // All auto-generated type titles, so a user-typed custom title can be told apart.
+    private static let autoTitles: Set<String> = {
+        var titles = Set<String>()
+        for activity in CardioActivity.allCases {
+            for environment in CardioEnvironment.allCases {
+                titles.insert(activity.title(in: environment))
             }
         }
+        return titles
+    }()
+
+    private static func defaultSource(for mode: CardioCaptureMode) -> CardioSessionSource {
+        switch mode {
+        case .gpsRoute: return .location
+        case .machineIntervals: return .manual
+        case .healthKitOnly: return .appleHealth
+        }
+    }
+
+    var activity: CardioActivity {
+        get { CardioActivity(rawValue: activityRawValue) ?? .run }
+        set { activityRawValue = newValue.rawValue }
+    }
+
+    var environment: CardioEnvironment {
+        get { CardioEnvironment(rawValue: environmentRawValue) ?? .outdoor }
+        set { environmentRawValue = newValue.rawValue }
+    }
+
+    var captureMode: CardioCaptureMode {
+        get { CardioCaptureMode(rawValue: captureModeRawValue) ?? .healthKitOnly }
+        set { captureModeRawValue = newValue.rawValue }
     }
 
     var statusValue: CardioSessionStatus {
@@ -104,13 +261,42 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
     }
 
     var source: CardioSessionSource {
-        get { CardioSessionSource(rawValue: sourceRawValue) ?? (kind.isOutdoor ? .location : .manual) }
+        get { CardioSessionSource(rawValue: sourceRawValue) ?? Self.defaultSource(for: captureMode) }
         set { sourceRawValue = newValue.rawValue }
     }
 
+    // Sets the activity/environment (and the matching default capture mode), and
+    // refreshes the title unless the user has typed a custom one.
+    func updateType(activity: CardioActivity, environment: CardioEnvironment, captureMode: CardioCaptureMode? = nil) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let titleIsAuto = trimmed.isEmpty || Self.autoTitles.contains(trimmed)
+        self.activity = activity
+        self.environment = environment
+        self.captureMode = captureMode ?? activity.defaultCaptureMode(in: environment)
+        if titleIsAuto {
+            self.title = activity.title(in: environment)
+        }
+    }
+
+    // MARK: Convenience
+
+    var isOutdoor: Bool { environment == .outdoor }
+    // "Manual" in the legacy sense = the user logs machine intervals by hand.
+    var isManual: Bool { captureMode == .machineIntervals }
+    var usesRoute: Bool { captureMode == .gpsRoute }
+    var usesMachineIntervals: Bool { captureMode == .machineIntervals }
+    var isHealthKitOnly: Bool { captureMode == .healthKitOnly }
+
+    var systemImage: String { activity.systemImage }
+    var healthActivityType: HKWorkoutActivityType { activity.healthActivityType }
+    var healthLocationType: HKWorkoutSessionLocationType { environment.healthLocationType }
+
+    // Environment-qualified type label, e.g. "Treadmill Walk".
+    var typeTitle: String { activity.title(in: environment) }
+
     var displayTitle: String {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedTitle.isEmpty ? kind.title : trimmedTitle
+        return trimmedTitle.isEmpty ? typeTitle : trimmedTitle
     }
 
     var sortedRoutePoints: [CardioRoutePoint] {
@@ -120,8 +306,8 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
         }
     }
 
-    var sortedTreadmillIntervals: [CardioTreadmillInterval] {
-        (treadmillIntervals ?? []).sorted { $0.index < $1.index }
+    var sortedMachineIntervals: [CardioMachineInterval] {
+        (machineIntervals ?? []).sorted { $0.index < $1.index }
     }
 
     var duration: TimeInterval {
@@ -138,26 +324,29 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
     func finish(at endDate: Date = .now) {
         endedAt = max(startedAt ?? endDate, endDate)
         statusValue = .done
-        if kind.isManual {
-            recalculateTreadmillDistance()
-        } else {
+        switch captureMode {
+        case .machineIntervals:
+            recalculateMachineDistance()
+        case .gpsRoute:
             recalculateRouteDistance()
+        case .healthKitOnly:
+            break
         }
     }
 
-    func recalculateTreadmillDistance() {
-        let intervals = sortedTreadmillIntervals
+    func recalculateMachineDistance() {
+        let intervals = sortedMachineIntervals
         let sessionEnd = endedAt ?? .now
         for (i, interval) in intervals.enumerated() {
             let nextStart = i + 1 < intervals.count ? intervals[i + 1].addedAt : sessionEnd
             let durationSeconds = max(0, nextStart.timeIntervalSince(interval.addedAt))
-            interval.distanceMeters = (interval.speedKPH / 3.6) * durationSeconds
+            interval.distanceMeters = ((interval.speedKPH ?? 0) / 3.6) * durationSeconds
         }
         totalDistanceMeters = intervals.reduce(0) { $0 + $1.distanceMeters }
     }
 
-    func intervalDuration(for interval: CardioTreadmillInterval) -> TimeInterval {
-        let intervals = sortedTreadmillIntervals
+    func intervalDuration(for interval: CardioMachineInterval) -> TimeInterval {
+        let intervals = sortedMachineIntervals
         guard let idx = intervals.firstIndex(where: { $0.id == interval.id }) else { return 0 }
         let sessionEnd = endedAt ?? .now
         let nextStart = idx + 1 < intervals.count ? intervals[idx + 1].addedAt : sessionEnd
@@ -168,14 +357,21 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
         let points = sortedRoutePoints
         guard points.count > 1 else { return }
 
-        totalDistanceMeters = zip(points, points.dropFirst()).reduce(0) { total, pair in
-            total + Self.distanceMeters(
-                fromLatitude: pair.0.latitude,
-                longitude: pair.0.longitude,
-                toLatitude: pair.1.latitude,
-                longitude: pair.1.longitude
+        var distance = 0.0
+        var gain = 0.0
+        for (start, end) in zip(points, points.dropFirst()) {
+            distance += Self.distanceMeters(
+                fromLatitude: start.latitude,
+                longitude: start.longitude,
+                toLatitude: end.latitude,
+                longitude: end.longitude
             )
+            if let startAltitude = start.altitude, let endAltitude = end.altitude, endAltitude > startAltitude {
+                gain += endAltitude - startAltitude
+            }
         }
+        totalDistanceMeters = distance
+        if gain > 0 { elevationGainMeters = gain }
     }
 
     static func distanceMeters(fromLatitude startLatitude: Double, longitude startLongitude: Double, toLatitude endLatitude: Double, longitude endLongitude: Double) -> Double {
@@ -223,37 +419,52 @@ extension CardioSession {
     var index: Int = 0
     var latitude: Double = 0
     var longitude: Double = 0
+    var altitude: Double?
     var timestamp: Date = Date()
     var horizontalAccuracy: Double = 0
+    var verticalAccuracy: Double?
+    var course: Double?
     var speedMetersPerSecond: Double?
     var session: CardioSession?
 
-    init(index: Int, latitude: Double, longitude: Double, timestamp: Date, horizontalAccuracy: Double = 0, speedMetersPerSecond: Double? = nil, session: CardioSession? = nil) {
+    init(index: Int, latitude: Double, longitude: Double, altitude: Double? = nil, timestamp: Date, horizontalAccuracy: Double = 0, verticalAccuracy: Double? = nil, course: Double? = nil, speedMetersPerSecond: Double? = nil, session: CardioSession? = nil) {
         self.index = index
         self.latitude = latitude
         self.longitude = longitude
+        self.altitude = altitude
         self.timestamp = timestamp
         self.horizontalAccuracy = horizontalAccuracy
+        self.verticalAccuracy = verticalAccuracy
+        self.course = course
         self.speedMetersPerSecond = speedMetersPerSecond
         self.session = session
     }
 }
 
-@Model final class CardioTreadmillInterval {
-    #Index<CardioTreadmillInterval>([\.index])
+// A user-logged segment for an indoor machine session (treadmill, indoor bike,
+// stair stepper…). Fields are optional so each machine fills only what applies:
+// treadmill → speed/incline, bike → resistance/cadence/power, stair → resistance.
+@Model final class CardioMachineInterval {
+    #Index<CardioMachineInterval>([\.index])
 
     var id: UUID = UUID()
     var index: Int = 0
-    var speedKPH: Double = 0
-    var inclinePercent: Double = 0
+    var speedKPH: Double?
+    var inclinePercent: Double?
+    var resistanceLevel: Double?
+    var cadenceRPM: Double?
+    var powerWatts: Double?
     var addedAt: Date = Date()
     var distanceMeters: Double = 0
     var session: CardioSession?
 
-    init(index: Int, speedKPH: Double, inclinePercent: Double = 0, addedAt: Date = .now, session: CardioSession? = nil) {
+    init(index: Int, speedKPH: Double? = nil, inclinePercent: Double? = nil, resistanceLevel: Double? = nil, cadenceRPM: Double? = nil, powerWatts: Double? = nil, addedAt: Date = .now, session: CardioSession? = nil) {
         self.index = index
-        self.speedKPH = max(0, speedKPH)
-        self.inclinePercent = max(0, inclinePercent)
+        self.speedKPH = speedKPH.map { max(0, $0) }
+        self.inclinePercent = inclinePercent.map { max(0, $0) }
+        self.resistanceLevel = resistanceLevel.map { max(0, $0) }
+        self.cadenceRPM = cadenceRPM.map { max(0, $0) }
+        self.powerWatts = powerWatts.map { max(0, $0) }
         self.addedAt = addedAt
         self.session = session
     }

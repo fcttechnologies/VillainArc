@@ -45,23 +45,26 @@ struct CardioActiveSessionView: View {
     @State private var showCancelConfirmation = false
     @State private var showFinishConfirmation = false
     @State private var showDeleteOnlyIntervalAlert = false
+    @State private var showEffortPrompt = false
+    @State private var pendingEffort = 0
     @State private var countdownValue: Int? = nil
 
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
     private var speedUnit: SpeedUnit { appSettings.first?.speedUnit ?? .systemDefault }
+    private var shouldPromptForPostWorkoutEffort: Bool { appSettings.first?.promptForPostWorkoutEffort ?? false }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if session.kind.isOutdoor {
+                    if session.isOutdoor {
                         CardioRouteMapView(sessions: [session], showsUserLocation: true, showsUserLocationButton: false, defaultsToUserLocation: true)
                             .frame(height: 380)
                     }
 
                     VStack(alignment: .leading, spacing: 16) {
-                        CardioMetricGrid(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, liveHeartRate: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : nil, liveEnergy: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : nil, liveDistance: session.kind.isManual ? liveTreadmillDistance : nil)
+                        CardioMetricGrid(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, liveHeartRate: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : nil, liveEnergy: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : nil, liveDistance: session.isManual ? liveTreadmillDistance : nil)
 
                         if shouldShowHealthAccessCard {
                             healthAccessCard
@@ -71,7 +74,7 @@ struct CardioActiveSessionView: View {
                         // not Apple Health is connected. Health (when available) layers on heart rate
                         // and energy; it does not replace the interval entry, which is the only way a
                         // treadmill session starts.
-                        if session.kind.isManual {
+                        if session.isManual {
                             treadmillIntervalSection
                         }
                     }
@@ -98,7 +101,7 @@ struct CardioActiveSessionView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Finish", systemImage: "checkmark", role: .confirm) {
-                        showFinishConfirmation = true
+                        handleFinishTapped()
                     }
                     .fontWeight(.semibold)
                     .confirmationDialog("Finish cardio session?", isPresented: $showFinishConfirmation, titleVisibility: .visible) {
@@ -124,13 +127,28 @@ struct CardioActiveSessionView: View {
                 if !focused { commitInclineText() }
             }
             .onReceive(liveTimer) { _ in
-                guard session.kind.isManual, session.startedAt != nil else { return }
+                guard session.isManual, session.startedAt != nil else { return }
                 updateLiveTreadmillDistance()
+            }
+            .sheet(isPresented: $showEffortPrompt) {
+                WorkoutEffortPromptView(
+                    selectedEffort: $pendingEffort,
+                    onClose: { showEffortPrompt = false },
+                    onSkip: {
+                        showEffortPrompt = false
+                        finishSession()
+                    },
+                    onConfirm: {
+                        session.postEffort = pendingEffort
+                        showEffortPrompt = false
+                        finishSession()
+                    }
+                )
             }
         }
         .overlay {
             if let count = countdownValue {
-                CardioCountdownOverlay(value: count, kind: session.kind)
+                CardioCountdownOverlay(value: count, type: CardioSessionType(activity: session.activity, environment: session.environment))
             }
         }
         // Soft scroll-edge fade for this separate presentation context — ContentView's root
@@ -179,7 +197,7 @@ struct CardioActiveSessionView: View {
                 Label("Treadmill Intervals", systemImage: "speedometer")
                     .font(.title3.bold())
                 Spacer()
-                Text("\(session.sortedTreadmillIntervals.count)")
+                Text("\(session.sortedMachineIntervals.count)")
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -242,7 +260,7 @@ struct CardioActiveSessionView: View {
             if !displayedIntervals.isEmpty {
                 List {
                     ForEach(displayedIntervals) { interval in
-                        CardioTreadmillIntervalRow(
+                        CardioMachineIntervalRow(
                             interval: interval,
                             timingText: intervalTimingText(for: interval),
                             isActive: isActiveInterval(interval),
@@ -281,24 +299,24 @@ struct CardioActiveSessionView: View {
 
     /// Newest interval first. The newest interval is the "active" one — it's still accumulating time
     /// and distance until the next interval is added or the session finishes.
-    private var displayedIntervals: [CardioTreadmillInterval] {
-        session.sortedTreadmillIntervals.reversed()
+    private var displayedIntervals: [CardioMachineInterval] {
+        session.sortedMachineIntervals.reversed()
     }
 
-    private func isActiveInterval(_ interval: CardioTreadmillInterval) -> Bool {
-        interval.id == session.sortedTreadmillIntervals.last?.id
+    private func isActiveInterval(_ interval: CardioMachineInterval) -> Bool {
+        interval.id == session.sortedMachineIntervals.last?.id
     }
 
     /// The active interval shows its live elapsed time; older intervals show the fixed window they
     /// occupied, expressed relative to the running workout clock (e.g. "2:00 – 5:30").
-    private func intervalTimingText(for interval: CardioTreadmillInterval) -> String {
+    private func intervalTimingText(for interval: CardioMachineInterval) -> String {
         if isActiveInterval(interval) {
             return secondsToTime(Int(session.intervalDuration(for: interval).rounded()))
         }
         guard let start = session.startedAt else {
             return secondsToTime(Int(session.intervalDuration(for: interval).rounded()))
         }
-        let intervals = session.sortedTreadmillIntervals
+        let intervals = session.sortedMachineIntervals
         guard let index = intervals.firstIndex(where: { $0.id == interval.id }) else { return "" }
         let from = max(0, interval.addedAt.timeIntervalSince(start))
         let to = index + 1 < intervals.count ? max(0, intervals[index + 1].addedAt.timeIntervalSince(start)) : from
@@ -306,8 +324,8 @@ struct CardioActiveSessionView: View {
     }
 
     private func requestDeleteLatestInterval() {
-        guard let latest = session.sortedTreadmillIntervals.last else { return }
-        if session.sortedTreadmillIntervals.count == 1 {
+        guard let latest = session.sortedMachineIntervals.last else { return }
+        if session.sortedMachineIntervals.count == 1 {
             showDeleteOnlyIntervalAlert = true
         } else {
             deleteTreadmillInterval(latest)
@@ -337,7 +355,7 @@ struct CardioActiveSessionView: View {
         // the value shown on screen. This guarantees what the user sees is what gets logged.
         commitSpeedText()
         commitInclineText()
-        let count = (session.treadmillIntervals ?? []).count
+        let count = (session.machineIntervals ?? []).count
         if count == 0 {
             session.startedAt = .now
             saveContext(context: context)
@@ -345,35 +363,35 @@ struct CardioActiveSessionView: View {
             Task { await healthCoordinator.beginActiveCollection(for: session) }
         }
         let addedAt: Date = count == 0 ? (session.startedAt ?? .now) : .now
-        let interval = CardioTreadmillInterval(index: count, speedKPH: speedKPH, inclinePercent: inclinePercent, addedAt: addedAt, session: session)
+        let interval = CardioMachineInterval(index: count, speedKPH: speedKPH, inclinePercent: inclinePercent, addedAt: addedAt, session: session)
         context.insert(interval)
-        session.treadmillIntervals?.append(interval)
-        session.recalculateTreadmillDistance()
+        session.machineIntervals?.append(interval)
+        session.recalculateMachineDistance()
         updateLiveTreadmillDistance()
         saveContext(context: context)
         CardioActivityManager.update(for: session)
     }
 
     private func updateLiveTreadmillDistance() {
-        let intervals = session.sortedTreadmillIntervals
+        let intervals = session.sortedMachineIntervals
         guard !intervals.isEmpty else { liveTreadmillDistance = 0; return }
         let now = Date.now
         var total = 0.0
         for (i, interval) in intervals.enumerated() {
             let nextStart = i + 1 < intervals.count ? intervals[i + 1].addedAt : now
             let dur = max(0, nextStart.timeIntervalSince(interval.addedAt))
-            total += (interval.speedKPH / 3.6) * dur
+            total += ((interval.speedKPH ?? 0) / 3.6) * dur
         }
         liveTreadmillDistance = total
     }
 
-    private func deleteTreadmillInterval(_ interval: CardioTreadmillInterval) {
-        session.treadmillIntervals?.removeAll { $0.id == interval.id }
+    private func deleteTreadmillInterval(_ interval: CardioMachineInterval) {
+        session.machineIntervals?.removeAll { $0.id == interval.id }
         context.delete(interval)
-        for (index, interval) in session.sortedTreadmillIntervals.enumerated() {
+        for (index, interval) in session.sortedMachineIntervals.enumerated() {
             interval.index = index
         }
-        session.recalculateTreadmillDistance()
+        session.recalculateMachineDistance()
         saveContext(context: context)
         CardioActivityManager.update(for: session)
     }
@@ -389,14 +407,14 @@ struct CardioActiveSessionView: View {
         if session.startedAt != nil {
             CardioActivityManager.restoreIfNeeded(session: session)
             await healthCoordinator.ensureRunning(for: session)
-            if session.kind.isOutdoor {
+            if session.isOutdoor {
                 routeRecorder.startRecording(session: session, context: context)
             }
             return
         }
 
         // Treadmill: no countdown — session doesn't start until first interval is added
-        if session.kind.isManual {
+        if session.isManual {
             Task { await healthCoordinator.prepareForSession(session) }
             return
         }
@@ -414,6 +432,18 @@ struct CardioActiveSessionView: View {
         CardioActivityManager.start(session: session)
         routeRecorder.startRecording(session: session, context: context)
         await healthCoordinator.beginActiveCollection(for: session)
+    }
+
+    private func handleFinishTapped() {
+        // Mirror the strength flow: when effort prompting is on, the effort dial's
+        // Finish button is the confirmation (skip → finish without a score); otherwise
+        // fall back to the finish confirmation dialog.
+        if shouldPromptForPostWorkoutEffort {
+            pendingEffort = 0
+            showEffortPrompt = true
+        } else {
+            showFinishConfirmation = true
+        }
     }
 
     private func finishSession() {
@@ -514,8 +544,8 @@ private struct CardioMetricGrid: View {
     }
 }
 
-private struct CardioTreadmillIntervalRow: View {
-    let interval: CardioTreadmillInterval
+private struct CardioMachineIntervalRow: View {
+    let interval: CardioMachineInterval
     let timingText: String
     let isActive: Bool
     let distanceUnit: DistanceUnit
@@ -525,7 +555,7 @@ private struct CardioTreadmillIntervalRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(speedUnit.display(interval.speedKPH))
+                    Text(speedUnit.display(interval.speedKPH ?? 0))
                         .font(.headline)
                     if isActive {
                         Text("Active")
@@ -533,7 +563,7 @@ private struct CardioTreadmillIntervalRow: View {
                             .foregroundStyle(.green)
                     }
                 }
-                Text("\(timingText) · \(interval.inclinePercent.formatted(.number.precision(.fractionLength(0...1))))% incline")
+                Text("\(timingText) · \((interval.inclinePercent ?? 0).formatted(.number.precision(.fractionLength(0...1))))% incline")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -551,7 +581,7 @@ private struct CardioTreadmillIntervalRow: View {
 
 private struct CardioCountdownOverlay: View {
     let value: Int
-    let kind: CardioSessionKind
+    let type: CardioSessionType
 
     var body: some View {
         ZStack {
@@ -569,7 +599,7 @@ private struct CardioCountdownOverlay: View {
                     .contentTransition(.numericText(countsDown: true))
                     .animation(.easeInOut(duration: 0.3), value: value)
 
-                Label(kind.title, systemImage: kind.systemImage)
+                Label(type.title, systemImage: type.systemImage)
                     .font(.headline)
                     .foregroundStyle(.secondary)
             }

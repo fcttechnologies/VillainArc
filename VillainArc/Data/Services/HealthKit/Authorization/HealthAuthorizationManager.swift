@@ -227,7 +227,7 @@ nonisolated enum HealthAuthorizationManager {
     static func metadata(for session: CardioSession) -> [String: Any] {
         [
             "Workout Title": session.displayTitle,
-            HKMetadataKeyIndoorWorkout: session.kind.isManual,
+            HKMetadataKeyIndoorWorkout: session.isManual,
             HealthMetadataKeys.cardioSessionID: session.id.uuidString
         ]
     }

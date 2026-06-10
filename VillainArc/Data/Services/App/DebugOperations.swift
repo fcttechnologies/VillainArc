@@ -393,7 +393,7 @@ enum DebugOperations {
         deletedCount += try deleteAll(HydrationEntry.self, in: context)
         deletedCount += try deleteAll(HydrationGoal.self, in: context)
         deletedCount += try deleteAll(CardioRoutePoint.self, in: context)
-        deletedCount += try deleteAll(CardioTreadmillInterval.self, in: context)
+        deletedCount += try deleteAll(CardioMachineInterval.self, in: context)
         deletedCount += try deleteAll(CardioSession.self, in: context)
         deletedCount += try deleteAll(TrainingConditionPeriod.self, in: context)
         deletedCount += try deleteAll(HealthSyncState.self, in: context)

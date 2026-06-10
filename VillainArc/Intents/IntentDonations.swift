@@ -175,10 +175,10 @@ enum IntentDonations {
         _ = try? await intent.donate()
     }
 
-    static func donateStartCardioSession(kind: CardioSessionKind) async {
+    static func donateStartCardioSession(type: CardioSessionType) async {
         guard donationsEnabled else { return }
         let intent = StartCardioSessionIntent()
-        intent.kind = CardioKindAppEnum(kind)
+        intent.kind = CardioKindAppEnum(type)
         _ = try? await intent.donate()
     }
 

@@ -66,7 +66,7 @@ enum CardioActivityManager {
 
     private static func requestActivity(for session: CardioSession) {
         resetTrackedActivityState()
-        let attributes = CardioActivityAttributes(startDate: session.startedAt ?? .now, kindTitle: session.kind.title, isOutdoor: session.kind.isOutdoor)
+        let attributes = CardioActivityAttributes(startDate: session.startedAt ?? .now, kindTitle: session.typeTitle, isOutdoor: session.isOutdoor)
         let state = normalizedContentState(for: contentState(for: session))
 
         do {
@@ -89,8 +89,8 @@ enum CardioActivityManager {
             liveHeartRateBPM: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : session.healthWorkout?.averageHeartRateBPM,
             activeEnergyBurned: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned,
             routePointCount: session.routePoints?.count ?? 0,
-            treadmillIntervalCount: session.treadmillIntervals?.count ?? 0,
-            statusText: session.kind.isOutdoor ? "Route recording" : "Manual intervals"
+            treadmillIntervalCount: session.machineIntervals?.count ?? 0,
+            statusText: session.isOutdoor ? "Route recording" : "Manual intervals"
         )
     }
 

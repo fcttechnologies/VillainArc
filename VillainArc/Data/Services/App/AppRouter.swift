@@ -160,8 +160,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
     @ObservationIgnored var pendingWidgetDestination: Destination?
     @ObservationIgnored var pendingNotificationDestination: Destination?
-    var pendingOutdoorCardioKind: CardioSessionKind?
-    var pendingManualCardioKind: CardioSessionKind?
+    var pendingOutdoorCardioType: CardioSessionType?
+    var pendingManualCardioType: CardioSessionType?
     var activeAppSheet: AppSheet?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
@@ -556,8 +556,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     /// finish → Health-save flow.
     func finishCardioSession(_ cardioSession: CardioSession) {
         CardioRouteRecorder.shared.stopRecording(sessionID: cardioSession.id)
-        if cardioSession.kind.isManual {
-            cardioSession.recalculateTreadmillDistance()
+        if cardioSession.isManual {
+            cardioSession.recalculateMachineDistance()
         } else {
             cardioSession.recalculateRouteDistance()
         }
@@ -943,37 +943,37 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         AppLog.info("Workout session started: \(newWorkout.id).")
     }
 
-    func requestManualCardioSession(kind: CardioSessionKind) {
+    func requestManualCardioSession(type: CardioSessionType) {
         let healthNeedsPrompt = HealthAuthorizationManager.isHealthDataAvailable && !HealthAuthorizationManager.hasRequestedWorkoutAuthorization
         if healthNeedsPrompt {
-            pendingManualCardioKind = kind
+            pendingManualCardioType = type
         } else {
-            startCardioSession(kind: kind)
+            startCardioSession(type: type)
         }
     }
 
-    func requestOutdoorCardioSession(kind: CardioSessionKind) {
+    func requestOutdoorCardioSession(type: CardioSessionType) {
         let locationGranted = CardioRouteRecorder.shared.canRecord
         let healthNeedsPrompt = HealthAuthorizationManager.isHealthDataAvailable && !HealthAuthorizationManager.hasRequestedWorkoutAuthorization
         if locationGranted && !healthNeedsPrompt {
-            startCardioSession(kind: kind)
+            startCardioSession(type: type)
         } else {
-            pendingOutdoorCardioKind = kind
+            pendingOutdoorCardioType = type
         }
     }
 
-    func startCardioSession(kind: CardioSessionKind) {
+    func startCardioSession(type: CardioSessionType) {
         guard !hasActiveFlow() else {
             showActiveFlowBlockedToast()
             return
         }
         Haptics.selection()
-        let newSession = CardioSession(kind: kind)
+        let newSession = CardioSession(type: type)
         context.insert(newSession)
         saveContext(context: context)
         activeCardioSession = newSession
         startCardioRuntime(for: newSession)
-        AppLog.info("Cardio session started: \(newSession.id), kind=\(kind.rawValue).")
+        AppLog.info("Cardio session started: \(newSession.id), type=\(type.rawValue).")
     }
 
     func createWorkoutPlan() {

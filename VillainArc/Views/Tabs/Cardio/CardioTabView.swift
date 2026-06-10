@@ -62,13 +62,13 @@ struct CardioTabView: View {
 
     private var routeSessions: [CardioSession] {
         recentSessions.filter { session in
-            guard session.kind.isOutdoor else { return false }
+            guard session.isOutdoor else { return false }
             return (session.routePoints?.count ?? 0) >= 2
         }
     }
 
     private var hasAnyCompletedOutdoorSession: Bool {
-        recentSessions.contains { $0.kind.isOutdoor }
+        recentSessions.contains { $0.isOutdoor }
     }
 
     private var standaloneOutdoorWorkouts: [HealthWorkout] {
@@ -92,7 +92,7 @@ struct CardioTabView: View {
                 duration: session.duration,
                 date: session.startedAt ?? .distantPast,
                 target: .appSession(session),
-                systemImage: session.kind.systemImage
+                systemImage: session.systemImage
             ))
         }
 
@@ -215,19 +215,19 @@ struct CardioTabView: View {
                 .font(.title3.bold())
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(CardioSessionKind.allCases, id: \.self) { kind in
-                    let isFavorite = appSettings.first?.favoriteCardioKind == kind
+                ForEach(CardioSessionType.presets) { type in
+                    let isFavorite = appSettings.first?.favoriteCardioType == type
                     Button {
-                        if kind.isOutdoor {
-                            router.requestOutdoorCardioSession(kind: kind)
+                        if type.isOutdoor {
+                            router.requestOutdoorCardioSession(type: type)
                         } else {
-                            router.requestManualCardioSession(kind: kind)
+                            router.requestManualCardioSession(type: type)
                         }
-                        Task { await IntentDonations.donateStartCardioSession(kind: kind) }
+                        Task { await IntentDonations.donateStartCardioSession(type: type) }
                     } label: {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                Image(systemName: kind.systemImage)
+                                Image(systemName: type.systemImage)
                                     .font(.title2)
                                 Spacer()
                                 if isFavorite {
@@ -236,7 +236,7 @@ struct CardioTabView: View {
                                         .foregroundStyle(.yellow)
                                 }
                             }
-                            Text(kind.title)
+                            Text(type.title)
                                 .font(.headline)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -244,9 +244,9 @@ struct CardioTabView: View {
                     }
                     .buttonStyle(.plain)
                     .appSurfaceStyle(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioStart(kindRawValue: kind.rawValue))
-                    .accessibilityLabel(Text("Start \(kind.title)"))
-                    .accessibilityHint(Text(kind.isOutdoor ? "Starts an outdoor cardio session with GPS route recording." : "Starts a treadmill cardio session with manual interval entry."))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioStart(kindRawValue: type.rawValue))
+                    .accessibilityLabel(Text("Start \(type.title)"))
+                    .accessibilityHint(Text(type.isOutdoor ? "Starts an outdoor cardio session with GPS route recording." : "Starts a treadmill cardio session with manual interval entry."))
                     .accessibilityAddTraits(isFavorite ? [.isButton] : [.isButton])
                     .contextMenu {
                         if isFavorite {
@@ -257,7 +257,7 @@ struct CardioTabView: View {
                             }
                         } else {
                             Button {
-                                setFavorite(kind)
+                                setFavorite(type)
                             } label: {
                                 Label("Set as Favorite", systemImage: "star")
                             }
@@ -268,9 +268,9 @@ struct CardioTabView: View {
         }
     }
 
-    private func setFavorite(_ kind: CardioSessionKind?) {
+    private func setFavorite(_ type: CardioSessionType?) {
         guard let settings = appSettings.first else { return }
-        settings.favoriteCardioKind = kind
+        settings.favoriteCardioType = type
         saveContext(context: context)
     }
 
@@ -376,7 +376,7 @@ private struct CardioSessionHistoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: session.kind.systemImage)
+            Image(systemName: session.systemImage)
                 .font(.title3)
                 .foregroundStyle(.green)
                 .frame(width: 28)

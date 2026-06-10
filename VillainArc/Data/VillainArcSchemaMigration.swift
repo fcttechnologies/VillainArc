@@ -2023,7 +2023,7 @@ enum VillainArcSchemaV5: VersionedSchema {
             HydrationGoal.self,
             CardioSession.self,
             CardioRoutePoint.self,
-            CardioTreadmillInterval.self
+            CardioMachineInterval.self
         ]
     }
 }

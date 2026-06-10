@@ -11,17 +11,25 @@ struct CardioSessionDetailView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
     @State private var cameraPosition: MapCameraPosition = .automatic
-    // Read-only location-auth check (never requests). An indoor/treadmill session detail must not
-    // request location, so the live-location dot + camera are shown only when the user already
-    // granted location for outdoor cardio.
-    @State private var routeRecorder = CardioRouteRecorder.shared
 
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
 
     var body: some View {
+        if session.isOutdoor {
+            outdoorLayout
+        } else {
+            indoorLayout
+        }
+    }
+
+    // Outdoor (GPS) sessions keep the immersive route map, with the metrics in a bottom
+    // card via a safe-area inset — not a blocking sheet. The old always-presented sheet
+    // (interactiveDismissDisabled) sat over a pushed "View in Health" detail and never
+    // dismissed; the inset lets that navigation read cleanly.
+    private var outdoorLayout: some View {
         ZStack(alignment: .top) {
-            mapLayer
+            outdoorMap
                 .ignoresSafeArea()
 
             LinearGradient(colors: [Color.black.opacity(0.35), Color.black.opacity(0.0)], startPoint: .top, endPoint: .center)
@@ -36,20 +44,47 @@ struct CardioSessionDetailView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: .constant(true)) {
+        .safeAreaInset(edge: .bottom) {
             ScrollView {
                 CardioMetricsSheet(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, onOpenHealthWorkout: openHealthHandler)
-                    .padding(.top, 12)
+                    .padding(.vertical, 12)
             }
             .scrollBounceBehavior(.basedOnSize)
-            .presentationDetents([.medium, .large])
-            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-            .presentationDragIndicator(.hidden)
-            .interactiveDismissDisabled(true)
-            .presentationBackground(.regularMaterial)
+            .frame(maxHeight: 320)
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
         .task(id: session.id) {
             updateInitialCameraPosition()
+        }
+    }
+
+    // Indoor / non-GPS sessions have no map — a regular scrolling detail, the way a Health
+    // workout reads. Only outdoor route sessions get a map.
+    private var indoorLayout: some View {
+        ScrollView {
+            CardioMetricsSheet(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, onOpenHealthWorkout: openHealthHandler)
+                .padding(.top, 12)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .appBackground()
+        .navigationTitle(session.displayTitle)
+        .toolbarTitleDisplayMode(.inline)
+        .toolbar {
+            if showsCloseButton {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close", systemImage: "xmark") { dismiss() }
+                        .accessibilityLabel(Text("Close"))
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                ShareLink(item: shareableSummary) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .accessibilityLabel(Text("Share session"))
+            }
         }
     }
 
@@ -76,15 +111,6 @@ struct CardioSessionDetailView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(Text("Share session"))
-        }
-    }
-
-    @ViewBuilder
-    private var mapLayer: some View {
-        if session.kind.isOutdoor {
-            outdoorMap
-        } else {
-            indoorMap
         }
     }
 
@@ -129,35 +155,12 @@ struct CardioSessionDetailView: View {
         }
     }
 
-    private var indoorMap: some View {
-        Map(position: $cameraPosition, interactionModes: [.pan, .zoom, .rotate]) {
-            if let coordinate = sessionLocation {
-                Annotation("Location", coordinate: coordinate) {
-                    CardioRouteMarker(systemImage: "mappin", tint: .orange)
-                }
-                .annotationTitles(.hidden)
-            } else if routeRecorder.canRecord {
-                UserAnnotation()
-            }
-        }
-        .mapStyle(.standard)
-    }
-
-    private var sessionLocation: CLLocationCoordinate2D? {
-        if let point = session.sortedRoutePoints.first {
-            return CLLocationCoordinate2D(latitude: point.latitude, longitude: point.longitude)
-        }
-        return nil
-    }
-
     private func updateInitialCameraPosition() {
         let coordinates = session.sortedRoutePoints.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
         if coordinates.count >= 2 {
             cameraPosition = .region(region(for: coordinates))
         } else if let first = coordinates.first {
             cameraPosition = .region(MKCoordinateRegion(center: first, span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)))
-        } else if session.kind.isManual, routeRecorder.canRecord {
-            cameraPosition = .userLocation(fallback: .automatic)
         } else {
             cameraPosition = .automatic
         }
@@ -183,9 +186,9 @@ struct CardioSessionDetailView: View {
         let distance = formattedDistanceText(session.totalDistanceMeters, unit: distanceUnit)
         let duration = secondsToTimeWithHours(Int(session.duration.rounded()))
         if session.totalDistanceMeters > 0 {
-            return "Just finished a \(session.kind.title.lowercased()): \(distance) in \(duration) with Villain Arc."
+            return "Just finished a \(session.typeTitle.lowercased()): \(distance) in \(duration) with Villain Arc."
         } else {
-            return "Just finished a \(session.kind.title.lowercased()): \(duration) with Villain Arc."
+            return "Just finished a \(session.typeTitle.lowercased()): \(duration) with Villain Arc."
         }
     }
 
@@ -216,6 +219,10 @@ struct CardioMetricsSheet: View {
                 ForEach(metricItems) { item in
                     MetricTile(title: item.title, value: item.value, systemImage: item.systemImage, tint: item.tint, subCaption: item.subCaption)
                 }
+            }
+
+            if (1...10).contains(session.postEffort) {
+                WorkoutEffortCardView(model: .init(title: workoutEffortTitle(session.postEffort), description: workoutEffortDescription(session.postEffort), valueText: "\(session.postEffort)", score: Double(session.postEffort), caption: nil))
             }
 
             if session.healthWorkout != nil, let onOpenHealthWorkout {
@@ -250,7 +257,7 @@ struct CardioMetricsSheet: View {
                     Circle()
                         .fill(kindTint.gradient)
                         .frame(width: 44, height: 44)
-                    Image(systemName: session.kind.systemImage)
+                    Image(systemName: session.systemImage)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(.white)
                 }
@@ -274,9 +281,10 @@ struct CardioMetricsSheet: View {
     }
 
     private var kindTint: Color {
-        switch session.kind {
-        case .outdoorRun, .treadmillRun: return .orange
-        case .outdoorWalk, .treadmillWalk: return .blue
+        switch session.activity {
+        case .run: return .orange
+        case .walk: return .blue
+        default: return .green
         }
     }
 

@@ -16,21 +16,21 @@ enum CardioKindAppEnum: String, AppEnum {
         .treadmillWalk: "Treadmill Walk"
     ]
 
-    var sessionKind: CardioSessionKind {
+    var sessionType: CardioSessionType {
         switch self {
-        case .outdoorRun: return .outdoorRun
-        case .outdoorWalk: return .outdoorWalk
-        case .treadmillRun: return .treadmillRun
-        case .treadmillWalk: return .treadmillWalk
+        case .outdoorRun: return CardioSessionType(activity: .run, environment: .outdoor)
+        case .outdoorWalk: return CardioSessionType(activity: .walk, environment: .outdoor)
+        case .treadmillRun: return CardioSessionType(activity: .run, environment: .indoor)
+        case .treadmillWalk: return CardioSessionType(activity: .walk, environment: .indoor)
         }
     }
 
-    init(_ kind: CardioSessionKind) {
-        switch kind {
-        case .outdoorRun: self = .outdoorRun
-        case .outdoorWalk: self = .outdoorWalk
-        case .treadmillRun: self = .treadmillRun
-        case .treadmillWalk: self = .treadmillWalk
+    init(_ type: CardioSessionType) {
+        switch (type.activity, type.environment) {
+        case (.walk, .outdoor): self = .outdoorWalk
+        case (.run, .indoor): self = .treadmillRun
+        case (.walk, .indoor): self = .treadmillWalk
+        default: self = .outdoorRun
         }
     }
 }

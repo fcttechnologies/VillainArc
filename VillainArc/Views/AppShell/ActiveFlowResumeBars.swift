@@ -315,7 +315,7 @@ struct ActiveCardioResumeBarButton: View {
     var body: some View {
         Button(action: openAction) {
             HStack(spacing: 12) {
-                Image(systemName: session.kind.systemImage)
+                Image(systemName: session.systemImage)
                     .font(.title3)
                     .foregroundStyle(.green)
 

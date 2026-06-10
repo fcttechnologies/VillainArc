@@ -133,7 +133,10 @@ import SwiftData
         let recoveredSessionID = recoveredBuilder.metadata[HealthMetadataKeys.workoutSessionID] as? String
 
         if let recoveredSessionID, recoveredSessionID != workout.id.uuidString {
-            AppLog.error("Recovered Health workout session metadata mismatch. Expected \(workout.id.uuidString), got \(recoveredSessionID).")
+            // Orphaned active session from a different workout (only one flow runs at a
+            // time). End it rather than leaving it active to avoid a later double-save.
+            AppLog.error("Recovered Health workout session metadata mismatch. Expected \(workout.id.uuidString), got \(recoveredSessionID). Ending the stale session.")
+            recoveredSession.end()
             return false
         }
 

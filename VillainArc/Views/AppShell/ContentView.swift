@@ -127,10 +127,10 @@ struct ContentView: View {
                 .presentationDetents([.fraction(0.4)])
                 .presentationBackground(Color.sheetBg)
         }
-        .sheet(item: $router.pendingOutdoorCardioKind) { kind in
-            CardioOutdoorPermissionView(kind: kind) {
-                router.startCardioSession(kind: kind)
-                Task { await IntentDonations.donateStartCardioSession(kind: kind) }
+        .sheet(item: $router.pendingOutdoorCardioType) { type in
+            CardioOutdoorPermissionView(type: type) {
+                router.startCardioSession(type: type)
+                Task { await IntentDonations.donateStartCardioSession(type: type) }
             }
             .presentationBackground(Color.sheetBg)
         }
@@ -151,10 +151,10 @@ struct ContentView: View {
             )
             .presentationBackground(Color.sheetBg)
         }
-        .sheet(item: $router.pendingManualCardioKind) { kind in
-            CardioOutdoorPermissionView(kind: kind, showsLocation: false) {
-                router.startCardioSession(kind: kind)
-                Task { await IntentDonations.donateStartCardioSession(kind: kind) }
+        .sheet(item: $router.pendingManualCardioType) { type in
+            CardioOutdoorPermissionView(type: type, showsLocation: false) {
+                router.startCardioSession(type: type)
+                Task { await IntentDonations.donateStartCardioSession(type: type) }
             }
             .presentationBackground(Color.sheetBg)
         }
@@ -245,22 +245,22 @@ struct ContentView: View {
         // Only surface the cardio quick action when the user has actually favorited a cardio mode.
         // Without a favorite there is no concrete action to start, so the slot is omitted entirely
         // rather than rendered as an iconless "Start Cardio" button.
-        if !router.hasActiveAuthoringFlow, let favoriteKind = appSettings.first?.favoriteCardioKind {
+        if !router.hasActiveAuthoringFlow, let favoriteType = appSettings.first?.favoriteCardioType {
             actions.append(ExpandedAction(
-                "Start \(favoriteKind.shortTitle)",
-                icon: favoriteKind.systemImage,
+                "Start \(favoriteType.activity.shortTitle)",
+                icon: favoriteType.systemImage,
                 accessibilityIdentifier: "morphing_start_cardio_button",
-                accessibilityHint: "Starts a \(favoriteKind.title) cardio session. Long press to change your favorite.",
+                accessibilityHint: "Starts a \(favoriteType.title) cardio session. Long press to change your favorite.",
                 kind: .cardio,
                 contextMenu: AnyView(cardioFavoriteContextMenu())
             ) {
                 collapseMorphingTabBar()
-                if favoriteKind.isOutdoor {
-                    router.requestOutdoorCardioSession(kind: favoriteKind)
+                if favoriteType.isOutdoor {
+                    router.requestOutdoorCardioSession(type: favoriteType)
                 } else {
-                    router.requestManualCardioSession(kind: favoriteKind)
+                    router.requestManualCardioSession(type: favoriteType)
                 }
-                Task { await IntentDonations.donateStartCardioSession(kind: favoriteKind) }
+                Task { await IntentDonations.donateStartCardioSession(type: favoriteType) }
             })
         }
 
@@ -269,12 +269,12 @@ struct ContentView: View {
 
     @ViewBuilder
     private func cardioFavoriteContextMenu() -> some View {
-        let currentFavorite = appSettings.first?.favoriteCardioKind
-        ForEach(CardioSessionKind.allCases) { kind in
+        let currentFavorite = appSettings.first?.favoriteCardioType
+        ForEach(CardioSessionType.presets) { type in
             Button {
-                setFavoriteCardioKind(kind)
+                setFavoriteCardioKind(type)
             } label: {
-                Label(kind.title, systemImage: currentFavorite == kind ? "star.fill" : kind.systemImage)
+                Label(type.title, systemImage: currentFavorite == type ? "star.fill" : type.systemImage)
             }
         }
         if currentFavorite != nil {
@@ -287,9 +287,9 @@ struct ContentView: View {
         }
     }
 
-    private func setFavoriteCardioKind(_ kind: CardioSessionKind?) {
+    private func setFavoriteCardioKind(_ type: CardioSessionType?) {
         guard let settings = appSettings.first else { return }
-        settings.favoriteCardioKind = kind
+        settings.favoriteCardioType = type
         saveContext(context: SharedModelContainer.container.mainContext)
         Haptics.selection()
         CardioFavoriteTip().invalidate(reason: .actionPerformed)

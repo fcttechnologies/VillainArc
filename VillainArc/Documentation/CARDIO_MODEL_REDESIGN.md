@@ -78,12 +78,35 @@ Each field optional so a treadmill interval fills speed/incline and a bike inter
 
 A `healthKitOnly` session records no app detail; its metrics come from the linked `HealthWorkout` mirror (VA already has `HealthWorkout` + `HealthWorkoutMirrorImporter`). **Browse:** surface existing HealthKit cardio workouts (Apple Watch / other apps) inside VA's cardio history via the mirror, optionally materializing a `healthKitOnly CardioSession` on open. (Feature layer, after the core model lands.)
 
+## Refinements (Fernando, 2026-06-10 notes)
+
+**1. HealthKit-preferred capture.** When HealthKit workout recording is available, **prefer `.healthKitOnly`** over app-managed capture — the `HKLiveWorkoutBuilder` already records HR, energy, distance, **and the route** (`HKWorkoutRoute`), so for outdoor sessions we shouldn't maintain our own GPS points, and indoor walkers with HealthKit should be able to use HK data instead of logging intervals. So the default capture mode at session creation is: **HealthKit available → `.healthKitOnly`**; otherwise fall back to `.gpsRoute` (outdoor) / `.machineIntervals` (indoor). `CardioActivity.defaultCaptureMode(in:)` stays the *app-managed* fallback; a creation-time policy layers the HealthKit preference on top. The route/metrics for a `.healthKitOnly` session are read back from the HK workout (`HKWorkoutRoute` query) for map display — a read-from-HealthKit layer after the core. **OPEN FORK for Fernando:** keep app-managed GPS (`CardioRoutePoint` + `CardioRouteRecorder`) as the no-HealthKit fallback, *or* go fully HealthKit for the route and drop app-managed location recording entirely (simpler, but no outdoor tracking without HealthKit auth). The model supports both; pick before finishing the call-site sweep.
+
+**2. Configurable Live Activity metrics.** The cardio Live Activity shows **two** metrics the user picks (stored in `AppSettings`), defaulting to **distance + time**. Other pairs: distance + energy, distance + heart rate. Base/fallback is distance + time when the chosen metric isn't available. Present **maximized** (expanded). This replaces the build-16 fixed priority (HR → energy → intervals). Feature layer after the core model + the HealthKit-capture default land.
+
 ## Schema handling
 
 Cardio lives only in **V5** (unreleased 1.3 schema; prod 1.2.3 is V4). The `V4→V5` migration touches only AppSettings/HealthSyncState — **not** cardio — so changing the cardio models doesn't affect prod users migrating V4→V5. Plan:
 - Edit the real cardio `@Model` types in place; update `VillainArcSchemaV5.models` (`CardioTreadmillInterval` → `CardioMachineInterval`).
 - No V6 / migration stage — cardio is throwaway pre-release.
 - **Requires:** Fernando redeploys the CloudKit schema (dev + prod reset) and does a **clean install** on test devices (same-version schema-hash change → existing test stores must be wiped). Prod 1.3 launch is the first cardio release, so prod is clean by construction.
+
+## View rework + effort (Fernando's device-test feedback, 2026-06-10) — build 18
+
+Real-world testing of build 17's first indoor walk surfaced these:
+
+- **Indoor cardio must not show the map.** Only outdoor (GPS route) benefits from a map. `CardioSessionDetailView` today is a full-screen map (`mapLayer` → `outdoorMap`/`indoorMap`) with an **always-presented** `.sheet(isPresented: .constant(true))` for the metrics. The `indoorMap` (a bare `Map` with `UserAnnotation`) is wrong for indoor.
+- **The always-presented sheet is the crash/stuck-sheet source.** "View in Health" (`openHealthWorkout` → pushes `.healthWorkoutDetail`) pushes *behind* a sheet that never dismisses (`interactiveDismissDisabled(true)`), so the pushed `HealthWorkoutDetailView` is hidden. Fernando wants the sheet **gone** → safe-area inset.
+- **`HealthWorkoutDetailView` is the target "regular health-workout view."** It already renders the route map **only when** `routeCoordinates.count >= 2`, plus summary stats, HR chart, zones, splits, metrics, and an effort card — for any activity type. So the real direction: a finished cardio session with a linked `healthWorkout` should present **through `HealthWorkoutDetailView`** (map-or-not handled for free). "A lot needs updating since all different workout types" = this routing across all cardio types.
+
+**Build-18 scope (conservative, addresses the concrete bugs; the full HealthWorkoutDetailView routing is the follow-up to confirm with Fernando):**
+- Remove the `.sheet(isPresented: .constant(true))` from `CardioSessionDetailView`.
+- **Outdoor (gpsRoute):** keep the route map; move the metrics to a `.safeAreaInset(edge: .bottom)` card (no blocking sheet) — "View in Health" then navigates cleanly.
+- **Indoor / machine / healthKitOnly:** no map — a plain scrolling metrics detail (the `CardioMetricsSheet` content as a normal view), with "View in Health" → the rich `HealthWorkoutDetailView` when a `healthWorkout` is linked.
+- **Effort rating** (mirror the workout flow): add `postEffort: Int = 0` to `CardioSession` (schema-free, pre-prod); a cardio effort prompt at finish gated by `promptForPostWorkoutEffort`; a cardio effort sample (mirror `HealthWorkoutEffortSampleBuilder.makeSample(for: WorkoutSession)`) + `relateWorkoutEffortSample` in the cardio coordinator's finish; display in the detail.
+- **Double-workout hardening:** cardio `finishIfRunning` gets the strength flow's pre-save dedup guard (`findSavedCardioWorkout(for: cardioSessionID)` on the `cardioSessionID` metadata key → link instead of re-save); `recoverIfPossible` ends any non-matching active session instead of orphaning it. Mirror across both coordinators; respects the sync (mirror import dedups by HK UUID).
+
+**Follow-up (confirm with Fernando):** route *all* finished-cardio detail through `HealthWorkoutDetailView` (full navigation change), and the configurable Live Activity metrics + HealthKit-preferred capture default.
 
 ## Execution order
 

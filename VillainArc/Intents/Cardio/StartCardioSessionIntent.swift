@@ -17,11 +17,11 @@ struct StartCardioSessionIntent: AppIntent {
         if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartCardioSessionError.workoutPlanIsActive }
         if (try? context.fetch(CardioSession.incomplete).first) != nil { throw StartCardioSessionError.cardioIsActive }
 
-        let sessionKind = kind.sessionKind
-        if sessionKind.isOutdoor {
-            AppRouter.shared.requestOutdoorCardioSession(kind: sessionKind)
+        let sessionType = kind.sessionType
+        if sessionType.isOutdoor {
+            AppRouter.shared.requestOutdoorCardioSession(type: sessionType)
         } else {
-            AppRouter.shared.requestManualCardioSession(kind: sessionKind)
+            AppRouter.shared.requestManualCardioSession(type: sessionType)
         }
         return .result(opensIntent: OpenAppIntent())
     }

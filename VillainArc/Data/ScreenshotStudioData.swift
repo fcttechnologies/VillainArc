@@ -191,7 +191,7 @@ enum ScreenshotStudioSeeder {
     // MARK: - Cardio (outdoor run with route)
 
     private static func seedCardioSession(in context: ModelContext) {
-        let session = CardioSession(kind: .outdoorRun)
+        let session = CardioSession(activity: .run, environment: .outdoor)
         session.startedAt = .now.addingTimeInterval(-32 * 60)
         session.endedAt = .now.addingTimeInterval(-2 * 60)
         context.insert(session)
@@ -235,7 +235,7 @@ enum ScreenshotStudioSeeder {
         deleteAll(WorkoutPlan.self, in: context)
         deleteAll(ExerciseHistory.self, in: context)
         deleteAll(CardioRoutePoint.self, in: context)
-        deleteAll(CardioTreadmillInterval.self, in: context)
+        deleteAll(CardioMachineInterval.self, in: context)
         deleteAll(CardioSession.self, in: context)
         dedupeExercises(in: context)
     }

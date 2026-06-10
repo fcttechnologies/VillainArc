@@ -37,7 +37,7 @@ import SwiftData
     }
 
     func startRecording(session: CardioSession, context: ModelContext) {
-        guard session.kind.isOutdoor, session.statusValue == .active else { return }
+        guard session.isOutdoor, session.statusValue == .active else { return }
         self.context = context
         activeSessionID = session.id
         lastErrorMessage = nil
@@ -107,8 +107,11 @@ import SwiftData
                 index: nextIndex,
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
+                altitude: location.altitude,
                 timestamp: location.timestamp,
                 horizontalAccuracy: location.horizontalAccuracy,
+                verticalAccuracy: location.verticalAccuracy,
+                course: location.course,
                 speedMetersPerSecond: location.speed >= 0 ? location.speed : nil,
                 session: session
             )

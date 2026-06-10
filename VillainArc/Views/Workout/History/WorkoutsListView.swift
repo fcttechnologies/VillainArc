@@ -211,7 +211,7 @@ struct WorkoutsListView: View {
         case .session:
             return .strength
         case .cardio(let session):
-            return session.kind.isOutdoor ? .outdoorCardio : .indoorCardio
+            return session.isOutdoor ? .outdoorCardio : .indoorCardio
         case .health(let workout):
             switch workout.activityType {
             case .traditionalStrengthTraining, .functionalStrengthTraining:

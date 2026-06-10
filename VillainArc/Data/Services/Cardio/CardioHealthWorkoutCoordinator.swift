@@ -31,7 +31,7 @@ import SwiftData
         guard HealthAuthorizationManager.canWriteWorkouts else { return }
         guard activeCardioSessionID == nil, liveWorkoutSession == nil, liveWorkoutBuilder == nil else { return }
 
-        let configuration = makeWorkoutConfiguration(for: session.kind)
+        let configuration = makeWorkoutConfiguration(for: session)
 
         do {
             let workoutSession = try HKWorkoutSession(healthStore: HealthAuthorizationManager.healthStore, configuration: configuration)
@@ -71,7 +71,7 @@ import SwiftData
         if activeCardioSessionID == session.id, liveWorkoutSession != nil, liveWorkoutBuilder != nil { return }
         guard liveWorkoutSession == nil, liveWorkoutBuilder == nil else { return }
 
-        let configuration = makeWorkoutConfiguration(for: session.kind)
+        let configuration = makeWorkoutConfiguration(for: session)
 
         if await recoverIfPossible(for: session, configuration: configuration) { return }
 
@@ -92,11 +92,28 @@ import SwiftData
     }
 
     func finishIfRunning(for session: CardioSession, context: ModelContext) async {
+        // Dedup guard (mirrors the strength flow): if a Health workout was already
+        // saved for this cardio session — e.g. an orphaned session that survived an
+        // app relaunch and resolved on its own — link it instead of saving a second
+        // one. This is what prevents the "two workouts in Health" double-save.
+        if session.healthWorkout == nil, let savedWorkout = try? await HealthMirrorQueries.findSavedCardioWorkout(for: session.id) {
+            await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedCardioSessionID: session.id)
+            if activeCardioSessionID == session.id {
+                liveWorkoutBuilder?.discardWorkout()
+                liveWorkoutSession?.end()
+                isFinishingWorkout = false
+                clearLiveWorkoutState()
+            }
+            AppLog.info("Linked existing Apple Health cardio workout \(savedWorkout.uuid) to session \(session.id) instead of re-saving.")
+            return
+        }
+
         guard activeCardioSessionID == session.id, let liveWorkoutSession, let liveWorkoutBuilder else { return }
         guard !isFinishingWorkout else { return }
         isFinishingWorkout = true
 
         let endDate = max(session.startedAt ?? .now, session.endedAt ?? .now)
+        let effortSample = HealthWorkoutEffortSampleBuilder.makeSample(for: session, endDate: endDate)
         liveWorkoutSession.stopActivity(with: endDate)
         await waitForSessionToStop(liveWorkoutSession)
 
@@ -112,6 +129,14 @@ import SwiftData
             guard let savedWorkout = try await liveWorkoutBuilder.finishWorkout() else {
                 AppLog.error("HealthKit finished cardio export for \(session.id), but the workout sample was unavailable.")
                 return
+            }
+
+            if let effortSample, HealthAuthorizationManager.canWriteWorkoutEffortScore {
+                do {
+                    _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(effortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
+                } catch {
+                    AppLog.error("Failed to relate cardio effort score for \(session.id)", error: error)
+                }
             }
 
             apply(savedWorkout: savedWorkout, to: session, context: context)
@@ -134,10 +159,10 @@ import SwiftData
         clearLiveWorkoutState()
     }
 
-    private func makeWorkoutConfiguration(for kind: CardioSessionKind) -> HKWorkoutConfiguration {
+    private func makeWorkoutConfiguration(for session: CardioSession) -> HKWorkoutConfiguration {
         let configuration = HKWorkoutConfiguration()
-        configuration.activityType = kind.healthActivityType
-        configuration.locationType = kind.healthLocationType
+        configuration.activityType = session.healthActivityType
+        configuration.locationType = session.healthLocationType
         return configuration
     }
 
@@ -148,7 +173,11 @@ import SwiftData
         let recoveredSessionID = recoveredBuilder.metadata[HealthMetadataKeys.cardioSessionID] as? String
 
         if let recoveredSessionID, recoveredSessionID != session.id.uuidString {
-            AppLog.info("Recovered cardio Health workout metadata mismatch. Expected \(session.id.uuidString), got \(recoveredSessionID).")
+            // A stale active session from a different cardio session (only one cardio
+            // flow runs at a time, so this is an orphan). End it instead of leaving it
+            // active — an orphaned live session is what later double-saves to Health.
+            AppLog.info("Recovered cardio Health workout metadata mismatch. Expected \(session.id.uuidString), got \(recoveredSessionID). Ending the stale session.")
+            recoveredSession.end()
             return false
         }
 

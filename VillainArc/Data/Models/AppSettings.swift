@@ -42,8 +42,8 @@ enum PreviousSetReferenceSource: String, Codable, CaseIterable, Identifiable {
 
     init() {}
 
-    var favoriteCardioKind: CardioSessionKind? {
-        get { favoriteCardioKindRawValue.flatMap { CardioSessionKind(rawValue: $0) } }
+    var favoriteCardioType: CardioSessionType? {
+        get { favoriteCardioKindRawValue.flatMap { CardioSessionType(rawValue: $0) } }
         set { favoriteCardioKindRawValue = newValue?.rawValue }
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 struct CardioOutdoorPermissionView: View {
-    let kind: CardioSessionKind
+    let type: CardioSessionType
     var showsLocation: Bool = true
     let onStart: () -> Void
 
@@ -23,7 +23,7 @@ struct CardioOutdoorPermissionView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Before You Go")
                             .font(.title2.bold())
-                        Text("Villain Arc needs the following to track your \(kind.title.lowercased()).")
+                        Text("Villain Arc needs the following to track your \(type.title.lowercased()).")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -44,7 +44,7 @@ struct CardioOutdoorPermissionView: View {
                     dismiss()
                     onStart()
                 } label: {
-                    Label("Start \(kind.title)", systemImage: kind.systemImage)
+                    Label("Start \(type.title)", systemImage: type.systemImage)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
                 }
@@ -54,7 +54,7 @@ struct CardioOutdoorPermissionView: View {
             }
             .quickActionContentBottomInset()
             .appBackground()
-            .navigationTitle(kind.title)
+            .navigationTitle(type.title)
             .navigationBarTitleDisplayMode(.inline)
         }
     }
