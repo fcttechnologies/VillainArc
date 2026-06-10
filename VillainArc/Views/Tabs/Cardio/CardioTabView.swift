@@ -50,7 +50,9 @@ private enum CardioRouteRange: String, CaseIterable, Identifiable {
 struct CardioTabView: View {
     @State private var router = AppRouter.shared
     @State private var routeLoader = CardioHealthRouteLoader()
-    @State private var routeRange: CardioRouteRange = .month
+    // Persisted in UserDefaults so the chosen range survives relaunch. CardioRouteRange is
+    // String-backed (RawRepresentable), which @AppStorage stores directly.
+    @AppStorage("cardio_route_range") private var routeRange: CardioRouteRange = .month
     @Query(CardioSession.recentCompleted(limit: 12)) private var recentSessions: [CardioSession]
     @Query(HealthWorkout.recentRunWalk(limit: 20)) private var recentRunWalkWorkouts: [HealthWorkout]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -89,7 +91,8 @@ struct CardioTabView: View {
                 distanceMeters: session.totalDistanceMeters,
                 duration: session.duration,
                 date: session.startedAt ?? .distantPast,
-                target: .appSession(session)
+                target: .appSession(session),
+                systemImage: session.kind.systemImage
             ))
         }
 
@@ -103,7 +106,8 @@ struct CardioTabView: View {
                 distanceMeters: workout.totalDistance ?? 0,
                 duration: workout.duration,
                 date: workout.startDate,
-                target: .healthWorkout(workout)
+                target: .healthWorkout(workout),
+                systemImage: workout.activityType == .running ? "figure.run" : "figure.walk"
             ))
         }
 

@@ -18,17 +18,26 @@ struct ExerciseView: View {
     @State private var showRestTimeEditor = false
     @State private var showReplaceExerciseSheet = false
     @State private var showExerciseHistorySheet = false
+    @State private var showNotesSyncEditor = false
     @State private var progressionStepExercise: Exercise?
     @State private var pendingRestTimerPromptAction: RestTimerPromptAction?
     @State private var restTimeUpdateSeconds = 0
     @State private var restTimeSnapshotBySetID: [UUID: Int] = [:]
     @State private var previousReferenceBySetIndex: [Int: SetReferenceData] = [:]
     @State private var showsPreviousInstead: Bool?
-    @State private var preferredWeightChangeKg: Double?
     @FocusState private var focusedSetField: SetFieldFocus?
     private let exerciseContextMenuTip = ExerciseContextMenuTip()
 
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
+
+    /// True when this exercise came from a plan and its notes have drifted from the plan's
+    /// prescription notes. Only meaningful while the live prescription link exists (it's cleared once
+    /// the workout completes).
+    private var notesMismatch: Bool {
+        guard let prescription = exercise.prescription else { return false }
+        return exercise.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            != prescription.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     private var autoStartRestTimerEnabled: Bool {
         appSettingsSnapshot.autoStartRestTimer
@@ -126,12 +135,27 @@ struct ExerciseView: View {
                         }
                     }
                     
-                    TextField("Notes", text: $exercise.notes)
-                        .padding(.top, 10)
-                        .onChange(of: exercise.notes) {
-                            scheduleSave(context: context)
+                    HStack(spacing: 8) {
+                        TextField("Notes", text: $exercise.notes)
+                            .onChange(of: exercise.notes) {
+                                scheduleSave(context: context)
+                            }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
+
+                        if notesMismatch {
+                            Button {
+                                Haptics.selection()
+                                showNotesSyncEditor = true
+                            } label: {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.orange)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Notes differ from plan")
+                            .accessibilityHint("Opens an editor to compare your notes with the plan and sync them.")
                         }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesField(exercise))
+                    }
+                    .padding(.top, 10)
                 }
                 .padding()
                 .appCardStyle()
@@ -232,13 +256,24 @@ struct ExerciseView: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackground(Color.sheetBg)
             }
+            .sheet(isPresented: $showNotesSyncEditor) {
+                NotesPlanSyncEditorView(
+                    title: "Exercise Notes",
+                    planLabel: "Plan Notes",
+                    currentLabel: "Workout Notes",
+                    planNotes: exercise.prescription?.notes ?? "",
+                    currentNotes: $exercise.notes
+                )
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Color.sheetBg)
+                .onDisappear { scheduleSave(context: context) }
+            }
             .sheet(item: $progressionStepExercise) { progressionStepExercise in
                 ExerciseSuggestionSettingsSheet(exercise: progressionStepExercise)
                     .presentationBackground(Color.sheetBg)
             }
             .task(id: exercise.catalogID) {
                 loadPreviousReferenceDataIfNeeded()
-                loadPreferredWeightChange()
             }
             .onChange(of: appSettingsSnapshot.previousSetReferenceSource) {
                 previousReferenceBySetIndex = [:]
@@ -301,10 +336,6 @@ struct ExerciseView: View {
         Haptics.selection()
     }
 
-    private func loadPreferredWeightChange() {
-        preferredWeightChangeKg = (try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first)?.preferredWeightChange
-    }
-
     /// The sets table (header row + a row per set). Extracted from `body` so the view's main
     /// expression stays inside the Swift type-checker's budget.
     @ViewBuilder
@@ -354,36 +385,21 @@ struct ExerciseView: View {
     /// `ToolbarContent` so the large `body` stays inside the Swift type-checker's budget.
     @ToolbarContentBuilder
     private var keyboardToolbarItems: some ToolbarContent {
-        if let focusedSetField {
+        if focusedSetField != nil {
             ToolbarItem(placement: .keyboard) {
-                keyboardToolbar(for: focusedSetField)
+                keyboardDismissBar
             }
         }
     }
 
-    /// Rendered once for the focused field (a single full-width HStack: adaptive +/- control(s) on
-    /// the left, dismiss on the right), so the accessory never stacks across set rows.
-    @ViewBuilder
-    private func keyboardToolbar(for focus: SetFieldFocus) -> some View {
-        HStack(spacing: 12) {
-            switch focus {
-            case .weight:
-                if let step = weightStepDisplay {
-                    Button("−\(weightStepLabel) \(weightUnit.unitLabel)") { adjustFocusedWeight(by: -step) }
-                    Button("+\(weightStepLabel) \(weightUnit.unitLabel)") { adjustFocusedWeight(by: step) }
-                }
-            case .reps:
-                Button("−1") { adjustFocusedReps(by: -1) }
-                Button("+1") { adjustFocusedReps(by: 1) }
-            }
-
+    /// The keyboard accessory for any focused set field: a single confirm-role button that dismisses
+    /// the keyboard and clears focus. (Replaced the earlier per-field +/- step buttons.)
+    private var keyboardDismissBar: some View {
+        HStack {
             Spacer()
-
-            Button {
+            Button("Done", systemImage: "keyboard.chevron.compact.down", role: .confirm) {
                 dismissKeyboard()
                 focusedSetField = nil
-            } label: {
-                Image(systemName: "keyboard.chevron.compact.down")
             }
             .accessibilityLabel("Dismiss Keyboard")
         }
@@ -391,43 +407,6 @@ struct ExerciseView: View {
         .padding(.horizontal, 4)
     }
 
-    /// The exercise's preferred progression step, in the user's display unit.
-    /// `nil` when no preferred step is set, which hides the weight +/- controls.
-    private var weightStepDisplay: Double? {
-        guard let preferredWeightChangeKg, preferredWeightChangeKg > 0 else { return nil }
-        let value = roundedDisplayValue(weightUnit.fromKg(preferredWeightChangeKg), fractionDigits: 2)
-        return value > 0 ? value : nil
-    }
-
-    private var weightStepLabel: String {
-        (weightStepDisplay ?? 0).formatted(.number.precision(.fractionLength(0...2)))
-    }
-
-    private func focusedSet() -> SetPerformance? {
-        guard let focusedSetField else { return nil }
-        let setID: UUID
-        switch focusedSetField {
-        case .reps(let id), .weight(let id):
-            setID = id
-        }
-        return exercise.sortedSets.first { $0.id == setID }
-    }
-
-    private func adjustFocusedReps(by delta: Int) {
-        guard let set = focusedSet() else { return }
-        Haptics.selection()
-        set.reps = max(0, set.reps + delta)
-    }
-
-    private func adjustFocusedWeight(by delta: Double) {
-        guard let set = focusedSet() else { return }
-        Haptics.selection()
-        // The step already reflects each equipment type's weight semantics (per-side,
-        // assistance, or added bodyweight load), so bump the entered value directly and
-        // clamp at 0 to keep assisted/bodyweight loads from going negative.
-        set.weight = max(0, roundedDisplayValue(set.weight + delta, fractionDigits: 2))
-    }
-    
     private func captureRestTimeSnapshot() {
         restTimeSnapshotBySetID = Dictionary(uniqueKeysWithValues: exercise.sortedSets.map { ($0.id, $0.effectiveRestSeconds) })
     }

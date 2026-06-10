@@ -512,19 +512,15 @@ private struct ExerciseStructureSnapshot: Equatable {
 
 private struct WorkoutPlanExerciseView: View {
     @Environment(\.modelContext) private var context
-    @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Bindable var exercise: ExercisePrescription
     let originalExercise: ExercisePrescription?
     let onDelete: (() -> Void)?
-
-    private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
 
     @State private var showRepRangeEditor = false
     @State private var showRestTimeEditor = false
     @State private var showReplaceExerciseSheet = false
     @State private var showExerciseHistorySheet = false
     @State private var progressionStepExercise: Exercise?
-    @State private var preferredWeightChangeKg: Double?
     @FocusState private var focusedSetField: SetFieldFocus?
 
     var body: some View {
@@ -574,9 +570,6 @@ private struct WorkoutPlanExerciseView: View {
             guard field != nil else { return }
             selectAllFocusedText()
         }
-        .task(id: exercise.catalogID) {
-            loadPreferredWeightChange()
-        }
     }
 
     /// The single keyboard accessory for every set field in this exercise — declared once and only
@@ -584,78 +577,26 @@ private struct WorkoutPlanExerciseView: View {
     /// `ExerciseView` parent-hoist pattern (see learnings.md "Keyboard toolbar").
     @ToolbarContentBuilder
     private var keyboardToolbarItems: some ToolbarContent {
-        if let focusedSetField {
+        if focusedSetField != nil {
             ToolbarItem(placement: .keyboard) {
-                keyboardToolbar(for: focusedSetField)
+                keyboardDismissBar
             }
         }
     }
 
-    /// Rendered once for the focused field (a single full-width HStack: adaptive +/- control(s) on
-    /// the left, dismiss on the right).
-    @ViewBuilder
-    private func keyboardToolbar(for focus: SetFieldFocus) -> some View {
-        HStack(spacing: 12) {
-            switch focus {
-            case .weight:
-                if let step = weightStepDisplay {
-                    Button("−\(weightStepLabel) \(weightUnit.unitLabel)") { adjustFocusedWeight(by: -step) }
-                    Button("+\(weightStepLabel) \(weightUnit.unitLabel)") { adjustFocusedWeight(by: step) }
-                }
-            case .reps:
-                Button("−1") { adjustFocusedReps(by: -1) }
-                Button("+1") { adjustFocusedReps(by: 1) }
-            }
-
+    /// The keyboard accessory for any focused set field: a single confirm-role button that dismisses
+    /// the keyboard and clears focus. (Replaced the earlier per-field +/- step buttons.)
+    private var keyboardDismissBar: some View {
+        HStack {
             Spacer()
-
-            Button {
+            Button("Done", systemImage: "keyboard.chevron.compact.down", role: .confirm) {
                 dismissKeyboard()
                 focusedSetField = nil
-            } label: {
-                Image(systemName: "keyboard.chevron.compact.down")
             }
             .accessibilityLabel("Dismiss Keyboard")
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 4)
-    }
-
-    /// The exercise's preferred progression step, in the user's display unit.
-    /// `nil` when no preferred step is set, which hides the weight +/- controls.
-    private var weightStepDisplay: Double? {
-        guard let preferredWeightChangeKg, preferredWeightChangeKg > 0 else { return nil }
-        let value = roundedDisplayValue(weightUnit.fromKg(preferredWeightChangeKg), fractionDigits: 2)
-        return value > 0 ? value : nil
-    }
-
-    private var weightStepLabel: String {
-        (weightStepDisplay ?? 0).formatted(.number.precision(.fractionLength(0...2)))
-    }
-
-    private func focusedSet() -> SetPrescription? {
-        guard let focusedSetField else { return nil }
-        let setID: UUID
-        switch focusedSetField {
-        case .reps(let id), .weight(let id):
-            setID = id
-        }
-        return exercise.sortedSets.first { $0.id == setID }
-    }
-
-    private func adjustFocusedReps(by delta: Int) {
-        guard let set = focusedSet() else { return }
-        Haptics.selection()
-        set.targetReps = max(0, set.targetReps + delta)
-    }
-
-    private func adjustFocusedWeight(by delta: Double) {
-        guard let set = focusedSet() else { return }
-        Haptics.selection()
-        // The step already reflects each equipment type's weight semantics (per-side,
-        // assistance, or added bodyweight load), so bump the entered value directly and
-        // clamp at 0 to keep assisted/bodyweight loads from going negative.
-        set.targetWeight = max(0, roundedDisplayValue(set.targetWeight + delta, fractionDigits: 2))
     }
 
     private var headerView: some View {
@@ -771,10 +712,6 @@ private struct WorkoutPlanExerciseView: View {
         guard let sourceExercise = try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first else { return }
         progressionStepExercise = sourceExercise
         Haptics.selection()
-    }
-
-    private func loadPreferredWeightChange() {
-        preferredWeightChangeKg = (try? context.fetch(Exercise.withCatalogID(exercise.catalogID)).first)?.preferredWeightChange
     }
 }
 

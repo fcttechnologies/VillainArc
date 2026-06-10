@@ -21,6 +21,8 @@ struct CardioMapRoute: Identifiable {
     let duration: TimeInterval
     let date: Date
     let target: Target
+    /// SF Symbol for this route's marker — reflects run vs walk so the map distinguishes the two.
+    let systemImage: String
 
     var midCoordinate: CLLocationCoordinate2D? {
         guard !coordinates.isEmpty else { return nil }
@@ -128,7 +130,7 @@ struct CardioRoutesMapView: View {
             Haptics.selection()
             selectedRoute = route
         } label: {
-            Image(systemName: route.isActive ? "figure.run.circle.fill" : "mappin.circle.fill")
+            Image(systemName: route.systemImage)
                 .font(.title3)
                 .foregroundStyle(color)
                 .padding(4)

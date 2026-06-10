@@ -539,7 +539,7 @@ struct ProfileSheetView: View {
                 Text("Complete Days")
                     .font(.headline)
                 Spacer()
-                Text("Past 6 months")
+                Text("Past \(profileHeatmapWeekCount) weeks")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -766,13 +766,17 @@ struct ProfileSheetView: View {
     private var profileCompletionDays: [ProfileCompletionDay] {
         let calendar = Calendar.autoupdatingCurrent
         let today = calendar.startOfDay(for: .now)
+        let windowStart = profileHeatmapWindowStart
+        let dayCount = (calendar.dateComponents([.day], from: windowStart, to: today).day ?? 0) + 1
         let workoutDays = completedTrainingDays(calendar: calendar)
         let sleepByDay = Dictionary(uniqueKeysWithValues: sleepNights.map { (calendar.startOfDay(for: $0.displayWakeDay), $0) })
         let stepsByDay = Dictionary(uniqueKeysWithValues: stepsEntries.map { (calendar.startOfDay(for: $0.date), $0) })
         let hydrationByDay = Dictionary(uniqueKeysWithValues: hydrationDays.map { (calendar.startOfDay(for: $0.date), $0) })
 
-        return (0..<profileHeatmapTotalDays).reversed().compactMap { offset in
-            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
+        // Oldest day first (the aligned Sunday window start) through today, so the grid's leftmost
+        // column is a full Sun–Sat week and only the current, in-progress week is partial.
+        return (0..<dayCount).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: windowStart) else { return nil }
             let sleepNight = sleepByDay[day]
             let stepsEntry = stepsByDay[day]
             return ProfileCompletionDay(
@@ -785,7 +789,18 @@ struct ProfileSheetView: View {
         }
     }
 
-    private let profileHeatmapTotalDays = 26 * 7
+    private let profileHeatmapWeekCount = 26
+
+    /// First day of the heatmap window: the Sunday `profileHeatmapWeekCount - 1` weeks before the
+    /// Sunday of the current week. Aligning to Sunday (weekday 1, matching the grid's Sun-top rows)
+    /// makes every column a full Sun–Sat week except the current, still-in-progress one.
+    private var profileHeatmapWindowStart: Date {
+        let calendar = Calendar.autoupdatingCurrent
+        let today = calendar.startOfDay(for: .now)
+        let weekdayIndex = calendar.component(.weekday, from: today) - 1 // 0=Sun…6=Sat
+        let startOfThisWeek = calendar.date(byAdding: .day, value: -weekdayIndex, to: today) ?? today
+        return calendar.date(byAdding: .day, value: -7 * (profileHeatmapWeekCount - 1), to: startOfThisWeek) ?? startOfThisWeek
+    }
 
     private var profileHeatmapWeeks: [[ProfileHeatmapCell]] {
         let calendar = Calendar.autoupdatingCurrent
@@ -825,7 +840,7 @@ struct ProfileSheetView: View {
         // goal/workout (completionCount > 0), not only days where all four goals were met.
         let count = profileCompletionDays.filter { $0.completionCount > 0 }.count
         let prefix = count == 1 ? "1 complete day" : "\(count) complete days"
-        return "\(prefix) in the last 6 months"
+        return "\(prefix) in the last \(profileHeatmapWeekCount) weeks"
     }
 
     private func sleepGoalCompleted(on day: Date, sleepNight: HealthSleepNight?) -> Bool {

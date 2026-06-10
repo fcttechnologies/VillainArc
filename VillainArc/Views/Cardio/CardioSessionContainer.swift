@@ -328,6 +328,12 @@ struct CardioActiveSessionView: View {
     }
 
     private func addTreadmillInterval() {
+        // Flush any value still being typed before reading it: the speed/incline fields only commit
+        // on focus loss, so tapping "Add Interval" while a field is focused would otherwise log the
+        // stale @State speed (e.g. the 8.0 km/h default = 5 mph = a 12 min/mile "run") instead of
+        // the value shown on screen. This guarantees what the user sees is what gets logged.
+        commitSpeedText()
+        commitInclineText()
         let count = (session.treadmillIntervals ?? []).count
         if count == 0 {
             session.startedAt = .now

@@ -667,7 +667,8 @@ private struct SleepHistoryMainSection: View {
                         .foregroundStyle(interval.stage.tint.opacity(interval.isApproximate ? 0.45 : 1).gradient)
                         .opacity(selectedDayInterval == nil || selectedDayInterval?.id == interval.id ? 1 : 0.3)
                 }
-            } else if let currentRangeData {
+            }
+            if selectedRange != .day, let currentRangeData {
                 ForEach(currentRangeData.windowBars) { bar in
                     BarMark(x: .value("Bucket", bar.point.date, unit: chartCalendarComponent(for: currentRangeData.layout.bucketStyle)), yStart: .value("Start", bar.startOffsetMinutes), yEnd: .value("End", bar.endOffsetMinutes), width: .ratio(0.8))
                         .foregroundStyle(tint.opacity(bar.isFullyUnavailable ? 0.35 : 0.85).gradient)

@@ -14,6 +14,7 @@ struct WorkoutView: View {
     @State private var showLiveHealthSheet = false
     @State private var showTitleEditorSheet = false
     @State private var showNotesEditorSheet = false
+    @State private var showNotesSyncEditor = false
     @State private var pendingEffortSelection = 0
     @State private var autoAdvanceTargetIndex: Int?
     @State private var draggingExerciseID: UUID?
@@ -26,6 +27,13 @@ struct WorkoutView: View {
 
     private var appSettingsSnapshot: AppSettingsSnapshot { AppSettingsSnapshot(settings: appSettings.first) }
     private var weightUnit: WeightUnit { appSettingsSnapshot.weightUnit }
+
+    /// True when this workout came from a plan and its notes have drifted from the plan's notes.
+    private var workoutNotesMismatch: Bool {
+        guard let plan = workout.workoutPlan else { return false }
+        return workout.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            != plan.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
     private var shouldPromptForPreWorkoutContext: Bool { appSettingsSnapshot.promptForPreWorkoutContext }
     private var shouldPromptForPostWorkoutEffort: Bool { appSettingsSnapshot.promptForPostWorkoutEffort }
     private var preferredAddExerciseMuscles: Set<Muscle> {
@@ -61,6 +69,11 @@ struct WorkoutView: View {
                 }
                 Button("Workout Notes", systemImage: "note.text") {
                     showNotesEditorSheet = true
+                }
+                if workoutNotesMismatch {
+                    Button("Notes Differ From Plan", systemImage: "exclamationmark.triangle") {
+                        showNotesSyncEditor = true
+                    }
                 }
                 Button("Pre Workout Context", systemImage: "bolt.fill") {
                     router.presentWorkoutSheet(.preWorkoutContext)
@@ -154,6 +167,18 @@ struct WorkoutView: View {
                     .onDisappear {
                         saveContext(context: context)
                     }
+            }
+            .sheet(isPresented: $showNotesSyncEditor) {
+                NotesPlanSyncEditorView(
+                    title: "Workout Notes",
+                    planLabel: "Plan Notes",
+                    currentLabel: "Workout Notes",
+                    planNotes: workout.workoutPlan?.notes ?? "",
+                    currentNotes: $workout.notes
+                )
+                .presentationDetents([.medium, .large])
+                .presentationBackground(Color.sheetBg)
+                .onDisappear { saveContext(context: context) }
             }
             .sheet(isPresented: preWorkoutSheetBinding) {
                 PreWorkoutContextView(preWorkoutContext: workout.preWorkoutContext ?? PreWorkoutContext())
