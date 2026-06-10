@@ -54,27 +54,44 @@ struct CardioActiveSessionView: View {
     private var speedUnit: SpeedUnit { appSettings.first?.speedUnit ?? .systemDefault }
     private var shouldPromptForPostWorkoutEffort: Bool { appSettings.first?.promptForPostWorkoutEffort ?? false }
 
+    private var isActiveHealthSession: Bool { healthCoordinator.activeCardioSessionID == session.id }
+
+    // One distance source per capture mode (the pace-bug fix): the grid, the Live Activity, and the
+    // finished detail all read this same value so their pace never disagrees.
+    private var liveSessionDistance: Double {
+        session.resolvedDistanceMeters(healthKitDistance: isActiveHealthSession ? healthCoordinator.distanceMeters : nil)
+    }
+
+    // A machineIntervals session can't be saved with no distance (no intervals logged). healthKitOnly
+    // is exempt — HealthKit provides the distance even with nothing logged in-app.
+    private var canFinish: Bool {
+        guard session.usesMachineIntervals else { return true }
+        return session.startedAt != nil && !session.sortedMachineIntervals.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if session.isOutdoor {
+                    // The active view is shaped by the capture mode: gpsRoute → live route map;
+                    // machineIntervals → interval entry; healthKitOnly → live metrics only.
+                    if session.usesRoute {
                         CardioRouteMapView(sessions: [session], showsUserLocation: true, showsUserLocationButton: false, defaultsToUserLocation: true)
                             .frame(height: 380)
                     }
 
                     VStack(alignment: .leading, spacing: 16) {
-                        CardioMetricGrid(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, liveHeartRate: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : nil, liveEnergy: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : nil, liveDistance: session.isManual ? liveTreadmillDistance : nil)
+                        CardioMetricGrid(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit, liveHeartRate: isActiveHealthSession ? healthCoordinator.latestHeartRate : nil, liveEnergy: isActiveHealthSession ? healthCoordinator.activeEnergyBurned : nil, liveDistance: liveSessionDistance)
 
                         if shouldShowHealthAccessCard {
                             healthAccessCard
                         }
 
-                        // Treadmill sessions always log distance through manual intervals, whether or
+                        // machineIntervals sessions log distance through manual intervals, whether or
                         // not Apple Health is connected. Health (when available) layers on heart rate
                         // and energy; it does not replace the interval entry, which is the only way a
                         // treadmill session starts.
-                        if session.isManual {
+                        if session.usesMachineIntervals {
                             treadmillIntervalSection
                         }
                     }
@@ -104,6 +121,7 @@ struct CardioActiveSessionView: View {
                         handleFinishTapped()
                     }
                     .fontWeight(.semibold)
+                    .disabled(!canFinish)
                     .confirmationDialog("Finish cardio session?", isPresented: $showFinishConfirmation, titleVisibility: .visible) {
                         Button("Finish Cardio Session", role: .confirm) { finishSession() }
                         Button("Keep Going", role: .cancel) {}
@@ -127,8 +145,11 @@ struct CardioActiveSessionView: View {
                 if !focused { commitInclineText() }
             }
             .onReceive(liveTimer) { _ in
-                guard session.isManual, session.startedAt != nil else { return }
+                guard session.usesMachineIntervals, session.startedAt != nil else { return }
                 updateLiveTreadmillDistance()
+                // Keep the Live Activity's interval distance/pace growing in step with the in-app
+                // grid so the two never disagree (the contentState reads the same live source).
+                CardioActivityManager.update(for: session)
             }
             .sheet(isPresented: $showEffortPrompt) {
                 WorkoutEffortPromptView(
@@ -407,19 +428,21 @@ struct CardioActiveSessionView: View {
         if session.startedAt != nil {
             CardioActivityManager.restoreIfNeeded(session: session)
             await healthCoordinator.ensureRunning(for: session)
-            if session.isOutdoor {
+            if session.usesRoute {
                 routeRecorder.startRecording(session: session, context: context)
             }
             return
         }
 
-        // Treadmill: no countdown — session doesn't start until first interval is added
-        if session.isManual {
+        // machineIntervals: no countdown — the session doesn't start until the first interval is added
+        if session.usesMachineIntervals {
             Task { await healthCoordinator.prepareForSession(session) }
             return
         }
 
-        // Outdoor: warm up sensors, show 3-2-1 countdown, then start GPS + health
+        // gpsRoute / healthKitOnly: warm up sensors, show the 3-2-1 countdown, then start. Only a
+        // gpsRoute session records a GPS route; healthKitOnly relies entirely on the live HealthKit
+        // workout builder for distance, heart rate, and energy.
         Task { await healthCoordinator.prepareForSession(session) }
         for i in stride(from: 3, through: 1, by: -1) {
             await MainActor.run { countdownValue = i }
@@ -430,7 +453,9 @@ struct CardioActiveSessionView: View {
         session.startedAt = .now
         saveContext(context: context)
         CardioActivityManager.start(session: session)
-        routeRecorder.startRecording(session: session, context: context)
+        if session.usesRoute {
+            routeRecorder.startRecording(session: session, context: context)
+        }
         await healthCoordinator.beginActiveCollection(for: session)
     }
 

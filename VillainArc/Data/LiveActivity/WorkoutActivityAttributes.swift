@@ -64,6 +64,12 @@ nonisolated struct CardioActivityAttributes: ActivityAttributes, Sendable {
     var startDate: Date
     var kindTitle: String
     var isOutdoor: Bool
+    // Stored capture mode ("gpsRoute" / "machineIntervals" / "healthKitOnly") so the widget can pick
+    // the right distance icon and a sensible fallback metric per mode. Optional/defaulted for any
+    // Live Activity started before this field existed.
+    var captureModeRawValue: String = CardioCaptureMode.gpsRoute.rawValue
+
+    var captureMode: CardioCaptureMode { CardioCaptureMode(rawValue: captureModeRawValue) ?? .gpsRoute }
 
     struct ContentState: Codable, Hashable, Sendable {
         var title: String

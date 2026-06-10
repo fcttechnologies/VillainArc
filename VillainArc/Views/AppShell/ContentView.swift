@@ -127,9 +127,9 @@ struct ContentView: View {
                 .presentationDetents([.fraction(0.4)])
                 .presentationBackground(Color.sheetBg)
         }
-        .sheet(item: $router.pendingOutdoorCardioType) { type in
-            CardioOutdoorPermissionView(type: type) {
-                router.startCardioSession(type: type)
+        .sheet(item: $router.pendingCardioStart) { type in
+            CardioStartView(type: type) { captureMode in
+                router.startCardioSession(type: type, captureMode: captureMode)
                 Task { await IntentDonations.donateStartCardioSession(type: type) }
             }
             .presentationBackground(Color.sheetBg)
@@ -149,13 +149,6 @@ struct ContentView: View {
                     handleAIGenerated(result: result)
                 }
             )
-            .presentationBackground(Color.sheetBg)
-        }
-        .sheet(item: $router.pendingManualCardioType) { type in
-            CardioOutdoorPermissionView(type: type, showsLocation: false) {
-                router.startCardioSession(type: type)
-                Task { await IntentDonations.donateStartCardioSession(type: type) }
-            }
             .presentationBackground(Color.sheetBg)
         }
         .fullScreenCover(item: $paywallPresenter.trigger) { feature in
@@ -255,11 +248,7 @@ struct ContentView: View {
                 contextMenu: AnyView(cardioFavoriteContextMenu())
             ) {
                 collapseMorphingTabBar()
-                if favoriteType.isOutdoor {
-                    router.requestOutdoorCardioSession(type: favoriteType)
-                } else {
-                    router.requestManualCardioSession(type: favoriteType)
-                }
+                router.requestCardioSession(type: favoriteType)
                 Task { await IntentDonations.donateStartCardioSession(type: favoriteType) }
             })
         }

@@ -160,8 +160,9 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     @ObservationIgnored var pendingHomeQuickAction: HomeQuickAction?
     @ObservationIgnored var pendingWidgetDestination: Destination?
     @ObservationIgnored var pendingNotificationDestination: Destination?
-    var pendingOutdoorCardioType: CardioSessionType?
-    var pendingManualCardioType: CardioSessionType?
+    // The cardio start sheet (CardioStartView) — presented when the user must choose a capture mode
+    // (Manual vs Apple Health) or still needs to grant a permission before starting.
+    var pendingCardioStart: CardioSessionType?
     var activeAppSheet: AppSheet?
     var activeHealthSheet: HealthSheet?
     var activeSplitSheet: SplitSheet?
@@ -943,37 +944,44 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         AppLog.info("Workout session started: \(newWorkout.id).")
     }
 
-    func requestManualCardioSession(type: CardioSessionType) {
-        let healthNeedsPrompt = HealthAuthorizationManager.isHealthDataAvailable && !HealthAuthorizationManager.hasRequestedWorkoutAuthorization
-        if healthNeedsPrompt {
-            pendingManualCardioType = type
+    /// Entry point for starting cardio (the tab presets, the favorite quick action, and the Start
+    /// Cardio intent all route here). Presents the start sheet (`CardioStartView`) when there's a
+    /// real decision — Apple Health can be offered as a capture mode (or connected), or the manual
+    /// mode still needs a permission — otherwise starts straight into the only available manual mode.
+    func requestCardioSession(type: CardioSessionType) {
+        // Apple Health can be offered (as a capture choice or a connect prompt) when it's available
+        // and either already granted or never asked.
+        let healthCanBeOffered = HealthAuthorizationManager.isHealthDataAvailable
+            && (HealthAuthorizationManager.canWriteWorkouts || !HealthAuthorizationManager.hasRequestedWorkoutAuthorization)
+
+        if type.isOutdoor {
+            let locationGranted = CardioRouteRecorder.shared.canRecord
+            if locationGranted && !healthCanBeOffered {
+                startCardioSession(type: type, captureMode: .gpsRoute)
+            } else {
+                pendingCardioStart = type
+            }
         } else {
-            startCardioSession(type: type)
+            if healthCanBeOffered {
+                pendingCardioStart = type
+            } else {
+                startCardioSession(type: type, captureMode: .machineIntervals)
+            }
         }
     }
 
-    func requestOutdoorCardioSession(type: CardioSessionType) {
-        let locationGranted = CardioRouteRecorder.shared.canRecord
-        let healthNeedsPrompt = HealthAuthorizationManager.isHealthDataAvailable && !HealthAuthorizationManager.hasRequestedWorkoutAuthorization
-        if locationGranted && !healthNeedsPrompt {
-            startCardioSession(type: type)
-        } else {
-            pendingOutdoorCardioType = type
-        }
-    }
-
-    func startCardioSession(type: CardioSessionType) {
+    func startCardioSession(type: CardioSessionType, captureMode: CardioCaptureMode? = nil) {
         guard !hasActiveFlow() else {
             showActiveFlowBlockedToast()
             return
         }
         Haptics.selection()
-        let newSession = CardioSession(type: type)
+        let newSession = CardioSession(type: type, captureMode: captureMode)
         context.insert(newSession)
         saveContext(context: context)
         activeCardioSession = newSession
         startCardioRuntime(for: newSession)
-        AppLog.info("Cardio session started: \(newSession.id), type=\(type.rawValue).")
+        AppLog.info("Cardio session started: \(newSession.id), type=\(type.rawValue), capture=\(newSession.captureMode.rawValue).")
     }
 
     func createWorkoutPlan() {

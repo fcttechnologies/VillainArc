@@ -198,13 +198,15 @@ private struct CardioLiveActivityTrailingMetricView: View {
         } else if let energy = state.activeEnergyBurned {
             CardioLiveActivityMetricView(systemImage: "flame.fill", value: "\(Int(energy.rounded()))", title: "kcal", alignment: alignment, tint: .orange, isSmall: isSmall)
         } else {
-            CardioLiveActivityMetricView(
-                systemImage: attributes.isOutdoor ? "location.fill" : "list.bullet",
-                value: "\(attributes.isOutdoor ? state.routePointCount : state.treadmillIntervalCount)",
-                title: attributes.isOutdoor ? "Points" : "Intervals",
-                alignment: alignment,
-                isSmall: isSmall
-            )
+            switch attributes.captureMode {
+            case .gpsRoute:
+                CardioLiveActivityMetricView(systemImage: "location.fill", value: "\(state.routePointCount)", title: "Points", alignment: alignment, isSmall: isSmall)
+            case .machineIntervals:
+                CardioLiveActivityMetricView(systemImage: "list.bullet", value: "\(state.treadmillIntervalCount)", title: "Intervals", alignment: alignment, isSmall: isSmall)
+            case .healthKitOnly:
+                // No app-recorded count — heart rate/energy fill this slot once collection warms up.
+                CardioLiveActivityMetricView(systemImage: "heart.text.square", value: "Live", title: "Apple Health", alignment: alignment, tint: .red, isSmall: isSmall)
+            }
         }
     }
 }

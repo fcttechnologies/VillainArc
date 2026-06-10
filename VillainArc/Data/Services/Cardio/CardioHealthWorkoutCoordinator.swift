@@ -234,9 +234,12 @@ import SwiftData
         if didChangeDisplayedMetrics, let activeCardioSessionID {
             let context = SharedModelContainer.container.mainContext
             if let session = try? context.fetch(CardioSession.byID(activeCardioSessionID)).first {
-                if let distanceMeters, distanceMeters > session.totalDistanceMeters {
+                // The live HealthKit distance is the session's distance source ONLY for
+                // healthKitOnly sessions. For gpsRoute the route recorder owns totalDistanceMeters,
+                // and for machineIntervals the logged intervals do — letting the Watch's running
+                // estimate overwrite either is exactly the pace bug (one source per mode).
+                if session.captureMode == .healthKitOnly, let distanceMeters {
                     session.totalDistanceMeters = distanceMeters
-                    session.source = .appleHealth
                 }
                 saveContext(context: context)
                 CardioActivityManager.update(for: session)
@@ -268,9 +271,14 @@ import SwiftData
 
     private func apply(savedWorkout: HKWorkout, to session: CardioSession, context: ModelContext) {
         session.healthWorkoutUUID = savedWorkout.uuid
-        session.source = .appleHealth
-        if let workoutDistance = savedWorkout.totalDistance?.doubleValue(for: HealthKitCatalog.meterUnit), workoutDistance > 0 {
-            session.totalDistanceMeters = max(session.totalDistanceMeters, workoutDistance)
+        // Only a healthKitOnly session takes its distance/source from the saved HealthKit workout.
+        // A gpsRoute (route) or machineIntervals (logged) session keeps its own distance source; the
+        // HealthKit workout is supplementary (heart rate, energy), not the distance of record.
+        if session.captureMode == .healthKitOnly {
+            session.source = .appleHealth
+            if let workoutDistance = savedWorkout.totalDistance?.doubleValue(for: HealthKitCatalog.meterUnit), workoutDistance > 0 {
+                session.totalDistanceMeters = workoutDistance
+            }
         }
         saveContext(context: context)
     }

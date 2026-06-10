@@ -122,6 +122,7 @@ enum AccessibilityIdentifiers {
     // MARK: - CardioTabView / CardioActiveSessionView
     static let cardioRouteRangeMenu = "cardioRouteRangeMenu"
     static func cardioStart(kindRawValue: String) -> String { "cardioStart-\(kindRawValue)" }
+    static let cardioStartConfirm = "cardioStartConfirm"
     static let cardioActiveCancel = "cardioActiveCancel"
     static let cardioActiveFinish = "cardioActiveFinish"
     static let cardioActivePause = "cardioActivePause"

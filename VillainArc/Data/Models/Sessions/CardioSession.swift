@@ -321,6 +321,36 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
         return duration / totalDistanceMeters
     }
 
+    /// Interval distance computed to the present moment — the active (latest) interval keeps
+    /// accruing until the next interval starts or the session ends. This is the read-only twin of
+    /// `recalculateMachineDistance()` so the live metric grid and Live Activity can show the same
+    /// growing distance without mutating/saving every tick.
+    var liveMachineDistanceMeters: Double {
+        let intervals = sortedMachineIntervals
+        guard !intervals.isEmpty else { return 0 }
+        let end = endedAt ?? .now
+        var total = 0.0
+        for (i, interval) in intervals.enumerated() {
+            let nextStart = i + 1 < intervals.count ? intervals[i + 1].addedAt : end
+            total += ((interval.speedKPH ?? 0) / 3.6) * max(0, nextStart.timeIntervalSince(interval.addedAt))
+        }
+        return total
+    }
+
+    /// The session's distance in meters, resolved to a SINGLE source per capture mode so the
+    /// in-app metric grid, the Live Activity, and the finished detail never disagree (this is the
+    /// pace-bug fix — no more `max()` across the interval distance and the Watch's HealthKit
+    /// estimate). gpsRoute → the GPS route distance (kept current by `CardioRouteRecorder`);
+    /// machineIntervals → the live interval distance; healthKitOnly → the live HealthKit distance
+    /// when available, otherwise the stored total.
+    func resolvedDistanceMeters(healthKitDistance: Double?) -> Double {
+        switch captureMode {
+        case .gpsRoute: return totalDistanceMeters
+        case .machineIntervals: return liveMachineDistanceMeters
+        case .healthKitOnly: return healthKitDistance ?? totalDistanceMeters
+        }
+    }
+
     func finish(at endDate: Date = .now) {
         endedAt = max(startedAt ?? endDate, endDate)
         statusValue = .done

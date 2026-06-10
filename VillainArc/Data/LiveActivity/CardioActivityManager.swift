@@ -66,7 +66,7 @@ enum CardioActivityManager {
 
     private static func requestActivity(for session: CardioSession) {
         resetTrackedActivityState()
-        let attributes = CardioActivityAttributes(startDate: session.startedAt ?? .now, kindTitle: session.typeTitle, isOutdoor: session.isOutdoor)
+        let attributes = CardioActivityAttributes(startDate: session.startedAt ?? .now, kindTitle: session.typeTitle, isOutdoor: session.isOutdoor, captureModeRawValue: session.captureMode.rawValue)
         let state = normalizedContentState(for: contentState(for: session))
 
         do {
@@ -79,19 +79,31 @@ enum CardioActivityManager {
 
     private static func contentState(for session: CardioSession) -> CardioActivityAttributes.ContentState {
         let healthCoordinator = CardioHealthWorkoutCoordinator.shared
-        let distance = max(session.totalDistanceMeters, healthCoordinator.distanceMeters ?? 0)
+        let isActiveSession = healthCoordinator.activeCardioSessionID == session.id
+        // One distance source per capture mode (the pace-bug fix): never mix the manual-interval
+        // distance with the Watch's HealthKit estimate, which produced a different pace in the Live
+        // Activity than the in-app view.
+        let distance = session.resolvedDistanceMeters(healthKitDistance: isActiveSession ? healthCoordinator.distanceMeters : nil)
         let paceSecondsPerKilometer = distance > 0 ? (session.duration / distance) * 1_000 : nil
 
         return .init(
             title: session.displayTitle,
             distanceMeters: distance,
             paceSecondsPerKilometer: paceSecondsPerKilometer,
-            liveHeartRateBPM: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : session.healthWorkout?.averageHeartRateBPM,
-            activeEnergyBurned: healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned,
+            liveHeartRateBPM: isActiveSession ? healthCoordinator.latestHeartRate : session.healthWorkout?.averageHeartRateBPM,
+            activeEnergyBurned: isActiveSession ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned,
             routePointCount: session.routePoints?.count ?? 0,
             treadmillIntervalCount: session.machineIntervals?.count ?? 0,
-            statusText: session.isOutdoor ? "Route recording" : "Manual intervals"
+            statusText: statusText(for: session)
         )
+    }
+
+    private static func statusText(for session: CardioSession) -> String {
+        switch session.captureMode {
+        case .gpsRoute: return "Route recording"
+        case .machineIntervals: return "Manual intervals"
+        case .healthKitOnly: return "Apple Health"
+        }
     }
 
     private static func normalizedContentState(for state: CardioActivityAttributes.ContentState) -> CardioActivityAttributes.ContentState {
