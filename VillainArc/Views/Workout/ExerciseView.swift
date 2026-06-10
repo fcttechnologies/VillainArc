@@ -11,6 +11,9 @@ struct ExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePerformance
     let appSettingsSnapshot: AppSettingsSnapshot
+    /// Reports up to the parent `WorkoutView` whether any set field here owns keyboard focus, so the
+    /// top-bar control can swap to a keyboard-dismiss button. Defaulted for previews.
+    let isFieldFocused: Binding<Bool>
     let onDeleteExercise: (() -> Void)?
     private let restTimer = RestTimerState.shared
     
@@ -43,9 +46,10 @@ struct ExerciseView: View {
         appSettingsSnapshot.autoStartRestTimer
     }
 
-    init(exercise: ExercisePerformance, appSettingsSnapshot: AppSettingsSnapshot, onDeleteExercise: (() -> Void)? = nil) {
+    init(exercise: ExercisePerformance, appSettingsSnapshot: AppSettingsSnapshot, isFieldFocused: Binding<Bool> = .constant(false), onDeleteExercise: (() -> Void)? = nil) {
         self.exercise = exercise
         self.appSettingsSnapshot = appSettingsSnapshot
+        self.isFieldFocused = isFieldFocused
         self.onDeleteExercise = onDeleteExercise
     }
 
@@ -212,8 +216,8 @@ struct ExerciseView: View {
                     dismissKeyboard()
                 }
             )
-            .toolbar { keyboardToolbarItems }
             .onChange(of: focusedSetField) { _, field in
+                isFieldFocused.wrappedValue = field != nil
                 guard field != nil else { return }
                 selectAllFocusedText()
             }
@@ -379,32 +383,6 @@ struct ExerciseView: View {
             }
         }
         .padding(.vertical)
-    }
-
-    /// The single keyboard accessory for every set field in this exercise — kept as its own
-    /// `ToolbarContent` so the large `body` stays inside the Swift type-checker's budget.
-    @ToolbarContentBuilder
-    private var keyboardToolbarItems: some ToolbarContent {
-        if focusedSetField != nil {
-            ToolbarItem(placement: .keyboard) {
-                keyboardDismissBar
-            }
-        }
-    }
-
-    /// The keyboard accessory for any focused set field: a single confirm-role button that dismisses
-    /// the keyboard and clears focus. (Replaced the earlier per-field +/- step buttons.)
-    private var keyboardDismissBar: some View {
-        HStack {
-            Spacer()
-            Button("Done", systemImage: "keyboard.chevron.compact.down", role: .confirm) {
-                dismissKeyboard()
-                focusedSetField = nil
-            }
-            .accessibilityLabel("Dismiss Keyboard")
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 4)
     }
 
     private func captureRestTimeSnapshot() {

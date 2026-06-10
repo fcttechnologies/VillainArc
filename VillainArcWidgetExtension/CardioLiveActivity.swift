@@ -9,42 +9,21 @@ struct CardioLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    CardioLiveActivityMetricView(systemImage: context.attributes.isOutdoor ? "map.fill" : "speedometer", value: formattedDistance(context.state.distanceMeters), title: "Distance")
+                    CardioLiveActivityIslandLeadingMetricView(attributes: context.attributes, state: context.state)
                         .padding(.leading, 6)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if let heartRate = context.state.liveHeartRateBPM {
-                        CardioLiveActivityMetricView(systemImage: "heart.fill", value: "\(Int(heartRate.rounded()))", title: "bpm", alignment: .trailing)
-                            .foregroundStyle(.red)
-                            .padding(.trailing, 6)
-                    } else {
-                        CardioLiveActivityMetricView(systemImage: "timer", value: timerText(from: context.attributes.startDate), title: "Time", alignment: .trailing)
-                            .padding(.trailing, 6)
-                    }
+                    CardioLiveActivityElapsedTimerView(startDate: context.attributes.startDate, font: .title2, widths: (55, 65, 83))
+                        .padding(.trailing, 6)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(context.state.title)
-                                .font(.headline)
-                                .lineLimit(1)
-                            Text(context.attributes.kindTitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                        Spacer()
-                        Text(context.attributes.startDate, style: .timer)
-                            .font(.headline.monospacedDigit())
-                    }
-                    .padding(.horizontal, 6)
+                    CardioLiveActivityIslandBottomView(attributes: context.attributes, state: context.state)
+                        .padding(.horizontal, 6)
                 }
             } compactLeading: {
-                Image(systemName: context.attributes.isOutdoor ? "map.fill" : "figure.run")
-                    .foregroundStyle(.green)
+                CardioLiveActivityCompactLeadingView(attributes: context.attributes, state: context.state)
             } compactTrailing: {
-                Text(formattedDistance(context.state.distanceMeters, compact: true))
-                    .font(.headline.monospacedDigit())
+                CardioLiveActivityElapsedTimerView(startDate: context.attributes.startDate, font: .title2, widths: (35, 45, 57))
             } minimal: {
                 Image(systemName: context.attributes.isOutdoor ? "map.fill" : "figure.run")
                     .foregroundStyle(.green)
@@ -54,50 +33,163 @@ struct CardioLiveActivity: Widget {
     }
 }
 
+// MARK: - Lock screen / expanded
+
 private struct CardioLiveActivityExpandedView: View {
     @Environment(\.activityFamily) private var activityFamily
     let attributes: CardioActivityAttributes
     let state: CardioActivityAttributes.ContentState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: activityFamily == .small ? 6 : 10) {
+        let isSmall = activityFamily == .small
+
+        VStack(alignment: .leading, spacing: isSmall ? 6 : 10) {
             HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(state.title)
-                        .font(.headline)
+                        .font(isSmall ? .caption : .title2)
                         .lineLimit(1)
                     Text(attributes.kindTitle)
-                        .font(.caption)
+                        .font(isSmall ? .caption2 : .headline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                Spacer()
-                Text(attributes.startDate, style: .timer)
-                    .font(.title3.monospacedDigit().weight(.bold))
+                .fontDesign(.rounded)
+                .fontWeight(.semibold)
+
+                Spacer(minLength: 8)
+
+                CardioLiveActivityElapsedTimerView(
+                    startDate: attributes.startDate,
+                    font: isSmall ? .subheadline : .title2,
+                    widths: isSmall ? (44, 52, 66) : (60, 72, 92)
+                )
             }
 
             Divider()
 
-            HStack(spacing: 12) {
-                CardioLiveActivityMetricView(systemImage: "point.topleft.down.curvedto.point.bottomright.up", value: formattedDistance(state.distanceMeters), title: "Distance")
+            HStack(spacing: isSmall ? 10 : 12) {
+                CardioLiveActivityMetricView(
+                    systemImage: attributes.isOutdoor ? "point.topleft.down.curvedto.point.bottomright.up" : "speedometer",
+                    value: formattedDistance(state.distanceMeters),
+                    title: "Distance",
+                    isSmall: isSmall
+                )
                 Spacer(minLength: 0)
                 if let pace = state.paceSecondsPerKilometer {
-                    CardioLiveActivityMetricView(systemImage: "speedometer", value: formattedPace(secondsPerKilometer: pace), title: "Pace")
+                    CardioLiveActivityMetricView(systemImage: "speedometer", value: formattedPace(secondsPerKilometer: pace), title: "Pace", isSmall: isSmall)
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
+                CardioLiveActivityTrailingMetricView(attributes: attributes, state: state, alignment: .trailing, isSmall: isSmall)
+            }
+        }
+        .padding(isSmall ? 8 : 16)
+        .activityBackgroundTint(isSmall ? .black : .clear)
+    }
+}
+
+// MARK: - Dynamic Island regions
+
+private struct CardioLiveActivityIslandLeadingMetricView: View {
+    let attributes: CardioActivityAttributes
+    let state: CardioActivityAttributes.ContentState
+
+    var body: some View {
+        CardioLiveActivityMetricView(
+            systemImage: attributes.isOutdoor ? "point.topleft.down.curvedto.point.bottomright.up" : "speedometer",
+            value: formattedDistance(state.distanceMeters),
+            title: "Distance"
+        )
+    }
+}
+
+private struct CardioLiveActivityIslandBottomView: View {
+    let attributes: CardioActivityAttributes
+    let state: CardioActivityAttributes.ContentState
+
+    var body: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(state.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(attributes.kindTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .fontDesign(.rounded)
+            .fontWeight(.semibold)
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 12) {
+                if let pace = state.paceSecondsPerKilometer {
+                    CardioLiveActivityInlineMetricView(systemImage: "speedometer", value: formattedPace(secondsPerKilometer: pace))
+                }
                 if let heartRate = state.liveHeartRateBPM {
-                    CardioLiveActivityMetricView(systemImage: "heart.fill", value: "\(Int(heartRate.rounded()))", title: "bpm", alignment: .trailing)
-                        .foregroundStyle(.red)
+                    CardioLiveActivityInlineMetricView(systemImage: "heart.fill", value: "\(Int(heartRate.rounded()))", tint: .red)
                 } else if let energy = state.activeEnergyBurned {
-                    CardioLiveActivityMetricView(systemImage: "flame.fill", value: "\(Int(energy.rounded()))", title: "kcal", alignment: .trailing)
-                        .foregroundStyle(.orange)
-                } else {
-                    CardioLiveActivityMetricView(systemImage: attributes.isOutdoor ? "location.fill" : "list.bullet", value: "\(attributes.isOutdoor ? state.routePointCount : state.treadmillIntervalCount)", title: attributes.isOutdoor ? "Points" : "Intervals", alignment: .trailing)
+                    CardioLiveActivityInlineMetricView(systemImage: "flame.fill", value: "\(Int(energy.rounded()))", tint: .orange)
                 }
             }
         }
-        .padding(activityFamily == .small ? 8 : 16)
-        .activityBackgroundTint(activityFamily == .small ? .black : .clear)
+    }
+}
+
+private struct CardioLiveActivityCompactLeadingView: View {
+    let attributes: CardioActivityAttributes
+    let state: CardioActivityAttributes.ContentState
+
+    var body: some View {
+        Group {
+            if let heartRate = state.liveHeartRateBPM {
+                HStack(spacing: 2) {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.red)
+                    Text("\(Int(heartRate.rounded()))")
+                        .bold()
+                        .font(.title2)
+                }
+            } else if let energy = state.activeEnergyBurned {
+                HStack(spacing: 2) {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(.orange)
+                    Text("\(Int(energy.rounded()))")
+                        .bold()
+                        .font(.title2)
+                }
+            } else {
+                Image(systemName: attributes.isOutdoor ? "map.fill" : "figure.run")
+                    .foregroundStyle(.green)
+            }
+        }
+        .fontDesign(.rounded)
+    }
+}
+
+// MARK: - Shared metric views
+
+private struct CardioLiveActivityTrailingMetricView: View {
+    let attributes: CardioActivityAttributes
+    let state: CardioActivityAttributes.ContentState
+    var alignment: HorizontalAlignment = .leading
+    var isSmall: Bool = false
+
+    var body: some View {
+        if let heartRate = state.liveHeartRateBPM {
+            CardioLiveActivityMetricView(systemImage: "heart.fill", value: "\(Int(heartRate.rounded()))", title: "bpm", alignment: alignment, tint: .red, isSmall: isSmall)
+        } else if let energy = state.activeEnergyBurned {
+            CardioLiveActivityMetricView(systemImage: "flame.fill", value: "\(Int(energy.rounded()))", title: "kcal", alignment: alignment, tint: .orange, isSmall: isSmall)
+        } else {
+            CardioLiveActivityMetricView(
+                systemImage: attributes.isOutdoor ? "location.fill" : "list.bullet",
+                value: "\(attributes.isOutdoor ? state.routePointCount : state.treadmillIntervalCount)",
+                title: attributes.isOutdoor ? "Points" : "Intervals",
+                alignment: alignment,
+                isSmall: isSmall
+            )
+        }
     }
 }
 
@@ -106,22 +198,66 @@ private struct CardioLiveActivityMetricView: View {
     let value: String
     let title: LocalizedStringKey
     var alignment: HorizontalAlignment = .leading
+    var tint: Color = .primary
+    var isSmall: Bool = false
 
     var body: some View {
         VStack(alignment: alignment, spacing: 2) {
             HStack(spacing: 4) {
                 Image(systemName: systemImage)
+                    .foregroundStyle(tint)
                 Text(value)
             }
-            .font(.headline.monospacedDigit())
-            .fontWeight(.bold)
+            .font((isSmall ? Font.subheadline : Font.headline).weight(.bold))
             Text(title)
-                .font(.caption2)
+                .font(isSmall ? .caption2 : .caption)
                 .foregroundStyle(.secondary)
         }
+        .fontDesign(.rounded)
         .lineLimit(1)
     }
 }
+
+private struct CardioLiveActivityInlineMetricView: View {
+    let systemImage: String
+    let value: String
+    var tint: Color = .primary
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .foregroundStyle(tint)
+            Text(value)
+        }
+        .font(.subheadline.weight(.semibold))
+        .fontDesign(.rounded)
+        .lineLimit(1)
+    }
+}
+
+// MARK: - Elapsed timer (width-restricted so the digits never shift the layout)
+
+private struct CardioLiveActivityElapsedTimerView: View {
+    let startDate: Date
+    var font: Font = .title2
+    // (under 10 min, 10 min–1 hr, 1 hr+) — the string widens as it crosses each
+    // threshold, so cap the frame per tier and keep the right edge pinned.
+    var widths: (base: CGFloat, tenMinute: CGFloat, hour: CGFloat) = (55, 65, 83)
+
+    var body: some View {
+        let elapsed = Date.now.timeIntervalSince(startDate)
+        let maxWidth = elapsed >= 3_600 ? widths.hour : (elapsed >= 600 ? widths.tenMinute : widths.base)
+
+        Text(startDate, style: .timer)
+            .font(font)
+            .fontWeight(.bold)
+            .fontDesign(.rounded)
+            .lineLimit(1)
+            .frame(maxWidth: maxWidth, alignment: .trailing)
+    }
+}
+
+// MARK: - Formatting
 
 private func formattedDistance(_ meters: Double, compact: Bool = false) -> String {
     let usesMiles = Locale.current.measurementSystem == .us
@@ -135,12 +271,4 @@ private func formattedPace(secondsPerKilometer: Double) -> String {
     let secondsPerUnit = Locale.current.measurementSystem == .us ? secondsPerKilometer * 1.609344 : secondsPerKilometer
     let totalSeconds = max(0, Int(secondsPerUnit.rounded()))
     return "\(totalSeconds / 60):\(String(format: "%02d", totalSeconds % 60))"
-}
-
-private func timerText(from startDate: Date) -> String {
-    let seconds = max(0, Int(Date().timeIntervalSince(startDate)))
-    if seconds >= 3_600 {
-        return "\(seconds / 3_600)h"
-    }
-    return "\(seconds / 60)m"
 }

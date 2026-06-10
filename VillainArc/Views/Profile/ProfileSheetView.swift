@@ -311,6 +311,9 @@ struct ProfileSheetView: View {
                 commitNameIfNeeded()
             }
         }
+        // Soft scroll-edge fade in the sheet presentation context (the root TabView modifier only
+        // covers this view when it's the Profile tab). Inert on the iOS 26 SDK (see ContentView).
+        .scrollEdgeEffectStyle(.soft, for: .all)
     }
 
     private func presentInitialSettingsDestinationIfNeeded() {
@@ -535,14 +538,8 @@ struct ProfileSheetView: View {
 
     private var workoutHeatmapCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Complete Days")
-                    .font(.headline)
-                Spacer()
-                Text("Past \(profileHeatmapWeekCount) weeks")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text("Complete Days")
+                .font(.headline)
 
             profileHeatmapGrid
                 .padding(16)

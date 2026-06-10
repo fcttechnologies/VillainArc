@@ -13,10 +13,9 @@ struct ExportHealthDayJSONIntent: AppIntent {
     @Parameter(title: "Date", description: "The day to export. Leave empty for today.")
     var date: Date?
 
-    nonisolated func perform() async throws -> some IntentResult & ReturnsValue<String> {
+    nonisolated func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
         let context = makeHealthIntentReadContext()
         let snapshot = try loadHealthDaySnapshot(for: date ?? .now, context: context)
-        let json = try healthExportJSONString(healthDayExportRecord(from: snapshot))
-        return .result(value: json)
+        return .result(value: try healthExportJSONFile(healthDayExportRecord(from: snapshot), filename: "villain-arc-health-day.json"))
     }
 }

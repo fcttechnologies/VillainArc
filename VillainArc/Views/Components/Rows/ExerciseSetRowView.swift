@@ -183,25 +183,44 @@ struct ExerciseSetRowView: View {
                 Button {
                     toggleCompletionOff()
                 } label: {
-                    Image(systemName: "checkmark")
-                        .padding(2)
+                    completionCheckmark
                 }
                 .buttonBorderShape(.circle)
                 .buttonStyle(.glassProminent)
                 .tint(.blue)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
-            } else {
+            } else if set.type == .warmup {
                 Button {
                     completeSet()
                 } label: {
-                    Image(systemName: "checkmark")
-                        .padding(2)
+                    completionCheckmark
                 }
                 .buttonBorderShape(.circle)
                 .buttonStyle(.glass)
                 .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
                 .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
+            } else {
+                // Tap completes the set as-is; touch-and-hold completes it AND logs an RPE in the same
+                // gesture. Warmup sets keep the plain button above — RPE isn't tracked for warmups.
+                Menu {
+                    ForEach(RPEValue.selectableValues, id: \.self) { value in
+                        Button {
+                            completeSet(withRPE: value)
+                        } label: {
+                            Label(RPEValue.pickerDescription(for: value, style: .actual), systemImage: "\(value).circle")
+                        }
+                    }
+                } label: {
+                    completionCheckmark
+                } primaryAction: {
+                    completeSet()
+                }
+                .buttonBorderShape(.circle)
+                .buttonStyle(.glass)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSetCompleteButton(exercise, set: set))
+                .accessibilityLabel(AccessibilityText.exerciseSetCompletionLabel(isComplete: set.complete))
+                .accessibilityHint("Touch and hold to complete this set with an RPE.")
             }
             Spacer()
         }
@@ -276,6 +295,13 @@ struct ExerciseSetRowView: View {
         Task { await IntentDonations.donateCompleteActiveSet() }
     }
 
+    /// Logs an RPE and completes the set in one gesture (the complete button's touch-and-hold menu).
+    /// Setting `rpe` first means `applyAssumedTargetRPEIfNeeded` (which only fills a 0 RPE) leaves it.
+    private func completeSet(withRPE rpe: Int) {
+        set.rpe = rpe
+        completeSet()
+    }
+
     private func toggleCompletionOff() {
         uncompleteSet()
     }
@@ -331,6 +357,11 @@ struct ExerciseSetRowView: View {
     
     private var replaceTimerPrompt: String {
         String(localized: "Start a new timer for \(secondsToTime(set.effectiveRestSeconds))?")
+    }
+
+    private var completionCheckmark: some View {
+        Image(systemName: "checkmark")
+            .padding(2)
     }
 
     private var setIndicator: some View {

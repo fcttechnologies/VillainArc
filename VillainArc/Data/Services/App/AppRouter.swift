@@ -550,6 +550,32 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         CardioActivityManager.end()
         AppLog.info("Cardio session canceled: \(cardioSession.id).")
     }
+
+    /// Finishes and saves a cardio session. Shared by the in-session UI (`CardioSessionContainer`)
+    /// and `FinishCardioSessionIntent` so both run the identical stop-recording → distance-recalc →
+    /// finish → Health-save flow.
+    func finishCardioSession(_ cardioSession: CardioSession) {
+        CardioRouteRecorder.shared.stopRecording(sessionID: cardioSession.id)
+        if cardioSession.kind.isManual {
+            cardioSession.recalculateTreadmillDistance()
+        } else {
+            cardioSession.recalculateRouteDistance()
+        }
+        cardioSession.finish()
+        saveContext(context: context)
+
+        let sessionID = cardioSession.id
+        Task {
+            await CardioHealthWorkoutCoordinator.shared.finishIfRunning(for: cardioSession, context: context)
+            await MainActor.run {
+                CardioActivityManager.end()
+                if self.activeCardioSession?.id == sessionID {
+                    self.activeCardioSession = nil
+                }
+                saveContext(context: context)
+            }
+        }
+    }
     func navigate(to destination: Destination) {
         popToRoot(tab: tab(for: destination))
         push(to: destination)

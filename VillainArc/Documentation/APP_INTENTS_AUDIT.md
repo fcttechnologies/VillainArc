@@ -115,7 +115,7 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 | Start a cardio session (run/walk, outdoor/treadmill) | ✅ `StartCardioSessionIntent` |
 | Open active cardio session | ✅ `OpenActiveCardioSessionIntent` |
 | Show cardio history + routes | ✅ `ShowCardioHistoryIntent` |
-| Finish / cancel cardio session | ⬜ no intent — cardio finish/cancel is in-session UI only; mirror of the workout finish/cancel intents is a possible follow-up |
+| Finish / cancel cardio session | ✅ `FinishCardioSessionIntent`, `CancelCardioSessionIntent` (`.background`; call `AppRouter.finishCardioSession` / `cancelCardioSession`) |
 
 ### Rest timer
 

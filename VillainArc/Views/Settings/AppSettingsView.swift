@@ -74,6 +74,9 @@ struct AppSettingsView: View {
                 }
             }
         }
+        // Soft scroll-edge fade for this sheet context + its pushed setting Forms — ContentView's
+        // root modifier doesn't reach sheets. Inert on the iOS 26 SDK (see ContentView).
+        .scrollEdgeEffectStyle(.soft, for: .all)
         .sheet(item: $presentedLegalDestination) { destination in
             SettingsLegalWebSheet(destination: destination)
                 .presentationBackground(Color.sheetBg)

@@ -11,6 +11,10 @@ struct CardioSessionDetailView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
     @State private var cameraPosition: MapCameraPosition = .automatic
+    // Read-only location-auth check (never requests). An indoor/treadmill session detail must not
+    // request location, so the live-location dot + camera are shown only when the user already
+    // granted location for outdoor cardio.
+    @State private var routeRecorder = CardioRouteRecorder.shared
 
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
@@ -132,7 +136,7 @@ struct CardioSessionDetailView: View {
                     CardioRouteMarker(systemImage: "mappin", tint: .orange)
                 }
                 .annotationTitles(.hidden)
-            } else {
+            } else if routeRecorder.canRecord {
                 UserAnnotation()
             }
         }
@@ -152,7 +156,7 @@ struct CardioSessionDetailView: View {
             cameraPosition = .region(region(for: coordinates))
         } else if let first = coordinates.first {
             cameraPosition = .region(MKCoordinateRegion(center: first, span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)))
-        } else if session.kind.isManual {
+        } else if session.kind.isManual, routeRecorder.canRecord {
             cameraPosition = .userLocation(fallback: .automatic)
         } else {
             cameraPosition = .automatic

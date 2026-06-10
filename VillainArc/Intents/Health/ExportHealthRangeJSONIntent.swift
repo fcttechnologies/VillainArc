@@ -16,10 +16,9 @@ struct ExportHealthRangeJSONIntent: AppIntent {
     @Parameter(title: "End Date")
     var endDate: Date
 
-    nonisolated func perform() async throws -> some IntentResult & ReturnsValue<String> {
+    nonisolated func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
         let context = makeHealthIntentReadContext()
         let records = try healthDayExportRecords(start: startDate, end: endDate, context: context)
-        let json = try healthExportJSONString(records)
-        return .result(value: json)
+        return .result(value: try healthExportJSONFile(records, filename: "villain-arc-health-range.json"))
     }
 }

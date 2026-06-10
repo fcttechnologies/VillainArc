@@ -95,10 +95,17 @@ struct CardioRoutesMapView: View {
 
     @State private var position: MapCameraPosition = .automatic
     @State private var selectedRoute: CardioMapRoute?
+    // Read-only location-auth check (never requests). The overview map shows the live-location dot
+    // only when the user already granted location for outdoor cardio, so merely viewing the cardio
+    // tab never triggers a location prompt. Location is requested solely by the outdoor-session start
+    // flow (CardioOutdoorPermissionView / CardioRouteRecorder).
+    @State private var routeRecorder = CardioRouteRecorder.shared
 
     var body: some View {
         Map(position: $position) {
-            UserAnnotation()
+            if routeRecorder.canRecord {
+                UserAnnotation()
+            }
 
             ForEach(Array(routes.enumerated()), id: \.element.id) { index, route in
                 let color = routeColor(for: route, index: index)

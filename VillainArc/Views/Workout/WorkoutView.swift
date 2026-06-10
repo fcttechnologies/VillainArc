@@ -19,7 +19,10 @@ struct WorkoutView: View {
     @State private var autoAdvanceTargetIndex: Int?
     @State private var draggingExerciseID: UUID?
     @State private var highlightedReorderExerciseID: UUID?
-    
+    /// True while any set field in the active `ExerciseView` owns keyboard focus. Drives the top-bar
+    /// options control to temporarily become a keyboard-dismiss button.
+    @State private var isSetFieldFocused = false
+
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -243,8 +246,11 @@ struct WorkoutView: View {
                 }
             }
         }
+        // Soft scroll-edge fade for this separate presentation context — ContentView's root
+        // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
+        .scrollEdgeEffectStyle(.soft, for: .all)
     }
-    
+
     var exerciseTabView: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal) {
@@ -255,7 +261,7 @@ struct WorkoutView: View {
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutExercisesEmptyState)
                     } else {
                         ForEach(workout.sortedExercises) { exercise in
-                            ExerciseView(exercise: exercise, appSettingsSnapshot: appSettingsSnapshot) {
+                            ExerciseView(exercise: exercise, appSettingsSnapshot: appSettingsSnapshot, isFieldFocused: $isSetFieldFocused) {
                                 deleteExercise(exercise)
                             }
                             .containerRelativeFrame(.horizontal)
@@ -429,7 +435,14 @@ struct WorkoutView: View {
     @ViewBuilder
     private var workoutOptionsToolbarLabel: some View {
         Group {
-            if workout.exercises?.isEmpty ?? true {
+            if isSetFieldFocused {
+                // While a set field is focused this control becomes the keyboard-dismiss button
+                // (the old keyboard-accessory toolbar button never fired its action — see learnings).
+                Button("Done", systemImage: "keyboard.chevron.compact.down", role: .confirm) {
+                    dismissKeyboard()
+                }
+                .accessibilityLabel("Dismiss Keyboard")
+            } else if workout.exercises?.isEmpty ?? true {
                 Button("Cancel Workout", systemImage: "xmark", role: .close) {
                     deleteWorkout()
                 }

@@ -133,6 +133,9 @@ struct CardioActiveSessionView: View {
                 CardioCountdownOverlay(value: count, kind: session.kind)
             }
         }
+        // Soft scroll-edge fade for this separate presentation context — ContentView's root
+        // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
+        .scrollEdgeEffectStyle(.soft, for: .all)
     }
 
     private var shouldShowHealthAccessCard: Bool {
@@ -407,26 +410,7 @@ struct CardioActiveSessionView: View {
     }
 
     private func finishSession() {
-        routeRecorder.stopRecording(sessionID: session.id)
-        if session.kind.isManual {
-            session.recalculateTreadmillDistance()
-        } else {
-            session.recalculateRouteDistance()
-        }
-        session.finish()
-        saveContext(context: context)
-
-        let sessionID = session.id
-        Task {
-            await CardioHealthWorkoutCoordinator.shared.finishIfRunning(for: session, context: context)
-            await MainActor.run {
-                CardioActivityManager.end()
-                if router.activeCardioSession?.id == sessionID {
-                    router.activeCardioSession = nil
-                }
-                saveContext(context: context)
-            }
-        }
+        router.finishCardioSession(session)
     }
 }
 

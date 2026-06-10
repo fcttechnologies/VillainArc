@@ -22,6 +22,9 @@ struct WorkoutPlanView: View {
     @State private var planDeletionAssessment: WorkoutPlanDeletionCoordinator.Assessment?
     @State private var draggingExerciseID: UUID?
     @State private var highlightedReorderExerciseID: UUID?
+    /// True while any set field in a `WorkoutPlanExerciseView` owns keyboard focus. Drives the Save
+    /// button to temporarily become a keyboard-dismiss button.
+    @State private var isSetFieldFocused = false
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
@@ -94,28 +97,37 @@ struct WorkoutPlanView: View {
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
-                            Haptics.selection()
-                            plan.convertTargetWeightsToKg(from: weightUnit)
-                            if let originalPlan {
-                                originalPlan.applyEditingCopy(plan, context: context)
+                        if isSetFieldFocused {
+                            // While a set field is focused the Save button becomes the keyboard-dismiss
+                            // button (the old keyboard-accessory button never fired — see learnings).
+                            Button("Done", systemImage: "keyboard.chevron.compact.down", role: .confirm) {
+                                dismissKeyboard()
+                            }
+                            .accessibilityLabel("Dismiss Keyboard")
+                        } else {
+                            Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
+                                Haptics.selection()
+                                plan.convertTargetWeightsToKg(from: weightUnit)
+                                if let originalPlan {
+                                    originalPlan.applyEditingCopy(plan, context: context)
+                                    saveContext(context: context)
+                                    SpotlightIndexer.index(workoutPlan: originalPlan)
+                                    SpotlightIndexer.reindexLinkedWorkoutSplits(for: originalPlan)
+                                    discardEditingCopyAndDismiss()
+                                    return
+                                }
+                                if !plan.completed {
+                                    plan.completed = true
+                                }
+                                plan.clearCompletedSessionPerformanceReferences()
                                 saveContext(context: context)
-                                SpotlightIndexer.index(workoutPlan: originalPlan)
-                                SpotlightIndexer.reindexLinkedWorkoutSplits(for: originalPlan)
-                                discardEditingCopyAndDismiss()
-                                return
+                                SpotlightIndexer.index(workoutPlan: plan)
+                                SpotlightIndexer.reindexLinkedWorkoutSplits(for: plan)
+                                dismissPresentedPlanEditor()
                             }
-                            if !plan.completed {
-                                plan.completed = true
-                            }
-                            plan.clearCompletedSessionPerformanceReferences()
-                            saveContext(context: context)
-                            SpotlightIndexer.index(workoutPlan: plan)
-                            SpotlightIndexer.reindexLinkedWorkoutSplits(for: plan)
-                            dismissPresentedPlanEditor()
+                            .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSaveButton)
                         }
-                        .disabled(plan.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || plan.sortedExercises.isEmpty)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSaveButton)
                     }
                     ToolbarItem(placement: .bottomBar) {
                         if !plan.sortedExercises.isEmpty {
@@ -210,8 +222,11 @@ struct WorkoutPlanView: View {
                     Text(planDeletionAssessment?.confirmationMessage ?? "")
                 }
         }
+        // Soft scroll-edge fade for this separate presentation context — ContentView's root
+        // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
+        .scrollEdgeEffectStyle(.soft, for: .all)
     }
-    
+
     private var planDetailView: some View {
         ScrollView {
             if plan.sortedExercises.isEmpty {
@@ -222,7 +237,7 @@ struct WorkoutPlanView: View {
             } else {
                 LazyVStack(spacing: 60) {
                     ForEach(plan.sortedExercises) { exercise in
-                        WorkoutPlanExerciseView(exercise: exercise, originalExercise: originalPlan?.sortedExercises.first(where: { $0.id == exercise.id }), onDelete: { deleteExercise(exercise) })
+                        WorkoutPlanExerciseView(exercise: exercise, originalExercise: originalPlan?.sortedExercises.first(where: { $0.id == exercise.id }), isFieldFocused: $isSetFieldFocused, onDelete: { deleteExercise(exercise) })
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseView(exercise))
                     }
                 }
@@ -514,6 +529,9 @@ private struct WorkoutPlanExerciseView: View {
     @Environment(\.modelContext) private var context
     @Bindable var exercise: ExercisePrescription
     let originalExercise: ExercisePrescription?
+    // Declared before `onDelete` so the synthesized memberwise-init argument order matches the call
+    // site (memberwise-init order follows stored-property declaration order — see learnings).
+    let isFieldFocused: Binding<Bool>
     let onDelete: (() -> Void)?
 
     @State private var showRepRangeEditor = false
@@ -565,38 +583,11 @@ private struct WorkoutPlanExerciseView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseAddSetButton(exercise))
             .accessibilityHint(AccessibilityText.workoutPlanExerciseAddSetHint)
         }
-        .toolbar { keyboardToolbarItems }
         .onChange(of: focusedSetField) { _, field in
+            isFieldFocused.wrappedValue = field != nil
             guard field != nil else { return }
             selectAllFocusedText()
         }
-    }
-
-    /// The single keyboard accessory for every set field in this exercise — declared once and only
-    /// when a field is focused, so the accessory never stacks across set rows. Mirrors the
-    /// `ExerciseView` parent-hoist pattern (see learnings.md "Keyboard toolbar").
-    @ToolbarContentBuilder
-    private var keyboardToolbarItems: some ToolbarContent {
-        if focusedSetField != nil {
-            ToolbarItem(placement: .keyboard) {
-                keyboardDismissBar
-            }
-        }
-    }
-
-    /// The keyboard accessory for any focused set field: a single confirm-role button that dismisses
-    /// the keyboard and clears focus. (Replaced the earlier per-field +/- step buttons.)
-    private var keyboardDismissBar: some View {
-        HStack {
-            Spacer()
-            Button("Done", systemImage: "keyboard.chevron.compact.down", role: .confirm) {
-                dismissKeyboard()
-                focusedSetField = nil
-            }
-            .accessibilityLabel("Dismiss Keyboard")
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 4)
     }
 
     private var headerView: some View {

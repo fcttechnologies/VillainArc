@@ -1,5 +1,7 @@
+import AppIntents
 import Foundation
 import SwiftData
+import UniformTypeIdentifiers
 
 // Codable JSON shapes for the health-export intents. These mirror the app's own
 // local Health caches and records so a Shortcut can run an export intent and save
@@ -107,6 +109,13 @@ nonisolated func healthExportJSONString(_ value: some Encodable) throws -> Strin
     return String(decoding: data, as: UTF8.self)
 }
 
+// All export intents hand back an IntentFile (not a String) for one consistent shape
+// a Shortcut can "Save File" — and because the full-history export is far larger than
+// a Shortcuts string return can carry (it came back empty).
+nonisolated func healthExportJSONFile(_ value: some Encodable, filename: String) throws -> IntentFile {
+    IntentFile(data: try healthExportJSONEncoder().encode(value), filename: filename, type: .json)
+}
+
 nonisolated func healthDayExportRecord(from snapshot: HealthDaySnapshot) -> HealthDayExportRecord {
     HealthDayExportRecord(
         date: snapshot.day,
@@ -124,7 +133,9 @@ nonisolated func healthDayExportRecord(from snapshot: HealthDaySnapshot) -> Heal
 nonisolated func healthDayExportRecords(start: Date, end: Date, context: ModelContext) throws -> [HealthDayExportRecord] {
     let calendar = Calendar.autoupdatingCurrent
     let lowerBound = calendar.startOfDay(for: min(start, end))
-    let upperBound = calendar.startOfDay(for: max(start, end))
+    // Never iterate past today — there is no tracked data for future days, and a
+    // mis-entered end date would otherwise emit a tail of empty future records.
+    let upperBound = min(calendar.startOfDay(for: max(start, end)), calendar.startOfDay(for: .now))
 
     var records: [HealthDayExportRecord] = []
     var day = lowerBound
