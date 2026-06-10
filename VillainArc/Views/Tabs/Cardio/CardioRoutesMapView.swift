@@ -98,11 +98,13 @@ struct CardioRoutesMapView: View {
     // Read-only location-auth check (never requests). The overview map shows the live-location dot
     // only when the user already granted location for outdoor cardio, so merely viewing the cardio
     // tab never triggers a location prompt. Location is requested solely by the outdoor-session start
-    // flow (CardioOutdoorPermissionView / CardioRouteRecorder).
+    // flow (CardioStartView / CardioRouteRecorder).
     @State private var routeRecorder = CardioRouteRecorder.shared
 
     var body: some View {
-        Map(position: $position) {
+        // With no routes for the selected range the map sits behind a "No Routes" overlay, so it
+        // shouldn't pan/zoom/rotate under the message — only make it interactive when it has content.
+        Map(position: $position, interactionModes: routes.isEmpty ? [] : [.pan, .zoom, .rotate]) {
             if routeRecorder.canRecord {
                 UserAnnotation()
             }

@@ -71,8 +71,16 @@ struct CardioTabView: View {
         recentSessions.contains { $0.isOutdoor }
     }
 
+    /// Apple Health run/walk workouts not already linked to an app session, outdoor only — these are
+    /// the ones with a route to draw on the map.
     private var standaloneOutdoorWorkouts: [HealthWorkout] {
         recentRunWalkWorkouts.filter { $0.cardioSession == nil && $0.isIndoorWorkout == false }
+    }
+
+    /// All standalone Apple Health cardio (indoor and outdoor) for the recent list — the list shows
+    /// every cardio session regardless of environment; only the route map stays outdoor-only.
+    private var standaloneCardioWorkouts: [HealthWorkout] {
+        recentRunWalkWorkouts.filter { $0.cardioSession == nil }
     }
 
     /// App-owned outdoor routes plus cached Apple Health outdoor routes, newest first, capped so the
@@ -128,7 +136,7 @@ struct CardioTabView: View {
 
     private var mergedHistory: [CardioHistoryItem] {
         let sessions = recentSessions.map { CardioHistoryItem.session($0) }
-        let hkWorkouts = standaloneOutdoorWorkouts.map { CardioHistoryItem.healthWorkout($0) }
+        let hkWorkouts = standaloneCardioWorkouts.map { CardioHistoryItem.healthWorkout($0) }
         return (sessions + hkWorkouts).sorted { $0.date > $1.date }.prefix(16).map { $0 }
     }
 
@@ -198,7 +206,16 @@ struct CardioTabView: View {
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .cardioSessionDetail(let session):
-                    CardioSessionDetailView(session: session, showsCloseButton: false)
+                    // A healthKitOnly session has no app-recorded detail — its route, heart rate,
+                    // zones, splits, and effort all live in the linked Health workout, so it opens
+                    // directly in the rich HealthWorkoutDetailView. gpsRoute (route map) and
+                    // machineIntervals (interval list) keep the app detail, which still drills into
+                    // Health via its "View in Health" button.
+                    if session.isHealthKitOnly, let workout = session.healthWorkout {
+                        HealthWorkoutDetailView(workout: workout)
+                    } else {
+                        CardioSessionDetailView(session: session, showsCloseButton: false)
+                    }
                 case .healthWorkoutDetail(let workout):
                     HealthWorkoutDetailView(workout: workout)
                 default:
@@ -218,11 +235,7 @@ struct CardioTabView: View {
                 ForEach(CardioSessionType.presets) { type in
                     let isFavorite = appSettings.first?.favoriteCardioType == type
                     Button {
-                        if type.isOutdoor {
-                            router.requestOutdoorCardioSession(type: type)
-                        } else {
-                            router.requestManualCardioSession(type: type)
-                        }
+                        router.requestCardioSession(type: type)
                         Task { await IntentDonations.donateStartCardioSession(type: type) }
                     } label: {
                         VStack(alignment: .leading, spacing: 10) {

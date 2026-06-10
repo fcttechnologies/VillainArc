@@ -11,12 +11,16 @@ struct CardioSessionDetailView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var router = AppRouter.shared
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var shareImage: Image?
 
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
 
     var body: some View {
-        if session.isOutdoor {
+        // Only a session that recorded an app GPS route gets the immersive map. machineIntervals and
+        // healthKitOnly sessions (no app route points) read as a plain scrolling detail, the way a
+        // Health workout does; healthKitOnly drills into the rich Health view via "View in Health".
+        if session.usesRoute {
             outdoorLayout
         } else {
             indoorLayout
@@ -58,6 +62,7 @@ struct CardioSessionDetailView: View {
         }
         .task(id: session.id) {
             updateInitialCameraPosition()
+            renderShareCard()
         }
     }
 
@@ -80,12 +85,13 @@ struct CardioSessionDetailView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: shareableSummary) {
+                shareControl {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .accessibilityLabel(Text("Share session"))
             }
         }
+        .task(id: session.id) { renderShareCard() }
     }
 
     private var topControls: some View {
@@ -103,7 +109,7 @@ struct CardioSessionDetailView: View {
 
             Spacer()
 
-            ShareLink(item: shareableSummary) {
+            shareControl {
                 Image(systemName: "square.and.arrow.up")
                     .font(.headline.weight(.semibold))
                     .frame(width: 36, height: 36)
@@ -111,6 +117,26 @@ struct CardioSessionDetailView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(Text("Share session"))
+        }
+    }
+
+    /// Shares a rendered Strava-style summary card image once it's ready, falling back to a short
+    /// text summary for the brief moment before the image renders (or if rendering fails).
+    @ViewBuilder
+    private func shareControl<Label: View>(@ViewBuilder label: () -> Label) -> some View {
+        if let shareImage {
+            ShareLink(item: shareImage, preview: SharePreview(session.displayTitle, image: shareImage), label: label)
+        } else {
+            ShareLink(item: shareableSummary, label: label)
+        }
+    }
+
+    @MainActor
+    private func renderShareCard() {
+        let renderer = ImageRenderer(content: CardioShareCard(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit))
+        renderer.scale = 3
+        if let uiImage = renderer.uiImage {
+            shareImage = Image(uiImage: uiImage)
         }
     }
 
