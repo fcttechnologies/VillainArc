@@ -128,6 +128,22 @@ nonisolated func healthDayExportRecord(from snapshot: HealthDaySnapshot) -> Heal
     )
 }
 
+// All start-of-day dates in [start, end] (inclusive), normalizing a reversed range. No upper cap —
+// callers that must not read past today apply that bound themselves (see healthDayExportRecords).
+nonisolated func healthExportDayStarts(start: Date, end: Date, calendar: Calendar = .autoupdatingCurrent) -> [Date] {
+    let lowerBound = calendar.startOfDay(for: min(start, end))
+    let upperBound = calendar.startOfDay(for: max(start, end))
+
+    var days: [Date] = []
+    var day = lowerBound
+    while day <= upperBound {
+        days.append(day)
+        guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+        day = next
+    }
+    return days
+}
+
 // Builds one day-level record per calendar day in [start, end] (inclusive), reusing
 // the same per-day snapshot loader the spoken health intents use.
 nonisolated func healthDayExportRecords(start: Date, end: Date, context: ModelContext) throws -> [HealthDayExportRecord] {
@@ -135,14 +151,12 @@ nonisolated func healthDayExportRecords(start: Date, end: Date, context: ModelCo
     let lowerBound = calendar.startOfDay(for: min(start, end))
     // Never iterate past today — there is no tracked data for future days, and a
     // mis-entered end date would otherwise emit a tail of empty future records.
-    let upperBound = min(calendar.startOfDay(for: max(start, end)), calendar.startOfDay(for: .now))
+    let cappedEnd = min(calendar.startOfDay(for: max(start, end)), calendar.startOfDay(for: .now))
+    guard lowerBound <= cappedEnd else { return [] }
 
     var records: [HealthDayExportRecord] = []
-    var day = lowerBound
-    while day <= upperBound {
+    for day in healthExportDayStarts(start: lowerBound, end: cappedEnd, calendar: calendar) {
         records.append(healthDayExportRecord(from: try loadHealthDaySnapshot(for: day, context: context)))
-        guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
-        day = next
     }
     return records
 }
