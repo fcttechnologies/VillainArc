@@ -571,7 +571,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             await MainActor.run {
                 CardioActivityManager.end()
                 if self.activeCardioSession?.id == sessionID {
-                    self.activeCardioSession = nil
+                    self.isCardioSessionCoverPresented = true
                 }
                 saveContext(context: context)
             }
@@ -686,7 +686,11 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     }
 
     func dismissActiveCardioSessionPresentation() {
-        isCardioSessionCoverPresented = false
+        if activeCardioSession?.statusValue == .done {
+            activeCardioSession = nil
+        } else {
+            isCardioSessionCoverPresented = false
+        }
     }
 
     func popToRoot(tab: AppTab) {

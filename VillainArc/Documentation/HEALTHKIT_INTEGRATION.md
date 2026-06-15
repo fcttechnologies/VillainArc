@@ -41,11 +41,11 @@ VillainArc treats Apple Health as an integration layer, not the app’s main sou
 - `WorkoutSession`
   - the app’s real workout record
 - `CardioSession`
-  - the app’s real cardio record for outdoor run/walk sessions and treadmill run/walk sessions
+  - the app’s real cardio record: activity + environment + capture mode
 - `CardioRoutePoint`
-  - local route points captured from foreground location updates during outdoor cardio sessions
-- `CardioTreadmillInterval`
-  - manual treadmill speed/duration/incline intervals used to calculate indoor distance
+  - local route points captured from foreground location updates during app-tracked outdoor cardio sessions
+- `CardioMachineInterval`
+  - manual machine speed/duration/incline/resistance/cadence intervals used to calculate indoor distance
 - `WeightEntry`
   - the app’s local weight history record, optionally linked to HealthKit
 - `WeightGoal`
@@ -213,13 +213,13 @@ The app-owned cardio path uses `CardioHealthWorkoutCoordinator` when Health writ
 
 That path:
 
-- starts an `HKWorkoutSession` for outdoor run, outdoor walk, treadmill run, or treadmill walk
+- starts an `HKWorkoutSession` for the cardio session’s activity and indoor/outdoor environment
 - stores the local `CardioSession.id` in Health metadata
 - collects live heart rate, active energy, and walking/running distance when the device and permissions support those samples
-- adds the app-calculated manual treadmill or route distance before finishing when walking/running distance writes are available
+- adds the app-calculated manual machine or route distance before finishing when walking/running distance writes are available
 - links the finished `HKWorkout` back to both `CardioSession.healthWorkout` and the local `HealthWorkout` mirror
 
-When Health access is unavailable or incomplete, the local cardio flow still works. Outdoor sessions use foreground When In Use location updates through `CardioRouteRecorder`; treadmill sessions use manual intervals.
+When Health access is unavailable or incomplete, the local cardio flow still works. App-tracked outdoor sessions use foreground When In Use location updates through `CardioRouteRecorder`; machine-interval sessions use manual intervals. HealthKit-only sessions keep app detail empty and read summary/route/heart-rate detail through the linked Health workout.
 
 ### Pre-Workout Readiness
 

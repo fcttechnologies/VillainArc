@@ -293,17 +293,24 @@ struct ActiveCardioResumeBarButton: View {
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
 
+    private var isActiveHealthSession: Bool {
+        healthCoordinator.activeCardioSessionID == session.id
+    }
+
     private var liveHeartRate: Double? {
-        healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.latestHeartRate : session.healthWorkout?.averageHeartRateBPM
+        isActiveHealthSession ? healthCoordinator.latestHeartRate : session.healthWorkout?.averageHeartRateBPM
     }
     private var liveEnergy: Double? {
-        healthCoordinator.activeCardioSessionID == session.id ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned
+        isActiveHealthSession ? healthCoordinator.activeEnergyBurned : session.healthWorkout?.activeEnergyBurned
+    }
+    private var liveDistanceMeters: Double {
+        session.resolvedDistanceMeters(healthKitDistance: isActiveHealthSession ? healthCoordinator.distanceMeters : nil)
     }
 
     /// Distance is the resume bar's primary metric. Miles users see feet until they cross 0.1 mi
     /// (so a just-started run reads "120 ft" rather than "0.00 mi"), then it switches to miles.
     private var resumeDistanceText: String {
-        let meters = session.totalDistanceMeters
+        let meters = liveDistanceMeters
         let tenthOfAMileInMeters = 0.1 * 1_609.344
         if distanceUnit == .mi, meters < tenthOfAMileInMeters {
             let feet = meters * 3.280_839_895
@@ -313,47 +320,49 @@ struct ActiveCardioResumeBarButton: View {
     }
 
     var body: some View {
-        Button(action: openAction) {
-            HStack(spacing: 12) {
-                Image(systemName: session.systemImage)
-                    .font(.title3)
-                    .foregroundStyle(.green)
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            Button(action: openAction) {
+                HStack(spacing: 12) {
+                    Image(systemName: session.systemImage)
+                        .font(.title3)
+                        .foregroundStyle(.green)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(session.displayTitle)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-
-                    HStack(spacing: 8) {
-                        Label(resumeDistanceText, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(session.displayTitle)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                        if let hr = liveHeartRate {
-                            Label(formattedHeartRateText(hr), systemImage: "heart.fill")
-                                .foregroundStyle(.red)
+                            .lineLimit(1)
+
+                        HStack(spacing: 8) {
+                            Label(resumeDistanceText, systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            if let hr = liveHeartRate {
+                                Label(formattedHeartRateText(hr), systemImage: "heart.fill")
+                                    .foregroundStyle(.red)
+                            }
+                            if let energy = liveEnergy {
+                                Label(formattedEnergyText(energy, unit: energyUnit), systemImage: "flame.fill")
+                                    .foregroundStyle(.orange)
+                            }
                         }
-                        if let energy = liveEnergy {
-                            Label(formattedEnergyText(energy, unit: energyUnit), systemImage: "flame.fill")
-                                .foregroundStyle(.orange)
-                        }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                     }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+
+                    Spacer(minLength: 0)
+
+                    Text(session.startedAt ?? .now, style: .timer)
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.green)
                 }
-
-                Spacer(minLength: 0)
-
-                Text(session.startedAt ?? .now, style: .timer)
-                    .font(.subheadline.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.green)
+                .contentShape(.rect)
+                .accessibilityElement(children: .combine)
             }
-            .contentShape(.rect)
-            .accessibilityElement(children: .combine)
+            .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
+            .accessibilityLabel("Cardio in progress. \(session.displayTitle).")
+            .accessibilityHint("Opens the active cardio session.")
         }
-        .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
-        .accessibilityLabel("Cardio in progress. \(session.displayTitle).")
-        .accessibilityHint("Opens the active cardio session.")
     }
 }
 

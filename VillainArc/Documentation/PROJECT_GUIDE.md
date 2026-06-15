@@ -198,7 +198,7 @@ The split is:
 - `HydrationEntry` is the app’s local water-intake model, which can also link to Apple Health dietary water samples
 - `HydrationDay` is the per-day hydration aggregate that owns the day total, goal target, completion timestamp, and linked entries
 - `HydrationGoal` is the historical local goal model for water-intake targets
-- `CardioSession` is the app-owned cardio record, with `CardioRoutePoint` for outdoor route tracking and `CardioTreadmillInterval` for manual treadmill distance
+- `CardioSession` is the app-owned cardio record, with `CardioRoutePoint` for app-tracked outdoor routes, `CardioMachineInterval` for manual machine distance, and HealthKit-only capture for sessions whose detail comes from Apple Health
 - `AppSettings.temperatureUnit` controls whether wrist temperature displays in F or C while HealthKit values stay stored in Celsius
 - Health widgets mirror the Health tab summary cards for weight, sleep, steps, energy, hydration, heart vitals, respiratory rate, and wrist temperature
 - `WeightGoal`, `StepsGoal`, `SleepGoal`, `HydrationGoal`, and `TrainingGoal` are local app models
@@ -315,16 +315,17 @@ See:
 
 ### Cardio Sessions
 
-Cardio sessions are app-owned run/walk records separate from strength workout logging. The dedicated Cardio tab starts four session kinds:
+Cardio sessions are app-owned records separate from strength workout logging. Each session is modeled as:
 
-- outdoor run
-- outdoor walk
-- treadmill run
-- treadmill walk
+- an activity (`run`, `walk`, `hike`, `cycle`, `row`, `elliptical`, `stairStepper`, `swim`, or `other`)
+- an environment (`outdoor` or `indoor`)
+- a capture mode (`gpsRoute`, `machineIntervals`, or `healthKitOnly`)
 
-Outdoor sessions use foreground When In Use location access to record `CardioRoutePoint`s and render routes with MapKit. Treadmill sessions use manual speed, duration, and incline intervals to calculate distance without GPS.
+The start UI currently surfaces the four primary presets: outdoor run, outdoor walk, treadmill run, and treadmill walk. The underlying model supports broader cardio activity types without replacing the schema again.
 
-When Apple Health workout write access is available, cardio sessions also start an `HKWorkoutSession` to collect live heart rate, active energy, and walking/running distance, then save a linked Health workout mirror on finish. Without Apple Health access, the same full-screen flow still works with route data or manual treadmill intervals.
+App-tracked outdoor sessions use foreground When In Use location access to record `CardioRoutePoint`s and render routes with MapKit. Machine-interval sessions use manual speed, duration, incline, resistance, cadence, or power intervals to calculate distance without GPS. HealthKit-only sessions keep app detail empty and rely on the linked Health workout for route, distance, heart rate, energy, splits, and effort detail.
+
+When Apple Health workout write access is available, cardio sessions start an `HKWorkoutSession` to collect live heart rate, active energy, and walking/running distance, then save a linked Health workout mirror on finish. Without Apple Health access, the app-tracked route and machine-interval flows still work locally.
 
 Cardio has its own Live Activity and resume bar. It participates in the same one-active-flow rule as strength workouts and plan creation.
 

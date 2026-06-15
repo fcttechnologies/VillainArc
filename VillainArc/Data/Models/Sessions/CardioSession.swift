@@ -7,7 +7,7 @@ import SwiftData
 // Cardio is modeled on two axes (activity × environment) plus a stored capture
 // mode (how the session's detail is recorded), instead of a flat named-type enum.
 // This represents any cardio session; types VillainArc can't natively record fall
-// back to `.healthKitOnly`. See Documentation/CARDIO_MODEL_REDESIGN.md.
+// back to `.healthKitOnly`.
 
 nonisolated enum CardioActivity: String, CaseIterable, Codable, Hashable, Identifiable {
     case run

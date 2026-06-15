@@ -12,6 +12,7 @@ struct CardioSessionDetailView: View {
     @State private var router = AppRouter.shared
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var shareImage: Image?
+    @State private var localHealthWorkout: HealthWorkout?
 
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
@@ -64,6 +65,11 @@ struct CardioSessionDetailView: View {
             updateInitialCameraPosition()
             renderShareCard()
         }
+        .navigationDestination(isPresented: localHealthWorkoutPresented) {
+            if let localHealthWorkout {
+                HealthWorkoutDetailView(workout: localHealthWorkout)
+            }
+        }
     }
 
     // Indoor / non-GPS sessions have no map — a regular scrolling detail, the way a Health
@@ -92,6 +98,11 @@ struct CardioSessionDetailView: View {
             }
         }
         .task(id: session.id) { renderShareCard() }
+        .navigationDestination(isPresented: localHealthWorkoutPresented) {
+            if let localHealthWorkout {
+                HealthWorkoutDetailView(workout: localHealthWorkout)
+            }
+        }
     }
 
     private var topControls: some View {
@@ -219,12 +230,26 @@ struct CardioSessionDetailView: View {
     }
 
     private var openHealthHandler: (() -> Void)? {
-        guard !showsCloseButton, session.healthWorkout != nil else { return nil }
+        guard session.healthWorkout != nil else { return nil }
         return openHealthWorkout
+    }
+
+    private var localHealthWorkoutPresented: Binding<Bool> {
+        Binding(
+            get: { localHealthWorkout != nil },
+            set: { isPresented in
+                if !isPresented { localHealthWorkout = nil }
+            }
+        )
     }
 
     private func openHealthWorkout() {
         guard let workout = session.healthWorkout else { return }
+        if showsCloseButton {
+            localHealthWorkout = workout
+            Haptics.selection()
+            return
+        }
         router.cardioTabPath.append(.healthWorkoutDetail(workout))
         router.noteNavigationStateChanged()
         Haptics.selection()

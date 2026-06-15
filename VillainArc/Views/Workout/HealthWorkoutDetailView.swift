@@ -61,6 +61,13 @@ struct HealthWorkoutDetailView: View {
 
 }
 
+private enum HealthWorkoutExpandedCard: String, Identifiable {
+    case route
+    case heartRate
+
+    var id: String { rawValue }
+}
+
 struct HealthWorkoutDetailContent: View {
     let loader: HealthWorkoutDetailLoader
     let distanceUnit: DistanceUnit
@@ -68,6 +75,7 @@ struct HealthWorkoutDetailContent: View {
     let estimatedMaxHeartRate: Double?
     let extraSummaryItems: [SummaryStatItem]
     let effortCardModel: WorkoutEffortCardModel?
+    @State private var expandedCard: HealthWorkoutExpandedCard?
 
     private var summaryGridColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 140), spacing: 12, alignment: .top)]
@@ -175,6 +183,18 @@ struct HealthWorkoutDetailContent: View {
                 activitiesSection
             }
         }
+        .fullScreenCover(item: $expandedCard) { card in
+            switch card {
+            case .route:
+                ExpandedHealthWorkoutRouteView(coordinates: routeCoordinates) {
+                    expandedCard = nil
+                }
+            case .heartRate:
+                ExpandedHealthWorkoutHeartRateView(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate) {
+                    expandedCard = nil
+                }
+            }
+        }
     }
 
     private var summarySection: some View {
@@ -218,8 +238,7 @@ struct HealthWorkoutDetailContent: View {
 
     private var routeSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Route")
-                .font(.headline)
+            sectionHeader(title: "Route", expandedCard: .route, accessibilityLabel: "Expand route")
 
             HealthWorkoutRouteMapCard(coordinates: routeCoordinates)
                 .accessibilityElement(children: .ignore)
@@ -230,13 +249,30 @@ struct HealthWorkoutDetailContent: View {
 
     private var heartRateSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Heart Rate")
-                .font(.headline)
+            sectionHeader(title: "Heart Rate", expandedCard: .heartRate, accessibilityLabel: "Expand heart rate chart")
 
             HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(AccessibilityText.healthWorkoutHeartRateChartLabel)
                 .accessibilityValue(AccessibilityText.healthWorkoutHeartRateChartValue(summary: chartAccessibilitySummary))
+        }
+    }
+
+    private func sectionHeader(title: LocalizedStringKey, expandedCard: HealthWorkoutExpandedCard, accessibilityLabel: LocalizedStringKey) -> some View {
+        HStack {
+            Text(title)
+                .font(.headline)
+            Spacer()
+            Button {
+                self.expandedCard = expandedCard
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel(Text(accessibilityLabel))
         }
     }
 
@@ -506,6 +542,82 @@ private struct HealthWorkoutRouteMapCard: View {
     }
 }
 
+private struct ExpandedHealthWorkoutRouteView: View {
+    let coordinates: [CLLocationCoordinate2D]
+    let onClose: () -> Void
+
+    @State private var position: MapCameraPosition = .automatic
+
+    private var region: MKCoordinateRegion {
+        guard let first = coordinates.first else {
+            return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.3349, longitude: -122.0090), span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+        }
+
+        let latitudes = coordinates.map(\.latitude)
+        let longitudes = coordinates.map(\.longitude)
+        let minLatitude = latitudes.min() ?? first.latitude
+        let maxLatitude = latitudes.max() ?? first.latitude
+        let minLongitude = longitudes.min() ?? first.longitude
+        let maxLongitude = longitudes.max() ?? first.longitude
+        let center = CLLocationCoordinate2D(latitude: (minLatitude + maxLatitude) / 2, longitude: (minLongitude + maxLongitude) / 2)
+        let span = MKCoordinateSpan(latitudeDelta: max((maxLatitude - minLatitude) * 1.35, 0.01), longitudeDelta: max((maxLongitude - minLongitude) * 1.35, 0.01))
+        return MKCoordinateRegion(center: center, span: span)
+    }
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Map(position: $position, interactionModes: [.pan, .zoom, .rotate]) {
+                MapPolyline(coordinates: coordinates)
+                    .stroke(.blue, lineWidth: 5)
+            }
+            .mapStyle(.standard(elevation: .realistic))
+            .ignoresSafeArea()
+
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.headline.weight(.semibold))
+                    .frame(width: 40, height: 40)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel(Text("Close"))
+            .padding()
+        }
+        .task(id: coordinates.count) {
+            position = .region(region)
+        }
+    }
+}
+
+private struct ExpandedHealthWorkoutHeartRateView: View {
+    let points: [HealthWorkoutHeartRatePoint]
+    let summary: HealthWorkoutHeartRateSummary
+    let estimatedMaxHeartRate: Double?
+    let onClose: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                HealthWorkoutHeartRateChartCard(points: points, summary: summary, estimatedMaxHeartRate: estimatedMaxHeartRate, chartHeight: 520)
+                    .padding()
+            }
+            .appBackground()
+            .navigationTitle("Heart Rate")
+            .toolbarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close", systemImage: "xmark") {
+                        onClose()
+                    }
+                    .accessibilityLabel(Text("Close"))
+                }
+            }
+        }
+    }
+}
+
 private extension HKWorkoutActivityType {
     var supportsPacePresentation: Bool {
         switch self {
@@ -527,6 +639,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
     let points: [HealthWorkoutHeartRatePoint]
     let summary: HealthWorkoutHeartRateSummary
     let estimatedMaxHeartRate: Double?
+    var chartHeight: CGFloat = 220
     
     @State private var selectedDate: Date?
 
@@ -619,7 +732,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
             .chartYAxis {
                 AxisMarks(position: .trailing)
             }
-            .frame(height: 220)
+            .frame(height: chartHeight)
         }
         .padding(14)
         .appCardStyle()

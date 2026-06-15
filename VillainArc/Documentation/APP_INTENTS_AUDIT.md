@@ -152,17 +152,11 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 | **Sleep goal status** | 🆕 `GetSleepGoalStatusIntent` |
 | **Hydration goal status** | 🆕 `GetHydrationGoalStatusIntent` |
 
-### Health — structured data export (`ReturnsValue<String>`, JSON)
+### Health — structured data export
 
 | Export | Intent |
 |---|---|
-| One day → JSON object | 🆕 `ExportHealthDayJSONIntent` (date optional; defaults to today) |
-| Date range → JSON array (one per day) | 🆕 `ExportHealthRangeJSONIntent` |
-| Full tracked history → JSON | 🆕 `ExportAllHealthJSONIntent` |
-
-Shared shapes/encoder/builders live in `HealthExportSupport.swift`. These read VA's **own
-local store** (not a live HealthKit read), so a Shortcut can run an export intent and "Save
-File" the result (e.g. to iCloud Drive) for an external sync. See the JSON schema below.
+| Day / range / all Health JSON export | ⬜ omitted from 1.3; Jarvis health tracking is manual, so the release ships no Health JSON export surface |
 
 ### Health — mutations
 
@@ -198,49 +192,12 @@ File" the result (e.g. to iCloud Drive) for an external sync. See the JSON schem
 | Open workout preferences / Health / notifications / units settings | ✅ `OpenWorkoutPreferencesIntent`, `OpenAppleHealthSettingsIntent`, `OpenNotificationSettingsIntent`, `OpenUnitSettingsIntent` |
 | Restore purchases / view subscription / paywall | ⬜ intentionally omitted — purchase/subscription flows must run in foreground StoreKit UI and aren't a fit for Siri/MCP automation |
 
----
-
-## Health export JSON schema
-
-All values are **raw / canonical**; the consumer converts to display units. Dates are
-ISO8601 (UTC). Optional fields are omitted-as-null when unavailable.
-
-**Day record** (`ExportHealthDayJSONIntent` → object, `ExportHealthRangeJSONIntent` → array of these):
-
-```json
-{
-  "date": "2026-06-07T05:00:00Z",
-  "weightKg": 84.1,
-  "sleepSeconds": 27000,
-  "steps": 8423,
-  "distanceMeters": 6210.4,
-  "activeEnergyKcal": 540,
-  "restingEnergyKcal": 1680
-}
-```
-
-**Full export** (`ExportAllHealthJSONIntent`): an object with `exportedAt` plus one array per
-store — `weightEntries` (`date`, `weightKg`), `sleepNights` (`date`, `timeAsleepSeconds`,
-`timeInBedSeconds`, `remSeconds`, `coreSeconds`, `deepSeconds`, `awakeSeconds`,
-`sleepStart`, `sleepEnd`), `stepsDistanceDays` (`date`, `steps`, `distanceMeters`),
-`energyDays` (`date`, `activeEnergyKcal`, `restingEnergyKcal`), `heartDays` (`date`,
-`restingHeartRate`, `minHeartRate`, `maxHeartRate`, `walkingHeartRateAverage`,
-`heartRateVariabilitySDNN`), `respiratoryRateDays` (`date`, `minRate`, `maxRate`),
-`wristTemperatureDays` (`date`, `temperatureCelsius`), `hydrationDays` (`date`,
-`totalVolumeML`, `goalTargetML`).
-
-Units: weight kg, durations seconds, distance meters, energy kcal, heart rate bpm, HRV ms,
-respiratory rate breaths/min, temperature °C, water mL.
-
----
-
 ## Intentional omissions and follow-ups
 
-**Known gap — nutrition / dietary intake.** VA's `HealthDaySnapshot` and stores do **not**
-include dietary calories or protein (Bevel logs these into HealthKit, but VA doesn't read
-or cache them). The export intents therefore can't include nutrition. To close this:
-extend `loadHealthDaySnapshot` / the stores to read HealthKit dietary types, then add the
-fields to the export schema. Tracked as a clear follow-up; deliberately not blocked on.
+**Health JSON export.** Day, range, and full-history JSON export intents are out of the
+1.3 release. Add them back only when there is a product need for a user-facing export or
+assistant sync path, and include nutrition/workout/cardio history deliberately instead of
+shipping a partial dump by accident.
 
 **Deferred (write paths with side effects).** `AddHydrationEntryIntent` and
 `CreateHydrationGoalIntent` are real gaps (weight has both; the goal-creation trio covers
@@ -251,15 +208,9 @@ additive reads on a shipping build. Add them by mirroring `AddWeightEntryIntent`
 export + reload) and `CreateStepsGoalIntent` (active-goal end/replace), plus
 `HydrationDay.reconcile(for:context:)` and the hydration widget reload.
 
-**Deferred (workouts/cardio in the full export).** `ExportAllHealthJSONIntent` covers the
-per-day Health caches and the weight log. Workout/cardio session history is relationship-
-heavy (sets, performances, route points) and is intentionally left out of the JSON dump;
-`LastWorkoutSummaryIntent` / `ViewLastWorkoutIntent` already expose recent workouts.
-
 **Deferred (day-parameterized metric reads + nav).** The four new metric reads
 (heart/respiratory/wrist-temp/hydration) are today-only and have no Show* navigation
-intent into their Health-tab detail screens. Both are natural follow-ups; the export
-intents already give an assistant arbitrary-date access to all of this data.
+intent into their Health-tab detail screens. Both are natural follow-ups.
 
 ---
 
