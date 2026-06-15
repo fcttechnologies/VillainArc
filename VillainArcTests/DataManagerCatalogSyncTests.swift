@@ -3,7 +3,7 @@ import Testing
 
 @testable import VillainArc
 
-struct DataManagerCatalogSyncTests {
+@Suite(.serialized) struct DataManagerCatalogSyncTests {
     @MainActor
     private func makePlanBackedSession(
         context: ModelContext,
