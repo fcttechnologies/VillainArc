@@ -1,70 +1,70 @@
-## App Review notes (paste into ASC → App Review Information → Notes)
+# App Review Notes
 
-### Summary
+Paste into App Store Connect -> App Review Information -> Notes.
 
-Villain Arc is a strength-training and cardio tracker with on-device AI plan generation and exercise replacement (Foundation Models), Apple Health integration, optional iCloud sync, Live Activities, widgets, and App Intents. No account is required and no third-party services are used.
+## Summary
 
-This is release **1.3.0**. Major additions over 1.2.3:
+Villain Arc is a strength-training and cardio tracker with on-device AI plan generation and exercise replacement, Apple Health integration, optional iCloud sync, Live Activities, widgets, and App Intents. No account is required and no third-party services are used.
 
-- A new Cardio tab with app-owned outdoor route recording and manual treadmill intervals.
-- On-device AI workout plan generation and exercise replacement (Apple Intelligence).
-- Six pre-built program templates (PPL, Upper/Lower, Full Body, 5×5, 5/3/1 BBB, Bro Split).
-- Hydration tracking with Apple Health two-way sync.
-- New Health surfaces: heart-rate vitals, respiratory rate, sleeping wrist temperature, Health Trends dashboard, Sleep Timing Insights, and Correlation Insights.
+This is release 1.4.0. Main additions over 1.3.0:
 
-### Demo account
+- Share cards for completed workouts, cardio sessions, and workout plans.
+- Apple Health heart-rate zones on iOS 27, with the existing estimated zone fallback kept for older OS versions or workouts without zone data.
+- Cardio detail routing cleanup: outdoor route sessions open route-first details, while completed indoor Health-backed cardio opens directly in the Health workout detail.
+- Finished cardio sessions now appear in Home recent workouts.
+- Location permission education flow refined for outdoor cardio: the app explanation step now uses Continue and proceeds directly to the iOS Location permission sheet.
 
-Not required. No login flow, no server backend. The app is fully usable on a clean install once onboarding (name, birthday, gender, height, fitness level, training goal) is complete. **Sign in:** not applicable.
+## Demo Account
 
-### Required permissions and why they appear
+Not required. No login flow, no server backend. The app is fully usable on a clean install once onboarding is complete. Sign in: not applicable.
+
+## Required Permissions
 
 | Permission | Required for | When triggered |
 |---|---|---|
-| **HealthKit** (Share + Read) | Workout import/export, weight, sleep, steps, distance, energy, heart-rate vitals, respiratory rate, wrist temperature, dietary water. Permissions catalog is versioned (`HealthKitCatalog.permissionsCatalogVersion`); a returning user is re-prompted only when the version changes. | First launch (onboarding) and again after a new permissions version ships. The standalone Health prompt is dismissible with "Not Now." |
-| **Location When In Use** | Outdoor cardio route recording (run, walk). When-In-Use only — never always-on. Records `CardioRoutePoint`s during an active outdoor cardio session for the route map. Distance filter 8 m; low-accuracy points discarded. | The moment a user taps Start on an outdoor cardio session. Treadmill sessions never trigger location. |
-| **User Notifications** | Local notifications: rest-timer completion, steps-goal milestones, sleep-goal completion, hydration-goal completion, weekly health coaching recaps. No remote/push, no APNs. | After the user reaches `.ready` post-onboarding. Requested once; re-asked only if status returns to `.notDetermined`. |
-| **Camera / Photo Library** | Optional profile photo. Only when the user taps to change their profile photo. | Inside Profile → Photo. Never on launch. |
+| HealthKit (Share + Read) | Workout import/export, weight, sleep, steps, distance, energy, heart-rate vitals, respiratory rate, wrist temperature, and dietary water. | First launch onboarding, and again only after a new Health permissions catalog version ships. |
+| Location When In Use | Outdoor cardio route recording for run/walk sessions. When-In-Use only. | After the user chooses an outdoor cardio session and taps Continue on the app's location explanation screen, the iOS system permission sheet appears. Treadmill sessions never trigger Location. |
+| User Notifications | Local notifications for rest timers, goals, hydration, and weekly health coaching recaps. No remote push or APNs. | After onboarding reaches the ready state. |
+| Camera / Photo Library | Optional profile photo. | Only when the user taps to change their profile photo. |
 
 No advertising identifiers, tracking permissions, or App Tracking Transparency prompts. Privacy nutrition label declares zero data collection by the developer.
 
-### How to exercise the new 1.3 features
+## How To Exercise The New 1.4 Features
 
-A clean install + onboarding gives the reviewer access to everything immediately.
+1. Share cards: finish any strength workout, cardio session, or open a saved workout plan, then tap Share in the summary/detail surface.
+2. Cardio detail routing: complete or import an indoor Health-backed treadmill workout, then open it from Home recent workouts. It should open directly in the Health workout detail without a second "View in Health" navigation step.
+3. Outdoor cardio detail: complete an outdoor run or walk, then open it from the Cardio tab. The route map/detail path remains available.
+4. Home recent workouts: finish a run, walk, or treadmill session and confirm it appears beside recent strength workouts.
+5. Apple Health zones: on iOS 27 with a Health workout that includes heart-rate zone data, open the Health workout detail. The Zones section uses Apple Health zones; older OS versions or workouts without zones keep estimated zones.
+6. Location permission fix: fresh install, start an outdoor cardio session, tap Continue on the app explanation step, then grant the iOS system Location permission.
 
-1. **AI plan generation.** Home → expanded plus → "Create Plan" → "Generate with AI" → short prompt → Generate. Foundation Models runs on-device; needs Apple Intelligence-capable hardware (entry hidden on unsupported devices).
-2. **Plan templates.** "Create Plan" sheet → Templates → pick one → "Build Full Program."
-3. **AI exercise replacement.** Any plan → tap an exercise → Replace → "AI Suggestions" row (Apple Intelligence devices only).
-4. **Cardio tab.** Cardio → Outdoor Run/Walk → grant Location → start (treadmill modes need no Location).
-5. **Health Trends.** Health → Trends card → 7D/30D/90D/1Y → tap a sparkline.
-6. **Sleep Timing Insights.** Health → Trends → "Sleep Timing Insights."
-7. **Correlation Insights.** Health → Trends → "Performance Correlations" (empty until 8 rated sessions).
-8. **Hydration.** Home quick-action plus → Add Water; history under Health → Hydration → Goal History.
+## Existing 1.3 Surfaces Still Available
 
-### App Intents / Siri Shortcuts
+- AI plan generation: Home -> expanded plus -> Create Plan -> Generate with AI.
+- Plan templates: Create Plan -> Templates -> pick one -> Build Full Program.
+- AI exercise replacement: any plan -> tap an exercise -> Replace -> AI Suggestions.
+- Cardio tab: Outdoor Run, Outdoor Walk, Treadmill Run, Treadmill Walk.
+- Health Trends, Sleep Timing Insights, Correlation Insights, and Hydration.
 
-10 App Shortcuts ship in `VillainArcShortcuts.swift` (Start Workout, Start Today's Workout, Start Cardio, View Last Workout, Show Workout History, Add Weight Entry, Show Health Trends, Show Sleep Insights, Show Correlation Insights, Open Active Workout). All intents that accept input use typed `AppEnum` parameters; none accept free-text strings that reach storage or the on-device language model.
+## App Intents / Siri Shortcuts
 
-### Foundation Models / Apple Intelligence
+App Shortcuts ship in `VillainArcShortcuts.swift` for starting workouts/cardio, viewing recent workout history, adding weight, showing Health trends, and opening active workout flows. Intents that accept input use typed `AppEnum` parameters; none accept free-text strings that reach storage or the on-device language model.
 
-Two features use `SystemLanguageModel.default`: **`AIWorkoutPlanGenerator`** and **`AIExerciseReplacementSuggester`**, both via `LanguageModelSession.respond(to:generating:)` with a structured `@Generable` schema. User prompts are capped at 500 chars and sanitized; a catalog resolver rejects exercise names that don't fuzzy-match the local catalog, so the model can't synthesize arbitrary exercise content. Both gate on `SystemLanguageModel.default.availability == .available` and hide their UI when unavailable.
+## Foundation Models / Apple Intelligence
 
-### Data, storage, and sync
+AI workout plan generation and AI exercise replacement use `SystemLanguageModel.default` through structured `@Generable` schemas. User prompts are capped and sanitized; catalog resolution rejects exercise names that do not match the local exercise catalog. Both features gate on Apple Intelligence availability and hide their UI when unavailable.
 
-- All user data in SwiftData (App Group container `group.com.fcttechnologies.VillainArcCont`).
-- iCloud sync uses `cloudKitDatabase: .private("iCloud.com.fcttechnologies.VillainArcCont")` — Apple-managed CloudKit private DB only, no custom server.
-- HealthKit via conventional `HKHealthStore` reads/writes, anchored queries, and `HKLiveWorkoutBuilder`.
-- App Group entitlement shared by main app, widget extension, intents extension; HealthKit entitlement on the main app only.
+## Data, Storage, And Sync
 
-### Known reviewer considerations
+- All user data lives in SwiftData in the App Group container `group.com.fcttechnologies.VillainArcCont`.
+- iCloud sync uses Apple's private CloudKit database only; no custom server.
+- HealthKit reads/writes use conventional `HKHealthStore` APIs, anchored queries, and live workout sessions.
+- App Group entitlement is shared by the main app, widget extension, and intents extension. HealthKit entitlement is on the main app only.
 
-- **Apple Intelligence requirement.** AI features gate to AI-capable hardware with Apple Intelligence enabled; entries hidden (never broken) otherwise. Deterministic plan builder + replacement ranker remain available.
-- **Live cardio Health workout.** With HealthKit workout-write permission, an `HKWorkoutSession` runs in parallel for live HR + active energy; without permission the local cardio flow still works.
-- **iCloud is optional.** "Continue Without iCloud" during onboarding seeds locally; CloudKit blocking states surface retry-able onboarding states.
+## In-App Purchase
 
-### In-App Purchase
+Villain Arc Pro is an auto-renewing subscription: monthly ($4.99) and yearly ($39.99), each with a 7-day free trial and Family Sharing enabled. Subscribe via Settings -> Subscription or through premium features. Restore Purchases is available in Settings.
 
-Villain Arc Pro — auto-renewing subscription, monthly ($4.99) / yearly ($39.99), each with a 7-day free trial, Family Sharing enabled. Subscribe via Settings → Subscription or any of the 5 premium features (AI Plan Generation, AI Exercise Replacement, Health Trends, Sleep Timing Insights, Correlation Insights). Restore Purchases in Settings. All other features free.
-
-### Contact
+## Contact
 
 villain-arc@fct-technologies.com
