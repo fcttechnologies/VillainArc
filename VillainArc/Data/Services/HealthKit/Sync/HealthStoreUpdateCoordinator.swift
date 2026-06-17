@@ -36,6 +36,25 @@ final class HealthStoreUpdateCoordinator {
             case .dietaryWater: return "dietary water"
             }
         }
+
+        var metricStateLabel: String {
+            switch self {
+            case .workout: return "observer-workout"
+            case .weight: return "observer-weight"
+            case .step: return "observer-step"
+            case .walkingRunningDistance: return "observer-walking-running-distance"
+            case .activeEnergy: return "observer-active-energy"
+            case .restingEnergy: return "observer-resting-energy"
+            case .sleep: return "observer-sleep"
+            case .heartRate: return "observer-heart-rate"
+            case .restingHeartRate: return "observer-resting-heart-rate"
+            case .walkingHeartRate: return "observer-walking-heart-rate"
+            case .heartRateVariability: return "observer-heart-rate-variability"
+            case .respiratoryRate: return "observer-respiratory-rate"
+            case .wristTemperature: return "observer-wrist-temperature"
+            case .dietaryWater: return "observer-dietary-water"
+            }
+        }
     }
 
     static let shared = HealthStoreUpdateCoordinator()
@@ -90,7 +109,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthSyncCoordinator.shared.syncWorkouts()
+                    await Self.trackObserverSync(.workout) {
+                        await HealthSyncCoordinator.shared.syncWorkouts()
+                    }
                 }
                 return
             }
@@ -122,7 +143,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthSyncCoordinator.shared.syncWeightEntries()
+                    await Self.trackObserverSync(.weight) {
+                        await HealthSyncCoordinator.shared.syncWeightEntries()
+                    }
                 }
                 return
             }
@@ -154,7 +177,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncSteps()
+                    await Self.trackObserverSync(.step) {
+                        await HealthDailyMetricsSync.shared.syncSteps()
+                    }
                 }
                 return
             }
@@ -186,7 +211,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
+                    await Self.trackObserverSync(.walkingRunningDistance) {
+                        await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
+                    }
                 }
                 return
             }
@@ -218,7 +245,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
+                    await Self.trackObserverSync(.activeEnergy) {
+                        await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
+                    }
                 }
                 return
             }
@@ -250,7 +279,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
+                    await Self.trackObserverSync(.restingEnergy) {
+                        await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
+                    }
                 }
                 return
             }
@@ -282,7 +313,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthSleepSync.shared.syncSleepNights()
+                    await Self.trackObserverSync(.sleep) {
+                        await HealthSleepSync.shared.syncSleepNights()
+                    }
                 }
                 return
             }
@@ -314,7 +347,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncHeartRate()
+                    await Self.trackObserverSync(.heartRate) {
+                        await HealthDailyMetricsSync.shared.syncHeartRate()
+                    }
                 }
                 return
             }
@@ -346,7 +381,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncRestingHeartRate()
+                    await Self.trackObserverSync(.restingHeartRate) {
+                        await HealthDailyMetricsSync.shared.syncRestingHeartRate()
+                    }
                 }
                 return
             }
@@ -378,7 +415,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncWalkingHeartRate()
+                    await Self.trackObserverSync(.walkingHeartRate) {
+                        await HealthDailyMetricsSync.shared.syncWalkingHeartRate()
+                    }
                 }
                 return
             }
@@ -410,7 +449,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncHeartRateVariability()
+                    await Self.trackObserverSync(.heartRateVariability) {
+                        await HealthDailyMetricsSync.shared.syncHeartRateVariability()
+                    }
                 }
                 return
             }
@@ -442,7 +483,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncRespiratoryRate()
+                    await Self.trackObserverSync(.respiratoryRate) {
+                        await HealthDailyMetricsSync.shared.syncRespiratoryRate()
+                    }
                 }
                 return
             }
@@ -474,7 +517,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthDailyMetricsSync.shared.syncWristTemperature()
+                    await Self.trackObserverSync(.wristTemperature) {
+                        await HealthDailyMetricsSync.shared.syncWristTemperature()
+                    }
                 }
                 return
             }
@@ -506,7 +551,9 @@ final class HealthStoreUpdateCoordinator {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
                     defer { completionHandler() }
-                    await HealthSyncCoordinator.shared.syncHydrationEntries()
+                    await Self.trackObserverSync(.dietaryWater) {
+                        await HealthSyncCoordinator.shared.syncHydrationEntries()
+                    }
                 }
                 return
             }
@@ -540,6 +587,26 @@ final class HealthStoreUpdateCoordinator {
             return true
         default:
             return false
+        }
+    }
+
+    private static func trackObserverSync(_ kind: ObserverKind, operation: () async -> Void) async {
+        await MetricsService.trackOperation(
+            .healthSync,
+            stateLabel: kind.metricStateLabel,
+            signpostName: "HealthKit Observer Sync"
+        ) {
+            await operation()
+        }
+    }
+
+    private static func trackManualSync(operation: () async -> Void) async {
+        await MetricsService.trackOperation(
+            .healthSync,
+            stateLabel: "manual-sync",
+            signpostName: "HealthKit Manual Sync"
+        ) {
+            await operation()
         }
     }
 
@@ -680,8 +747,10 @@ final class HealthStoreUpdateCoordinator {
         }
 
         let task = Task {
-            await HealthSyncCoordinator.shared.syncAll()
-            await HealthExportCoordinator.shared.reconcilePendingExports()
+            await Self.trackManualSync {
+                await HealthSyncCoordinator.shared.syncAll()
+                await HealthExportCoordinator.shared.reconcilePendingExports()
+            }
         }
 
         inFlightRefreshTask = task

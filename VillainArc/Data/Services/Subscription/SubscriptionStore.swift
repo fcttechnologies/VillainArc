@@ -128,6 +128,16 @@ final class SubscriptionStore {
     // MARK: - Status refresh
 
     func refreshStatus() async {
+        await MetricsService.trackOperation(
+            .subscriptionEntitlementRefresh,
+            stateLabel: "current-entitlements",
+            signpostName: "Subscription Entitlement Refresh"
+        ) {
+            await refreshStatusCore()
+        }
+    }
+
+    private func refreshStatusCore() async {
         var resolved: SubscriptionStatus = .notSubscribed
         for await result in Transaction.currentEntitlements {
             guard case let .verified(transaction) = result else { continue }

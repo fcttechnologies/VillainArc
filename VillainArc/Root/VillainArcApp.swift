@@ -6,13 +6,15 @@ import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        if HealthAuthorizationManager.isHealthDataAvailable {
-            HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
-        }
-        if !NotificationCoordinator.isUITestRun {
-            NotificationCoordinator.shared.installDelegate()
-        }
         MetricsService.shared.register()
+        MetricsService.trackLaunchTask(.launch, stateLabel: "did-finish-launching") {
+            if HealthAuthorizationManager.isHealthDataAvailable {
+                HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
+            }
+            if !NotificationCoordinator.isUITestRun {
+                NotificationCoordinator.shared.installDelegate()
+            }
+        }
         return true
     }
 
@@ -28,8 +30,11 @@ struct VillainArcApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
-        try? Tips.configure([.datastoreLocation(.applicationDefault)])
-        CardioFavoriteTip.appLaunchCount = min(CardioFavoriteTip.appLaunchCount + 1, 100)
+        MetricsService.shared.register()
+        MetricsService.trackLaunchTask(.launch, stateLabel: "app-init") {
+            try? Tips.configure([.datastoreLocation(.applicationDefault)])
+            CardioFavoriteTip.appLaunchCount = min(CardioFavoriteTip.appLaunchCount + 1, 100)
+        }
         SubscriptionStore.shared.start()
     }
 

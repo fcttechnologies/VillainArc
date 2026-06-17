@@ -50,7 +50,13 @@ struct AIExerciseReplacementSuggester {
         }
 
         do {
-            let response = try await session.respond(to: prompt, generating: AIReplacementSuggestionList.self)
+            let response = try await MetricsService.trackOperation(
+                .aiExerciseReplacement,
+                stateLabel: "respond",
+                signpostName: "AI Exercise Replacement"
+            ) {
+                try await session.respond(to: prompt, generating: AIReplacementSuggestionList.self)
+            }
             return resolve(suggestions: response.content.suggestions, excluding: input.excludedCatalogID)
         } catch {
             return []

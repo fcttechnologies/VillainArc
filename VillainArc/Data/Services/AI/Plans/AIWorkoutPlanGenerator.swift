@@ -48,7 +48,13 @@ struct AIWorkoutPlanGenerator {
         }
 
         do {
-            let response = try await session.respond(to: prompt, generating: AIGeneratedPlan.self)
+            let response = try await MetricsService.trackOperation(
+                .aiPlanGeneration,
+                stateLabel: "respond",
+                signpostName: "AI Plan Generation"
+            ) {
+                try await session.respond(to: prompt, generating: AIGeneratedPlan.self)
+            }
             let resolved = resolve(plan: response.content)
             guard !resolved.days.isEmpty else { return .failure(.emptyResult) }
             return .success(resolved)

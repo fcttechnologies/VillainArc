@@ -41,4 +41,20 @@ struct MetricsServiceIsolationTests {
             }
         }
     }
+
+    @Test
+    func stateReportingDomainsAreStable() {
+        let domains = MetricsService.Domain.allCases
+        #expect(domains.count == 5)
+        #expect(Set(domains.map(\.rawValue)).count == domains.count)
+        #expect(domains.allSatisfy { $0.rawValue.hasPrefix("com.fcttechnologies.villainarc.") })
+        #expect(domains.allSatisfy { !$0.rawValue.contains(" ") })
+
+        if #available(iOS 27.0, *) {
+            let expected = Set(domains.map(\.stateReportingDomain))
+            #expect(MetricsService.enabledStateReportingDomains == expected)
+            #expect(domains.allSatisfy { $0.launchTaskID(stateLabel: "app-init").rawValue.count <= 128 })
+            #expect(domains.allSatisfy { $0.launchTaskID(stateLabel: "did-finish-launching").rawValue.count <= 128 })
+        }
+    }
 }
