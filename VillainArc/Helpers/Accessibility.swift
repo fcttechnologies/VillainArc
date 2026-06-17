@@ -413,9 +413,13 @@ enum AccessibilityIdentifiers {
     static let planBuilderSheet = "planBuilderSheet"
     static let planBuilderScratchButton = "planBuilderScratchButton"
     static let planBuilderAIButton = "planBuilderAIButton"
+    static let planBuilderImportButton = "planBuilderImportButton"
     static let aiPlanPromptField = "aiPlanPromptField"
     static let aiPlanGenerateButton = "aiPlanGenerateButton"
     static let aiPlanGeneratingOverlay = "aiPlanGeneratingOverlay"
+    static let planImportTextField = "planImportTextField"
+    static let planImportButton = "planImportButton"
+    static let planImportOverlay = "planImportOverlay"
 
     static func planBuilderTemplate(_ id: String) -> String { "planBuilderTemplate-\(id)" }
     static func planTemplateDay(_ templateID: String, _ dayID: String) -> String { "planTemplateDay-\(templateID)-\(dayID)" }

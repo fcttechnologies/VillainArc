@@ -1,13 +1,14 @@
 import SwiftUI
 import SwiftData
 
-/// Presented when the user taps "Create Plan". Lets them start blank or pick a pre-built program
-/// template. Mirrors the SplitBuilder's `SelectTypeView` layout for visual consistency.
+/// Presented when the user taps "Create Plan". Lets them start blank, import or generate with AI,
+/// or pick a pre-built program template.
 struct PlanBuilderSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var path: [PlanBuilderNavStep] = []
     @State private var showAIPrompt = false
+    @State private var showImportPrompt = false
 
     let onScratchSelected: () -> Void
     let onTemplateDaySelected: (PlanTemplate, PlanTemplateDay) -> Void
@@ -67,8 +68,43 @@ struct PlanBuilderSheet: View {
                             .tint(.primary)
                         }
                         .buttonStyle(.borderless)
-                        .appGroupedListRow(position: .single)
+                        .appGroupedListRow(position: .top)
                         .accessibilityIdentifier(AccessibilityIdentifiers.planBuilderAIButton)
+
+                        Button {
+                            Haptics.selection()
+                            SubscriptionGate.require(.aiPlanGeneration) {
+                                showImportPrompt = true
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "doc.text.magnifyingglass")
+                                    .frame(width: 24)
+                                    .foregroundStyle(.blue)
+                                    .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Import from Text")
+                                        .font(.headline)
+                                    Text("Paste a routine from notes or another training app.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                Spacer()
+                                if !SubscriptionGate.isPro {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundStyle(.purple)
+                                        .accessibilityHidden(true)
+                                }
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
+                            }
+                            .tint(.primary)
+                        }
+                        .buttonStyle(.borderless)
+                        .appGroupedListRow(position: .bottom)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.planBuilderImportButton)
                     }
                 }
 
@@ -119,6 +155,14 @@ struct PlanBuilderSheet: View {
             .sheet(isPresented: $showAIPrompt) {
                 GeneratePlanAIPromptView { result in
                     showAIPrompt = false
+                    dismiss()
+                    onAIGenerated(result)
+                }
+                .presentationBackground(Color.sheetBg)
+            }
+            .sheet(isPresented: $showImportPrompt) {
+                ImportPlanTextView { result in
+                    showImportPrompt = false
                     dismiss()
                     onAIGenerated(result)
                 }
