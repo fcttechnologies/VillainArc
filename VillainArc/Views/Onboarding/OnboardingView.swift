@@ -550,22 +550,12 @@ private struct OnboardingLocationPermissionStepView: View {
                     locationManager.requestWhenInUseAuthorization()
                     pushNextStep()
                 } label: {
-                    Text("Allow Location")
+                    Text("Continue")
                         .padding(.vertical, 8)
                         .fontWeight(.semibold)
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
-
-                Button {
-                    pushNextStep()
-                } label: {
-                    Text("Not Now")
-                        .padding(.vertical, 8)
-                        .fontWeight(.semibold)
-                }
-                .buttonSizing(.flexible)
-                .buttonStyle(.glass)
             }
         }
         .padding(.horizontal)
