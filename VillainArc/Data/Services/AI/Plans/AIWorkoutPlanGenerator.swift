@@ -141,6 +141,11 @@ struct AIWorkoutPlanGenerator {
         )
     }
 
+    /// Evaluation/test seam for scoring structured model output without invoking Foundation Models.
+    static func resolveForEvaluation(plan: AIGeneratedPlan) -> AIGeneratedPlanResult {
+        resolve(plan: plan)
+    }
+
     private static func resolveCatalogID(for exercise: AIGeneratedPlanExercise) -> String? {
         resolveCatalogID(name: exercise.exerciseName, equipment: exercise.equipment)
     }

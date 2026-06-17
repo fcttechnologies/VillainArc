@@ -98,6 +98,11 @@ struct AIExerciseReplacementSuggester {
         return resolved
     }
 
+    /// Evaluation/test seam for scoring model suggestions without invoking Foundation Models.
+    static func resolveForEvaluation(suggestions: [AIReplacementSuggestion], excluding excludedCatalogID: String) -> [AIResolvedReplacementSuggestion] {
+        resolve(suggestions: suggestions, excluding: excludedCatalogID)
+    }
+
     private static func resolveCatalogID(name: String, equipment: EquipmentType) -> String? {
         let normalized = normalize(name)
 
