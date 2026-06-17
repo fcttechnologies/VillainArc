@@ -31,8 +31,9 @@ MCP-ready assistant.
   .background`, `nonisolated func perform() async throws -> some IntentResult &
   ProvidesDialog`, reading a fresh `makeHealthIntentReadContext()` (Health) or the shared
   container. Gate with `SetupGuard.requireReady(context:)`.
-- **Data exports** that return structured values: `.background` mode, `nonisolated`
-  `perform()` returning `some IntentResult & ReturnsValue<String>`.
+- **Data exports**: no Health JSON export intent currently ships. If a large structured
+  export returns later, use `IntentFile` instead of a large `String` payload so Shortcuts
+  can hand the file to a Save File action reliably.
 - **Mutations**: `.background` (silent) or `.foreground(.dynamic)` when they open UI;
   `@MainActor func perform()` using `SharedModelContainer.container.mainContext`, then
   `saveContext` + the relevant `HealthMetricWidgetReloader` reload.
@@ -43,7 +44,7 @@ MCP-ready assistant.
 
 ## Coverage map
 
-Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (reason inline).
+Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 
 ### Workout session
 
@@ -137,10 +138,10 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 | Steps | ✅ `GetStepsIntent` | (via `GetHealthMetricForDay`) |
 | Distance | ✅ `GetDistanceIntent` | (via `GetHealthMetricForDay`) |
 | Calories (total/active/resting) | ✅ `GetCaloriesBurnedIntent`, `GetActiveCaloriesIntent`, `GetRestingCaloriesIntent` | (via `GetHealthMetricForDay`) |
-| **Heart vitals** (resting/range/walking/HRV) | 🆕 `GetHeartRateIntent` | ⬜ follow-up: day-parameterized variant |
-| **Respiratory rate** | 🆕 `GetRespiratoryRateIntent` | ⬜ follow-up |
-| **Wrist temperature** | 🆕 `GetWristTemperatureIntent` | ⬜ follow-up |
-| **Hydration** (water intake) | 🆕 `GetHydrationIntent` | ⬜ follow-up |
+| **Heart vitals** (resting/range/walking/HRV) | ✅ `GetHeartRateIntent` | ✅ `GetHeartRateForDayIntent` |
+| **Respiratory rate** | ✅ `GetRespiratoryRateIntent` | ✅ `GetRespiratoryRateForDayIntent` |
+| **Wrist temperature** | ✅ `GetWristTemperatureIntent` | ✅ `GetWristTemperatureForDayIntent` |
+| **Hydration** (water intake) | ✅ `GetHydrationIntent` | ✅ `GetHydrationForDayIntent` |
 | Training condition | ✅ `GetTrainingConditionIntent` | — |
 
 ### Health — goal status reads
@@ -149,8 +150,8 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 |---|---|
 | Steps goal status | ✅ `GetStepsGoalStatusIntent` |
 | Weight goal status | ✅ `GetWeightGoalStatusIntent` |
-| **Sleep goal status** | 🆕 `GetSleepGoalStatusIntent` |
-| **Hydration goal status** | 🆕 `GetHydrationGoalStatusIntent` |
+| **Sleep goal status** | ✅ `GetSleepGoalStatusIntent` |
+| **Hydration goal status** | ✅ `GetHydrationGoalStatusIntent` |
 
 ### Health — structured data export
 
@@ -167,8 +168,8 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 | Create/replace steps goal | ✅ `CreateStepsGoalIntent` |
 | Create/replace sleep goal | ✅ `CreateSleepGoalIntent` |
 | Update / end training condition | ✅ `UpdateTrainingConditionIntent`, `EndTrainingConditionIntent` |
-| **Log a hydration entry** | ⬜ follow-up (see below) |
-| **Create/replace hydration goal** | ⬜ follow-up (see below) |
+| **Log a hydration entry** | ✅ `AddHydrationEntryIntent` |
+| **Create/replace hydration goal** | ✅ `CreateHydrationGoalIntent` |
 
 ### Health — navigation (`.foreground`)
 
@@ -180,7 +181,9 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 | Calories history | ✅ `ShowCaloriesBurnedHistoryIntent` |
 | Health Trends / Sleep Insights / Correlation Insights | ✅ `ShowHealthTrendsIntent`, `ShowSleepInsightsIntent`, `ShowCorrelationInsightsIntent` |
 | Training condition history | ✅ `OpenTrainingConditionHistoryIntent` |
-| Heart / respiratory / wrist-temp / hydration history screens | ⬜ follow-up: nav intents into those Health-tab detail screens |
+| Heart history / resting heart / walking heart / HRV history | ✅ `ShowHeartRateHistoryIntent`, `ShowRestingHeartRateHistoryIntent`, `ShowWalkingHeartRateHistoryIntent`, `ShowHeartRateVariabilityHistoryIntent` |
+| Respiratory / wrist-temp history screens | ✅ `ShowRespiratoryRateHistoryIntent`, `ShowWristTemperatureHistoryIntent` |
+| Hydration history / hydration-goal history | ✅ `ShowHydrationHistoryIntent`, `ShowHydrationGoalHistoryIntent` |
 
 ### App, profile, settings
 
@@ -194,23 +197,10 @@ Legend: ✅ existing · 🆕 added in build 12 · ⬜ intentionally omitted (rea
 
 ## Intentional omissions and follow-ups
 
-**Health JSON export.** Day, range, and full-history JSON export intents are out of the
-1.3 release. Add them back only when there is a product need for a user-facing export or
-assistant sync path, and include nutrition/workout/cardio history deliberately instead of
-shipping a partial dump by accident.
-
-**Deferred (write paths with side effects).** `AddHydrationEntryIntent` and
-`CreateHydrationGoalIntent` are real gaps (weight has both; the goal-creation trio covers
-steps/weight/sleep but not hydration). They were deferred from build 12 because logging
-hydration must replicate the full export/`HydrationDay.reconcile`/widget-reload/goal-
-completion-notification flow correctly, and that side-effect surface is higher risk than
-additive reads on a shipping build. Add them by mirroring `AddWeightEntryIntent` (entry +
-export + reload) and `CreateStepsGoalIntent` (active-goal end/replace), plus
-`HydrationDay.reconcile(for:context:)` and the hydration widget reload.
-
-**Deferred (day-parameterized metric reads + nav).** The four new metric reads
-(heart/respiratory/wrist-temp/hydration) are today-only and have no Show* navigation
-intent into their Health-tab detail screens. Both are natural follow-ups.
+**Health JSON export.** Day, range, and full-history JSON export intents are intentionally
+absent. Add them only when there is a product need for a user-facing export or assistant
+sync path, and include nutrition/workout/cardio history deliberately instead of shipping a
+partial dump by accident. Use `IntentFile` for that surface, not a large returned string.
 
 ---
 
