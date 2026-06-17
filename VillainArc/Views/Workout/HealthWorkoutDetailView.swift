@@ -212,7 +212,7 @@ struct HealthWorkoutDetailContent: View {
                     expandedCard = nil
                 }
             case .heartRate:
-                ExpandedHealthWorkoutHeartRateView(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate) {
+                ExpandedHealthWorkoutHeartRateView(points: loader.heartRatePoints, summary: loader.heartRateSummary, zoneRanges: loader.heartRateZoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate) {
                     expandedCard = nil
                 }
             }
@@ -273,7 +273,7 @@ struct HealthWorkoutDetailContent: View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader(title: "Heart Rate", expandedCard: .heartRate, accessibilityLabel: "Expand heart rate chart")
 
-            HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, summary: loader.heartRateSummary, estimatedMaxHeartRate: estimatedMaxHeartRate)
+            HealthWorkoutHeartRateChartCard(points: loader.heartRatePoints, summary: loader.heartRateSummary, zoneRanges: loader.heartRateZoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(AccessibilityText.healthWorkoutHeartRateChartLabel)
                 .accessibilityValue(AccessibilityText.healthWorkoutHeartRateChartValue(summary: chartAccessibilitySummary))
@@ -300,8 +300,21 @@ struct HealthWorkoutDetailContent: View {
 
     private var heartRateZonesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Zones")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Text("Zones")
+                        .font(.headline)
+                    Text(loader.heartRateZoneSource.label)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.thinMaterial, in: Capsule())
+                }
+                Text(loader.heartRateZoneSource.caption)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
             ForEach(loader.heartRateZones) { zone in
                 HealthWorkoutZoneRow(zoneTitle: "Zone \(zone.zone)", rangeText: heartRateZoneRangeText(for: zone), durationText: formattedDuration(zone.duration), percentageText: zone.percentage.formatted(.percent.precision(.fractionLength(0))), color: heartRateZoneColor(for: zone.zone))
@@ -416,8 +429,15 @@ struct HealthWorkoutDetailContent: View {
     }
 
     private func zoneColorIndex(for averageHeartRate: Double?) -> Int {
-        guard let averageHeartRate,
-              let estimatedMaxHeartRate,
+        guard let averageHeartRate else {
+            return 1
+        }
+
+        if let range = loader.heartRateZoneRanges.first(where: { $0.contains(averageHeartRate) }) {
+            return range.zone
+        }
+
+        guard let estimatedMaxHeartRate,
               estimatedMaxHeartRate > 0 else {
             return 1
         }
@@ -616,13 +636,14 @@ private struct ExpandedHealthWorkoutRouteView: View {
 private struct ExpandedHealthWorkoutHeartRateView: View {
     let points: [HealthWorkoutHeartRatePoint]
     let summary: HealthWorkoutHeartRateSummary
+    let zoneRanges: [HealthWorkoutHeartRateZoneRange]
     let estimatedMaxHeartRate: Double?
     let onClose: () -> Void
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                HealthWorkoutHeartRateChartCard(points: points, summary: summary, estimatedMaxHeartRate: estimatedMaxHeartRate, chartHeight: 520)
+                HealthWorkoutHeartRateChartCard(points: points, summary: summary, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate, chartHeight: 520)
                     .padding()
             }
             .appBackground()
@@ -660,6 +681,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
 
     let points: [HealthWorkoutHeartRatePoint]
     let summary: HealthWorkoutHeartRateSummary
+    let zoneRanges: [HealthWorkoutHeartRateZoneRange]
     let estimatedMaxHeartRate: Double?
     var chartHeight: CGFloat = 220
     
@@ -713,7 +735,7 @@ private struct HealthWorkoutHeartRateChartCard: View {
                     Text(primaryValue)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundStyle(displayedPoint.map { HealthWorkoutHeartRatePalette.color(for: $0.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate) } ?? .primary)
+                        .foregroundStyle(displayedPoint.map { HealthWorkoutHeartRatePalette.color(for: $0.bpm, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate) } ?? .primary)
                 }
 
                 Spacer(minLength: 12)
@@ -724,21 +746,21 @@ private struct HealthWorkoutHeartRateChartCard: View {
             Chart {
                 ForEach(segments) { segment in
                     LineMark(x: .value("Time", segment.start.date), y: .value("Heart Rate", segment.start.bpm), series: .value("Segment", segment.id))
-                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate))
                     .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
 
                     LineMark(x: .value("Time", segment.end.date), y: .value("Heart Rate", segment.end.bpm), series: .value("Segment", segment.id))
-                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                    .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: segment.start.bpm, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate))
                     .lineStyle(.init(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
 
                 if let displayedPoint {
                     PointMark(x: .value("Time", displayedPoint.date), y: .value("Heart Rate", displayedPoint.bpm))
-                        .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                        .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate))
                         .symbolSize(80)
 
                     RuleMark(x: .value("Selected Time", displayedPoint.date))
-                        .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate))
+                        .foregroundStyle(HealthWorkoutHeartRatePalette.color(for: displayedPoint.bpm, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate))
                         .lineStyle(.init(lineWidth: 1, dash: [4, 4]))
                 }
             }
@@ -789,8 +811,8 @@ private struct HealthWorkoutHeartRateChartCard: View {
 }
 
 private enum HealthWorkoutHeartRatePalette {
-    static func color(for bpm: Double, estimatedMaxHeartRate: Double?) -> Color {
-        switch zone(for: bpm, estimatedMaxHeartRate: estimatedMaxHeartRate) {
+    static func color(for bpm: Double, zoneRanges: [HealthWorkoutHeartRateZoneRange], estimatedMaxHeartRate: Double?) -> Color {
+        switch zone(for: bpm, zoneRanges: zoneRanges, estimatedMaxHeartRate: estimatedMaxHeartRate) {
         case 1:
             return .blue
         case 2:
@@ -804,7 +826,11 @@ private enum HealthWorkoutHeartRatePalette {
         }
     }
 
-    static func zone(for bpm: Double, estimatedMaxHeartRate: Double?) -> Int {
+    static func zone(for bpm: Double, zoneRanges: [HealthWorkoutHeartRateZoneRange], estimatedMaxHeartRate: Double?) -> Int {
+        if let range = zoneRanges.first(where: { $0.contains(bpm) }) {
+            return range.zone
+        }
+
         guard let estimatedMaxHeartRate, estimatedMaxHeartRate > 0 else { return 5 }
 
         let percentage = bpm / estimatedMaxHeartRate

@@ -89,6 +89,37 @@ struct HealthWorkoutHeartRateZoneSummary: Identifiable, Hashable {
     var id: Int { zone }
 }
 
+enum HealthWorkoutHeartRateZoneSource: Hashable {
+    case appleHealth
+    case estimated
+
+    var label: String {
+        switch self {
+        case .appleHealth: return "Apple Health"
+        case .estimated: return "Estimated"
+        }
+    }
+
+    var caption: String {
+        switch self {
+        case .appleHealth: return "Using your configured Apple Health zones."
+        case .estimated: return "Estimated from your profile when Apple Health zones are unavailable."
+        }
+    }
+}
+
+struct HealthWorkoutHeartRateZoneRange: Hashable {
+    let zone: Int
+    let lowerBoundBPM: Int?
+    let upperBoundBPM: Int?
+
+    func contains(_ bpm: Double) -> Bool {
+        if let lowerBoundBPM, bpm < Double(lowerBoundBPM) { return false }
+        if let upperBoundBPM, bpm >= Double(upperBoundBPM) { return false }
+        return true
+    }
+}
+
 struct HealthWorkoutDetailMetric: Identifiable, Hashable {
     enum ValueStyle: Hashable {
         case integer
@@ -142,6 +173,12 @@ private struct HealthWorkoutHeartRateInterval: Hashable {
     let bpm: Double
 }
 
+private struct HealthWorkoutHeartRateZoneData {
+    let source: HealthWorkoutHeartRateZoneSource
+    let ranges: [HealthWorkoutHeartRateZoneRange]
+    let summaries: [HealthWorkoutHeartRateZoneSummary]
+}
+
 struct HealthWorkoutRoutePoint: Hashable {
     let latitude: Double
     let longitude: Double
@@ -188,6 +225,8 @@ enum HealthWorkoutSummaryStatsLoader {
     var summary: HealthWorkoutDetailSummary
     var heartRateSummary: HealthWorkoutHeartRateSummary
     var heartRatePoints: [HealthWorkoutHeartRatePoint] = []
+    var heartRateZoneSource: HealthWorkoutHeartRateZoneSource = .estimated
+    var heartRateZoneRanges: [HealthWorkoutHeartRateZoneRange] = []
     var heartRateZones: [HealthWorkoutHeartRateZoneSummary] = []
     var metrics: [HealthWorkoutDetailMetric] = []
     var activities: [HealthWorkoutActivitySummary] = []
@@ -294,7 +333,16 @@ enum HealthWorkoutSummaryStatsLoader {
     func refreshDerivedData(distanceUnit: DistanceUnit, estimatedMaxHeartRate: Double?) {
         let workoutStart = loadedWorkout?.startDate ?? cachedWorkout.startDate
         let workoutEnd = loadedWorkout?.endDate ?? cachedWorkout.endDate
-        heartRateZones = makeHeartRateZoneSummaries(from: heartRateSamples, workoutStart: workoutStart, workoutEnd: workoutEnd, estimatedMaxHeartRate: estimatedMaxHeartRate)
+        let zoneData: HealthWorkoutHeartRateZoneData
+        if #available(iOS 27.0, *),
+           let nativeZoneData = makeNativeHeartRateZoneData(from: loadedWorkout) {
+            zoneData = nativeZoneData
+        } else {
+            zoneData = makeEstimatedHeartRateZoneData(from: heartRateSamples, workoutStart: workoutStart, workoutEnd: workoutEnd, estimatedMaxHeartRate: estimatedMaxHeartRate)
+        }
+        heartRateZoneSource = zoneData.source
+        heartRateZoneRanges = zoneData.ranges
+        heartRateZones = zoneData.summaries
         splits = makeSplitSummaries(from: distanceSamples, heartRateSamples: heartRateSamples, workoutStart: workoutStart, workoutEnd: workoutEnd, distanceUnit: distanceUnit)
     }
     private func fetchWorkout() async throws -> HKWorkout? {
@@ -399,24 +447,75 @@ enum HealthWorkoutSummaryStatsLoader {
         default: return nil
         }
     }
-    private func makeHeartRateZoneSummaries(from samples: [HealthWorkoutHeartRateSample], workoutStart: Date, workoutEnd: Date, estimatedMaxHeartRate: Double?) -> [HealthWorkoutHeartRateZoneSummary] {
-        guard let estimatedMaxHeartRate, estimatedMaxHeartRate > 0 else { return [] }
+    @available(iOS 27.0, *)
+    private func makeNativeHeartRateZoneData(from workout: HKWorkout?) -> HealthWorkoutHeartRateZoneData? {
+        guard let workout,
+              let group = workout.zoneGroup(for: HealthKitCatalog.heartRateType) else {
+            return nil
+        }
+
+        let ranges = group.configuration.zones
+            .sorted { $0.index < $1.index }
+            .map { zone in
+                HealthWorkoutHeartRateZoneRange(
+                    zone: zone.index + 1,
+                    lowerBoundBPM: zone.minimum.map { Int($0.doubleValue(for: HealthKitCatalog.bpmUnit).rounded(.down)) },
+                    upperBoundBPM: zone.maximum.map { Int($0.doubleValue(for: HealthKitCatalog.bpmUnit).rounded(.down)) }
+                )
+            }
+
+        let activeDurations = group.zoneDurations
+            .filter { $0.duration > 0 }
+            .sorted { $0.zone.index < $1.zone.index }
+        let trackedDuration = activeDurations.reduce(0) { $0 + $1.duration }
+        guard trackedDuration > 0 else { return nil }
+
+        let summaries = activeDurations.map { duration in
+            HealthWorkoutHeartRateZoneSummary(
+                zone: duration.zone.index + 1,
+                lowerBoundBPM: duration.zone.minimum.map { Int($0.doubleValue(for: HealthKitCatalog.bpmUnit).rounded(.down)) },
+                upperBoundBPM: duration.zone.maximum.map { Int($0.doubleValue(for: HealthKitCatalog.bpmUnit).rounded(.down)) },
+                duration: duration.duration,
+                percentage: duration.duration / trackedDuration
+            )
+        }
+
+        return HealthWorkoutHeartRateZoneData(source: .appleHealth, ranges: ranges, summaries: summaries)
+    }
+
+    private func makeEstimatedHeartRateZoneData(from samples: [HealthWorkoutHeartRateSample], workoutStart: Date, workoutEnd: Date, estimatedMaxHeartRate: Double?) -> HealthWorkoutHeartRateZoneData {
+        guard let estimatedMaxHeartRate, estimatedMaxHeartRate > 0 else {
+            return HealthWorkoutHeartRateZoneData(source: .estimated, ranges: [], summaries: [])
+        }
+        let ranges = (1...5).map { zone in
+            let bounds = heartRateBounds(for: zone, estimatedMaxHeartRate: estimatedMaxHeartRate)
+            return HealthWorkoutHeartRateZoneRange(
+                zone: zone,
+                lowerBoundBPM: bounds.lower.map { Int($0.rounded(.down)) },
+                upperBoundBPM: bounds.upper.map { Int($0.rounded(.down)) }
+            )
+        }
         let intervals = makeHeartRateIntervals(from: samples, workoutStart: workoutStart, workoutEnd: workoutEnd)
-        guard !intervals.isEmpty else { return [] }
+        guard !intervals.isEmpty else {
+            return HealthWorkoutHeartRateZoneData(source: .estimated, ranges: ranges, summaries: [])
+        }
         var durationsByZone = Dictionary(uniqueKeysWithValues: (1...5).map { ($0, 0.0) })
         for interval in intervals {
             let zone = heartRateZone(for: interval.bpm, estimatedMaxHeartRate: estimatedMaxHeartRate)
             durationsByZone[zone, default: 0] += interval.endDate.timeIntervalSince(interval.startDate)
         }
         let trackedDuration = durationsByZone.values.reduce(0, +)
-        guard trackedDuration > 0 else { return [] }
-        return (1...5)
-            .compactMap { zone in
+        guard trackedDuration > 0 else {
+            return HealthWorkoutHeartRateZoneData(source: .estimated, ranges: ranges, summaries: [])
+        }
+        let summaries = (1...5)
+            .compactMap { zone -> HealthWorkoutHeartRateZoneSummary? in
                 let duration = durationsByZone[zone, default: 0]
                 guard duration > 0 else { return nil }
                 let (lowerBoundBPM, upperBoundBPM) = heartRateBounds(for: zone, estimatedMaxHeartRate: estimatedMaxHeartRate)
                 return HealthWorkoutHeartRateZoneSummary(zone: zone, lowerBoundBPM: lowerBoundBPM.map { Int($0.rounded(.down)) }, upperBoundBPM: upperBoundBPM.map { Int($0.rounded(.down)) }, duration: duration, percentage: duration / trackedDuration)
             }
+        return HealthWorkoutHeartRateZoneData(source: .estimated, ranges: ranges, summaries: summaries)
     }
     private func heartRateZone(for bpm: Double, estimatedMaxHeartRate: Double) -> Int {
         let percentage = bpm / estimatedMaxHeartRate
@@ -428,7 +527,7 @@ enum HealthWorkoutSummaryStatsLoader {
         default: return 5
         }
     }
-    private func heartRateBounds(for zone: Int, estimatedMaxHeartRate: Double) -> (Double?, Double?) {
+    private func heartRateBounds(for zone: Int, estimatedMaxHeartRate: Double) -> (lower: Double?, upper: Double?) {
         switch zone {
         case 1: return (nil, estimatedMaxHeartRate * 0.6)
         case 2: return (estimatedMaxHeartRate * 0.6, estimatedMaxHeartRate * 0.7)
