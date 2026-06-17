@@ -5,14 +5,19 @@ import HealthKit
 import MapKit
 
 struct HealthWorkoutDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     let workout: HealthWorkout
+    let showsCloseButton: Bool
+    let cardioSession: CardioSession?
 
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Query(UserProfile.single) private var userProfiles: [UserProfile]
     @State private var loader: HealthWorkoutDetailLoader
 
-    init(workout: HealthWorkout) {
+    init(workout: HealthWorkout, showsCloseButton: Bool = false, cardioSession: CardioSession? = nil) {
         self.workout = workout
+        self.showsCloseButton = showsCloseButton
+        self.cardioSession = cardioSession
         _loader = State(initialValue: HealthWorkoutDetailLoader(workout: workout))
     }
 
@@ -33,7 +38,7 @@ struct HealthWorkoutDetailView: View {
 
     var body: some View {
         ScrollView {
-            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: [], effortCardModel: effortCardModel)
+            HealthWorkoutDetailContent(loader: loader, distanceUnit: distanceUnit, energyUnit: energyUnit, estimatedMaxHeartRate: estimatedMaxHeartRate, extraSummaryItems: cardioSummaryItems, effortCardModel: effortCardModel)
             .padding(.horizontal)
             .padding(.vertical, 20)
         }
@@ -42,9 +47,26 @@ struct HealthWorkoutDetailView: View {
         .navigationTitle(loader.summary.activityTypeDisplayName)
         .navigationSubtitle(Text(formattedDateRange(start: loader.summary.startDate, end: loader.summary.endDate, includeTime: true)))
         .toolbarTitleDisplayMode(.inline)
+        .toolbar {
+            if showsCloseButton {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close", systemImage: "xmark") { dismiss() }
+                        .accessibilityLabel(Text("Close"))
+                }
+            }
+        }
         .task(id: workout.healthWorkoutUUID) {
             await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
         }
+    }
+
+    private var cardioSummaryItems: [SummaryStatItem] {
+        guard let cardioSession else { return [] }
+        var items = [SummaryStatItem(title: "Source", value: cardioSession.typeTitle)]
+        if cardioSession.postEffort > 0 {
+            items.append(SummaryStatItem(title: "Effort", value: "\(cardioSession.postEffort)/10"))
+        }
+        return items
     }
 
     private var effortCardModel: WorkoutEffortCardModel? {

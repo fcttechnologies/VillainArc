@@ -77,12 +77,6 @@ struct CardioTabView: View {
         recentRunWalkWorkouts.filter { $0.cardioSession == nil && $0.isIndoorWorkout == false }
     }
 
-    /// All standalone Apple Health cardio (indoor and outdoor) for the recent list — the list shows
-    /// every cardio session regardless of environment; only the route map stays outdoor-only.
-    private var standaloneCardioWorkouts: [HealthWorkout] {
-        recentRunWalkWorkouts.filter { $0.cardioSession == nil }
-    }
-
     /// App-owned outdoor routes plus cached Apple Health outdoor routes, newest first, capped so the
     /// map never draws more than ~10 overlapping routes at once.
     private var mapRoutes: [CardioMapRoute] {
@@ -135,8 +129,8 @@ struct CardioTabView: View {
     }
 
     private var mergedHistory: [CardioHistoryItem] {
-        let sessions = recentSessions.map { CardioHistoryItem.session($0) }
-        let hkWorkouts = standaloneCardioWorkouts.map { CardioHistoryItem.healthWorkout($0) }
+        let sessions = recentSessions.filter(\.usesRoute).map { CardioHistoryItem.session($0) }
+        let hkWorkouts = standaloneOutdoorWorkouts.map { CardioHistoryItem.healthWorkout($0) }
         return (sessions + hkWorkouts).sorted { $0.date > $1.date }.prefix(16).map { $0 }
     }
 
@@ -206,12 +200,7 @@ struct CardioTabView: View {
             .navigationDestination(for: AppRouter.Destination.self) { destination in
                 switch destination {
                 case .cardioSessionDetail(let session):
-                    // A healthKitOnly session has no app-recorded detail — its route, heart rate,
-                    // zones, splits, and effort all live in the linked Health workout, so it opens
-                    // directly in the rich HealthWorkoutDetailView. gpsRoute (route map) and
-                    // machineIntervals (interval list) keep the app detail, which still drills into
-                    // Health via its "View in Health" button.
-                    if session.isHealthKitOnly, let workout = session.healthWorkout {
+                    if !session.usesRoute, let workout = session.healthWorkout {
                         HealthWorkoutDetailView(workout: workout)
                     } else {
                         CardioSessionDetailView(session: session, showsCloseButton: false)
@@ -316,7 +305,7 @@ struct CardioTabView: View {
                         switch item {
                         case .session(let session):
                             Button {
-                                router.push(to: .cardioSessionDetail(session))
+                                router.push(to: AppRouter.detailDestination(for: session))
                             } label: {
                                 CardioSessionHistoryRow(session: session)
                             }

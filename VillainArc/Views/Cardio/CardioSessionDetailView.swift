@@ -18,9 +18,9 @@ struct CardioSessionDetailView: View {
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
 
     var body: some View {
-        // Only a session that recorded an app GPS route gets the immersive map. machineIntervals and
-        // healthKitOnly sessions (no app route points) read as a plain scrolling detail, the way a
-        // Health workout does; healthKitOnly drills into the rich Health view via "View in Health".
+        // Only a session that recorded an app GPS route gets the immersive map. Non-route sessions
+        // normally open directly in HealthWorkoutDetailView; this fallback still reads as a plain
+        // scrolling detail when there is no mirrored Health workout yet.
         if session.usesRoute {
             outdoorLayout
         } else {
@@ -230,7 +230,7 @@ struct CardioSessionDetailView: View {
     }
 
     private var openHealthHandler: (() -> Void)? {
-        guard session.healthWorkout != nil else { return nil }
+        guard session.usesRoute, session.healthWorkout != nil else { return nil }
         return openHealthWorkout
     }
 

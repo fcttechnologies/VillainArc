@@ -600,6 +600,13 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         noteNavigationStateChanged()
     }
 
+    static func detailDestination(for cardioSession: CardioSession) -> Destination {
+        guard !cardioSession.usesRoute, let workout = cardioSession.healthWorkout else {
+            return .cardioSessionDetail(cardioSession)
+        }
+        return .healthWorkoutDetail(workout)
+    }
+
     func presentHealthSheet(_ sheet: HealthSheet) {
         Haptics.selection()
         activeHealthSheet = sheet

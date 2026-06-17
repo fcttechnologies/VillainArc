@@ -17,7 +17,7 @@ struct WorkoutHistoryRowView: View {
             case .health(let workout):
                 appRouter.push(to: .healthWorkoutDetail(workout))
             case .cardio(let session):
-                appRouter.push(to: .cardioSessionDetail(session))
+                appRouter.push(to: AppRouter.detailDestination(for: session))
             }
         } label: {
             content

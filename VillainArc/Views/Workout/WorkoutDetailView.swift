@@ -15,9 +15,11 @@ struct WorkoutDetailView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     @State private var showDeleteWorkoutConfirmation: Bool = false
+    @State private var shareImage: Image?
 
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
+    private var shareRenderKey: String { "\(workout.id.uuidString)-\(weightUnit.rawValue)-\(workout.totalVolume)-\(workout.totalSets)" }
 
     init(workout: WorkoutSession, showSheetBackground: Bool = false, showsCloseButton: Bool = false, showsOptionsMenu: Bool = true, scrollToExerciseID: UUID? = nil) {
         self.workout = workout
@@ -64,39 +66,48 @@ struct WorkoutDetailView: View {
                     .fontWeight(.semibold)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if showsOptionsMenu { Menu("Options", systemImage: "ellipsis") {
-                    if let linkedPlan = workout.workoutPlan {
-                        Button("Open Workout Plan", systemImage: "arrowshape.turn.up.right") {
-                            openWorkoutPlan(linkedPlan)
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailOpenWorkoutPlanButton)
-                        .accessibilityHint(AccessibilityText.workoutDetailOpenWorkoutPlanHint)
-                    } else {
-                        Button("Save as Workout Plan", systemImage: "list.clipboard") {
-                            saveWorkoutAsPlan()
-                        }
-                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSaveWorkoutPlanButton)
-                        .accessibilityHint(AccessibilityText.workoutDetailSaveWorkoutPlanHint)
-                    }
-                    Button("Delete Workout", systemImage: "trash", role: .destructive) {
-                        showDeleteWorkoutConfirmation = true
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailDeleteButton)
-                    .accessibilityHint(AccessibilityText.workoutDetailDeleteHint)
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                shareControl {
+                    Image(systemName: "square.and.arrow.up")
                 }
-                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailOptionsMenu)
-                .accessibilityHint(AccessibilityText.workoutDetailOptionsMenuHint)
-                .confirmationDialog("Delete Workout", isPresented: $showDeleteWorkoutConfirmation) {
-                    Button("Delete", role: .destructive) {
-                        deleteWorkout()
+                .accessibilityLabel(Text("Share workout"))
+
+                if showsOptionsMenu {
+                    Menu("Options", systemImage: "ellipsis") {
+                        if let linkedPlan = workout.workoutPlan {
+                            Button("Open Workout Plan", systemImage: "arrowshape.turn.up.right") {
+                                openWorkoutPlan(linkedPlan)
+                            }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailOpenWorkoutPlanButton)
+                            .accessibilityHint(AccessibilityText.workoutDetailOpenWorkoutPlanHint)
+                        } else {
+                            Button("Save as Workout Plan", systemImage: "list.clipboard") {
+                                saveWorkoutAsPlan()
+                            }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailSaveWorkoutPlanButton)
+                            .accessibilityHint(AccessibilityText.workoutDetailSaveWorkoutPlanHint)
+                        }
+                        Button("Delete Workout", systemImage: "trash", role: .destructive) {
+                            showDeleteWorkoutConfirmation = true
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailDeleteButton)
+                        .accessibilityHint(AccessibilityText.workoutDetailDeleteHint)
                     }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailConfirmDeleteButton)
-                } message: {
-                    Text("Are you sure you want to delete this workout?")
-                }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailOptionsMenu)
+                    .accessibilityHint(AccessibilityText.workoutDetailOptionsMenuHint)
+                    .confirmationDialog("Delete Workout", isPresented: $showDeleteWorkoutConfirmation) {
+                        Button("Delete", role: .destructive) {
+                            deleteWorkout()
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailConfirmDeleteButton)
+                    } message: {
+                        Text("Are you sure you want to delete this workout?")
+                    }
                 }
             }
+        }
+        .task(id: shareRenderKey) {
+            renderShareCard()
         }
         .userActivity("com.villainarc.workoutSession.view", element: workout) { session, activity in
             activity.title = session.title
@@ -109,6 +120,35 @@ struct WorkoutDetailView: View {
             let entity = WorkoutSessionEntity(workoutSession: session)
             activity.appEntityIdentifier = .init(for: entity)
         }
+    }
+
+    @ViewBuilder
+    private func shareControl<Label: View>(@ViewBuilder label: () -> Label) -> some View {
+        if let shareImage {
+            ShareLink(item: shareImage, preview: SharePreview(workout.title, image: shareImage), label: label)
+        } else {
+            ShareLink(item: shareableSummary, label: label)
+        }
+    }
+
+    @MainActor
+    private func renderShareCard() {
+        let renderer = ImageRenderer(content: WorkoutShareCard(summary: WorkoutShareSummary(workout: workout, weightUnit: weightUnit)))
+        renderer.scale = 3
+        if let uiImage = renderer.uiImage {
+            shareImage = Image(uiImage: uiImage)
+        }
+    }
+
+    private var shareableSummary: String {
+        var parts = ["\(workout.title): \(workout.totalExercises) exercises", "\(workout.totalSets) sets"]
+        if workout.totalVolume > 0 {
+            parts.append(formattedWeightText(workout.totalVolume, unit: weightUnit, fractionDigits: 0...0))
+        }
+        if workout.totalDuration > 0 {
+            parts.append(secondsToTimeWithHours(Int(workout.totalDuration.rounded())))
+        }
+        return "Just finished \(parts.joined(separator: ", ")) with Villain Arc."
     }
 
     private func deleteWorkout() {

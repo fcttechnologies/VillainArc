@@ -17,7 +17,11 @@ struct CardioSessionContainer: View {
                     .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
             case .done:
                 NavigationStack {
-                    CardioSessionDetailView(session: session, showsCloseButton: true)
+                    if !session.usesRoute, let workout = session.healthWorkout {
+                        HealthWorkoutDetailView(workout: workout, showsCloseButton: true, cardioSession: session)
+                    } else {
+                        CardioSessionDetailView(session: session, showsCloseButton: true)
+                    }
                 }
                 .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
             }
@@ -632,4 +636,3 @@ private struct CardioCountdownOverlay: View {
         .transition(.opacity)
     }
 }
-

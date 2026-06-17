@@ -4,23 +4,18 @@ import SwiftData
 struct RecentWorkoutSectionView: View {
     @Query(WorkoutSession.recent) private var workouts: [WorkoutSession]
     @Query(HealthWorkout.recentStandalone) private var healthWorkouts: [HealthWorkout]
+    @Query(CardioSession.recentCompleted(limit: 1)) private var cardioSessions: [CardioSession]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     private let appRouter = AppRouter.shared
 
     private var recentItem: WorkoutHistoryItem? {
-        let sessionItem = workouts.first.map { WorkoutHistoryItem(source: .session($0)) }
-        let healthItem = healthWorkouts.first.map { WorkoutHistoryItem(source: .health($0)) }
-
-        switch (sessionItem, healthItem) {
-        case let (.some(session), .some(health)):
-            return session.sortDate >= health.sortDate ? session : health
-        case let (.some(session), .none):
-            return session
-        case let (.none, .some(health)):
-            return health
-        case (.none, .none):
-            return nil
-        }
+        [
+            workouts.first.map { WorkoutHistoryItem(source: .session($0)) },
+            healthWorkouts.first.map { WorkoutHistoryItem(source: .health($0)) },
+            cardioSessions.first.map { WorkoutHistoryItem(source: .cardio($0)) }
+        ]
+            .compactMap(\.self)
+            .max { $0.sortDate < $1.sortDate }
     }
 
     private var appSettingsSnapshot: AppSettingsSnapshot {

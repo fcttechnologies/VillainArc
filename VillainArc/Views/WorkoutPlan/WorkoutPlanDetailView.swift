@@ -30,9 +30,18 @@ struct WorkoutPlanDetailView: View {
     @State private var suggestionsInitialTab: WorkoutPlanSuggestionsSheet.Tab = .toReview
     @State private var focusedSuggestionExerciseID: UUID?
     @State private var isDeletingWorkoutPlan = false
+    @State private var shareImage: Image?
 
     private var isSplitAssignmentPreview: Bool {
         splitAssignmentActions != nil
+    }
+
+    private var canSharePlan: Bool {
+        onSelect == nil && !showsUseOnly && !isSplitAssignmentPreview
+    }
+
+    private var shareRenderKey: String {
+        "\(plan.id.uuidString)-\(weightUnit.rawValue)-\(plan.totalVolume)-\(plan.totalSets)-\(completedSessions.count)"
     }
 
     init(plan: WorkoutPlan, showsUseOnly: Bool = false, onSelect: (() -> Void)? = nil, showSheetBackground: Bool = false, showsCloseButton: Bool = false, splitAssignmentActions: SplitAssignmentActions? = nil) {
@@ -194,6 +203,14 @@ struct WorkoutPlanDetailView: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
+                if canSharePlan {
+                    shareControl {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel(Text("Share plan"))
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 if let onSelect {
                     Button("Select") {
                         Haptics.selection()
@@ -285,6 +302,9 @@ struct WorkoutPlanDetailView: View {
                 }
             }
         }
+        .task(id: shareRenderKey) {
+            renderShareCard()
+        }
         .userActivity("com.villainarc.workoutPlan.view", element: plan) { plan, activity in
             activity.title = plan.title
             activity.isEligibleForSearch = true
@@ -296,6 +316,37 @@ struct WorkoutPlanDetailView: View {
             let entity = WorkoutPlanEntity(workoutPlan: plan)
             activity.appEntityIdentifier = .init(for: entity)
         }
+    }
+
+    @ViewBuilder
+    private func shareControl<Label: View>(@ViewBuilder label: () -> Label) -> some View {
+        if let shareImage {
+            ShareLink(item: shareImage, preview: SharePreview(plan.title, image: shareImage), label: label)
+        } else {
+            ShareLink(item: shareableSummary, label: label)
+        }
+    }
+
+    @MainActor
+    private func renderShareCard() {
+        guard canSharePlan else { return }
+        let summary = WorkoutPlanShareSummary(plan: plan, completedSessionCount: completedSessions.count, weightUnit: weightUnit)
+        let renderer = ImageRenderer(content: WorkoutPlanShareCard(summary: summary))
+        renderer.scale = 3
+        if let uiImage = renderer.uiImage {
+            shareImage = Image(uiImage: uiImage)
+        }
+    }
+
+    private var shareableSummary: String {
+        var parts = ["\(plan.title): \(plan.totalExercises) exercises", "\(plan.totalSets) sets"]
+        if plan.totalVolume > 0 {
+            parts.append(formattedWeightText(plan.totalVolume, unit: weightUnit, fractionDigits: 0...0))
+        }
+        if completedSessions.count > 0 {
+            parts.append("\(completedSessions.count) completed \(completedSessions.count == 1 ? "run" : "runs")")
+        }
+        return "Workout plan in Villain Arc: \(parts.joined(separator: ", "))."
     }
 
 private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
