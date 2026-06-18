@@ -24,6 +24,7 @@ struct WorkoutPlansListView: View {
         List {
             ForEach(filteredWorkoutPlans) { plan in
                 WorkoutPlanRowView(workoutPlan: plan)
+                    .villainArcAppEntityIdentifier(WorkoutPlanEntity.self, id: plan.id)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .accessibilityHint(AccessibilityText.workoutPlanRowHint)

@@ -34,6 +34,7 @@ struct WorkoutSplitListView: View {
                             } label: {
                                 splitRowContent(for: activeSplit, isActive: true)
                             }
+                            .villainArcAppEntityIdentifier(WorkoutSplitEntity.self, id: activeSplit.id)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitActiveRow)
                             .accessibilityHint(AccessibilityText.workoutSplitRowHint)
                             .swipeActions(edge: .trailing) {
@@ -71,6 +72,7 @@ struct WorkoutSplitListView: View {
                                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSetActiveButton)
                                     .accessibilityHint(AccessibilityText.workoutSplitSetActiveHint)
                                 }
+                                .villainArcAppEntityIdentifier(WorkoutSplitEntity.self, id: split.id)
                                 .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitInactiveRow(split))
                                 .accessibilityHint(AccessibilityText.workoutSplitRowHint)
                             }

@@ -47,6 +47,7 @@ struct ExercisesListView: View {
         List {
             ForEach(filteredExercises) { exercise in
                 ExerciseSummaryRow(exercise: exercise, history: historyOrdering.history(for: exercise), appSettingsSnapshot: appSettingsSnapshot)
+                    .villainArcAppEntityIdentifier(ExerciseEntity.self, id: exercise.catalogID)
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         favoriteAction(for: exercise)
                     }

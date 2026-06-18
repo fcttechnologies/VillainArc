@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import SwiftData
 import HealthKit
@@ -102,6 +103,7 @@ struct WorkoutsListView: View {
             
             ForEach(visibleItems) { item in
                 WorkoutHistoryRowView(item: item, appSettingsSnapshot: appSettingsSnapshot, deletionSettings: appSettings.first)
+                    .villainArcAppEntityIdentifier(appEntityIdentifier(for: item))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .deleteDisabled(item.session == nil)
@@ -175,6 +177,11 @@ struct WorkoutsListView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
             }
         }
+    }
+
+    private func appEntityIdentifier(for item: WorkoutHistoryItem) -> EntityIdentifier? {
+        guard let session = item.session else { return nil }
+        return EntityIdentifier(for: WorkoutSessionEntity.self, identifier: session.id)
     }
     
     private func workoutTypeFilterChip(_ filter: WorkoutTypeFilter) -> some View {
