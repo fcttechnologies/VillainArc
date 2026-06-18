@@ -1,5 +1,6 @@
 import StoreKit
 import SwiftUI
+import UIKit
 
 /// Full-screen paywall presented globally when a free user taps a gated feature. Reads products
 /// from `SubscriptionStore.shared` and renders monthly + yearly cards with trial copy, restore,
@@ -13,6 +14,7 @@ struct PaywallView: View {
     @State private var selectedProductID: String?
     @State private var isPurchasing = false
     @State private var isRestoring = false
+    @State private var isRedeemingOfferCode = false
     @State private var errorMessage: String?
     @State private var productsState: ProductsLoadState = .loading
 
@@ -303,23 +305,42 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var legalLinks: some View {
-        HStack(spacing: 14) {
-            Button("Terms") { openURL(SubscriptionStore.termsURL) }
-            Button("Privacy") { openURL(SubscriptionStore.privacyURL) }
-            Button("EULA") { openURL(SubscriptionStore.standardEULAURL) }
-            Spacer()
-            Button {
-                Task { await handleRestore() }
-            } label: {
-                if isRestoring {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Text("Restore")
-                }
+        VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                Button("Terms") { openURL(SubscriptionStore.termsURL) }
+                Button("Privacy") { openURL(SubscriptionStore.privacyURL) }
+                Button("EULA") { openURL(SubscriptionStore.standardEULAURL) }
+                Spacer()
             }
-            .accessibilityIdentifier(AccessibilityIdentifiers.paywallRestoreButton)
-            .disabled(isPurchasing || isRestoring)
+            HStack(spacing: 14) {
+                Button {
+                    Task { await handleOfferCodeRedemption() }
+                } label: {
+                    if isRedeemingOfferCode {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Redeem Code")
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.paywallRedeemOfferCodeButton)
+                .disabled(isPurchasing || isRestoring || isRedeemingOfferCode)
+
+                Spacer()
+
+                Button {
+                    Task { await handleRestore() }
+                } label: {
+                    if isRestoring {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Restore")
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.paywallRestoreButton)
+                .disabled(isPurchasing || isRestoring || isRedeemingOfferCode)
+            }
         }
         .font(.caption)
         .tint(.secondary)
@@ -411,6 +432,57 @@ struct PaywallView: View {
             errorMessage = String(localized: "Restore failed. Try again later.")
             AppLog.error("Paywall restore failed", error: error)
         }
+    }
+
+    private func handleOfferCodeRedemption() async {
+        errorMessage = nil
+        isRedeemingOfferCode = true
+        defer { isRedeemingOfferCode = false }
+
+        do {
+            guard let scene = activeWindowScene else {
+                errorMessage = String(localized: "Offer code redemption isn't available right now.")
+                return
+            }
+
+            if #available(iOS 27.0, *) {
+                guard let viewController = scene.keyWindow?.rootViewController?.topPresentedViewController else {
+                    errorMessage = String(localized: "Offer code redemption isn't available right now.")
+                    return
+                }
+                let result = try await AppStore.presentOfferCodeRedeemSheet(from: viewController)
+                guard case let .verified(transaction) = result else {
+                    throw SubscriptionStore.SubscriptionStoreError.verificationFailed
+                }
+                await transaction.finish()
+            } else {
+                try await AppStore.presentOfferCodeRedeemSheet(in: scene)
+            }
+
+            await store.refreshStatus()
+            if store.status.isPro {
+                Haptics.success()
+                PaywallPresenter.shared.dismiss()
+                dismiss()
+            }
+        } catch {
+            Haptics.error()
+            errorMessage = (error as? SubscriptionStore.SubscriptionStoreError)?.localizedDescription
+                ?? String(localized: "Offer code redemption failed. Please try again.")
+            AppLog.error("Offer code redemption failed", error: error)
+        }
+    }
+
+    private var activeWindowScene: UIWindowScene? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+    }
+}
+
+private extension UIViewController {
+    var topPresentedViewController: UIViewController {
+        presentedViewController?.topPresentedViewController ?? self
     }
 }
 

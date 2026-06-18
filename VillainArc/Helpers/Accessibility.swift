@@ -9,6 +9,7 @@ enum AccessibilityIdentifiers {
     static let paywallYearlyOption = "paywallYearlyOption"
     static let paywallSubscribeButton = "paywallSubscribeButton"
     static let paywallRestoreButton = "paywallRestoreButton"
+    static let paywallRedeemOfferCodeButton = "paywallRedeemOfferCodeButton"
     static let paywallPlansLoading = "paywallPlansLoading"
     static let settingsSubscriptionRow = "settingsSubscriptionRow"
     static let settingsSubscriptionGetProButton = "settingsSubscriptionGetProButton"
