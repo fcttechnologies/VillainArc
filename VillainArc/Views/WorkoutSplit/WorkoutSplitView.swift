@@ -381,45 +381,67 @@ struct WorkoutSplitView: View {
     
     private func rotationHeader(for split: WorkoutSplit) -> some View {
         ScrollView(.horizontal) {
-            HStack(spacing: 12) {
-                ForEach(split.sortedDays) { day in
-                    rotationCapsule(for: day, split: split)
-                        .contextMenu {
-                            if !isSwapMode, canSwapRotationDays {
-                                Button {
-                                    startSwapMode(with: day)
-                                } label: {
-                                    Label("Swap Days", systemImage: "arrow.left.arrow.right")
-                                }
-                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapModeButton)
-                                .accessibilityHint(AccessibilityText.workoutSplitSwapModeHint)
-                            }
-                            if split.isActive, day.index != split.rotationCurrentIndex {
-                                Button {
-                                    setCurrentRotationDay(day, split: split)
-                                } label: {
-                                    Label("Set as Current Day", systemImage: "checkmark.circle")
-                                }
-                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationSetCurrentDayButton(day))
-                                .accessibilityHint(AccessibilityText.workoutSplitRotationSetCurrentDayHint)
-                            }
-                            if (split.days?.count ?? 0) > 1 {
-                                Button("Delete Day", systemImage: "trash", role: .destructive) {
-                                    deleteDay(day, from: split)
-                                }
-                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDeleteDayButton(day))
-                                .accessibilityHint(AccessibilityText.workoutSplitDeleteDayHint)
-                            }
-                        }
+            if #available(iOS 27.0, *) {
+                HStack(spacing: 12) {
+                    ForEach(split.sortedDays, id: \.id) { day in
+                        rotationCapsuleWithMenu(for: day, split: split)
+                    }
+                    .reorderable()
+
+                    if !isSwapMode {
+                        addDayCapsule(for: split)
+                    }
                 }
-                if !isSwapMode {
-                    addDayCapsule(for: split)
+                .reorderContainer(for: WorkoutSplitDay.self, isEnabled: !isSwapMode) { difference in
+                    animated(.snappy) {
+                        applyNativeRotationReorder(difference, split: split)
+                    }
+                }
+            } else {
+                HStack(spacing: 12) {
+                    ForEach(split.sortedDays) { day in
+                        rotationCapsuleWithMenu(for: day, split: split)
+                    }
+                    if !isSwapMode {
+                        addDayCapsule(for: split)
+                    }
                 }
             }
         }
         .contentMargins(.horizontal, 20, for: .scrollContent)
         .scrollIndicators(.hidden)
         .scrollClipDisabled()
+    }
+
+    private func rotationCapsuleWithMenu(for day: WorkoutSplitDay, split: WorkoutSplit) -> some View {
+        rotationCapsule(for: day, split: split)
+            .contextMenu {
+                if !isSwapMode, canSwapRotationDays {
+                    Button {
+                        startSwapMode(with: day)
+                    } label: {
+                        Label("Swap Days", systemImage: "arrow.left.arrow.right")
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSwapModeButton)
+                    .accessibilityHint(AccessibilityText.workoutSplitSwapModeHint)
+                }
+                if split.isActive, day.index != split.rotationCurrentIndex {
+                    Button {
+                        setCurrentRotationDay(day, split: split)
+                    } label: {
+                        Label("Set as Current Day", systemImage: "checkmark.circle")
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitRotationSetCurrentDayButton(day))
+                    .accessibilityHint(AccessibilityText.workoutSplitRotationSetCurrentDayHint)
+                }
+                if (split.days?.count ?? 0) > 1 {
+                    Button("Delete Day", systemImage: "trash", role: .destructive) {
+                        deleteDay(day, from: split)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitDeleteDayButton(day))
+                    .accessibilityHint(AccessibilityText.workoutSplitDeleteDayHint)
+                }
+            }
     }
     
     @ViewBuilder
@@ -536,6 +558,8 @@ struct WorkoutSplitView: View {
         
         if isSwapMode {
             capsule
+        } else if #available(iOS 27.0, *) {
+            capsule
         } else {
             capsule
                 .onDrag {
@@ -618,6 +642,39 @@ struct WorkoutSplitView: View {
         for (index, day) in ordered.enumerated() { day.index = index }
         if let currentDay { split.rotationCurrentIndex = currentDay.index }
         scheduleSave(context: context)
+        SpotlightIndexer.index(workoutSplit: split)
+    }
+
+    @available(iOS 27.0, *)
+    private func applyNativeRotationReorder(
+        _ difference: ReorderDifference<PersistentIdentifier, ReorderableSingleCollectionIdentifier>,
+        split: WorkoutSplit
+    ) {
+        let days = split.sortedDays
+        let currentDay = (split.rotationCurrentIndex >= 0 && split.rotationCurrentIndex < days.count)
+            ? days[split.rotationCurrentIndex]
+            : nil
+        let destinationID: PersistentIdentifier?
+        switch difference.destination.position {
+        case .before(let id):
+            destinationID = id
+        case .end:
+            destinationID = nil
+        }
+        let orderedIDs = ReorderSupport.applying(
+            current: days.map(\.id),
+            sources: difference.sources,
+            destinationBefore: destinationID
+        )
+        let daysByID = Dictionary(uniqueKeysWithValues: days.map { ($0.id, $0) })
+
+        for (index, id) in orderedIDs.enumerated() {
+            daysByID[id]?.index = index
+        }
+        if let currentDay {
+            split.rotationCurrentIndex = currentDay.index
+        }
+        saveContext(context: context)
         SpotlightIndexer.index(workoutSplit: split)
     }
     

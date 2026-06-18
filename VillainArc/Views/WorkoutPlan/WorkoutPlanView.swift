@@ -254,13 +254,31 @@ struct WorkoutPlanView: View {
     }
     
     private var exerciseListView: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(plan.sortedExercises.enumerated()), id: \.element.id) { index, exercise in
-                    exerciseEditorRow(for: exercise, index: index)
+        let exercises = plan.sortedExercises
+
+        return ScrollView {
+            if #available(iOS 27.0, *) {
+                LazyVStack(spacing: 0) {
+                    ForEach(exercises, id: \.id) { exercise in
+                        exerciseEditorRow(
+                            for: exercise,
+                            index: exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
+                        )
+                    }
+                    .reorderable()
                 }
+                .reorderContainer(for: ExercisePrescription.self) { difference in
+                    applyNativeExerciseReorder(difference)
+                }
+                .padding()
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                        exerciseEditorRow(for: exercise, index: index)
+                    }
+                }
+                .padding()
             }
-            .padding()
         }
         .scrollIndicators(.hidden)
         .sheetBackground()
@@ -274,7 +292,7 @@ struct WorkoutPlanView: View {
     private func exerciseEditorRow(for exercise: ExercisePrescription, index: Int) -> some View {
         let isDragging = highlightedReorderExerciseID == exercise.id
 
-        HStack(spacing: 14) {
+        let row = HStack(spacing: 14) {
             Button {
                 deleteExercise(exercise)
             } label: {
@@ -326,27 +344,61 @@ struct WorkoutPlanView: View {
         }
         .zIndex(isDragging ? 1 : 0)
         .animation(reduceMotion ? nil : .snappy, value: highlightedReorderExerciseID)
-        .onDrag {
-            draggingExerciseID = exercise.id
-            return NSItemProvider(object: exercise.id.uuidString as NSString)
-        }
-        .onDrop(
-            of: [UTType.text],
-            delegate: WorkoutPlanExerciseDropDelegate(
-                targetExercise: exercise,
-                draggingExerciseID: $draggingExerciseID,
-                highlightedExerciseID: $highlightedReorderExerciseID,
-                onMove: { draggedID, targetID in
-                    animated(.snappy) {
-                        moveExercise(draggedID, to: targetID)
-                    }
-                },
-                onDropCompleted: {
-                    finishExerciseReorder()
-                    saveContext(context: context)
+
+        if #available(iOS 27.0, *) {
+            row
+        } else {
+            row
+                .onDrag {
+                    draggingExerciseID = exercise.id
+                    return NSItemProvider(object: exercise.id.uuidString as NSString)
                 }
-            )
+                .onDrop(
+                    of: [UTType.text],
+                    delegate: WorkoutPlanExerciseDropDelegate(
+                        targetExercise: exercise,
+                        draggingExerciseID: $draggingExerciseID,
+                        highlightedExerciseID: $highlightedReorderExerciseID,
+                        onMove: { draggedID, targetID in
+                            animated(.snappy) {
+                                moveExercise(draggedID, to: targetID)
+                            }
+                        },
+                        onDropCompleted: {
+                            finishExerciseReorder()
+                            saveContext(context: context)
+                        }
+                    )
+                )
+        }
+    }
+
+    @available(iOS 27.0, *)
+    private func applyNativeExerciseReorder(
+        _ difference: ReorderDifference<UUID, ReorderableSingleCollectionIdentifier>
+    ) {
+        let exercises = plan.sortedExercises
+        let destinationID: UUID?
+        switch difference.destination.position {
+        case .before(let id):
+            destinationID = id
+        case .end:
+            destinationID = nil
+        }
+        let orderedIDs = ReorderSupport.applying(
+            current: exercises.map(\.id),
+            sources: difference.sources,
+            destinationBefore: destinationID
         )
+        let exercisesByID = Dictionary(uniqueKeysWithValues: exercises.map { ($0.id, $0) })
+
+        animated(.snappy) {
+            for (index, id) in orderedIDs.enumerated() {
+                exercisesByID[id]?.index = index
+            }
+        }
+        finishExerciseReorder()
+        saveContext(context: context)
     }
     
     private func deleteExercise(offsets: IndexSet) {
