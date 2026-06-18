@@ -459,6 +459,14 @@ enum DebugOperations {
         let split = WorkoutSplit(mode: .weekly); context.insert(split)
         let splitDay = WorkoutSplitDay(weekday: 1, split: split); context.insert(splitDay)
 
+        // Cardio chain
+        let cardioSession = CardioSession(activity: .run, environment: .outdoor); context.insert(cardioSession)
+        let cardioRoutePoint = CardioRoutePoint(index: 0, latitude: 0, longitude: 0, timestamp: .now, session: cardioSession); context.insert(cardioRoutePoint)
+        let cardioMachineInterval = CardioMachineInterval(index: 0, session: cardioSession); context.insert(cardioMachineInterval)
+
+        // Hydration day
+        let hydrationDay = HydrationDay(); context.insert(hydrationDay)
+
         try context.save()
         AppLog.info("Debug touchAllModels: all model tables touched.")
 
@@ -475,6 +483,8 @@ enum DebugOperations {
             exercise, plan, prescription, setPrescription,
             session, performance, setPerformance,
             split, splitDay,
+            cardioSession, cardioRoutePoint, cardioMachineInterval,
+            hydrationDay,
         ]
         for obj in toDelete { context.delete(obj) }
         try context.save()
