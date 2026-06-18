@@ -108,6 +108,13 @@
               "displayPrice" : "39.99",
               "internalID" : "6773965537_BILLED_UPFRONT",
               "isEnabled" : true
+            },
+            {
+              "billingPlanType" : "MONTHLY",
+              "commitmentDisplayPrice" : "47.88",
+              "displayPrice" : "3.99",
+              "internalID" : "6773965537_MONTHLY",
+              "isEnabled" : true
             }
           ],
           "codeOffers" : [
