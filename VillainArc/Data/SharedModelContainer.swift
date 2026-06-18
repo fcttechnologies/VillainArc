@@ -11,7 +11,7 @@ enum SharedModelContainer {
         return defaults
     }()
 
-    nonisolated static let schema = Schema(versionedSchema: VillainArcSchemaV5.self)
+    nonisolated static let schema = Schema(versionedSchema: VillainArcSchemaV6.self)
 
     nonisolated static let container: ModelContainer = {
         do {
