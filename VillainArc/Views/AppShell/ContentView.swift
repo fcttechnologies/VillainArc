@@ -92,6 +92,9 @@ struct ContentView: View {
             case let .profileSettings(destination):
                 ProfileSheetView(initialSettingsDestination: destination)
                     .presentationBackground(Color.sheetBg)
+            case .askVillainArc:
+                AskVillainArcView()
+                    .presentationBackground(Color.sheetBg)
             }
         }
         .sheet(isPresented: addWeightEntrySheetBinding) {
@@ -223,6 +226,13 @@ struct ContentView: View {
             ExpandedAction("Update Status", icon: "figure.run", accessibilityIdentifier: "morphing_training_condition_button", accessibilityHint: "Opens your training condition editor.") {
                 collapseMorphingTabBar()
                 router.presentHealthSheet(.trainingConditionEditor)
+            }
+        )
+
+        actions.append(
+            ExpandedAction("Ask AI", icon: "sparkles", accessibilityIdentifier: AccessibilityIdentifiers.askVillainArcOpenButton, accessibilityHint: "Opens the Ask Villain Arc assistant.") {
+                collapseMorphingTabBar()
+                router.presentAppSheet(.askVillainArc)
             }
         )
 
