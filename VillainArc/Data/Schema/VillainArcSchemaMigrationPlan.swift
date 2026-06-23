@@ -9,13 +9,12 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
             VillainArcSchemaV2.self,
             VillainArcSchemaV3.self,
             VillainArcSchemaV4.self,
-            VillainArcSchemaV5.self,
-            VillainArcSchemaV6.self
+            VillainArcSchemaV5.self
         ]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6]
+        [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5]
     }
 
     static let migrateV1toV2 = MigrationStage.custom(fromVersion: VillainArcSchemaV1.self, toVersion: VillainArcSchemaV2.self, willMigrate: nil) { context in
@@ -52,7 +51,7 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
     }
 
     static let migrateV4toV5 = MigrationStage.custom(fromVersion: VillainArcSchemaV4.self, toVersion: VillainArcSchemaV5.self, willMigrate: nil) { context in
-        let settings = try context.fetch(FetchDescriptor<VillainArcSchemaV5.AppSettings>())
+        let settings = try context.fetch(FetchDescriptor<AppSettings>())
         for setting in settings {
             setting.temperatureUnit = .systemDefault
             setting.previousSetReferenceSource = .anyWorkout
@@ -62,7 +61,7 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
             setting.autoCompleteSetAfterRPE = true
         }
 
-        let syncStates = try context.fetch(FetchDescriptor<VillainArcSchemaV5.HealthSyncState>())
+        let syncStates = try context.fetch(FetchDescriptor<HealthSyncState>())
         for syncState in syncStates {
             syncState.heartRateSyncedRangeStart = nil
             syncState.heartRateSyncedRangeEnd = nil
@@ -83,5 +82,4 @@ enum VillainArcSchemaMigrationPlan: SchemaMigrationPlan {
         try context.save()
     }
 
-    static let migrateV5toV6 = MigrationStage.custom(fromVersion: VillainArcSchemaV5.self, toVersion: VillainArcSchemaV6.self, willMigrate: nil) { _ in }
 }
