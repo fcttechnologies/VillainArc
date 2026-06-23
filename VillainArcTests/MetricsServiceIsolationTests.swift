@@ -45,7 +45,7 @@ struct MetricsServiceIsolationTests {
     @Test
     func stateReportingDomainsAreStable() {
         let domains = MetricsService.Domain.allCases
-        #expect(domains.count == 5)
+        #expect(domains.count == 6)
         #expect(Set(domains.map(\.rawValue)).count == domains.count)
         #expect(domains.allSatisfy { $0.rawValue.hasPrefix("com.fcttechnologies.villainarc.") })
         #expect(domains.allSatisfy { !$0.rawValue.contains(" ") })
