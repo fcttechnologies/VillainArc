@@ -39,6 +39,12 @@ MCP-ready assistant.
   `saveContext` + the relevant `HealthMetricWidgetReloader` reload.
 - **Navigation**: `.foreground` / `.foreground(.dynamic)`, routing through `AppRouter` /
   `HealthNavigationIntentSupport`.
+- **Execution targets (iOS 27)**: every state-writing intent (starts, finishes, cancels,
+  deletes, creates, adds, toggles, goal/condition mutations, rest-timer controls) is pinned to
+  the main app process via `static var allowedExecutionTargets: IntentExecutionTargets { .main }`,
+  declared per-intent in `Intents/IntentExecutionPolicies.swift` (gated `@available(iOS 27.0, *)`).
+  Writes never run in an extension or remote target. `AppIntentExecutionPolicyTests` asserts the
+  full list stays `.main`. Pure data-read and navigation intents are unrestricted.
 
 ---
 
@@ -73,7 +79,7 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 
 | Action / view | Intent |
 |---|---|
-| Add an exercise | ✅ `AddExerciseIntent` |
+| Add an exercise | ✅ `AddExerciseIntent` (+ `LiveActivityAddExerciseIntent` from the live workout Live Activity) |
 | Add multiple exercises | ✅ `AddExercisesIntent` |
 | Replace the current exercise | ✅ `ReplaceExerciseIntent` |
 | Open an exercise (progress/history) | ✅ `OpenExerciseIntent` |
@@ -201,6 +207,15 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 absent. Add them only when there is a product need for a user-facing export or assistant
 sync path, and include nutrition/workout/cardio history deliberately instead of shipping a
 partial dump by accident. Use `IntentFile` for that surface, not a large returned string.
+
+**Ask Villain Arc (not an App Intent).** The conversational assistant
+(`AskVillainArcAssistant` + `AskVillainArcView`) answers natural-language questions over the
+user's indexed data through the iOS 27 `SpotlightSearchTool`, scoped to the app's own
+CoreSpotlight index. It is read-only by construction (the Spotlight tool conforms to `SafeTool`
+and is vetted read-only; see `AIToolSafety.swift`) and complements — does not replace — the
+intent surface above: actions and writes still flow through the intents, the assistant only
+reads and explains. It is gated behind iOS 27 + Apple Intelligence, with a History/Trends
+fallback.
 
 ---
 
