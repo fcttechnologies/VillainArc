@@ -8,7 +8,9 @@ struct AITrainingStyleClassifier {
         let model = SystemLanguageModel.default
         guard case .available = model.availability else { return nil }
 
-        let tools: [any Tool] = [RecentExercisePerformancesTool()]
+        // Route through the agentic-safety policy: every tool is asserted read-only and on the
+        // allowlist before it can reach the session ("AI reads, user confirms writes").
+        let tools = AIToolSafetyPolicy.vettedTools([RecentExercisePerformancesTool()])
 
         let input = AIInferenceInput(performance: performance)
 

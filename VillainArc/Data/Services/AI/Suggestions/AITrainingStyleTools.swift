@@ -2,7 +2,9 @@ import Foundation
 import FoundationModels
 import SwiftData
 
-struct RecentExercisePerformancesTool: Tool, Sendable {
+struct RecentExercisePerformancesTool: SafeTool, Sendable {
+    static let capability: AIToolCapability = .readOnly
+
     let name = "getRecentExercisePerformances"
     let description = "Fetch up to 3 recent exercise performances, newest first. Use only when the current workout is ambiguous."
 
