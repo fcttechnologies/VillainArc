@@ -82,13 +82,6 @@ final class SubscriptionStore {
     /// a `Transaction.updates` listener, then fetches products + current entitlements.
     func start() {
         guard !hasStarted else { return }
-        // Under the unit-test host, don't attach the background `Transaction.updates` listener or
-        // kick off the launch-time load: the StoreKit integration tests drive this shared store
-        // deterministically against their own `SKTestSession`, and a launch-time listener bound to
-        // the host's StoreKit context deadlocks `product.purchase()` in those tests. Production app
-        // launch (no test env var) starts normally; tests call `loadProducts()`/`refreshStatus()`
-        // explicitly.
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return }
         hasStarted = true
 
         prewarmFromCache()
