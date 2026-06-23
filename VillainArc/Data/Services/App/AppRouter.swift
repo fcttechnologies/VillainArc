@@ -61,6 +61,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         case profile
         case settings
         case profileSettings(AppSettingsDestination?)
+        case askVillainArc
 
         var id: String {
             switch self {
@@ -70,6 +71,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
                 return "settings"
             case let .profileSettings(destination):
                 return "profileSettings.\(destination?.rawValue ?? "root")"
+            case .askVillainArc:
+                return "askVillainArc"
             }
         }
     }

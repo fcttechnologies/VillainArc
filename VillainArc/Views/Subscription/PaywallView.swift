@@ -12,6 +12,7 @@ struct PaywallView: View {
     @Environment(\.openURL) private var openURL
     @State private var store = SubscriptionStore.shared
     @State private var selectedProductID: String?
+    @State private var selectsAnnualCommitment = false
     @State private var isPurchasing = false
     @State private var isRestoring = false
     @State private var isRedeemingOfferCode = false
@@ -24,8 +25,24 @@ struct PaywallView: View {
     private var yearly: Product? { store.yearlyProduct }
 
     private var selectedProduct: Product? {
-        guard let id = selectedProductID else { return yearly ?? monthly }
+        guard let id = selectedProductID else { return monthly ?? yearly }
         return store.products.first { $0.id == id }
+    }
+
+    @available(iOS 26.4, *)
+    private var annualCommitmentTerms: Product.SubscriptionInfo.PricingTerms? {
+        yearly?.subscription?.pricingTerms.first { $0.billingPlanType == .monthly }
+    }
+
+    private var selectedIncludesFreeTrial: Bool {
+        guard store.isEligibleForIntroOffer, let selectedProduct else { return false }
+        if selectsAnnualCommitment {
+            if #available(iOS 26.4, *), let terms = annualCommitmentTerms {
+                return terms[offers: .introductory].contains { $0.paymentMode == .freeTrial }
+            }
+            return false
+        }
+        return selectedProduct.subscription?.introductoryOffer?.paymentMode == .freeTrial
     }
 
     private var canPurchase: Bool {
@@ -43,7 +60,7 @@ struct PaywallView: View {
     }
 
     private var ctaTitle: LocalizedStringResource {
-        store.isEligibleForIntroOffer ? "Start Free Trial" : "Subscribe"
+        selectedIncludesFreeTrial ? "Start Free Trial" : "Subscribe"
     }
 
     var body: some View {
@@ -154,6 +171,9 @@ struct PaywallView: View {
             VStack(spacing: 12) {
                 if let yearly {
                     planCard(for: yearly, isYearly: true)
+                    if #available(iOS 26.4, *), let terms = annualCommitmentTerms {
+                        annualCommitmentCard(for: yearly, terms: terms)
+                    }
                 }
                 if let monthly {
                     planCard(for: monthly, isYearly: false)
@@ -189,10 +209,11 @@ struct PaywallView: View {
 
     @ViewBuilder
     private func planCard(for product: Product, isYearly: Bool) -> some View {
-        let isSelected = selectedProductID == product.id
+        let isSelected = selectedProductID == product.id && !selectsAnnualCommitment
         Button {
             Haptics.selection()
             selectedProductID = product.id
+            selectsAnnualCommitment = false
         } label: {
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
@@ -259,6 +280,79 @@ struct PaywallView: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    @available(iOS 26.4, *)
+    @ViewBuilder
+    private func annualCommitmentCard(
+        for product: Product,
+        terms: Product.SubscriptionInfo.PricingTerms
+    ) -> some View {
+        let isSelected = selectedProductID == product.id && selectsAnnualCommitment
+        Button {
+            Haptics.selection()
+            selectedProductID = product.id
+            selectsAnnualCommitment = true
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+                    if isSelected {
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text("Annual commitment")
+                            .font(.headline)
+                            .fontDesign(.rounded)
+                        Text("Pay monthly")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.blue.opacity(0.18), in: Capsule())
+                            .foregroundStyle(.blue)
+                    }
+                    Text("\(terms.billingDisplayPrice) each month for 12 months")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(terms.billingDisplayPrice)
+                        .font(.headline)
+                        .fontDesign(.rounded)
+                    Text("\(terms.commitmentInfo.displayPrice) total")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.10) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.secondary.opacity(0.25), lineWidth: isSelected ? 2 : 1)
+            )
+            .appCardStyle()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Annual commitment plan")
+        .accessibilityValue("\(terms.billingDisplayPrice) per month for 12 months. \(terms.commitmentInfo.displayPrice) total commitment.")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
     private func periodSubtitle(for product: Product, isYearly: Bool) -> String {
         if store.isEligibleForIntroOffer,
            let intro = product.subscription?.introductoryOffer,
@@ -291,7 +385,7 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var trialFooter: some View {
-        let text: LocalizedStringResource = store.isEligibleForIntroOffer
+        let text: LocalizedStringResource = selectedIncludesFreeTrial
             ? "7-day free trial. Cancel anytime in Settings. Subscription auto-renews until cancelled."
             : "Cancel anytime in Settings. Subscription auto-renews until cancelled."
         Text(text)
@@ -392,7 +486,7 @@ struct PaywallView: View {
         }
         productsState = store.products.isEmpty ? .failed : .loaded
         if selectedProductID == nil {
-            selectedProductID = (yearly ?? monthly)?.id
+            selectedProductID = (monthly ?? yearly)?.id
         }
     }
 
@@ -402,7 +496,13 @@ struct PaywallView: View {
         isPurchasing = true
         defer { isPurchasing = false }
         do {
-            if try await store.purchase(product) != nil {
+            let transaction: StoreKit.Transaction?
+            if selectsAnnualCommitment, #available(iOS 26.4, *) {
+                transaction = try await store.purchase(product, billingPlanType: .monthly)
+            } else {
+                transaction = try await store.purchase(product)
+            }
+            if transaction != nil {
                 Haptics.success()
                 PaywallPresenter.shared.dismiss()
                 dismiss()

@@ -516,6 +516,10 @@ private struct WorkoutPreferencesView: View {
         activeWorkout != nil || activeCardio != nil
     }
 
+    private var cardioLiveActivityMetricsSummary: String {
+        CardioLiveActivityMetricStore.load().metrics.map(\.displayName).joined(separator: ", ")
+    }
+
     private func restartActiveLiveActivity() {
         if let activeWorkout {
             WorkoutActivityManager.restart(workout: activeWorkout)
@@ -618,7 +622,17 @@ private struct WorkoutPreferencesView: View {
                 Toggle("Show Live Activity", isOn: $settings.liveActivitiesEnabled)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSettingsLiveActivitiesToggle)
                     .accessibilityHint(AccessibilityText.workoutSettingsLiveActivitiesHint)
-                    .appGroupedListRow(position: settings.liveActivitiesEnabled && systemLiveActivitiesAvailable && hasActiveLiveActivitySession ? .top : .single)
+                    .appGroupedListRow(position: settings.liveActivitiesEnabled ? .top : .single)
+
+                if settings.liveActivitiesEnabled {
+                    NavigationLink {
+                        CardioLiveActivityMetricPickerView()
+                    } label: {
+                        LabeledContent("Cardio Metrics", value: cardioLiveActivityMetricsSummary)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioLiveActivityMetricsRow)
+                    .appGroupedListRow(position: (systemLiveActivitiesAvailable && hasActiveLiveActivitySession) ? .middle : .bottom)
+                }
 
                 if settings.liveActivitiesEnabled && systemLiveActivitiesAvailable, hasActiveLiveActivitySession {
                     Button("Restart Live Activity", systemImage: "arrow.clockwise") {

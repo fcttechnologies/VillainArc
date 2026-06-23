@@ -1,0 +1,42 @@
+import CoreSpotlight
+import FoundationModels
+import Testing
+
+@testable import VillainArc
+
+/// Wiring + gating + safety-boundary coverage for the Ask Villain Arc assistant. On-device answer
+/// quality is a later with-Fernando device pass; these checks are model-free.
+struct AskVillainArcAssistantTests {
+    @Test func availability_matchesIsAvailableFlag() {
+        // The convenience flag must agree with the detailed availability case.
+        #expect(AskVillainArcAssistant.isAvailable == AskVillainArcAssistant.availability.isAvailable)
+    }
+
+    @Test func availability_onlyAvailableCaseReportsAvailable() {
+        #expect(AskVillainArcAssistant.Availability.available.isAvailable)
+        #expect(AskVillainArcAssistant.Availability.requiresNewerOS.isAvailable == false)
+        #expect(AskVillainArcAssistant.Availability.modelUnavailable.isAvailable == false)
+    }
+
+    @Test func instructions_declareReadOnlyPrivateDataBoundary() {
+        let instructions = AskVillainArcAssistant.instructions.lowercased()
+        // The system prompt must state the read-only boundary and the private-data scope.
+        #expect(instructions.contains("only read") || instructions.contains("can only read"))
+        #expect(instructions.contains("never invent") || instructions.contains("only use the user"))
+        #expect(instructions.contains("history") || instructions.contains("trends"))
+    }
+
+    @Test @available(iOS 27.0, *)
+    func spotlightTool_isReadOnly() {
+        #expect(SpotlightSearchTool.capability == .readOnly)
+    }
+
+    @Test @available(iOS 27.0, *)
+    func makeSpotlightTool_producesAVettableReadOnlyTool() {
+        let tool = AskVillainArcAssistant.makeSpotlightTool()
+        // vettedSpotlightTools precondition-fails on a non-read-only tool; reaching a non-empty
+        // result proves the assistant's tool passes the safety gate.
+        let vetted = AIToolSafetyPolicy.vettedSpotlightTools([tool])
+        #expect(vetted.count == 1)
+    }
+}

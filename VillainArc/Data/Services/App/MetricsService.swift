@@ -27,6 +27,7 @@ nonisolated final class MetricsService: NSObject, MXMetricManagerSubscriber, @un
         case healthSync = "com.fcttechnologies.villainarc.health-sync"
         case aiPlanGeneration = "com.fcttechnologies.villainarc.ai-plan-generation"
         case aiExerciseReplacement = "com.fcttechnologies.villainarc.ai-exercise-replacement"
+        case askAssistant = "com.fcttechnologies.villainarc.ask-assistant"
         case subscriptionEntitlementRefresh = "com.fcttechnologies.villainarc.subscription-entitlement-refresh"
 
         @available(iOS 27.0, *)

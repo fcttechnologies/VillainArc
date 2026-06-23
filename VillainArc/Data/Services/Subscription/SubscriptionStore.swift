@@ -207,7 +207,24 @@ final class SubscriptionStore {
 
     /// Returns the finished transaction on success, `nil` if the user cancelled or the purchase is pending.
     func purchase(_ product: Product) async throws -> Transaction? {
-        let result = try await product.purchase()
+        try await purchase(product, options: [])
+    }
+
+    /// Purchases a specific billing plan for a subscription product. A one-year product can
+    /// offer both up-front billing and monthly billing with a 12-month commitment.
+    @available(iOS 26.4, *)
+    func purchase(
+        _ product: Product,
+        billingPlanType: Product.SubscriptionInfo.BillingPlanType
+    ) async throws -> Transaction? {
+        try await purchase(product, options: [.billingPlanType(billingPlanType)])
+    }
+
+    private func purchase(
+        _ product: Product,
+        options: Set<Product.PurchaseOption>
+    ) async throws -> Transaction? {
+        let result = try await product.purchase(options: options)
         switch result {
         case let .success(verification):
             switch verification {
