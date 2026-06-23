@@ -1004,8 +1004,7 @@ private struct DebugSettingsView: View {
     @State private var isWorking = false
     @State private var statusMessage = "Ready"
     @State private var showsResetConfirmation = false
-    @State private var showsWhatsNewPreview = false
-    @State private var showsOnboardingTour = false
+    @State private var introPreview: WhatsNewPresentation?
 
     private var healthStatusText: String {
         #if targetEnvironment(simulator)
@@ -1027,15 +1026,17 @@ private struct DebugSettingsView: View {
             }
 
             Section {
-                Button("Show What's New", systemImage: "sparkles") {
+                Button("Show Welcome", systemImage: "hand.wave") {
                     Haptics.selection()
-                    showsWhatsNewPreview = true
+                    introPreview = WhatsNewPresentation(kind: .welcome, features: WhatsNewCatalog.welcomeHighlights)
                 }
                 .appGroupedListRow(position: .top)
 
-                Button("Show Onboarding Tour", systemImage: "rectangle.stack.fill") {
+                Button("Show What's New", systemImage: "sparkles") {
                     Haptics.selection()
-                    showsOnboardingTour = true
+                    let current = WhatsNewPreferences.currentVersion
+                    let features = WhatsNewCatalog.featuresIntroduced(after: "0", throughIncluding: current)
+                    introPreview = WhatsNewPresentation(kind: .whatsNew(version: current), features: features)
                 }
                 .appGroupedListRow(position: .bottom)
             } header: {
@@ -1136,17 +1137,12 @@ private struct DebugSettingsView: View {
         } message: {
             Text("This clears local app data and recreates the minimum records needed for testing.")
         }
-        .sheet(isPresented: $showsWhatsNewPreview) {
-            WhatsNewSheet(version: WhatsNewPreferences.currentVersion) {
-                showsWhatsNewPreview = false
+        .sheet(item: $introPreview) { presentation in
+            WhatsNewSheet(presentation: presentation) {
+                introPreview = nil
             }
             .presentationBackground(Color.sheetBg)
             .presentationDetents([.large])
-        }
-        .fullScreenCover(isPresented: $showsOnboardingTour) {
-            OnboardingSlideshowView {
-                showsOnboardingTour = false
-            }
         }
     }
 

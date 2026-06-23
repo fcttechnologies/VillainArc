@@ -421,7 +421,7 @@ enum DebugOperations {
         let suggestionEvent = SuggestionEvent(); context.insert(suggestionEvent)
         let prescriptionChange = PrescriptionChange(); context.insert(prescriptionChange)
         let suggestionEval = SuggestionEvaluation(); context.insert(suggestionEval)
-        let healthWorkout = HealthWorkout(workout: HKWorkout(activityType: .other, start: .now, end: .now)); context.insert(healthWorkout)
+        let healthWorkout = HealthWorkout(debugPlaceholder: true); context.insert(healthWorkout)
         let restTimeHistory = RestTimeHistory(seconds: 90); context.insert(restTimeHistory)
         let trainingGoal = TrainingGoal(kind: .generalTraining); context.insert(trainingGoal)
         let trainingCondition = TrainingConditionPeriod(kind: .sick, trainingImpact: .contextOnly); context.insert(trainingCondition)

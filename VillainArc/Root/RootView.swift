@@ -4,8 +4,7 @@ import SwiftData
 
 struct RootView: View {
     @State private var onboardingManager = OnboardingManager()
-    @State private var showWhatsNew = false
-    @State private var showOnboardingSlideshow = false
+    @State private var whatsNewPresentation: WhatsNewPresentation?
     @Query(AppSettings.single) private var appSettings: [AppSettings]
 
     private var onboardingBinding: Binding<Bool> {
@@ -39,10 +38,11 @@ struct RootView: View {
                     await NotificationCoordinator.requestAuthorizationIfNeededAfterOnboarding()
                     await WeeklyHealthCoachingCoordinator.shared.refreshSchedule()
                 }
-                if !OnboardingSlideshowPreferences.hasSeenSlideshow {
-                    showOnboardingSlideshow = true
-                } else if WhatsNewPreferences.shouldShowWhatsNew {
-                    showWhatsNew = true
+                if let presentation = WhatsNewPreferences.presentationOnLaunch() {
+                    whatsNewPresentation = presentation
+                } else {
+                    // Nothing to show — advance the pointer so we don't recompute next launch.
+                    WhatsNewPreferences.markCurrentVersionSeen()
                 }
             }
             .sheet(isPresented: onboardingBinding) {
@@ -51,22 +51,16 @@ struct RootView: View {
                     .interactiveDismissDisabled(true)
                     .presentationDragIndicator(.hidden)
             }
-            .sheet(isPresented: $showWhatsNew) {
-                WhatsNewSheet(version: WhatsNewPreferences.currentVersion) {
-                    WhatsNewPreferences.markCurrentVersionSeen()
-                    showWhatsNew = false
+            .sheet(item: $whatsNewPresentation, onDismiss: {
+                // Fires on any dismissal (button or swipe), so a swipe-away still marks the
+                // version seen and the sheet doesn't reappear next launch.
+                WhatsNewPreferences.markCurrentVersionSeen()
+            }) { presentation in
+                WhatsNewSheet(presentation: presentation) {
+                    whatsNewPresentation = nil
                 }
                 .presentationBackground(Color.sheetBg)
                 .presentationDetents([.large])
-            }
-            .fullScreenCover(isPresented: $showOnboardingSlideshow) {
-                OnboardingSlideshowView {
-                    OnboardingSlideshowPreferences.hasSeenSlideshow = true
-                    showOnboardingSlideshow = false
-                    if WhatsNewPreferences.shouldShowWhatsNew {
-                        showWhatsNew = true
-                    }
-                }
             }
     }
 

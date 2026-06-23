@@ -211,6 +211,12 @@
 				Data/Models/WorkoutSplit/WorkoutSplit.swift,
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
 				Data/Protocols/RestTimeEditable.swift,
+				Data/Schema/VillainArcSchemaMigrationPlan.swift,
+				Data/Schema/VillainArcSchemaV1.swift,
+				Data/Schema/VillainArcSchemaV2.swift,
+				Data/Schema/VillainArcSchemaV3.swift,
+				Data/Schema/VillainArcSchemaV4.swift,
+				Data/Schema/VillainArcSchemaV5.swift,
 				Data/Services/AI/Shared/FoundationModelPrewarmer.swift,
 				Data/Services/App/AppLog.swift,
 				Data/Services/App/AppRouter.swift,
@@ -229,12 +235,6 @@
 				Data/Services/Training/TrainingConditionStore.swift,
 				Data/Services/Workout/RestTimerState.swift,
 				Data/SharedModelContainer.swift,
-				Data/Schema/VillainArcSchemaV1.swift,
-				Data/Schema/VillainArcSchemaV2.swift,
-				Data/Schema/VillainArcSchemaV3.swift,
-				Data/Schema/VillainArcSchemaV4.swift,
-				Data/Schema/VillainArcSchemaV5.swift,
-				Data/Schema/VillainArcSchemaMigrationPlan.swift,
 				Helpers/ExerciseSearch.swift,
 				Helpers/FormattingHelpers.swift,
 				Helpers/Haptics.swift,
@@ -263,11 +263,6 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		7B89D629E41F1B3517458F81 /* VillainArcUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = VillainArcUITests;
-			sourceTree = "<group>";
-		};
 		FD68245D2F33A712009F6D98 /* VillainArcTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = VillainArcTests;
@@ -375,7 +370,6 @@
 				FD68245D2F33A712009F6D98 /* VillainArcTests */,
 				FD93E5E52F3051FD009569BB /* Frameworks */,
 				FDA193912F16D14500CA57C5 /* Products */,
-				7B89D629E41F1B3517458F81 /* VillainArcUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -406,9 +400,6 @@
 			);
 			dependencies = (
 				7EC23CD6FEAED390C2D9A7C4 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				7B89D629E41F1B3517458F81 /* VillainArcUITests */,
 			);
 			name = VillainArcUITests;
 			productName = VillainArcUITests;
@@ -668,7 +659,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -697,7 +688,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -725,7 +716,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
@@ -752,7 +743,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
@@ -780,7 +771,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcIntentsExtension/VillainArcIntentsExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
@@ -817,7 +808,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcIntentsExtension/VillainArcIntentsExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcIntentsExtension/Info.plist;
@@ -856,7 +847,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
@@ -895,7 +886,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArcWidgetExtensionExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VillainArcWidgetExtension/Info.plist;
@@ -1062,7 +1053,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArc/VillainArc.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1111,7 +1102,7 @@
 				CODE_SIGN_ENTITLEMENTS = VillainArc/VillainArc.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X26SC78YDG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

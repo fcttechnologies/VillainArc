@@ -1,31 +1,21 @@
 import SwiftUI
 
-struct WhatsNewFeature: Identifiable {
-    let id = UUID()
-    let icon: String
-    let iconColor: Color
-    let title: LocalizedStringResource
-    let description: LocalizedStringResource
-}
-
+// Welcome / What's New sheet. The presentation (welcome vs whatsNew + its features)
+// is decided by WhatsNewPreferences.presentationOnLaunch; this view only renders it.
+// Feature/release/catalog types live in WhatsNewCatalog.swift.
 struct WhatsNewSheet: View {
-    let version: String
+    let presentation: WhatsNewPresentation
     let onDismiss: () -> Void
 
-    private let features: [WhatsNewFeature] = [
-        WhatsNewFeature(icon: "figure.run.treadmill", iconColor: .orange, title: "Cardio with Routes", description: "Run, walk, or treadmill, mapped live."),
-        WhatsNewFeature(icon: "sparkles", iconColor: .yellow, title: "AI Plan Generation", description: "Build a full program from a sentence. (Pro)"),
-        WhatsNewFeature(icon: "arrow.triangle.2.circlepath", iconColor: .blue, title: "AI Exercise Swaps", description: "Smart replacements for your goal and level. (Pro)"),
-        WhatsNewFeature(icon: "chart.xyaxis.line", iconColor: .pink, title: "Health Insights", description: "Trends, sleep timing, and correlations. (Pro)"),
-        WhatsNewFeature(icon: "drop.fill", iconColor: .cyan, title: "Hydration Tracking", description: "Log water and hit a daily goal."),
-        WhatsNewFeature(icon: "person.crop.circle.fill", iconColor: .indigo, title: "Profile & Streaks", description: "Stats, muscle map, and a complete-day heatmap.")
-    ]
+    private var isWelcome: Bool {
+        presentation.kind == .welcome
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    versionHeader
+                    header
                     featuresSection
                 }
                 .padding(.horizontal, 20)
@@ -34,7 +24,7 @@ struct WhatsNewSheet: View {
             }
             .scrollContentBackground(.hidden)
             .sheetBackground()
-            .navigationTitle("What's New")
+            .navigationTitle(isWelcome ? "Welcome to Villain Arc" : "What's New")
             .toolbarTitleDisplayMode(.inlineLarge)
             .safeAreaBar(edge: .bottom) {
                 continueBar
@@ -43,16 +33,25 @@ struct WhatsNewSheet: View {
         }
     }
 
-    private var versionHeader: some View {
-        Text("Version \(version)")
-            .font(.headline.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .fontDesign(.rounded)
+    @ViewBuilder
+    private var header: some View {
+        switch presentation.kind {
+        case .welcome:
+            Text("Here's what you can do.")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .fontDesign(.rounded)
+        case .whatsNew(let version):
+            Text("Version \(version)")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .fontDesign(.rounded)
+        }
     }
 
     private var featuresSection: some View {
         VStack(alignment: .leading, spacing: 28) {
-            ForEach(features) { feature in
+            ForEach(presentation.features) { feature in
                 featureRow(feature)
             }
         }
@@ -87,7 +86,7 @@ struct WhatsNewSheet: View {
         Button {
             onDismiss()
         } label: {
-            Text("Continue")
+            Text(isWelcome ? "Get Started" : "Continue")
                 .fontWeight(.semibold)
                 .font(.title3)
                 .padding(.vertical, 5)
@@ -97,11 +96,16 @@ struct WhatsNewSheet: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .accessibilityIdentifier("whats_new_continue_button")
-        .accessibilityHint(Text("Closes the What's New sheet and continues to the app."))
+        .accessibilityHint(Text(isWelcome ? "Closes the welcome screen and enters the app." : "Closes the What's New sheet and continues to the app."))
     }
 }
 
-#Preview {
-    WhatsNewSheet(version: "1.3") {}
+#Preview("Welcome") {
+    WhatsNewSheet(presentation: WhatsNewPresentation(kind: .welcome, features: WhatsNewCatalog.welcomeHighlights)) {}
+        .presentationBackground(Color.sheetBg)
+}
+
+#Preview("What's New") {
+    WhatsNewSheet(presentation: WhatsNewPresentation(kind: .whatsNew(version: "1.4"), features: WhatsNewCatalog.releases.first?.features ?? [])) {}
         .presentationBackground(Color.sheetBg)
 }

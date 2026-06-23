@@ -215,16 +215,25 @@ That means reinstall behaves like:
 
 The app takes the first-bootstrap path again, waits for cloud import, then seeds/syncs against the imported store.
 
-## Post-Ready Education Surfaces
+## Post-Ready Education Surface
 
-After the post-ready Health pass, `RootView` decides whether to present a one-time education surface:
+After the post-ready Health pass, `RootView` asks `WhatsNewPreferences.presentationOnLaunch()` what (if anything) to present as a one-time sheet. There is a single surface — the `WhatsNewSheet` — rendered in one of two modes:
 
-- **Onboarding slideshow** (`OnboardingSlideshowView`): shown on first launch after `.ready` if `OnboardingSlideshowPreferences.hasSeenSlideshow == false`. Four-screenshot paging TabView. Marks `hasSeenSlideshow = true` on dismiss.
-- **What's New sheet** (`WhatsNewSheet`): shown after a version bump if `WhatsNewPreferences.shouldShowWhatsNew == true`. Apple-style modal listing the v1.3 features. Marks the current marketing version seen on dismiss.
+- **Welcome** — a brand-new install (no stored version and no legacy pre-1.4 marker). Shows the app's main pillars (`WhatsNewCatalog.welcomeHighlights`) under a "Welcome to Villain Arc" header with a Get Started button.
+- **What's New** — a returning/updated user. Shows the aggregated highlights of every release the user hasn't seen yet (`WhatsNewCatalog.featuresIntroduced(after:throughIncluding:)`), so a user who skips versions (e.g. 1.3 → 1.5) still sees every missed release's highlights in one sheet.
 
-If both apply on the same launch (first-time user on a new version), the slideshow runs first and the What's New sheet is queued for after dismissal.
+The decision logic (`WhatsNewPreferences`):
 
-These surfaces are gating decisions, not state machine states. They do not block `.ready`; they layer on top of it via SwiftUI sheets.
+- the last shown marketing version is stored in App Group `UserDefaults` (`whats_new_last_shown_version`)
+- already on the current version → present nothing, and advance the stored pointer immediately
+- no stored version **and** no legacy marker (`has_seen_onboarding_slideshow`, written by the removed pre-1.4 onboarding slideshow) → Welcome
+- otherwise → What's New for the unseen releases (nothing if those releases contribute no highlights, e.g. a minor bug-fix build)
+
+The version it was shown for is marked seen on **any** dismissal (Continue/Get Started button or a swipe-away), via the sheet's `onDismiss`, so it never reappears on the next launch.
+
+The per-version changelog and the Welcome highlights live in `WhatsNewCatalog`. To announce a release's features, append a `WhatsNewRelease` with its marketing version. The releases list starts at 1.4 — the 1.3 pillars are the Welcome content, so a user updating from 1.3 sees only what's new in 1.4.
+
+This surface is a gating decision, not a state machine state. It does not block `.ready`; it layers on top via a SwiftUI sheet.
 
 ## Why `SetupGuard` Exists
 

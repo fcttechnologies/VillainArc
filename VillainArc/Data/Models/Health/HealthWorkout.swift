@@ -36,7 +36,14 @@ import SwiftData
         totalDistance = workout.totalDistance?.doubleValue(for: .meter())
         isAvailableInHealthKit = true
     }
-    
+
+    #if DEBUG
+    /// DEBUG-only placeholder for model-table touch tests. All fields take their declared
+    /// defaults, so this avoids the deprecated synchronous `HKWorkout` initializer the real
+    /// `init(workout:)` path would otherwise force a debug touch to construct.
+    init(debugPlaceholder: Bool) {}
+    #endif
+
     var activityType: HKWorkoutActivityType {
         get { HKWorkoutActivityType(rawValue: activityTypeRawValue) ?? .other }
         set { activityTypeRawValue = newValue.rawValue }
