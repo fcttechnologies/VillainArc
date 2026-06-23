@@ -74,6 +74,10 @@ struct SubscriptionStoreKitIntegrationTests {
     }
 
     private func makeSession() throws -> SKTestSession {
+        // `DebugSubscriptionOverride.forcePro` defaults to `true` in DEBUG (a Screenshot Studio
+        // convenience), which short-circuits `SubscriptionGate.isPro` to true for every test. These
+        // tests must read the real StoreKit entitlement, so force it off.
+        DebugSubscriptionOverride.forcePro = false
         let session = try SKTestSession(configurationFileNamed: "VillainArc")
         session.disableDialogs = true
         session.resetToDefaultState()

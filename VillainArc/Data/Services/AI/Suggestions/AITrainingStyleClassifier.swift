@@ -5,6 +5,16 @@ struct AITrainingStyleClassifier {
     /// Asks the on-device model to classify training style for an exercise.
     /// Returns nil if the model is unavailable or inference fails.
     static func infer(performance: AIExercisePerformanceSnapshot) async -> AIInferenceOutput? {
+        // Skip live Foundation Models inference only in the **Simulator** test host: there the model
+        // reports `.available` but `respond` never returns (no real inference engine; the
+        // GenerativeModels instrumentation also blocks on an unreachable Biome service), hanging any
+        // test that reaches the full suggestion path. On a real device the model runs, so on-device
+        // test runs DO exercise the AI. Unit tests otherwise verify the deterministic rules engine;
+        // the classifier's own logic is covered model-free by AIInferenceEvaluations. No production
+        // effect — gated to (simulator AND the XCTest host).
+        #if targetEnvironment(simulator)
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return nil }
+        #endif
         let model = SystemLanguageModel.default
         guard case .available = model.availability else { return nil }
 
