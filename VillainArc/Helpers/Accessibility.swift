@@ -195,6 +195,8 @@ enum AccessibilityIdentifiers {
 
     static func workoutDetailExerciseNotes(_ exercise: ExercisePerformance) -> String { "workoutDetailExerciseNotes-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
 
+    static func workoutDetailExerciseNotesSyncButton(_ exercise: ExercisePerformance) -> String { "workoutDetailExerciseNotesSyncButton-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
+
     static let workoutDetailList = "workoutDetailList"
 
     static func workoutDetailSet(_ exercise: ExercisePerformance, set: SetPerformance) -> String { "workoutDetailSet-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)-\(set.index)" }
@@ -496,6 +498,7 @@ enum AccessibilityIdentifiers {
     static let replaceExerciseMuscleFiltersButton = "replaceExerciseMuscleFiltersButton"
     static let replaceExerciseFiltersMenu = "replaceExerciseFiltersMenu"
     static let workoutDetailNotesText = "workoutDetailNotesText"
+    static let workoutDetailNotesSyncButton = "workoutDetailNotesSyncButton"
     static let workoutDetailOpenWorkoutPlanButton = "workoutDetailOpenWorkoutPlanButton"
     static let workoutDetailSaveWorkoutPlanButton = "workoutDetailSaveWorkoutPlanButton"
     static let workoutDetailDeleteButton = "workoutDetailDeleteButton"

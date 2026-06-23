@@ -237,9 +237,16 @@ private struct WorkoutLinkedHealthDetailSection: View {
 }
 
 private struct WorkoutSessionDetailContent: View {
+    @Environment(\.modelContext) private var context
     let workout: WorkoutSession
     let weightUnit: WeightUnit
     var scrollToExerciseID: UUID? = nil
+
+    @State private var showNotesSyncEditor = false
+
+    private var driftedPlanNotes: String? {
+        CompletedWorkoutNotesSync.driftedPlanNotes(for: workout)
+    }
 
     private var muscleDistributionSlices: [MuscleDistributionSlice] {
         MuscleDistributionCalculator.slices(for: workout)
@@ -300,7 +307,7 @@ private struct WorkoutSessionDetailContent: View {
                 preWorkoutContextSection
             }
 
-            if !workout.notes.isEmpty {
+            if !workout.notes.isEmpty || driftedPlanNotes != nil {
                 notesSection
             }
 
@@ -309,6 +316,18 @@ private struct WorkoutSessionDetailContent: View {
             }
 
             exercisesSection
+        }
+        .sheet(isPresented: $showNotesSyncEditor) {
+            NotesPlanSyncEditorView(
+                title: "Workout Notes",
+                planLabel: "Plan Notes",
+                currentLabel: "Workout Notes",
+                planNotes: workout.workoutPlan?.notes ?? "",
+                currentNotes: Binding(get: { workout.notes }, set: { workout.notes = $0 })
+            )
+            .presentationDetents([.medium, .large])
+            .presentationBackground(Color.sheetBg)
+            .onDisappear { try? context.save() }
         }
     }
 
@@ -373,17 +392,32 @@ private struct WorkoutSessionDetailContent: View {
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Workout Notes")
-                .font(.headline)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(workout.notes)
-                    .multilineTextAlignment(.leading)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailNotesText)
+            HStack {
+                Text("Workout Notes")
+                    .font(.headline)
+                Spacer()
+                if driftedPlanNotes != nil {
+                    Button("Plan Notes Differ", systemImage: "doc.on.doc") {
+                        Haptics.selection()
+                        showNotesSyncEditor = true
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailNotesSyncButton)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .appCardStyle()
+
+            if !workout.notes.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(workout.notes)
+                        .multilineTextAlignment(.leading)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailNotesText)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .appCardStyle()
+            }
         }
     }
 
@@ -404,7 +438,7 @@ private struct WorkoutSessionDetailContent: View {
                 .font(.headline)
 
             ForEach(workout.sortedExercises) { exercise in
-                WorkoutDetailExerciseCard(exercise: exercise, weightUnit: weightUnit)
+                WorkoutDetailExerciseCard(exercise: exercise, workout: workout, weightUnit: weightUnit)
                     .id(exercise.id)
             }
         }
@@ -419,24 +453,48 @@ struct SummaryStatItem: Identifiable {
 }
 
 private struct WorkoutDetailExerciseCard: View {
+    @Environment(\.modelContext) private var context
     let exercise: ExercisePerformance
+    let workout: WorkoutSession
     let weightUnit: WeightUnit
+
+    @State private var showNotesSyncEditor = false
+
+    private var driftedPrescriptionNotes: String? {
+        CompletedWorkoutNotesSync.driftedPrescriptionNotes(for: exercise, in: workout)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(exercise.name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(exercise.name)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
 
-                if let repRange = exercise.repRange {
-                    Text(repRange.displayText)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if let repRange = exercise.repRange {
+                        Text(repRange.displayText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseHeader(exercise))
+
+                if driftedPrescriptionNotes != nil {
+                    Spacer()
+                    Button("Plan Notes Differ", systemImage: "doc.on.doc") {
+                        Haptics.selection()
+                        showNotesSyncEditor = true
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .labelStyle(.iconOnly)
+                    .accessibilityLabel(Text("Sync notes from plan"))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseNotesSyncButton(exercise))
                 }
             }
-            .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExerciseHeader(exercise))
 
             if !exercise.notes.isEmpty {
                 Text(exercise.notes)
@@ -463,6 +521,18 @@ private struct WorkoutDetailExerciseCard: View {
         .padding(16)
         .appCardStyle()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailExercise(exercise))
+        .sheet(isPresented: $showNotesSyncEditor) {
+            NotesPlanSyncEditorView(
+                title: "Exercise Notes",
+                planLabel: "Plan Notes",
+                currentLabel: "Exercise Notes",
+                planNotes: driftedPrescriptionNotes ?? "",
+                currentNotes: Binding(get: { exercise.notes }, set: { exercise.notes = $0 })
+            )
+            .presentationDetents([.medium, .large])
+            .presentationBackground(Color.sheetBg)
+            .onDisappear { try? context.save() }
+        }
     }
 }
 
