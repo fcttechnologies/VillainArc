@@ -124,6 +124,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Data/LiveActivity/CardioActivityManager.swift,
+				Data/LiveActivity/CardioLiveActivityMetric.swift,
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/AppSettings.swift,
