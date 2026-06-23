@@ -497,6 +497,10 @@ enum AccessibilityIdentifiers {
     static let replaceExerciseFavoritesToggle = "replaceExerciseFavoritesToggle"
     static let replaceExerciseMuscleFiltersButton = "replaceExerciseMuscleFiltersButton"
     static let replaceExerciseFiltersMenu = "replaceExerciseFiltersMenu"
+    static let askVillainArcOpenButton = "askVillainArcOpenButton"
+    static let askVillainArcQuestionField = "askVillainArcQuestionField"
+    static let askVillainArcAskButton = "askVillainArcAskButton"
+    static let askVillainArcAnswer = "askVillainArcAnswer"
     static let cardioLiveActivityMetricsRow = "cardioLiveActivityMetricsRow"
     static func cardioLiveActivityMetricRow(_ rawValue: String) -> String { "cardioLiveActivityMetricRow-\(rawValue)" }
     static let workoutDetailNotesText = "workoutDetailNotesText"

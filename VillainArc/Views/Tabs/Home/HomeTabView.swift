@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HomeTabView: View {
     @State private var router = AppRouter.shared
+    @State private var showAskVillainArc = false
 
     var body: some View {
         NavigationStack(path: Binding(get: { router.homeTabPath }, set: { router.homeTabPath = $0; router.noteNavigationStateChanged() })) {
@@ -58,6 +59,19 @@ struct HomeTabView: View {
                 default:
                     EmptyView()
                 }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Ask Villain Arc", systemImage: "sparkles") {
+                        Haptics.selection()
+                        showAskVillainArc = true
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.askVillainArcOpenButton)
+                }
+            }
+            .sheet(isPresented: $showAskVillainArc) {
+                AskVillainArcView()
+                    .presentationBackground(Color.sheetBg)
             }
         }
         .id(router.homeTabResetToken)

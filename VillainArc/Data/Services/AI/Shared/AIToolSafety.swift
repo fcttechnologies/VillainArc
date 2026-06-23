@@ -50,6 +50,20 @@ enum AIToolSafetyPolicy {
         return tools
     }
 
+    /// Vets the system Spotlight search tool used by the "Ask Villain Arc" assistant. The tool's name
+    /// is Apple-supplied (not on our static allowlist), so this asserts only the read-only capability
+    /// — the one invariant that matters: the assistant may read the user's index, never write. The
+    /// tool is scoped to `.coreSpotlight` (the app's own private index) by its construction.
+    static func vettedSpotlightTools(_ tools: [any SafeTool]) -> [any Tool] {
+        for tool in tools {
+            precondition(
+                type(of: tool).capability == .readOnly,
+                "Spotlight assistant tool \"\(tool.name)\" must be read-only."
+            )
+        }
+        return tools
+    }
+
     /// History transform for tool-using sessions: keep only the most recent user prompt (plus the
     /// session instructions), so an earlier turn's text can't survive to influence a later tool call
     /// or response. Villain Arc's AI sessions are single-shot, but adopting the transform keeps the
