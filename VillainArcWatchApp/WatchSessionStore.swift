@@ -33,15 +33,18 @@ import WatchKit
         let session = WCSession.default
         guard session.activationState == .activated else { return }
         guard let dictionary = WatchSync.encodeCommand(command) else { return }
-        session.sendMessage(dictionary) { reply in
+        // Both handlers run on a WatchConnectivity background queue — they must be
+        // @Sendable (NOT implicitly MainActor under the MainActor-default isolation)
+        // or the runtime's executor assertion traps on delivery.
+        session.sendMessage(dictionary, replyHandler: { @Sendable [weak self] reply in
             guard let payload = WatchSync.decodePayload(from: reply) else { return }
-            Task { @MainActor [weak self] in
+            Task { @MainActor in
                 self?.apply(payload)
             }
-        } errorHandler: { _ in
+        }, errorHandler: { @Sendable _ in
             // The phone is unreachable right now; the next application-context
             // push reconciles state. Reachability is surfaced in the UI.
-        }
+        })
     }
 
     fileprivate func apply(_ payload: WatchSyncPayload) {

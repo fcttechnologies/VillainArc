@@ -96,7 +96,7 @@ struct WatchLiveSessionView: View {
                     metricRow(title: "Energy", value: activeEnergyText)
                 }
                 if live.distanceText == nil && live.paceText == nil && live.activeEnergyText == nil {
-                    Text("Metrics appear as your session records.")
+                    Text("Metrics appear as your session progresses.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
