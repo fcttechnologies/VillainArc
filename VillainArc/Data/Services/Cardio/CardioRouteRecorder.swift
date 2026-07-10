@@ -141,6 +141,10 @@ extension CardioRouteRecorder: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
+        // CLError.locationUnknown is transient: Core Location "keeps trying" and delivers
+        // fixes as soon as it can (per the didFailWithError docs), so a momentary GPS blip
+        // mid-run must not flip the recorder into a not-recording state. Ignore it.
+        if let clError = error as? CLError, clError.code == .locationUnknown { return }
         Task { @MainActor in
             self.lastErrorMessage = error.localizedDescription
             self.isRecording = false

@@ -10197,6 +10197,41 @@
         }
       }
     },
+    "Cardio Session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardio-Session"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardio Session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión de cardio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Séance de cardio"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão de cardio"
+          }
+        }
+      }
+    },
     "Cardio session cancelled." : {
       "localizations" : {
         "de" : {
@@ -19757,6 +19792,41 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Termine de criar o plano de treino antes de iniciar um treino a partir dele."
+          }
+        }
+      }
+    },
+    "Finish the cardio session before opening its details." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beende die Cardio-Session, bevor du ihre Details öffnest."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish the cardio session before opening its details."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finaliza la sesión de cardio antes de abrir sus detalles."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminez la séance de cardio avant d’ouvrir ses détails."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finalize a sessão de cardio antes de abrir os detalhes."
           }
         }
       }
@@ -34913,6 +34983,41 @@
         }
       }
     },
+    "Open ${cardioSession}" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${cardioSession} öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open ${cardioSession}"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir ${cardioSession}"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir ${cardioSession}"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir ${cardioSession}"
+          }
+        }
+      }
+    },
     "Open ${exercise}" : {
       "localizations" : {
         "de" : {
@@ -35135,6 +35240,41 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abra todos os splits para definir um como ativo ou criar um novo."
+          }
+        }
+      }
+    },
+    "Open Cardio Session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardio-Session öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Cardio Session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir sesión de cardio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir la séance de cardio"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir sessão de cardio"
           }
         }
       }
@@ -35821,6 +35961,41 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abrir split de treino"
+          }
+        }
+      }
+    },
+    "Opens a specific cardio session." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet eine bestimmte Cardio-Einheit."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens a specific cardio session."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre una sesión de cardio específica."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre une séance de cardio spécifique."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre uma sessão de cardio específica."
           }
         }
       }
@@ -55809,6 +55984,41 @@
         }
       }
     },
+    "That cardio session is no longer available." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Cardio-Einheit ist nicht mehr verfügbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That cardio session is no longer available."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esa sesión de cardio ya no está disponible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette séance de cardio n’est plus disponible."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Essa sessão de cardio não está mais disponível."
+          }
+        }
+      }
+    },
     "That exercise is no longer available." : {
       "localizations" : {
         "de" : {
@@ -62887,6 +63097,41 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quando é seu aniversário?"
+          }
+        }
+      }
+    },
+    "Which cardio session would you like to open?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welche Cardio-Session möchtest du öffnen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which cardio session would you like to open?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué sesión de cardio te gustaría abrir?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelle séance de cardio souhaitez-vous ouvrir ?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qual sessão de cardio você gostaria de abrir?"
           }
         }
       }

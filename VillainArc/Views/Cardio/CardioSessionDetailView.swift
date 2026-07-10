@@ -1,4 +1,6 @@
+import AppIntents
 import CoreLocation
+import CoreSpotlight
 import HealthKit
 import MapKit
 import SwiftData
@@ -21,10 +23,23 @@ struct CardioSessionDetailView: View {
         // Only a session that recorded an app GPS route gets the immersive map. Non-route sessions
         // normally open directly in HealthWorkoutDetailView; this fallback still reads as a plain
         // scrolling detail when there is no mirrored Health workout yet.
-        if session.usesRoute {
-            outdoorLayout
-        } else {
-            indoorLayout
+        Group {
+            if session.usesRoute {
+                outdoorLayout
+            } else {
+                indoorLayout
+            }
+        }
+        .userActivity("com.villainarc.cardioSession.view", element: session) { session, activity in
+            activity.title = session.displayTitle
+            activity.isEligibleForSearch = true
+            activity.isEligibleForPrediction = true
+            activity.persistentIdentifier = NSUserActivityPersistentIdentifier(SpotlightIndexer.cardioSessionIdentifier(for: session.id))
+            let attributeSet = activity.contentAttributeSet ?? CSSearchableItemAttributeSet(contentType: .item)
+            attributeSet.relatedUniqueIdentifier = SpotlightIndexer.cardioSessionIdentifier(for: session.id)
+            activity.contentAttributeSet = attributeSet
+            let entity = CardioSessionEntity(cardioSession: session)
+            activity.appEntityIdentifier = .init(for: entity)
         }
     }
 
