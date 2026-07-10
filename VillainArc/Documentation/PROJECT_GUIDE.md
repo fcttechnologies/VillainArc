@@ -422,3 +422,5 @@ If you are changing:
   - `Documentation/EXERCISE_HISTORY_FLOW.md`
 - plan templates and AI plan generation:
   - `Documentation/TEMPLATES_FLOW.md`
+- the Apple Watch companion app or phone↔watch sync:
+  - `Documentation/WATCH_COMPANION.md`

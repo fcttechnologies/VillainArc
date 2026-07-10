@@ -16,6 +16,7 @@ Beta testing (iOS 26+ target).
 - Review post-workout summaries and progression suggestions.
 - Use Siri / Shortcuts / Spotlight to trigger key workflows faster.
 - Use rest timer controls with Live Activities and widget support.
+- Control the rest timer and glance at the live session from the Apple Watch companion app.
 
 ## Core capabilities
 
@@ -50,6 +51,7 @@ Beta testing (iOS 26+ target).
 ## Project structure
 
 - `VillainArc/` — main app target
+- `VillainArcWatchApp/` — Apple Watch companion app (rest timer, live-workout glance, stats)
 - `VillainArcIntentsExtension/` — SiriKit intents extension
 - `VillainArcWidgetExtension/` — widget + Live Activity UI
 - `VillainArcTests/` — test target
