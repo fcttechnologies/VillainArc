@@ -15,6 +15,7 @@
 		FD93E5E92F3051FD009569BB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD93E5E82F3051FD009569BB /* SwiftUI.framework */; };
 		FD93E5F42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FDAB6AF12FC769540085E0F0 /* MuscleMap in Frameworks */ = {isa = PBXBuildFile; productRef = FDAB6AF02FC769540085E0F0 /* MuscleMap */; };
+		FDACE00A2F7000000000000A /* VillainArcWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = FDACE0012F70000000000001 /* VillainArcWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,13 @@
 			remoteGlobalIDString = FD93E5E32F3051FD009569BB;
 			remoteInfo = VillainArcWidgetExtensionExtension;
 		};
+		FDACE00C2F7000000000000C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FDACE0032F70000000000003;
+			remoteInfo = VillainArcWatchApp;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -71,6 +79,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FDACE00B2F7000000000000B /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				FDACE00A2F7000000000000A /* VillainArcWatchApp.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -86,6 +105,7 @@
 		FD93E5FA2F305206009569BB /* VillainArcWidgetExtensionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VillainArcWidgetExtensionExtension.entitlements; sourceTree = "<group>"; };
 		FDA193902F16D14500CA57C5 /* VillainArc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VillainArc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDA193A12F16F90000CA57C5 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		FDACE0012F70000000000001 /* VillainArcWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VillainArcWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -260,6 +280,13 @@
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
 		};
+		FDACE00E2F7000000000000E /* Exceptions for "VillainArc" folder in "VillainArcWatchApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Data/Watch/WatchSyncContract.swift,
+			);
+			target = FDACE0032F70000000000003 /* VillainArcWatchApp */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -289,8 +316,14 @@
 			exceptions = (
 				FD93E5FC2F305224009569BB /* Exceptions for "VillainArc" folder in "VillainArc" target */,
 				FD93E60D2F305327009569BB /* Exceptions for "VillainArc" folder in "VillainArcWidgetExtensionExtension" target */,
+				FDACE00E2F7000000000000E /* Exceptions for "VillainArc" folder in "VillainArcWatchApp" target */,
 			);
 			path = VillainArc;
+			sourceTree = "<group>";
+		};
+		FDACE0022F70000000000002 /* VillainArcWatchApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VillainArcWatchApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -336,6 +369,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FDACE0082F70000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -365,6 +405,7 @@
 				FD93E5FA2F305206009569BB /* VillainArcWidgetExtensionExtension.entitlements */,
 				FDA193A12F16F90000CA57C5 /* .gitignore */,
 				FDA193922F16D14500CA57C5 /* VillainArc */,
+				FDACE0022F70000000000002 /* VillainArcWatchApp */,
 				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
 				FD68290B2F31190700C83480 /* VillainArcIntentsExtension */,
 				FD68245D2F33A712009F6D98 /* VillainArcTests */,
@@ -377,6 +418,7 @@
 			isa = PBXGroup;
 			children = (
 				FDA193902F16D14500CA57C5 /* VillainArc.app */,
+				FDACE0012F70000000000001 /* VillainArcWatchApp.app */,
 				FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */,
 				FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */,
 				FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */,
@@ -467,6 +509,26 @@
 			productReference = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		FDACE0032F70000000000003 /* VillainArcWatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FDACE0042F70000000000004 /* Build configuration list for PBXNativeTarget "VillainArcWatchApp" */;
+			buildPhases = (
+				FDACE0072F70000000000007 /* Sources */,
+				FDACE0082F70000000000008 /* Frameworks */,
+				FDACE0092F70000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FDACE0022F70000000000002 /* VillainArcWatchApp */,
+			);
+			name = VillainArcWatchApp;
+			productName = VillainArcWatchApp;
+			productReference = FDACE0012F70000000000001 /* VillainArcWatchApp.app */;
+			productType = "com.apple.product-type.application";
+		};
 		FDA1938F2F16D14500CA57C5 /* VillainArc */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FDA1939B2F16D14600CA57C5 /* Build configuration list for PBXNativeTarget "VillainArc" */;
@@ -476,12 +538,14 @@
 				FDA1938E2F16D14500CA57C5 /* Resources */,
 				FD18C78A2F248B3000EB287C /* Embed ExtensionKit Extensions */,
 				FD93E5F92F3051FE009569BB /* Embed Foundation Extensions */,
+				FDACE00B2F7000000000000B /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				FD93E5F32F3051FD009569BB /* PBXTargetDependency */,
 				FD6829102F31190700C83480 /* PBXTargetDependency */,
+				FDACE00D2F7000000000000D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FDA193922F16D14500CA57C5 /* VillainArc */,
@@ -520,6 +584,9 @@
 					FDA1938F2F16D14500CA57C5 = {
 						CreatedOnToolsVersion = 26.2;
 					};
+					FDACE0032F70000000000003 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 				};
 			};
 			buildConfigurationList = FDA1938B2F16D14500CA57C5 /* Build configuration list for PBXProject "VillainArc" */;
@@ -544,6 +611,7 @@
 			projectRoot = "";
 			targets = (
 				FDA1938F2F16D14500CA57C5 /* VillainArc */,
+				FDACE0032F70000000000003 /* VillainArcWatchApp */,
 				FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */,
 				FD6829072F31190700C83480 /* VillainArcIntentsExtension */,
 				FD68245B2F33A712009F6D98 /* VillainArcTests */,
@@ -589,6 +657,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FDACE0092F70000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -627,6 +702,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FDACE0072F70000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -650,6 +732,11 @@
 			isa = PBXTargetDependency;
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
 			targetProxy = FD93E5F22F3051FD009569BB /* PBXContainerItemProxy */;
+		};
+		FDACE00D2F7000000000000D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FDACE0032F70000000000003 /* VillainArcWatchApp */;
+			targetProxy = FDACE00C2F7000000000000C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1143,6 +1230,77 @@
 			};
 			name = Release;
 		};
+		FDACE0052F70000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X26SC78YDG;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fcttechnologies.VillainArc;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		FDACE0062F70000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X26SC78YDG;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fcttechnologies.VillainArc;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1196,6 +1354,15 @@
 			buildConfigurations = (
 				FDA1939C2F16D14600CA57C5 /* Debug */,
 				FDA1939D2F16D14600CA57C5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FDACE0042F70000000000004 /* Build configuration list for PBXNativeTarget "VillainArcWatchApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FDACE0052F70000000000005 /* Debug */,
+				FDACE0062F70000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
