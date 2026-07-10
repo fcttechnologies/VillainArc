@@ -180,8 +180,13 @@ struct WorkoutsListView: View {
     }
 
     private func appEntityIdentifier(for item: WorkoutHistoryItem) -> EntityIdentifier? {
-        guard let session = item.session else { return nil }
-        return EntityIdentifier(for: WorkoutSessionEntity.self, identifier: session.id)
+        if let session = item.session {
+            return EntityIdentifier(for: WorkoutSessionEntity.self, identifier: session.id)
+        }
+        if let cardioSession = item.cardioSession {
+            return EntityIdentifier(for: CardioSessionEntity.self, identifier: cardioSession.id)
+        }
+        return nil
     }
     
     private func workoutTypeFilterChip(_ filter: WorkoutTypeFilter) -> some View {

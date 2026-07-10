@@ -123,6 +123,8 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 | Open active cardio session | ✅ `OpenActiveCardioSessionIntent` |
 | Show cardio history + routes | ✅ `ShowCardioHistoryIntent` |
 | Finish / cancel cardio session | ✅ `FinishCardioSessionIntent`, `CancelCardioSessionIntent` (`.background`; call `AppRouter.finishCardioSession` / `cancelCardioSession`) |
+| Open a specific past cardio session | ✅ `OpenCardioSessionIntent` |
+| Reference a cardio session by name | ✅ `CardioSessionEntity` (+ query, Spotlight-indexed on finish) |
 
 ### Rest timer
 
