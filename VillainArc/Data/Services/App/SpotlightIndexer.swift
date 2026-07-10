@@ -8,10 +8,12 @@ enum SpotlightIndexer {
     static let workoutPlanIdentifierPrefix = "workoutPlan:"
     static let exerciseIdentifierPrefix = "exercise:"
     static let workoutSplitIdentifierPrefix = "workoutSplit:"
+    static let cardioSessionIdentifierPrefix = "cardioSession:"
     private static let workoutSessionDomainIdentifier = "com.villainarc.workoutSession"
     private static let workoutPlanDomainIdentifier = "com.villainarc.workoutPlan"
     private static let exerciseDomainIdentifier = "com.villainarc.exercise"
     private static let workoutSplitDomainIdentifier = "com.villainarc.workoutSplit"
+    private static let cardioSessionDomainIdentifier = "com.villainarc.cardioSession"
 
     static func index(workoutSession: WorkoutSession) {
         CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: workoutSession)], completionHandler: nil)
@@ -31,6 +33,10 @@ enum SpotlightIndexer {
 
     static func index(workoutSplit: WorkoutSplit) {
         CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: workoutSplit)], completionHandler: nil)
+    }
+
+    static func index(cardioSession: CardioSession) {
+        CSSearchableIndex.default().indexSearchableItems([makeSearchableItem(for: cardioSession)], completionHandler: nil)
     }
 
     static func index(workoutSplits: [WorkoutSplit]) {
@@ -53,6 +59,10 @@ enum SpotlightIndexer {
         splitDescriptor.relationshipKeyPathsForPrefetching = [\.days]
         let workoutSplits = (try? context.fetch(splitDescriptor)) ?? []
 
+        var cardioDescriptor = CardioSession.history
+        cardioDescriptor.relationshipKeyPathsForPrefetching = [\.machineIntervals]
+        let completedCardio = (try? context.fetch(cardioDescriptor)) ?? []
+
         // ExerciseHistory only exists when completed performances exist — it's the
         // single source of truth for exercise Spotlight eligibility.
         var historyDescriptor = FetchDescriptor<ExerciseHistory>()
@@ -67,13 +77,14 @@ enum SpotlightIndexer {
             + completedPlans.map(makeSearchableItem(for:))
             + exercisesToIndex.map { makeSearchableItem(for: $0, history: historyByCatalogID[$0.catalogID]) }
             + workoutSplits.map(makeSearchableItem(for:))
+            + completedCardio.map(makeSearchableItem(for:))
 
         guard !allItems.isEmpty else {
             return
         }
 
         CSSearchableIndex.default().indexSearchableItems(allItems, completionHandler: nil)
-        AppLog.info("Spotlight rebuild queued: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises, \(workoutSplits.count) splits.")
+        AppLog.info("Spotlight rebuild queued: \(completedWorkouts.count) workouts, \(completedPlans.count) plans, \(exercisesToIndex.count) exercises, \(workoutSplits.count) splits, \(completedCardio.count) cardio sessions.")
     }
 
     static func deleteWorkoutSession(id: UUID) {
@@ -163,6 +174,18 @@ enum SpotlightIndexer {
         return item
     }
 
+    private static func makeSearchableItem(for cardioSession: CardioSession) -> CSSearchableItem {
+        let attributes = CSSearchableItemAttributeSet(contentType: .item)
+        let displayTitle = cardioSession.displayTitle
+        attributes.title = displayTitle
+        attributes.displayName = displayTitle
+        attributes.contentDescription = cardioSpotlightDescription(for: cardioSession)
+        attributes.keywords = cardioSpotlightKeywords(for: cardioSession)
+        let item = CSSearchableItem(uniqueIdentifier: cardioSessionIdentifier(for: cardioSession.id), domainIdentifier: cardioSessionDomainIdentifier, attributeSet: attributes)
+        item.associateAppEntity(CardioSessionEntity(cardioSession: cardioSession), priority: cardioSessionPriority(for: cardioSession))
+        return item
+    }
+
     private static func delete(identifiers: [String]) {
         guard !identifiers.isEmpty else { return }
         CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: identifiers, completionHandler: nil)
@@ -187,6 +210,10 @@ enum SpotlightIndexer {
 
     static func workoutSplitIdentifier(for id: UUID) -> String {
         workoutSplitIdentifierPrefix + id.uuidString
+    }
+
+    static func cardioSessionIdentifier(for id: UUID) -> String {
+        cardioSessionIdentifierPrefix + id.uuidString
     }
 
     static func workoutSplitID(for workoutSplit: WorkoutSplit) -> UUID {
@@ -235,6 +262,17 @@ enum SpotlightIndexer {
         let days = workoutSplit.sortedDays
         priority += min(days.count, 7)
         priority += min(days.compactMap(\.workoutPlan).count, 6)
+
+        return priority
+    }
+
+    private static func cardioSessionPriority(for cardioSession: CardioSession) -> Int {
+        var priority = 20
+        priority += recencyPriorityBonus(for: cardioSession.endedAt ?? cardioSession.startedAt)
+
+        if cardioSession.totalDistanceMeters > 0 { priority += 4 }
+        if cardioSession.usesRoute { priority += 3 }
+        if cardioSession.postEffort >= 8 { priority += 3 }
 
         return priority
     }
@@ -371,6 +409,46 @@ enum SpotlightIndexer {
         if workoutPlan.favorite { parts.append("Marked as favorite.") }
 
         return parts.joined(separator: " ")
+    }
+
+    private static func cardioSpotlightDescription(for cardioSession: CardioSession) -> String {
+        let unit = cardioSession.preferredDistanceUnit
+        let dateText = (cardioSession.endedAt ?? cardioSession.startedAt ?? Date()).formatted(date: .abbreviated, time: .omitted)
+
+        var parts: [String] = ["Completed \(cardioSession.typeTitle.lowercased()) from \(dateText).", "Duration \(secondsToTimeWithHours(Int(cardioSession.duration.rounded())))."]
+
+        if cardioSession.totalDistanceMeters > 0 { parts.append("Distance \(unit.display(cardioSession.totalDistanceMeters)).") }
+        if cardioSession.usesMachineIntervals {
+            let count = cardioSession.sortedMachineIntervals.count
+            if count > 0 { parts.append("\(count) \(count == 1 ? "interval" : "intervals") logged.") }
+        }
+        if cardioSession.postEffort > 0 { parts.append("Effort \(cardioSession.postEffort) out of 10.") }
+
+        let notes = cardioSession.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !notes.isEmpty { parts.append(notes) }
+
+        return parts.joined(separator: " ")
+    }
+
+    private static func cardioSpotlightKeywords(for cardioSession: CardioSession) -> [String] {
+        var keywords: [String] = []
+        var seen = Set<String>()
+
+        func add(_ value: String) {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            let normalized = trimmed.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            guard seen.insert(normalized).inserted else { return }
+            keywords.append(trimmed)
+        }
+
+        add(cardioSession.displayTitle)
+        add(cardioSession.typeTitle)
+        add(cardioSession.activity.title)
+        add(cardioSession.environment.title)
+        add("Cardio")
+
+        return keywords
     }
 
     private static func splitDaySpotlightLabel(for day: WorkoutSplitDay) -> String {
