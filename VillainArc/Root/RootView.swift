@@ -20,6 +20,9 @@ struct RootView: View {
             .task {
                 cleanupEditingWorkoutPlanCopies()
                 VillainArcShortcuts.updateAppShortcutParameters()
+                if #available(iOS 27, *) {
+                    RemoteChangeRefreshCoordinator.startSharedIfNeeded()
+                }
                 await onboardingManager.startOnboarding()
             }
             .onChange(of: onboardingManager.state) { _, newState in
