@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             if !NotificationCoordinator.isUITestRun {
                 NotificationCoordinator.shared.installDelegate()
             }
+            PhoneWatchSyncManager.shared.activate()
         }
         return true
     }
