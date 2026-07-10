@@ -14,17 +14,17 @@ import WidgetKit
 @available(iOS 27.0, *)
 @MainActor
 final class RemoteChangeRefreshCoordinator {
-    /// The user-content model types Spotlight actually surfaces. A remote transaction touching
-    /// any of these triggers a full Spotlight rebuild. CardioSession is deliberately excluded —
-    /// it is neither Spotlight-indexed (see `SpotlightIndexer.reindexAll`) nor backed by a
-    /// timeline widget, so a remote cardio change has nothing to refresh here.
+    /// The user-content model types Spotlight actually surfaces (see
+    /// `SpotlightIndexer.reindexAll`). A remote transaction touching any of these triggers a
+    /// full Spotlight rebuild.
     static let spotlightModels: [any PersistentModel.Type] = [
         WorkoutSession.self,
         WorkoutPlan.self,
         WorkoutSplit.self,
         WorkoutSplitDay.self,
         Exercise.self,
-        ExerciseHistory.self
+        ExerciseHistory.self,
+        CardioSession.self
     ]
 
     private let container: ModelContainer

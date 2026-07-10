@@ -73,7 +73,7 @@ struct RemoteChangeRefreshCoordinatorTests {
         #expect(names.contains("WorkoutSplit"))
         #expect(names.contains("Exercise"))
         #expect(names.contains("ExerciseHistory"))
-        // CardioSession is intentionally not observed (not Spotlight-indexed, no timeline widget).
-        #expect(names.contains("CardioSession") == false)
+        // Completed cardio sessions are Spotlight-indexed too (CardioSessionEntity).
+        #expect(names.contains("CardioSession"))
     }
 }
