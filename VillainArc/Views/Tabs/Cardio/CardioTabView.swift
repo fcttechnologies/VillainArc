@@ -1,3 +1,4 @@
+import AppIntents
 import CoreLocation
 import SwiftData
 import SwiftUI
@@ -310,6 +311,7 @@ struct CardioTabView: View {
                                 CardioSessionHistoryRow(session: session)
                             }
                             .buttonStyle(.plain)
+                            .villainArcAppEntityIdentifier(CardioSessionEntity.self, id: session.id)
                             .accessibilityIdentifier(AccessibilityIdentifiers.cardioHistoryRow(sessionID: session.id.uuidString))
                         case .healthWorkout(let hw):
                             Button {

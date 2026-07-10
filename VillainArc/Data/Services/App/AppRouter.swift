@@ -567,6 +567,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         }
         cardioSession.finish()
         saveContext(context: context)
+        SpotlightIndexer.index(cardioSession: cardioSession)
 
         let sessionID = cardioSession.id
         Task {
@@ -1209,6 +1210,19 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             if let workoutSession = try? context.fetch(descriptor).first {
                 AppLog.info("Spotlight routed to workout session detail.")
                 navigate(to: .workoutSessionDetail(workoutSession))
+            }
+            return
+        }
+
+        if identifier.hasPrefix(SpotlightIndexer.cardioSessionIdentifierPrefix) {
+            let idString = String(identifier.dropFirst(SpotlightIndexer.cardioSessionIdentifierPrefix.count))
+            guard let id = UUID(uuidString: idString) else { return }
+            let predicate = #Predicate<CardioSession> { $0.id == id }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            if let cardioSession = try? context.fetch(descriptor).first {
+                AppLog.info("Spotlight routed to cardio session detail.")
+                navigate(to: AppRouter.detailDestination(for: cardioSession))
             }
             return
         }

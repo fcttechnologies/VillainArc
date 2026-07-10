@@ -39,4 +39,16 @@ enum SpeedUnit: String, CaseIterable, Codable, Hashable {
     nonisolated func display(_ kph: Double, fractionDigits: ClosedRange<Int> = 1...1) -> String {
         "\(fromKPH(kph).formatted(.number.precision(.fractionLength(fractionDigits)))) \(unitLabel)"
     }
+
+    /// Canonical treadmill speed cap, unit-independent (25 km/h ≈ 15.5 mph).
+    /// Clamping in km/h keeps the ceiling the same for every user; a cap applied in
+    /// display units would limit metric users to 15 km/h (≈ 9.3 mph) — below a real sprint.
+    nonisolated static let maxTreadmillSpeedKPH = 25.0
+
+    /// Clamps a treadmill speed typed in this display unit to 0.1...(25 km/h in this unit),
+    /// rounded to one decimal place.
+    nonisolated func clampedTreadmillInput(_ value: Double) -> Double {
+        let cap = fromKPH(Self.maxTreadmillSpeedKPH)
+        return (min(cap, max(0.1, value)) * 10).rounded() / 10
+    }
 }

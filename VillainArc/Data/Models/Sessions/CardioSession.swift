@@ -440,6 +440,46 @@ extension CardioSession {
         descriptor.fetchLimit = limit
         return descriptor
     }
+
+    // Completed sessions whose id is in the given set — the entity-query rehydration fetch.
+    static func completed(ids: [UUID]) -> FetchDescriptor<CardioSession> {
+        let done = CardioSessionStatus.done.rawValue
+        let predicate = #Predicate<CardioSession> { ids.contains($0.id) && $0.status == done }
+        return FetchDescriptor(predicate: predicate)
+    }
+
+    // Completed sessions matching a title query (empty query → recent completed), most recent
+    // first. Shared by `CardioSessionEntityQuery` so Spotlight/Siri title lookups and history
+    // reads resolve identically.
+    static func completedMatching(_ query: String, limit: Int? = nil) -> FetchDescriptor<CardioSession> {
+        let done = CardioSessionStatus.done.rawValue
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let predicate: Predicate<CardioSession> = trimmed.isEmpty
+            ? #Predicate { $0.status == done }
+            : #Predicate { $0.status == done && $0.title.localizedStandardContains(trimmed) }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\CardioSession.startedAt, order: .reverse), SortDescriptor(\CardioSession.title)])
+        if let limit { descriptor.fetchLimit = limit }
+        return descriptor
+    }
+}
+
+extension CardioSession {
+    // The user's chosen distance unit, so Spotlight/entity text matches what the app shows
+    // (falls back to the locale default when no settings row exists, e.g. in unit tests).
+    var preferredDistanceUnit: DistanceUnit {
+        guard let modelContext, let settings = try? modelContext.fetch(AppSettings.single).first else { return .systemDefault }
+        return settings.distanceUnit
+    }
+
+    // A one-line, unit-aware recap used as the entity subtitle and the seed for the Spotlight
+    // description — mirrors `WorkoutSession.spotlightSummary`.
+    var spotlightSummary: String {
+        let unit = preferredDistanceUnit
+        var parts: [String] = [typeTitle]
+        if totalDistanceMeters > 0 { parts.append(unit.display(totalDistanceMeters)) }
+        parts.append(secondsToTimeWithHours(Int(duration.rounded())))
+        return parts.joined(separator: " · ")
+    }
 }
 
 @Model final class CardioRoutePoint {

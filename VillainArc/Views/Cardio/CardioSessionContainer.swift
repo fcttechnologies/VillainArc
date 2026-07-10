@@ -359,7 +359,7 @@ struct CardioActiveSessionView: View {
 
     private func commitSpeedText() {
         if let val = Double(speedText), val > 0 {
-            let rounded = (min(15.0, max(0.1, val)) * 10).rounded() / 10
+            let rounded = speedUnit.clampedTreadmillInput(val)
             speedKPH = speedUnit.toKPH(rounded)
         }
         speedText = String(format: "%.1f", speedUnit.fromKPH(speedKPH))
@@ -450,9 +450,19 @@ struct CardioActiveSessionView: View {
         Task { await healthCoordinator.prepareForSession(session) }
         for i in stride(from: 3, through: 1, by: -1) {
             await MainActor.run { countdownValue = i }
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+            } catch {
+                // The hosting `.task` was cancelled (view dismissed mid-countdown).
+                // Swallowing this used to rush through the countdown and start the
+                // session — Live Activity, HealthKit collection and all — on a view
+                // that was already gone. Abort instead; the session never started.
+                await MainActor.run { countdownValue = nil }
+                return
+            }
         }
         await MainActor.run { countdownValue = nil }
+        guard !Task.isCancelled else { return }
 
         session.startedAt = .now
         saveContext(context: context)

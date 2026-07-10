@@ -239,6 +239,7 @@
 				Helpers/FormattingHelpers.swift,
 				Helpers/Haptics.swift,
 				Helpers/TextNormalization.swift,
+				Intents/Cardio/CardioSessionEntity.swift,
 				Intents/Exercise/ExerciseEntity.swift,
 				Intents/LiveActivity/LiveActivityAddExerciseIntent.swift,
 				Intents/LiveActivity/LiveActivityCompleteSetIntent.swift,
