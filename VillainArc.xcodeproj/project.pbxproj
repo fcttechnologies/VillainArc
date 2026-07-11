@@ -7,8 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0EFD2294144CA53AFC24080B /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = 57CA85F33D542E5A71727A42 /* FCTSync */; };
+		0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = D9589A0FAF7667BC425CCA9A /* FCTSync */; };
 		354CA66B2F535701005622B1 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66A2F535701005622B1 /* README.md */; };
+		38F5B4EA9DF12A08A0B96B49 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = B4373FF459A151B3B305FDAA /* FCTEntities */; };
+		8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = C5EC413C794E0ED7DF5B6881 /* FCTSync */; };
+		912F77127216E6A720D55660 /* FCTIntelligence in Frameworks */ = {isa = PBXBuildFile; productRef = 254EA949EE4842D7AF0AE15A /* FCTIntelligence */; };
 		A54F0367A912B1480985484F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 57340E3AA3AF074CD4BF345E /* Foundation.framework */; };
+		C61D188DE205EED2135DCDD6 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = EF47D003449BB9F5A885E3F4 /* FCTEntities */; };
+		DB5153E291329ED28DE3BE58 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = C382025D55A14347E9C351BD /* FCTEntities */; };
 		FD68290A2F31190700C83480 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD6829092F31190700C83480 /* Intents.framework */; };
 		FD6829112F31190700C83480 /* VillainArcIntentsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD93E5E62F3051FD009569BB /* WidgetKit.framework */; };
@@ -294,6 +301,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FD68245D2F33A712009F6D98 /* VillainArcTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = VillainArcTests;
 			sourceTree = "<group>";
 		};
@@ -325,6 +334,8 @@
 		};
 		FDACE0022F70000000000002 /* VillainArcWatchApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = VillainArcWatchApp;
 			sourceTree = "<group>";
 		};
@@ -343,6 +354,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DB5153E291329ED28DE3BE58 /* FCTEntities in Frameworks */,
+				0EFD2294144CA53AFC24080B /* FCTSync in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,6 +373,8 @@
 			files = (
 				FD93E5E92F3051FD009569BB /* SwiftUI.framework in Frameworks */,
 				FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */,
+				C61D188DE205EED2135DCDD6 /* FCTEntities in Frameworks */,
+				8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -368,6 +383,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				FDAB6AF12FC769540085E0F0 /* MuscleMap in Frameworks */,
+				912F77127216E6A720D55660 /* FCTIntelligence in Frameworks */,
+				38F5B4EA9DF12A08A0B96B49 /* FCTEntities in Frameworks */,
+				0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,6 +485,10 @@
 				FD68245D2F33A712009F6D98 /* VillainArcTests */,
 			);
 			name = VillainArcTests;
+			packageProductDependencies = (
+				C382025D55A14347E9C351BD /* FCTEntities */,
+				57CA85F33D542E5A71727A42 /* FCTSync */,
+			);
 			productName = VillainArcTests;
 			productReference = FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -507,29 +529,13 @@
 				FD93E5EA2F3051FD009569BB /* VillainArcWidgetExtension */,
 			);
 			name = VillainArcWidgetExtensionExtension;
+			packageProductDependencies = (
+				EF47D003449BB9F5A885E3F4 /* FCTEntities */,
+				C5EC413C794E0ED7DF5B6881 /* FCTSync */,
+			);
 			productName = VillainArcWidgetExtensionExtension;
 			productReference = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
-		};
-		FDACE0032F70000000000003 /* VillainArcWatchApp */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = FDACE0042F70000000000004 /* Build configuration list for PBXNativeTarget "VillainArcWatchApp" */;
-			buildPhases = (
-				FDACE0072F70000000000007 /* Sources */,
-				FDACE0082F70000000000008 /* Frameworks */,
-				FDACE0092F70000000000009 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				FDACE0022F70000000000002 /* VillainArcWatchApp */,
-			);
-			name = VillainArcWatchApp;
-			productName = VillainArcWatchApp;
-			productReference = FDACE0012F70000000000001 /* VillainArcWatchApp.app */;
-			productType = "com.apple.product-type.application";
 		};
 		FDA1938F2F16D14500CA57C5 /* VillainArc */ = {
 			isa = PBXNativeTarget;
@@ -555,9 +561,32 @@
 			name = VillainArc;
 			packageProductDependencies = (
 				FDAB6AF02FC769540085E0F0 /* MuscleMap */,
+				254EA949EE4842D7AF0AE15A /* FCTIntelligence */,
+				B4373FF459A151B3B305FDAA /* FCTEntities */,
+				D9589A0FAF7667BC425CCA9A /* FCTSync */,
 			);
 			productName = VillainArc;
 			productReference = FDA193902F16D14500CA57C5 /* VillainArc.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FDACE0032F70000000000003 /* VillainArcWatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FDACE0042F70000000000004 /* Build configuration list for PBXNativeTarget "VillainArcWatchApp" */;
+			buildPhases = (
+				FDACE0072F70000000000007 /* Sources */,
+				FDACE0082F70000000000008 /* Frameworks */,
+				FDACE0092F70000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FDACE0022F70000000000002 /* VillainArcWatchApp */,
+			);
+			name = VillainArcWatchApp;
+			productName = VillainArcWatchApp;
+			productReference = FDACE0012F70000000000001 /* VillainArcWatchApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -606,6 +635,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				FDAB6AEF2FC769540085E0F0 /* XCRemoteSwiftPackageReference "MuscleMap" */,
+				8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FDA193912F16D14500CA57C5 /* Products */;
@@ -1371,6 +1401,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../FCTFoundation;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		FDAB6AEF2FC769540085E0F0 /* XCRemoteSwiftPackageReference "MuscleMap" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -1383,6 +1420,41 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		254EA949EE4842D7AF0AE15A /* FCTIntelligence */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTIntelligence;
+		};
+		57CA85F33D542E5A71727A42 /* FCTSync */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTSync;
+		};
+		B4373FF459A151B3B305FDAA /* FCTEntities */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTEntities;
+		};
+		C382025D55A14347E9C351BD /* FCTEntities */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTEntities;
+		};
+		C5EC413C794E0ED7DF5B6881 /* FCTSync */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTSync;
+		};
+		D9589A0FAF7667BC425CCA9A /* FCTSync */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTSync;
+		};
+		EF47D003449BB9F5A885E3F4 /* FCTEntities */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTEntities;
+		};
 		FDAB6AF02FC769540085E0F0 /* MuscleMap */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FDAB6AEF2FC769540085E0F0 /* XCRemoteSwiftPackageReference "MuscleMap" */;
