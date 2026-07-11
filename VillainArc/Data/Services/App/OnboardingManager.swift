@@ -1,3 +1,4 @@
+import FCTSync
 import HealthKit
 import SwiftData
 import SwiftUI
@@ -525,6 +526,13 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         }
     }
 
+}
+
+extension CloudKitImportMonitor {
+    /// App-owned single instance, preserving VillainArc's global-singleton monitor semantics: one
+    /// observer shared across the onboarding flow's start / wait / stop / fail calls. The state
+    /// machine now lives in `FCTSync.CloudKitImportMonitor`; the app owns only its lifetime.
+    static let shared = CloudKitImportMonitor.cloudKit()
 }
 
 extension UserGender {
