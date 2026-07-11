@@ -1,3 +1,4 @@
+import FCTEntities
 import Foundation
 
 nonisolated struct ExerciseSearchMatch {
@@ -14,7 +15,7 @@ nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
     var tokens: [String] = []
 
     func add(_ string: String) {
-        for token in normalizedTokens(for: string) {
+        for token in EntitySearchScoring.normalizedTokens(for: string) {
             guard !token.isEmpty, seen.insert(token).inserted else { continue }
             tokens.append(token)
         }
@@ -30,11 +31,11 @@ nonisolated func exerciseSearchTokens(for exercise: Exercise) -> [String] {
 nonisolated func exerciseSearchScore(for exercise: Exercise, queryTokens: [String]) -> Int {
     guard !queryTokens.isEmpty else { return 0 }
 
-    let nameTokens = normalizedTokens(for: exercise.name)
-    let aliasTokenGroups = exercise.aliases.map { normalizedTokens(for: $0) }
+    let nameTokens = EntitySearchScoring.normalizedTokens(for: exercise.name)
+    let aliasTokenGroups = exercise.aliases.map { EntitySearchScoring.normalizedTokens(for: $0) }
     let aliasTokens = aliasTokenGroups.flatMap { $0 }
-    let equipmentTokens = normalizedTokens(for: exercise.equipmentType.displayName)
-    let primaryMuscleTokens = exercise.musclesTargeted.first.map { normalizedTokens(for: $0.displayName) } ?? []
+    let equipmentTokens = EntitySearchScoring.normalizedTokens(for: exercise.equipmentType.displayName)
+    let primaryMuscleTokens = exercise.musclesTargeted.first.map { EntitySearchScoring.normalizedTokens(for: $0.displayName) } ?? []
 
     var score = 0
     for token in queryTokens {
@@ -52,8 +53,8 @@ nonisolated func exerciseSearchScore(for exercise: Exercise, queryTokens: [Strin
     }
 
     if queryTokens.count > 1 {
-        if phraseMatch(phraseTokens: queryTokens, in: nameTokens) { score += 6 }
-        if aliasTokenGroups.contains(where: { phraseMatch(phraseTokens: queryTokens, in: $0) }) { score += 4 }
+        if EntitySearchScoring.containsPhrase(queryTokens, in: nameTokens) { score += 6 }
+        if aliasTokenGroups.contains(where: { EntitySearchScoring.containsPhrase(queryTokens, in: $0) }) { score += 4 }
     }
 
     if exercise.favorite { score += 1 }
@@ -74,24 +75,13 @@ nonisolated func cachedExerciseSearchTokens(for exercise: Exercise) -> [String] 
 }
 
 nonisolated func matchesExerciseFuzzy(_ exercise: Exercise, queryTokens: [String], additionalTokens: [String] = []) -> Bool {
-    guard !queryTokens.isEmpty else { return true }
-
     let haystackTokens = cachedExerciseSearchTokens(for: exercise) + additionalTokens
-
-    return queryTokens.allSatisfy { queryToken in
-        let maxDistance = maximumFuzzyDistance(for: queryToken)
-        return haystackTokens.contains { token in
-            if token == queryToken { return true }
-            if maxDistance == 0 { return false }
-            if abs(token.count - queryToken.count) > maxDistance { return false }
-            return levenshteinDistance(between: token, and: queryToken, maxDistance: maxDistance) <= maxDistance
-        }
-    }
+    return EntitySearchScoring.fuzzyMatches(queryTokens: queryTokens, haystackTokens: haystackTokens)
 }
 
 func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrderedBefore: (Exercise, Exercise) -> Bool, score: ExerciseSearchScoreResolver, fuzzyAdditionalTokens: ExerciseFuzzyTokenResolver? = nil) -> [Exercise] {
     let cleanText = query.trimmingCharacters(in: .whitespacesAndNewlines)
-    let queryTokens = normalizedTokens(for: cleanText)
+    let queryTokens = EntitySearchScoring.normalizedTokens(for: cleanText)
 
     guard !queryTokens.isEmpty else { return exercises.sorted(by: isOrderedBefore) }
 
@@ -108,7 +98,7 @@ func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrde
             .map(\.exercise)
     }
 
-    guard shouldUseFuzzySearch(queryTokens: queryTokens) else { return [] }
+    guard EntitySearchScoring.shouldUseFuzzy(queryTokens: queryTokens) else { return [] }
 
     let fuzzyFiltered = exercises.filter { exercise in
         let extraTokens = fuzzyAdditionalTokens?(exercise) ?? []
@@ -116,20 +106,4 @@ func searchedExercises(in exercises: [Exercise], query: String, orderedBy isOrde
     }
 
     return fuzzyFiltered.sorted(by: isOrderedBefore)
-}
-
-private nonisolated func phraseMatch(phraseTokens: [String], in tokens: [String]) -> Bool {
-    guard !phraseTokens.isEmpty, tokens.count >= phraseTokens.count else { return false }
-    let maxStart = tokens.count - phraseTokens.count
-    for start in 0...maxStart {
-        var matches = true
-        for offset in phraseTokens.indices {
-            if tokens[start + offset] != phraseTokens[offset] {
-                matches = false
-                break
-            }
-        }
-        if matches { return true }
-    }
-    return false
 }

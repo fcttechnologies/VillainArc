@@ -1,3 +1,4 @@
+import FCTEntities
 import Foundation
 import SwiftData
 
@@ -106,7 +107,7 @@ import SwiftData
 
 }
 
-nonisolated func normalizedSearchPhrase(_ value: String) -> String { normalizedTokens(for: value).joined(separator: " ") }
+nonisolated func normalizedSearchPhrase(_ value: String) -> String { EntitySearchScoring.normalizedPhrase(value) }
 
 extension Exercise {
     static var recentsSort: [SortDescriptor<Exercise>] { [SortDescriptor(\Exercise.lastAddedAt, order: .reverse), SortDescriptor(\Exercise.name)] }

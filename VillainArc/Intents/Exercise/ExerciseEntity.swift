@@ -1,5 +1,6 @@
 import AppIntents
 import CoreTransferable
+import FCTEntities
 import SwiftData
 
 struct ExerciseEntity: AppEntity, IndexedEntity, Identifiable {
@@ -81,7 +82,7 @@ private func fetchExercises(for catalogIDs: [String], in context: ModelContext) 
 }
 
 func exerciseEntitySearchScore(for exercise: Exercise, query: String, queryTokens: [String]? = nil) -> Int {
-    let resolvedQueryTokens = queryTokens ?? normalizedTokens(for: query)
+    let resolvedQueryTokens = queryTokens ?? EntitySearchScoring.normalizedTokens(for: query)
     guard !resolvedQueryTokens.isEmpty else { return 0 }
 
     var score = exerciseSearchScore(for: exercise, queryTokens: resolvedQueryTokens)
@@ -109,7 +110,7 @@ private func exerciseEntitySearchTokens(for exercise: Exercise) -> [String] {
     var seen = Set<String>()
 
     for value in exercise.systemAlternateNames {
-        for token in normalizedTokens(for: value) {
+        for token in EntitySearchScoring.normalizedTokens(for: value) {
             guard seen.insert(token).inserted else { continue }
             tokens.append(token)
         }
