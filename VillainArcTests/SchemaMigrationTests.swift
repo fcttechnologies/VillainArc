@@ -1,3 +1,4 @@
+import FCTSync
 import Foundation
 import SwiftData
 import Testing
@@ -105,5 +106,58 @@ struct SchemaMigrationTests {
     @Test @MainActor
     func v5SchemaIncludesEveryActiveModel() {
         #expect(VillainArcSchemaV5.models.count == 40)
+    }
+
+    /// The by-name half of the schema-membership tripwire, via `FCTSync.SchemaContract`: pins the
+    /// exact 40-model V5 set so a dropped/renamed model fails loudly *with its name*, not just as a
+    /// count drift. Kept ALONGSIDE the `count == 40` pin above, not instead of it — the count
+    /// catches additions, this catches which specific model went missing.
+    @Test @MainActor
+    func v5SchemaContainsEveryExpectedModelByName() {
+        let expected: [any PersistentModel.Type] = [
+            WorkoutSession.self,
+            HealthWorkout.self,
+            WeightEntry.self,
+            HealthStepsDistance.self,
+            HealthEnergy.self,
+            TrainingConditionPeriod.self,
+            HealthSleepNight.self,
+            HealthSleepBlock.self,
+            HealthSyncState.self,
+            WeightGoal.self,
+            StepsGoal.self,
+            PreWorkoutContext.self,
+            ExercisePerformance.self,
+            SetPerformance.self,
+            Exercise.self,
+            AppSettings.self,
+            UserProfile.self,
+            ExerciseHistory.self,
+            ProgressionPoint.self,
+            RepRangePolicy.self,
+            RestTimeHistory.self,
+            WorkoutPlan.self,
+            ExercisePrescription.self,
+            SetPrescription.self,
+            WorkoutSplit.self,
+            WorkoutSplitDay.self,
+            SuggestionEvent.self,
+            PrescriptionChange.self,
+            SuggestionEvaluation.self,
+            TrainingGoal.self,
+            SleepGoal.self,
+            HealthHeart.self,
+            HealthRespiratoryRate.self,
+            HealthWristTemperature.self,
+            HydrationDay.self,
+            HydrationEntry.self,
+            HydrationGoal.self,
+            CardioSession.self,
+            CardioRoutePoint.self,
+            CardioMachineInterval.self
+        ]
+        #expect(expected.count == 40)
+        let missing = SchemaContract.missingModelNames(in: VillainArcSchemaV5.self, requiring: expected)
+        #expect(missing.isEmpty, "Models missing from VillainArcSchemaV5.models: \(missing)")
     }
 }

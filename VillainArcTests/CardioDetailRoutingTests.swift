@@ -1,4 +1,3 @@
-import HealthKit
 import Testing
 
 @testable import VillainArc
@@ -19,7 +18,11 @@ struct CardioDetailRoutingTests {
     @Test @MainActor
     func indoorSessionWithHealthMirrorUsesHealthDetailDestination() {
         let session = CardioSession(activity: .walk, environment: .indoor, captureMode: .machineIntervals)
-        let workout = HealthWorkout(workout: HKWorkout(activityType: .walking, start: Date(timeIntervalSince1970: 0), end: Date(timeIntervalSince1970: 1800)), cardioSession: session)
+        // Use the model's DEBUG placeholder init rather than the deprecated synchronous
+        // `HKWorkout(activityType:start:end:)` (deprecated since iOS 17). Routing keys only off the
+        // session's mirrored `healthWorkout`, so the placeholder's default fields are sufficient.
+        let workout = HealthWorkout(debugPlaceholder: true)
+        workout.cardioSession = session
         session.healthWorkout = workout
 
         guard case .healthWorkoutDetail(let routedWorkout) = AppRouter.detailDestination(for: session) else {
