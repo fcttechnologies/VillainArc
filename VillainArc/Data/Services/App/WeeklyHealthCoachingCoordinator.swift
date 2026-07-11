@@ -35,7 +35,7 @@ actor WeeklyHealthCoachingCoordinator {
 
         do {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.taskIdentifier)
-            try BGTaskScheduler.shared.submit(request)
+            try await BGTaskScheduler.shared.submitTaskRequest(request)
             AppLog.info("Scheduled weekly health coaching refresh for \(request.earliestBeginDate?.formatted(date: .abbreviated, time: .standard) ?? "the next system opportunity").")
         } catch {
             AppLog.error("Failed to schedule weekly health coaching refresh", error: error)
