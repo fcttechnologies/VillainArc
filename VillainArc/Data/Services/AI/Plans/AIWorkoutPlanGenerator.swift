@@ -1,3 +1,4 @@
+import FCTIntelligence
 import Foundation
 import FoundationModels
 
@@ -63,27 +64,19 @@ struct AIWorkoutPlanGenerator {
         }
     }
 
-    /// Trim, cap length, and strip control characters before the prompt reaches the model.
+    /// Trim, cap length, and strip control/invisible characters before the prompt reaches the model.
     /// Long inputs are truncated at a word boundary when possible so the request still reads cleanly.
     /// `internal` so the unit-test target can call it directly without standing up FoundationModels.
     static func sanitize(userPrompt: String) -> String {
         sanitize(userPrompt: userPrompt, maxLength: maxUserPromptLength)
     }
 
+    /// Delegates to `FCTIntelligence.PromptSafety.sanitize`, whose control/invisible-character
+    /// stripping is a strict superset of the prior local pass (it also drops DEL/C1 controls and the
+    /// full format category) while keeping the identical trim, word-boundary truncation, and
+    /// newline/tab preservation the sanitize pins verify.
     static func sanitize(userPrompt: String, maxLength: Int) -> String {
-        let trimmed = userPrompt
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .unicodeScalars
-            .filter { !$0.properties.isDefaultIgnorableCodePoint && $0.value >= 0x20 || $0 == "\n" || $0 == "\t" }
-            .map(Character.init)
-        let normalized = String(trimmed)
-        guard normalized.count > maxLength else { return normalized }
-        let cutIndex = normalized.index(normalized.startIndex, offsetBy: maxLength)
-        let head = normalized[..<cutIndex]
-        if let lastSpace = head.lastIndex(where: { $0.isWhitespace }) {
-            return String(head[..<lastSpace])
-        }
-        return String(head)
+        PromptSafety.sanitize(userPrompt, maxLength: maxLength)
     }
 
     private static var instructions: String {
