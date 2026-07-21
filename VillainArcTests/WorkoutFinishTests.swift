@@ -7,7 +7,7 @@ import Testing
 struct WorkoutFinishTests {
     // MARK: - Helpers
 
-    @MainActor private func makeSession(context: ModelContext, exerciseConfigs: [(weight: Double, reps: Int, complete: Bool)]) -> WorkoutSession {
+    private func makeSession(context: ModelContext, exerciseConfigs: [(weight: Double, reps: Int, complete: Bool)]) -> WorkoutSession {
         let session = WorkoutSession()
         context.insert(session)
         let exercise = ExercisePerformance(exercise: Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!), workoutSession: session)
@@ -26,7 +26,7 @@ struct WorkoutFinishTests {
         }
         return session
     }
-    @MainActor private func makeMultiExerciseSession(context: ModelContext) -> WorkoutSession {
+    private func makeMultiExerciseSession(context: ModelContext) -> WorkoutSession {
         let session = WorkoutSession()
         context.insert(session)
         // Exercise 1: all sets complete
@@ -55,7 +55,7 @@ struct WorkoutFinishTests {
     }
     // MARK: - .finish action (all sets already complete)
 
-    @Test @MainActor func finishWithAllSetsComplete_setsStatusToSummary() throws {
+    @Test func finishWithAllSetsComplete_setsStatusToSummary() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(context: context, exerciseConfigs: [(weight: 135, reps: 10, complete: true), (weight: 145, reps: 8, complete: true)])
@@ -65,7 +65,7 @@ struct WorkoutFinishTests {
         #expect(session.endedAt != nil)
         #expect(session.activeExercise == nil)
     }
-    @Test @MainActor func finish_keepsPreWorkoutFeelingUnsetWhenNotProvided() throws {
+    @Test func finish_keepsPreWorkoutFeelingUnsetWhenNotProvided() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(context: context, exerciseConfigs: [(weight: 135, reps: 10, complete: true)])
@@ -77,7 +77,7 @@ struct WorkoutFinishTests {
     }
     // MARK: - .markLoggedComplete action
 
-    @Test @MainActor func markLoggedComplete_marksLoggedSetsAndDeletesEmpty() throws {
+    @Test func markLoggedComplete_marksLoggedSetsAndDeletesEmpty() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         // 1 complete, 1 logged (has data but not complete), 1 empty
@@ -100,7 +100,7 @@ struct WorkoutFinishTests {
         #expect(session.statusValue == .summary)
         #expect(session.endedAt != nil)
     }
-    @Test @MainActor func markLoggedComplete_withOnlyLoggedSets_marksThemComplete() throws {
+    @Test func markLoggedComplete_withOnlyLoggedSets_marksThemComplete() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(
@@ -119,7 +119,7 @@ struct WorkoutFinishTests {
     }
     // MARK: - .deleteUnfinished action
 
-    @Test @MainActor func deleteUnfinished_deletesAllIncompleteSets() throws {
+    @Test func deleteUnfinished_deletesAllIncompleteSets() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(
@@ -135,7 +135,7 @@ struct WorkoutFinishTests {
         #expect(exercise.sets?.first?.complete == true)
         #expect(session.statusValue == .summary)
     }
-    @Test @MainActor func deleteUnfinished_whenAllSetsDeleted_deletesWorkout() throws {
+    @Test func deleteUnfinished_whenAllSetsDeleted_deletesWorkout() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         // All sets are incomplete
@@ -145,7 +145,7 @@ struct WorkoutFinishTests {
     }
     // MARK: - .deleteEmpty action
 
-    @Test @MainActor func deleteEmpty_deletesOnlyEmptySets() throws {
+    @Test func deleteEmpty_deletesOnlyEmptySets() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(
@@ -162,7 +162,7 @@ struct WorkoutFinishTests {
         #expect((exercise.sets ?? []).contains(loggedSet))
         #expect(session.statusValue == .summary)
     }
-    @Test @MainActor func deleteEmpty_whenAllSetsEmpty_deletesWorkout() throws {
+    @Test func deleteEmpty_whenAllSetsEmpty_deletesWorkout() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         // All sets are empty
@@ -172,7 +172,7 @@ struct WorkoutFinishTests {
     }
     // MARK: - Prune empty exercises
 
-    @Test @MainActor func finish_prunesExercisesWithNoSetsRemaining() throws {
+    @Test func finish_prunesExercisesWithNoSetsRemaining() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeMultiExerciseSession(context: context)
@@ -184,7 +184,7 @@ struct WorkoutFinishTests {
         #expect(session.exercises?.first?.catalogID == "barbell_bench_press")
         #expect(session.statusValue == .summary)
     }
-    @Test @MainActor func finish_deletesWorkoutWhenAllExercisesPruned() throws {
+    @Test func finish_deletesWorkoutWhenAllExercisesPruned() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         // Single exercise with only empty sets
@@ -193,7 +193,7 @@ struct WorkoutFinishTests {
         #expect(result == .workoutDeleted)
     }
 
-    @Test @MainActor func predictedFinishResult_forDeleteUnfinished_matchesDeletionCase() throws {
+    @Test func predictedFinishResult_forDeleteUnfinished_matchesDeletionCase() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -202,7 +202,7 @@ struct WorkoutFinishTests {
         #expect(session.predictedFinishResult(action: .deleteUnfinished) == .workoutDeleted)
     }
 
-    @Test @MainActor func predictedFinishResult_forFinishWithCompletedSets_staysFinished() throws {
+    @Test func predictedFinishResult_forFinishWithCompletedSets_staysFinished() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -212,7 +212,7 @@ struct WorkoutFinishTests {
     }
     // MARK: - State after finish
 
-    @Test @MainActor func finish_clearsActiveExercise() throws {
+    @Test func finish_clearsActiveExercise() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(context: context, exerciseConfigs: [(weight: 135, reps: 10, complete: true)])
@@ -221,7 +221,7 @@ struct WorkoutFinishTests {
         #expect(result == .finished)
         #expect(session.activeExercise == nil)
     }
-    @Test @MainActor func finish_setsEndedAt() throws {
+    @Test func finish_setsEndedAt() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = makeSession(context: context, exerciseConfigs: [(weight: 135, reps: 10, complete: true)])
@@ -235,7 +235,7 @@ struct WorkoutFinishTests {
         #expect(session.endedAt! <= after)
     }
 
-    @Test @MainActor func finish_updatesExerciseDateToLatestCompletedSetTime() throws {
+    @Test func finish_updatesExerciseDateToLatestCompletedSetTime() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 

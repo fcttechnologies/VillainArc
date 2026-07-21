@@ -3,7 +3,7 @@ import SwiftData
 
 @testable import VillainArc
 
-@MainActor enum TestDataFactory {
+enum TestDataFactory {
     static func makeContext() throws -> ModelContext { ModelContext(try TestModelContainer.make()) }
     static func makePrescription(context: ModelContext, catalogID: String = "barbell_bench_press", workingSets: Int = 4, targetWeight: Double = 135, targetReps: Int = 8, targetRest: Int = 90, repRangeMode: RepRangeMode = .range, lowerRange: Int = 6, upperRange: Int = 12) -> (WorkoutPlan, ExercisePrescription) {
         let plan = WorkoutPlan.makeForTests()
@@ -65,7 +65,7 @@ import SwiftData
     }
 }
 
-@MainActor extension SetPerformance {
+extension SetPerformance {
     fileprivate convenience init() {
         self.init(rawIndex: 0)
     }
@@ -76,7 +76,7 @@ import SwiftData
     }
 }
 
-@MainActor extension ExercisePerformance {
+extension ExercisePerformance {
     fileprivate convenience init() {
         let dummySession = WorkoutSession()
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)

@@ -70,7 +70,6 @@ enum PremiumFeature: String, CaseIterable, Identifiable, Hashable {
 
 /// Gate helper used at every premium-feature call site. Reads the live `SubscriptionStore.status`
 /// and falls back to the App Group cache to avoid a paywall flash before StoreKit has resolved.
-@MainActor
 enum SubscriptionGate {
     /// True when the current entitlement gives Pro access, including free trial and grace period.
     /// When `status == .unknown` (first launch, products not yet fetched), trusts the App Group
@@ -97,7 +96,6 @@ enum SubscriptionGate {
 
 /// Drives the single global paywall sheet. `ContentView` mounts a full-screen cover bound to
 /// `PaywallPresenter.shared.trigger`; call sites set it via `SubscriptionGate.require`.
-@MainActor
 @Observable
 final class PaywallPresenter {
     static let shared = PaywallPresenter()

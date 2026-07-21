@@ -5,7 +5,6 @@ import SwiftData
 /// Seeds the real app store with curated, marketing-grade demo data for the Screenshot Studio.
 /// Reuses the same unit conventions the app uses (completed-set weights in kg → display as clean lbs;
 /// active-session weights in display units). Idempotent: clears its own seeded data first.
-@MainActor
 enum ScreenshotStudioSeeder {
     /// Catalog IDs for the demo push plan.
     private static let planExerciseIDs = ["barbell_bench_press", "dumbbell_incline_bench_press", "cable_bench_chest_fly", "cable_bar_pushdown"]

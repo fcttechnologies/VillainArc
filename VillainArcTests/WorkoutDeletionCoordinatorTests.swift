@@ -5,7 +5,7 @@ import Testing
 @testable import VillainArc
 
 struct WorkoutDeletionCoordinatorTests {
-    @Test @MainActor func deleteCompletedWorkouts_retainsSnapshotsByHidingSession() throws {
+    @Test func deleteCompletedWorkouts_retainsSnapshotsByHidingSession() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -34,7 +34,7 @@ struct WorkoutDeletionCoordinatorTests {
         #expect(remainingEvents.contains(where: { $0.id == event.id }))
     }
 
-    @Test @MainActor func deleteCompletedWorkouts_hardDeletesSessionAndLearningArtifacts() throws {
+    @Test func deleteCompletedWorkouts_hardDeletesSessionAndLearningArtifacts() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -85,7 +85,7 @@ struct WorkoutDeletionCoordinatorTests {
         #expect(remainingChanges.contains(where: { $0.id == linkedChange.id }) == false)
     }
 
-    @Test @MainActor func applyRetentionSetting_deletesAlreadyHiddenWorkoutsWhenDisabled() throws {
+    @Test func applyRetentionSetting_deletesAlreadyHiddenWorkoutsWhenDisabled() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 

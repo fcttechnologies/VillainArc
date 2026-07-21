@@ -1,7 +1,6 @@
 import Foundation
 import SwiftData
 
-@MainActor
 enum WorkoutPlanDeletionCoordinator {
     struct Assessment {
         enum Risk {

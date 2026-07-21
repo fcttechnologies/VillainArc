@@ -43,7 +43,7 @@ struct OutcomeResolver {
 
     // MARK: - Public Entry Point
 
-    @MainActor static func resolveOutcomes(for workout: WorkoutSession, context: ModelContext) async {
+    static func resolveOutcomes(for workout: WorkoutSession, context: ModelContext) async {
         guard workout.workoutPlan != nil else { return }
 
         // Step 1: Gather eligible events

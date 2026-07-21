@@ -4,7 +4,6 @@ import Testing
 
 @testable import VillainArc
 
-@MainActor
 struct StepsGoalEvaluatorTests {
     private let calendar = Calendar.autoupdatingCurrent
 

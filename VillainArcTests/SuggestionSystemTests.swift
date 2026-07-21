@@ -5,65 +5,65 @@ import Testing
 @testable import VillainArc
 
 struct SuggestionSystemTests {
-    @MainActor private func flattenedChanges(from drafts: [SuggestionEventDraft]) -> [(draft: SuggestionEventDraft, change: PrescriptionChangeDraft)] { drafts.flatMap { draft in draft.changes.map { (draft: draft, change: $0) } } }
-    @MainActor private func exerciseLevelChanges(from drafts: [SuggestionEventDraft]) -> [PrescriptionChangeDraft] { drafts.filter { $0.targetSetPrescription == nil }.flatMap(\.changes) }
+    private func flattenedChanges(from drafts: [SuggestionEventDraft]) -> [(draft: SuggestionEventDraft, change: PrescriptionChangeDraft)] { drafts.flatMap { draft in draft.changes.map { (draft: draft, change: $0) } } }
+    private func exerciseLevelChanges(from drafts: [SuggestionEventDraft]) -> [PrescriptionChangeDraft] { drafts.filter { $0.targetSetPrescription == nil }.flatMap(\.changes) }
     // MARK: - Training Style Detection Tests
 
-    @Test @MainActor func detectTrainingStyle_straightSets() {
+    @Test func detectTrainingStyle_straightSets() {
         let sets = [100.0, 100.0, 100.0, 100.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .straightSets)
     }
-    @Test @MainActor func detectTrainingStyle_straightSetsWithSmallVariance() {
+    @Test func detectTrainingStyle_straightSetsWithSmallVariance() {
         // Tight small variance with no clear structure should still be straight sets.
         let sets = [100.0, 105.0, 100.0, 95.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .straightSets)
     }
 
-    @Test @MainActor func detectTrainingStyle_moderateRampWithinOldTenPercentBand_prefersAscending() {
+    @Test func detectTrainingStyle_moderateRampWithinOldTenPercentBand_prefersAscending() {
         let sets = [100.0, 105.0, 110.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .ascending)
     }
-    @Test @MainActor func detectTrainingStyle_topSetBackoffs() {
+    @Test func detectTrainingStyle_topSetBackoffs() {
         // 2 heavy sets + 2 clearly lighter sets
         let sets = [200.0, 200.0, 150.0, 150.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .topSetBackoffs)
     }
 
-    @Test @MainActor func detectTrainingStyle_feederRamp() {
+    @Test func detectTrainingStyle_feederRamp() {
         let sets = [80.0, 90.0, 100.0, 100.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .feederRamp)
     }
 
-    @Test @MainActor func detectTrainingStyle_reversePyramid() {
+    @Test func detectTrainingStyle_reversePyramid() {
         let sets = [100.0, 90.0, 90.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .reversePyramid)
     }
 
-    @Test @MainActor func detectTrainingStyle_ascending() {
+    @Test func detectTrainingStyle_ascending() {
         // Spread > 10% of avg (not straight), all weights >= max*0.8 (not topSetBackoffs), monotonically increasing
         let sets = [165.0, 175.0, 185.0, 200.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .ascending)
     }
-    @Test @MainActor func detectTrainingStyle_descendingPyramid() {
+    @Test func detectTrainingStyle_descendingPyramid() {
         // Spread > 10% of avg (not straight), all weights >= max*0.8 (not topSetBackoffs), monotonically decreasing
         let sets = [200.0, 185.0, 175.0, 165.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .descendingPyramid)
     }
 
-    @Test @MainActor func detectTrainingStyle_descendingPyramid_notMisclassifiedAsTopSetBackoffs() {
+    @Test func detectTrainingStyle_descendingPyramid_notMisclassifiedAsTopSetBackoffs() {
         let sets = [100.0, 90.0, 80.0, 70.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .descendingPyramid)
     }
-    @Test @MainActor func detectTrainingStyle_ascendingPyramid() {
+    @Test func detectTrainingStyle_ascendingPyramid() {
         // Peak in middle, spread > 10% of avg (not straight), all weights >= max*0.8 (not topSetBackoffs)
         // avg=182, threshold=18.2 → need diff > 18.2 for at least one weight
         let sets = [165.0, 185.0, 200.0, 185.0, 165.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
@@ -71,49 +71,49 @@ struct SuggestionSystemTests {
         #expect(style == .ascendingPyramid)
     }
 
-    @Test @MainActor func detectTrainingStyle_mildInteriorPlateauBackoff_prefersUnknownOverStraightSets() {
+    @Test func detectTrainingStyle_mildInteriorPlateauBackoff_prefersUnknownOverStraightSets() {
         let sets = [100.0, 110.0, 110.0, 100.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .unknown)
     }
 
-    @Test @MainActor func detectTrainingStyle_unknownForNoisyMiddlePeak() {
+    @Test func detectTrainingStyle_unknownForNoisyMiddlePeak() {
         let sets = [100.0, 125.0, 105.0, 115.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .unknown)
     }
-    @Test @MainActor func detectTrainingStyle_unknownForTwoSets() {
+    @Test func detectTrainingStyle_unknownForTwoSets() {
         let sets = [100.0, 150.0].enumerated().map { (i, w) in TestDataFactory.makeSetPerformance(index: i, weight: w, reps: 8) }
         let style = MetricsCalculator.detectTrainingStyle(sets)
         #expect(style == .unknown)
     }
-    @Test @MainActor func detectTrainingStyle_unknownForEmptySets() {
+    @Test func detectTrainingStyle_unknownForEmptySets() {
         let style = MetricsCalculator.detectTrainingStyle([])
         #expect(style == .unknown)
     }
 
-    @Test @MainActor func roundSuggestedWeight_roundsMachineLoadsToFivePoundsInLbsMode() {
+    @Test func roundSuggestedWeight_roundsMachineLoadsToFivePoundsInLbsMode() {
         let rawSuggestion = WeightUnit.lbs.toKg(206.8)
         let rounded = MetricsCalculator.roundSuggestedWeight(rawSuggestion, equipmentType: .machine, weightUnit: .lbs)
 
         #expect(abs(WeightUnit.lbs.fromKg(rounded) - 205.0) < 0.001)
     }
 
-    @Test @MainActor func roundSuggestedWeight_roundsCableLoadsToTwoPointFivePoundsInLbsMode() {
+    @Test func roundSuggestedWeight_roundsCableLoadsToTwoPointFivePoundsInLbsMode() {
         let rawSuggestion = WeightUnit.lbs.toKg(46.8)
         let rounded = MetricsCalculator.roundSuggestedWeight(rawSuggestion, equipmentType: .cableSingle, weightUnit: .lbs)
 
         #expect(abs(WeightUnit.lbs.fromKg(rounded) - 47.5) < 0.001)
     }
 
-    @Test @MainActor func roundSuggestedWeight_roundsDumbbellLoadsToFivePoundsInLbsMode() {
+    @Test func roundSuggestedWeight_roundsDumbbellLoadsToFivePoundsInLbsMode() {
         let rawSuggestion = WeightUnit.lbs.toKg(49.6)
         let rounded = MetricsCalculator.roundSuggestedWeight(rawSuggestion, equipmentType: .dumbbellSingle, weightUnit: .lbs)
 
         #expect(abs(WeightUnit.lbs.fromKg(rounded) - 50.0) < 0.001)
     }
 
-    @Test @MainActor func weightIncrement_usesSingleImplementStepsForDoubleDumbbellsDoubleCablesAndDoubleKettlebells() {
+    @Test func weightIncrement_usesSingleImplementStepsForDoubleDumbbellsDoubleCablesAndDoubleKettlebells() {
         let dumbbellIncrement = MetricsCalculator.weightIncrement(for: 6, primaryMuscle: .chest, equipmentType: .dumbbells, catalogID: "dumbbell_bench_press")
         let cableIncrement = MetricsCalculator.weightIncrement(for: 10, primaryMuscle: .back, equipmentType: .cables, catalogID: "cable_rows")
         let kettlebellIncrement = MetricsCalculator.weightIncrement(for: 6, primaryMuscle: .shoulders, equipmentType: .kettlebell, catalogID: "kettlebell_double_press")
@@ -123,7 +123,7 @@ struct SuggestionSystemTests {
         #expect(kettlebellIncrement == 1.25)
     }
 
-    @Test @MainActor func detectTrainingStyle_ignoresExplicitWarmupRamp_beforeStraightTopSets() throws {
+    @Test func detectTrainingStyle_ignoresExplicitWarmupRamp_beforeStraightTopSets() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
 
@@ -146,7 +146,7 @@ struct SuggestionSystemTests {
         #expect(progressionSets.allSatisfy { $0.type == .working })
     }
 
-    @Test @MainActor func detectTrainingStyle_restPauseCluster_whenSameLoadUsesVeryShortRest() throws {
+    @Test func detectTrainingStyle_restPauseCluster_whenSameLoadUsesVeryShortRest() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -162,7 +162,7 @@ struct SuggestionSystemTests {
         #expect(progressionSets.first?.index == 0)
     }
 
-    @Test @MainActor func detectTrainingStyle_shortRestStraightSets_doNotCollapseIntoRestPauseCluster() throws {
+    @Test func detectTrainingStyle_shortRestStraightSets_doNotCollapseIntoRestPauseCluster() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 10, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -176,7 +176,7 @@ struct SuggestionSystemTests {
         #expect(progressionSets.map(\.index) == [0, 1, 2])
     }
 
-    @Test @MainActor func detectTrainingStyle_dropSetCluster_whenExplicitDropSetsDominate() throws {
+    @Test func detectTrainingStyle_dropSetCluster_whenExplicitDropSetsDominate() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -193,7 +193,7 @@ struct SuggestionSystemTests {
     }
     // MARK: - Style Increment Multiplier (via doubleProgressionTarget)
 
-    @Test @MainActor func styleIncrementMultiplier_topSetBackoffsGetsLargerIncrement() throws {
+    @Test func styleIncrementMultiplier_topSetBackoffsGetsLargerIncrement() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 200, targetReps: 8, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -224,7 +224,7 @@ struct SuggestionSystemTests {
         #expect(topSetIndices == Set([0, 1]))
     }
 
-    @Test @MainActor func confirmedProgressionTarget_usesPreferredWeightChangeOverride() throws {
+    @Test func confirmedProgressionTarget_usesPreferredWeightChangeOverride() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(100), targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -245,7 +245,7 @@ struct SuggestionSystemTests {
         #expect(abs((weightIncrease?.change.newValue ?? 0) - WeightUnit.lbs.toKg(115)) < 0.001)
     }
 
-    @Test @MainActor func generatedSuggestion_persistsWeightStepUsedFromPreferredWeightChange() async throws {
+    @Test func generatedSuggestion_persistsWeightStepUsedFromPreferredWeightChange() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(100), targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -279,7 +279,7 @@ struct SuggestionSystemTests {
         #expect(abs((weightEvent.weightStepUsed ?? 0) - WeightUnit.lbs.toKg(15)) < 0.001)
     }
 
-    @Test @MainActor func largeOvershootProgression_roundsPreferredWeightChangeToMultipleOfPreferredStep() throws {
+    @Test func largeOvershootProgression_roundsPreferredWeightChangeToMultipleOfPreferredStep() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(100), targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -296,7 +296,7 @@ struct SuggestionSystemTests {
         #expect(abs((weightIncrease?.change.newValue ?? 0) - WeightUnit.lbs.toKg(120)) < 0.001)
     }
 
-    @Test @MainActor func selectProgressionSets_ascendingStyleIncludesTopThreeWeights() throws {
+    @Test func selectProgressionSets_ascendingStyleIncludesTopThreeWeights() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 5, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         let session = TestDataFactory.makeSession(context: context)
@@ -310,7 +310,7 @@ struct SuggestionSystemTests {
         #expect(progressionWeights == [80, 90, 100])
     }
 
-    @Test @MainActor func selectProgressionSets_detectedModerateAscendingRamp_excludesFeederSets() throws {
+    @Test func selectProgressionSets_detectedModerateAscendingRamp_excludesFeederSets() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 5, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         let session = TestDataFactory.makeSession(context: context)
@@ -325,7 +325,7 @@ struct SuggestionSystemTests {
         #expect(progressionSets.map(\.weight) == [100, 105, 110])
     }
 
-    @Test @MainActor func selectProgressionSets_feederRamp_usesFlatTopClusterOnly() throws {
+    @Test func selectProgressionSets_feederRamp_usesFlatTopClusterOnly() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         let session = TestDataFactory.makeSession(context: context)
@@ -340,7 +340,7 @@ struct SuggestionSystemTests {
         #expect(progressionSets.map(\.index) == [2, 3])
     }
 
-    @Test @MainActor func immediateProgressionRange_feederRamp_targetsOnlyTopCluster() throws {
+    @Test func immediateProgressionRange_feederRamp_targetsOnlyTopCluster() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 4, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         prescription.sortedSets[0].targetWeight = 80
@@ -360,19 +360,19 @@ struct SuggestionSystemTests {
         #expect(weightChangeIndices == Set([2, 3]))
     }
 
-    @Test @MainActor func weightIncrement_usesFiveKgForWhitelistedBarbellPulls() {
+    @Test func weightIncrement_usesFiveKgForWhitelistedBarbellPulls() {
         let increment = MetricsCalculator.weightIncrement(for: 100, primaryMuscle: .lats, equipmentType: .barbell, catalogID: "barbell_deadlift")
 
         #expect(increment == 5.0)
     }
 
-    @Test @MainActor func weightIncrement_keepsConservativeStepForNonWhitelistedBackExercises() {
+    @Test func weightIncrement_keepsConservativeStepForNonWhitelistedBackExercises() {
         let increment = MetricsCalculator.weightIncrement(for: 100, primaryMuscle: .lats, equipmentType: .barbell, catalogID: "barbell_shrugs")
 
         #expect(increment == 2.5)
     }
 
-    @Test @MainActor func progressionProfile_keepsDefaultThresholdsForNonReviewedBarbellCatalogIDs() {
+    @Test func progressionProfile_keepsDefaultThresholdsForNonReviewedBarbellCatalogIDs() {
         let profile = MetricsCalculator.progressionProfile(primaryMuscle: .back, equipmentType: .barbell, catalogID: "barbell_shrugs")
 
         #expect(profile.kind == .default)
@@ -380,7 +380,7 @@ struct SuggestionSystemTests {
         #expect(profile.confirmedRangeMargin == 1)
     }
 
-    @Test @MainActor func confirmedProgressionRange_loadedBodyweightSuggestsLoadIncrease() throws {
+    @Test func confirmedProgressionRange_loadedBodyweightSuggestsLoadIncrease() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "ab_wheel_rollout", workingSets: 2, targetWeight: WeightUnit.lbs.toKg(20), targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -401,7 +401,7 @@ struct SuggestionSystemTests {
         #expect(abs((weightIncrease?.change.newValue ?? 0) - WeightUnit.lbs.toKg(25)) < 0.001)
     }
 
-    @Test @MainActor func confirmedProgressionRange_unloadedBodyweightStillDoesNotSuggestLoadIncrease() throws {
+    @Test func confirmedProgressionRange_unloadedBodyweightStillDoesNotSuggestLoadIncrease() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "push_ups", workingSets: 2, targetWeight: 0, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -420,7 +420,7 @@ struct SuggestionSystemTests {
         #expect(weightIncrease == nil, "Pure bodyweight work should still progress through reps and ranges until explicit external load is tracked.")
     }
 
-    @Test @MainActor func immediateProgressionRange_heavyCompoundWaitsForConfirmation_whileStableMachineCanProgressNow() throws {
+    @Test func immediateProgressionRange_heavyCompoundWaitsForConfirmation_whileStableMachineCanProgressNow() throws {
         let context = try TestDataFactory.makeContext()
 
         let (barbellPlan, barbellPrescription) = TestDataFactory.makePrescription(context: context, catalogID: "barbell_bench_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
@@ -443,7 +443,7 @@ struct SuggestionSystemTests {
         #expect(machineWeightIncrease != nil, "Stable machine work should still progress immediately when all primary sets hit the top of the range")
     }
 
-    @Test @MainActor func confirmedProgressionRange_heavyCompound_requiresExactTopAcrossTwoSessions() throws {
+    @Test func confirmedProgressionRange_heavyCompound_requiresExactTopAcrossTwoSessions() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "barbell_bench_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -464,7 +464,7 @@ struct SuggestionSystemTests {
         #expect(repIncrease != nil, "When load progression is held back on a heavy compound, rep progression should remain available within the range")
     }
 
-    @Test @MainActor func confirmedProgressionRange_heavyCompound_fires_whenAllSetsHitCeilingAcrossTwoSessions() throws {
+    @Test func confirmedProgressionRange_heavyCompound_fires_whenAllSetsHitCeilingAcrossTwoSessions() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "barbell_bench_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -483,7 +483,7 @@ struct SuggestionSystemTests {
         #expect(weightIncreaseCount == 2, "Heavy compounds should still load-progress once two sessions clearly hit the top of the range")
     }
 
-    @Test @MainActor func belowRangeWeightDecrease_heavyCompound_requiresThreeDocumentedMisses() throws {
+    @Test func belowRangeWeightDecrease_heavyCompound_requiresThreeDocumentedMisses() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "barbell_bench_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -506,7 +506,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease == nil, "Heavy compounds should not lower load after only two documented below-range misses")
     }
 
-    @Test @MainActor func belowRangeWeightDecrease_heavyCompound_requiresFullFourSessionWindow() throws {
+    @Test func belowRangeWeightDecrease_heavyCompound_requiresFullFourSessionWindow() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "barbell_bench_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -529,7 +529,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease == nil, "Heavy compounds should not lower load until the full four-session evidence window exists")
     }
 
-    @Test @MainActor func largeJumpDumbbell_prefersRepIncreaseOverLoadIncrease_whenTwoSessionsAreOneRepShy() throws {
+    @Test func largeJumpDumbbell_prefersRepIncreaseOverLoadIncrease_whenTwoSessionsAreOneRepShy() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "dumbbell_bench_press", workingSets: 2, targetWeight: 30, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -550,7 +550,7 @@ struct SuggestionSystemTests {
         #expect(repIncreaseCount == 2, "Large-jump dumbbell work should keep progressing by reps within the range when that is the safer next step")
     }
 
-    @Test @MainActor func matchActualWeight_updatesDoubleDumbbellPrescription_forStablePerSideDrift() throws {
+    @Test func matchActualWeight_updatesDoubleDumbbellPrescription_forStablePerSideDrift() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "dumbbell_bench_press", workingSets: 1, targetWeight: 30, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -574,7 +574,7 @@ struct SuggestionSystemTests {
         #expect(weightDriftAdjustment?.change.newValue == 35)
     }
 
-    @Test @MainActor func confirmedProgressionTarget_machineAssistedSuggestsLessAssistance() throws {
+    @Test func confirmedProgressionTarget_machineAssistedSuggestsLessAssistance() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "assisted_pull_ups", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(90), targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -595,7 +595,7 @@ struct SuggestionSystemTests {
         #expect(abs((assistanceDecrease?.change.newValue ?? 0) - WeightUnit.lbs.toKg(85)) < 0.001)
     }
 
-    @Test @MainActor func immediateProgressionRange_doesNotFire_whenLastSetMissesCeiling() throws {
+    @Test func immediateProgressionRange_doesNotFire_whenLastSetMissesCeiling() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -611,7 +611,7 @@ struct SuggestionSystemTests {
         #expect(weightIncrease == nil, "Immediate range progression should stay strict for a single-session fatigue miss on the last set")
     }
 
-    @Test @MainActor func immediateProgressionRange_ignoresCloseUnlinkedWorkingSet() throws {
+    @Test func immediateProgressionRange_ignoresCloseUnlinkedWorkingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -627,7 +627,7 @@ struct SuggestionSystemTests {
         #expect(targetedIndices == Set([0, 1]), "A close unlinked working set should not block progression for linked prescribed sets")
     }
 
-    @Test @MainActor func immediateProgressionRange_blocksOnStronglyContradictoryComparableUnlinkedSet() throws {
+    @Test func immediateProgressionRange_blocksOnStronglyContradictoryComparableUnlinkedSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -642,7 +642,7 @@ struct SuggestionSystemTests {
         #expect(weightIncrease == nil, "A strongly underperforming comparable unlinked working set should block immediate progression")
     }
 
-    @Test @MainActor func confirmedProgressionRange_fires_whenStableMachineWorkIsOneRepShyAcrossTwoSessions() throws {
+    @Test func confirmedProgressionRange_fires_whenStableMachineWorkIsOneRepShyAcrossTwoSessions() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 4, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -664,7 +664,7 @@ struct SuggestionSystemTests {
         #expect(weightChanges.count == 4, "Stable machine work should still progress after two sessions when every set is at ceiling or one rep shy")
         #expect(repChanges.isEmpty, "Rep reset should not be emitted when the prescription is already at the lower bound")
     }
-    @Test @MainActor func generatedSuggestionsAttachSessionEventContext() async throws {
+    @Test func generatedSuggestionsAttachSessionEventContext() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 3, targetWeight: 200, targetReps: 8, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -690,7 +690,7 @@ struct SuggestionSystemTests {
         #expect(generated.allSatisfy { $0.targetExercisePrescription?.workoutPlan?.id == plan.id })
     }
 
-    @Test @MainActor func generateSuggestions_persistsConfidenceOnSuggestionEvents() async throws {
+    @Test func generateSuggestions_persistsConfidenceOnSuggestionEvents() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -721,13 +721,13 @@ struct SuggestionSystemTests {
         #expect(event.suggestionConfidence == 0.7)
         #expect(event.suggestionConfidenceTier == .moderate)
     }
-    @Test @MainActor func generateSuggestions_returnsEmptyForFreeformWorkout() async throws {
+    @Test func generateSuggestions_returnsEmptyForFreeformWorkout() async throws {
         let context = try TestDataFactory.makeContext()
         let session = TestDataFactory.makeSession(context: context)
         let generated = await SuggestionGenerator.generateSuggestions(for: session, context: context)
         #expect(generated.isEmpty)
     }
-    @Test @MainActor func generateSuggestions_deduplicatesOvershootToSingleStrongerEvent() async throws {
+    @Test func generateSuggestions_deduplicatesOvershootToSingleStrongerEvent() async throws {
         let context = try TestDataFactory.makeContext()
         let settings = AppSettings()
         settings.weightUnit = .kg
@@ -759,7 +759,7 @@ struct SuggestionSystemTests {
         #expect(event.changeReasoning?.contains("significantly overshot the target") == true)
     }
 
-    @Test @MainActor func generateSuggestions_triggerSnapshotPreservesLinkedTargetSetIndices() async throws {
+    @Test func generateSuggestions_triggerSnapshotPreservesLinkedTargetSetIndices() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -793,7 +793,7 @@ struct SuggestionSystemTests {
         #expect(snapshotSets[0].originalTargetSetID == prescription.sortedSets[0].id)
         #expect(snapshotSets[1].originalTargetSetID == prescription.sortedSets[1].id)
     }
-    @Test @MainActor func generateSuggestions_ignoresIncompleteHistoryForConfirmedProgression() async throws {
+    @Test func generateSuggestions_ignoresIncompleteHistoryForConfirmedProgression() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         prescription.musclesTargeted = [.chest]
@@ -815,7 +815,7 @@ struct SuggestionSystemTests {
         let generated = await SuggestionGenerator.generateSuggestions(for: workout, context: context)
         #expect(generated.isEmpty)
     }
-    @Test @MainActor func historicalSnapshotSupportsRepSuggestionAfterOldPlanLinksAreCleared() throws {
+    @Test func historicalSnapshotSupportsRepSuggestionAfterOldPlanLinksAreCleared() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         let previousSession = WorkoutSession(from: plan)
@@ -853,7 +853,7 @@ struct SuggestionSystemTests {
         }
     }
 
-    @Test @MainActor func historicalLinkedTargetSetIndexMatchesReindexedHistoricalSetToOriginalTargetSlot() throws {
+    @Test func historicalLinkedTargetSetIndexMatchesReindexedHistoricalSetToOriginalTargetSlot() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -908,7 +908,7 @@ struct SuggestionSystemTests {
         #expect(repChanges.contains { $0.draft.targetSetPrescription?.index == 1 })
         #expect(repChanges.contains { $0.draft.targetSetPrescription?.index == 0 } == false)
     }
-    @Test @MainActor func belowRangeWeightDecrease_requiresAttemptingPrescribedLoad() throws {
+    @Test func belowRangeWeightDecrease_requiresAttemptingPrescribedLoad() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
@@ -920,7 +920,7 @@ struct SuggestionSystemTests {
         let weightDecrease = flattenedChanges(from: suggestions).filter { $0.change.changeType == .decreaseWeight }
         #expect(weightDecrease.isEmpty)
     }
-    @Test @MainActor func belowRangeWeightDecrease_triggersAfterTwoBelowRangeSessionsAtTargetLoad() throws {
+    @Test func belowRangeWeightDecrease_triggersAfterTwoBelowRangeSessionsAtTargetLoad() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
@@ -936,7 +936,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease?.change.newValue == 95.0)
     }
 
-    @Test @MainActor func reducedWeightToHitReps_doesNotTrigger_whenReducedLoadOnlyHitsRangeFloor() throws {
+    @Test func reducedWeightToHitReps_doesNotTrigger_whenReducedLoadOnlyHitsRangeFloor() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -954,7 +954,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease == nil, "Two reduced-load sessions that still hit the range floor should not lower the prescription")
     }
 
-    @Test @MainActor func reducedWeightToHitReps_triggers_whenOneReducedLoadSessionFallsBelowRangeFloor() throws {
+    @Test func reducedWeightToHitReps_triggers_whenOneReducedLoadSessionFallsBelowRangeFloor() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -974,7 +974,7 @@ struct SuggestionSystemTests {
         #expect(weightDecrease?.change.newValue == 97.5)
     }
 
-    @Test @MainActor func reducedWeightToHitReps_usesHistoricalTargetWeight_notLiveTargetWeight() throws {
+    @Test func reducedWeightToHitReps_usesHistoricalTargetWeight_notLiveTargetWeight() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 95, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -1012,7 +1012,7 @@ struct SuggestionSystemTests {
 
         #expect(weightDecrease == nil, "Historical sessions should be judged against their own target weight, not the current live target after a later plan increase")
     }
-    @Test @MainActor func shortRestPerformanceDrop_increasesRestForTheIntervalBeforeTheFatiguingSet() throws {
+    @Test func shortRestPerformanceDrop_increasesRestForTheIntervalBeforeTheFatiguingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         let previousSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
@@ -1030,7 +1030,7 @@ struct SuggestionSystemTests {
         #expect(allChanges.contains(where: { $0.change.changeType == .increaseRest && $0.draft.targetSetPrescription?.index == 1 }) == false)
     }
 
-    @Test @MainActor func shortRestPerformanceDrop_doesNotTrigger_forNormalTwoRepDrop() throws {
+    @Test func shortRestPerformanceDrop_doesNotTrigger_forNormalTwoRepDrop() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -1048,7 +1048,7 @@ struct SuggestionSystemTests {
         #expect(restChange == nil, "A normal two-rep drop under short rest should not increase prescribed rest on its own")
     }
 
-    @Test @MainActor func shortRestPerformanceDrop_doesNotTrigger_whenLaggingSetStaysMidRange() throws {
+    @Test func shortRestPerformanceDrop_doesNotTrigger_whenLaggingSetStaysMidRange() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -1066,7 +1066,7 @@ struct SuggestionSystemTests {
         #expect(restChange == nil, "A repeated short-rest rep drop that still lands comfortably in range should not infer that more rest is needed")
     }
 
-    @Test @MainActor func shortRestPerformanceDrop_requiresSameTargetSetAcrossSessions() throws {
+    @Test func shortRestPerformanceDrop_requiresSameTargetSetAcrossSessions() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -1084,7 +1084,7 @@ struct SuggestionSystemTests {
         #expect(restChanges.isEmpty, "Short-rest recovery suggestions should require repeated evidence on the same target set, not different sets across sessions")
     }
 
-    @Test @MainActor func stagnationIncreaseRest_doesNotTrigger_whenAllProgressionSetsAreAtFloorPlusOne() throws {
+    @Test func stagnationIncreaseRest_doesNotTrigger_whenAllProgressionSetsAreAtFloorPlusOne() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -1105,7 +1105,7 @@ struct SuggestionSystemTests {
         #expect(restChange == nil, "Floor+1 performance across plateaued sessions should not count as struggling or trigger a rest increase")
     }
 
-    @Test @MainActor func stagnationIncreaseRest_doesNotTrigger_fromPlateauAloneAtFloorWithoutRecoveryPattern() throws {
+    @Test func stagnationIncreaseRest_doesNotTrigger_fromPlateauAloneAtFloorWithoutRecoveryPattern() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -1126,7 +1126,7 @@ struct SuggestionSystemTests {
         #expect(restChange == nil, "Plateau plus floor-level performance alone should not imply that prescribed rest is the limiting factor")
     }
 
-    @Test @MainActor func stagnationIncreaseRest_targetsOnlyRepeatedRecoveryLimitedIntervals() throws {
+    @Test func stagnationIncreaseRest_targetsOnlyRepeatedRecoveryLimitedIntervals() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 12)
 
@@ -1147,7 +1147,7 @@ struct SuggestionSystemTests {
 
         #expect(targetedIndices == Set([0]), "Only intervals that repeatedly precede recovery-limited downstream sets should get extra rest")
     }
-    @Test @MainActor func matchActualWeight_updatesPrescriptionAfterThreeConsistentHigherLoads() throws {
+    @Test func matchActualWeight_updatesPrescriptionAfterThreeConsistentHigherLoads() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         let oldestSession = TestDataFactory.makeSession(context: context, daysAgo: 6)
@@ -1163,7 +1163,7 @@ struct SuggestionSystemTests {
         #expect(weightChange?.draft.targetSetPrescription?.index == 0)
         #expect(weightChange?.change.newValue == 110)
     }
-    @Test @MainActor func dropSetWithoutBase_convertsLeadingDropSetToWorkingSet() throws {
+    @Test func dropSetWithoutBase_convertsLeadingDropSetToWorkingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         prescription.sortedSets.first?.type = .dropSet
@@ -1176,7 +1176,7 @@ struct SuggestionSystemTests {
         #expect(setTypeChange?.draft.targetSetPrescription?.index == 0)
         #expect(setTypeChange?.change.newValue == Double(ExerciseSetType.working.rawValue))
     }
-    @Test @MainActor func warmupActingLikeWorkingSet_promotesWarmupAfterRepeatedHeavyUse() throws {
+    @Test func warmupActingLikeWorkingSet_promotesWarmupAfterRepeatedHeavyUse() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         prescription.sortedSets[0].type = .warmup
@@ -1193,7 +1193,7 @@ struct SuggestionSystemTests {
         #expect(setTypeChange?.change.newValue == Double(ExerciseSetType.working.rawValue))
     }
 
-    @Test @MainActor func warmupActingLikeWorkingSet_doesNotPromoteHeavyFeederWarmupInAscendingPyramid() throws {
+    @Test func warmupActingLikeWorkingSet_doesNotPromoteHeavyFeederWarmupInAscendingPyramid() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         prescription.sortedSets[0].type = .warmup
@@ -1213,7 +1213,7 @@ struct SuggestionSystemTests {
         #expect(setTypeChange == nil, "A heavy feeder warmup with much lower reps than the top working set should stay a warmup")
     }
 
-    @Test @MainActor func regularActingLikeWarmup_doesNotDemoteAscendingFeederWorkingSet() throws {
+    @Test func regularActingLikeWarmup_doesNotDemoteAscendingFeederWorkingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         prescription.sortedSets[0].targetWeight = 60
@@ -1234,7 +1234,7 @@ struct SuggestionSystemTests {
         #expect(warmupDowngrade == nil, "A feeder working set in a real ascending structure should not be downgraded to warmup")
     }
 
-    @Test @MainActor func regularActingLikeWarmup_doesNotDemoteAscendingPyramidFeederWorkingSet() throws {
+    @Test func regularActingLikeWarmup_doesNotDemoteAscendingPyramidFeederWorkingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 4, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         prescription.sortedSets[0].targetWeight = 60
@@ -1258,7 +1258,7 @@ struct SuggestionSystemTests {
         #expect(warmupDowngrade == nil, "A feeder working set in an ascending pyramid should not be downgraded to warmup")
     }
 
-    @Test @MainActor func regularActingLikeWarmup_doesNotDemoteTopSetBackoffFeederWorkingSet() throws {
+    @Test func regularActingLikeWarmup_doesNotDemoteTopSetBackoffFeederWorkingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 200, targetReps: 6, targetRest: 120, repRangeMode: .target)
         prescription.sortedSets[0].targetWeight = 120
@@ -1279,7 +1279,7 @@ struct SuggestionSystemTests {
         #expect(warmupDowngrade == nil, "A feeder set in a top-set/backoff structure should not be downgraded to warmup")
     }
 
-    @Test @MainActor func regularActingLikeWarmup_demotesIsolatedLightSetBeforeWorkingCluster() throws {
+    @Test func regularActingLikeWarmup_demotesIsolatedLightSetBeforeWorkingCluster() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
         prescription.sortedSets[0].targetWeight = 50
@@ -1300,7 +1300,7 @@ struct SuggestionSystemTests {
         #expect(warmupDowngrade != nil, "An isolated light first set before a stable heavy working cluster should still be eligible for warmup reclassification")
     }
 
-    @Test @MainActor func warmupCalibration_increasesWarmupWeightWhenUserConsistentlyRampsHigher() throws {
+    @Test func warmupCalibration_increasesWarmupWeightWhenUserConsistentlyRampsHigher() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         prescription.sortedSets[0].type = .warmup
@@ -1322,7 +1322,7 @@ struct SuggestionSystemTests {
         #expect(warmupChange?.change.newValue == 60)
     }
 
-    @Test @MainActor func warmupCalibration_usesTopSetAnchorForTopSetBackoffStyle() throws {
+    @Test func warmupCalibration_usesTopSetAnchorForTopSetBackoffStyle() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 200, targetReps: 6, targetRest: 120, repRangeMode: .target)
         prescription.sortedSets[0].type = .warmup
@@ -1342,7 +1342,7 @@ struct SuggestionSystemTests {
         #expect(warmupChange != nil)
         #expect(warmupChange?.change.newValue == 120)
     }
-    @Test @MainActor func notSetRepRangeSuggestsInitialExerciseLevelRange() throws {
+    @Test func notSetRepRangeSuggestsInitialExerciseLevelRange() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .notSet)
         let session1 = TestDataFactory.makeSession(context: context, daysAgo: 6)
@@ -1361,7 +1361,7 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower && $0.newValue == 10 })
     }
 
-    @Test @MainActor func notSetRepRangeSuggestsNarrowObservedRangeWithoutInventingExtraWidth() throws {
+    @Test func notSetRepRangeSuggestsNarrowObservedRangeWithoutInventingExtraWidth() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 1, targetRest: 180, repRangeMode: .notSet)
 
@@ -1386,7 +1386,7 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeUpper && $0.newValue == 3 } == false)
     }
 
-    @Test @MainActor func notSetRepRangeDoesNotSuggestArtificialRangeForFixedSingles() throws {
+    @Test func notSetRepRangeDoesNotSuggestArtificialRangeForFixedSingles() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 1, targetRest: 180, repRangeMode: .notSet)
 
@@ -1410,7 +1410,7 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .increaseRepRangeLower || $0.changeType == .decreaseRepRangeLower } == false)
     }
 
-    @Test @MainActor func targetRepRange_doesNotSuggestModeChange_whenRecentSessionsSpanABand() throws {
+    @Test func targetRepRange_doesNotSuggestModeChange_whenRecentSessionsSpanABand() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian (median) can be >= target-1 even if one set is below.
         // This ensures confirmedProgressionTarget (allSatisfy reps >= target-1) doesn't fire
@@ -1440,7 +1440,7 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
     }
 
-    @Test @MainActor func targetRepRange_doesNotSuggestModeChange_fromRepeatedWithinSessionBand() throws {
+    @Test func targetRepRange_doesNotSuggestModeChange_fromRepeatedWithinSessionBand() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian (median of set reps) can be >= target-1 even if the
         // lowest set is below target-1, preventing confirmedProgressionTarget from firing.
@@ -1469,7 +1469,7 @@ struct SuggestionSystemTests {
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
     }
 
-    @Test @MainActor func targetRepRange_doesNotSuggestRangeReconfiguration_forSingleHighOutlierSet() throws {
+    @Test func targetRepRange_doesNotSuggestRangeReconfiguration_forSingleHighOutlierSet() throws {
         let context = try TestDataFactory.makeContext()
         // 3 working sets so lowerMedian can be >= target-1 even when one set is below,
         // preventing confirmedProgressionTarget from firing (same strategy as the other range tests).
@@ -1497,7 +1497,7 @@ struct SuggestionSystemTests {
         #expect(suggestions.contains { $0.targetSetPrescription == nil } == false)
         #expect(exerciseChanges.contains { $0.changeType == .changeRepRangeMode } == false)
     }
-    @Test @MainActor func setLevelSuggestionBlocksExerciseLevelRepRangeSuggestion() throws {
+    @Test func setLevelSuggestionBlocksExerciseLevelRepRangeSuggestion() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -1514,7 +1514,7 @@ struct SuggestionSystemTests {
         #expect(suggestions.contains { $0.targetSetPrescription != nil })
         #expect(suggestions.contains { $0.targetSetPrescription == nil } == false)
     }
-    @Test @MainActor func pendingSuggestionEventsAndGroupingUseEventAsGroupUnit() throws {
+    @Test func pendingSuggestionEventsAndGroupingUseEventAsGroupUnit() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 135, targetReps: 10, repRangeMode: .range, lowerRange: 8, upperRange: 12)
         guard let set = prescription.sortedSets.first else {
@@ -1537,7 +1537,7 @@ struct SuggestionSystemTests {
         #expect(sections.first?.groups.first?.changes.count == 2)
     }
 
-    @Test @MainActor func suggestionConfidenceTier_mapsPersistedScores() {
+    @Test func suggestionConfidenceTier_mapsPersistedScores() {
         let exploratory = SuggestionEvent(catalogID: "test", sessionFrom: nil, trainingStyle: .straightSets, suggestionConfidence: 0.5)
         let moderate = SuggestionEvent(catalogID: "test", sessionFrom: nil, trainingStyle: .straightSets, suggestionConfidence: 0.7)
         let strong = SuggestionEvent(catalogID: "test", sessionFrom: nil, trainingStyle: .straightSets, suggestionConfidence: 0.9)
@@ -1547,7 +1547,7 @@ struct SuggestionSystemTests {
         #expect(strong.suggestionConfidenceTier == .strong)
     }
 
-    @Test @MainActor func suggestionConfidence_usesEvidenceStrengthMapping() throws {
+    @Test func suggestionConfidence_usesEvidenceStrengthMapping() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .target)
         guard let set = prescription.sortedSets.first else {
@@ -1564,7 +1564,7 @@ struct SuggestionSystemTests {
         #expect(SuggestionGenerator.suggestionConfidence(for: directDraft) == 0.9)
     }
 
-    @Test @MainActor func outcomeRuleEngine_requiresLiveSetPrescriptionLinkForSetLevelChanges() throws {
+    @Test func outcomeRuleEngine_requiresLiveSetPrescriptionLinkForSetLevelChanges() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 95, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -1594,7 +1594,7 @@ struct SuggestionSystemTests {
         #expect(withoutLiveLink == nil)
     }
 
-    @Test @MainActor func outcomeRuleEngine_warmupCalibrationGoodWhenFollowedAndStillWarmup() throws {
+    @Test func outcomeRuleEngine_warmupCalibrationGoodWhenFollowedAndStillWarmup() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.sortedSets[0].type = .warmup
@@ -1628,7 +1628,7 @@ struct SuggestionSystemTests {
         #expect(result?.outcome == .good)
     }
 
-    @Test @MainActor func outcomeRuleEngine_warmupCalibrationTooAggressiveWhenWarmupBecomesTooHeavy() throws {
+    @Test func outcomeRuleEngine_warmupCalibrationTooAggressiveWhenWarmupBecomesTooHeavy() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.sortedSets[0].type = .warmup
@@ -1662,7 +1662,7 @@ struct SuggestionSystemTests {
         #expect(result?.outcome == .tooAggressive)
     }
 
-    @Test @MainActor func suggestionDeduplicator_keepsPerformanceAndRecoveryForSameSet() throws {
+    @Test func suggestionDeduplicator_keepsPerformanceAndRecoveryForSameSet() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         guard let set = prescription.sortedSets.first else {
@@ -1678,7 +1678,7 @@ struct SuggestionSystemTests {
         #expect(Set(result.map(\.category)) == Set([.performance, .recovery]))
     }
 
-    @Test @MainActor func suggestionDeduplicator_allowsWorkingSetReclassificationWithPerformanceForSameSet() throws {
+    @Test func suggestionDeduplicator_allowsWorkingSetReclassificationWithPerformanceForSameSet() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .target)
         guard let set = prescription.sortedSets.first else {
@@ -1694,7 +1694,7 @@ struct SuggestionSystemTests {
         #expect(Set(result.map(\.category)) == Set([.structure, .performance]))
     }
 
-    @Test @MainActor func suggestionDeduplicator_structureToWarmupStillSuppressesPerformanceForSameSet() throws {
+    @Test func suggestionDeduplicator_structureToWarmupStillSuppressesPerformanceForSameSet() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .target)
         guard let set = prescription.sortedSets.first else {
@@ -1710,7 +1710,7 @@ struct SuggestionSystemTests {
         #expect(result.first?.category == .structure)
     }
 
-    @Test @MainActor func suggestionDeduplicator_prefersStrongerEvidenceForSameRecoveryChange() throws {
+    @Test func suggestionDeduplicator_prefersStrongerEvidenceForSameRecoveryChange() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         guard let set = prescription.sortedSets.first else {
@@ -1730,7 +1730,7 @@ struct SuggestionSystemTests {
         #expect(result.first?.changes.first?.newValue == 105)
     }
 
-    @Test @MainActor func suggestionDeduplicator_prefersLargerIncreaseWhenEvidenceStrengthIsEqual() throws {
+    @Test func suggestionDeduplicator_prefersLargerIncreaseWhenEvidenceStrengthIsEqual() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         guard let set = prescription.sortedSets.first else {
@@ -1748,7 +1748,7 @@ struct SuggestionSystemTests {
         #expect(result.first?.changes.first?.newValue == 120)
     }
 
-    @Test @MainActor func acceptGroup_hydratesPendingSessionSetValuesAndSnapshot() throws {
+    @Test func acceptGroup_hydratesPendingSessionSetValuesAndSnapshot() throws {
         let context = try TestDataFactory.makeContext()
         let settings = AppSettings()
         settings.weightUnit = .kg
@@ -1780,7 +1780,7 @@ struct SuggestionSystemTests {
         #expect(performance.originalTargetSnapshot?.sets.first?.targetReps == 6)
     }
 
-    @Test @MainActor func acceptGroup_hydratesPendingSessionRepRangeAndSnapshot() throws {
+    @Test func acceptGroup_hydratesPendingSessionRepRangeAndSnapshot() throws {
         let context = try TestDataFactory.makeContext()
         let settings = AppSettings()
         settings.weightUnit = .kg
@@ -1812,7 +1812,7 @@ struct SuggestionSystemTests {
         #expect(performance.originalTargetSnapshot?.repRange.upper == 12)
     }
 
-    @Test @MainActor func acceptGroup_hydratesPendingSessionSetTypeAndClearsWarmupRPE() throws {
+    @Test func acceptGroup_hydratesPendingSessionSetTypeAndClearsWarmupRPE() throws {
         let context = try TestDataFactory.makeContext()
         let settings = AppSettings()
         settings.weightUnit = .kg
@@ -1843,7 +1843,7 @@ struct SuggestionSystemTests {
         #expect(performance.originalTargetSnapshot?.sets.first?.type == .warmup)
     }
 
-    @Test @MainActor func generateSuggestions_blocksSetScopedPerformanceWhenUnresolvedPerformanceExists() async throws {
+    @Test func generateSuggestions_blocksSetScopedPerformanceWhenUnresolvedPerformanceExists() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         prescription.musclesTargeted = [.chest]
@@ -1877,7 +1877,7 @@ struct SuggestionSystemTests {
         #expect(generated.isEmpty)
     }
 
-    @Test @MainActor func generateSuggestions_blocksSetScopedPerformanceWhenUnresolvedStructureExists() async throws {
+    @Test func generateSuggestions_blocksSetScopedPerformanceWhenUnresolvedStructureExists() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
         prescription.musclesTargeted = [.chest]
@@ -1916,7 +1916,7 @@ struct SuggestionSystemTests {
     /// Two machine-based sessions, both at target - 1 reps: confirmedProgressionTarget should fire.
     /// Stable accessory work keeps the softer target-1 confirmation threshold even though
     /// heavier compound and large-jump profiles now require exact target hits.
-    @Test @MainActor func confirmedProgressionTarget_firesWhenAllSetsAtTargetMinusOne_twoSessions() async throws {
+    @Test func confirmedProgressionTarget_firesWhenAllSetsAtTargetMinusOne_twoSessions() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         // targetReps on RepRangePolicy defaults to 8; confirm explicitly.
@@ -1947,7 +1947,7 @@ struct SuggestionSystemTests {
     }
 
     /// Two sessions where reps are well below target — confirmedProgressionTarget must not fire.
-    @Test @MainActor func confirmedProgressionTarget_doesNotFire_whenSetsFarBelowTarget() async throws {
+    @Test func confirmedProgressionTarget_doesNotFire_whenSetsFarBelowTarget() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -1982,7 +1982,7 @@ struct SuggestionSystemTests {
     /// With reps at target-1 and weights consistently above prescription, only the progression
     /// suggestion (increaseWeight by one increment) should fire — NOT matchActualWeight's update
     /// to the actual weights used.
-    @Test @MainActor func matchActualWeight_doesNotSuggestActualWeight_whenProgressionRulesBlockIt() throws {
+    @Test func matchActualWeight_doesNotSuggestActualWeight_whenProgressionRulesBlockIt() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -2007,7 +2007,7 @@ struct SuggestionSystemTests {
 
     /// Stability filter: three sessions with monotonically trending weights (spread > one increment)
     /// must not trigger matchActualWeight — the athlete is in active progression, not settled at a new load.
-    @Test @MainActor func matchActualWeight_doesNotFire_whenWeightsTrending() throws {
+    @Test func matchActualWeight_doesNotFire_whenWeightsTrending() throws {
         let context = try TestDataFactory.makeContext()
         // Range mode so no progression rule fires — isolates the stability filter behaviour.
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
@@ -2031,7 +2031,7 @@ struct SuggestionSystemTests {
 
     /// Median replaces average: stable weights skewed high ([110, 112.5, 112.5]) should produce
     /// a suggestion of 112.5 (median), not 111.25 (roundToNearestPlate of average ≈ 111.67).
-    @Test @MainActor func matchActualWeight_usesMedian_notAverage() throws {
+    @Test func matchActualWeight_usesMedian_notAverage() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
 
@@ -2056,7 +2056,7 @@ struct SuggestionSystemTests {
 
     /// Single session at exactly the target (reps = target) — immediateProgressionTarget requires
     /// reps >= target + 1, so no weight increase should be suggested.
-    @Test @MainActor func immediateProgressionTarget_doesNotFire_whenOnlyAtTarget() async throws {
+    @Test func immediateProgressionTarget_doesNotFire_whenOnlyAtTarget() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8

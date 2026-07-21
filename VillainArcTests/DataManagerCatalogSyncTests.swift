@@ -4,7 +4,6 @@ import Testing
 @testable import VillainArc
 
 @Suite(.serialized) struct DataManagerCatalogSyncTests {
-    @MainActor
     private func makePlanBackedSession(
         context: ModelContext,
         exercises: [Exercise],
@@ -21,7 +20,7 @@ import Testing
         return (plan, session, prescriptions)
     }
 
-    @Test @MainActor func syncExerciseSnapshotsUpdatesMatchingPrescriptionsAndPerformances() throws {
+    @Test func syncExerciseSnapshotsUpdatesMatchingPrescriptionsAndPerformances() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
@@ -50,7 +49,7 @@ import Testing
         #expect(savedPerformance.equipmentType == updatedCatalogItem.equipmentType)
     }
 
-    @Test @MainActor func syncExerciseSnapshotsLeavesUnrelatedExercisesUntouched() throws {
+    @Test func syncExerciseSnapshotsLeavesUnrelatedExercisesUntouched() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let bench = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
@@ -94,7 +93,7 @@ import Testing
         #expect(savedBenchPerformance.name == updatedBench.name)
     }
 
-    @Test @MainActor func syncExerciseSnapshotsReturnsFalseWhenCatalogDataIsUnchanged() throws {
+    @Test func syncExerciseSnapshotsReturnsFalseWhenCatalogDataIsUnchanged() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)

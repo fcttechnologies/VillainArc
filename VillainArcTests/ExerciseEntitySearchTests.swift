@@ -3,7 +3,7 @@ import Testing
 @testable import VillainArc
 
 struct ExerciseEntitySearchTests {
-    @Test @MainActor func systemAlternateNamesIncludeEquipmentPrefixedVariants() {
+    @Test func systemAlternateNamesIncludeEquipmentPrefixedVariants() {
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_incline_bench_press"]!)
         let expectedNames = [
             "Incline Bench",
@@ -15,7 +15,7 @@ struct ExerciseEntitySearchTests {
         #expect(expectedNames.allSatisfy(exercise.systemAlternateNames.contains))
     }
 
-    @Test @MainActor func entitySearchScorePrefersExactEquipmentPrefixedMatch() {
+    @Test func entitySearchScorePrefersExactEquipmentPrefixedMatch() {
         let barbellExercise = Exercise(from: ExerciseCatalog.byID["barbell_incline_bench_press"]!)
         let smithExercise = Exercise(from: ExerciseCatalog.byID["smith_machine_incline_bench_press"]!)
         let query = "barbell incline bench press"
@@ -24,7 +24,7 @@ struct ExerciseEntitySearchTests {
         #expect(barbellScore > smithScore)
     }
 
-    @Test @MainActor func systemAlternateNamesDeduplicateAliasesAndExcludePrimaryName() {
+    @Test func systemAlternateNamesDeduplicateAliasesAndExcludePrimaryName() {
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_incline_bench_press"]!)
         exercise.aliases = [
             "Incline Bench",

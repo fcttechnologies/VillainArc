@@ -73,7 +73,7 @@ struct AIWorkoutPlanGeneratorTests {
 
     // MARK: - Availability gate
 
-    @Test @MainActor
+    @Test
     // The availability gate should never crash in a test context. It returns a Bool depending on
     // the simulator/Apple Intelligence state. Just asserting it returns without throwing.
     func availability_doesNotCrash() {
@@ -81,7 +81,7 @@ struct AIWorkoutPlanGeneratorTests {
         _ = AIExerciseReplacementSuggester.isAvailable
     }
 
-    @Test @MainActor
+    @Test
     // When the model is unavailable, generate() should return .failure(.modelUnavailable) without
     // attempting a session. The test only runs the guard branch by inspecting isAvailable up front.
     func generate_returnsModelUnavailableWhenServiceOff() async {

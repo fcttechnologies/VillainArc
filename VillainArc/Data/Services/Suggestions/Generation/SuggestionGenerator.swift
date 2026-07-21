@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 struct SuggestionGenerator {
-    @MainActor static func generateSuggestions(for session: WorkoutSession, context: ModelContext) async -> [SuggestionEvent] {
+    static func generateSuggestions(for session: WorkoutSession, context: ModelContext) async -> [SuggestionEvent] {
         guard let plan = session.workoutPlan else { return [] }
 
         let weightUnit = (try? context.fetch(AppSettings.single))?.first?.weightUnit ?? .lbs

@@ -4,7 +4,6 @@ import Testing
 
 @testable import VillainArc
 
-@MainActor
 struct SplitScheduleResolverTests {
     private func makeResolution(
         impact: TrainingImpact?,

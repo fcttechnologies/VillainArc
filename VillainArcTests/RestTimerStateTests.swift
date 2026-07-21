@@ -3,7 +3,6 @@ import Testing
 
 @testable import VillainArc
 
-@MainActor
 struct RestTimerStateTests {
     /// A fresh instance, reset to a clean state so inherited App-Group defaults don't leak in.
     private func freshTimer() -> RestTimerState {

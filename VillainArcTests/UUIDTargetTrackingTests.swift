@@ -12,11 +12,11 @@ import Testing
 // correct even after the working-set indices shift.
 //
 struct UUIDTargetTrackingTests {
-    @MainActor private func flattenedChanges(from drafts: [SuggestionEventDraft]) -> [(draft: SuggestionEventDraft, change: PrescriptionChangeDraft)] { drafts.flatMap { draft in draft.changes.map { (draft: draft, change: $0) } } }
+    private func flattenedChanges(from drafts: [SuggestionEventDraft]) -> [(draft: SuggestionEventDraft, change: PrescriptionChangeDraft)] { drafts.flatMap { draft in draft.changes.map { (draft: draft, change: $0) } } }
 
     // MARK: - Invariant: UUID set at creation
 
-    @Test @MainActor func originalTargetSetID_isSetFromPrescriptionIDAtSessionCreation() throws {
+    @Test func originalTargetSetID_isSetFromPrescriptionIDAtSessionCreation() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -40,7 +40,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - Invariant: UUID survives clearPrescriptionLinksForHistoricalUse
 
-    @Test @MainActor func originalTargetSetID_survivesAfterPrescriptionLinksAreCleared() throws {
+    @Test func originalTargetSetID_survivesAfterPrescriptionLinksAreCleared() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -76,7 +76,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - UUID matching survives warmup-add reindex
 
-    @Test @MainActor func originalTargetSetID_matchesCorrectPrescriptionAfterWarmupAddShiftsWorkingSetIndices() throws {
+    @Test func originalTargetSetID_matchesCorrectPrescriptionAfterWarmupAddShiftsWorkingSetIndices() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -121,7 +121,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - New warmup has no historical match
 
-    @Test @MainActor func matchingSetPerformance_returnsNilForNewWarmupWithNoHistoricalEvidence() throws {
+    @Test func matchingSetPerformance_returnsNilForNewWarmupWithNoHistoricalEvidence() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 12)
 
@@ -169,7 +169,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - confirmedProgressionRange fires for the right sets after warmup-add reindex
 
-    @Test @MainActor func confirmedProgressionRange_firesForCorrectSetsAfterWarmupAddShiftsWorkingSetIndices() throws {
+    @Test func confirmedProgressionRange_firesForCorrectSetsAfterWarmupAddShiftsWorkingSetIndices() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 
@@ -232,7 +232,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - setTypeMismatch detects consistent mismatch after warmup-add reindex
 
-    @Test @MainActor func setTypeMismatch_detectsConsistentMismatchAfterWarmupAddReindex() throws {
+    @Test func setTypeMismatch_detectsConsistentMismatchAfterWarmupAddReindex() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -302,7 +302,7 @@ struct UUIDTargetTrackingTests {
         #expect(mismatchForW2 == nil, "W2 was logged correctly — no mismatch expected.")
     }
 
-    @Test @MainActor func setTypeMismatch_requiresThreeSessionsForDropSetReclassification() throws {
+    @Test func setTypeMismatch_requiresThreeSessionsForDropSetReclassification() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -340,7 +340,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - belowRangeWeightDecrease resolves target weight from snapshot UUID after reindex
 
-    @Test @MainActor func historicalTargetWeightLookup_usesSnapshotUUIDToConfirmAttemptedLoadAfterWarmupAddReindex() throws {
+    @Test func historicalTargetWeightLookup_usesSnapshotUUIDToConfirmAttemptedLoadAfterWarmupAddReindex() throws {
         let context = try TestDataFactory.makeContext()
         // Single working set. User repeatedly fails to hit the lower rep bound.
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
@@ -408,7 +408,7 @@ struct UUIDTargetTrackingTests {
 
     // MARK: - Double reindex (add warmup → remove warmup) leaves UUID matching intact
 
-    @Test @MainActor func doubleReindex_UUIDMatchingUnbrokenAfterAddWarmupThenRemoveWarmup() throws {
+    @Test func doubleReindex_UUIDMatchingUnbrokenAfterAddWarmupThenRemoveWarmup() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "machine_chest_press", workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 8, upperRange: 10)
 

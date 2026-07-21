@@ -4,7 +4,7 @@ import Testing
 @testable import VillainArc
 
 struct SuggestionGroupingTests {
-    @Test @MainActor func pendingOutcomeSuggestionEvents_includeRejectedUnresolvedEvents() throws {
+    @Test func pendingOutcomeSuggestionEvents_includeRejectedUnresolvedEvents() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, exercise) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100)
 

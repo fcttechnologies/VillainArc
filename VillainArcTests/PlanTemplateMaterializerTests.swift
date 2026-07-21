@@ -5,7 +5,7 @@ import Testing
 @testable import VillainArc
 
 struct PlanTemplateMaterializerTests {
-    @Test @MainActor
+    @Test
     // Materializing a single template day should produce an incomplete WorkoutPlan with the
     // template's notes, target-rep range, set count, rest, and RPE — and a zero target weight so
     // the user fills loads themselves.
@@ -65,7 +65,7 @@ struct PlanTemplateMaterializerTests {
         #expect(lateralSets.allSatisfy { $0.targetRest == 60 })
     }
 
-    @Test @MainActor
+    @Test
     // Materializing a full program should create one completed WorkoutPlan per training day, a
     // rotation split linking each day, and activate the new split when `activate: true`.
     func materializeProgram_buildsAllPlansAndActiveSplit() throws {
@@ -108,7 +108,7 @@ struct PlanTemplateMaterializerTests {
         #expect(days[1].workoutPlan?.title == "Test Upper/Lower — Lower")
     }
 
-    @Test @MainActor
+    @Test
     // Activating a new program should deactivate any previously active split. The previous split
     // stays in the store but its isActive flag flips off.
     func materializeProgram_deactivatesPreviousActiveSplit() throws {
@@ -142,7 +142,6 @@ struct PlanTemplateMaterializerTests {
 
     // MARK: - Helpers
 
-    @MainActor
     private func seedCatalog(into context: ModelContext) throws {
         // PlanTemplateMaterializer looks up Exercise rows by catalog ID. Seed the rows the
         // template references so the resolver can find them.

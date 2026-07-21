@@ -6,7 +6,6 @@ import StoreKit
 /// caches the resolved `isPro` flag to the shared App Group so the widget can read it, and
 /// publishes an `Observable` `status` UI gates can read directly. Always instantiated as
 /// `SubscriptionStore.shared`.
-@MainActor
 @Observable
 final class SubscriptionStore {
     // MARK: - Constants

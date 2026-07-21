@@ -7,7 +7,6 @@ import Testing
         "training style validation rejects confidence outside 0...1",
         arguments: [-0.01, 1.01]
     )
-    @MainActor
     func trainingStyleValidation_rejectsOutOfRangeConfidence(confidence: Double) {
         let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: confidence)
         #expect(AITrainingStyleClassifier.validate(output) == nil)
@@ -17,7 +16,6 @@ import Testing
         "training style validation accepts boundary confidence",
         arguments: [0.0, 1.0]
     )
-    @MainActor
     func trainingStyleValidation_acceptsBoundaryConfidence(confidence: Double) {
         let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: confidence)
         let validated = AITrainingStyleClassifier.validate(output)
@@ -25,7 +23,7 @@ import Testing
         #expect(validated?.confidence == confidence)
     }
 
-    @Test @MainActor func trainingStyleValidation_acceptsBoundedConfidence() {
+    @Test func trainingStyleValidation_acceptsBoundedConfidence() {
         let output = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: 0.7)
 
         let validated = AITrainingStyleClassifier.validate(output)
@@ -34,7 +32,7 @@ import Testing
         #expect(validated?.confidence == 0.7)
     }
 
-    @Test @MainActor func trainingStyleAcceptance_requiresConfidenceAbovePointFive() {
+    @Test func trainingStyleAcceptance_requiresConfidenceAbovePointFive() {
         let weak = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: 0.5)
         let strong = AIInferenceOutput(trainingStyleClassification: .ascending, confidence: 0.51)
 
@@ -46,7 +44,6 @@ import Testing
         "outcome validation rejects confidence outside 0...1",
         arguments: [-0.01, 1.01]
     )
-    @MainActor
     func outcomeValidation_rejectsOutOfRangeConfidence(confidence: Double) {
         let output = AIOutcomeInferenceOutput(outcome: .good, confidence: confidence, reason: "Clear evidence.")
 
@@ -59,7 +56,6 @@ import Testing
         "outcome validation accepts boundary confidence",
         arguments: [0.0, 1.0]
     )
-    @MainActor
     func outcomeValidation_acceptsBoundaryConfidence(confidence: Double) {
         let output = AIOutcomeInferenceOutput(outcome: .good, confidence: confidence, reason: "Clear evidence.")
         let validated = AIOutcomeInferrer.validate(output)
@@ -68,7 +64,7 @@ import Testing
         #expect(validated?.reason == "Clear evidence.")
     }
 
-    @Test @MainActor func outcomeValidation_normalizesMultilineReason() {
+    @Test func outcomeValidation_normalizesMultilineReason() {
         let multiline = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: "Line one.\nLine two.")
 
         let validated = AIOutcomeInferrer.validate(multiline)
@@ -76,7 +72,7 @@ import Testing
         #expect(validated?.reason == "Line one. Line two.")
     }
 
-    @Test @MainActor func outcomeValidation_truncatesLongReason() {
+    @Test func outcomeValidation_truncatesLongReason() {
         let longReason = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: String(repeating: "a", count: 161))
 
         let validated = AIOutcomeInferrer.validate(longReason)
@@ -85,7 +81,7 @@ import Testing
         #expect(validated?.reason == String(repeating: "a", count: 160))
     }
 
-    @Test @MainActor func outcomeValidation_trimsAndAcceptsShortReason() {
+    @Test func outcomeValidation_trimsAndAcceptsShortReason() {
         let output = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: "  Strong adherence to the new target.  ")
 
         let validated = AIOutcomeInferrer.validate(output)
@@ -94,12 +90,12 @@ import Testing
         #expect(validated?.reason == "Strong adherence to the new target.")
     }
 
-    @Test @MainActor func outcomeValidation_rejectsWhitespaceOnlyReason() {
+    @Test func outcomeValidation_rejectsWhitespaceOnlyReason() {
         let output = AIOutcomeInferenceOutput(outcome: .good, confidence: 0.8, reason: "   \n\t  ")
         #expect(AIOutcomeInferrer.validate(output) == nil)
     }
 
-    @Test @MainActor func aiPerformanceSnapshot_includesSetRPE() {
+    @Test func aiPerformanceSnapshot_includesSetRPE() {
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
         let session = WorkoutSession(status: .done)
         let performance = ExercisePerformance(exercise: exercise, workoutSession: session)
@@ -112,7 +108,7 @@ import Testing
         #expect(snapshot.sets.first?.rpe == 9)
     }
 
-    @Test @MainActor func aiPrescriptionSnapshot_includesTargetRPE() {
+    @Test func aiPrescriptionSnapshot_includesTargetRPE() {
         let exercise = Exercise(from: ExerciseCatalog.byID["barbell_bench_press"]!)
         let plan = WorkoutPlan(title: "Push")
         let prescription = ExercisePrescription(exercise: exercise, workoutPlan: plan)

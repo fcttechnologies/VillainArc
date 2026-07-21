@@ -5,7 +5,7 @@ import Testing
 @testable import VillainArc
 
 struct SchemaMigrationTests {
-    @Test @MainActor
+    @Test
     func migratingV2StoreToV3PreservesUserProfileImageAndAppliesV3Defaults() throws {
         let storeURL = FileManager.default.temporaryDirectory.appendingPathComponent("VillainArcMigration-\(UUID().uuidString).store")
         defer {
@@ -50,7 +50,7 @@ struct SchemaMigrationTests {
         #expect(migratedProfile.profileImageData == originalImageData)
     }
 
-    @Test @MainActor
+    @Test
     func migratingV4StoreToV5InitializesNewSyncStateFields() throws {
         let storeURL = FileManager.default.temporaryDirectory.appendingPathComponent("VillainArcMigration-\(UUID().uuidString).store")
         defer {
@@ -102,7 +102,7 @@ struct SchemaMigrationTests {
     /// Tripwire for the build-2 crash class (a new `@Model` added to the codebase but missing
     /// from the active schema's `models` array silently breaks fetches/migration). Update this
     /// count deliberately whenever a new `@Model` ships in the active (V5) schema.
-    @Test @MainActor
+    @Test
     func v5SchemaIncludesEveryActiveModel() {
         #expect(VillainArcSchemaV5.models.count == 40)
     }

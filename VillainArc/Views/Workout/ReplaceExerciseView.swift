@@ -188,7 +188,6 @@ struct ReplaceExerciseView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.aiReplacementLockedRow)
     }
 
-    @MainActor
     private func loadAISuggestionsIfNeeded() async {
         guard SubscriptionGate.isPro, AIExerciseReplacementSuggester.isAvailable, !aiSuggestionsLoaded, !aiSuggestionsLoading else { return }
         aiSuggestionsLoading = true

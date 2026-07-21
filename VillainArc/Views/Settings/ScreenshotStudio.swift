@@ -29,7 +29,6 @@ struct ScreenshotStudioScene: Identifiable {
 
 // MARK: - Catalog
 
-@MainActor
 enum ScreenshotStudioCatalog {
     /// Ranked by selling power. Every scene reuses the real view. Seed the demo data first.
     static let scenes: [ScreenshotStudioScene] = [

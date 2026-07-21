@@ -2,7 +2,6 @@ import CoreLocation
 import Observation
 import SwiftData
 
-@MainActor
 @Observable final class CardioRouteRecorder: NSObject {
     static let shared = CardioRouteRecorder()
 

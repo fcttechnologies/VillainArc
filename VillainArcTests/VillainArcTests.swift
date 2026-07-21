@@ -5,12 +5,12 @@ import Testing
 @testable import VillainArc
 
 struct VillainArcTests {
-    @MainActor private func finishEditing(_ editCopy: WorkoutPlan, originalPlan: WorkoutPlan, context: ModelContext) {
+    private func finishEditing(_ editCopy: WorkoutPlan, originalPlan: WorkoutPlan, context: ModelContext) {
         originalPlan.applyEditingCopy(editCopy, context: context)
         context.delete(editCopy)
         try? context.save()
     }
-    @MainActor @discardableResult private func insertSuggestionEvent(
+    @discardableResult private func insertSuggestionEvent(
         for exercise: ExercisePrescription, changes: [PrescriptionChange], in context: ModelContext, decision: Decision = .pending, outcome: Outcome = .pending, evaluatedAt: Date? = nil, targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance
     ) -> SuggestionEvent {
         let event = SuggestionEvent(
@@ -19,7 +19,7 @@ struct VillainArcTests {
         for change in changes { change.event = event }
         return event
     }
-    @Test @MainActor
+    @Test
     // Editing a set updates the plan and deletes the unresolved grouped suggestion it conflicts with.
     func userEditsDeleteMatchingUnresolvedSuggestionEvent() throws {
         let container = try TestModelContainer.make()
@@ -46,7 +46,7 @@ struct VillainArcTests {
         #expect(allChanges.contains { $0.id == weightRuleChangeID } == false)
         #expect(allChanges.contains { $0.id == repsRuleChangeID } == false)
     }
-    @Test @MainActor
+    @Test
     // Deleting a set removes unresolved changes tied to that set.
     func deletingSetDeletesPendingChangesForRemovedSet() throws {
         let container = try TestModelContainer.make()
@@ -68,7 +68,7 @@ struct VillainArcTests {
         let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(remainingChanges.contains { $0.id == ruleChangeForSet2ID } == false)
     }
-    @Test @MainActor
+    @Test
     // Deleting a set should keep resolved history, but the deleted set link should nullify.
     func deletingSetPreservesResolvedHistoryForRemovedSet() throws {
         let container = try TestModelContainer.make()
@@ -92,7 +92,7 @@ struct VillainArcTests {
         #expect(resolvedEvent.targetSetPrescription == nil)
         #expect(resolvedEvent.targetExercisePrescription?.id == data.bench.id)
     }
-    @Test @MainActor
+    @Test
     // A deferred weight suggestion is deleted when the user edits the same set weight.
     func userEditDeletesDeferredWeightSuggestion() throws {
         let container = try TestModelContainer.make()
@@ -115,7 +115,7 @@ struct VillainArcTests {
         let allChanges = (try? context.fetch(descriptor)) ?? []
         #expect(allChanges.contains { $0.id == deferredDecrease.id } == false)
     }
-    @Test @MainActor
+    @Test
     // Editing rep range should not touch pending set-change outcomes on the same exercise.
     func repRangeEditDoesNotOverridePendingSetChangeOutcome() throws {
         let container = try TestModelContainer.make()
@@ -136,7 +136,7 @@ struct VillainArcTests {
         #expect(setEvent.decision == .accepted)
         #expect(setEvent.outcome == .pending)
     }
-    @Test @MainActor
+    @Test
     // Replacing an exercise deletes unresolved old-exercise changes but preserves resolved outcomes for learning.
     func replacingExerciseDeletesPendingOutcomeChangesForOriginalExercise() throws {
         let container = try TestModelContainer.make()
@@ -159,7 +159,7 @@ struct VillainArcTests {
         for changeID in originalPendingChangeIDs { #expect(remainingChangeIDs.contains(changeID) == false) }
         #expect(remainingChangeIDs.contains(resolvedChange.id))
     }
-    @Test @MainActor
+    @Test
     // Deleting an exercise removes unresolved changes but preserves resolved history.
     func deletingExerciseDeletesPendingChangesWithoutNewUserChange() throws {
         let container = try TestModelContainer.make()
@@ -190,7 +190,7 @@ struct VillainArcTests {
         #expect(allChanges.contains { $0.id == pendingAcceptedChange.id } == false)
         #expect(allChanges.contains { $0.id == resolvedChange.id })
     }
-    @Test @MainActor
+    @Test
     // Adding an exercise updates the original plan without creating change records.
     func addingExerciseAppliesToOriginalWithoutCreatingChanges() throws {
         let container = try TestModelContainer.make()
@@ -205,7 +205,7 @@ struct VillainArcTests {
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(allChanges.count == initialChanges.count)
     }
-    @Test @MainActor
+    @Test
     // Removing an exercise updates the original plan and deletes that exercise's unresolved changes.
     func removingExerciseAppliesToOriginalWithoutCreatingChanges() throws {
         let container = try TestModelContainer.make()
@@ -223,7 +223,7 @@ struct VillainArcTests {
         let allChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(allChanges.count == initialChanges.count - pendingFlysChangeCount)
     }
-    @Test @MainActor
+    @Test
     // Moving exercises updates indices/order without creating change records.
     func movingExercisesUpdatesOrderWithoutCreatingChanges() throws {
         let container = try TestModelContainer.make()
@@ -243,7 +243,7 @@ struct VillainArcTests {
         #expect(allChanges.count == initialChanges.count)
     }
 
-    @Test @MainActor
+    @Test
     // Deleting a tail set in an edit copy and re-adding it should restore the original set identity.
     func readdingDeletedTailSetRestoresOriginalSetIdentity() throws {
         let container = try TestModelContainer.make()
@@ -275,7 +275,7 @@ struct VillainArcTests {
         #expect(remainingChanges.contains { $0.id == tailSetChangeID })
     }
 
-    @Test @MainActor
+    @Test
     // Restoring a deleted tail set and then editing its weight should still delete only matching unresolved set changes.
     func editingRestoredTailSetDeletesMatchingUnresolvedChange() throws {
         let container = try TestModelContainer.make()
@@ -311,7 +311,7 @@ struct VillainArcTests {
         let remainingChanges = (try? context.fetch(FetchDescriptor<PrescriptionChange>())) ?? []
         #expect(remainingChanges.contains { $0.id == tailSetChangeID } == false)
     }
-    @Test @MainActor
+    @Test
     // Deleting a plan removes unresolved changes but preserves resolved history.
     func deletingPlanDeletesOnlyPendingLinkedChanges() throws {
         let container = try TestModelContainer.make()

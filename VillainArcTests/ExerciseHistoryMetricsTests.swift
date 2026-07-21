@@ -5,7 +5,7 @@ import Testing
 @testable import VillainArc
 
 struct ExerciseHistoryMetricsTests {
-    @Test @MainActor func recalculateTracksRepBasedMetricsForBodyweightExercise() throws {
+    @Test func recalculateTracksRepBasedMetricsForBodyweightExercise() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 
@@ -48,7 +48,7 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.chronologicalProgressionPoints.first?.weight == 0)
         #expect(history.chronologicalProgressionPoints.first?.volume == 0)
     }
-    @Test @MainActor func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() throws {
+    @Test func recalculateResetsLastCompletedAtWhenHistoryIsEmpty() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let history = ExerciseHistory(catalogID: "push_ups")
@@ -57,7 +57,7 @@ struct ExerciseHistoryMetricsTests {
         #expect(history.lastCompletedAt == nil)
     }
 
-    @Test @MainActor func recalculateCollapsesDuplicateExerciseRowsFromSameWorkoutIntoOneSession() throws {
+    @Test func recalculateCollapsesDuplicateExerciseRowsFromSameWorkoutIntoOneSession() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
 

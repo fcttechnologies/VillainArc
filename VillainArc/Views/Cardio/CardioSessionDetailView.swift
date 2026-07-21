@@ -142,7 +142,6 @@ struct CardioSessionDetailView: View {
         }
     }
 
-    @MainActor
     private func renderShareCard() {
         let renderer = ImageRenderer(content: CardioShareCard(session: session, distanceUnit: distanceUnit, energyUnit: energyUnit))
         renderer.scale = 3
@@ -410,7 +409,6 @@ struct CardioRouteMarker: View {
     }
 }
 
-@MainActor
 private func previewSession() -> CardioSession? {
     let context = SharedModelContainer.container.mainContext
     let descriptor = CardioSession.recentCompleted(limit: 1)

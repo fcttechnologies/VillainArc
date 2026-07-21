@@ -3,7 +3,7 @@ import SwiftData
 
 @testable import VillainArc
 
-@MainActor struct PlanEditingTestData {
+struct PlanEditingTestData {
     let plan: WorkoutPlan
     let bench: ExercisePrescription
     let benchSet1: SetPrescription
@@ -13,7 +13,7 @@ import SwiftData
     let changes: [PrescriptionChange]
 }
 
-@MainActor func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestData {
+func makePlanWithRuleSuggestions(in context: ModelContext) -> PlanEditingTestData {
     func makeEvent(for exercise: ExercisePrescription, changes: [PrescriptionChange], targetSet: SetPrescription? = nil, category: SuggestionCategory = .performance, reasoning: String? = nil) -> SuggestionEvent {
         let event = SuggestionEvent(category: category, catalogID: exercise.catalogID, sessionFrom: nil, targetExercisePrescription: exercise, targetSetPrescription: targetSet, triggerTargetSetID: targetSet?.id, trainingStyle: .straightSets, changeReasoning: reasoning, changes: changes)
         context.insert(event)

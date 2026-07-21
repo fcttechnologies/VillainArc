@@ -4,7 +4,6 @@ import Testing
 
 @testable import VillainArc
 
-@MainActor
 struct SleepGoalEvaluatorTests {
     private func pastDay(_ days: Int) -> Date {
         Calendar.autoupdatingCurrent.date(byAdding: .day, value: -days, to: .now)!

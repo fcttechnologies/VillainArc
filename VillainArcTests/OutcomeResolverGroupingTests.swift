@@ -13,7 +13,7 @@ import Testing
 
     /// Creates a multi-change event (increaseWeight + decreaseReps bundle) scoped to the
     /// first set of the given prescription. Both changes are linked to the returned event.
-    @MainActor private func makeBundle(context: ModelContext, prescription: ExercisePrescription, weightOld: Double, weightNew: Double, repsOld: Int, repsNew: Int, requiredEvaluationCount: Int = 1) -> SuggestionEvent {
+    private func makeBundle(context: ModelContext, prescription: ExercisePrescription, weightOld: Double, weightNew: Double, repsOld: Int, repsNew: Int, requiredEvaluationCount: Int = 1) -> SuggestionEvent {
         let setPrescription = prescription.sortedSets.first!
 
         let triggerSession = TestDataFactory.makeSession(context: context, daysAgo: 3)
@@ -44,7 +44,7 @@ import Testing
     ///   decreaseReps    → good     (reps followed to 8, in-range)
     /// Old code: good > ignored in severity priority → resolves as "good" (wrong)
     /// New code: primary weight signal anchors → resolves as "ignored" (correct)
-    @Test @MainActor func bundle_primaryWeightIgnored_secondaryRepsGood_resolvesAsIgnored() async throws {
+    @Test func bundle_primaryWeightIgnored_secondaryRepsGood_resolvesAsIgnored() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, repRangeMode: .range, lowerRange: 6, upperRange: 10)
 
@@ -68,7 +68,7 @@ import Testing
     ///   increaseWeight  → good     (weight at 102.5, reps in-range)
     ///   decreaseReps    → ignored  (reps stayed at 10, never reached new target 8)
     /// Both old and new code should resolve as "good" — secondary ignored must not demote primary.
-    @Test @MainActor func bundle_primaryGood_secondaryRepsIgnored_resolvesAsGood() async throws {
+    @Test func bundle_primaryGood_secondaryRepsIgnored_resolvesAsGood() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, repRangeMode: .range, lowerRange: 6, upperRange: 10)
 
@@ -92,7 +92,7 @@ import Testing
     ///   decreaseReps  → good     (reps followed to 8, in-range)
     ///   increaseRest  → ignored  (rest stayed at 90)
     /// No primary changes → falls back to original severity-priority: good > ignored → good.
-    @Test @MainActor func noPrimaryChanges_fallsBackToSeverityPriority_goodBeatsIgnored() async throws {
+    @Test func noPrimaryChanges_fallsBackToSeverityPriority_goodBeatsIgnored() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         let setPrescription = prescription.sortedSets.first!
@@ -129,7 +129,7 @@ import Testing
     /// Bundle: increaseWeight (100→102.5) + decreaseReps (10→8).
     /// Athlete followed both: new weight and reset reps, reps in-range.
     /// Verifies the normal happy-path still works after the fix.
-    @Test @MainActor func bundle_primaryGood_secondaryGood_resolvesAsGood() async throws {
+    @Test func bundle_primaryGood_secondaryGood_resolvesAsGood() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 10, repRangeMode: .range, lowerRange: 6, upperRange: 10)
 

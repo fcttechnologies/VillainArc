@@ -5,7 +5,6 @@ import Testing
 @testable import VillainArc
 
 struct WorkoutActiveExerciseTests {
-    @MainActor
     private func makePlanBackedSession(context: ModelContext) -> WorkoutSession {
         let plan = WorkoutPlan(title: "Push Day")
         context.insert(plan)
@@ -30,7 +29,7 @@ struct WorkoutActiveExerciseTests {
         return session
     }
 
-    @Test @MainActor
+    @Test
     func completingLastSetOfPlanExerciseAdvancesActiveExercise() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
@@ -45,7 +44,7 @@ struct WorkoutActiveExerciseTests {
         #expect(session.activeExercise?.id == secondExercise.id)
     }
 
-    @Test @MainActor
+    @Test
     func completingLastSetOfStandaloneExerciseDoesNotAdvanceActiveExercise() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
@@ -65,7 +64,7 @@ struct WorkoutActiveExerciseTests {
         #expect(session.activeExercise?.id == bench.id)
     }
 
-    @Test @MainActor
+    @Test
     func completingSetWithAssumedTargetRPEEnabledFillsMissingRPE() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
@@ -78,7 +77,7 @@ struct WorkoutActiveExerciseTests {
         #expect(set.rpe == 8)
     }
 
-    @Test @MainActor
+    @Test
     func completingSetWithAssumedTargetRPEDisabledLeavesMissingRPEEmpty() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)

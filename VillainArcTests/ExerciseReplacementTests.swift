@@ -5,7 +5,7 @@ import Testing
 @testable import VillainArc
 
 struct ExerciseReplacementTests {
-    @Test @MainActor
+    @Test
     // Starting a workout from a plan should prefill set values from each target set.
     func startFromPlanCopiesTargetValuesIntoSetPerformance() throws {
         let container = try TestModelContainer.make()
@@ -49,7 +49,7 @@ struct ExerciseReplacementTests {
         #expect(snapshot?.sets[1].targetRPE == 8)
     }
 
-    @Test @MainActor
+    @Test
     // Users can keep plan targets as references without pre-filling the logging fields.
     func startFromPlanCanLeaveTargetValuesEmpty() throws {
         let container = try TestModelContainer.make()
@@ -74,7 +74,7 @@ struct ExerciseReplacementTests {
         #expect(session.sortedExercises.first?.originalTargetSnapshot?.sets.first?.targetWeight == 135)
     }
 
-    @Test @MainActor
+    @Test
     // Removing a plan-backed set from a live workout must not leave the plan target
     // pointing at the removed SetPerformance.
     func deletingAndRestoringPlanBackedSessionSetClearsStaleTargetLink() throws {
@@ -128,7 +128,7 @@ struct ExerciseReplacementTests {
         #expect(secondTarget.activePerformance?.id == restartedPerformance.sortedSets[1].id)
     }
 
-    @Test @MainActor
+    @Test
     func acceptedDeferredSuggestionDoesNotHydratePendingSessionWhenAutoFillTargetsIsOff() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
@@ -158,7 +158,7 @@ struct ExerciseReplacementTests {
         #expect(set.restSeconds == 0)
     }
 
-    @Test @MainActor
+    @Test
     // Freeform exercises should not invent an original target snapshot.
     func freeformExerciseStartsWithoutOriginalTargetSnapshot() throws {
         let container = try TestModelContainer.make()
@@ -170,7 +170,7 @@ struct ExerciseReplacementTests {
         context.insert(performance)
         #expect(performance.originalTargetSnapshot == nil)
     }
-    @Test @MainActor
+    @Test
     // Replacing an exercise should detach all plan targets from the current performance.
     func replaceExerciseClearsExerciseAndSetPrescriptions() throws {
         let container = try TestModelContainer.make()
@@ -200,7 +200,7 @@ struct ExerciseReplacementTests {
         #expect(performance.sortedSets.allSatisfy { $0.prescription == nil })
         #expect(replacement.lastAddedAt != nil)
     }
-    @Test @MainActor
+    @Test
     // After replace, historical lookup should follow the NEW exercise catalog id.
     func lastCompletedLookupUsesNewExerciseAfterReplace() throws {
         let container = try TestModelContainer.make()
@@ -246,7 +246,7 @@ struct ExerciseReplacementTests {
         #expect(afterReplace?.sortedSets.first?.reps == 10)
         #expect(afterReplace?.sortedSets.first?.weight == 165)
     }
-    @Test @MainActor
+    @Test
     // Replacing a session-derived plan exercise should unlink completed workout evidence from the repurposed prescription.
     func replacingSessionDerivedPrescriptionClearsLinkedPerformanceReferences() throws {
         let container = try TestModelContainer.make()
@@ -273,7 +273,7 @@ struct ExerciseReplacementTests {
         #expect(set.prescription == nil)
         #expect(prescription.catalogID == incline.catalogID)
     }
-    @Test @MainActor
+    @Test
     // Saving an edit copy with a replaced exercise should clear historical performance links from the reused original prescription.
     func applyingEditingCopyAfterReplaceClearsOriginalLinkedPerformanceReferences() throws {
         let container = try TestModelContainer.make()
@@ -302,7 +302,7 @@ struct ExerciseReplacementTests {
         #expect(performance.prescription == nil)
         #expect(set.prescription == nil)
     }
-    @Test @MainActor
+    @Test
     // Completed workouts should drop live prescription links once the history pipeline is done.
     func clearingHistoricalUseLinksDetachesCompletedSessionFromPlanTargets() throws {
         let container = try TestModelContainer.make()
@@ -330,7 +330,7 @@ struct ExerciseReplacementTests {
         #expect(set.prescription == nil)
         #expect(setPrescription.activePerformance == nil)
     }
-    @Test @MainActor
+    @Test
     // Finalizing a session-derived plan should clear links from its completed source workout.
     func clearingCompletedSessionPerformanceReferencesDetachesSavedSourceWorkout() throws {
         let container = try TestModelContainer.make()

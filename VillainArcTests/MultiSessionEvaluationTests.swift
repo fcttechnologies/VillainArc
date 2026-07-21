@@ -16,7 +16,7 @@ import Testing
     /// Builds the full test fixture for OutcomeResolver tests:
     /// plan → prescription (1 working set) → suggestion event (created 1h ago, accepted)
     /// The caller creates and configures the WorkoutSession separately.
-    @MainActor private func makeEventForOutcomeResolver(
+    private func makeEventForOutcomeResolver(
         context: ModelContext, requiredEvaluationCount: Int = 2, decision: Decision = .accepted, createdSecondsAgo: Double = 3600, lowerRange: Int = 6, upperRange: Int = 10
     ) -> (plan: WorkoutPlan, prescription: ExercisePrescription, setPrescription: SetPrescription, event: SuggestionEvent) {
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: lowerRange, upperRange: upperRange)
@@ -39,7 +39,7 @@ import Testing
     }
 
     /// Creates a WorkoutSession linked to the given plan with one completed working set.
-    @MainActor private func makeCompletedSession(context: ModelContext, plan: WorkoutPlan, prescription: ExercisePrescription, actualWeight: Double = 102.5, actualReps: Int = 8, postEffort: Int = 0, preWorkoutFeeling: MoodLevel = .notSet, tookPreWorkout: Bool = false) -> WorkoutSession {
+    private func makeCompletedSession(context: ModelContext, plan: WorkoutPlan, prescription: ExercisePrescription, actualWeight: Double = 102.5, actualReps: Int = 8, postEffort: Int = 0, preWorkoutFeeling: MoodLevel = .notSet, tookPreWorkout: Bool = false) -> WorkoutSession {
         let session = TestDataFactory.makeSession(context: context)
         session.workoutPlan = plan
         session.postEffort = postEffort
@@ -49,7 +49,7 @@ import Testing
         return session
     }
 
-    @MainActor private func makeTargetModeEventForOutcomeResolver(
+    private func makeTargetModeEventForOutcomeResolver(
         context: ModelContext, requiredEvaluationCount: Int = 1, decision: Decision = .accepted, createdSecondsAgo: Double = 3600, targetReps: Int = 8
     ) -> (plan: WorkoutPlan, prescription: ExercisePrescription, setPrescription: SetPrescription, event: SuggestionEvent) {
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: targetReps, repRangeMode: .target)
@@ -72,7 +72,7 @@ import Testing
         return (plan, prescription, setPrescription, event)
     }
 
-    @MainActor private func makeRecoveryEventForOutcomeResolver(context: ModelContext, decision: Decision = .accepted, createdSecondsAgo: Double = 3600) -> (plan: WorkoutPlan, prescription: ExercisePrescription, event: SuggestionEvent) {
+    private func makeRecoveryEventForOutcomeResolver(context: ModelContext, decision: Decision = .accepted, createdSecondsAgo: Double = 3600) -> (plan: WorkoutPlan, prescription: ExercisePrescription, event: SuggestionEvent) {
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 2, targetWeight: 100, targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         let restOwnerSet = prescription.sortedSets[0]
 
@@ -94,21 +94,21 @@ import Testing
 
     // MARK: - Model: evaluations
 
-    @Test @MainActor func evaluations_isEmptyByDefault() throws {
+    @Test func evaluations_isEmptyByDefault() throws {
         let context = try TestDataFactory.makeContext()
         let (_, _, _, event) = makeEventForOutcomeResolver(context: context)
 
         #expect((event.evaluations ?? []).isEmpty)
     }
 
-    @Test @MainActor func latestEvaluation_returnsNil_whenEvaluationsIsEmpty() throws {
+    @Test func latestEvaluation_returnsNil_whenEvaluationsIsEmpty() throws {
         let context = try TestDataFactory.makeContext()
         let (_, _, _, event) = makeEventForOutcomeResolver(context: context)
 
         #expect(event.latestEvaluation == nil)
     }
 
-    @Test @MainActor func latestEvaluation_returnsLastEntry() throws {
+    @Test func latestEvaluation_returnsLastEntry() throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription, _, event) = makeEventForOutcomeResolver(context: context)
 
@@ -128,7 +128,7 @@ import Testing
 
     // MARK: - Positive first session finalizes early
 
-    @Test @MainActor func singleGoodSession_finalizesEarly_whenRequiredCountIs2() async throws {
+    @Test func singleGoodSession_finalizesEarly_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -140,7 +140,7 @@ import Testing
         #expect(event.evaluatedAt != nil)
     }
 
-    @Test @MainActor func singleTooEasySession_finalizesEarly_whenRequiredCountIs2() async throws {
+    @Test func singleTooEasySession_finalizesEarly_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
         // reps=14, range 6-10+2=12 → tooEasy from rule engine
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
@@ -155,7 +155,7 @@ import Testing
 
     // MARK: - Non-positive first session still waits for required count
 
-    @Test @MainActor func singleIgnoredSession_doesNotFinalize_whenRequiredCountIs2() async throws {
+    @Test func singleIgnoredSession_doesNotFinalize_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
         // actualWeight=97.5 stayed meaningfully away from the new target, so the change is ignored.
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
@@ -169,7 +169,7 @@ import Testing
 
     // MARK: - tooAggressive does NOT finalize early (requires full evaluation count)
 
-    @Test @MainActor func singleTooAggressiveSession_doesNotFinalize_whenRequiredCountIs2() async throws {
+    @Test func singleTooAggressiveSession_doesNotFinalize_whenRequiredCountIs2() async throws {
         let context = try TestDataFactory.makeContext()
         // reps=4, floor=6 → tooAggressive — but no early resolution, requires full count
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
@@ -183,7 +183,7 @@ import Testing
     }
 
     /// Pre-injects a SuggestionEvaluation into the event for multi-session test setup.
-    @MainActor @discardableResult private func injectPriorEvaluation(context: ModelContext, event: SuggestionEvent, sessionID: UUID = UUID(), partialOutcome: Outcome, confidence: Double, reason: String) -> SuggestionEvaluation {
+    @discardableResult private func injectPriorEvaluation(context: ModelContext, event: SuggestionEvent, sessionID: UUID = UUID(), partialOutcome: Outcome, confidence: Double, reason: String) -> SuggestionEvaluation {
         let eval = SuggestionEvaluation()
         eval.event = event
         eval.sourceWorkoutSessionID = sessionID
@@ -197,7 +197,7 @@ import Testing
 
     // MARK: - Two sessions finalize at threshold
 
-    @Test @MainActor func twoGoodSessions_finalizeWithGoodOutcome() async throws {
+    @Test func twoGoodSessions_finalizeWithGoodOutcome() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -214,7 +214,7 @@ import Testing
         #expect((event.evaluations ?? []).count == 2)
     }
 
-    @Test @MainActor func twoTooEasySessions_finalizeWithTooEasyOutcome() async throws {
+    @Test func twoTooEasySessions_finalizeWithTooEasyOutcome() async throws {
         let context = try TestDataFactory.makeContext()
         // reps=14 exceeds range ceiling+buffer consistently → tooEasy
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
@@ -233,7 +233,7 @@ import Testing
 
     // MARK: - Weighted aggregation at threshold
 
-    @Test @MainActor func weightedAggregation_goodBeatsWeakTooAggressive_atThreshold() async throws {
+    @Test func weightedAggregation_goodBeatsWeakTooAggressive_atThreshold() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -245,7 +245,7 @@ import Testing
         #expect(event.outcomeReason?.hasPrefix("[Aggregate]") == true)
     }
 
-    @Test @MainActor func weightedAggregation_ignoredCarriesNoWeight_atThreshold() async throws {
+    @Test func weightedAggregation_ignoredCarriesNoWeight_atThreshold() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -257,7 +257,7 @@ import Testing
         #expect(event.outcome == .good)
     }
 
-    @Test @MainActor func weightedAggregation_goodBeatsTooEasyWithinPositiveBucket_atThreshold() async throws {
+    @Test func weightedAggregation_goodBeatsTooEasyWithinPositiveBucket_atThreshold() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -269,7 +269,7 @@ import Testing
         #expect(event.outcome == .good)
     }
 
-    @Test @MainActor func weightedAggregation_strongTooAggressiveBeatsWeakGood_atThreshold() async throws {
+    @Test func weightedAggregation_strongTooAggressiveBeatsWeakGood_atThreshold() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -281,7 +281,7 @@ import Testing
         #expect(event.outcomeReason?.hasPrefix("[Aggregate]") == true)
     }
 
-    @Test @MainActor func mixedPositiveAndNegativeEvidence_lowNetScoreEscalatesToThree() async throws {
+    @Test func mixedPositiveAndNegativeEvidence_lowNetScoreEscalatesToThree() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -295,7 +295,7 @@ import Testing
         #expect(event.requiredEvaluationCount == 3)
     }
 
-    @Test @MainActor func exactTooAggressiveAndTooEasyPair_alwaysEscalatesToThree() async throws {
+    @Test func exactTooAggressiveAndTooEasyPair_alwaysEscalatesToThree() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2, lowerRange: 6, upperRange: 10)
 
@@ -309,7 +309,7 @@ import Testing
         #expect(event.requiredEvaluationCount == 3)
     }
 
-    @Test @MainActor func threeSessions_withMixedLowNetScore_finalizesIgnored() async throws {
+    @Test func threeSessions_withMixedLowNetScore_finalizesIgnored() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 3, lowerRange: 6, upperRange: 10)
 
@@ -326,7 +326,7 @@ import Testing
 
     // MARK: - Cross-invocation deduplication (same session called twice)
 
-    @Test @MainActor func crossInvocationDedup_callingSameSessionTwiceOnlyAppendsOneEntry() async throws {
+    @Test func crossInvocationDedup_callingSameSessionTwiceOnlyAppendsOneEntry() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -338,7 +338,7 @@ import Testing
         #expect((event.evaluations ?? []).count == 1)
     }
 
-    @Test @MainActor func crossInvocationDedup_differentSessionsEachAppendOneEntry() async throws {
+    @Test func crossInvocationDedup_differentSessionsEachAppendOneEntry() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 3)
 
@@ -359,7 +359,7 @@ import Testing
 
     // MARK: - Eligibility filtering
 
-    @Test @MainActor func eligibility_eventCreatedAfterWorkoutStart_isNotEvaluated() async throws {
+    @Test func eligibility_eventCreatedAfterWorkoutStart_isNotEvaluated() async throws {
         let context = try TestDataFactory.makeContext()
         // Event created AFTER the session starts → ineligible
         let (_, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100)
@@ -392,7 +392,7 @@ import Testing
         #expect(event.outcome == .pending)
     }
 
-    @Test @MainActor func eligibility_decisionPending_isNotEvaluated() async throws {
+    @Test func eligibility_decisionPending_isNotEvaluated() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 1, decision: .pending)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription)
@@ -403,7 +403,7 @@ import Testing
         #expect(event.outcome == .pending)
     }
 
-    @Test @MainActor func eligibility_decisionRejected_isEvaluated() async throws {
+    @Test func eligibility_decisionRejected_isEvaluated() async throws {
         let context = try TestDataFactory.makeContext()
         // Rejected events still get outcome resolution (they track whether rejection was correct)
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 1, decision: .rejected)
@@ -415,7 +415,7 @@ import Testing
         #expect((event.evaluations ?? []).count == 1)
     }
 
-    @Test @MainActor func eligibility_sessionWithoutPlan_isSkipped() async throws {
+    @Test func eligibility_sessionWithoutPlan_isSkipped() async throws {
         let context = try TestDataFactory.makeContext()
         let (_, prescription, _, event) = makeEventForOutcomeResolver(context: context)
 
@@ -428,7 +428,7 @@ import Testing
         #expect((event.evaluations ?? []).isEmpty)
     }
 
-    @Test @MainActor func recoveryEvidenceGate_requiresLinkedCompletedDownstreamWorkingSet() throws {
+    @Test func recoveryEvidenceGate_requiresLinkedCompletedDownstreamWorkingSet() throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, event) = makeRecoveryEventForOutcomeResolver(context: context)
 
@@ -442,7 +442,7 @@ import Testing
         #expect(OutcomeResolver.hasSufficientCurrentEvidence(for: event, in: performance) == false)
     }
 
-    @Test @MainActor func eligibility_alreadyFinalizedEvent_isSkipped() async throws {
+    @Test func eligibility_alreadyFinalizedEvent_isSkipped() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 1)
 
@@ -460,7 +460,7 @@ import Testing
 
     // MARK: - requiredEvaluationCount via SuggestionGenerator
 
-    @Test @MainActor func generatedIncreaseWeightEvent_hasRequiredCount2() async throws {
+    @Test func generatedIncreaseWeightEvent_hasRequiredCount2() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 3, targetWeight: 200, targetReps: 8, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -492,7 +492,7 @@ import Testing
         #expect(weightEvents.allSatisfy { $0.requiredEvaluationCount == 2 })
     }
 
-    @Test @MainActor func generatedIncreaseRestEvent_hasRequiredCount2() async throws {
+    @Test func generatedIncreaseRestEvent_hasRequiredCount2() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, targetRest: 60, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         prescription.musclesTargeted = [.chest]
@@ -520,7 +520,7 @@ import Testing
         if !restEvents.isEmpty { #expect(restEvents.allSatisfy { $0.requiredEvaluationCount == 2 }) }  // Note: rest increase may not trigger in every scenario — this test validates count IF generated
     }
 
-    @Test @MainActor func generatedDecreaseWeightEvent_hasRequiredCount1() async throws {
+    @Test func generatedDecreaseWeightEvent_hasRequiredCount1() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
         prescription.musclesTargeted = [.chest]
@@ -546,7 +546,7 @@ import Testing
         }
     }
 
-    @Test @MainActor func generatedAssistedDecreaseWeightEvent_hasRequiredCount2() async throws {
+    @Test func generatedAssistedDecreaseWeightEvent_hasRequiredCount2() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "assisted_pull_ups", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(90), targetReps: 8, targetRest: 90, repRangeMode: .target)
         prescription.repRange?.targetReps = 8
@@ -572,7 +572,7 @@ import Testing
         #expect(assistedProgressionEvents.allSatisfy { $0.requiredEvaluationCount == 2 })
     }
 
-    @Test @MainActor func generatedAssistedIncreaseWeightEvent_hasRequiredCount1() async throws {
+    @Test func generatedAssistedIncreaseWeightEvent_hasRequiredCount1() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, catalogID: "assisted_pull_ups", workingSets: 1, targetWeight: WeightUnit.lbs.toKg(90), targetReps: 8, targetRest: 90, repRangeMode: .range, lowerRange: 6, upperRange: 8)
 
@@ -599,7 +599,7 @@ import Testing
         #expect(assistedSupportEvents.allSatisfy { $0.requiredEvaluationCount == 1 })
     }
 
-    @Test @MainActor func generatedWarmupCalibrationEvent_hasRequiredCount1() async throws {
+    @Test func generatedWarmupCalibrationEvent_hasRequiredCount1() async throws {
         let context = try TestDataFactory.makeContext()
         // Warmup calibration category always requires only 1 session regardless of change type
         let (plan, prescription) = TestDataFactory.makePrescription(context: context, workingSets: 1, targetWeight: 100, targetReps: 8, repRangeMode: .range, lowerRange: 6, upperRange: 10)
@@ -630,7 +630,7 @@ import Testing
 
     // MARK: - Evaluation content
 
-    @Test @MainActor func evaluation_storesCorrectSessionID() async throws {
+    @Test func evaluation_storesCorrectSessionID() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -640,7 +640,7 @@ import Testing
         #expect((event.evaluations ?? []).first?.sourceWorkoutSessionID == session.id)
     }
 
-    @Test @MainActor func evaluation_storesPerformanceRelationship() async throws {
+    @Test func evaluation_storesPerformanceRelationship() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -653,7 +653,7 @@ import Testing
         #expect(performance?.sortedSets.first?.reps == 8)
     }
 
-    @Test @MainActor func evaluation_reasonContainsRulesPrefix() async throws {
+    @Test func evaluation_reasonContainsRulesPrefix() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 2)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -664,33 +664,33 @@ import Testing
         #expect(reason.hasPrefix("[Rules]") || reason.hasPrefix("[AI]") || reason.hasPrefix("[AI override]"))
     }
 
-    @Test @MainActor func outcomeResolver_skipsAIForHighConfidenceRules() {
+    @Test func outcomeResolver_skipsAIForHighConfidenceRules() {
         let rule = OutcomeSignal(outcome: .good, confidence: 0.9, reason: "Rules are clear")
 
         #expect(OutcomeResolver.shouldRunAI(for: rule) == false)
     }
 
-    @Test @MainActor func outcomeResolver_runsAIForAmbiguousRules() {
+    @Test func outcomeResolver_runsAIForAmbiguousRules() {
         let rule = OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Ambiguous rule path")
 
         #expect(OutcomeResolver.shouldRunAI(for: rule))
     }
 
-    @Test @MainActor func outcomeResolver_prefersHighConfidenceAIOverMidConfidenceRule() {
+    @Test func outcomeResolver_prefersHighConfidenceAIOverMidConfidenceRule() {
         let rule = OutcomeSignal(outcome: .good, confidence: 0.8, reason: "Rule said good")
         let ai = AIOutcomeInferenceOutput(outcome: .tooEasy, confidence: 0.9, reason: "AI saw clear overshoot")
 
         #expect(OutcomeResolver.shouldPreferAIOverride(rule: rule, ai: ai))
     }
 
-    @Test @MainActor func outcomeResolver_keepsRuleWhenAIIsNotDecisivelyStronger() {
+    @Test func outcomeResolver_keepsRuleWhenAIIsNotDecisivelyStronger() {
         let rule = OutcomeSignal(outcome: .good, confidence: 0.8, reason: "Rule said good")
         let ai = AIOutcomeInferenceOutput(outcome: .tooEasy, confidence: 0.82, reason: "AI slightly disagreed")
 
         #expect(OutcomeResolver.shouldPreferAIOverride(rule: rule, ai: ai) == false)
     }
 
-    @Test @MainActor func mergeOutcome_usesAIConfidenceWhenAIOverrideWins() throws {
+    @Test func mergeOutcome_usesAIConfidenceWhenAIOverrideWins() throws {
         let rule = OutcomeSignal(outcome: .ignored, confidence: 0.7, reason: "Ambiguous rule path")
         let ai = AIOutcomeInferenceOutput(outcome: .tooEasy, confidence: 0.92, reason: "AI saw clear overshoot")
 
@@ -700,7 +700,7 @@ import Testing
         #expect(resolved.reason.hasPrefix("[AI override]"))
     }
 
-    @Test @MainActor func adjustedConfidence_highPostEffortBoostsNegativeOutcomes() {
+    @Test func adjustedConfidence_highPostEffortBoostsNegativeOutcomes() {
         let workout = WorkoutSession()
         workout.postEffort = 9
 
@@ -708,7 +708,7 @@ import Testing
         #expect(abs(adjusted - 1.0) < 0.0001)
     }
 
-    @Test @MainActor func adjustedConfidence_sickOrTiredWeakensNegativeOutcomes() {
+    @Test func adjustedConfidence_sickOrTiredWeakensNegativeOutcomes() {
         let workout = WorkoutSession()
         workout.preWorkoutContext?.feeling = .tired
 
@@ -716,7 +716,7 @@ import Testing
         #expect(abs(adjusted - 0.7225) < 0.0001)
     }
 
-    @Test @MainActor func adjustedConfidence_preWorkoutSlightlyBoostsNegativeAndDampensPositive() {
+    @Test func adjustedConfidence_preWorkoutSlightlyBoostsNegativeAndDampensPositive() {
         let workout = WorkoutSession()
         workout.preWorkoutContext?.tookPreWorkout = true
 
@@ -727,7 +727,7 @@ import Testing
         #expect(abs(positiveAdjusted - 0.76) < 0.0001)
     }
 
-    @Test @MainActor func aiContextFields_includeOnlyMeaningfulValues() {
+    @Test func aiContextFields_includeOnlyMeaningfulValues() {
         let workout = WorkoutSession()
         workout.postEffort = 8
         workout.preWorkoutContext?.feeling = .good
@@ -739,7 +739,7 @@ import Testing
         #expect(fields.tookPreWorkout == true)
     }
 
-    @Test @MainActor func aiContextFields_omitUnsetValues() {
+    @Test func aiContextFields_omitUnsetValues() {
         let workout = WorkoutSession()
         workout.postEffort = 0
         workout.preWorkoutContext?.feeling = .notSet
@@ -753,7 +753,7 @@ import Testing
 
     // MARK: - RequiredEvaluationCount = 1 finalizes after single session
 
-    @Test @MainActor func singleSessionFinalizes_whenRequiredCountIs1() async throws {
+    @Test func singleSessionFinalizes_whenRequiredCountIs1() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeEventForOutcomeResolver(context: context, requiredEvaluationCount: 1)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 8)
@@ -765,7 +765,7 @@ import Testing
         #expect((event.evaluations ?? []).count == 1)
     }
 
-    @Test @MainActor func targetMode_targetMinusOneSession_resolvesAsGood_notTooAggressive() async throws {
+    @Test func targetMode_targetMinusOneSession_resolvesAsGood_notTooAggressive() async throws {
         let context = try TestDataFactory.makeContext()
         let (plan, prescription, _, event) = makeTargetModeEventForOutcomeResolver(context: context, requiredEvaluationCount: 1, targetReps: 8)
         let session = makeCompletedSession(context: context, plan: plan, prescription: prescription, actualWeight: 102.5, actualReps: 7)
@@ -778,7 +778,7 @@ import Testing
 
     // MARK: - Multiple events same workout
 
-    @Test @MainActor func multipleEventsInSameWorkout_eachGetsIndependentEvaluation() async throws {
+    @Test func multipleEventsInSameWorkout_eachGetsIndependentEvaluation() async throws {
         let context = try TestDataFactory.makeContext()
 
         // Two exercise-level rep range events on the same prescription — no set scoping,

@@ -1,7 +1,6 @@
 import SwiftUI
 import UIKit
 
-@MainActor
 @Observable
 final class ToastManager {
     enum HapticStyle {
@@ -282,7 +281,6 @@ private extension AnyTransition {
     }
 }
 
-@MainActor
 final class ToastOverlayCoordinator {
     static let shared = ToastOverlayCoordinator()
 

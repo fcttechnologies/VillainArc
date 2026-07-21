@@ -4,7 +4,6 @@ import Testing
 
 @testable import VillainArc
 
-@MainActor
 struct WorkoutPlanDeletionCoordinatorTests {
     private typealias Assessment = WorkoutPlanDeletionCoordinator.Assessment
 

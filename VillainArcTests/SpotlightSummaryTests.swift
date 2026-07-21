@@ -5,7 +5,7 @@ import Testing
 @testable import VillainArc
 
 struct SpotlightSummaryTests {
-    @Test @MainActor func workoutSessionSpotlightSummaryUsesPlainSetCount() throws {
+    @Test func workoutSessionSpotlightSummaryUsesPlainSetCount() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let session = WorkoutSession(title: "Push")
@@ -22,7 +22,7 @@ struct SpotlightSummaryTests {
         #expect(summary.contains("2x \(performance.name)"))
         #expect(summary.contains("Optional(") == false)
     }
-    @Test @MainActor func workoutPlanSpotlightSummaryUsesPlainSetCount() throws {
+    @Test func workoutPlanSpotlightSummaryUsesPlainSetCount() throws {
         let container = try TestModelContainer.make()
         let context = ModelContext(container)
         let plan = WorkoutPlan(title: "Leg Day")
