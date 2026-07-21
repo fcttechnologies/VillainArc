@@ -84,5 +84,5 @@ xcodebuild \
 
 ## Notes
 
-- AI usage and rationale are documented in `VillainArc/Data/AI_USAGE.md`.
+- AI usage and rationale are documented in `VillainArc/Documentation/SUGGESTION_AND_OUTCOME_FLOW.md`.
 - Architecture notes live under `VillainArc/Documentation/`.
