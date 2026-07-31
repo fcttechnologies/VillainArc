@@ -3,6 +3,30 @@ import SwiftData
 import Foundation
 import HealthKit
 
+// Apple's replacement for the deprecated `HKWorkout(activityType:start:end:)` initializer is
+// `HKWorkoutBuilder.finishWorkout`, which ACTUALLY SAVES a workout to the HealthKit store — not
+// a fit for this debug schema-touch tool, which must never write real Health data as a side
+// effect of exercising SwiftData models. The deprecated initializer is genuinely still the right
+// tool here; this protocol-witness shim silences just that one call (the requirement carries no
+// availability, so the call site sees no deprecation) without a project-wide flag.
+private protocol _DebugLegacyWorkoutMaking {
+    static func makeDebugPlaceholder(activityType: HKWorkoutActivityType, start: Date, end: Date) -> HKWorkout
+}
+
+extension HKWorkout: _DebugLegacyWorkoutMaking {
+    @available(iOS, deprecated: 17.0)
+    static func makeDebugPlaceholder(activityType: HKWorkoutActivityType, start: Date, end: Date) -> HKWorkout {
+        HKWorkout(activityType: activityType, start: start, end: end)
+    }
+}
+
+/// Resolves through the protocol requirement (no availability annotation) rather than the
+/// concrete `HKWorkout` static method, so the call site never sees the deprecation.
+private func makeDebugPlaceholderWorkout(activityType: HKWorkoutActivityType, start: Date, end: Date) -> HKWorkout {
+    let maker: _DebugLegacyWorkoutMaking.Type = HKWorkout.self
+    return maker.makeDebugPlaceholder(activityType: activityType, start: start, end: end)
+}
+
 enum DebugOperations {
     enum HealthSampleScenario: String, CaseIterable, Identifiable {
         case rareFastCut
@@ -421,7 +445,7 @@ enum DebugOperations {
         let suggestionEvent = SuggestionEvent(); context.insert(suggestionEvent)
         let prescriptionChange = PrescriptionChange(); context.insert(prescriptionChange)
         let suggestionEval = SuggestionEvaluation(); context.insert(suggestionEval)
-        let healthWorkout = HealthWorkout(workout: HKWorkout(activityType: .other, start: .now, end: .now)); context.insert(healthWorkout)
+        let healthWorkout = HealthWorkout(workout: makeDebugPlaceholderWorkout(activityType: .other, start: .now, end: .now)); context.insert(healthWorkout)
         let restTimeHistory = RestTimeHistory(seconds: 90); context.insert(restTimeHistory)
         let trainingGoal = TrainingGoal(kind: .generalTraining); context.insert(trainingGoal)
         let trainingCondition = TrainingConditionPeriod(kind: .sick, trainingImpact: .contextOnly); context.insert(trainingCondition)

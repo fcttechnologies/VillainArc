@@ -786,6 +786,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				LM_SKIP_METADATA_EXTRACTION = YES;
 				MARKETING_VERSION = 1.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.VillainArcIntentsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -823,6 +824,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				LM_SKIP_METADATA_EXTRACTION = YES;
 				MARKETING_VERSION = 1.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.VillainArcIntentsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
