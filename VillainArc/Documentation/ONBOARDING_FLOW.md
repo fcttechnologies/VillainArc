@@ -1,6 +1,6 @@
 # Onboarding Flow
 
-This document explains how VillainArc gets from process launch to a ready app state. It covers first bootstrap, returning launch, profile onboarding, the required fitness-level and training-goal steps, the Apple Health permission prompt, and why the app waits for CloudKit import before seeding the exercise catalog.
+This document explains how VillainArc gets from process launch to a ready app state. It covers first bootstrap, returning launch, profile onboarding, the required fitness-level and training-goal steps, the Apple Health permission prompt, and the terminal FCT account sign-in step.
 
 This file is only about launch readiness. Ongoing profile editing after setup lives in the dedicated Profile surface (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
 
@@ -10,7 +10,6 @@ This file is only about launch readiness. Ongoing profile editing after setup li
 - `Root/RootView.swift`
 - `Views/Onboarding/OnboardingView.swift`
 - `Data/Services/App/OnboardingManager.swift`
-- `Data/Services/App/CloudKitImportMonitor.swift`
 - `Data/Services/App/DataManager.swift`
 - `Data/Services/App/SystemState.swift`
 - `Data/Services/App/SetupGuard.swift`
@@ -111,7 +110,7 @@ VillainArc also requires one active `TrainingGoal` before setup is considered co
 
 For a true first-time user, the profile flow is:
 
-`name -> health permissions -> birthday -> gender -> height -> fitness level -> training goal`
+`name -> health permissions -> birthday -> gender -> height -> fitness level -> training goal -> account sign-in`
 
 The in-flow Apple Health step comes immediately after the name step.
 
@@ -187,33 +186,17 @@ The observer reinstall matters because observer queries are also created earlier
 
 ## Failure and Retry States
 
-Before the app is ready, onboarding can enter:
-
-- no network
-- iCloud disabled
-- iCloud account issue
-- CloudKit unavailable
-- syncing
-- generic bootstrap error
-
-Important timing rules:
-
-- the first-bootstrap import wait starts checking for stalls after about 2 minutes
-- the wait only fails when CloudKit import appears idle long enough without local store progress, with a hard cap of about 8 minutes
-- stall failures resolve the CloudKit import wait before showing the retryable error, so retry starts a clean onboarding attempt
-- stall failures do not stop the CloudKit import observer; if a late import-complete event arrives after the retryable error, the monitor can still capture it for the next retry
-- no-network uses a retry loop that restarts onboarding when connectivity returns
-- iCloud/CloudKit blocking states also retry when the app becomes active again
+Before the app is ready, onboarding can enter a generic bootstrap error (seeding or singleton
+setup failed) with a Retry button that restarts the attempt. Sign-in failures are handled inside
+the account surface itself and never abandon the flow.
 
 ## Reinstall Behavior
 
-On reinstall, the local store and defaults are gone but CloudKit data may still exist.
-
-That means reinstall behaves like:
-
-`import first -> reconcile bundled catalog -> continue setup`
-
-The app takes the first-bootstrap path again, waits for cloud import, then seeds/syncs against the imported store.
+On reinstall, the local store and defaults are gone; the account's data lives on the FCT platform.
+The app takes the first-bootstrap path again (seed, profile, health, sign-in), and enrollment after
+sign-in restores the account's rows in the background. The profile typed during setup pushes as the
+current truth; the account's workout history, plans, splits, and settings pull down and settle by
+LWW.
 
 ## Post-Ready Education Surface
 

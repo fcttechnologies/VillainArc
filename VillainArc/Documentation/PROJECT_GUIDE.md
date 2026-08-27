@@ -153,33 +153,28 @@ Startup code ensures they exist before the app treats launch as ready.
 - the user fitness level and last confirmed timestamp
 - externally stored profile photo data
 
-### SwiftData Schemas Are Versioned
+### One Store, Two Layers: SwiftData Local, the FCT Platform Canonical
 
-VillainArc uses `VersionedSchema` and `SchemaMigrationPlan` for persisted store changes.
+VillainArc's store is local-first SwiftData in the App Group with **no CloudKit mirror**. What the
+app authors syncs through the FCT platform (`FCTServerSync` + `FCTBlobSync` against the shared
+backend, under the mandatory FCT account); what Apple Health canonically holds re-derives from
+Apple Health per device. `Documentation/SYNC_FLOW.md` owns the whole split, the wire, and the
+lifecycle.
 
-The rules are:
+The schema is `VillainArcSchemaV1` — the clean platform-era V1, currently unpublished:
 
-- treat the last shipped public store shape as a frozen historical schema
-- keep historical schema versions append-only and do not edit them after release
-- keep model entries in schema order
-- when adding a brand-new persisted model, append it to the end of the current schema list
-- when changing any persisted shape, add a new schema version instead of editing the old one in place
-
-The current convention is:
-
-- historical versions are fully frozen snapshots of the persisted model graph
-- the latest schema version can continue using the live app models
-- when the next store-shape change happens, freeze the current live schema into the next historical version first, then advance the live schema again
-
-This means all of these require a new schema version:
-
-- adding a new model
-- adding an optional field
-- adding a non-optional field
-- renaming or removing a field
-- changing relationship structure
-
-**Exception: unpublished schema versions can be edited in-place.** If the current schema version has not shipped to the App Store yet, changes to it can be made directly — no new schema version, no migration stage needed. Just edit the model, delete the app and its data from the simulator (`xcrun simctl uninstall booted com.fcttechnologies.VillainArc`), and rebuild clean. Only freeze a schema version and write a migration once it has been distributed publicly.
+- the live `@Model` classes ARE the schema; editing one edits V1 in place
+- while V1 is unpublished, shape changes clear the store on dev devices (delete the app AND the
+  App-Group store file — the store survives an app delete on its own)
+- the first public release freezes V1; any later shape change then adds a real V2 with a migration
+- every `@Model` must be in `VillainArcSchemaV1.models` (pinned by `SchemaContractTests`)
+- a synced model's `id` carries `@Attribute(.preserveValueOnDeletion)`, or its deletions cannot
+  ride the history feed
+- a stored attribute must never be a Codable struct that contains an array: SwiftData reflects the
+  struct into composite sub-attributes and traps materializing the nested keypath the first time
+  persistent history over that model is read (which sync does on every drain); store encoded
+  `Data` with a typed computed face instead (`ExercisePerformance.originalTargetSnapshot` is the
+  in-repo example)
 
 ### Apple Health Is an Integration Layer
 
@@ -242,24 +237,19 @@ Setup is only considered valid once:
 
 ## First Bootstrap
 
-On the first launch, VillainArc takes the full setup path:
+On the first launch, VillainArc takes the local-first setup path:
 
-- check connectivity
-- check iCloud sign-in state
-- check CloudKit availability
-- wait for CloudKit import completion
-- seed or sync the bundled exercise catalog
+- seed the bundled exercise catalog
 - reindex Spotlight
 - ensure singleton records exist
 - route into profile onboarding
+- end in the FCT account sign-in step
 
-The wait-before-seed rule prevents duplicate built-in exercises if older cloud data is still importing.
-
-If the first-bootstrap import completion signal is missed or stalls, onboarding fails closed with a retryable error instead of seeding early. The CloudKit import observer stays alive after that retryable error so a late completion event can still be captured before the next retry.
-
-Note:
-
-- if the user chooses `Continue Without iCloud`, the app still seeds locally and continues onboarding, but it does not perform the first-bootstrap Spotlight reindex pass in that path
+The store has no cloud mirror, so seeding waits on nothing. Cross-device convergence is an
+identity property instead of a wait: catalog exercises carry deterministic ids and the singletons
+fixed ids (`VASyncIdentity`), so an existing account's rows settle against the fresh seed under
+LWW once the sync engine enrolls at sign-in. Restoring account data runs in the background after
+sign-in; readiness never waits on a pull.
 
 ## Returning Launch
 
@@ -408,6 +398,8 @@ If you are changing:
 
 - launch, bootstrap, or readiness behavior:
   - `Documentation/ONBOARDING_FLOW.md`
+- the FCT account, platform sync, or what does and does not ride the wire:
+  - `Documentation/SYNC_FLOW.md`
 - Health syncing, observers, or Health-backed UI:
   - `Documentation/HEALTHKIT_INTEGRATION.md`
 - workout logging, finish flow, or resume behavior:

@@ -5,7 +5,8 @@ It combines workout planning, live workout logging, and intelligent suggestions 
 
 ## Status
 
-Beta testing (iOS 26+ target).
+Platform rebuild (iOS 27+ minimum): built on FCTFoundation, synced through the FCT platform under
+the mandatory FCT account.
 
 ## What it does
 
@@ -34,7 +35,7 @@ Beta testing (iOS 26+ target).
 
 ### Apple ecosystem integrations
 - SwiftUI app architecture.
-- SwiftData persistence (CloudKit sync enabled).
+- SwiftData persistence, local-first, synced through the FCT platform (FCTServerSync).
 - App Intents + App Shortcuts.
 - Spotlight indexing.
 - Widget + Live Activity extensions.
@@ -43,7 +44,7 @@ Beta testing (iOS 26+ target).
 ## Tech stack
 
 - Swift / SwiftUI
-- SwiftData + CloudKit
+- SwiftData (local-first) + FCTFoundation (FCTServerSync/FCTBlobSync/FCTAccount/FCTMetrics)
 - Foundation Models (on-device)
 - ActivityKit / WidgetKit
 - App Intents / Core Spotlight
@@ -58,8 +59,9 @@ Beta testing (iOS 26+ target).
 
 ## Requirements
 
-- Xcode 26+
-- iOS 26+ deployment target
+- Xcode 27+
+- iOS 27+ deployment target
+- FCTFoundation checked out as a sibling (`../FCTFoundation`, local path dependency)
 
 ## Getting started
 
@@ -67,7 +69,7 @@ Beta testing (iOS 26+ target).
 2. Open `VillainArc.xcodeproj` in Xcode.
 3. Select the `VillainArc` scheme.
 4. Set your signing team / bundle settings as needed.
-5. Run on an iOS 26 simulator (or supported device).
+5. Run on an iOS 27 simulator (or supported device).
 
 ## Run tests
 
@@ -80,7 +82,7 @@ Or CLI:
 xcodebuild \
   -project VillainArc.xcodeproj \
   -scheme VillainArc \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   test
 ```
 

@@ -36,13 +36,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		6E645697D2CE5B731571A36F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = FDA1938F2F16D14500CA57C5;
-			remoteInfo = VillainArc;
-		};
 		FD6824602F33A712009F6D98 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FDA193882F16D14500CA57C5 /* Project object */;
@@ -110,7 +103,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		167C5306C4A28943AB2EC0EB /* VillainArcUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VillainArcUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		354CA66A2F535701005622B1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		57340E3AA3AF074CD4BF345E /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VillainArcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -348,14 +340,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		B3554DC4AE272AC65B2DB940 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A54F0367A912B1480985484F /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD6824592F33A712009F6D98 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -458,7 +442,6 @@
 				FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */,
 				FD6829082F31190700C83480 /* VillainArcIntentsExtension.appex */,
 				FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */,
-				167C5306C4A28943AB2EC0EB /* VillainArcUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -466,24 +449,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EC8DFBAEDAFE40A9DE190C0C /* VillainArcUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = E77F8F5FC1E822D157B9A126 /* Build configuration list for PBXNativeTarget "VillainArcUITests" */;
-			buildPhases = (
-				25D1E5C04ADA7E3047B78A6E /* Sources */,
-				B3554DC4AE272AC65B2DB940 /* Frameworks */,
-				219F05E4698CB827345A6259 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				7EC23CD6FEAED390C2D9A7C4 /* PBXTargetDependency */,
-			);
-			name = VillainArcUITests;
-			productName = VillainArcUITests;
-			productReference = 167C5306C4A28943AB2EC0EB /* VillainArcUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 		FD68245B2F33A712009F6D98 /* VillainArcTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FD6824642F33A712009F6D98 /* Build configuration list for PBXNativeTarget "VillainArcTests" */;
@@ -615,9 +580,6 @@
 				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
-					EC8DFBAEDAFE40A9DE190C0C = {
-						TestTargetID = FDA1938F2F16D14500CA57C5;
-					};
 					FD68245B2F33A712009F6D98 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = FDA1938F2F16D14500CA57C5;
@@ -663,19 +625,11 @@
 				FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */,
 				FD6829072F31190700C83480 /* VillainArcIntentsExtension */,
 				FD68245B2F33A712009F6D98 /* VillainArcTests */,
-				EC8DFBAEDAFE40A9DE190C0C /* VillainArcUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		219F05E4698CB827345A6259 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD68245A2F33A712009F6D98 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -715,13 +669,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		25D1E5C04ADA7E3047B78A6E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		FD6824582F33A712009F6D98 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -760,12 +707,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		7EC23CD6FEAED390C2D9A7C4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = VillainArc;
-			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
-			targetProxy = 6E645697D2CE5B731571A36F /* PBXContainerItemProxy */;
-		};
 		FD6824612F33A712009F6D98 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FDA1938F2F16D14500CA57C5 /* VillainArc */;
@@ -789,63 +730,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		9EBE7A008A6FF80D149BB266 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X26SC78YDG;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArcUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = VillainArc;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		B10318F87B6AC53D52A1AF48 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X26SC78YDG;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArcUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				TEST_TARGET_NAME = VillainArc;
-			};
-			name = Debug;
-		};
 		FD6824622F33A712009F6D98 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -919,6 +803,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.4;
+				LM_SKIP_METADATA_EXTRACTION = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.VillainArcIntentsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -956,6 +841,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.4;
+				LM_SKIP_METADATA_EXTRACTION = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fcttechnologies.VillainArc.VillainArcIntentsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1352,15 +1238,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E77F8F5FC1E822D157B9A126 /* Build configuration list for PBXNativeTarget "VillainArcUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				9EBE7A008A6FF80D149BB266 /* Release */,
-				B10318F87B6AC53D52A1AF48 /* Debug */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		FD6824642F33A712009F6D98 /* Build configuration list for PBXNativeTarget "VillainArcTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
