@@ -51,6 +51,17 @@ struct ExerciseHistoryUpdater {
     static func updateHistory(for catalogID: String, context: ModelContext, save: Bool = true) {
         updateHistoriesForDeletedCatalogIDs(Set([catalogID]), context: context, save: save)
     }
+
+    /// Full rebuild across every exercise that has (or had) completed performances. The platform
+    /// sync engine's apply path writes sessions without passing the completion flow, so the cache
+    /// has to be re-derived after a pull that landed rows; remote changes are infrequent enough
+    /// that coarse-and-correct beats tracking which exercises a pull touched.
+    static func rebuildAllHistories(context: ModelContext) {
+        let exerciseIDs = ((try? context.fetch(Exercise.all)) ?? []).map(\.catalogID)
+        let historyIDs = ((try? context.fetch(FetchDescriptor<ExerciseHistory>())) ?? []).map(\.catalogID)
+        let catalogIDs = Set(exerciseIDs).union(historyIDs)
+        updateHistoriesForDeletedCatalogIDs(catalogIDs, context: context)
+    }
     
     /// Fetches all ExerciseHistory records for the given catalog IDs in a single query.
     /// Returns a dictionary keyed by catalogID for O(1) lookup.

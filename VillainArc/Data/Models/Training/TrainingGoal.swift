@@ -3,6 +3,7 @@ import SwiftData
 
 @Model final class TrainingGoal {
     #Index<TrainingGoal>([\.startedOnDay])
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var startedOnDay: Date = Date()
     var endedOnDay: Date?
     var kind: TrainingGoalKind = TrainingGoalKind.generalTraining

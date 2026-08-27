@@ -16,6 +16,7 @@ enum PreviousSetReferenceSource: String, Codable, CaseIterable, Identifiable {
 }
 
 @Model final class AppSettings {
+    @Attribute(.preserveValueOnDeletion) var id: UUID = VASyncIdentity.appSettingsID
     var autoStartRestTimer: Bool = true
     var autoCompleteSetAfterRPE: Bool = true
     var autoFillPlanTargets: Bool = true

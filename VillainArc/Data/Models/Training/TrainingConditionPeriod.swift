@@ -3,6 +3,7 @@ import SwiftData
 
 @Model final class TrainingConditionPeriod {
     #Index<TrainingConditionPeriod>([\.startDate], [\.endDate])
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var kind: TrainingConditionKind = TrainingConditionKind.recovering
     var trainingImpact: TrainingImpact = TrainingImpact.contextOnly
     var startDate: Date = Date()

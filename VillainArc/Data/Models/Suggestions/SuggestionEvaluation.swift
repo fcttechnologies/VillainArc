@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model final class SuggestionEvaluation {
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var event: SuggestionEvent?
     var performance: ExercisePerformance?
     var sourceWorkoutSessionID: UUID = UUID()

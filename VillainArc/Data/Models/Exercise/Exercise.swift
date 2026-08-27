@@ -4,6 +4,7 @@ import SwiftData
 
 @Model final class Exercise {
     #Index<Exercise>([\.catalogID], [\.lastAddedAt], [\.favorite])
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var catalogID: String = ""
     var name: String = ""
     var musclesTargeted: [Muscle] = []
@@ -16,7 +17,11 @@ import SwiftData
     var suggestionsEnabled: Bool = true
     var preferredWeightChange: Double?
     
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it.
+    init(syncID: UUID) { id = syncID }
+
     init(from catalogItem: ExerciseCatalogItem) {
+        id = VASyncIdentity.exerciseID(catalogID: catalogItem.id)
         catalogID = catalogItem.id
         name = catalogItem.name
         musclesTargeted = catalogItem.musclesTargeted

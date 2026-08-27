@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model final class SetPerformance {
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var index: Int = 0
     var originalTargetSetID: UUID?
     var type: ExerciseSetType = ExerciseSetType.working
@@ -16,6 +16,9 @@ import SwiftData
     @Relationship(inverse: \SetPrescription.activePerformance) var prescription: SetPrescription?
     
     // Adding set in session
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it.
+    init(syncID: UUID) { id = syncID }
+
     init(exercise: ExercisePerformance, weight: Double = 0, reps: Int = 0, restSeconds: Int = 0) {
         index = exercise.sets?.count ?? 0
         self.exercise = exercise

@@ -3,7 +3,7 @@ import SwiftData
 
 @Model final class SuggestionEvent {
     #Index<SuggestionEvent>([\.createdAt])
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var source: SuggestionSource = SuggestionSource.rules
     var category: SuggestionCategory = SuggestionCategory.performance
     var catalogID: String = ""

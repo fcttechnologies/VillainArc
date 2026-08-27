@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model final class PrescriptionChange {
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var event: SuggestionEvent?
     var changeType: ChangeType = ChangeType.increaseWeight
     var previousValue: Double = 0

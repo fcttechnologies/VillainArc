@@ -3,7 +3,7 @@ import SwiftData
 
 @Model final class ExercisePrescription {
     #Index<ExercisePrescription>([\.catalogID])
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var index: Int = 0
     var catalogID: String = ""
     var name: String = ""
@@ -17,6 +17,15 @@ import SwiftData
     var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
     
     // Adding exercise in workout plan creation
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it. The default
+    /// rep-range child is dropped — the pulled `rep_range_policy` row is its own record and
+    /// relinks here; a default-created one would float off and push as a phantom row.
+    init(syncID: UUID) {
+        id = syncID
+        repRange = nil
+        sets = []
+    }
+
     init(exercise: Exercise, workoutPlan: WorkoutPlan) {
         index = workoutPlan.exercises?.count ?? 0
         catalogID = exercise.catalogID

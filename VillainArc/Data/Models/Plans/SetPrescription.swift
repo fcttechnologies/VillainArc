@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model final class SetPrescription {
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var index: Int = 0
     var type: ExerciseSetType = ExerciseSetType.working
     var targetWeight: Double = 0
@@ -14,6 +14,9 @@ import SwiftData
     var suggestionEvents: [SuggestionEvent]? = [SuggestionEvent]()
     
     // Adding set in workout plan creation
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it.
+    init(syncID: UUID) { id = syncID }
+
     init(exercisePrescription: ExercisePrescription, targetWeight: Double = 0, targetReps: Int = 0, targetRest: Int = 0, targetRPE: Int = 0) {
         index = exercisePrescription.sets?.count ?? 0
         exercise = exercisePrescription

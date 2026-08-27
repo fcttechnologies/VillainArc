@@ -3,7 +3,7 @@ import SwiftData
 
 @Model final class ExercisePerformance {
     #Index<ExercisePerformance>([\.catalogID], [\.date], [\.catalogID, \.date])
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var index: Int = 0
     var date: Date = Date()
     var catalogID: String = ""
@@ -23,6 +23,15 @@ import SwiftData
     var sortedSets: [SetPerformance] { (sets ?? []).sorted { $0.index < $1.index } }
 
     // Adding exercise in session
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it. The default
+    /// rep-range child is dropped — the pulled `rep_range_policy` row is its own record and
+    /// relinks here; a default-created one would float off and push as a phantom row.
+    init(syncID: UUID) {
+        id = syncID
+        repRange = nil
+        sets = []
+    }
+
     init(exercise: Exercise, workoutSession: WorkoutSession) {
         index = workoutSession.exercises?.count ?? 0
         catalogID = exercise.catalogID

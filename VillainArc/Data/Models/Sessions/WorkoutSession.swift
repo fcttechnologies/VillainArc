@@ -3,7 +3,7 @@ import SwiftUI
 
 @Model final class WorkoutSession {
     #Index<WorkoutSession>([\.id], [\.status], [\.startedAt], [\.isHidden], [\.status, \.isHidden, \.startedAt])
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var title: String = "New Workout"
     var notes: String = ""
     var isHidden: Bool = false
@@ -20,6 +20,16 @@ import SwiftUI
     var healthWorkout: HealthWorkout?
 
     init() {}
+
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it. The default
+    /// child context is dropped — the pulled `pre_workout_context` row is its own record and
+    /// relinks here; a default-created one would float off and push as a phantom row.
+    init(syncID: UUID) {
+        id = syncID
+        preWorkoutContext = nil
+        exercises = []
+        createdSuggestionEvents = []
+    }
 
     var sortedExercises: [ExercisePerformance] { (exercises ?? []).sorted { $0.index < $1.index } }
 

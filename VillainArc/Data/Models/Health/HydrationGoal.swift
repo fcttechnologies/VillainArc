@@ -3,6 +3,7 @@ import SwiftData
 
 @Model final class HydrationGoal {
     #Index<HydrationGoal>([\.startedOnDay])
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var startedOnDay: Date = Date()
     var endedOnDay: Date?
     var targetML: Double = 3000

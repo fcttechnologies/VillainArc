@@ -7,6 +7,7 @@ struct RootView: View {
     @State private var onboardingManager = OnboardingManager()
     @State private var whatsNewPresentation: WhatsNewPresentation?
     @Query(AppSettings.single) private var appSettings: [AppSettings]
+    @Environment(\.scenePhase) private var scenePhase
 
     private var onboardingBinding: Binding<Bool> {
         Binding(
@@ -26,8 +27,32 @@ struct RootView: View {
                 // session in the shared keychain into the state the terminal account step (and
                 // the sync engine's lifecycle) reads.
                 onboardingManager.attachAccount(VAAccount.controller)
+                VASync.shared.start(
+                    controller: VAAccount.controller,
+                    container: SharedModelContainer.container
+                )
+                // A sign-out/switch/deletion wipes this device's copy; the next thing the user
+                // sees is a fresh first bootstrap ending in the sign-in step.
+                VASync.shared.onLocalDataCleared = {
+                    Task { await onboardingManager.startOnboarding() }
+                }
                 await VAAccount.controller.resume()
                 await onboardingManager.startOnboarding()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                Task {
+                    await VAAccount.controller.resume()
+                    await VAAccount.controller.refreshAppleCredentialState()
+                    VASync.shared.foregrounded()
+                }
+            }
+            .onChange(of: VAAccount.controller.state) { _, newState in
+                // An involuntary session loss surfaces the sign-in step over intact data; one
+                // sign-in resumes the engine (mandatory-auth posture, nothing local cleared).
+                if case .needsReauthentication = newState, onboardingManager.state == .ready {
+                    onboardingManager.state = .account
+                }
             }
             .onChange(of: onboardingManager.state) { _, newState in
                 guard newState == .ready else { return }

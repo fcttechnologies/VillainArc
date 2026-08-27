@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 
 @Model final class WorkoutSplitDay {
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var name: String = ""
     var index: Int = 0
     var weekday: Int = 1
@@ -9,6 +10,9 @@ import SwiftData
     var targetMuscles: [Muscle] = []
     var split: WorkoutSplit?
     var workoutPlan: WorkoutPlan?
+
+    /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it.
+    init(syncID: UUID) { id = syncID }
 
     init(weekday: Int, split: WorkoutSplit) {
         self.weekday = weekday

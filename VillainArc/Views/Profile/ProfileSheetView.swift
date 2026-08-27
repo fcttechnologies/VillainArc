@@ -974,7 +974,7 @@ struct ProfileSheetView: View {
 
     private func saveProfilePhoto(data: Data?) {
         guard let profile else { return }
-        profile.profileImageData = data
+        profile.setPhoto(data)
         saveContext(context: context)
     }
 

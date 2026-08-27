@@ -3,7 +3,7 @@ import SwiftUI
 
 @Model final class WorkoutPlan {
     #Index<WorkoutPlan>([\.id], [\.completed], [\.isEditing], [\.lastUsed], [\.completed, \.isEditing, \.lastUsed])
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var title: String = "New Workout Plan"
     var notes: String = ""
     var favorite: Bool = false

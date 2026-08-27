@@ -3,6 +3,7 @@ import SwiftData
 
 @Model final class SleepGoal {
     #Index<SleepGoal>([\.startedOnDay])
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var startedOnDay: Date = Date()
     var endedOnDay: Date?
     var targetSleepDuration: TimeInterval = 0

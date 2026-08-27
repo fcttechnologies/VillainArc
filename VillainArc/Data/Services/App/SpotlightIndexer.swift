@@ -46,6 +46,12 @@ enum SpotlightIndexer {
         CSSearchableIndex.default().indexSearchableItems(items, completionHandler: nil)
     }
 
+    /// Remove everything this app donated — the sign-out / account-switch sweep, so a departing
+    /// account leaves nothing searchable behind.
+    static func deleteAll() {
+        CSSearchableIndex.default().deleteAllSearchableItems(completionHandler: nil)
+    }
+
     static func reindexAll(context: ModelContext) {
         var workoutDescriptor = WorkoutSession.completedSession
         workoutDescriptor.relationshipKeyPathsForPrefetching = [\.exercises]

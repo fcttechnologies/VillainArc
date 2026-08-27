@@ -2,6 +2,7 @@ import Foundation
 import SwiftData
 
 @Model final class RepRangePolicy {
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var activeMode: RepRangeMode = RepRangeMode.notSet
     var lowerRange: Int = 8
     var upperRange: Int = 12

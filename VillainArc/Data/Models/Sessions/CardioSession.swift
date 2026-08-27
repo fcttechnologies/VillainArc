@@ -188,7 +188,7 @@ nonisolated enum CardioSessionSource: String, Codable, Hashable {
 @Model final class CardioSession {
     #Index<CardioSession>([\.id], [\.status])
 
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var title: String = ""
     var notes: String = ""
     var postEffort: Int = 0
@@ -485,7 +485,7 @@ extension CardioSession {
 @Model final class CardioRoutePoint {
     #Index<CardioRoutePoint>([\.timestamp], [\.index])
 
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var index: Int = 0
     var latitude: Double = 0
     var longitude: Double = 0
@@ -517,7 +517,7 @@ extension CardioSession {
 @Model final class CardioMachineInterval {
     #Index<CardioMachineInterval>([\.index])
 
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var index: Int = 0
     var speedKPH: Double?
     var inclinePercent: Double?

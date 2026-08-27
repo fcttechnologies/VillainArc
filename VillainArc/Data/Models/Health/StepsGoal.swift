@@ -3,6 +3,7 @@ import SwiftData
 
 @Model final class StepsGoal {
     #Index<StepsGoal>([\.startedOnDay])
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var startedOnDay: Date = Date()
     var endedOnDay: Date?
     var targetSteps: Int = 0

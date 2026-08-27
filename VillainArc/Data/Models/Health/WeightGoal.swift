@@ -3,7 +3,7 @@ import SwiftData
 
 @Model final class WeightGoal {
     #Index<WeightGoal>([\.startedAt], [\.endedAt])
-    var id: UUID = UUID()
+    @Attribute(.preserveValueOnDeletion) var id: UUID = UUID()
     var type: WeightGoalType = WeightGoalType.maintain
     var startedAt: Date = Date()
     var endedAt: Date?

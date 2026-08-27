@@ -250,6 +250,7 @@
 				Data/Protocols/RestTimeEditable.swift,
 				Data/Schema/VillainArcSchemaV1.swift,
 				Data/Services/AI/Shared/FoundationModelPrewarmer.swift,
+				Data/Sync/VASyncIdentity.swift,
 				Data/Services/App/AppLog.swift,
 				Data/Services/App/AppRouter.swift,
 				Data/Services/App/DataManager.swift,

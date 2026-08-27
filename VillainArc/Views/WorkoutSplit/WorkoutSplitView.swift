@@ -606,14 +606,14 @@ struct WorkoutSplitView: View {
     }
     
     private func applyNativeRotationReorder(
-        _ difference: ReorderDifference<PersistentIdentifier, ReorderableSingleCollectionIdentifier>,
+        _ difference: ReorderDifference<UUID, ReorderableSingleCollectionIdentifier>,
         split: WorkoutSplit
     ) {
         let days = split.sortedDays
         let currentDay = (split.rotationCurrentIndex >= 0 && split.rotationCurrentIndex < days.count)
             ? days[split.rotationCurrentIndex]
             : nil
-        let destinationID: PersistentIdentifier?
+        let destinationID: UUID?
         switch difference.destination.position {
         case .before(let id):
             destinationID = id
