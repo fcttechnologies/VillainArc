@@ -14,7 +14,6 @@ struct AskVillainArcAssistantTests {
 
     @Test func availability_onlyAvailableCaseReportsAvailable() {
         #expect(AskVillainArcAssistant.Availability.available.isAvailable)
-        #expect(AskVillainArcAssistant.Availability.requiresNewerOS.isAvailable == false)
         #expect(AskVillainArcAssistant.Availability.modelUnavailable.isAvailable == false)
     }
 
@@ -26,12 +25,12 @@ struct AskVillainArcAssistantTests {
         #expect(instructions.contains("history") || instructions.contains("trends"))
     }
 
-    @Test @available(iOS 27.0, *)
+    @Test
     func spotlightTool_isReadOnly() {
         #expect(SpotlightSearchTool.capability == .readOnly)
     }
 
-    @Test @available(iOS 27.0, *)
+    @Test
     func makeSpotlightTool_producesAVettableReadOnlyTool() {
         let tool = AskVillainArcAssistant.makeSpotlightTool()
         // vettedSpotlightTools precondition-fails on a non-read-only tool; reaching a non-empty

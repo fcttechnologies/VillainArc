@@ -6,8 +6,9 @@ final class DataManager {
 
     // MARK: - Onboarding Methods (First Launch)
 
-    /// Onboarding-specific seeding - assumes CloudKit import already completed
-    /// OnboardingManager handles the CloudKit wait before calling this
+    /// Onboarding-specific seeding into the local-first store. Runs before the terminal account
+    /// step, so a restored account's rows arrive after the seed; catalog rows converge across
+    /// devices by their deterministic ids rather than by any pre-seed wait.
     @discardableResult static func seedExercisesForOnboarding() async throws -> Bool { try syncExercisesAndPersist() }
 
     // MARK: - Returning User Methods (Fast Path)

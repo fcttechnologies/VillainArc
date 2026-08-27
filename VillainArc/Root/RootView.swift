@@ -1,5 +1,6 @@
 import SwiftUI
 import AppIntents
+import FCTAccount
 import SwiftData
 
 struct RootView: View {
@@ -20,9 +21,12 @@ struct RootView: View {
             .task {
                 cleanupEditingWorkoutPlanCopies()
                 VillainArcShortcuts.updateAppShortcutParameters()
-                if #available(iOS 27, *) {
-                    RemoteChangeRefreshCoordinator.startSharedIfNeeded()
-                }
+                RemoteChangeRefreshCoordinator.startSharedIfNeeded()
+                // The account resolves before onboarding routes: `resume()` is what turns a
+                // session in the shared keychain into the state the terminal account step (and
+                // the sync engine's lifecycle) reads.
+                onboardingManager.attachAccount(VAAccount.controller)
+                await VAAccount.controller.resume()
                 await onboardingManager.startOnboarding()
             }
             .onChange(of: onboardingManager.state) { _, newState in

@@ -1188,8 +1188,6 @@ enum AccessibilityText {
     static let onboardingConnectHealthHint = localized("Requests Apple Health read and write access for workouts.")
     static let onboardingSkipHealthHint = localized("Skips Apple Health for now and continues into the app.")
     static let onboardingRetryHint = localized("Retries the current setup step.")
-    static let onboardingContinueWithoutiCloudHint = localized("Continues setup without iCloud sync.")
-    static let onboardingEnableICloudHint = localized("Opens iOS Settings to enable iCloud.")
     static let onboardingGenderOptionHint = localized("Selects this gender option.")
     static let onboardingGenderContinueHint = localized("Saves your selected gender and continues to the next profile step.")
 

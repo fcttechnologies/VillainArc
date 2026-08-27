@@ -1,20 +1,18 @@
-import FCTSync
+import FCTAccount
 import HealthKit
 import SwiftData
 import SwiftUI
 
 enum OnboardingState: Equatable {
     case launching
-    case checking
-    case noWiFi
-    case noiCloud
-    case cloudKitAccountIssue
-    case cloudKitUnavailable
-    case syncing
     case seeding
     case profile(UserProfileOnboardingStep)
     case finishing
     case healthPermissions
+    /// The terminal step: every FCT app requires the FCT account, and onboarding ends in the
+    /// sign-in surface. Reached only once profile + health setup are complete; `.ready` follows
+    /// the account controller reporting `.signedIn`.
+    case account
     case ready
     case error(String)
 
@@ -26,47 +24,7 @@ enum OnboardingState: Equatable {
     }
 }
 
-private struct BootstrapSyncProgressSnapshot: Equatable {
-    let userProfiles: Int
-    let appSettings: Int
-    let healthSyncStates: Int
-    let exercises: Int
-    let exerciseHistories: Int
-    let workoutSessions: Int
-    let exercisePerformances: Int
-    let setPerformances: Int
-    let workoutPlans: Int
-    let exercisePrescriptions: Int
-    let setPrescriptions: Int
-    let workoutSplits: Int
-    let workoutSplitDays: Int
-    let trainingGoals: Int
-    let trainingConditionPeriods: Int
-    let weightEntries: Int
-    let weightGoals: Int
-    let stepsGoals: Int
-    let sleepGoals: Int
-    let healthWorkouts: Int
-    let healthSleepNights: Int
-    let healthSleepBlocks: Int
-    let healthStepsDistances: Int
-    let healthEnergyRecords: Int
-    let healthHeartRecords: Int
-    let healthRespiratoryRateRecords: Int
-    let healthWristTemperatureRecords: Int
-    let hydrationEntries: Int
-    let suggestionEvents: Int
-    let restTimeHistories: Int
-}
-
 @Observable class OnboardingManager {
-    private static let networkRetryPollInterval: Duration = .milliseconds(500)
-    private static let bootstrapSyncPollInterval: Duration = .seconds(15)
-    private static let bootstrapSyncMinimumWait: TimeInterval = 120
-    private static let bootstrapSyncIdleGracePeriod: TimeInterval = 90
-    private static let bootstrapSyncMaximumWait: TimeInterval = 480
-    private static let bootstrapSyncTimeoutMessage = "Villain Arc couldn't confirm that your iCloud data finished syncing. Please try again."
-
     var state: OnboardingState = .launching
     var profile: UserProfile?
     /// Measured natural height of the onboarding step currently on screen. The sheet's
@@ -78,9 +36,14 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
     private(set) var prefetchedGender: UserGender?
     private(set) var prefetchedHeightCm: Double?
     private var context: ModelContext { SharedModelContainer.container.mainContext }
-    private let networkMonitor = NetworkMonitor()
-    private var networkRetryTask: Task<Void, Never>?
     private var onboardingAttemptID = UUID()
+    /// The account layer the terminal step drives. Set once by `RootView` before
+    /// `startOnboarding()`; the manager only reads its state and never owns its lifecycle.
+    private(set) weak var account: AccountController?
+
+    func attachAccount(_ controller: AccountController) {
+        account = controller
+    }
 
     var nextRequiredStep: UserProfileOnboardingStep? {
         if let profile, let missingStep = profile.firstMissingStep {
@@ -95,10 +58,6 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
     }
 
     func startOnboarding() async {
-        // Start monitoring immediately on first bootstrap so we don't miss an
-        // import-complete event before the flow reaches the explicit wait.
-        CloudKitImportMonitor.shared.start()
-        
         let attemptID = UUID()
         onboardingAttemptID = attemptID
 
@@ -107,60 +66,10 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
             return
         }
 
-        state = .checking
-
-        // Step 1: Check network
-        guard await NetworkMonitor.checkConnectivity() else {
-            state = .noWiFi
-            startNetworkMonitoring()
-            return
-        }
-
-        // Step 2: Check iCloud
-        let iCloudStatus = CloudKitStatusChecker.checkiCloudStatus()
-        if iCloudStatus == .disabled {
-            state = .noiCloud
-            // User can choose to continue without iCloud
-            return
-        }
-
-        // Step 3: Check CloudKit availability
-        let cloudKitStatus = await CloudKitStatusChecker.checkCloudKitAvailability()
-        guard attemptID == onboardingAttemptID else { return }
-
-        switch cloudKitStatus {
-        case .available: break
-        case .accountIssue:
-            state = .cloudKitAccountIssue
-            return
-        case .unavailable:
-            state = .cloudKitUnavailable
-            return
-        }
-
-        // Step 4: Sync from CloudKit (if any data exists)
-        state = .syncing
-        CloudKitImportMonitor.shared.prepareForBootstrapWait()
-
-        let stalledSyncTask = startBootstrapSyncStallWatcher(attemptID: attemptID)
-
-        let importStatus = await CloudKitImportMonitor.shared.waitForImportCompletion()
-        stalledSyncTask.cancel()
-        guard attemptID == onboardingAttemptID else { return }
-
-        switch importStatus {
-        case .completed: break
-        case .failed(let message):
-            state = .error(message == Self.bootstrapSyncTimeoutMessage ? message : "Unable to finish syncing your iCloud data: \(message)")
-            return
-        case .idle, .waiting, .importing:
-            state = .error(Self.bootstrapSyncTimeoutMessage)
-            return
-        }
-
-        guard state == .syncing else { return }
-
-        // Step 5: Seed exercises
+        // First bootstrap. The store is local-first with no cloud mirror, so there is nothing to
+        // wait for before seeding: seed the bundled catalog, ensure the singletons, and route
+        // into profile setup. Restoring an existing account's data is the sync engine's job and
+        // begins at the terminal sign-in step.
         state = .seeding
         do {
             _ = try await DataManager.seedExercisesForOnboarding()
@@ -183,26 +92,7 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
     }
 
     func retry() async {
-        networkRetryTask?.cancel()
-        networkRetryTask = nil
         await startOnboarding()
-    }
-
-    func continueWithoutiCloud() async {
-        // User chose to continue without iCloud
-        CloudKitImportMonitor.shared.stop()
-        state = .seeding
-
-        do {
-            // Seed exercises locally only
-            _ = try await DataManager.seedExercisesForOnboarding()
-            cleanupIncompleteAuthoringWork()
-            _ = try SystemState.ensureAppSettings(context: context)
-            _ = try SystemState.ensureHealthSyncState(context: context)
-            let profile = try SystemState.ensureUserProfile(context: context)
-            shouldInsertHealthPermissionsStep = await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion()
-            routeFromProfile(profile)
-        } catch { state = .error("Failed to finish setup: \(error.localizedDescription)") }
     }
 
     func saveName(_ name: String) async -> Bool {
@@ -334,10 +224,6 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
     }
 
     private func transitionToReady() {
-        CloudKitImportMonitor.shared.stop()
-        networkRetryTask?.cancel()
-        networkRetryTask = nil
-        networkMonitor.stop()
         state = .ready
     }
 
@@ -373,138 +259,44 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         return true
     }
 
-    private func startNetworkMonitoring() {
-        networkRetryTask?.cancel()
-        networkRetryTask = Task { [weak self] in
-            guard let self else { return }
-            while case .noWiFi = self.state {
-                if Task.isCancelled { return }
-
-                if self.networkMonitor.isConnected {
-                    await self.startOnboarding()
-                    return
-                }
-
-                do {
-                    try await Task.sleep(for: Self.networkRetryPollInterval)
-                } catch {
-                    return
-                }
-            }
-        }
-    }
-
-    private func startBootstrapSyncStallWatcher(attemptID: UUID) -> Task<Void, Never> {
-        Task { [weak self] in
-            guard let self else { return }
-
-            let startedAt = Date()
-            var lastProgressAt = startedAt
-            var lastSnapshot = bootstrapSyncProgressSnapshot()
-
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: Self.bootstrapSyncPollInterval)
-                } catch {
-                    return
-                }
-
-                guard attemptID == onboardingAttemptID else { return }
-                guard state == .syncing else { return }
-
-                let now = Date()
-                let snapshot = bootstrapSyncProgressSnapshot()
-                if let snapshot, snapshot != lastSnapshot {
-                    lastSnapshot = snapshot
-                    lastProgressAt = now
-                }
-
-                let elapsed = now.timeIntervalSince(startedAt)
-                guard elapsed >= Self.bootstrapSyncMinimumWait else { continue }
-
-                if elapsed >= Self.bootstrapSyncMaximumWait {
-                    CloudKitImportMonitor.shared.failCurrentWait(message: Self.bootstrapSyncTimeoutMessage)
-                    return
-                }
-
-                let importStatus = CloudKitImportMonitor.shared.status
-                guard importStatus != .importing else { continue }
-
-                if now.timeIntervalSince(lastProgressAt) >= Self.bootstrapSyncIdleGracePeriod {
-                    CloudKitImportMonitor.shared.failCurrentWait(message: Self.bootstrapSyncTimeoutMessage)
-                    return
-                }
-            }
-        }
-    }
-
-    private func bootstrapSyncProgressSnapshot() -> BootstrapSyncProgressSnapshot? {
-        do {
-            return BootstrapSyncProgressSnapshot(
-                userProfiles: try context.fetchCount(FetchDescriptor<UserProfile>()),
-                appSettings: try context.fetchCount(FetchDescriptor<AppSettings>()),
-                healthSyncStates: try context.fetchCount(FetchDescriptor<HealthSyncState>()),
-                exercises: try context.fetchCount(FetchDescriptor<Exercise>()),
-                exerciseHistories: try context.fetchCount(FetchDescriptor<ExerciseHistory>()),
-                workoutSessions: try context.fetchCount(FetchDescriptor<WorkoutSession>()),
-                exercisePerformances: try context.fetchCount(FetchDescriptor<ExercisePerformance>()),
-                setPerformances: try context.fetchCount(FetchDescriptor<SetPerformance>()),
-                workoutPlans: try context.fetchCount(FetchDescriptor<WorkoutPlan>()),
-                exercisePrescriptions: try context.fetchCount(FetchDescriptor<ExercisePrescription>()),
-                setPrescriptions: try context.fetchCount(FetchDescriptor<SetPrescription>()),
-                workoutSplits: try context.fetchCount(FetchDescriptor<WorkoutSplit>()),
-                workoutSplitDays: try context.fetchCount(FetchDescriptor<WorkoutSplitDay>()),
-                trainingGoals: try context.fetchCount(FetchDescriptor<TrainingGoal>()),
-                trainingConditionPeriods: try context.fetchCount(FetchDescriptor<TrainingConditionPeriod>()),
-                weightEntries: try context.fetchCount(FetchDescriptor<WeightEntry>()),
-                weightGoals: try context.fetchCount(FetchDescriptor<WeightGoal>()),
-                stepsGoals: try context.fetchCount(FetchDescriptor<StepsGoal>()),
-                sleepGoals: try context.fetchCount(FetchDescriptor<SleepGoal>()),
-                healthWorkouts: try context.fetchCount(FetchDescriptor<HealthWorkout>()),
-                healthSleepNights: try context.fetchCount(FetchDescriptor<HealthSleepNight>()),
-                healthSleepBlocks: try context.fetchCount(FetchDescriptor<HealthSleepBlock>()),
-                healthStepsDistances: try context.fetchCount(FetchDescriptor<HealthStepsDistance>()),
-                healthEnergyRecords: try context.fetchCount(FetchDescriptor<HealthEnergy>()),
-                healthHeartRecords: try context.fetchCount(FetchDescriptor<HealthHeart>()),
-                healthRespiratoryRateRecords: try context.fetchCount(FetchDescriptor<HealthRespiratoryRate>()),
-                healthWristTemperatureRecords: try context.fetchCount(FetchDescriptor<HealthWristTemperature>()),
-                hydrationEntries: try context.fetchCount(FetchDescriptor<HydrationEntry>()),
-                suggestionEvents: try context.fetchCount(FetchDescriptor<SuggestionEvent>()),
-                restTimeHistories: try context.fetchCount(FetchDescriptor<RestTimeHistory>())
-            )
-        } catch {
-            AppLog.error("Unable to inspect bootstrap sync progress", error: error)
-            return nil
-        }
-    }
-
     private func transitionAfterSetup() async {
         if let missingStep = nextRequiredStep {
             state = .profile(missingStep)
         } else if await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion() {
             state = .healthPermissions
+        } else if accountStepIsRequired {
+            state = .account
         } else {
             transitionToReady()
         }
+    }
+
+    /// Whether the terminal sign-in step still stands between here and `.ready`. Signed in means
+    /// done; `needsReauthentication` and `signedOut` both route through the same surface, since
+    /// the app requires an account to run.
+    private var accountStepIsRequired: Bool {
+        guard let account else { return false }
+        if case .signedIn = account.state { return false }
+        return true
+    }
+
+    /// Called by the account step when the controller reports `.signedIn`. The sync engine's
+    /// enrollment (and any prior data restore) proceeds in the background; readiness never waits
+    /// on a pull.
+    func accountStepCompleted() {
+        guard state == .account else { return }
+        transitionToReady()
     }
 
     func connectAppleHealth() async {
         HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
         _ = await HealthAuthorizationManager.requestAuthorization()
-        if let missingStep = nextRequiredStep {
-            state = .profile(missingStep)
-        } else {
-            transitionToReady()
-        }
+        await transitionAfterSetup()
     }
 
     func skipAppleHealth() {
         HealthAuthorizationManager.markCurrentPermissionsVersionHandled()
-        if let missingStep = nextRequiredStep {
-            state = .profile(missingStep)
-        } else {
-            transitionToReady()
-        }
+        Task { await transitionAfterSetup() }
     }
 
     private func cleanupIncompleteAuthoringWork() {
@@ -526,13 +318,6 @@ private struct BootstrapSyncProgressSnapshot: Equatable {
         }
     }
 
-}
-
-extension CloudKitImportMonitor {
-    /// App-owned single instance, preserving VillainArc's global-singleton monitor semantics: one
-    /// observer shared across the onboarding flow's start / wait / stop / fail calls. The state
-    /// machine now lives in `FCTSync.CloudKitImportMonitor`; the app owns only its lifetime.
-    static let shared = CloudKitImportMonitor.cloudKit()
 }
 
 extension UserGender {

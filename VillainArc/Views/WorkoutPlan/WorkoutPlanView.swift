@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import AppIntents
-import UniformTypeIdentifiers
 
 struct WorkoutPlanView: View {
     @Environment(\.modelContext) private var context
@@ -20,8 +19,6 @@ struct WorkoutPlanView: View {
     @State private var showNotesEditorSheet = false
     @State private var showDeletePlanConfirmation = false
     @State private var planDeletionAssessment: WorkoutPlanDeletionCoordinator.Assessment?
-    @State private var draggingExerciseID: UUID?
-    @State private var highlightedReorderExerciseID: UUID?
     /// True while any set field in a `WorkoutPlanExerciseView` owns keyboard focus. Drives the Save
     /// button to temporarily become a keyboard-dismiss button.
     @State private var isSetFieldFocused = false
@@ -41,11 +38,6 @@ struct WorkoutPlanView: View {
 
     private func animated<Result>(_ animation: Animation, _ updates: () -> Result) -> Result {
         withAnimation(reduceMotion ? nil : animation, updates)
-    }
-
-    private func finishExerciseReorder() {
-        draggingExerciseID = nil
-        highlightedReorderExerciseID = nil
     }
 
     var body: some View {
@@ -164,9 +156,6 @@ struct WorkoutPlanView: View {
                 }
                 .presentationBackground(Color.sheetBg)
             }
-            .onChange(of: showExerciseEditSheet) {
-                finishExerciseReorder()
-            }
                 .sheet(isPresented: $showAddExerciseSheet) {
                     AddExerciseView(plan: plan)
                         .presentationBackground(Color.sheetBg)
@@ -257,42 +246,28 @@ struct WorkoutPlanView: View {
         let exercises = plan.sortedExercises
 
         return ScrollView {
-            if #available(iOS 27.0, *) {
-                LazyVStack(spacing: 0) {
-                    ForEach(exercises, id: \.id) { exercise in
-                        exerciseEditorRow(
-                            for: exercise,
-                            index: exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
-                        )
-                    }
-                    .reorderable()
+            LazyVStack(spacing: 0) {
+                ForEach(exercises, id: \.id) { exercise in
+                    exerciseEditorRow(
+                        for: exercise,
+                        index: exercises.firstIndex(where: { $0.id == exercise.id }) ?? 0
+                    )
                 }
-                .reorderContainer(for: ExercisePrescription.self) { difference in
-                    applyNativeExerciseReorder(difference)
-                }
-                .padding()
-            } else {
-                LazyVStack(spacing: 0) {
-                    ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                        exerciseEditorRow(for: exercise, index: index)
-                    }
-                }
-                .padding()
+                .reorderable()
             }
+            .reorderContainer(for: ExercisePrescription.self) { difference in
+                applyNativeExerciseReorder(difference)
+            }
+            .padding()
         }
         .scrollIndicators(.hidden)
         .sheetBackground()
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseList)
-        .onDisappear {
-            finishExerciseReorder()
-        }
     }
 
     @ViewBuilder
     private func exerciseEditorRow(for exercise: ExercisePrescription, index: Int) -> some View {
-        let isDragging = highlightedReorderExerciseID == exercise.id
-
-        let row = HStack(spacing: 14) {
+        HStack(spacing: 14) {
             Button {
                 deleteExercise(exercise)
             } label: {
@@ -328,52 +303,16 @@ struct WorkoutPlanView: View {
 
             Image(systemName: "line.3.horizontal")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(isDragging ? AnyShapeStyle(Color.blue) : AnyShapeStyle(.tertiary))
+                .foregroundStyle(.tertiary)
                 .frame(width: 28, height: 28)
                 .contentShape(.rect)
                 .accessibilityLabel("Reorder \(exercise.name)")
                 .accessibilityHint("Drag to change the exercise order.")
         }
         .contentShape(.rect)
-        .appGroupedStackRow(position: rowPosition(for: index, count: plan.sortedExercises.count), fillColor: isDragging ? Color.blue.opacity(0.14) : nil)
-        .overlay {
-            if isDragging {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Color.blue.opacity(0.3), lineWidth: 1)
-            }
-        }
-        .zIndex(isDragging ? 1 : 0)
-        .animation(reduceMotion ? nil : .snappy, value: highlightedReorderExerciseID)
-
-        if #available(iOS 27.0, *) {
-            row
-        } else {
-            row
-                .onDrag {
-                    draggingExerciseID = exercise.id
-                    return NSItemProvider(object: exercise.id.uuidString as NSString)
-                }
-                .onDrop(
-                    of: [UTType.text],
-                    delegate: WorkoutPlanExerciseDropDelegate(
-                        targetExercise: exercise,
-                        draggingExerciseID: $draggingExerciseID,
-                        highlightedExerciseID: $highlightedReorderExerciseID,
-                        onMove: { draggedID, targetID in
-                            animated(.snappy) {
-                                moveExercise(draggedID, to: targetID)
-                            }
-                        },
-                        onDropCompleted: {
-                            finishExerciseReorder()
-                            saveContext(context: context)
-                        }
-                    )
-                )
-        }
+        .appGroupedStackRow(position: rowPosition(for: index, count: plan.sortedExercises.count))
     }
 
-    @available(iOS 27.0, *)
     private func applyNativeExerciseReorder(
         _ difference: ReorderDifference<UUID, ReorderableSingleCollectionIdentifier>
     ) {
@@ -397,7 +336,6 @@ struct WorkoutPlanView: View {
                 exercisesByID[id]?.index = index
             }
         }
-        finishExerciseReorder()
         saveContext(context: context)
     }
     
@@ -442,26 +380,11 @@ struct WorkoutPlanView: View {
         }
     }
 
-    private func moveExercise(from source: IndexSet, to destination: Int) {
-        plan.moveExercise(from: source, to: destination)
-        scheduleSave(context: context)
-    }
-
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
         if count <= 1 { return .single }
         if index == 0 { return .top }
         if index == count - 1 { return .bottom }
         return .middle
-    }
-
-    private func moveExercise(_ draggedID: UUID, to targetID: UUID) {
-        let exercises = plan.sortedExercises
-        guard let sourceIndex = exercises.firstIndex(where: { $0.id == draggedID }),
-              let targetIndex = exercises.firstIndex(where: { $0.id == targetID }),
-              sourceIndex != targetIndex else { return }
-
-        let destination = sourceIndex < targetIndex ? targetIndex + 1 : targetIndex
-        moveExercise(from: IndexSet(integer: sourceIndex), to: destination)
     }
 
     private func confirmDeletePlanAndDismiss() {
@@ -539,29 +462,6 @@ struct WorkoutPlanView: View {
                 }
             }
         )
-    }
-}
-
-private struct WorkoutPlanExerciseDropDelegate: DropDelegate {
-    let targetExercise: ExercisePrescription
-    @Binding var draggingExerciseID: UUID?
-    @Binding var highlightedExerciseID: UUID?
-    let onMove: (UUID, UUID) -> Void
-    let onDropCompleted: () -> Void
-
-    func dropEntered(info: DropInfo) {
-        guard let draggingExerciseID, draggingExerciseID != targetExercise.id else { return }
-        highlightedExerciseID = draggingExerciseID
-        onMove(draggingExerciseID, targetExercise.id)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        onDropCompleted()
-        return true
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
     }
 }
 

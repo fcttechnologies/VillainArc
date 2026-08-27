@@ -334,8 +334,7 @@ enum HealthWorkoutSummaryStatsLoader {
         let workoutStart = loadedWorkout?.startDate ?? cachedWorkout.startDate
         let workoutEnd = loadedWorkout?.endDate ?? cachedWorkout.endDate
         let zoneData: HealthWorkoutHeartRateZoneData
-        if #available(iOS 27.0, *),
-           let nativeZoneData = makeNativeHeartRateZoneData(from: loadedWorkout) {
+        if let nativeZoneData = makeNativeHeartRateZoneData(from: loadedWorkout) {
             zoneData = nativeZoneData
         } else {
             zoneData = makeEstimatedHeartRateZoneData(from: heartRateSamples, workoutStart: workoutStart, workoutEnd: workoutEnd, estimatedMaxHeartRate: estimatedMaxHeartRate)
@@ -447,7 +446,6 @@ enum HealthWorkoutSummaryStatsLoader {
         default: return nil
         }
     }
-    @available(iOS 27.0, *)
     private func makeNativeHeartRateZoneData(from workout: HKWorkout?) -> HealthWorkoutHeartRateZoneData? {
         guard let workout,
               let group = workout.zoneGroup(for: HealthKitCatalog.heartRateType) else {

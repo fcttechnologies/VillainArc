@@ -1,4 +1,5 @@
 import CoreLocation
+import FCTAccount
 import SwiftData
 import SwiftUI
 
@@ -74,6 +75,8 @@ struct OnboardingView: View {
                 profileFlow
             case .healthPermissions:
                 healthPermissionsView
+            case .account:
+                accountStepView
             case .finishing:
                 finishingView
             default:
@@ -88,11 +91,6 @@ struct OnboardingView: View {
             if case .profile = oldState {
                 path = []
             }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active else { return }
-            guard manager.state == .noiCloud || manager.state == .cloudKitAccountIssue || manager.state == .cloudKitUnavailable else { return }
-            Task { await manager.retry() }
         }
         .presentationDetents([.height(max(280, manager.sheetHeight))])
         .animation(.easeInOut(duration: 0.25), value: manager.sheetHeight)
@@ -229,153 +227,6 @@ struct OnboardingView: View {
         case .launching:
             OnboardingProgressStateView(title: "Starting Up")
 
-        case .checking:
-            OnboardingProgressStateView(title: "Checking System Status...")
-
-        case .noWiFi:
-            VStack(spacing: 16) {
-                Image(systemName: "wifi.slash")
-                    .font(.system(size: onboardingIconSize))
-                    .foregroundStyle(.red)
-                    .accessibilityHidden(true)
-
-                Text("WiFi Required")
-                    .font(.title2.bold())
-
-                Text("Villain Arc needs WiFi for first time setup to sync your workout data.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                Button {
-                    Task { await manager.retry() }
-                } label: {
-                    Text("Retry")
-                        .padding(.vertical, 8)
-                        .fontWeight(.semibold)
-                }
-                .buttonSizing(.flexible)
-                .buttonStyle(.glassProminent)
-                .accessibilityHint(AccessibilityText.onboardingRetryHint)
-            }
-            .padding()
-
-        case .noiCloud:
-            VStack(spacing: 16) {
-                Image(systemName: "icloud.slash")
-                    .font(.system(size: onboardingIconSize))
-                    .foregroundStyle(.orange)
-                    .accessibilityHidden(true)
-
-                Text("iCloud Disabled")
-                    .font(.title2.bold())
-
-                Text("Your workout data won't sync across devices or be backed up if you delete the app.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-
-                VStack(spacing: 12) {
-                    Button {
-                        Task { await manager.continueWithoutiCloud() }
-                    } label: {
-                        Text("Continue Without iCloud")
-                            .padding(.vertical, 8)
-                            .fontWeight(.semibold)
-                    }
-                    .buttonSizing(.flexible)
-                    .buttonStyle(.glassProminent)
-                    .accessibilityHint(AccessibilityText.onboardingContinueWithoutiCloudHint)
-
-                    Button {
-                        guard let url = URL(string: "App-prefs:CASTLE") else { return }
-                        UIApplication.shared.open(url)
-                    } label: {
-                        Text("Enable iCloud in Settings")
-                            .padding(.vertical, 8)
-                            .fontWeight(.semibold)
-                    }
-                    .buttonSizing(.flexible)
-                    .buttonStyle(.glass)
-                    .accessibilityHint(AccessibilityText.onboardingEnableICloudHint)
-                }
-            }
-
-        case .cloudKitAccountIssue:
-            VStack(spacing: 16) {
-                Image(systemName: "person.crop.circle.badge.exclamationmark")
-                    .font(.system(size: onboardingIconSize))
-                    .foregroundStyle(.orange)
-                    .accessibilityHidden(true)
-
-                Text("Check Your iCloud Account")
-                    .font(.title2.bold())
-
-                Text("Villain Arc couldn't access your iCloud account. Make sure you're signed in to iCloud and that CloudKit access isn't restricted.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-
-                VStack(spacing: 12) {
-                    Button {
-                        Task { await manager.retry() }
-                    } label: {
-                        Text("Retry")
-                            .padding(.vertical, 8)
-                            .fontWeight(.semibold)
-                    }
-                    .buttonSizing(.flexible)
-                    .buttonStyle(.glassProminent)
-                    .accessibilityHint(AccessibilityText.onboardingRetryHint)
-
-                    Button {
-                        guard let url = URL(string: "App-prefs:CASTLE") else { return }
-                        UIApplication.shared.open(url)
-                    } label: {
-                        Text("Open iCloud Settings")
-                            .padding(.vertical, 8)
-                            .fontWeight(.semibold)
-                    }
-                    .buttonSizing(.flexible)
-                    .buttonStyle(.glass)
-                    .accessibilityHint(AccessibilityText.onboardingEnableICloudHint)
-                }
-            }
-
-        case .cloudKitUnavailable:
-            VStack(spacing: 16) {
-                Image(systemName: "exclamationmark.icloud")
-                    .font(.system(size: onboardingIconSize))
-                    .foregroundStyle(.red)
-                    .accessibilityHidden(true)
-
-                Text("Servers Unavailable")
-                    .font(.title2.bold())
-
-                Text("Unable to connect to iCloud right now. Please check your internet connection and try again.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-
-                Button {
-                    Task { await manager.retry() }
-                } label: {
-                    Text("Retry")
-                        .padding(.vertical, 8)
-                        .fontWeight(.semibold)
-                }
-                .buttonSizing(.flexible)
-                .buttonStyle(.glassProminent)
-                .accessibilityHint(AccessibilityText.onboardingRetryHint)
-            }
-
-        case .syncing:
-            OnboardingProgressStateView(title: "Syncing Your Data", message: "Restoring your workouts, plans, profile, and health history from iCloud...")
-
         case .seeding:
             OnboardingProgressStateView(title: "Updating Exercises", message: "Preparing your exercise catalog...")
 
@@ -407,11 +258,41 @@ struct OnboardingView: View {
                 .accessibilityHint(AccessibilityText.onboardingRetryHint)
             }
 
-        case .profile, .healthPermissions, .finishing, .ready:
+        case .profile, .healthPermissions, .account, .finishing, .ready:
             EmptyView()
         }
     }
 
+    /// The terminal onboarding step: the FCT account sign-in, hosted whole from `FCTAccount`.
+    /// Setup data is already saved locally at this point; signing in is what enrolls the device
+    /// with the platform sync engine (and restores any existing account data in the background).
+    /// When `FCTOnboarding` ships its packaged account terminal step, this view is the seam it
+    /// replaces.
+    private var accountStepView: some View {
+        OnboardingAccountStepView(manager: manager)
+    }
+
+}
+
+private struct OnboardingAccountStepView: View {
+    @Bindable var manager: OnboardingManager
+
+    var body: some View {
+        Group {
+            if let account = manager.account {
+                AccountSignInView(controller: account)
+                    .onChange(of: account.state, initial: true) { _, newState in
+                        guard case .signedIn = newState else { return }
+                        manager.accountStepCompleted()
+                    }
+            } else {
+                // No controller attached (previews, tests): nothing to sign in with, so don't
+                // strand the sheet.
+                OnboardingProgressStateView(title: "Finishing Setup")
+                    .task { manager.accountStepCompleted() }
+            }
+        }
+    }
 }
 
 private struct OnboardingProgressStateView: View {

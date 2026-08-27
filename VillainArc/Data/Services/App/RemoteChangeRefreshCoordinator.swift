@@ -2,16 +2,13 @@ import Foundation
 import SwiftData
 import WidgetKit
 
-/// Keeps Spotlight and widgets fresh when the persistent store changes *remotely* —
-/// CloudKit sync landing changes made on another device, or a write from another process
-/// (the widget/Watch extension). iOS 27's `HistoryObserver` listens for
-/// `ModelContainer.remoteChange` notifications only; in-process writes never fire it, so the
-/// existing manual `SpotlightIndexer.index(...)`/`reindexAll` calls on local edits stay the
-/// single source of truth for same-process changes and are intentionally left untouched.
-///
-/// iOS 26 and earlier keep their prior behavior (reindex at onboarding/launch only) — this
-/// coordinator is started only under an `#available(iOS 27, *)` check.
-@available(iOS 27.0, *)
+/// Keeps Spotlight and widgets fresh when the persistent store changes from *another process* —
+/// a write from the widget or intents extension landing in the shared App Group store.
+/// `HistoryObserver` listens for `ModelContainer.remoteChange` notifications only; in-process
+/// writes never fire it, so the existing manual `SpotlightIndexer.index(...)`/`reindexAll` calls
+/// on local edits stay the single source of truth for same-process changes and are intentionally
+/// left untouched. Rows the platform sync engine applies are in-process writes too: those are
+/// covered by the engine's own `didApplyRemoteChanges` hook, not by this coordinator.
 @MainActor
 final class RemoteChangeRefreshCoordinator {
     /// The user-content model types Spotlight actually surfaces (see
@@ -37,8 +34,8 @@ final class RemoteChangeRefreshCoordinator {
 
     /// - Parameters:
     ///   - container: the store to observe (production: `SharedModelContainer.container`).
-    ///   - debounce: quiet-period before a refresh runs; a CloudKit import arrives as a burst of
-    ///     transactions, so we collapse the burst into a single reindex.
+    ///   - debounce: quiet-period before a refresh runs; cross-process writes can arrive as a
+    ///     burst of transactions, so we collapse the burst into a single reindex.
     ///   - performRefresh: the side effect to run after the debounce. Defaults to a full Spotlight
     ///     rebuild plus a widget-timeline reload; injectable so the debounce seam is unit-testable
     ///     without a live remote-change notification.
@@ -115,7 +112,6 @@ final class RemoteChangeRefreshCoordinator {
     }
 }
 
-@available(iOS 27.0, *)
 extension RemoteChangeRefreshCoordinator {
     private static var shared: RemoteChangeRefreshCoordinator?
 

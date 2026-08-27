@@ -19,7 +19,6 @@ import FoundationModels
 enum AskVillainArcAssistant {
     nonisolated enum Availability: Equatable, Sendable {
         case available
-        case requiresNewerOS
         case modelUnavailable
 
         var isAvailable: Bool { self == .available }
@@ -32,7 +31,6 @@ enum AskVillainArcAssistant {
 
     /// Whether the assistant can run right now, and why not if it can't.
     static var availability: Availability {
-        guard #available(iOS 27.0, *) else { return .requiresNewerOS }
         if case .available = SystemLanguageModel.default.availability { return .available }
         return .modelUnavailable
     }
@@ -55,7 +53,6 @@ enum AskVillainArcAssistant {
         """
     }
 
-    @available(iOS 27.0, *)
     static func ask(_ question: String) async -> Result<String, AskError> {
         guard isAvailable else { return .failure(.unavailable(availability)) }
 
@@ -82,13 +79,11 @@ enum AskVillainArcAssistant {
     }
 
     /// The Spotlight search tool scoped to this app's own CoreSpotlight index (the private-data boundary).
-    @available(iOS 27.0, *)
     static func makeSpotlightTool() -> SpotlightSearchTool {
         SpotlightSearchTool(configuration: .init(sources: [.coreSpotlight]))
     }
 }
 
-@available(iOS 27.0, *)
 extension SpotlightSearchTool: SafeTool {
     /// The Spotlight tool only reads the user's index; it has no write capability.
     static var capability: AIToolCapability { .readOnly }

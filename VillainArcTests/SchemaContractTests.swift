@@ -1,20 +1,28 @@
+import FCTSync
 import Foundation
 import SwiftData
-import HealthKit
+import Testing
 
-// V5 adds HealthHeart, HealthRespiratoryRate, HealthWristTemperature, HydrationDay, HydrationEntry,
-// HydrationGoal, HealthSyncState synced-range fields for the new read types,
-// AppSettings.temperatureUnit, AppSettings.previousSetReferenceSource,
-// AppSettings.hydrationUnit, and AppSettings.hydrationNotificationMode.
-enum VillainArcSchemaV5: VersionedSchema {
-    // Public App Store schema for Villain Arc 1.3, and the current live head: this references the
-    // live models. There is no separate frozen V5 snapshot or a V6 yet — only freeze V5 (copy the
-    // live models into a nested snapshot) and add a real V6 with a real migration when the data model
-    // actually changes.
-    static let versionIdentifier = Schema.Version(5, 0, 0)
+@testable import VillainArc
 
-    static var models: [any PersistentModel.Type] {
-        [
+/// Schema-membership tripwires for the clean platform-era V1. There is no migration plan to test:
+/// V1 is unpublished, shape changes are made in place, and the first public release is what
+/// freezes it (per the schema header). What must never drift silently is the `models` array —
+/// a new `@Model` missing from it is a runtime crash class, not a compile error.
+struct SchemaContractTests {
+    /// Update this count deliberately whenever an `@Model` is added or removed.
+    @Test @MainActor
+    func v1SchemaIncludesEveryActiveModel() {
+        #expect(VillainArcSchemaV1.models.count == 40)
+    }
+
+    /// The by-name half of the schema-membership tripwire, via `FCTSync.SchemaContract`: pins the
+    /// exact model set so a dropped/renamed model fails loudly *with its name*, not just as a
+    /// count drift. Kept ALONGSIDE the count pin above, not instead of it — the count catches
+    /// additions, this catches which specific model went missing.
+    @Test @MainActor
+    func v1SchemaContainsEveryExpectedModelByName() {
+        let expected: [any PersistentModel.Type] = [
             WorkoutSession.self,
             HealthWorkout.self,
             WeightEntry.self,
@@ -56,5 +64,8 @@ enum VillainArcSchemaV5: VersionedSchema {
             CardioRoutePoint.self,
             CardioMachineInterval.self
         ]
+        #expect(expected.count == 40)
+        let missing = SchemaContract.missingModelNames(in: VillainArcSchemaV1.self, requiring: expected)
+        #expect(missing.isEmpty, "Models missing from VillainArcSchemaV1.models: \(missing)")
     }
 }

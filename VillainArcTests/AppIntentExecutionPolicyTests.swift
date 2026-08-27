@@ -4,7 +4,7 @@ import Testing
 @testable import VillainArc
 
 struct AppIntentExecutionPolicyTests {
-    @Test @available(iOS 27.0, *)
+    @Test
     func stateWritingIntentsRunOnlyInTheMainApp() {
         let targets: [IntentExecutionTargets] = [
             StartCardioSessionIntent.allowedExecutionTargets,

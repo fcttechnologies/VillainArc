@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UniformTypeIdentifiers
 import AppIntents
 import CoreSpotlight
 
@@ -17,7 +16,6 @@ struct WorkoutSplitView: View {
     @State private var selectedSplitDay: WorkoutSplitDay?
     @State private var showSplitTitleEditor = false
     @State private var showDeleteSplitConfirmation = false
-    @State private var draggingRotationDay: WorkoutSplitDay?
     @State private var isSwapMode = false
     @State private var swapFirstDay: WorkoutSplitDay?
     @State private var swapSecondDay: WorkoutSplitDay?
@@ -381,30 +379,19 @@ struct WorkoutSplitView: View {
     
     private func rotationHeader(for split: WorkoutSplit) -> some View {
         ScrollView(.horizontal) {
-            if #available(iOS 27.0, *) {
-                HStack(spacing: 12) {
-                    ForEach(split.sortedDays, id: \.id) { day in
-                        rotationCapsuleWithMenu(for: day, split: split)
-                    }
-                    .reorderable()
+            HStack(spacing: 12) {
+                ForEach(split.sortedDays, id: \.id) { day in
+                    rotationCapsuleWithMenu(for: day, split: split)
+                }
+                .reorderable()
 
-                    if !isSwapMode {
-                        addDayCapsule(for: split)
-                    }
+                if !isSwapMode {
+                    addDayCapsule(for: split)
                 }
-                .reorderContainer(for: WorkoutSplitDay.self, isEnabled: !isSwapMode) { difference in
-                    animated(.snappy) {
-                        applyNativeRotationReorder(difference, split: split)
-                    }
-                }
-            } else {
-                HStack(spacing: 12) {
-                    ForEach(split.sortedDays) { day in
-                        rotationCapsuleWithMenu(for: day, split: split)
-                    }
-                    if !isSwapMode {
-                        addDayCapsule(for: split)
-                    }
+            }
+            .reorderContainer(for: WorkoutSplitDay.self, isEnabled: !isSwapMode) { difference in
+                animated(.snappy) {
+                    applyNativeRotationReorder(difference, split: split)
                 }
             }
         }
@@ -556,22 +543,7 @@ struct WorkoutSplitView: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .modifier(SwapWiggleModifier(isActive: isSwapMode && !reduceMotion))
         
-        if isSwapMode {
-            capsule
-        } else if #available(iOS 27.0, *) {
-            capsule
-        } else {
-            capsule
-                .onDrag {
-                    draggingRotationDay = day
-                    return NSItemProvider(object: "\(day.index)" as NSString)
-                }
-                .onDrop(of: [UTType.text], delegate: RotationDropDelegate(
-                    targetDay: day,
-                    draggingDay: $draggingRotationDay,
-                    onMove: { from, to in animated(.snappy) { moveRotationDay(from: from, to: to, split: split) } }
-                ))
-        }
+        capsule
     }
     
     private func addDayCapsule(for split: WorkoutSplit) -> some View {
@@ -633,19 +605,6 @@ struct WorkoutSplitView: View {
         selectedSplitDay = updated.isEmpty ? nil : updated[nextIndex]
     }
     
-    private func moveRotationDay(from source: WorkoutSplitDay, to destination: WorkoutSplitDay, split: WorkoutSplit) {
-        guard source !== destination else { return }
-        var ordered = split.sortedDays
-        guard let sourceIndex = ordered.firstIndex(of: source), let destinationIndex = ordered.firstIndex(of: destination) else { return }
-        let currentDay = (split.rotationCurrentIndex >= 0 && split.rotationCurrentIndex < ordered.count) ? ordered[split.rotationCurrentIndex] : nil
-        ordered.move(fromOffsets: IndexSet(integer: sourceIndex), toOffset: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex)
-        for (index, day) in ordered.enumerated() { day.index = index }
-        if let currentDay { split.rotationCurrentIndex = currentDay.index }
-        scheduleSave(context: context)
-        SpotlightIndexer.index(workoutSplit: split)
-    }
-
-    @available(iOS 27.0, *)
     private func applyNativeRotationReorder(
         _ difference: ReorderDifference<PersistentIdentifier, ReorderableSingleCollectionIdentifier>,
         split: WorkoutSplit
@@ -744,7 +703,6 @@ struct WorkoutSplitView: View {
         isSwapMode = true
         swapFirstDay = nil
         swapSecondDay = nil
-        draggingRotationDay = nil
     }
     
     private func startSwapMode(with day: WorkoutSplitDay) {
@@ -851,19 +809,6 @@ struct WorkoutSplitView: View {
     }
     
     // MARK: - Nested Types
-    
-    private struct RotationDropDelegate: DropDelegate {
-        let targetDay: WorkoutSplitDay
-        @Binding var draggingDay: WorkoutSplitDay?
-        let onMove: (WorkoutSplitDay, WorkoutSplitDay) -> Void
-        
-        func dropEntered(info: DropInfo) {
-            guard let draggingDay, draggingDay !== targetDay else { return }
-            onMove(draggingDay, targetDay)
-        }
-        func performDrop(info: DropInfo) -> Bool { draggingDay = nil; return true }
-        func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
-    }
     
     private struct SwapWiggleModifier: ViewModifier {
         let isActive: Bool

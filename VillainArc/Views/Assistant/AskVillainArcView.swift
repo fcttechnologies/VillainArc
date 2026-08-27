@@ -169,8 +169,6 @@ struct AskVillainArcView: View {
 
     private var unavailableMessage: String {
         switch availability {
-        case .requiresNewerOS:
-            return String(localized: "Ask Villain Arc needs a newer iOS version. You can still explore everything in History and Trends.")
         case .modelUnavailable:
             return String(localized: "Apple Intelligence isn't available on this device. You can still explore everything in History and Trends.")
         case .available:
@@ -179,7 +177,6 @@ struct AskVillainArcView: View {
     }
 
     private func ask() async {
-        guard #available(iOS 27.0, *) else { return }
         Haptics.selection()
         errorMessage = nil
         answer = nil

@@ -545,19 +545,15 @@ struct PaywallView: View {
                 return
             }
 
-            if #available(iOS 27.0, *) {
-                guard let viewController = scene.keyWindow?.rootViewController?.topPresentedViewController else {
-                    errorMessage = String(localized: "Offer code redemption isn't available right now.")
-                    return
-                }
-                let result = try await AppStore.presentOfferCodeRedeemSheet(from: viewController)
-                guard case let .verified(transaction) = result else {
-                    throw SubscriptionStore.SubscriptionStoreError.verificationFailed
-                }
-                await transaction.finish()
-            } else {
-                try await AppStore.presentOfferCodeRedeemSheet(in: scene)
+            guard let viewController = scene.keyWindow?.rootViewController?.topPresentedViewController else {
+                errorMessage = String(localized: "Offer code redemption isn't available right now.")
+                return
             }
+            let result = try await AppStore.presentOfferCodeRedeemSheet(from: viewController)
+            guard case let .verified(transaction) = result else {
+                throw SubscriptionStore.SubscriptionStoreError.verificationFailed
+            }
+            await transaction.finish()
 
             await store.refreshStatus()
             if store.status.isPro {

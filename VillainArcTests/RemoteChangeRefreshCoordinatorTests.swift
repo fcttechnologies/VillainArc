@@ -19,7 +19,6 @@ struct RemoteChangeRefreshCoordinatorTests {
         func increment() { count += 1 }
     }
 
-    @available(iOS 27.0, *)
     private func makeCoordinator(debounce: Duration, counter: RefreshCounter) throws -> RemoteChangeRefreshCoordinator {
         let container = try TestModelContainer.make()
         return RemoteChangeRefreshCoordinator(container: container, debounce: debounce) {
@@ -28,7 +27,6 @@ struct RemoteChangeRefreshCoordinatorTests {
     }
 
     @Test func rapidSignalsCollapseToSingleRefresh() async throws {
-        guard #available(iOS 27, *) else { return }
         let counter = RefreshCounter()
         let coordinator = try makeCoordinator(debounce: .milliseconds(100), counter: counter)
 
@@ -41,7 +39,6 @@ struct RemoteChangeRefreshCoordinatorTests {
     }
 
     @Test func signalsSpacedBeyondDebounceFireSeparately() async throws {
-        guard #available(iOS 27, *) else { return }
         let counter = RefreshCounter()
         let coordinator = try makeCoordinator(debounce: .milliseconds(100), counter: counter)
 
@@ -54,7 +51,6 @@ struct RemoteChangeRefreshCoordinatorTests {
     }
 
     @Test func stopCancelsPendingRefresh() async throws {
-        guard #available(iOS 27, *) else { return }
         let counter = RefreshCounter()
         let coordinator = try makeCoordinator(debounce: .milliseconds(150), counter: counter)
 
@@ -66,7 +62,6 @@ struct RemoteChangeRefreshCoordinatorTests {
     }
 
     @Test func observedModelsCoverSpotlightSurfacedTypes() {
-        guard #available(iOS 27, *) else { return }
         let names = RemoteChangeRefreshCoordinator.spotlightModels.map { String(describing: $0) }
         #expect(names.contains("WorkoutSession"))
         #expect(names.contains("WorkoutPlan"))

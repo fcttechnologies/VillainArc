@@ -6,14 +6,16 @@ enum SharedModelContainer {
 
     nonisolated static let appGroupID = "group.com.fcttechnologies.VillainArcCont"
 
-    /// The App Group–backed, CloudKit-mirrored store wiring, expressed through the shared FCTSync
-    /// seam. The group ID, store filename, CloudKit private container, and versioned schema stay
-    /// app-owned; `AppGroupStoreConfiguration` supplies the store/container/defaults mechanism.
+    /// The App Group–backed, local-only store wiring, expressed through the shared FCTSync seam.
+    /// There is no CloudKit mirror: cross-device continuity is the FCT platform sync engine's job,
+    /// and a second sync engine on the same store was ruled out portfolio-wide. The group ID,
+    /// store filename, and schema stay app-owned; `AppGroupStoreConfiguration` supplies the
+    /// store/container/defaults mechanism.
     nonisolated static let configuration = AppGroupStoreConfiguration(
         appGroupID: appGroupID,
         storeName: "VillainArc.store",
-        cloudContainerID: "iCloud.com.fcttechnologies.VillainArcCont",
-        versionedSchema: VillainArcSchemaV5.self
+        cloudContainerID: nil,
+        versionedSchema: VillainArcSchemaV1.self
     )
 
     nonisolated static let schema = configuration.schema
@@ -30,7 +32,7 @@ enum SharedModelContainer {
 
     nonisolated static let container: ModelContainer = {
         do {
-            return try configuration.makeContainer(migrationPlan: VillainArcSchemaMigrationPlan.self)
+            return try configuration.makeContainer()
         } catch {
             fatalError("Failed to create shared ModelContainer: \(error)")
         }

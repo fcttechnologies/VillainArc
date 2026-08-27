@@ -39,8 +39,9 @@ enum CardioLiveActivityMetric: String, Codable, CaseIterable, Identifiable, Send
 }
 
 /// The user's chosen cardio Live Activity metrics, persisted to the App Group so the widget extension
-/// reads the same value. Stored in App Group `UserDefaults` (not SwiftData) deliberately: it needs no
-/// schema migration / CloudKit redeploy, and the widget reads it directly.
+/// reads the same value. Stored in App Group `UserDefaults` (not SwiftData) deliberately: a
+/// device-local display preference needs no schema membership or sync, and the widget reads it
+/// directly.
 struct CardioLiveActivityMetricConfig: Codable, Equatable, Sendable {
     /// The Live Activity's compact region shows at most this many user metrics; the picker enforces it.
     static let maxMetrics = 2
