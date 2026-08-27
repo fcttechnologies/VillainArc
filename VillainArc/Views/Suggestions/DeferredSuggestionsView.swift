@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -115,6 +116,7 @@ struct DeferredSuggestionsView: View {
         Haptics.selection()
         for event in sessionEvents where event.decision == .deferred || event.decision == .pending {
             event.decision = .rejected
+            Diag.breadcrumb(VACrumb.suggestionDecided)
         }
         saveContext(context: context)
         proceedToWorkout()

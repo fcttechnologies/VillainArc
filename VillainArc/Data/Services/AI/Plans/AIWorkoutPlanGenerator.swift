@@ -1,3 +1,4 @@
+import FCTMetrics
 import FCTIntelligence
 import Foundation
 import FoundationModels
@@ -49,7 +50,7 @@ struct AIWorkoutPlanGenerator {
         }
 
         do {
-            let response = try await MetricsService.trackOperation(
+            let response = try await VAMetrics.service.trackOperation(
                 .aiPlanGeneration,
                 stateLabel: "respond",
                 signpostName: "AI Plan Generation"
@@ -58,6 +59,7 @@ struct AIWorkoutPlanGenerator {
             }
             let resolved = resolve(plan: response.content)
             guard !resolved.days.isEmpty else { return .failure(.emptyResult) }
+            Diag.count(VACounter.aiPlansGenerated)
             return .success(resolved)
         } catch {
             return .failure(.modelFailed)

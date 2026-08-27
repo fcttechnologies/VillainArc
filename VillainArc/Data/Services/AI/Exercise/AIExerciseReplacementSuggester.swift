@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import FoundationModels
 
@@ -50,14 +51,16 @@ struct AIExerciseReplacementSuggester {
         }
 
         do {
-            let response = try await MetricsService.trackOperation(
+            let response = try await VAMetrics.service.trackOperation(
                 .aiExerciseReplacement,
                 stateLabel: "respond",
                 signpostName: "AI Exercise Replacement"
             ) {
                 try await session.respond(to: prompt, generating: AIReplacementSuggestionList.self)
             }
-            return resolve(suggestions: response.content.suggestions, excluding: input.excludedCatalogID)
+            let resolved = resolve(suggestions: response.content.suggestions, excluding: input.excludedCatalogID)
+            if !resolved.isEmpty { Diag.count(VACounter.aiReplacementsSuggested) }
+            return resolved
         } catch {
             return []
         }

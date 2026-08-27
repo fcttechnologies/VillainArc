@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import HealthKit
 
@@ -591,7 +592,7 @@ final class HealthStoreUpdateCoordinator {
     }
 
     private static func trackObserverSync(_ kind: ObserverKind, operation: () async -> Void) async {
-        await MetricsService.trackOperation(
+        await VAMetrics.service.trackOperation(
             .healthSync,
             stateLabel: kind.metricStateLabel,
             signpostName: "HealthKit Observer Sync"
@@ -601,7 +602,7 @@ final class HealthStoreUpdateCoordinator {
     }
 
     private static func trackManualSync(operation: () async -> Void) async {
-        await MetricsService.trackOperation(
+        await VAMetrics.service.trackOperation(
             .healthSync,
             stateLabel: "manual-sync",
             signpostName: "HealthKit Manual Sync"
@@ -745,6 +746,7 @@ final class HealthStoreUpdateCoordinator {
             await inFlightRefreshTask.value
             return
         }
+        Diag.breadcrumb(VACrumb.healthSyncRan)
 
         let task = Task {
             await Self.trackManualSync {

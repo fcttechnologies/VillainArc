@@ -1,3 +1,4 @@
+import FCTMetrics
 import CoreSpotlight
 import SwiftData
 import SwiftUI
@@ -542,6 +543,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         if activeWorkoutSession?.id == workoutSession.id { activeWorkoutSession = nil }
         WorkoutActivityManager.end()
+        Diag.breadcrumb(VACrumb.workoutDiscarded)
+        Diag.funnel(VAFunnel.workoutSession, .abandoned)
         AppLog.info("Workout session canceled: \(workoutSession.id).")
     }
 
@@ -552,6 +555,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         if activeCardioSession?.id == cardioSession.id { activeCardioSession = nil }
         CardioActivityManager.end()
+        Diag.funnel(VAFunnel.cardioSession, .abandoned)
         AppLog.info("Cardio session canceled: \(cardioSession.id).")
     }
 
@@ -568,6 +572,9 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         cardioSession.finish()
         saveContext(context: context)
         SpotlightIndexer.index(cardioSession: cardioSession)
+        Diag.breadcrumb(VACrumb.cardioFinished)
+        Diag.funnel(VAFunnel.cardioSession, .completed)
+        Diag.count(VACounter.cardioCompleted)
 
         let sessionID = cardioSession.id
         Task {
@@ -956,6 +963,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         activeWorkoutSession = newWorkout
         startWorkoutRuntime(for: newWorkout)
+        Diag.breadcrumb(VACrumb.workoutStarted)
+        Diag.funnel(VAFunnel.workoutSession, .started)
         AppLog.info("Workout session started: \(newWorkout.id).")
     }
 
@@ -996,6 +1005,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         activeCardioSession = newSession
         startCardioRuntime(for: newSession)
+        Diag.breadcrumb(VACrumb.cardioStarted)
+        Diag.funnel(VAFunnel.cardioSession, .started)
         AppLog.info("Cardio session started: \(newSession.id), type=\(type.rawValue), capture=\(newSession.captureMode.rawValue).")
     }
 
@@ -1111,6 +1122,8 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         if workoutSession.statusValue == .active {
             startWorkoutRuntime(for: workoutSession)
         }
+        Diag.breadcrumb(VACrumb.workoutStarted)
+        Diag.funnel(VAFunnel.workoutSession, .started)
         AppLog.info("Workout session started from plan: \(plan.id), session: \(workoutSession.id), pendingSuggestions=\(hasDeferredSuggestions).")
     }
 

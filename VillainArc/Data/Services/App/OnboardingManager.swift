@@ -1,3 +1,4 @@
+import FCTMetrics
 import FCTAccount
 import HealthKit
 import SwiftData
@@ -70,6 +71,7 @@ enum OnboardingState: Equatable {
         // wait for before seeding: seed the bundled catalog, ensure the singletons, and route
         // into profile setup. Restoring an existing account's data is the sync engine's job and
         // begins at the terminal sign-in step.
+        Diag.funnel(VAFunnel.onboarding, .started)
         state = .seeding
         do {
             _ = try await DataManager.seedExercisesForOnboarding()
@@ -224,6 +226,9 @@ enum OnboardingState: Equatable {
     }
 
     private func transitionToReady() {
+        // Terminal for the first-run funnel; a phase for a funnel that isn't running is ignored,
+        // so returning launches pass through here for free.
+        Diag.funnel(VAFunnel.onboarding, .completed)
         state = .ready
     }
 

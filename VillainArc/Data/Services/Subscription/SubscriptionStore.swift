@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import Observation
 import StoreKit
@@ -128,12 +129,12 @@ final class SubscriptionStore {
     // MARK: - Status refresh
 
     func refreshStatus() async {
-        await MetricsService.trackOperation(
+        await VAMetrics.service.trackOperation(
             .subscriptionEntitlementRefresh,
             stateLabel: "current-entitlements",
             signpostName: "Subscription Entitlement Refresh"
-        ) {
-            await refreshStatusCore()
+        ) { @Sendable in
+            await self.refreshStatusCore()
         }
     }
 

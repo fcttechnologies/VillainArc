@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import StoreKit
@@ -631,6 +632,10 @@ struct WorkoutSummaryView: View {
         ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(workout, context: context)
         workout.status = SessionStatus.done.rawValue
         saveContext(context: context)
+        Diag.breadcrumb(VACrumb.workoutFinished)
+        Diag.funnel(VAFunnel.workoutSession, .completed)
+        Diag.count(VACounter.workoutsCompleted)
+        Diag.count(VACounter.setsLogged, by: workout.sortedExercises.reduce(0) { $0 + $1.sortedSets.filter(\.complete).count })
         Task {
             await HealthExportCoordinator.shared.exportIfEligible(sessionID: workout.id)
         }

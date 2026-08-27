@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -294,6 +295,7 @@ func applyChange(_ change: PrescriptionChange, in event: SuggestionEvent, contex
 
 func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .accepted
+    Diag.breadcrumb(VACrumb.suggestionDecided)
     for change in group.changes {
         applyChange(change, in: group.event, context: context)
     }
@@ -304,6 +306,7 @@ func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
 
 func rejectGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .rejected
+    Diag.breadcrumb(VACrumb.suggestionDecided)
     saveContext(context: context)
     AppLog.info("Suggestion group rejected. changes=\(group.changes.count)")
 }

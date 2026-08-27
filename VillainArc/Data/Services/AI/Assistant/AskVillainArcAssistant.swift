@@ -1,3 +1,4 @@
+import FCTMetrics
 import CoreSpotlight
 import FoundationModels
 // `SpotlightSearchTool` comes from the `_CoreSpotlight_FoundationModels` cross-import overlay, which
@@ -55,6 +56,8 @@ enum AskVillainArcAssistant {
 
     static func ask(_ question: String) async -> Result<String, AskError> {
         guard isAvailable else { return .failure(.unavailable(availability)) }
+        Diag.breadcrumb(VACrumb.assistantAsked)
+        Diag.count(VACounter.assistantQuestions)
 
         let tools = AIToolSafetyPolicy.vettedSpotlightTools([makeSpotlightTool()])
         let session = LanguageModelSession(tools: tools, instructions: instructions)
@@ -65,7 +68,7 @@ enum AskVillainArcAssistant {
         }
 
         do {
-            let response = try await MetricsService.trackOperation(
+            let response = try await VAMetrics.service.trackOperation(
                 .askAssistant,
                 stateLabel: "respond",
                 signpostName: "Ask Villain Arc"

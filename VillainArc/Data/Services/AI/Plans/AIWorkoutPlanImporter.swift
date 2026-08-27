@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import FoundationModels
 
@@ -35,7 +36,7 @@ struct AIWorkoutPlanImporter {
         }
 
         do {
-            let response = try await MetricsService.trackOperation(
+            let response = try await VAMetrics.service.trackOperation(
                 .aiPlanGeneration,
                 stateLabel: "import-respond",
                 signpostName: "AI Plan Import"

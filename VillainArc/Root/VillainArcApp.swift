@@ -1,3 +1,4 @@
+import FCTMetrics
 import CoreSpotlight
 import SwiftUI
 import SwiftData
@@ -6,8 +7,8 @@ import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        MetricsService.shared.register()
-        MetricsService.trackLaunchTask(.launch, stateLabel: "did-finish-launching") {
+        VAMetrics.start()
+        VAMetrics.service.trackLaunchTask(.launch, stateLabel: "did-finish-launching") {
             if HealthAuthorizationManager.isHealthDataAvailable {
                 HealthStoreUpdateCoordinator.shared.installObserversIfNeeded()
             }
@@ -31,8 +32,8 @@ struct VillainArcApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
-        MetricsService.shared.register()
-        MetricsService.trackLaunchTask(.launch, stateLabel: "app-init") {
+        VAMetrics.start()
+        VAMetrics.service.trackLaunchTask(.launch, stateLabel: "app-init") {
             try? Tips.configure([.datastoreLocation(.applicationDefault)])
             CardioFavoriteTip.appLaunchCount = min(CardioFavoriteTip.appLaunchCount + 1, 100)
         }

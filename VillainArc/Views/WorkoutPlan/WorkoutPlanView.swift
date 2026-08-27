@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import AppIntents
@@ -110,6 +111,7 @@ struct WorkoutPlanView: View {
                                 }
                                 if !plan.completed {
                                     plan.completed = true
+                                    Diag.breadcrumb(VACrumb.planCreated)
                                 }
                                 plan.clearCompletedSessionPerformanceReferences()
                                 saveContext(context: context)

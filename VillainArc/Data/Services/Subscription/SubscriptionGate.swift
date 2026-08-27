@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import Observation
 import SwiftUI
@@ -109,6 +110,7 @@ final class PaywallPresenter {
     func present(for feature: PremiumFeature) {
         Haptics.selection()
         trigger = feature
+        Diag.breadcrumb(VACrumb.paywallShown)
     }
 
     func dismiss() {

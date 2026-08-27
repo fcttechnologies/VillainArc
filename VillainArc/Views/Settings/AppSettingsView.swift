@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import UIKit
@@ -463,7 +464,7 @@ private struct AppSettingsFormView: View {
     }
 
     private func refreshLatestDiagnostic() {
-        if let payload = MetricsService.shared.latestDiagnostic() {
+        if let payload = VAMetrics.service.latestDiagnostic() {
             latestDiagnostic = DiagnosticDescriptor(json: payload.json, receivedAt: payload.receivedAt)
         } else {
             latestDiagnostic = nil
