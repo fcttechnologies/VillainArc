@@ -42,6 +42,7 @@ enum AccessibilityIdentifiers {
     static let settingsAppleHealthKeepRemovedDataToggle = "settingsAppleHealthKeepRemovedDataToggle"
     static let settingsNotificationsLink = "settingsNotificationsLink"
     static let settingsUnitsLink = "settingsUnitsLink"
+    static let settingsSyncStatusRow = "settingsSyncStatusRow"
     static let settingsDebugLink = "settingsDebugLink"
     static let debugResetAppDataButton = "debugResetAppDataButton"
     static let debugResetAppDataConfirmButton = "debugResetAppDataConfirmButton"

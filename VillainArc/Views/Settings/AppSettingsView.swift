@@ -120,6 +120,8 @@ private struct AppSettingsFormView: View {
 
     var body: some View {
         Form {
+            VAAccountSection()
+
             Section {
                 NavigationLink(value: AppSettingsDestination.workouts) {
                     Label("Workouts", systemImage: "figure.strengthtraining.traditional")

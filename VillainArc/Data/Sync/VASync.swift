@@ -436,6 +436,17 @@ final class VASync {
         }
     }
 
+    /// The narrow deletion door's local half: the server's rows for this app are already erased,
+    /// so this device's copy goes unconditionally and the engine rebuilds against the now-empty
+    /// account at cursor 0. The session survives — the app returns to signed-in-empty.
+    func eraseAppDataLocally() async {
+        discardLocalData()
+        if let controller, let credentials = controller.credentials {
+            await startEngine(accountID: credentials.accountID, enrolling: true)
+        }
+        onLocalDataCleared?()
+    }
+
     /// Every synced row, the engine's state, the blob queue and cache — gone. Switch and delete
     /// only.
     private func discardLocalData() {

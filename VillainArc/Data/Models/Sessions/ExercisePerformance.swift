@@ -12,7 +12,13 @@ import SwiftData
     var musclesTargeted: [Muscle] = []
     var equipmentType: EquipmentType = EquipmentType.bodyweight
     @Relationship(deleteRule: .cascade, inverse: \RepRangePolicy.exercisePerformance) var repRange: RepRangePolicy? = RepRangePolicy()
-    var originalTargetSnapshot: ExerciseTargetSnapshot?
+    /// The frozen prescription state at session start, stored as encoded JSON rather than as the
+    /// Codable struct itself: SwiftData reflects a struct-typed attribute into composite
+    /// sub-attributes, and one whose struct contains an array (`sets`) traps at runtime the first
+    /// time persistent history over this model is read ("Failed to materialize a keypath for
+    /// originalTargetSnapshot.sets"), which the platform sync engine does on every drain. Read
+    /// and write through ``originalTargetSnapshot``.
+    private var originalTargetSnapshotData: Data?
     var workoutSession: WorkoutSession?
     var activeInSession: WorkoutSession?
     @Relationship(inverse: \ExercisePrescription.activePerformance) var prescription: ExercisePrescription?
@@ -21,6 +27,12 @@ import SwiftData
     @Relationship(deleteRule: .cascade, inverse: \SetPerformance.exercise) var sets: [SetPerformance]? = [SetPerformance]()
 
     var sortedSets: [SetPerformance] { (sets ?? []).sorted { $0.index < $1.index } }
+
+    /// The typed face over ``originalTargetSnapshotData``.
+    var originalTargetSnapshot: ExerciseTargetSnapshot? {
+        get { originalTargetSnapshotData.flatMap { try? JSONDecoder().decode(ExerciseTargetSnapshot.self, from: $0) } }
+        set { originalTargetSnapshotData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
 
     // Adding exercise in session
     /// Sync materialization: a pulled row starts empty and `apply(_:)` fills it. The default
