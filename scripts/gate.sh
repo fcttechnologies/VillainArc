@@ -172,21 +172,22 @@ done
 # Debug extraction set also carries the `#if DEBUG` surfaces (Screenshot Studio, the debug menu)
 # whose strings no user ever sees and which have no business in a shipping catalog.
 #
-# Three scoped passes, and the scoping is load-bearing. A catalog's table name is its filename
-# stem, so the app's and the watch's `Localizable.xcstrings` collide on one table: run together,
-# the last one wins and the 28-key watch catalog gets measured against the app's 2,200 strings.
-# `--source-root` splits them by which sources the strings came from. The third pass is the one
-# that is easy to miss entirely: SwiftUI resolves a `Text("…")` inside FCTFoundation against the
-# MAIN bundle, so the account, onboarding and sync copy VA renders is the APP's catalog's
-# responsibility, and nothing else in this gate would ever look at it.
+# Two scoped passes, and the scoping is load-bearing. A catalog's table name is its filename stem,
+# so the app's and the watch's `Localizable.xcstrings` collide on one table: run together, the last
+# one wins and the 28-key watch catalog gets measured against the app's ~2,200 strings.
+# `--source-root` splits them by which sources the strings came from.
+#
+# FCTFoundation is deliberately NOT a third pass. The rule that a package's strings count against
+# the app's catalog holds only for a package that resolves against the MAIN bundle; every
+# `String(localized:)` in FCTFoundation passes `bundle: .module` and each module ships its own
+# `Resources/Localizable.xcstrings`, complete in all ten locales. Scoping a pass at its sources
+# would report every one of those strings as missing from VA's catalog and be wrong.
 echo "==> Localization drift"
 check_loc_drift "${DD}/ios-release" --source-root "${PWD}/VillainArc" \
   VillainArc/Localizable.xcstrings \
   VillainArc/AppShortcuts.xcstrings
 check_loc_drift "${DD}/ios-release" --source-root "${PWD}/VillainArcWatchApp" \
   VillainArcWatchApp/Localizable.xcstrings
-check_loc_drift "${DD}/ios-release" --source-root "${HOME}/Projects/FCTFoundation/Sources" \
-  VillainArc/Localizable.xcstrings
 
 # Locale COMPLETENESS — the half the drift check cannot see — is asserted by the unit suite that
 # already ran above (`LocalizationIntegrityTests`), straight from the catalog JSON: every declared
