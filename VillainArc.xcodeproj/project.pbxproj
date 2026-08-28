@@ -607,10 +607,15 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
 				es,
 				fr,
-				de,
+				it,
+				ja,
+				ko,
 				"pt-BR",
+				ru,
+				"zh-Hans",
 			);
 			mainGroup = FDA193872F16D14500CA57C5;
 			minimizedProjectReferenceProxies = 1;
