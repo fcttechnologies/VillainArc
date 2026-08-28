@@ -14,9 +14,12 @@ import SwiftData
     var triggerTargetSetID: UUID?
     var decision: Decision = Decision.pending
     var outcome: Outcome = Outcome.pending
-    var ruleID: SuggestionRule?
-    var decisionReason: DecisionReason?
-    var userFeedback: UserFeedback?
+    /// Raw text, not optional enum attributes: an optional enum attribute on a synced model is
+    /// dropped by the sync applier's save (`UserProfile.fitnessLevelRawValue` carries the full
+    /// note). Their typed faces are below.
+    var ruleIDRawValue: String?
+    var decisionReasonRawValue: String?
+    var userFeedbackRawValue: String?
     var trainingStyle: TrainingStyle = TrainingStyle.unknown
     var requiredEvaluationCount: Int = 1
     var weightStepUsed: Double?
@@ -29,6 +32,22 @@ import SwiftData
     @Relationship(deleteRule: .cascade, inverse: \PrescriptionChange.event) var changes: [PrescriptionChange]? = [PrescriptionChange]()
 
     init() {}
+
+    /// The typed faces of the raw columns above; every surface reads and writes these.
+    var ruleID: SuggestionRule? {
+        get { ruleIDRawValue.flatMap(SuggestionRule.init(rawValue:)) }
+        set { ruleIDRawValue = newValue?.rawValue }
+    }
+
+    var decisionReason: DecisionReason? {
+        get { decisionReasonRawValue.flatMap(DecisionReason.init(rawValue:)) }
+        set { decisionReasonRawValue = newValue?.rawValue }
+    }
+
+    var userFeedback: UserFeedback? {
+        get { userFeedbackRawValue.flatMap(UserFeedback.init(rawValue:)) }
+        set { userFeedbackRawValue = newValue?.rawValue }
+    }
 
     var currentTargetSetIndex: Int? { targetSetPrescription?.index }
 

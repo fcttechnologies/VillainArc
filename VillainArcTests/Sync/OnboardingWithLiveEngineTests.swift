@@ -52,9 +52,8 @@ struct OnboardingWithLiveEngineTests {
         try context.save()
     }
 
-    @Test(.disabled("Open defect: a full sync cycle drops UserProfile.fitnessLevel. Reproduction kept; cause not yet found."))
-    @MainActor
-    func aFullCycleDropsTheFitnessLevelFromDisk() async throws {
+    @Test @MainActor
+    func aFullCycleKeepsTheFitnessLevel() async throws {
         let harness = try VASyncFaultHarness()
         let context = harness.container.mainContext
 
@@ -91,5 +90,39 @@ struct OnboardingWithLiveEngineTests {
         #expect(try onDisk(harness)?.heightCm == 177.8, "C: the control survives the full cycle")
         #expect(try onDisk(harness)?.fitnessLevelSetAt != nil, "C: the timestamp survives the full cycle")
         #expect(try onDisk(harness)?.fitnessLevel == .advanced, "C: after the full cycle")
+    }
+}
+
+/// The same defect on every other optional enum stored on a synced model.
+///
+/// `apply(_:)` re-assigns each column on every pull, so any optional enum attribute on a synced
+/// model is dropped by the applier's save exactly as `UserProfile.fitnessLevel` was. `WeightGoal`
+/// is the clean representative: no parent links, one optional enum, and a non-optional enum
+/// (`type`) beside it as the control.
+@Suite("Optional enums on synced models", .serialized)
+struct SyncedOptionalEnumSweepTests {
+    @Test @MainActor
+    func aWeightGoalsEndReasonSurvivesAFullCycle() async throws {
+        let harness = try VASyncFaultHarness()
+        let context = harness.container.mainContext
+
+        let goal = WeightGoal(type: .cut, startWeight: 90, targetWeight: 80)
+        context.insert(goal)
+        try context.save()
+        await harness.enroll()
+
+        goal.endedAt = .now
+        goal.endReason = .achieved
+        try context.save()
+        await harness.sync.syncNow()
+
+        let reopened = try ModelContainer(
+            for: SharedModelContainer.schema,
+            configurations: [ModelConfiguration(nil, schema: SharedModelContainer.schema, url: harness.storeURL, allowsSave: true, cloudKitDatabase: .none)]
+        )
+        let stored = try #require(try ModelContext(reopened).fetch(FetchDescriptor<WeightGoal>()).first)
+        #expect(stored.type == .cut, "the control: a non-optional enum with a default")
+        #expect(stored.endedAt != nil, "the control: a Date? on the adjacent line")
+        #expect(stored.endReason == .achieved, "the optional enum, now stored as raw text")
     }
 }

@@ -7,7 +7,10 @@ import SwiftData
     var type: WeightGoalType = WeightGoalType.maintain
     var startedAt: Date = Date()
     var endedAt: Date?
-    var endReason: WeightGoalEndReason?
+    /// Raw text, not a `WeightGoalEndReason?` attribute: an optional enum attribute on a synced
+    /// model is dropped by the sync applier's save (`UserProfile.fitnessLevelRawValue` carries the
+    /// full note). `SyncedOptionalEnumSweepTests` pins this one.
+    var endReasonRawValue: String?
     var startWeight: Double = 0
     var targetWeight: Double = 0
     var targetDate: Date?
@@ -19,6 +22,12 @@ import SwiftData
         self.targetWeight = targetWeight
         self.targetDate = targetDate
         self.targetRatePerWeek = targetRatePerWeek
+    }
+
+    /// The typed face of `endReasonRawValue`; every surface reads and writes this.
+    var endReason: WeightGoalEndReason? {
+        get { endReasonRawValue.flatMap(WeightGoalEndReason.init(rawValue:)) }
+        set { endReasonRawValue = newValue?.rawValue }
     }
 }
 
