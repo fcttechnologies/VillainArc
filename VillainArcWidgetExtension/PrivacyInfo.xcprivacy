@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Villain Arc widgets + Live Activities — this extension's own privacy manifest.
+
+  A required-reason API has to be reported by the bundle whose executable uses it, so this appex
+  answers for itself rather than riding the app's manifest.
+
+  It reads and writes the App Group suite the app and its extensions share
+  (SharedModelContainer.sharedDefaults, and the cardio Live Activity's metric preference) — that
+  is the whole of its required-reason surface. It renders the local store and transmits nothing,
+  so it collects no data of its own; what the app syncs is declared in the app's manifest.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>1C8F.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

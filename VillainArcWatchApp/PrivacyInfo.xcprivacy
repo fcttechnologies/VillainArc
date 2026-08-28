@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Villain Arc watch companion — this app's own privacy manifest.
+
+  A required-reason API has to be reported by the bundle whose executable uses it, and the watch
+  app is its own bundle with its own executable, so it answers for itself.
+
+  It mirrors the phone's live session over WatchConnectivity and holds that state in memory: no
+  user defaults, no file metadata, no disk or boot-time reads, and no transmission off the pair.
+  Both arrays are therefore empty, and empty is the claim — not an omission.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>
