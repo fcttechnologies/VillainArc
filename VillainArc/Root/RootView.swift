@@ -19,11 +19,11 @@ struct RootView: View {
 
     var body: some View {
         rootSurface
-            // The front door is dark whatever the app's appearance setting says — a first launch
-            // has no setting yet, and the carousel is built for a dark backdrop.
-            .preferredColorScheme(
-                onboardingManager.state == .welcome ? .dark : appSettings.first?.appearanceMode.preferredColorScheme
-            )
+            // The front door follows the system like every other surface: a first launch has no
+            // appearance setting yet, so `appSettings` is empty and this resolves to nil — which
+            // is exactly right, since nil means "whatever the device is set to". The carousel and
+            // the sign-in surface are both built against the adaptive palette.
+            .preferredColorScheme(appSettings.first?.appearanceMode.preferredColorScheme)
             .task {
                 cleanupEditingWorkoutPlanCopies()
                 VillainArcShortcuts.updateAppShortcutParameters()
