@@ -51,6 +51,18 @@ enum DebugOperations {
         AppLog.info("Debug reset app data completed. deletedRecords=\(deletedCount), setupReady=\(isSetupReady)")
     }
 
+    /// Everything a capture needs, in one action: the store cleared to a known state, then the
+    /// records that make the app look like someone has been using it. Reset first, so the result
+    /// is the same whatever the device was holding — a demo seeded on top of yesterday's seed is
+    /// not a reproducible capture.
+    static func seedDemoData() async throws {
+        AppLog.info("Debug demo data seed started.")
+        try await resetAppData()
+        try seedWorkoutData()
+        try seedHealthSamples(scenario: .daily)
+        AppLog.info("Debug demo data seed completed.")
+    }
+
     static func resyncExerciseCatalog() async throws {
         AppLog.info("Debug exercise catalog resync started.")
         SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)

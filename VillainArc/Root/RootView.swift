@@ -96,6 +96,15 @@ struct RootView: View {
             }
     }
 
+    /// The one-tap sign-in an agent driving a Debug build uses, on both signed-out surfaces.
+    /// Empty in a release build, and empty in a Debug build that was never handed the credential.
+    @ViewBuilder
+    private var debugTestAccountBar: some View {
+        #if DEBUG
+        DebugTestAccountSignInBar(controller: VAAccount.controller)
+        #endif
+    }
+
     /// What the window holds. The account gate is the whole surface rather than a layer over one:
     /// until a session exists there is no Villain Arc to render behind it, and the app's own setup
     /// steps ride a sheet over the launch backdrop, not over the app.
@@ -113,12 +122,14 @@ struct RootView: View {
             ) {
                 onboardingManager.accountGateCompleted()
             }
+            .overlay(alignment: .bottom) { debugTestAccountBar }
         case .account:
             AccountSignInView(controller: VAAccount.controller, appearance: .accountRequired)
                 .onChange(of: VAAccount.controller.state, initial: true) { _, newState in
                     guard newState.isSignedIn else { return }
                     onboardingManager.accountGateCompleted()
                 }
+                .overlay(alignment: .bottom) { debugTestAccountBar }
         case .launching, .seeding, .profile, .finishing, .healthPermissions, .error:
             // The launch backdrop: the app's own background, matching the generated launch screen
             // so the hand-off is seamless, and holding nothing of the app itself.

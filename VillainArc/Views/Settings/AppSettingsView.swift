@@ -1098,6 +1098,7 @@ private struct DebugSettingsView: View {
                     }
                 }
                 .disabled(isWorking)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugTouchAllModelsButton)
                 .appGroupedListRow(position: .middle)
 
                 Button("Seed Workout Data", systemImage: "dumbbell") {
@@ -1106,9 +1107,25 @@ private struct DebugSettingsView: View {
                     }
                 }
                 .disabled(isWorking)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugSeedWorkoutDataButton)
                 .appGroupedListRow(position: .bottom)
             } footer: {
                 Text(statusMessage)
+            }
+
+            Section {
+                Button("Seed Demo Data", systemImage: "wand.and.sparkles") {
+                    runOperation("Demo data seeded.") {
+                        try await DebugOperations.seedDemoData()
+                    }
+                }
+                .disabled(isWorking)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugSeedDemoDataButton)
+                .appGroupedListRow(position: .single)
+            } header: {
+                Text("Demo Capture")
+            } footer: {
+                Text("One action: a clean store, the profile and goal a ready app needs, workout history, and 35 days of Health data — the state store screenshots and demo footage are captured from.")
             }
 
             Section {
