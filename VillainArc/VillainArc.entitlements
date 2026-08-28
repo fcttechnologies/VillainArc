@@ -6,6 +6,16 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!--
+	  Password AutoFill for the account's own email-and-password surface: the claim here is one
+	  half, and the site serving this app's team-prefixed id under `webcredentials` in
+	  /.well-known/apple-app-site-association is the other. Without both, iOS neither offers to
+	  save the password nor suggests it on return, and the failure is silent.
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>webcredentials:fct-technologies.com</string>
+	</array>
 	<key>aps-environment</key>
 	<string>development</string>
 	<key>com.apple.developer.healthkit</key>
