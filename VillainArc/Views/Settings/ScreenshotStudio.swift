@@ -165,6 +165,7 @@ struct ScreenshotStudioGalleryView: View {
                     Label(isSeeding ? "Seeding…" : "Seed Demo Data", systemImage: "tray.and.arrow.down.fill")
                 }
                 .disabled(isSeeding)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugScreenshotStudioSeedButton)
             } footer: {
                 Text(statusMessage)
             }
@@ -185,6 +186,7 @@ struct ScreenshotStudioGalleryView: View {
                         }
                     }
                     .matchedTransitionSource(id: scene.id, in: namespace)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.debugScreenshotStudioScene(scene.id))
                 }
             } footer: {
                 Text("Tap a scene to present it full-screen for capture. Swipe down to dismiss. Widgets and Live Activities are captured separately.")

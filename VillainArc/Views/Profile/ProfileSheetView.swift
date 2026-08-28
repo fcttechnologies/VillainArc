@@ -238,18 +238,21 @@ struct ProfileSheetView: View {
                         Haptics.selection()
                         Task { await startCameraFlow() }
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetTakePhotoButton)
                 }
 
                 Button("Select Photo") {
                     Haptics.selection()
                     presentedImagePickerSource = .photoLibrary
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetSelectPhotoButton)
 
                 if profile?.profileImageData != nil {
                     Button("Clear Photo", role: .destructive) {
                         Haptics.selection()
                         clearProfilePhoto()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetClearPhotoButton)
                 }
             }
             .alert("Camera Access Needed", isPresented: $showCameraAccessAlert) {
@@ -257,7 +260,9 @@ struct ProfileSheetView: View {
                     guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                     UIApplication.shared.open(url)
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetCameraAccessOpenSettingsButton)
                 Button("OK", role: .cancel) {}
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetCameraAccessDismissButton)
             } message: {
                 Text("Allow camera access in Settings to take a profile photo.")
             }
@@ -373,6 +378,7 @@ struct ProfileSheetView: View {
                     }
                     .disabled(profile == nil)
                     .foregroundStyle(profile == nil ? .tertiary : .secondary)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetNameField)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 18)
@@ -390,6 +396,7 @@ struct ProfileSheetView: View {
             .buttonStyle(.borderless)
             .foregroundStyle(.primary)
             .disabled(profile == nil)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetBirthdayRow)
 
             Divider()
                 .padding(.horizontal, 16)
@@ -408,6 +415,7 @@ struct ProfileSheetView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetGenderRow)
 
             Divider()
                 .padding(.horizontal, 16)
@@ -421,6 +429,7 @@ struct ProfileSheetView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetHeightRow)
 
             Divider()
                 .padding(.horizontal, 16)

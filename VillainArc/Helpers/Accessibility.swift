@@ -30,6 +30,15 @@ enum AccessibilityIdentifiers {
     static let profileSheetAvatar = "profileSheetAvatar"
     static let profileSheetEditPhotoButton = "profileSheetEditPhotoButton"
     static let profileSheetName = "profileSheetName"
+    static let profileSheetNameField = "profileSheetNameField"
+    static let profileSheetTakePhotoButton = "profileSheetTakePhotoButton"
+    static let profileSheetSelectPhotoButton = "profileSheetSelectPhotoButton"
+    static let profileSheetClearPhotoButton = "profileSheetClearPhotoButton"
+    static let profileSheetCameraAccessOpenSettingsButton = "profileSheetCameraAccessOpenSettingsButton"
+    static let profileSheetCameraAccessDismissButton = "profileSheetCameraAccessDismissButton"
+    static let profileSheetBirthdayRow = "profileSheetBirthdayRow"
+    static let profileSheetGenderRow = "profileSheetGenderRow"
+    static let profileSheetHeightRow = "profileSheetHeightRow"
     static let profileSheetDetailsCard = "profileSheetDetailsCard"
     static let profileSheetFitnessLevelRow = "profileSheetFitnessLevelRow"
     static let profileSheetTrainingGoalRow = "profileSheetTrainingGoalRow"
@@ -304,6 +313,20 @@ enum AccessibilityIdentifiers {
     // MARK: - ExerciseHistoryView
     static let exerciseHistoryEmptyState = "exerciseHistoryEmptyState"
     static let exerciseHistoryList = "exerciseHistoryList"
+    static let exerciseHistoryCopyCancelButton = "exerciseHistoryCopyCancelButton"
+
+    static func exerciseHistoryPerformanceCard(_ performance: ExercisePerformance) -> String { "exerciseHistoryPerformanceCard-\(performance.id.uuidString)" }
+
+    static func exerciseHistoryCopyMenu(_ performance: ExercisePerformance) -> String { "exerciseHistoryCopyMenu-\(performance.id.uuidString)" }
+
+    static func exerciseHistoryCopyModeButton(_ mode: ExerciseHistoryCopyMode) -> String { "exerciseHistoryCopyModeButton-\(mode.rawValue)" }
+
+    static func exerciseHistoryCopyStrategyButton(_ strategy: ExerciseHistoryCopyStrategy) -> String {
+        switch strategy {
+        case .replaceAll: "exerciseHistoryCopyStrategyButton-replaceAll"
+        case .replaceRemaining: "exerciseHistoryCopyStrategyButton-replaceRemaining"
+        }
+    }
 
     // MARK: - AddExerciseView
     static let addExerciseCloseButton = "addExerciseCloseButton"
@@ -615,6 +638,54 @@ enum AccessibilityIdentifiers {
     static func onboardingFitnessLevelOption(_ level: FitnessLevel) -> String { "onboardingFitnessLevelOption-\(level.rawValue)" }
 
     static func onboardingTrainingGoalOption(_ kind: TrainingGoalKind) -> String { "onboardingTrainingGoalOption-\(kind.rawValue)" }
+
+    // MARK: - ProfileEditorViews
+    static let profileBirthdayEditorPicker = "profileBirthdayEditorPicker"
+    static let profileBirthdayEditorCloseButton = "profileBirthdayEditorCloseButton"
+    static let profileBirthdayEditorConfirmButton = "profileBirthdayEditorConfirmButton"
+    static let profileGenderEditorCloseButton = "profileGenderEditorCloseButton"
+    static let profileGenderEditorConfirmButton = "profileGenderEditorConfirmButton"
+    static let profileHeightEditorFeetPicker = "profileHeightEditorFeetPicker"
+    static let profileHeightEditorInchesPicker = "profileHeightEditorInchesPicker"
+    static let profileHeightEditorCentimetersPicker = "profileHeightEditorCentimetersPicker"
+    static let profileHeightEditorCloseButton = "profileHeightEditorCloseButton"
+    static let profileHeightEditorConfirmButton = "profileHeightEditorConfirmButton"
+    static let profileTrainingGoalEditorCloseButton = "profileTrainingGoalEditorCloseButton"
+    static let profileTrainingGoalEditorConfirmButton = "profileTrainingGoalEditorConfirmButton"
+    static let profileFitnessLevelEditorCloseButton = "profileFitnessLevelEditorCloseButton"
+    static let profileFitnessLevelEditorConfirmButton = "profileFitnessLevelEditorConfirmButton"
+
+    // MARK: - AppSettingsView
+    static let settingsCloseButton = "settingsCloseButton"
+    static let settingsThemePicker = "settingsThemePicker"
+    static let settingsSendDiagnosticButton = "settingsSendDiagnosticButton"
+    static let settingsReportIssueButton = "settingsReportIssueButton"
+    static let settingsRequestFeatureButton = "settingsRequestFeatureButton"
+    static let settingsSupportPageButton = "settingsSupportPageButton"
+    static let settingsAppleHealthOpenSystemSettingsButton = "settingsAppleHealthOpenSystemSettingsButton"
+    static let settingsAppleHealthInstructionsDismissButton = "settingsAppleHealthInstructionsDismissButton"
+    static let settingsNotificationsActionButton = "settingsNotificationsActionButton"
+    static let settingsStepsNotificationModePicker = "settingsStepsNotificationModePicker"
+    static let settingsSleepNotificationModePicker = "settingsSleepNotificationModePicker"
+    static let settingsHydrationNotificationModePicker = "settingsHydrationNotificationModePicker"
+    static let settingsWeightUnitPicker = "settingsWeightUnitPicker"
+    static let settingsHeightUnitPicker = "settingsHeightUnitPicker"
+    static let settingsDistanceUnitPicker = "settingsDistanceUnitPicker"
+    static let settingsEnergyUnitPicker = "settingsEnergyUnitPicker"
+    static let settingsTemperatureUnitPicker = "settingsTemperatureUnitPicker"
+    static let settingsSpeedUnitPicker = "settingsSpeedUnitPicker"
+    static let settingsLegalWebCloseButton = "settingsLegalWebCloseButton"
+    static let debugScreenshotStudioLink = "debugScreenshotStudioLink"
+    static let debugShowOnboardingCarouselButton = "debugShowOnboardingCarouselButton"
+    static let debugShowWhatsNewButton = "debugShowWhatsNewButton"
+    static let debugResetAppDataCancelButton = "debugResetAppDataCancelButton"
+    static let debugSeedExerciseHistoryButton = "debugSeedExerciseHistoryButton"
+    static let debugSeedExerciseDetailHistoryButton = "debugSeedExerciseDetailHistoryButton"
+    static let debugScreenshotStudioSeedButton = "debugScreenshotStudioSeedButton"
+
+    static func debugSeedHealthSamplesButton(_ scenarioTitle: String) -> String { "debugSeedHealthSamplesButton-\(slug(scenarioTitle))" }
+
+    static func debugScreenshotStudioScene(_ sceneID: String) -> String { "debugScreenshotStudioScene-\(slug(sceneID))" }
 
     private static func slug(_ text: String) -> String {
         let lowercase = text.lowercased()

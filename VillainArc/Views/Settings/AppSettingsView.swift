@@ -72,6 +72,7 @@ struct AppSettingsView: View {
                             dismiss()
                         }
                         .fontWeight(.semibold)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.settingsCloseButton)
                     }
                 }
             }
@@ -185,6 +186,7 @@ private struct AppSettingsFormView: View {
                             .tag(mode)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsThemePicker)
                 .appGroupedListRow(position: .single)
             } footer: {
                 Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
@@ -415,6 +417,7 @@ private struct AppSettingsFormView: View {
                     }
                 }
                 .foregroundStyle(.primary)
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSendDiagnosticButton)
                 .appGroupedListRow(position: .top)
             }
 
@@ -425,6 +428,7 @@ private struct AppSettingsFormView: View {
                 Label("Report an Issue", systemImage: "ladybug.fill")
             }
             .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.settingsReportIssueButton)
             .appGroupedListRow(position: latestDiagnostic == nil ? .top : .middle)
 
             Button {
@@ -434,6 +438,7 @@ private struct AppSettingsFormView: View {
                 Label("Request a Feature", systemImage: "lightbulb.max.fill")
             }
             .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.settingsRequestFeatureButton)
             .appGroupedListRow(position: .middle)
 
             Button {
@@ -443,6 +448,7 @@ private struct AppSettingsFormView: View {
                 Label("Visit Support Page", systemImage: "safari")
             }
             .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.settingsSupportPageButton)
             .appGroupedListRow(position: .bottom)
         } footer: {
             Text("Send diagnostics, report issues, or request features. Diagnostics are stored on your device until you tap Send.")
@@ -783,7 +789,9 @@ private struct AppleHealthSettingsView: View {
                 guard let url = URL(string: "App-prefs:root=HEALTH") else { return }
                 UIApplication.shared.open(url)
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthOpenSystemSettingsButton)
             Button("OK", role: .cancel) {}
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsAppleHealthInstructionsDismissButton)
         } message: {
             Text("Apple does not let this app open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access and Devices, tap this app, then update the workout permissions.")
         }
@@ -837,6 +845,7 @@ private struct NotificationSettingsView: View {
                     }
                 }
                 .disabled(isHandlingNotificationAction)
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsNotificationsActionButton)
                 .appGroupedListRow(position: .bottom)
             }
 
@@ -847,6 +856,7 @@ private struct NotificationSettingsView: View {
                             .tag(mode)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsStepsNotificationModePicker)
                 .disabled(!notificationsAreAllowedBySystem)
                 .appGroupedListRow(position: .single)
             } header: {
@@ -868,6 +878,7 @@ private struct NotificationSettingsView: View {
                             .tag(mode)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSleepNotificationModePicker)
                 .disabled(!notificationsAreAllowedBySystem)
                 .appGroupedListRow(position: .single)
             } header: {
@@ -889,6 +900,7 @@ private struct NotificationSettingsView: View {
                             .tag(mode)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsHydrationNotificationModePicker)
                 .disabled(!notificationsAreAllowedBySystem)
                 .appGroupedListRow(position: .single)
             } header: {
@@ -1027,6 +1039,7 @@ private struct DebugSettingsView: View {
                 } label: {
                     Label("Screenshot Studio", systemImage: "camera.viewfinder")
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugScreenshotStudioLink)
                 .appGroupedListRow(position: .single)
             }
 
@@ -1035,6 +1048,7 @@ private struct DebugSettingsView: View {
                     Haptics.selection()
                     showsCarouselPreview = true
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugShowOnboardingCarouselButton)
                 .appGroupedListRow(position: .top)
 
                 Button("Show What's New", systemImage: "sparkles") {
@@ -1043,6 +1057,7 @@ private struct DebugSettingsView: View {
                     let features = WhatsNewCatalog.featuresIntroduced(after: "0", throughIncluding: current)
                     introPreview = WhatsNewPresentation(version: current, features: features)
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugShowWhatsNewButton)
                 .appGroupedListRow(position: .bottom)
             } header: {
                 Text("Intro Flows")
@@ -1136,6 +1151,7 @@ private struct DebugSettingsView: View {
                         }
                     }
                     .disabled(isWorking)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.debugSeedHealthSamplesButton(scenario.title))
                     .appGroupedListRow(position: rowPosition(for: scenario))
                 }
             } header: {
@@ -1156,6 +1172,7 @@ private struct DebugSettingsView: View {
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.debugResetAppDataConfirmButton)
             Button("Cancel", role: .cancel) {}
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugResetAppDataCancelButton)
         } message: {
             Text("This clears local app data and recreates the minimum records needed for testing.")
         }
@@ -1219,6 +1236,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsWeightUnitPicker)
                 .appGroupedListRow(position: .top)
 
                 Picker("Height", selection: $settings.heightUnit) {
@@ -1227,6 +1245,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsHeightUnitPicker)
                 .appGroupedListRow(position: .middle)
 
                 Picker("Distance", selection: $settings.distanceUnit) {
@@ -1235,6 +1254,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsDistanceUnitPicker)
                 .appGroupedListRow(position: .middle)
 
                 Picker("Energy", selection: $settings.energyUnit) {
@@ -1243,6 +1263,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsEnergyUnitPicker)
                 .appGroupedListRow(position: .middle)
 
                 Picker("Temperature", selection: $settings.temperatureUnit) {
@@ -1251,6 +1272,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsTemperatureUnitPicker)
                 .appGroupedListRow(position: .middle)
 
                 Picker("Speed", selection: $settings.speedUnit) {
@@ -1259,6 +1281,7 @@ private struct UnitSettingsView: View {
                             .tag(unit)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSpeedUnitPicker)
                 .appGroupedListRow(position: .bottom)
             } footer: {
                 Text("These units control how weight, height, distance, energy, temperature, and speed are displayed throughout the app.")
@@ -1325,6 +1348,7 @@ private struct SettingsLegalWebSheet: View {
                             dismiss()
                         }
                         .accessibilityHint(AccessibilityText.closeButtonHint)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.settingsLegalWebCloseButton)
                     }
                 }
         }

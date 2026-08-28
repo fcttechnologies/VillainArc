@@ -89,6 +89,7 @@ struct ExerciseHistoryView: View {
                 }
                 .fontWeight(.semibold)
                 .disabled(isSeedingDebugHistory || exercise == nil)
+                .accessibilityIdentifier(AccessibilityIdentifiers.debugSeedExerciseHistoryButton)
             }
             #endif
         }
@@ -98,12 +99,14 @@ struct ExerciseHistoryView: View {
                     Button(request.buttonLabel(for: strategy), role: strategy == .replaceAll && workoutExercise?.completedSetCount ?? 0 > 0 ? .destructive : nil) {
                         applyCopy(request, strategy: strategy)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryCopyStrategyButton(strategy))
                 }
             }
             Button("Cancel", role: .cancel) {
                 Haptics.selection()
                 pendingCopyRequest = nil
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryCopyCancelButton)
         } message: {
             if let request = pendingCopyRequest {
                 Text(request.confirmationMessage(for: workoutExercise))
@@ -247,6 +250,7 @@ struct ExerciseHistoryPerformanceCard: View {
                     cardContent
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryPerformanceCard(performance))
                 .contextMenu {
                     NavigationLink {
                         workoutDestination(for: workout)
@@ -272,6 +276,7 @@ struct ExerciseHistoryPerformanceCard: View {
                 Button(mode.label, systemImage: "square.on.square") {
                     onCopy?(performance, mode)
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryCopyModeButton(mode))
             }
         }
     }
@@ -307,6 +312,7 @@ struct ExerciseHistoryPerformanceCard: View {
                                 Button(mode.label, systemImage: "square.on.square") {
                                     onCopy?(performance, mode)
                                 }
+                                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryCopyModeButton(mode))
                             }
                         } label: {
                             Image(systemName: "square.on.square")
@@ -315,6 +321,7 @@ struct ExerciseHistoryPerformanceCard: View {
                                 .padding(.top, 2)
                         }
                         .accessibilityLabel("Copy from history")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryCopyMenu(performance))
                     }
 
                     if performance.workoutSession != nil {

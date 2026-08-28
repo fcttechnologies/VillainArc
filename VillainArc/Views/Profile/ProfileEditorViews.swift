@@ -76,6 +76,7 @@ struct ProfileBirthdayEditorSheet: View {
                 DatePicker("Birthday", selection: $draftBirthday, in: ...Date.now, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .labelsHidden()
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileBirthdayEditorPicker)
 
                 Spacer()
             }
@@ -88,6 +89,7 @@ struct ProfileBirthdayEditorSheet: View {
                         dismiss()
                     }
                     .accessibilityHint(AccessibilityText.closeButtonHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileBirthdayEditorCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .confirm) {
@@ -96,6 +98,7 @@ struct ProfileBirthdayEditorSheet: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileBirthdayEditorConfirmButton)
                 }
             }
         }
@@ -141,6 +144,7 @@ struct ProfileGenderEditorSheet: View {
                                 .accessibilityHint(AccessibilityText.onboardingGenderOptionHint)
                                 .accessibilityValue(AccessibilityText.onboardingGenderOptionValue(isSelected: true))
                                 .accessibilityAddTraits(.isSelected)
+                                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingGenderOption(option))
                             } else {
                                 Button {
                                     selection = option
@@ -158,6 +162,7 @@ struct ProfileGenderEditorSheet: View {
                                 .buttonBorderShape(.roundedRectangle(radius: 16))
                                 .accessibilityHint(AccessibilityText.onboardingGenderOptionHint)
                                 .accessibilityValue(AccessibilityText.onboardingGenderOptionValue(isSelected: false))
+                                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingGenderOption(option))
                             }
                         }
                     }
@@ -174,6 +179,7 @@ struct ProfileGenderEditorSheet: View {
                         dismiss()
                     }
                     .accessibilityHint(AccessibilityText.closeButtonHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileGenderEditorCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .confirm) {
@@ -182,6 +188,7 @@ struct ProfileGenderEditorSheet: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileGenderEditorConfirmButton)
                 }
             }
         }
@@ -225,6 +232,7 @@ struct ProfileHeightEditorSheet: View {
                             }
                         }
                         .pickerStyle(.wheel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.profileHeightEditorFeetPicker)
 
                         Picker("Inches", selection: $inches) {
                             ForEach(Self.inchOptions, id: \.self) { option in
@@ -232,6 +240,7 @@ struct ProfileHeightEditorSheet: View {
                             }
                         }
                         .pickerStyle(.wheel)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.profileHeightEditorInchesPicker)
                     }
                     .frame(maxWidth: .infinity)
                 } else {
@@ -242,6 +251,7 @@ struct ProfileHeightEditorSheet: View {
                     }
                     .pickerStyle(.wheel)
                     .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileHeightEditorCentimetersPicker)
                 }
 
                 Spacer(minLength: 0)
@@ -255,6 +265,7 @@ struct ProfileHeightEditorSheet: View {
                         dismiss()
                     }
                     .accessibilityHint(AccessibilityText.closeButtonHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileHeightEditorCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .confirm) {
@@ -264,6 +275,7 @@ struct ProfileHeightEditorSheet: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileHeightEditorConfirmButton)
                 }
             }
         }
@@ -307,6 +319,7 @@ struct TrainingGoalEditorSheet: View {
                         dismiss()
                     }
                     .accessibilityHint(AccessibilityText.closeButtonHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileTrainingGoalEditorCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .confirm) {
@@ -317,6 +330,7 @@ struct TrainingGoalEditorSheet: View {
                     }
                     .fontWeight(.semibold)
                     .disabled(selectedGoal == nil)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileTrainingGoalEditorConfirmButton)
                 }
             }
         }
@@ -362,6 +376,7 @@ struct FitnessLevelEditorSheet: View {
                         dismiss()
                     }
                     .accessibilityHint(AccessibilityText.closeButtonHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileFitnessLevelEditorCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .confirm) {
@@ -372,6 +387,7 @@ struct FitnessLevelEditorSheet: View {
                     }
                     .fontWeight(.semibold)
                     .disabled(selectedLevel == nil)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.profileFitnessLevelEditorConfirmButton)
                 }
             }
         }
