@@ -36,7 +36,7 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-beta.app}"
 SIM_NAME="${SIM_NAME:-iPhone 17 Pro}"
 SHORTCUT_COUNT=10
 PHRASE_CATALOG="VillainArc/AppShortcuts.xcstrings"
-MIN_TESTS=520
+MIN_TESTS=523
 VERIFY_SHORTCUTS="../FCTFoundation/scripts/verify-app-shortcuts.py"
 VERIFY_ICONS="../FCTFoundation/scripts/verify-app-icons.py"
 DD="$(mktemp -d -t villainarc-gate)" || exit 1
@@ -164,14 +164,29 @@ done
 # A `Text("…")` added in source reaches the String Catalog only when Xcode's IDE extracts it; a
 # command-line xcodebuild never does, so the catalog silently stops covering the UI and every
 # non-English locale ships the raw English key. This compares against the compiler's own
-# extraction set in the build that already ran, and costs no build of its own. Checked table by
+# extraction set in a build that already ran, and costs no build of its own. Checked table by
 # table: the Siri phrases live in their own catalog, and a key sitting in the wrong one is just as
 # undelivered as a missing one.
+#
+# Read from the RELEASE tree, not the Debug one: drift is a question about what ships, and the
+# Debug extraction set also carries the `#if DEBUG` surfaces (Screenshot Studio, the debug menu)
+# whose strings no user ever sees and which have no business in a shipping catalog.
+#
+# Three scoped passes, and the scoping is load-bearing. A catalog's table name is its filename
+# stem, so the app's and the watch's `Localizable.xcstrings` collide on one table: run together,
+# the last one wins and the 28-key watch catalog gets measured against the app's 2,200 strings.
+# `--source-root` splits them by which sources the strings came from. The third pass is the one
+# that is easy to miss entirely: SwiftUI resolves a `Text("…")` inside FCTFoundation against the
+# MAIN bundle, so the account, onboarding and sync copy VA renders is the APP's catalog's
+# responsibility, and nothing else in this gate would ever look at it.
 echo "==> Localization drift"
-check_loc_drift "${DD}/ios" \
+check_loc_drift "${DD}/ios-release" --source-root "${PWD}/VillainArc" \
   VillainArc/Localizable.xcstrings \
-  VillainArc/AppShortcuts.xcstrings \
+  VillainArc/AppShortcuts.xcstrings
+check_loc_drift "${DD}/ios-release" --source-root "${PWD}/VillainArcWatchApp" \
   VillainArcWatchApp/Localizable.xcstrings
+check_loc_drift "${DD}/ios-release" --source-root "${HOME}/Projects/FCTFoundation/Sources" \
+  VillainArc/Localizable.xcstrings
 
 # Locale COMPLETENESS — the half the drift check cannot see — is asserted by the unit suite that
 # already ran above (`LocalizationIntegrityTests`), straight from the catalog JSON: every declared
