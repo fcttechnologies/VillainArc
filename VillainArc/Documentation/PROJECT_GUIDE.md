@@ -217,9 +217,10 @@ The high-level launch path is:
 
 1. `VillainArcApp` installs the shared model container and forwards Spotlight/Siri handoffs.
 2. The app delegate registers the weekly Health coaching background refresh task and reinstalls Health observers on process launch.
-3. `RootView` starts `OnboardingManager`, cleans up abandoned plan-edit copies, and refreshes shortcut parameters.
-4. `OnboardingManager` decides whether this is first bootstrap or a returning launch.
-5. Only after onboarding reaches `.ready` does `RootView`:
+3. `RootView` resumes the FCT account, starts `VASync`, then starts `OnboardingManager`; it also cleans up abandoned plan-edit copies and refreshes shortcut parameters.
+4. `OnboardingManager` routes on the session first (`OnboardingEntry`): without one the window holds the front door — the intro carousel ending in the required sign-in step, or the sign-in gate alone on a device that is already set up. `ContentView` does not exist until `.ready`.
+5. With a session, it decides whether this is first bootstrap or a returning launch.
+6. Only after onboarding reaches `.ready` does `RootView`:
    - ask `AppRouter` to resume unfinished work
    - reinstall any missing Health observers
    - refresh Health background delivery registration
@@ -237,19 +238,19 @@ Setup is only considered valid once:
 
 ## First Bootstrap
 
-On the first launch, VillainArc takes the local-first setup path:
+The first launch opens on the front door — the intro carousel, then sign-in — and only behind the
+session does VillainArc take the local-first setup path:
 
 - seed the bundled exercise catalog
 - reindex Spotlight
 - ensure singleton records exist
 - route into profile onboarding
-- end in the FCT account sign-in step
 
 The store has no cloud mirror, so seeding waits on nothing. Cross-device convergence is an
 identity property instead of a wait: catalog exercises carry deterministic ids and the singletons
 fixed ids (`VASyncIdentity`), so an existing account's rows settle against the fresh seed under
-LWW once the sync engine enrolls at sign-in. Restoring account data runs in the background after
-sign-in; readiness never waits on a pull.
+LWW once the sync engine enrolls at sign-in. Restoring account data runs in the background from
+that sign-in; readiness never waits on a pull.
 
 ## Returning Launch
 

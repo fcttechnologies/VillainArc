@@ -4,23 +4,48 @@ import HealthKit
 import SwiftData
 import SwiftUI
 
+/// Where a launch routes before any of Villain Arc's own setup runs.
+///
+/// The rule this type holds: **no part of the app exists without a session.** Every FCT app
+/// requires the FCT account, so a launch without one goes to the front door and nothing else —
+/// the whole intro on a device that has never been set up, the sign-in gate alone on one that
+/// has (a session that expired, or a sign-out whose local clear was refused).
+nonisolated enum OnboardingEntry: Equatable {
+    /// The carousel, then the required sign-in step.
+    case welcome
+    /// The sign-in gate on its own.
+    case account
+    /// Signed in, nothing set up: seed the catalog, then Villain Arc's own setup steps.
+    case firstRunSetup
+    /// Signed in and set up: the short path to `.ready`.
+    case returningLaunch
+
+    static func forLaunch(hasSession: Bool, hasCompletedBootstrap: Bool) -> OnboardingEntry {
+        guard hasSession else { return hasCompletedBootstrap ? .account : .welcome }
+        return hasCompletedBootstrap ? .returningLaunch : .firstRunSetup
+    }
+}
+
 enum OnboardingState: Equatable {
     case launching
+    /// The front door: the intro carousel ending in the required sign-in step. Held whole by the
+    /// root view — no app surface renders behind or before it.
+    case welcome
+    /// The sign-in gate without the carousel, for a device that is already set up.
+    case account
     case seeding
     case profile(UserProfileOnboardingStep)
     case finishing
     case healthPermissions
-    /// The terminal step: every FCT app requires the FCT account, and onboarding ends in the
-    /// sign-in surface. Reached only once profile + health setup are complete; `.ready` follows
-    /// the account controller reporting `.signedIn`.
-    case account
     case ready
     case error(String)
 
-    var shouldPresentSheet: Bool {
+    /// Whether this state is one of Villain Arc's own setup steps, which the root view presents as
+    /// a sheet over the launch backdrop. The account states are full-screen gates, not sheets.
+    var presentsSetupSheet: Bool {
         switch self {
-        case .launching, .ready: return false
-        default: return true
+        case .launching, .welcome, .account, .ready: return false
+        case .seeding, .profile, .finishing, .healthPermissions, .error: return true
         }
     }
 }
@@ -62,16 +87,29 @@ enum OnboardingState: Equatable {
         let attemptID = UUID()
         onboardingAttemptID = attemptID
 
-        if DataManager.hasCompletedInitialBootstrap() {
+        switch OnboardingEntry.forLaunch(
+            hasSession: account?.state.isSignedIn == true,
+            hasCompletedBootstrap: DataManager.hasCompletedInitialBootstrap()
+        ) {
+        case .welcome:
+            // The front door opens the funnel: everything after it, sign-in included, is a step a
+            // user can abandon.
+            Diag.funnel(VAFunnel.onboarding, .started)
+            state = .welcome
+        case .account:
+            state = .account
+        case .firstRunSetup:
+            await runFirstBootstrap(attemptID: attemptID)
+        case .returningLaunch:
             await handleReturningLaunch()
-            return
         }
+    }
 
-        // First bootstrap. The store is local-first with no cloud mirror, so there is nothing to
-        // wait for before seeding: seed the bundled catalog, ensure the singletons, and route
-        // into profile setup. Restoring an existing account's data is the sync engine's job and
-        // begins at the terminal sign-in step.
-        Diag.funnel(VAFunnel.onboarding, .started)
+    /// The session is in hand and this device has never been set up: seed the bundled catalog,
+    /// ensure the singletons, and route into profile setup. The store is local-first with no cloud
+    /// mirror, so seeding waits on nothing — restoring the account's existing rows is the sync
+    /// engine's job, already running in the background from the sign-in that just happened.
+    private func runFirstBootstrap(attemptID: UUID) async {
         state = .seeding
         do {
             _ = try await DataManager.seedExercisesForOnboarding()
@@ -269,28 +307,18 @@ enum OnboardingState: Equatable {
             state = .profile(missingStep)
         } else if await HealthAuthorizationManager.shouldPromptForCurrentPermissionsVersion() {
             state = .healthPermissions
-        } else if accountStepIsRequired {
-            state = .account
         } else {
             transitionToReady()
         }
     }
 
-    /// Whether the terminal sign-in step still stands between here and `.ready`. Signed in means
-    /// done; `needsReauthentication` and `signedOut` both route through the same surface, since
-    /// the app requires an account to run.
-    private var accountStepIsRequired: Bool {
-        guard let account else { return false }
-        if case .signedIn = account.state { return false }
-        return true
-    }
-
-    /// Called by the account step when the controller reports `.signedIn`. The sync engine's
-    /// enrollment (and any prior data restore) proceeds in the background; readiness never waits
-    /// on a pull.
-    func accountStepCompleted() {
-        guard state == .account else { return }
-        transitionToReady()
+    /// Called by the front door once a session exists — the carousel's sign-in step, or the
+    /// sign-in gate on an already-set-up device. Routing again from the top is what picks up the
+    /// setup this launch still owes; the sync engine's enrollment (and any restore of the
+    /// account's existing rows) proceeds in the background, and readiness never waits on a pull.
+    func accountGateCompleted() {
+        guard state == .welcome || state == .account else { return }
+        Task { await startOnboarding() }
     }
 
     func connectAppleHealth() async {

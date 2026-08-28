@@ -15,7 +15,8 @@ means locally. The store itself (App Group, clean V1, no CloudKit) is covered in
   staging sweep, the status surface, the clears
 - `Data/Services/Platform/VAAccount.swift` — the one `AccountController`
 - `Views/Settings/AccountSection.swift` — identity, sync status row, sign-out, the deletion doors
-- `Views/Onboarding/OnboardingView.swift` — the terminal sign-in step
+- `Root/RootView.swift` — the account gate: the sign-in surface as the whole window, never a layer
+  over the app
 - Server half: the `va.*` tables in the FCTPlatform repo's migrations
 
 ## What Syncs
@@ -66,8 +67,8 @@ exists only while an account does:
 
 - `.enrolled` / `.resumed` → build the engine (state file + blob store beside the store in the App
   Group), enroll marks-all-dirty on first sign-in, then cycle
-- `.needsReauthentication` → engine idles, nothing cleared; the sign-in step re-presents over
-  intact data
+- `.needsReauthentication` → engine idles, nothing cleared; the sign-in gate takes the window back
+  over intact data
 - `.signedOut` → barrier-gated clear: one last push while a token exists (`signOutPreflight`),
   then the engine's own non-discarding clear (refuses while anything is unpushed), then the local
   caches and bootstrap markers go and onboarding restarts

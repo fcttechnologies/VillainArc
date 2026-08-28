@@ -85,6 +85,41 @@
         }
       }
     },
+    "Every Lift's History" : {
+      "comment" : "Onboarding page: exercise history",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Historie jeder Übung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every Lift's History"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El historial de cada ejercicio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'historique de chaque exercice"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O histórico de cada exercício"
+          }
+        }
+      }
+    },
     "Finishing Setup" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -116,6 +151,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Concluindo a configuração"
+          }
+        }
+      }
+    },
+    "Log Every Set in Seconds" : {
+      "comment" : "Onboarding page: workout logging",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeden Satz in Sekunden erfassen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log Every Set in Seconds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra cada serie en segundos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrez chaque série en quelques secondes"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registre cada série em segundos"
+          }
+        }
+      }
+    },
+    "Muscles worked, PRs, and totals for every exercise." : {
+      "comment" : "Onboarding page subtitle: exercise history",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainierte Muskeln, Bestleistungen und Summen für jede Übung."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muscles worked, PRs, and totals for every exercise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músculos trabajados, récords y totales de cada ejercicio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muscles sollicités, records et totaux pour chaque exercice."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músculos trabalhados, recordes e totais de cada exercício."
           }
         }
       }
@@ -256,6 +361,41 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inicie a sessão novamente para sincronizar"
+          }
+        }
+      }
+    },
+    "Smart Suggestions" : {
+      "comment" : "Onboarding page: set suggestions",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intelligente Vorschläge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Suggestions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sugerencias inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggestions intelligentes"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sugestões inteligentes"
           }
         }
       }
@@ -431,6 +571,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aguardando a rede"
+          }
+        }
+      }
+    },
+    "Weight, reps, and rest, with your last session right there." : {
+      "comment" : "Onboarding page subtitle: workout logging",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gewicht, Wiederholungen und Pause – mit deinem letzten Training direkt daneben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight, reps, and rest, with your last session right there."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peso, repeticiones y descanso, con tu última sesión justo ahí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charge, répétitions et repos, avec votre dernière séance juste à côté."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peso, repetições e descanso, com seu último treino bem ali."
+          }
+        }
+      }
+    },
+    "Your next weight and reps, worked out from your own history. (Pro)" : {
+      "comment" : "Onboarding page subtitle: set suggestions",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein nächstes Gewicht und deine Wiederholungen, aus deiner eigenen Historie berechnet. (Pro)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next weight and reps, worked out from your own history. (Pro)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu próximo peso y repeticiones, calculados a partir de tu propio historial. (Pro)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre prochaine charge et vos répétitions, calculées à partir de votre historique. (Pro)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu próximo peso e repetições, calculados a partir do seu próprio histórico. (Pro)"
           }
         }
       }
@@ -6769,34 +6979,6 @@
         }
       }
     },
-    "AI Exercise Swaps" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "KI-Übungswechsel"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambios de ejercicio con IA"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remplacements d’exercices par IA"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trocas de exercício com IA"
-          }
-        }
-      }
-    },
     "AI Plan Generation" : {
       "comment" : "Display name for the AI Plan Generation premium feature.",
       "isCommentAutoGenerated" : true,
@@ -10765,34 +10947,6 @@
         }
       }
     },
-    "Cardio with Routes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio mit Routen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio con rutas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio avec itinéraires"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio com rotas"
-          }
-        }
-      }
-    },
     "Change" : {
       "localizations" : {
         "de" : {
@@ -11763,42 +11917,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fecha a folha."
-          }
-        }
-      }
-    },
-    "Closes the welcome screen and enters the app." : {
-      "comment" : "The accessibility hint for the button that dismisses the welcome screen and enters the app.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schließt den Willkommensbildschirm und öffnet die App."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Closes the welcome screen and enters the app."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cierra la pantalla de bienvenida y entra en la app."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ferme l'écran de bienvenue et entre dans l'app."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fecha a tela de boas-vindas e entra no app."
           }
         }
       }
@@ -23115,42 +23233,6 @@
         }
       }
     },
-    "Here's what you can do." : {
-      "comment" : "A heading for the features of the app.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das kannst du tun."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Here's what you can do."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esto es lo que puedes hacer."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Voici ce que tu peux faire."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Veja o que você pode fazer."
-          }
-        }
-      }
-    },
     "Hide quick actions" : {
       "localizations" : {
         "de" : {
@@ -24268,34 +24350,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hidratação hoje %1$@ %2$@."
-          }
-        }
-      }
-    },
-    "Hydration Tracking" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flüssigkeitstracking"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seguimiento de hidratación"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suivi de l’hydratation"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acompanhamento de hidratação"
           }
         }
       }
@@ -27117,34 +27171,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registre o RPE em mais sessões para ver este gráfico."
-          }
-        }
-      }
-    },
-    "Log water and hit a daily goal." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erfasse Wasser und erreiche ein Tagesziel."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registra agua y alcanza un objetivo diario."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistre ton eau et atteins un objectif quotidien."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registre água e atinja uma meta diária."
           }
         }
       }
@@ -40343,34 +40369,6 @@
         }
       }
     },
-    "Profile & Streaks" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profil & Serien"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perfil y rachas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profil et séries"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perfil e sequências"
-          }
-        }
-      }
-    },
     "Program ready" : {
       "localizations" : {
         "de" : {
@@ -44879,36 +44877,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "RPE: %lld"
-          }
-        }
-      }
-    },
-    "Run, walk, or treadmill, mapped live." : {
-      "comment" : "Description of a feature that allows users to run, walk, or treadmill while the app is running.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Laufen, Gehen oder Laufband – live aufgezeichnet."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Correr, caminar o cinta, registrado en vivo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Course, marche ou tapis, suivis en direct."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corrida, caminhada ou esteira, mapeados ao vivo."
           }
         }
       }
@@ -51174,34 +51142,6 @@
         }
       }
     },
-    "Smart replacements for your goal and level. (Pro)" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intelligente Alternativen für dein Ziel und Niveau. (Pro)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reemplazos inteligentes para tu objetivo y nivel. (Pro)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Des remplacements intelligents pour ton objectif et ton niveau. (Pro)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Substituições inteligentes para o seu objetivo e nível. (Pro)"
-          }
-        }
-      }
-    },
     "Smarter Exercise Picker" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52946,34 +52886,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inicia o treino de hoje do seu split ativo."
-          }
-        }
-      }
-    },
-    "Stats, muscle map, and a complete-day heatmap." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Statistiken, Muskelkarte und eine Heatmap der absolvierten Tage."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estadísticas, mapa muscular y un mapa de calor de días completos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Statistiques, carte musculaire et une carte thermique des jours complétés."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estatísticas, mapa muscular e um mapa de calor dos dias concluídos."
           }
         }
       }
@@ -62819,42 +62731,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bola com peso"
-          }
-        }
-      }
-    },
-    "Welcome to Villain Arc" : {
-      "comment" : "The title of the Welcome sheet.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Willkommen bei Villain Arc"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welcome to Villain Arc"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Te damos la bienvenida a Villain Arc"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bienvenue dans Villain Arc"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Boas-vindas ao Villain Arc"
           }
         }
       }

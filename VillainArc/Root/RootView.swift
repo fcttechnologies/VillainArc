@@ -1,6 +1,7 @@
 import SwiftUI
 import AppIntents
 import FCTAccount
+import FCTOnboarding
 import SwiftData
 
 struct RootView: View {
@@ -9,30 +10,34 @@ struct RootView: View {
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @Environment(\.scenePhase) private var scenePhase
 
-    private var onboardingBinding: Binding<Bool> {
+    private var setupSheetBinding: Binding<Bool> {
         Binding(
-            get: { onboardingManager.state.shouldPresentSheet },
+            get: { onboardingManager.state.presentsSetupSheet },
             set: { _ in }
         )
     }
 
     var body: some View {
-        ContentView()
-            .preferredColorScheme(appSettings.first?.appearanceMode.preferredColorScheme)
+        rootSurface
+            // The front door is dark whatever the app's appearance setting says — a first launch
+            // has no setting yet, and the carousel is built for a dark backdrop.
+            .preferredColorScheme(
+                onboardingManager.state == .welcome ? .dark : appSettings.first?.appearanceMode.preferredColorScheme
+            )
             .task {
                 cleanupEditingWorkoutPlanCopies()
                 VillainArcShortcuts.updateAppShortcutParameters()
                 RemoteChangeRefreshCoordinator.startSharedIfNeeded()
                 // The account resolves before onboarding routes: `resume()` is what turns a
-                // session in the shared keychain into the state the terminal account step (and
-                // the sync engine's lifecycle) reads.
+                // session in the shared keychain into the state the front door reads, and what
+                // decides whether this launch sees the app at all.
                 onboardingManager.attachAccount(VAAccount.controller)
                 VASync.shared.start(
                     controller: VAAccount.controller,
                     container: SharedModelContainer.container
                 )
                 // A sign-out/switch/deletion wipes this device's copy; the next thing the user
-                // sees is a fresh first bootstrap ending in the sign-in step.
+                // sees is the front door again, carousel included.
                 VASync.shared.onLocalDataCleared = {
                     Task { await onboardingManager.startOnboarding() }
                 }
@@ -48,11 +53,12 @@ struct RootView: View {
                 }
             }
             .onChange(of: VAAccount.controller.state) { _, newState in
-                // An involuntary session loss surfaces the sign-in step over intact data; one
-                // sign-in resumes the engine (mandatory-auth posture, nothing local cleared).
-                if case .needsReauthentication = newState, onboardingManager.state == .ready {
-                    onboardingManager.state = .account
-                }
+                // Losing the session closes the app behind the gate, whatever caused it: an
+                // involuntary expiry, or a sign-out whose local clear was refused because this
+                // device still holds unpushed work. One sign-in reopens it — nothing local is
+                // cleared here.
+                guard !newState.isSignedIn, onboardingManager.state == .ready else { return }
+                onboardingManager.state = .account
             }
             .onChange(of: onboardingManager.state) { _, newState in
                 guard newState == .ready else { return }
@@ -77,12 +83,6 @@ struct RootView: View {
                     WhatsNewPreferences.markCurrentVersionSeen()
                 }
             }
-            .sheet(isPresented: onboardingBinding) {
-                OnboardingView(manager: onboardingManager)
-                    .presentationBackground(Color.sheetBg)
-                    .interactiveDismissDisabled(true)
-                    .presentationDragIndicator(.hidden)
-            }
             .sheet(item: $whatsNewPresentation, onDismiss: {
                 // Fires on any dismissal (button or swipe), so a swipe-away still marks the
                 // version seen and the sheet doesn't reappear next launch.
@@ -94,6 +94,43 @@ struct RootView: View {
                 .presentationBackground(Color.sheetBg)
                 .presentationDetents([.large])
             }
+    }
+
+    /// What the window holds. The account gate is the whole surface rather than a layer over one:
+    /// until a session exists there is no Villain Arc to render behind it, and the app's own setup
+    /// steps ride a sheet over the launch backdrop, not over the app.
+    @ViewBuilder
+    private var rootSurface: some View {
+        switch onboardingManager.state {
+        case .ready:
+            ContentView()
+        case .welcome:
+            AccountOnboardingFlow(
+                items: VAOnboardingCarousel.items,
+                controller: VAAccount.controller,
+                continueTitle: VAOnboardingCarousel.continueTitle,
+                completeTitle: VAOnboardingCarousel.continueTitle
+            ) {
+                onboardingManager.accountGateCompleted()
+            }
+        case .account:
+            AccountSignInView(controller: VAAccount.controller, appearance: .accountRequired)
+                .onChange(of: VAAccount.controller.state, initial: true) { _, newState in
+                    guard newState.isSignedIn else { return }
+                    onboardingManager.accountGateCompleted()
+                }
+        case .launching, .seeding, .profile, .finishing, .healthPermissions, .error:
+            // The launch backdrop: the app's own background, matching the generated launch screen
+            // so the hand-off is seamless, and holding nothing of the app itself.
+            Color.bg
+                .ignoresSafeArea()
+                .sheet(isPresented: setupSheetBinding) {
+                    OnboardingView(manager: onboardingManager)
+                        .presentationBackground(Color.sheetBg)
+                        .interactiveDismissDisabled(true)
+                        .presentationDragIndicator(.hidden)
+                }
+        }
     }
 
     private func cleanupEditingWorkoutPlanCopies() {

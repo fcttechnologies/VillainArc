@@ -1,5 +1,4 @@
 import CoreLocation
-import FCTAccount
 import SwiftData
 import SwiftUI
 
@@ -75,8 +74,6 @@ struct OnboardingView: View {
                 profileFlow
             case .healthPermissions:
                 healthPermissionsView
-            case .account:
-                accountStepView
             case .finishing:
                 finishingView
             default:
@@ -258,42 +255,11 @@ struct OnboardingView: View {
                 .accessibilityHint(AccessibilityText.onboardingRetryHint)
             }
 
-        case .profile, .healthPermissions, .account, .finishing, .ready:
+        case .welcome, .account, .profile, .healthPermissions, .finishing, .ready:
             EmptyView()
         }
     }
 
-    /// The terminal onboarding step: the FCT account sign-in, hosted whole from `FCTAccount` with
-    /// the required-account wording. Setup data is already saved locally at this point; signing in
-    /// is what enrolls the device with the platform sync engine (and restores any existing account
-    /// data in the background). `FCTOnboarding.AccountOnboardingFlow` packages the same terminal
-    /// step behind the intro carousel; Villain Arc's onboarding is a multi-step setup flow rather
-    /// than a carousel, so it hosts the sign-in surface directly, exactly as that flow does.
-    private var accountStepView: some View {
-        OnboardingAccountStepView(manager: manager)
-    }
-
-}
-
-private struct OnboardingAccountStepView: View {
-    @Bindable var manager: OnboardingManager
-
-    var body: some View {
-        Group {
-            if let account = manager.account {
-                AccountSignInView(controller: account, appearance: .accountRequired)
-                    .onChange(of: account.state, initial: true) { _, newState in
-                        guard case .signedIn = newState else { return }
-                        manager.accountStepCompleted()
-                    }
-            } else {
-                // No controller attached (previews, tests): nothing to sign in with, so don't
-                // strand the sheet.
-                OnboardingProgressStateView(title: "Finishing Setup")
-                    .task { manager.accountStepCompleted() }
-            }
-        }
-    }
 }
 
 private struct OnboardingProgressStateView: View {

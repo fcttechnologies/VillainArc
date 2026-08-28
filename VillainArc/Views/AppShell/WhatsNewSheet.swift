@@ -1,15 +1,11 @@
 import SwiftUI
 
-// Welcome / What's New sheet. The presentation (welcome vs whatsNew + its features)
-// is decided by WhatsNewPreferences.presentationOnLaunch; this view only renders it.
-// Feature/release/catalog types live in WhatsNewCatalog.swift.
+// What's New sheet: the highlights of every release this user hasn't seen yet.
+// What to present is decided by WhatsNewPreferences.presentationOnLaunch; this
+// view only renders it. Feature/release/catalog types live in WhatsNewCatalog.swift.
 struct WhatsNewSheet: View {
     let presentation: WhatsNewPresentation
     let onDismiss: () -> Void
-
-    private var isWelcome: Bool {
-        presentation.kind == .welcome
-    }
 
     var body: some View {
         NavigationStack {
@@ -24,7 +20,7 @@ struct WhatsNewSheet: View {
             }
             .scrollContentBackground(.hidden)
             .sheetBackground()
-            .navigationTitle(isWelcome ? "Welcome to Villain Arc" : "What's New")
+            .navigationTitle("What's New")
             .toolbarTitleDisplayMode(.inlineLarge)
             .safeAreaBar(edge: .bottom) {
                 continueBar
@@ -33,20 +29,11 @@ struct WhatsNewSheet: View {
         }
     }
 
-    @ViewBuilder
     private var header: some View {
-        switch presentation.kind {
-        case .welcome:
-            Text("Here's what you can do.")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .fontDesign(.rounded)
-        case .whatsNew(let version):
-            Text("Version \(version)")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .fontDesign(.rounded)
-        }
+        Text("Version \(presentation.version)")
+            .font(.headline.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .fontDesign(.rounded)
     }
 
     private var featuresSection: some View {
@@ -86,7 +73,7 @@ struct WhatsNewSheet: View {
         Button {
             onDismiss()
         } label: {
-            Text(isWelcome ? "Get Started" : "Continue")
+            Text("Continue")
                 .fontWeight(.semibold)
                 .font(.title3)
                 .padding(.vertical, 5)
@@ -96,16 +83,11 @@ struct WhatsNewSheet: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .accessibilityIdentifier("whats_new_continue_button")
-        .accessibilityHint(Text(isWelcome ? "Closes the welcome screen and enters the app." : "Closes the What's New sheet and continues to the app."))
+        .accessibilityHint(Text("Closes the What's New sheet and continues to the app."))
     }
 }
 
-#Preview("Welcome") {
-    WhatsNewSheet(presentation: WhatsNewPresentation(kind: .welcome, features: WhatsNewCatalog.welcomeHighlights)) {}
-        .presentationBackground(Color.sheetBg)
-}
-
 #Preview("What's New") {
-    WhatsNewSheet(presentation: WhatsNewPresentation(kind: .whatsNew(version: "1.4"), features: WhatsNewCatalog.releases.first?.features ?? [])) {}
+    WhatsNewSheet(presentation: WhatsNewPresentation(version: "1.4", features: WhatsNewCatalog.releases.first?.features ?? [])) {}
         .presentationBackground(Color.sheetBg)
 }

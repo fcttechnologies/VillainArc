@@ -1,6 +1,6 @@
 import SwiftUI
 
-// A single highlighted feature shown in the Welcome / What's New sheet.
+// A single highlighted feature shown in the What's New sheet.
 nonisolated struct WhatsNewFeature: Identifiable {
     let id = UUID()
     let icon: String
@@ -15,47 +15,26 @@ nonisolated struct WhatsNewRelease {
     let features: [WhatsNewFeature]
 }
 
-// How the Welcome / What's New sheet should present this launch.
-// `welcome` greets a brand-new install with the app's main pillars; `whatsNew`
-// shows the aggregated highlights of every release the user hasn't seen yet.
+// The unseen releases a launch should announce, and their aggregated highlights.
+// A brand-new install has no releases to announce: the first-launch carousel
+// (`VAOnboardingCarousel`) is where a new user meets the app.
 nonisolated struct WhatsNewPresentation: Identifiable {
-    enum Kind: Equatable {
-        case welcome
-        case whatsNew(version: String)
-    }
-
-    let kind: Kind
+    let version: String
     let features: [WhatsNewFeature]
 
-    var id: String {
-        switch kind {
-        case .welcome: return "welcome"
-        case .whatsNew(let version): return "whatsNew-\(version)"
-        }
-    }
+    var id: String { version }
 }
 
-// The single source of truth for the Welcome highlights and the per-version
-// What's New changelog. To announce a new release's features, append a
-// `WhatsNewRelease` with its marketing version — the launch logic
-// (`WhatsNewPreferences.presentationOnLaunch`) aggregates every release a user
-// hasn't seen, so a user who skips versions still sees all missed highlights in
-// one sheet. A version with no entry (e.g. a minor bug-fix build) contributes
-// nothing and no sheet is shown.
+// The single source of truth for the per-version What's New changelog. To
+// announce a new release's features, append a `WhatsNewRelease` with its
+// marketing version — the launch logic (`WhatsNewPreferences.presentationOnLaunch`)
+// aggregates every release a user hasn't seen, so a user who skips versions still
+// sees all missed highlights in one sheet. A version with no entry (e.g. a minor
+// bug-fix build) contributes nothing and no sheet is shown.
 nonisolated enum WhatsNewCatalog {
-    // Evergreen "main parts" of the app, shown to first-time users as a Welcome.
-    // These are the pillars the app is built on, not a single version's changes.
-    static let welcomeHighlights: [WhatsNewFeature] = [
-        WhatsNewFeature(icon: "figure.run.treadmill", iconColor: .orange, title: "Cardio with Routes", description: "Run, walk, or treadmill, mapped live."),
-        WhatsNewFeature(icon: "sparkles", iconColor: .yellow, title: "AI Plan Generation", description: "Build a full program from a sentence. (Pro)"),
-        WhatsNewFeature(icon: "arrow.triangle.2.circlepath", iconColor: .blue, title: "AI Exercise Swaps", description: "Smart replacements for your goal and level. (Pro)"),
-        WhatsNewFeature(icon: "chart.xyaxis.line", iconColor: .pink, title: "Health Insights", description: "Trends, sleep timing, and correlations. (Pro)"),
-        WhatsNewFeature(icon: "drop.fill", iconColor: .cyan, title: "Hydration Tracking", description: "Log water and hit a daily goal."),
-        WhatsNewFeature(icon: "person.crop.circle.fill", iconColor: .indigo, title: "Profile & Streaks", description: "Stats, muscle map, and a complete-day heatmap.")
-    ]
-
-    // Per-version highlights, ascending. Start at 1.4 — the 1.3 pillars live in
-    // `welcomeHighlights`, so a user updating from 1.3 sees only what's new in 1.4.
+    // Per-version highlights, ascending. Start at 1.4 — the 1.3 pillars are the
+    // app's introduction and live in the onboarding carousel, so a user updating
+    // from 1.3 sees only what's new in 1.4.
     static let releases: [WhatsNewRelease] = [
         WhatsNewRelease(version: "1.4", features: [
             WhatsNewFeature(icon: "text.magnifyingglass", iconColor: .indigo, title: "Ask Villain Arc", description: "Ask about your training and get answers from your own history. (Pro)"),

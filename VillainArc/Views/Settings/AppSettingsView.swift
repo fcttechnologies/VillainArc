@@ -1,4 +1,5 @@
 import FCTMetrics
+import FCTOnboarding
 import SwiftUI
 import SwiftData
 import UIKit
@@ -1008,6 +1009,7 @@ private struct DebugSettingsView: View {
     @State private var statusMessage = "Ready"
     @State private var showsResetConfirmation = false
     @State private var introPreview: WhatsNewPresentation?
+    @State private var showsCarouselPreview = false
 
     private var healthStatusText: String {
         #if targetEnvironment(simulator)
@@ -1029,9 +1031,9 @@ private struct DebugSettingsView: View {
             }
 
             Section {
-                Button("Show Welcome", systemImage: "hand.wave") {
+                Button("Show Onboarding Carousel", systemImage: "hand.wave") {
                     Haptics.selection()
-                    introPreview = WhatsNewPresentation(kind: .welcome, features: WhatsNewCatalog.welcomeHighlights)
+                    showsCarouselPreview = true
                 }
                 .appGroupedListRow(position: .top)
 
@@ -1039,7 +1041,7 @@ private struct DebugSettingsView: View {
                     Haptics.selection()
                     let current = WhatsNewPreferences.currentVersion
                     let features = WhatsNewCatalog.featuresIntroduced(after: "0", throughIncluding: current)
-                    introPreview = WhatsNewPresentation(kind: .whatsNew(version: current), features: features)
+                    introPreview = WhatsNewPresentation(version: current, features: features)
                 }
                 .appGroupedListRow(position: .bottom)
             } header: {
@@ -1146,6 +1148,17 @@ private struct DebugSettingsView: View {
             }
             .presentationBackground(Color.sheetBg)
             .presentationDetents([.large])
+        }
+        // The carousel alone, without the sign-in step it ends in on a real first launch — the
+        // artwork and copy are what a preview here is for.
+        .fullScreenCover(isPresented: $showsCarouselPreview) {
+            OnboardingFlow(
+                items: VAOnboardingCarousel.items,
+                continueTitle: VAOnboardingCarousel.continueTitle,
+                completeTitle: VAOnboardingCarousel.continueTitle
+            ) {
+                showsCarouselPreview = false
+            }
         }
     }
 

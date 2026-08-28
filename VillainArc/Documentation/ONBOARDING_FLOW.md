@@ -1,13 +1,18 @@
 # Onboarding Flow
 
-This document explains how VillainArc gets from process launch to a ready app state. It covers first bootstrap, returning launch, profile onboarding, the required fitness-level and training-goal steps, the Apple Health permission prompt, and the terminal FCT account sign-in step.
+This document explains how VillainArc gets from process launch to a ready app state. It covers the
+front door (the intro carousel ending in the required FCT account sign-in), first bootstrap,
+returning launch, profile onboarding, the required fitness-level and training-goal steps, and the
+Apple Health permission prompt.
 
-This file is only about launch readiness. Ongoing profile editing after setup lives in the dedicated Profile surface (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
+This file is only about launch readiness. Ongoing profile editing after setup lives in the dedicated
+Profile surface (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
 
 ## Main Files
 
 - `Root/VillainArcApp.swift`
 - `Root/RootView.swift`
+- `Views/Onboarding/VAOnboardingCarousel.swift`
 - `Views/Onboarding/OnboardingView.swift`
 - `Data/Services/App/OnboardingManager.swift`
 - `Data/Services/App/DataManager.swift`
@@ -25,13 +30,44 @@ Startup is split across three pieces:
   - forwards Spotlight and Siri handoffs
   - reinstalls Health observers on process launch through the app delegate
 - `RootView`
-  - starts onboarding
+  - resumes the account, starts `VASync`, then starts onboarding
+  - holds the front door as the whole window, and the app only behind it
   - performs launch cleanup
   - waits for `.ready` before resuming unfinished work
 - `OnboardingManager`
   - owns the readiness state machine
 
-That split is deliberate. Onboarding owns readiness decisions; `RootView` owns when the foreground app may actually resume persisted work.
+That split is deliberate. Onboarding owns readiness decisions; `RootView` owns what the window
+holds and when the foreground app may actually resume persisted work.
+
+## The Front Door
+
+**No part of VillainArc exists without an FCT session.** The account is required, so a launch
+without one gets the account surface and nothing else: `RootView` renders it *instead of*
+`ContentView`, never as a sheet over it.
+
+First launch opens on the intro carousel — `FCTOnboarding.AccountOnboardingFlow` paging
+`VAOnboardingCarousel.items` (the app's pillars over its App Store artwork, in
+`Assets.xcassets/Onboarding`) and ending in the three-provider sign-in step. The carousel finishing
+never finishes onboarding: the flow completes only once a session exists, and the carousel cannot
+produce one. The front door is dark whatever the app's appearance setting says — a first launch has
+no setting yet.
+
+`OnboardingEntry.forLaunch` is the whole routing rule, and `OnboardingSequenceTests` pins it:
+
+| session | bootstrap marker | entry | what the user sees |
+|---|---|---|---|
+| no | no | `.welcome` | the carousel, then sign-in |
+| no | yes | `.account` | the sign-in gate alone — the device has met the app, it is only missing the session |
+| yes | no | `.firstRunSetup` | seeding, then the profile steps |
+| yes | yes | `.returningLaunch` | the short path to `.ready` |
+
+Signing in routes from the top again, which is what picks up the setup that launch still owes.
+
+Losing the session closes the app behind the gate again, whatever caused it — an involuntary
+expiry, or a sign-out whose local clear was refused because this device still holds unpushed work.
+A clean sign-out clears the local store *and* the bootstrap marker, so the next thing the user sees
+is the whole front door, carousel included.
 
 ## First Bootstrap vs Returning Launch
 
@@ -42,39 +78,17 @@ The bootstrap marker is `DataManager.exerciseCatalogVersionKey`.
 
 ## First Bootstrap
 
-First bootstrap does the slow path:
+First bootstrap runs behind the session, and does the slow path:
 
-1. check connectivity
-2. check iCloud sign-in state
-3. check CloudKit availability
-4. wait for CloudKit import completion
-5. seed the bundled exercise catalog
-6. reindex Spotlight
-7. ensure singleton records
-8. route into profile onboarding
+1. seed the bundled exercise catalog
+2. reindex Spotlight
+3. clean up incomplete authoring work
+4. ensure singleton records
+5. route into profile onboarding
 
-The critical rule is:
-
-- wait for CloudKit import before seeding the bundled exercise catalog
-
-That prevents duplicate built-in exercises when older cloud data is still arriving.
-
-Important implementation detail:
-
-- `CloudKitImportMonitor` starts at onboarding start on first bootstrap (before the explicit wait step) so the app does not miss an early import-complete event
-
-## Continue Without iCloud
-
-If iCloud is disabled, VillainArc can continue without cloud sync.
-
-That path still:
-
-- seeds the bundled exercise catalog locally
-- ensures singleton records
-- continues into profile onboarding
-- skips the first-bootstrap Spotlight reindex pass used by the iCloud-enabled bootstrap path
-
-The app becomes usable, but cloud recovery and cross-device sync are unavailable.
+The store is local-first with no cloud mirror, so seeding waits on nothing. Restoring the account's
+existing rows is the sync engine's job and is already running in the background from the sign-in
+that just happened; readiness never waits on a pull.
 
 ## Returning Launch
 
@@ -82,7 +96,8 @@ Returning launch does the short path:
 
 - ensure singleton records exist
 - route into missing profile steps if the profile is incomplete
-- route into the training-goal step if profile fields (including fitness level) are complete but no active training goal exists
+- route into the training-goal step if profile fields (including fitness level) are complete but no
+  active training goal exists
 - sync the bundled exercise catalog only if its version changed
 - decide whether the current Health permissions version still needs a prompt
 - otherwise transition directly to `.ready`
@@ -104,13 +119,17 @@ Fitness-level completeness requires both:
 
 VillainArc also requires one active `TrainingGoal` before setup is considered complete.
 
-`OnboardingView` uses a `NavigationStack` for the profile portion of onboarding. `OnboardingManager.state` chooses the initial entry point, but the per-step screens drive the forward navigation once the flow is active.
+These steps present as a sheet over the launch backdrop — the app itself is not behind them.
+`OnboardingView` uses a `NavigationStack` for the profile portion; `OnboardingManager.state`
+chooses the initial entry point, but the per-step screens drive the forward navigation once the
+flow is active. The sheet sizes itself to the step on screen by measuring that step's natural
+content height, so it follows Dynamic Type and localization instead of a hardcoded detent.
 
 ### New User Flow
 
-For a true first-time user, the profile flow is:
+For a true first-time user, the setup flow after sign-in is:
 
-`name -> health permissions -> birthday -> gender -> height -> fitness level -> training goal -> account sign-in`
+`name -> health permissions -> location permissions -> birthday -> gender -> height -> fitness level -> training goal`
 
 The in-flow Apple Health step comes immediately after the name step.
 
@@ -118,27 +137,34 @@ The in-flow Apple Health step comes immediately after the name step.
 
 For a returning user with an incomplete profile:
 
-- if the current Health permissions version still needs a prompt, onboarding starts with the Health step after name
+- if the current Health permissions version still needs a prompt, onboarding starts with the Health
+  step after name
 - otherwise onboarding jumps directly to the first missing required profile field
 
 For a returning user whose profile fields are complete but who has no active training goal:
 
 - onboarding jumps directly to the training-goal step
-- if the current Health permissions version still needs a prompt, the Health step appears before the training-goal step
+- if the current Health permissions version still needs a prompt, the Health step appears before the
+  training-goal step
 
 ## Apple Health Permission Prompt
 
-VillainArc treats Health as optional from a product perspective, but the launch flow still treats the standalone Health-permission screen as part of readiness when the current Health permissions version still needs a request.
+VillainArc treats Health as optional from a product perspective, but the launch flow still treats
+the standalone Health-permission screen as part of readiness when the current Health permissions
+version still needs a request.
 
 The prompt rule is versioned:
 
-- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write type set. Version `1.3` requests the added heart vitals, respiratory rate, sleeping wrist temperature, and dietary water permissions.
+- `HealthKitCatalog.permissionsCatalogVersion` represents the current read/write type set. Version
+  `1.3` requests the added heart vitals, respiratory rate, sleeping wrist temperature, and dietary
+  water permissions.
 - the app stores the last handled Health permissions version in shared defaults
 - onboarding and the standalone launch gate prompt only when:
   - the current permissions version differs from the stored handled version
   - and HealthKit still reports that the current type set should be requested
 - the handled version updates only when the user taps `Connect to Apple Health` or `Not Now`
-- if the user leaves the blocking screen without tapping either button, the prompt appears again on the next launch
+- if the user leaves the blocking screen without tapping either button, the prompt appears again on
+  the next launch
 
 ### In-Flow Prompt for New Users
 
@@ -147,21 +173,25 @@ For new users:
 - the Health step lives inside profile onboarding
 - tapping Connect requests authorization
 - the app tries to prefill birthday, gender, and height for confirmation
-- tapping `Not Now` marks the current Health permissions version as handled and skips the request for that version
+- tapping `Not Now` marks the current Health permissions version as handled and skips the request
+  for that version
 
 ### Standalone Prompt After Profile Completion
 
-If the current Health permissions version still needs a request after the profile is otherwise complete, onboarding enters `.healthPermissions`.
+If the current Health permissions version still needs a request after the profile is otherwise
+complete, onboarding enters `.healthPermissions`.
 
 That screen:
 
 - explains that VillainArc needs additional Health permissions for newly added or upcoming features
 - shows `Connect to Apple Health` and `Not Now`
-- marks the current Health permissions version as handled only when the user taps one of those buttons
+- marks the current Health permissions version as handled only when the user taps one of those
+  buttons
 - requests authorization only when the user taps `Connect to Apple Health`
 - then transitions to `.ready` whether access was granted or denied
 
-So the standalone Health prompt is effectively a launch gate that requires the user to explicitly handle the current permissions version once.
+So the standalone Health prompt is effectively a launch gate that requires the user to explicitly
+handle the current permissions version once.
 
 ## Post-Ready Health Pass
 
@@ -180,47 +210,60 @@ This does five jobs:
 - backfill Health mirrors, sleep nights and sleep blocks, and daily caches
 - reconcile older workout and weight exports
 - refresh all Health widgets after the manual sync pass
-- schedule or cancel the weekly Health coaching background refresh based on the current notification settings and system permissions
+- schedule or cancel the weekly Health coaching background refresh based on the current notification
+  settings and system permissions
 
-The observer reinstall matters because observer queries are also created earlier at process launch. If an earlier observer failed due to Health authorization state, the ready-time path can recreate it cleanly.
+The observer reinstall matters because observer queries are also created earlier at process launch.
+If an earlier observer failed due to Health authorization state, the ready-time path can recreate it
+cleanly.
 
 ## Failure and Retry States
 
-Before the app is ready, onboarding can enter a generic bootstrap error (seeding or singleton
-setup failed) with a Retry button that restarts the attempt. Sign-in failures are handled inside
-the account surface itself and never abandon the flow.
+Before the app is ready, onboarding can enter a generic bootstrap error (seeding or singleton setup
+failed) with a Retry button that restarts the attempt. Sign-in failures are handled inside the
+account surface itself and never abandon the flow.
 
 ## Reinstall Behavior
 
 On reinstall, the local store and defaults are gone; the account's data lives on the FCT platform.
-The app takes the first-bootstrap path again (seed, profile, health, sign-in), and enrollment after
+The app takes the front door again (carousel, sign-in, seed, profile, health), and enrollment after
 sign-in restores the account's rows in the background. The profile typed during setup pushes as the
 current truth; the account's workout history, plans, splits, and settings pull down and settle by
 LWW.
 
 ## Post-Ready Education Surface
 
-After the post-ready Health pass, `RootView` asks `WhatsNewPreferences.presentationOnLaunch()` what (if anything) to present as a one-time sheet. There is a single surface — the `WhatsNewSheet` — rendered in one of two modes:
+After the post-ready Health pass, `RootView` asks `WhatsNewPreferences.presentationOnLaunch()`
+whether this launch has a release to announce, and presents the `WhatsNewSheet` if it does: the
+aggregated highlights of every release the user hasn't seen yet
+(`WhatsNewCatalog.featuresIntroduced(after:throughIncluding:)`), so a user who skips versions (e.g.
+1.3 → 1.5) still sees every missed release's highlights in one sheet.
 
-- **Welcome** — a brand-new install (no stored version and no legacy pre-1.4 marker). Shows the app's main pillars (`WhatsNewCatalog.welcomeHighlights`) under a "Welcome to Villain Arc" header with a Get Started button.
-- **What's New** — a returning/updated user. Shows the aggregated highlights of every release the user hasn't seen yet (`WhatsNewCatalog.featuresIntroduced(after:throughIncluding:)`), so a user who skips versions (e.g. 1.3 → 1.5) still sees every missed release's highlights in one sheet.
+The decision logic (`WhatsNewPreferences`), pinned by `WhatsNewPresentationTests`:
 
-The decision logic (`WhatsNewPreferences`):
-
-- the last shown marketing version is stored in App Group `UserDefaults` (`whats_new_last_shown_version`)
+- the last shown marketing version is stored in App Group `UserDefaults`
+  (`whats_new_last_shown_version`)
 - already on the current version → present nothing, and advance the stored pointer immediately
-- no stored version **and** no legacy marker (`has_seen_onboarding_slideshow`, written by the removed pre-1.4 onboarding slideshow) → Welcome
-- otherwise → What's New for the unseen releases (nothing if those releases contribute no highlights, e.g. a minor bug-fix build)
+- no stored version **and** no legacy marker (`has_seen_onboarding_slideshow`, written by the
+  removed pre-1.4 onboarding slideshow) → a brand-new install: present nothing, because the
+  first-launch carousel is where a new user meets the app
+- otherwise → What's New for the unseen releases (nothing if those releases contribute no
+  highlights, e.g. a minor bug-fix build)
 
-The version it was shown for is marked seen on **any** dismissal (Continue/Get Started button or a swipe-away), via the sheet's `onDismiss`, so it never reappears on the next launch.
+The version it was shown for is marked seen on **any** dismissal (Continue button or a swipe-away),
+via the sheet's `onDismiss`, so it never reappears on the next launch.
 
-The per-version changelog and the Welcome highlights live in `WhatsNewCatalog`. To announce a release's features, append a `WhatsNewRelease` with its marketing version. The releases list starts at 1.4 — the 1.3 pillars are the Welcome content, so a user updating from 1.3 sees only what's new in 1.4.
+The per-version changelog lives in `WhatsNewCatalog`. To announce a release's features, append a
+`WhatsNewRelease` with its marketing version. The releases list starts at 1.4 — the 1.3 pillars are
+the app's introduction and live in the onboarding carousel, so a user updating from 1.3 sees only
+what's new in 1.4.
 
-This surface is a gating decision, not a state machine state. It does not block `.ready`; it layers on top via a SwiftUI sheet.
+This surface is a gating decision, not a state machine state. It does not block `.ready`; it layers
+on top via a SwiftUI sheet.
 
 ## Why `SetupGuard` Exists
 
-App Intents can run before the foreground app has completed the current launch’s onboarding path.
+App Intents can run before the foreground app has completed the current launch's onboarding path.
 
 `SetupGuard` exists to block intent work until:
 
@@ -230,4 +273,4 @@ App Intents can run before the foreground app has completed the current launch�
 - an active training goal exists
 - any additional no-active-flow requirement is satisfied
 
-That keeps shortcut/intents behavior aligned with the app’s actual readiness rules.
+That keeps shortcut/intents behavior aligned with the app's actual readiness rules.
