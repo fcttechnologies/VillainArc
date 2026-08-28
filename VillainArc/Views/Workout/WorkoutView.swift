@@ -62,13 +62,16 @@ struct WorkoutView: View {
                 Button("Change Title", systemImage: "pencil") {
                     showTitleEditorSheet = true
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutChangeTitleButton)
                 Button("Workout Notes", systemImage: "note.text") {
                     showNotesEditorSheet = true
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutNotesButton)
                 if workoutNotesMismatch {
                     Button("Notes Differ From Plan", systemImage: "exclamationmark.triangle") {
                         showNotesSyncEditor = true
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutNotesSyncButton)
                 }
                 Button("Pre Workout Context", systemImage: "bolt.fill") {
                     router.presentWorkoutSheet(.preWorkoutContext)
@@ -125,6 +128,7 @@ struct WorkoutView: View {
                                 Button(role: .confirm) {
                                     showExerciseEditSheet = false
                                 }
+                                .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseEditDoneButton)
                             }
                         }
                 }
@@ -317,6 +321,7 @@ struct WorkoutView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Delete \(exercise.name)")
             .accessibilityHint("Removes this exercise from the workout.")
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutExerciseRemoveButton(exercise))
 
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -423,6 +428,7 @@ struct WorkoutView: View {
                     dismissKeyboard()
                 }
                 .accessibilityLabel("Dismiss Keyboard")
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDismissKeyboardButton)
             } else if workout.exercises?.isEmpty ?? true {
                 Button("Cancel Workout", systemImage: "xmark", role: .close) {
                     deleteWorkout()

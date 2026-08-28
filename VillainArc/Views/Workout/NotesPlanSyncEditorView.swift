@@ -42,6 +42,7 @@ struct NotesPlanSyncEditorView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
                         .appCardStyle()
+                        .accessibilityIdentifier(AccessibilityIdentifiers.notesPlanSyncCurrentField)
                 }
 
                 Button {
@@ -53,6 +54,7 @@ struct NotesPlanSyncEditorView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .disabled(isSynced)
+                .accessibilityIdentifier(AccessibilityIdentifiers.notesPlanSyncUsePlanNotesButton)
             }
             .padding()
         }

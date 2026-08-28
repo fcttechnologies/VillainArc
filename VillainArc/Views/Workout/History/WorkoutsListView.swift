@@ -216,6 +216,7 @@ struct WorkoutsListView: View {
                 }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutsTypeFilterChip(filter.id))
     }
     
     private func workoutTypeFilter(for item: WorkoutHistoryItem) -> WorkoutTypeFilter {

@@ -91,6 +91,7 @@ struct WorkoutEffortPromptView: View {
                             selectedEffort = 0
                         }
                             .fontWeight(.semibold)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortClearButton)
                     } else {
                         Button("Skip", action: onSkip)
                             .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortSkipButton)

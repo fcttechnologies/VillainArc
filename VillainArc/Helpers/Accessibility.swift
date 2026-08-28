@@ -639,6 +639,45 @@ enum AccessibilityIdentifiers {
 
     static func onboardingTrainingGoalOption(_ kind: TrainingGoalKind) -> String { "onboardingTrainingGoalOption-\(kind.rawValue)" }
 
+    // MARK: - WorkoutView / ExerciseView / WorkoutDetailView
+    static let workoutChangeTitleButton = "workoutChangeTitleButton"
+    static let workoutNotesButton = "workoutNotesButton"
+    static let workoutNotesSyncButton = "workoutNotesSyncButton"
+    static let workoutExerciseEditDoneButton = "workoutExerciseEditDoneButton"
+    static let workoutDismissKeyboardButton = "workoutDismissKeyboardButton"
+    static let workoutDetailCloseButton = "workoutDetailCloseButton"
+    static let workoutDetailShareButton = "workoutDetailShareButton"
+    static let workoutFinishEffortClearButton = "workoutFinishEffortClearButton"
+    static let exerciseRestTimerPromptConfirmButton = "exerciseRestTimerPromptConfirmButton"
+    static let exerciseRestTimerPromptKeepCurrentButton = "exerciseRestTimerPromptKeepCurrentButton"
+    static let replaceExerciseKeepSetsButton = "replaceExerciseKeepSetsButton"
+    static let replaceExerciseClearSetsButton = "replaceExerciseClearSetsButton"
+    static let replaceExerciseCancelButton = "replaceExerciseCancelButton"
+    static let notesPlanSyncCurrentField = "notesPlanSyncCurrentField"
+    static let notesPlanSyncUsePlanNotesButton = "notesPlanSyncUsePlanNotesButton"
+    static let preWorkoutCloseButton = "preWorkoutCloseButton"
+    static let healthWorkoutDetailCloseButton = "healthWorkoutDetailCloseButton"
+    static let healthWorkoutRouteMapCloseButton = "healthWorkoutRouteMapCloseButton"
+    static let healthWorkoutHeartRateCloseButton = "healthWorkoutHeartRateCloseButton"
+
+    static func workoutExerciseRemoveButton(_ exercise: ExercisePerformance) -> String { "workoutExerciseRemoveButton-\(exercise.catalogID)-\(exercise.index)" }
+
+    static func exerciseNotesSyncButton(_ exercise: ExercisePerformance) -> String { "exerciseNotesSyncButton-\(exercise.catalogID)-\(exercise.index)" }
+
+    static func exerciseSuggestionSettingsButton(_ exercise: ExercisePerformance) -> String { "exerciseSuggestionSettingsButton-\(exercise.catalogID)-\(exercise.index)" }
+
+    static func exerciseReferenceColumnToggle(_ exercise: ExercisePerformance) -> String { "exerciseReferenceColumnToggle-\(exercise.catalogID)-\(exercise.index)" }
+
+    static func filteredExerciseInfoButton(_ exercise: Exercise) -> String { "filteredExerciseInfoButton-\(exercise.catalogID)" }
+
+    static func filteredExerciseSelectionToggle(_ exercise: Exercise) -> String { "filteredExerciseSelectionToggle-\(exercise.catalogID)" }
+
+    static func filteredExerciseSuggestionSettingsButton(_ exercise: Exercise) -> String { "filteredExerciseSuggestionSettingsButton-\(exercise.catalogID)" }
+
+    static func healthWorkoutDetailExpandButton(_ cardRawValue: String) -> String { "healthWorkoutDetailExpandButton-\(cardRawValue)" }
+
+    static func workoutsTypeFilterChip(_ filterID: String) -> String { "workoutsTypeFilterChip-\(slug(filterID))" }
+
     // MARK: - WorkoutPlanView / WorkoutPlanDetailView / WorkoutPlansListView
     static let workoutPlanChangeTitleButton = "workoutPlanChangeTitleButton"
     static let workoutPlanNotesButton = "workoutPlanNotesButton"

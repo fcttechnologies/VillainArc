@@ -64,6 +64,7 @@ struct WorkoutDetailView: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailCloseButton)
                 }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -126,8 +127,10 @@ struct WorkoutDetailView: View {
     private func shareControl<Label: View>(@ViewBuilder label: () -> Label) -> some View {
         if let shareImage {
             ShareLink(item: shareImage, preview: SharePreview(workout.title, image: shareImage), label: label)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailShareButton)
         } else {
             ShareLink(item: shareableSummary, label: label)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutDetailShareButton)
         }
     }
 

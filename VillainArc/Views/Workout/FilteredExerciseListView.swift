@@ -116,6 +116,7 @@ struct FilteredExerciseListView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.primary)
+            .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseInfoButton(exercise))
 
             Spacer()
 
@@ -132,6 +133,7 @@ struct FilteredExerciseListView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(isSelected ? "Remove from selection" : "Add to selection")
+            .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseSelectionToggle(exercise))
         }
         .appGroupedListRow(
             position: rowPosition(for: index, count: count),
@@ -198,6 +200,7 @@ struct FilteredExerciseListView: View {
         } label: {
             Label("Suggestion Settings", systemImage: "slider.horizontal.3")
         }
+        .accessibilityIdentifier(AccessibilityIdentifiers.filteredExerciseSuggestionSettingsButton(exercise))
     }
     
     @ViewBuilder

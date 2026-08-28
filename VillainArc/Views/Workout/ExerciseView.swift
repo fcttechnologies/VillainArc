@@ -157,6 +157,7 @@ struct ExerciseView: View {
                             .buttonStyle(.plain)
                             .accessibilityLabel("Notes differ from plan")
                             .accessibilityHint("Opens an editor to compare your notes with the plan and sync them.")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseNotesSyncButton(exercise))
                         }
                     }
                     .padding(.top, 10)
@@ -170,6 +171,7 @@ struct ExerciseView: View {
                     } label: {
                         Label("Suggestion Settings", systemImage: "slider.horizontal.3")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSuggestionSettingsButton(exercise))
                     Button {
                         Haptics.selection()
                         showReplaceExerciseSheet = true
@@ -225,9 +227,11 @@ struct ExerciseView: View {
                 Button(restTimerPromptConfirmLabel) {
                     applyRestTimerPrompt()
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimerPromptConfirmButton)
                 Button("Keep Current", role: .cancel) {
                     Haptics.selection()
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseRestTimerPromptKeepCurrentButton)
             } message: {
                 Text(restTimerPromptMessage)
             }
@@ -363,6 +367,7 @@ struct ExerciseView: View {
                         toggleReferenceColumn()
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseReferenceColumnToggle(exercise))
                 } else {
                     Text(shouldUseTargetReference ? "Target" : "Previous")
                 }

@@ -52,6 +52,7 @@ struct HealthWorkoutDetailView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close", systemImage: "xmark") { dismiss() }
                         .accessibilityLabel(Text("Close"))
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutDetailCloseButton)
                 }
             }
         }
@@ -295,6 +296,7 @@ struct HealthWorkoutDetailContent: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(Text(accessibilityLabel))
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutDetailExpandButton(expandedCard.rawValue))
         }
     }
 
@@ -625,6 +627,7 @@ private struct ExpandedHealthWorkoutRouteView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(Text("Close"))
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutRouteMapCloseButton)
             .padding()
         }
         .task(id: coordinates.count) {
@@ -655,6 +658,7 @@ private struct ExpandedHealthWorkoutHeartRateView: View {
                         onClose()
                     }
                     .accessibilityLabel(Text("Close"))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutHeartRateCloseButton)
                 }
             }
         }

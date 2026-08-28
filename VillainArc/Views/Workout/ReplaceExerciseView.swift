@@ -115,16 +115,19 @@ struct ReplaceExerciseView: View {
                     onReplace(selected, true)
                     dismiss()
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseKeepSetsButton)
                 Button("Clear Sets", role: .destructive) {
                     guard let selected = selectedExercise else { return }
                     Haptics.selection()
                     onReplace(selected, false)
                     dismiss()
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseClearSetsButton)
                 Button("Cancel", role: .cancel) {
                     selectedExercises.removeAll()
                     selectedExerciseIDs.removeAll()
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.replaceExerciseCancelButton)
             }
             .sheet(isPresented: $showMuscleFilterSheet) {
                 MuscleFilterSheetView(selectedMuscles: selectedMuscles) { updatedMuscles in

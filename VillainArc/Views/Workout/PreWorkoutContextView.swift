@@ -64,6 +64,7 @@ struct PreWorkoutContextView: View {
                         Haptics.selection()
                         dismiss()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.preWorkoutCloseButton)
                 }
             }
             .navigationTitle("How are you feeling?")
