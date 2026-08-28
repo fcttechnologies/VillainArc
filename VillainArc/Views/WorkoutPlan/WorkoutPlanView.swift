@@ -49,9 +49,11 @@ struct WorkoutPlanView: View {
                     Button("Change Title", systemImage: "pencil") {
                         showTitleEditorSheet = true
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanChangeTitleButton)
                     Button("Plan Notes", systemImage: "note.text") {
                         showNotesEditorSheet = true
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanNotesButton)
                 }
                 .toolbarTitleDisplayMode(.inline)
                 .scrollContentBackground(.hidden)
@@ -97,6 +99,7 @@ struct WorkoutPlanView: View {
                                 dismissKeyboard()
                             }
                             .accessibilityLabel("Dismiss Keyboard")
+                            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDismissKeyboardButton)
                         } else {
                             Button(isEditingExistingPlan || plan.completed ? "Done" : "Save") {
                                 Haptics.selection()
@@ -153,6 +156,7 @@ struct WorkoutPlanView: View {
                                     Button(role: .confirm) {
                                         showExerciseEditSheet = false
                                     }
+                                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseEditDoneButton)
                                 }
                             }
                 }
@@ -198,6 +202,7 @@ struct WorkoutPlanView: View {
                     Button("Delete Plan", role: .destructive) {
                         confirmDeletePlanAndDismiss()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDeletePlanConfirmButton)
                 } message: {
                     Text("Removing the last exercise will delete this plan.")
                 }
@@ -206,9 +211,11 @@ struct WorkoutPlanView: View {
                         guard let planDeletionAssessment else { return }
                         performDeletePlanAndDismiss(using: planDeletionAssessment)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDeleteAssessmentConfirmButton)
                     Button("Cancel", role: .cancel) {
                         planDeletionAssessment = nil
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDeleteAssessmentCancelButton)
                 } message: {
                     Text(planDeletionAssessment?.confirmationMessage ?? "")
                 }
@@ -281,6 +288,7 @@ struct WorkoutPlanView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Delete \(exercise.name)")
             .accessibilityHint("Removes this exercise from the workout plan.")
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseRemoveButton(exercise))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.name)
@@ -598,6 +606,7 @@ private struct WorkoutPlanExerciseView: View {
             } label: {
                 Label("Suggestion Settings", systemImage: "slider.horizontal.3")
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanExerciseSuggestionSettingsButton(exercise))
             Button {
                 Haptics.selection()
                 showReplaceExerciseSheet = true

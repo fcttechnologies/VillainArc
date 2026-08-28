@@ -136,6 +136,7 @@ struct PlanBuilderSheet: View {
                         Haptics.selection()
                         dismiss()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.planBuilderCloseButton)
                 }
             }
             .navigationDestination(for: PlanBuilderNavStep.self) { step in

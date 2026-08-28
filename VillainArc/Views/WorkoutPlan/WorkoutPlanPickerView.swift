@@ -38,6 +38,7 @@ struct WorkoutPlanPickerView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .navigationLinkIndicatorVisibility(.hidden)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerRow(plan))
                 }
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanPickerList)

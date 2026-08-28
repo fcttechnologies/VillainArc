@@ -639,6 +639,40 @@ enum AccessibilityIdentifiers {
 
     static func onboardingTrainingGoalOption(_ kind: TrainingGoalKind) -> String { "onboardingTrainingGoalOption-\(kind.rawValue)" }
 
+    // MARK: - WorkoutPlanView / WorkoutPlanDetailView / WorkoutPlansListView
+    static let workoutPlanChangeTitleButton = "workoutPlanChangeTitleButton"
+    static let workoutPlanNotesButton = "workoutPlanNotesButton"
+    static let workoutPlanDismissKeyboardButton = "workoutPlanDismissKeyboardButton"
+    static let workoutPlanExerciseEditDoneButton = "workoutPlanExerciseEditDoneButton"
+    static let workoutPlanDeletePlanConfirmButton = "workoutPlanDeletePlanConfirmButton"
+    static let workoutPlanDeleteAssessmentConfirmButton = "workoutPlanDeleteAssessmentConfirmButton"
+    static let workoutPlanDeleteAssessmentCancelButton = "workoutPlanDeleteAssessmentCancelButton"
+    static let workoutPlanDetailCloseButton = "workoutPlanDetailCloseButton"
+    static let workoutPlanDetailSplitAssignmentMenu = "workoutPlanDetailSplitAssignmentMenu"
+    static let workoutPlanDetailChangePlanButton = "workoutPlanDetailChangePlanButton"
+    static let workoutPlanDetailClearPlanButton = "workoutPlanDetailClearPlanButton"
+    static let workoutPlanDetailShareButton = "workoutPlanDetailShareButton"
+    static let workoutPlanDetailAllSessionsLink = "workoutPlanDetailAllSessionsLink"
+    static let workoutPlansDeleteAllAssessmentConfirmButton = "workoutPlansDeleteAllAssessmentConfirmButton"
+    static let workoutPlansDeleteAllAssessmentCancelButton = "workoutPlansDeleteAllAssessmentCancelButton"
+    static let workoutPlansDeleteSelectionConfirmButton = "workoutPlansDeleteSelectionConfirmButton"
+    static let workoutPlansDeleteSelectionCancelButton = "workoutPlansDeleteSelectionCancelButton"
+    static let planBuilderCloseButton = "planBuilderCloseButton"
+    static let planImportCloseButton = "planImportCloseButton"
+    static let aiPlanCloseButton = "aiPlanCloseButton"
+
+    static func workoutPlanExerciseRemoveButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseRemoveButton-\(exercise.catalogID)-\(exercise.index)" }
+
+    static func workoutPlanExerciseSuggestionSettingsButton(_ exercise: ExercisePrescription) -> String { "workoutPlanExerciseSuggestionSettingsButton-\(exercise.catalogID)-\(exercise.index)" }
+
+    static func workoutPlanDetailSessionRow(_ workout: WorkoutSession) -> String { "workoutPlanDetailSessionRow-\(workout.id.uuidString)" }
+
+    static func workoutPlanAllSessionsRow(_ workout: WorkoutSession) -> String { "workoutPlanAllSessionsRow-\(workout.id.uuidString)" }
+
+    static func workoutPlanPickerRow(_ plan: WorkoutPlan) -> String { "workoutPlanPickerRow-\(plan.id)" }
+
+    static func workoutPlanRowFavoriteSwipeButton(_ plan: WorkoutPlan) -> String { "workoutPlanRowFavoriteSwipeButton-\(plan.id)" }
+
     // MARK: - ProfileEditorViews
     static let profileBirthdayEditorPicker = "profileBirthdayEditorPicker"
     static let profileBirthdayEditorCloseButton = "profileBirthdayEditorCloseButton"

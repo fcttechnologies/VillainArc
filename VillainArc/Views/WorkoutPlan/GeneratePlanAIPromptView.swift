@@ -102,6 +102,7 @@ struct GeneratePlanAIPromptView: View {
                         dismiss()
                     }
                     .disabled(isGenerating)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.aiPlanCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if isGenerating {

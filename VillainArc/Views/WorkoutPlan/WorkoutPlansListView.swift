@@ -35,6 +35,7 @@ struct WorkoutPlansListView: View {
                             Task { await IntentDonations.donateToggleWorkoutPlanFavorite(workoutPlan: plan) }
                         }
                         .tint(.yellow)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanRowFavoriteSwipeButton(plan))
                     }
             }
             .onDelete(perform: deleteWorkoutPlan)
@@ -62,9 +63,11 @@ struct WorkoutPlansListView: View {
                 guard let deleteAllAssessment else { return }
                 performDeleteAll(using: deleteAllAssessment)
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllAssessmentConfirmButton)
             Button("Cancel", role: .cancel) {
                 deleteAllAssessment = nil
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteAllAssessmentCancelButton)
         } message: {
             Text(deleteAllAssessment?.confirmationMessage ?? "")
         }
@@ -73,9 +76,11 @@ struct WorkoutPlansListView: View {
                 guard let deleteSelectionAssessment else { return }
                 performDeleteSelection(using: deleteSelectionAssessment)
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteSelectionConfirmButton)
             Button("Cancel", role: .cancel) {
                 deleteSelectionAssessment = nil
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansDeleteSelectionCancelButton)
         } message: {
             Text(deleteSelectionAssessment?.confirmationMessage ?? "")
         }

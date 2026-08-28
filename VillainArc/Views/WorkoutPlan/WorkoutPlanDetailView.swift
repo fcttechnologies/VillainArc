@@ -186,6 +186,7 @@ struct WorkoutPlanDetailView: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailCloseButton)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -248,12 +249,15 @@ struct WorkoutPlanDetailView: View {
                             Haptics.selection()
                             splitAssignmentActions.onChangePlan()
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailChangePlanButton)
 
                         Button("Clear Plan", systemImage: "xmark.circle", role: .destructive) {
                             Haptics.selection()
                             splitAssignmentActions.onClearPlan()
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailClearPlanButton)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSplitAssignmentMenu)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -322,8 +326,10 @@ struct WorkoutPlanDetailView: View {
     private func shareControl<Label: View>(@ViewBuilder label: () -> Label) -> some View {
         if let shareImage {
             ShareLink(item: shareImage, preview: SharePreview(plan.title, image: shareImage), label: label)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailShareButton)
         } else {
             ShareLink(item: shareableSummary, label: label)
+                .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailShareButton)
         }
     }
 
@@ -458,6 +464,7 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
                             .font(.subheadline)
                             .fontWeight(.semibold)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailAllSessionsLink)
                 }
             }
 
@@ -469,6 +476,7 @@ private struct WorkoutPlanDetailBackgroundModifier: ViewModifier {
                         WorkoutRowCard(workout: workout)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanDetailSessionRow(workout))
                 }
             }
             .accessibilityIdentifier("workoutPlanDetailPlanHistory")
@@ -805,6 +813,7 @@ private struct WorkoutPlanAllSessionsView: View {
                         WorkoutRowCard(workout: workout)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanAllSessionsRow(workout))
                 }
             }
             .padding()

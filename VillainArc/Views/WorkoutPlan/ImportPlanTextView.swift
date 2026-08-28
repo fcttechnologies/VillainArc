@@ -69,6 +69,7 @@ struct ImportPlanTextView: View {
                         dismiss()
                     }
                     .disabled(isImporting)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.planImportCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if isImporting {
