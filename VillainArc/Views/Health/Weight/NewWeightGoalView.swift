@@ -278,6 +278,7 @@ struct NewWeightGoalView: View {
                                 Haptics.selection()
                                 dismissKeyboard()
                             }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthNewWeightGoalEstimatedRateButton)
                         }
                     }
                 }

@@ -117,6 +117,7 @@ private struct SleepWeekdayChartSection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthSleepMetricPicker)
 
             WeekdayAverageChart(presentation: presentation, points: points, tint: tint, selectedWeekday: $selectedWeekday, accessibilityLabel: AccessibilityText.healthSleepWeekdayChartLabel, yAxisValueLabel: valueText)
         }
@@ -569,6 +570,7 @@ private struct SleepHistoryMainSection: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(sleepGoalAccessibilityLabel)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthSleepGoalButton)
                 }
                 .bold()
                 .fontDesign(.rounded)
@@ -612,6 +614,7 @@ private struct SleepHistoryMainSection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthSleepHistoryRangePicker)
             .onChange(of: selectedRange) {
                 Haptics.selection()
                 selectedDate = nil

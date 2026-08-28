@@ -34,9 +34,11 @@ struct NewHydrationEntryView: View {
             Form {
                 Section {
                     DatePicker("Date", selection: $selectedDate, in: ...Date.now, displayedComponents: .date)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthAddHydrationEntryDatePicker)
                         .appGroupedListRow(position: .top)
 
                     DatePicker("Time", selection: $selectedTime, in: ...Date.now, displayedComponents: .hourAndMinute)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthAddHydrationEntryTimePicker)
                         .appGroupedListRow(position: .bottom)
                 }
 
@@ -45,6 +47,7 @@ struct NewHydrationEntryView: View {
                         TextField("Water", text: $volumeText)
                             .keyboardType(.decimalPad)
                             .focused($isVolumeFieldFocused)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthAddHydrationEntryVolumeField)
 
                         Text(hydrationUnit.unitLabel)
                             .foregroundStyle(.secondary)
@@ -62,6 +65,7 @@ struct NewHydrationEntryView: View {
                     Button("Save", systemImage: "checkmark", role: .confirm) {
                         save()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthAddHydrationEntryConfirmButton)
                     .labelStyle(.iconOnly)
                     .disabled(!canSave)
                 }

@@ -113,6 +113,7 @@ struct NewSleepGoalView: View {
                                 }
                             }
                             .pickerStyle(.wheel)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthNewSleepGoalHoursPicker)
 
                             Picker("Minutes", selection: $targetMinutes) {
                                 ForEach(availableMinuteOptions, id: \.self) { option in
@@ -120,6 +121,7 @@ struct NewSleepGoalView: View {
                                 }
                             }
                             .pickerStyle(.wheel)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthNewSleepGoalMinutesPicker)
                         }
                     }
                     .appGroupedListRow(position: .single)
@@ -137,6 +139,7 @@ struct NewSleepGoalView: View {
                     Button("Save", systemImage: "checkmark", role: .confirm) {
                         save()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewSleepGoalSaveButton)
                     .labelStyle(.iconOnly)
                     .disabled(!canSave)
                 }

@@ -202,6 +202,7 @@ struct CardioActiveSessionView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.glassProminent)
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioConnectAppleHealthButton)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -244,6 +245,7 @@ struct CardioActiveSessionView: View {
                         .fontWeight(.semibold)
                         .monospacedDigit()
                         .foregroundStyle(speedFocused ? Color.primary : Color.blue)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.cardioTreadmillSpeedField)
                 }
                 .padding(.vertical, 12)
                 .appGroupedStackRow(position: .top)
@@ -264,6 +266,7 @@ struct CardioActiveSessionView: View {
                         .fontWeight(.semibold)
                         .monospacedDigit()
                         .foregroundStyle(inclineFocused ? Color.primary : Color.blue)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.cardioTreadmillInclineField)
                 }
                 .padding(.vertical, 12)
                 .appGroupedStackRow(position: .bottom)
@@ -304,6 +307,7 @@ struct CardioActiveSessionView: View {
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
+                                .accessibilityIdentifier(AccessibilityIdentifiers.cardioTreadmillIntervalDeleteButton)
                             }
                         }
                     }
@@ -316,7 +320,9 @@ struct CardioActiveSessionView: View {
         }
         .alert("Cancel Cardio Session?", isPresented: $showDeleteOnlyIntervalAlert) {
             Button("Cancel Session", role: .destructive) { router.cancelCardioSession(session) }
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioCancelSessionConfirmButton)
             Button("Keep Going", role: .cancel) {}
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioCancelSessionKeepGoingButton)
         } message: {
             Text("Deleting your only interval will cancel this cardio session.")
         }

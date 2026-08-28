@@ -100,6 +100,7 @@ struct HealthTrendsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthTrendsRangePicker)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     HealthTrendCard(metric: .weight, range: range)
@@ -421,6 +422,7 @@ private struct HealthTrendDetailSheet: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthTrendDetailRangePicker)
 
                 if points.count > 1 {
                     Chart(points) { point in
@@ -469,6 +471,7 @@ private struct HealthTrendDetailSheet: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Done") { dismiss() }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthTrendDetailDoneButton)
             }
         }
     }

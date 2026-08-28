@@ -81,6 +81,7 @@ struct HydrationGoalSummaryCard: View {
         }
         .buttonStyle(.glass)
         .buttonBorderShape(.roundedRectangle(radius: 12))
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthHydrationGoalSummaryButton)
     }
 }
 
@@ -103,6 +104,7 @@ struct HydrationGoalHistoryView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             deleteGoal(goal)
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthHydrationGoalDeleteButton(goal))
                     }
             }
         }
@@ -120,6 +122,7 @@ struct HydrationGoalHistoryView: View {
                     Image(systemName: "plus")
                         .font(.title3)
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthHydrationGoalHistoryAddButton)
             }
         }
         .overlay {
@@ -253,6 +256,7 @@ struct NewHydrationGoalView: View {
                         TextField("Target", text: $targetText)
                             .keyboardType(.decimalPad)
                             .focused($isFieldFocused)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthNewHydrationGoalTargetField)
 
                         Text(hydrationUnit.unitLabel)
                             .foregroundStyle(.secondary)
@@ -273,6 +277,7 @@ struct NewHydrationGoalView: View {
                     Button("Save", systemImage: "checkmark", role: .confirm) {
                         save()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewHydrationGoalSaveButton)
                     .labelStyle(.iconOnly)
                     .disabled(!canSave)
                 }

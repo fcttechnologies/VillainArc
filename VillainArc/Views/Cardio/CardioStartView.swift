@@ -249,6 +249,7 @@ private struct CaptureModeCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityIdentifier(AccessibilityIdentifiers.cardioCaptureModeCard(title))
     }
 }
 
@@ -299,5 +300,6 @@ private struct PermissionRow: View {
         .buttonStyle(.plain)
         .disabled(isGranted)
         .appGroupedStackRow(position: position)
+        .accessibilityIdentifier(AccessibilityIdentifiers.cardioStartPermissionRow(title))
     }
 }

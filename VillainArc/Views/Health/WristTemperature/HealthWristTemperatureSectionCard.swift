@@ -66,5 +66,6 @@ struct HealthWristTemperatureSectionCard: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthWristTemperatureSectionCard)
     }
 }

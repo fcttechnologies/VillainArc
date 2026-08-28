@@ -171,5 +171,6 @@ private struct HealthVitalMetricCard<ChartContent: View>: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthHeartSectionCard(title))
     }
 }

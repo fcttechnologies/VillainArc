@@ -67,5 +67,6 @@ struct HealthRespiratoryRateSectionCard: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthRespiratoryRateSectionCard)
     }
 }

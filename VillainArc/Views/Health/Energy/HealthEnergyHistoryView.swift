@@ -276,6 +276,7 @@ private struct HealthEnergyMainChartSection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthEnergyHistoryRangePicker)
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()

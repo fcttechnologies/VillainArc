@@ -121,6 +121,7 @@ struct HealthHydrationSectionCard: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthHydrationSectionCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(String(localized: "Hydration today \(hydrationVolumeText(todayTotal.totalVolume, unit: hydrationUnit)) \(hydrationUnit.unitLabel)."))
     }
@@ -345,6 +346,7 @@ private struct HealthHydrationMainChartSection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthHydrationHistoryRangePicker)
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()
@@ -411,6 +413,7 @@ private struct HealthHydrationMainChartSection: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(goalAccessibilityLabel)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthHydrationGoalButton)
             }
             .bold()
             .fontDesign(.rounded)

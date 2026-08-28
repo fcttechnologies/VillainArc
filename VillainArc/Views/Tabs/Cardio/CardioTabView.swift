@@ -298,6 +298,7 @@ struct CardioTabView: View {
                 }
                 .font(.subheadline.weight(.semibold))
                 .accessibilityHint(Text("Opens all cardio history filtered to your cardio workouts."))
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioViewAllHistoryButton)
             }
 
             VStack(spacing: 0) {
@@ -322,6 +323,7 @@ struct CardioTabView: View {
                                 CardioHealthWorkoutHistoryRow(workout: hw)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.cardioHealthWorkoutHistoryRow(uuid: hw.healthWorkoutUUID.uuidString))
                         }
                     }
                     .appGroupedStackRow(position: rowPosition(for: index, count: recentCardio.count))

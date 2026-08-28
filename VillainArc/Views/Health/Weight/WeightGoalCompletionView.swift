@@ -205,6 +205,7 @@ struct WeightGoalCompletionView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glass)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalCompletionKeepActiveButton)
             }
             .font(.title3)
             .fontWeight(.semibold)
@@ -267,6 +268,7 @@ struct WeightGoalCompletionView: View {
             .buttonSizing(.flexible)
             .buttonStyle(.glassProminent)
             .tint(.red)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalCompletionPrimaryButton)
         } else {
             Button {
                 finishGoal(using: action)
@@ -276,6 +278,7 @@ struct WeightGoalCompletionView: View {
             }
             .buttonSizing(.flexible)
             .buttonStyle(.glassProminent)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalCompletionPrimaryButton)
         }
     }
     

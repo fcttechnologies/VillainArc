@@ -88,6 +88,7 @@ struct TrainingConditionHistoryView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             delete(period)
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionDeleteButton(period))
                     }
             }
         }
@@ -168,11 +169,13 @@ private struct TrainingConditionHistoryRow: View {
                     if let onEdit {
                         Button("Edit") { onEdit() }
                             .buttonStyle(.glass)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionEditButton)
                     }
                     Spacer()
                     if let onEnd {
                         Button("End") { onEnd() }
                             .buttonStyle(.glass)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionEndButton)
                     }
                 }
             }

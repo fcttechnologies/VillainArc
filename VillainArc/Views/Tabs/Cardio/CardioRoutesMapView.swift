@@ -148,6 +148,7 @@ struct CardioRoutesMapView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text("\(route.title) route"))
         .accessibilityHint(Text("Shows distance, time, and pace, and lets you open the full session."))
+        .accessibilityIdentifier(AccessibilityIdentifiers.cardioRouteMarker(route.id))
         .popover(item: Binding(get: { selectedRoute?.id == route.id ? selectedRoute : nil }, set: { selectedRoute = $0 })) { route in
             CardioRoutePopover(route: route, distanceUnit: distanceUnit) {
                 selectedRoute = nil
@@ -191,6 +192,7 @@ private struct CardioRoutePopover: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.glassProminent)
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioRouteViewFullyButton)
         }
         .padding(16)
         .frame(minWidth: 260)

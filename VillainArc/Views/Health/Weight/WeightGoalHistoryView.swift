@@ -25,12 +25,14 @@ struct WeightGoalHistoryView: View {
                                 router.presentWeightGoalCompletion(for: goal, trigger: .manualCompletion)
                             }
                             .tint(.blue)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalCompleteSwipeButton(goal))
                         }
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             deleteGoal(goal)
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightGoalDeleteButton(goal))
                     }
             }
         }

@@ -293,6 +293,7 @@ private struct StepsDistanceMainChartSection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsHistoryRangePicker)
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()

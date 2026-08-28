@@ -16,6 +16,7 @@ struct SleepGoalHistoryView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             deleteGoal(goal)
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthSleepGoalDeleteButton(goal))
                     }
             }
         }

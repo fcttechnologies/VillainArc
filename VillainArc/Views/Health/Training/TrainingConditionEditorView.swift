@@ -189,6 +189,7 @@ struct TrainingConditionEditorView: View {
                 }
                 .buttonStyle(.glass)
                 .buttonSizing(.flexible)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionViewHistoryButton)
             }
         }
     }
@@ -233,6 +234,7 @@ struct TrainingConditionEditorView: View {
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
                 .buttonStyle(.glass)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionClearEndDateButton)
             }
         }
         .padding()
@@ -276,6 +278,7 @@ struct TrainingConditionEditorView: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionKindOption(choice.id))
     }
 
     private func impactButton(for impact: TrainingImpact) -> some View {
@@ -291,6 +294,7 @@ struct TrainingConditionEditorView: View {
                         .padding(.vertical, 4)
                 }
                 .buttonStyle(.glassProminent)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionImpactOption(impact))
             } else {
                 Button {
                     Haptics.selection()
@@ -300,6 +304,7 @@ struct TrainingConditionEditorView: View {
                         .padding(.vertical, 4)
                 }
                 .buttonStyle(.glass)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthTrainingConditionImpactOption(impact))
             }
         }
         .fontWeight(.semibold)

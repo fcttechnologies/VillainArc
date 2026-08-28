@@ -346,6 +346,7 @@ private struct WeightHistoryMainSection: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightHistoryRangePicker)
                 .onChange(of: selectedRange) { Haptics.selection() }
             }
             .padding()
@@ -381,6 +382,7 @@ private struct WeightHistoryMainSection: View {
                 Haptics.selection()
                 onAddEntry()
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthWeightHistoryLogWeightButton)
         }
     }
 

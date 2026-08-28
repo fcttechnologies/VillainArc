@@ -85,6 +85,7 @@ struct StepsGoalSummaryCard: View {
         }
         .buttonStyle(.glass)
         .buttonBorderShape(.roundedRectangle(radius: 12))
+        .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsGoalSummaryButton)
     }
 }
 
@@ -104,6 +105,7 @@ struct StepsGoalHistoryView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             deleteGoal(goal)
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.healthStepsGoalDeleteButton(goal))
                     }
             }
         }
@@ -266,6 +268,7 @@ struct NewStepsGoalView: View {
                         TextField("Target Steps", text: $targetStepsText)
                             .keyboardType(.numberPad)
                             .focused($isFieldFocused)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.healthNewStepsGoalTargetField)
 
                         Text("steps")
                             .foregroundStyle(.secondary)
@@ -286,6 +289,7 @@ struct NewStepsGoalView: View {
                     Button("Save", systemImage: "checkmark", role: .confirm) {
                         save()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.healthNewStepsGoalSaveButton)
                     .labelStyle(.iconOnly)
                     .disabled(!canSave)
                 }

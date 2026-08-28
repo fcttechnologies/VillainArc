@@ -103,6 +103,7 @@ struct CardioSessionDetailView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close", systemImage: "xmark") { dismiss() }
                         .accessibilityLabel(Text("Close"))
+                        .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailCloseButton)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -132,6 +133,7 @@ struct CardioSessionDetailView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(Text(showsCloseButton ? "Close" : "Back"))
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailBackButton)
 
             Spacer()
 
@@ -152,8 +154,10 @@ struct CardioSessionDetailView: View {
     private func shareControl<Label: View>(@ViewBuilder label: () -> Label) -> some View {
         if let shareImage {
             ShareLink(item: shareImage, preview: SharePreview(session.displayTitle, image: shareImage), label: label)
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailShareButton)
         } else {
             ShareLink(item: shareableSummary, label: label)
+                .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailShareButton)
         }
     }
 

@@ -147,6 +147,26 @@ enum AccessibilityIdentifiers {
     static func cardioMetricTile(_ metricTitle: String) -> String { "cardioMetricTile-\(slug(metricTitle))" }
     static func cardioHistoryRow(sessionID: String) -> String { "cardioHistoryRow-\(sessionID)" }
 
+    static let cardioConnectAppleHealthButton = "cardioConnectAppleHealthButton"
+    static let cardioTreadmillSpeedField = "cardioTreadmillSpeedField"
+    static let cardioTreadmillInclineField = "cardioTreadmillInclineField"
+    static let cardioTreadmillIntervalDeleteButton = "cardioTreadmillIntervalDeleteButton"
+    static let cardioCancelSessionConfirmButton = "cardioCancelSessionConfirmButton"
+    static let cardioCancelSessionKeepGoingButton = "cardioCancelSessionKeepGoingButton"
+    static let cardioSessionDetailCloseButton = "cardioSessionDetailCloseButton"
+    static let cardioSessionDetailBackButton = "cardioSessionDetailBackButton"
+    static let cardioSessionDetailShareButton = "cardioSessionDetailShareButton"
+    static let cardioRouteViewFullyButton = "cardioRouteViewFullyButton"
+    static let cardioViewAllHistoryButton = "cardioViewAllHistoryButton"
+
+    static func cardioCaptureModeCard(_ title: String) -> String { "cardioCaptureModeCard-\(slug(title))" }
+
+    static func cardioStartPermissionRow(_ title: String) -> String { "cardioStartPermissionRow-\(slug(title))" }
+
+    static func cardioRouteMarker(_ routeID: String) -> String { "cardioRouteMarker-\(slug(routeID))" }
+
+    static func cardioHealthWorkoutHistoryRow(uuid: String) -> String { "cardioHealthWorkoutHistoryRow-\(uuid)" }
+
     static func healthTrainingConditionRow(_ period: TrainingConditionPeriod) -> String { "healthTrainingConditionRow-\(period.persistentModelID)" }
 
     static func healthWeightEntryRow(_ entry: WeightEntry) -> String { "healthWeightEntryRow-\(entry.id.uuidString)" }
@@ -638,6 +658,62 @@ enum AccessibilityIdentifiers {
     static func onboardingFitnessLevelOption(_ level: FitnessLevel) -> String { "onboardingFitnessLevelOption-\(level.rawValue)" }
 
     static func onboardingTrainingGoalOption(_ kind: TrainingGoalKind) -> String { "onboardingTrainingGoalOption-\(kind.rawValue)" }
+
+    // MARK: - Health surfaces
+    static let healthHydrationSectionCard = "healthHydrationSectionCard"
+    static let healthRespiratoryRateSectionCard = "healthRespiratoryRateSectionCard"
+    static let healthWristTemperatureSectionCard = "healthWristTemperatureSectionCard"
+    static let healthEnergyHistoryRangePicker = "healthEnergyHistoryRangePicker"
+    static let healthHydrationHistoryRangePicker = "healthHydrationHistoryRangePicker"
+    static let healthSleepHistoryRangePicker = "healthSleepHistoryRangePicker"
+    static let healthSleepMetricPicker = "healthSleepMetricPicker"
+    static let healthStepsHistoryRangePicker = "healthStepsHistoryRangePicker"
+    static let healthWeightHistoryRangePicker = "healthWeightHistoryRangePicker"
+    static let healthWeightHistoryLogWeightButton = "healthWeightHistoryLogWeightButton"
+    static let healthTrendsRangePicker = "healthTrendsRangePicker"
+    static let healthTrendDetailRangePicker = "healthTrendDetailRangePicker"
+    static let healthTrendDetailDoneButton = "healthTrendDetailDoneButton"
+    static let healthHydrationGoalButton = "healthHydrationGoalButton"
+    static let healthHydrationGoalSummaryButton = "healthHydrationGoalSummaryButton"
+    static let healthHydrationGoalHistoryAddButton = "healthHydrationGoalHistoryAddButton"
+    static let healthNewHydrationGoalTargetField = "healthNewHydrationGoalTargetField"
+    static let healthNewHydrationGoalSaveButton = "healthNewHydrationGoalSaveButton"
+    static let healthAddHydrationEntryDatePicker = "healthAddHydrationEntryDatePicker"
+    static let healthAddHydrationEntryTimePicker = "healthAddHydrationEntryTimePicker"
+    static let healthAddHydrationEntryVolumeField = "healthAddHydrationEntryVolumeField"
+    static let healthAddHydrationEntryConfirmButton = "healthAddHydrationEntryConfirmButton"
+    static let healthSleepGoalButton = "healthSleepGoalButton"
+    static let healthNewSleepGoalHoursPicker = "healthNewSleepGoalHoursPicker"
+    static let healthNewSleepGoalMinutesPicker = "healthNewSleepGoalMinutesPicker"
+    static let healthNewSleepGoalSaveButton = "healthNewSleepGoalSaveButton"
+    static let healthStepsGoalSummaryButton = "healthStepsGoalSummaryButton"
+    static let healthNewStepsGoalTargetField = "healthNewStepsGoalTargetField"
+    static let healthNewStepsGoalSaveButton = "healthNewStepsGoalSaveButton"
+    static let healthNewWeightGoalEstimatedRateButton = "healthNewWeightGoalEstimatedRateButton"
+    static let healthWeightGoalCompletionKeepActiveButton = "healthWeightGoalCompletionKeepActiveButton"
+    static let healthWeightGoalCompletionPrimaryButton = "healthWeightGoalCompletionPrimaryButton"
+    static let healthTrainingConditionViewHistoryButton = "healthTrainingConditionViewHistoryButton"
+    static let healthTrainingConditionClearEndDateButton = "healthTrainingConditionClearEndDateButton"
+    static let healthTrainingConditionEditButton = "healthTrainingConditionEditButton"
+    static let healthTrainingConditionEndButton = "healthTrainingConditionEndButton"
+
+    static func healthHeartSectionCard(_ title: String) -> String { "healthHeartSectionCard-\(slug(title))" }
+
+    static func healthWeightGoalCompleteSwipeButton(_ goal: WeightGoal) -> String { "healthWeightGoalCompleteSwipeButton-\(goal.id.uuidString)" }
+
+    static func healthWeightGoalDeleteButton(_ goal: WeightGoal) -> String { "healthWeightGoalDeleteButton-\(goal.id.uuidString)" }
+
+    static func healthStepsGoalDeleteButton(_ goal: StepsGoal) -> String { "healthStepsGoalDeleteButton-\(goal.id.uuidString)" }
+
+    static func healthSleepGoalDeleteButton(_ goal: SleepGoal) -> String { "healthSleepGoalDeleteButton-\(goal.id.uuidString)" }
+
+    static func healthHydrationGoalDeleteButton(_ goal: HydrationGoal) -> String { "healthHydrationGoalDeleteButton-\(goal.id.uuidString)" }
+
+    static func healthTrainingConditionDeleteButton(_ period: TrainingConditionPeriod) -> String { "healthTrainingConditionDeleteButton-\(period.persistentModelID)" }
+
+    static func healthTrainingConditionKindOption(_ choiceID: String) -> String { "healthTrainingConditionKindOption-\(slug(choiceID))" }
+
+    static func healthTrainingConditionImpactOption(_ impact: TrainingImpact) -> String { "healthTrainingConditionImpactOption-\(impact.rawValue)" }
 
     // MARK: - WorkoutView / ExerciseView / WorkoutDetailView
     static let workoutChangeTitleButton = "workoutChangeTitleButton"
