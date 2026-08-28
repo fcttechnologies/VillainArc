@@ -202,6 +202,10 @@ extension UserProfile: SyncedModel {
             fitnessLevel = value.stringValue.flatMap(FitnessLevel.init(rawValue:))
         }
         if let value = row["fitness_level_set_at"] { fitnessLevelSetAt = value.dateValue }
+        // The level and the moment it was chosen are one fact. A timestamp left standing over a
+        // null level is a pair no write path produces, and `firstMissingStep` reads it as still
+        // missing — so the step returns however many times the user answers it.
+        if fitnessLevel == nil { fitnessLevelSetAt = nil }
         if let value = row["photo"] {
             let incoming = AssetSource(jsonValue: value)
             if incoming != photoAsset {

@@ -34,6 +34,8 @@ enum OnboardingState: Equatable {
     /// The sign-in gate without the carousel, for a device that is already set up.
     case account
     case seeding
+    /// The account's existing rows coming down, before setup asks for anything it may already hold.
+    case restoring
     case profile(UserProfileOnboardingStep)
     case finishing
     case healthPermissions
@@ -45,7 +47,7 @@ enum OnboardingState: Equatable {
     var presentsSetupSheet: Bool {
         switch self {
         case .launching, .welcome, .account, .ready: return false
-        case .seeding, .profile, .finishing, .healthPermissions, .error: return true
+        case .seeding, .restoring, .profile, .finishing, .healthPermissions, .error: return true
         }
     }
 }
@@ -66,6 +68,9 @@ enum OnboardingState: Equatable {
     /// The account layer the terminal step drives. Set once by `RootView` before
     /// `startOnboarding()`; the manager only reads its state and never owns its lifecycle.
     private(set) weak var account: AccountController?
+    /// The first-run restore. A seam rather than a direct call so the setup sequence is testable
+    /// without a live engine; the app runs the real one.
+    @ObservationIgnored var restoreAccountData: () async -> Bool = { await VASync.shared.restoreAccountData() }
 
     func attachAccount(_ controller: AccountController) {
         account = controller
@@ -106,9 +111,14 @@ enum OnboardingState: Equatable {
     }
 
     /// The session is in hand and this device has never been set up: seed the bundled catalog,
-    /// ensure the singletons, and route into profile setup. The store is local-first with no cloud
-    /// mirror, so seeding waits on nothing — restoring the account's existing rows is the sync
-    /// engine's job, already running in the background from the sign-in that just happened.
+    /// restore whatever the account already holds, and only then ask for what is still missing.
+    ///
+    /// **The restore comes before the singletons, and that ordering is the whole point.**
+    /// `AppSettings` and `UserProfile` are created under fixed ids and enrollment marks every
+    /// local row dirty, so a blank pair created ahead of the pull is pushed over the account's
+    /// real rows — which both destroys them and asks the user to type back what was just
+    /// destroyed. Signing out clears the store and the bootstrap marker, so every re-sign-in
+    /// arrives here and every one of them would pay that price.
     private func runFirstBootstrap(attemptID: UUID) async {
         state = .seeding
         do {
@@ -118,6 +128,17 @@ enum OnboardingState: Equatable {
         } catch {
             guard attemptID == onboardingAttemptID else { return }
             state = .error("Failed to set up exercises: \(error.localizedDescription)")
+            return
+        }
+
+        state = .restoring
+        let restored = await restoreAccountData()
+        guard attemptID == onboardingAttemptID else { return }
+        // An empty store and an unreachable account look identical here and mean opposite things.
+        // Saying "let's set you up" over a restore that never ran is indistinguishable from data
+        // loss to the person reading it, so the refusal is surfaced instead.
+        guard restored else {
+            state = .error(String(localized: "Couldn't reach your account to restore your data. Check your connection and try again."))
             return
         }
 

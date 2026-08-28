@@ -130,7 +130,7 @@ struct RootView: View {
                     onboardingManager.accountGateCompleted()
                 }
                 .overlay(alignment: .bottom) { debugTestAccountBar }
-        case .launching, .seeding, .profile, .finishing, .healthPermissions, .error:
+        case .launching, .seeding, .restoring, .profile, .finishing, .healthPermissions, .error:
             // The launch backdrop: the app's own background, matching the generated launch screen
             // so the hand-off is seamless, and holding nothing of the app itself.
             Color.bg

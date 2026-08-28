@@ -172,6 +172,30 @@ final class VASync {
         } while syncAgain
     }
 
+    /// Bring the account's rows down before Villain Arc's own setup asks for anything the account
+    /// may already hold.
+    ///
+    /// A signed-in device with an empty store cannot tell a new account from an unrestored one:
+    /// both are empty, and they mean opposite things. So the question is settled by a completed
+    /// pull rather than inferred from emptiness.
+    ///
+    /// - Returns: whether the restore completed. A `false` is an **unanswered** question and never
+    ///   "new account" — the caller has to say so rather than start setup over data it did not
+    ///   look at.
+    func restoreAccountData(waitingUpTo timeout: Duration = .seconds(30)) async -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        // The engine is built from the account's event stream, which races the setup path that
+        // needs it. A cycle that stream already started has to finish first, too: `syncNow()`
+        // coalesces a concurrent request into the running cycle and returns immediately, which
+        // would hand back a verdict about a pull that had not happened.
+        while engine == nil || syncInFlight {
+            guard ContinuousClock.now < deadline else { return false }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        await syncNow()
+        return status == .idle
+    }
+
     /// Ask for one more pass, folded into a running cycle when one is up.
     private func requestAnotherCycle() {
         if syncInFlight {
@@ -467,6 +491,10 @@ final class VASync {
     /// The non-synced residue a departing account leaves behind: the Apple Health mirrors and
     /// derived caches (all re-derivable — from HealthKit or from the synced rows — for whoever
     /// signs in next), and the bootstrap markers, so the next launch runs a full first bootstrap.
+    ///
+    /// "Re-derivable from HealthKit" is a property of the anchors, not a hope: the mirror rows and
+    /// the anchors that produced them go together, or the next import resumes past history that no
+    /// longer exists locally and the user reads it as data loss.
     private func clearLocalCaches() {
         guard let container else { return }
         let context = container.mainContext
@@ -490,6 +518,7 @@ final class VASync {
         } catch {
             AppLog.error("Sign-out cache clear failed", error: error)
         }
+        HealthSyncPreferences.resetAllAnchors()
         SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
         SpotlightIndexer.deleteAll()
     }

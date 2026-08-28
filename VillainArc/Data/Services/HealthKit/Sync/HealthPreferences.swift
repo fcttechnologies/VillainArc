@@ -18,7 +18,35 @@ nonisolated enum HealthSyncPreferences {
     private static let wristTemperatureAnchorKey = "health_wrist_temperature_anchor"
     private static let dietaryWaterAnchorKey = "health_dietary_water_anchor"
 
+    /// Every anchor, for the one operation that has to treat them as a set.
+    private static let allAnchorKeys = [
+        workoutAnchorKey,
+        weightEntryAnchorKey,
+        stepCountAnchorKey,
+        walkingRunningDistanceAnchorKey,
+        activeEnergyBurnedAnchorKey,
+        restingEnergyBurnedAnchorKey,
+        sleepAnalysisAnchorKey,
+        heartRateAnchorKey,
+        restingHeartRateAnchorKey,
+        walkingHeartRateAnchorKey,
+        heartRateVariabilityAnchorKey,
+        respiratoryRateAnchorKey,
+        wristTemperatureAnchorKey,
+        dietaryWaterAnchorKey,
+    ]
+
     nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
+
+    /// Forget how far each import has read, so the next one reads Apple Health from the beginning.
+    ///
+    /// **An anchor and the rows it produced are one fact.** An anchored query resumes from its
+    /// anchor and returns only what changed since, so clearing the mirror rows while keeping the
+    /// anchors leaves the import with nothing to say and the history gone from the app while every
+    /// sample still sits in Apple Health. Whoever deletes the rows resets these in the same act.
+    static func resetAllAnchors() {
+        for key in allAnchorKeys { defaults.removeObject(forKey: key) }
+    }
 
     static var workoutAnchor: HKQueryAnchor? {
         get { anchor(forKey: workoutAnchorKey) }

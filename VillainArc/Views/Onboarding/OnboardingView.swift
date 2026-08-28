@@ -229,6 +229,9 @@ struct OnboardingView: View {
         case .seeding:
             OnboardingProgressStateView(title: "Updating Exercises", message: "Preparing your exercise catalog...")
 
+        case .restoring:
+            OnboardingProgressStateView(title: "Restoring Your Account", message: "Bringing your profile down to this device...")
+
         case .error(let message):
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle")
