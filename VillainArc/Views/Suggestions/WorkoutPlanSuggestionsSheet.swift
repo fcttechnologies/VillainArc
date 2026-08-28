@@ -98,6 +98,7 @@ struct WorkoutPlanSuggestionsSheet: View {
                             }
                         }
                         .pickerStyle(.segmented)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlanSuggestionsTabPicker)
                     }
                     .padding([.horizontal, .top])
                 }

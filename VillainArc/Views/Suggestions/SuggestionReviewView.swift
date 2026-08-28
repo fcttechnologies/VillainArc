@@ -118,6 +118,7 @@ struct SuggestionGroupRow: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.red)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.suggestionRejectButton)
                     .accessibilityHint(AccessibilityText.suggestionRejectHint)
 
                     Button {
@@ -129,6 +130,7 @@ struct SuggestionGroupRow: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.green)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.suggestionAcceptButton)
                     .accessibilityHint(AccessibilityText.suggestionAcceptHint)
 
                     if let onDefer {
@@ -140,6 +142,7 @@ struct SuggestionGroupRow: View {
                                 .fontWeight(.semibold)
                         }
                         .buttonStyle(.glass)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.suggestionDeferButton)
                         .accessibilityHint(AccessibilityText.suggestionDeferHint)
                     }
                 }

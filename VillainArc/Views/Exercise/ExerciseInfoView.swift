@@ -134,6 +134,7 @@ struct ExerciseInfoView: View {
                             .contentTransition(.symbolEffect(.replace))
                     }
                     .accessibilityLabel(isSelected ? "Remove from Workout" : "Add to Workout")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseInfoSelectButton)
                 }
             }
             .sheet(item: $suggestionSettingsExercise) { exercise in
@@ -317,6 +318,7 @@ struct ExerciseInfoView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseInfoMetricPicker)
             }
         }
     }
@@ -374,6 +376,7 @@ struct ExerciseInfoView: View {
                             .font(.subheadline)
                             .fontWeight(.semibold)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseInfoAllHistoryLink)
                 }
             }
 

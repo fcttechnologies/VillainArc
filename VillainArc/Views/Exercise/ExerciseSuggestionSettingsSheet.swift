@@ -69,6 +69,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                             }
                         }
                         .toggleStyle(.switch)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSuggestionSettingsEnabledToggle)
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -126,6 +127,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                                         }
                                         .buttonStyle(.glass)
                                         .buttonBorderShape(.roundedRectangle(radius: 14))
+                                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseProgressionStepPresetButton(presetValue))
                                     }
                                 }
 
@@ -187,6 +189,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                         Haptics.selection()
                         dismiss()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSuggestionSettingsCancelButton)
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {

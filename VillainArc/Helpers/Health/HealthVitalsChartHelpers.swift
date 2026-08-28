@@ -413,6 +413,7 @@ struct HealthVitalsLineHistorySection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthVitalsLineHistoryRangePicker)
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()
@@ -594,6 +595,7 @@ struct HealthVitalsRangeHistorySection: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.healthVitalsRangeHistoryRangePicker)
             .onChange(of: selectedRange) { Haptics.selection() }
         }
         .padding()

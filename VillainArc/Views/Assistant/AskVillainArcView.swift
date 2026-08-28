@@ -47,6 +47,7 @@ struct AskVillainArcView: View {
                         dismiss()
                     }
                     .disabled(isAsking)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.askVillainArcCloseButton)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if isAsking {
@@ -120,6 +121,7 @@ struct AskVillainArcView: View {
                         }
                         .buttonStyle(.glass)
                         .buttonBorderShape(.capsule)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.askVillainArcQuickPick(suggestion))
                     }
                 }
                 .padding(.horizontal, 6)

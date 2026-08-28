@@ -47,6 +47,7 @@ struct PremiumLockedView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .buttonSizing(.flexible)
+                .accessibilityIdentifier(AccessibilityIdentifiers.premiumLockedUpgradeButton)
                 .padding(.horizontal, 24)
 
                 Text("Plus \(PremiumFeature.allCases.count - 1) more premium features.")

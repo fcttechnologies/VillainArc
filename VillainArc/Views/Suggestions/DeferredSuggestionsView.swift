@@ -44,11 +44,13 @@ struct DeferredSuggestionsView: View {
                     Button(role: .close) {
                         router.presentWorkoutDialog(.cancel)
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.deferredSuggestionsCloseButton)
                     .accessibilityHint(AccessibilityText.workoutDeleteHint)
                     .confirmationDialog("Cancel Workout", isPresented: cancelWorkoutDialogBinding) {
                         Button("Cancel Workout", role: .destructive) {
                             cancelWorkout()
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.deferredSuggestionsCancelWorkoutConfirmButton)
                     } message: {
                         Text("Are you sure you want to delete this workout?")
                     }
@@ -57,6 +59,7 @@ struct DeferredSuggestionsView: View {
                     Button(AccessibilityText.deferredSuggestionsSkipLabel) {
                         skipAll()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.deferredSuggestionsSkipButton)
                     .accessibilityHint(AccessibilityText.deferredSuggestionsSkipHint)
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
@@ -70,6 +73,7 @@ struct DeferredSuggestionsView: View {
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.glassProminent)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.deferredSuggestionsAcceptAllButton)
                     .accessibilityHint(AccessibilityText.deferredSuggestionsAcceptAllHint)
                 }
             }

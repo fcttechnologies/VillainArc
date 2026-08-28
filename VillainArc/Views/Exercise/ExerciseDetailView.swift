@@ -371,6 +371,7 @@ struct ExerciseDetailView: View {
                                     }
                                 }
                                 .pickerStyle(.segmented)
+                                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailMetricPicker)
                             }
                         }
                         .padding(16)
@@ -409,6 +410,7 @@ struct ExerciseDetailView: View {
             Button("OK", role: .cancel) {
                 addedConfirmationDestination = nil
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailAddedConfirmationDismissButton)
         } message: {
             if let destination = addedConfirmationDestination {
                 Text(destination.confirmationMessage(exerciseName: displayName))
@@ -450,6 +452,7 @@ struct ExerciseDetailView: View {
                         seedDebugHistory(for: exercise)
                     }
                     .disabled(isSeedingDebugHistory)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.debugSeedExerciseDetailHistoryButton)
                     #endif
 
                     if let destination = activeFlowAddDestination {
@@ -567,6 +570,7 @@ struct ExerciseDetailView: View {
                     appRouter.push(to: .exerciseHistory(catalogID))
                 }
                 .font(.subheadline.weight(.semibold))
+                .accessibilityIdentifier(AccessibilityIdentifiers.exerciseDetailAllHistoryButton)
             }
 
             ForEach(recentPerformances) { performance in

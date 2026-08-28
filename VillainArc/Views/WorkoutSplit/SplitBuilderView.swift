@@ -24,6 +24,7 @@ struct SplitBuilderView: View {
                         Haptics.selection()
                         dismiss()
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderCloseButton)
                 }
             }
             .navigationDestination(for: BuilderNavStep.self) { step in

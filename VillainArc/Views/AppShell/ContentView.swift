@@ -275,6 +275,7 @@ struct ContentView: View {
             } label: {
                 Label(type.title, systemImage: currentFavorite == type ? "star.fill" : type.systemImage)
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioFavoriteTypeOption(type.rawValue))
         }
         if currentFavorite != nil {
             Divider()
@@ -283,6 +284,7 @@ struct ContentView: View {
             } label: {
                 Label("Clear Favorite", systemImage: "star.slash")
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioFavoriteClearButton)
         }
     }
 

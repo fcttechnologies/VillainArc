@@ -189,6 +189,7 @@ struct PaywallView: View {
                     Task { await loadProducts() }
                 }
                 .buttonStyle(.bordered)
+                .accessibilityIdentifier(AccessibilityIdentifiers.paywallRetryButton)
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .padding()
@@ -348,6 +349,7 @@ struct PaywallView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.paywallAnnualCommitmentOption)
         .accessibilityLabel("Annual commitment plan")
         .accessibilityValue("\(terms.billingDisplayPrice) per month for 12 months. \(terms.commitmentInfo.displayPrice) total commitment.")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -402,8 +404,11 @@ struct PaywallView: View {
         VStack(spacing: 12) {
             HStack(spacing: 14) {
                 Button("Terms") { openURL(SubscriptionStore.termsURL) }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.paywallTermsButton)
                 Button("Privacy") { openURL(SubscriptionStore.privacyURL) }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.paywallPrivacyButton)
                 Button("EULA") { openURL(SubscriptionStore.standardEULAURL) }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.paywallEULAButton)
                 Spacer()
             }
             HStack(spacing: 14) {

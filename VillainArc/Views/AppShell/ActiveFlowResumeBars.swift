@@ -360,6 +360,7 @@ struct ActiveCardioResumeBarButton: View {
                 .accessibilityElement(children: .combine)
             }
             .activeFlowResumeBarChrome(isCollapsed: isCollapsed, reduceMotion: reduceMotion)
+            .accessibilityIdentifier(AccessibilityIdentifiers.activeCardioResumeBarButton)
             .accessibilityLabel("Cardio in progress. \(session.displayTitle).")
             .accessibilityHint("Opens the active cardio session.")
         }

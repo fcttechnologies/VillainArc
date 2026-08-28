@@ -659,11 +659,47 @@ enum AccessibilityIdentifiers {
 
     static func onboardingTrainingGoalOption(_ kind: TrainingGoalKind) -> String { "onboardingTrainingGoalOption-\(kind.rawValue)" }
 
+    // MARK: - Paywall / Suggestions / Assistant / Exercise info
+    static let paywallRetryButton = "paywallRetryButton"
+    static let paywallAnnualCommitmentOption = "paywallAnnualCommitmentOption"
+    static let paywallTermsButton = "paywallTermsButton"
+    static let paywallPrivacyButton = "paywallPrivacyButton"
+    static let paywallEULAButton = "paywallEULAButton"
+    static let premiumLockedUpgradeButton = "premiumLockedUpgradeButton"
+    static let exerciseDetailMetricPicker = "exerciseDetailMetricPicker"
+    static let exerciseDetailAddedConfirmationDismissButton = "exerciseDetailAddedConfirmationDismissButton"
+    static let exerciseDetailAllHistoryButton = "exerciseDetailAllHistoryButton"
+    static let exerciseInfoSelectButton = "exerciseInfoSelectButton"
+    static let exerciseInfoMetricPicker = "exerciseInfoMetricPicker"
+    static let exerciseInfoAllHistoryLink = "exerciseInfoAllHistoryLink"
+    static let exerciseSuggestionSettingsEnabledToggle = "exerciseSuggestionSettingsEnabledToggle"
+    static let exerciseSuggestionSettingsCancelButton = "exerciseSuggestionSettingsCancelButton"
+    static let deferredSuggestionsCloseButton = "deferredSuggestionsCloseButton"
+    static let deferredSuggestionsCancelWorkoutConfirmButton = "deferredSuggestionsCancelWorkoutConfirmButton"
+    static let deferredSuggestionsSkipButton = "deferredSuggestionsSkipButton"
+    static let deferredSuggestionsAcceptAllButton = "deferredSuggestionsAcceptAllButton"
+    static let suggestionRejectButton = "suggestionRejectButton"
+    static let suggestionAcceptButton = "suggestionAcceptButton"
+    static let suggestionDeferButton = "suggestionDeferButton"
+    static let workoutPlanSuggestionsTabPicker = "workoutPlanSuggestionsTabPicker"
+    static let askVillainArcCloseButton = "askVillainArcCloseButton"
+    static let cardioFavoriteClearButton = "cardioFavoriteClearButton"
+    static let activeCardioResumeBarButton = "activeCardioResumeBarButton"
+    static let splitBuilderCloseButton = "splitBuilderCloseButton"
+
+    static func exerciseProgressionStepPresetButton(_ value: Double) -> String { "exerciseProgressionStepPresetButton-\(slug(value.formatted(.number.precision(.fractionLength(0...2)))))" }
+
+    static func askVillainArcQuickPick(_ suggestion: String) -> String { "askVillainArcQuickPick-\(slug(suggestion))" }
+
+    static func cardioFavoriteTypeOption(_ typeRawValue: String) -> String { "cardioFavoriteTypeOption-\(slug(typeRawValue))" }
+
     // MARK: - Health surfaces
     static let healthHydrationSectionCard = "healthHydrationSectionCard"
     static let healthRespiratoryRateSectionCard = "healthRespiratoryRateSectionCard"
     static let healthWristTemperatureSectionCard = "healthWristTemperatureSectionCard"
     static let healthEnergyHistoryRangePicker = "healthEnergyHistoryRangePicker"
+    static let healthVitalsLineHistoryRangePicker = "healthVitalsLineHistoryRangePicker"
+    static let healthVitalsRangeHistoryRangePicker = "healthVitalsRangeHistoryRangePicker"
     static let healthHydrationHistoryRangePicker = "healthHydrationHistoryRangePicker"
     static let healthSleepHistoryRangePicker = "healthSleepHistoryRangePicker"
     static let healthSleepMetricPicker = "healthSleepMetricPicker"
