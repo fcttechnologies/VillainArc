@@ -193,7 +193,16 @@ final class VASync {
             try? await Task.sleep(for: .milliseconds(50))
         }
         await syncNow()
-        return status == .idle
+
+        // The question is whether the PULL completed, not whether the outbox is clean. Records the
+        // server judged and refused are a push-side fact that never clears by itself, so gating on
+        // `.idle` would make a single stuck record block setup forever — with no profile and a
+        // Retry that cannot succeed. Only the states that mean "this device did not read the
+        // account" are a failed restore.
+        switch status {
+        case .idle, .failed: return true
+        case .off, .syncing, .offline, .needsReauthentication, .resyncRequired: return false
+        }
     }
 
     /// Ask for one more pass, folded into a running cycle when one is up.

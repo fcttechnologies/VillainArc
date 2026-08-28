@@ -1,4 +1,5 @@
 import FCTServerSync
+import FCTServerSyncTesting
 import Foundation
 import SwiftData
 import Testing
@@ -103,5 +104,22 @@ struct VASyncRestoreTests {
         let harness = try VASyncFaultHarness()
 
         #expect(await harness.sync.restoreAccountData(waitingUpTo: .milliseconds(200)) == false)
+    }
+
+    /// Records the server judged and refused are a **push**-side fact that never clears on its own.
+    /// The pull still ran, so the account was read and setup may proceed — gating on a clean outbox
+    /// instead would strand the user at an error screen with no profile and a Retry that can never
+    /// succeed, which is exactly what one poisoned unrelated table did.
+    @Test @MainActor
+    func recordsTheServerRefusedDoNotBlockTheRestore() async throws {
+        let harness = try VASyncFaultHarness()
+        await harness.enroll()
+
+        let stuck = try harness.writeSession(notes: "refused")
+        await harness.server.setRejecting([stuck])
+        await harness.sync.syncNow()
+        #expect(harness.sync.counted.stuck >= 1, "the fixture must actually strand a record")
+
+        #expect(await harness.sync.restoreAccountData())
     }
 }
