@@ -4,7 +4,7 @@ import SwiftData
 
 enum SharedModelContainer {
 
-    nonisolated static let appGroupID = "group.com.fcttechnologies.VillainArcCont"
+    nonisolated static let appGroupID = "group.com.fcttechnologies.VillainArc1"
 
     /// The App Group–backed, local-only store wiring, expressed through the shared FCTSync seam.
     /// There is no CloudKit mirror: cross-device continuity is the FCT platform sync engine's job,

@@ -56,7 +56,7 @@ AI workout plan generation and AI exercise replacement use `SystemLanguageModel.
 
 ## Data, Storage, And Sync
 
-- All user data lives in SwiftData in the App Group container `group.com.fcttechnologies.VillainArcCont`.
+- All user data lives in SwiftData in the App Group container `group.com.fcttechnologies.VillainArc1`.
 - iCloud sync uses Apple's private CloudKit database only; no custom server.
 - HealthKit reads/writes use conventional `HKHealthStore` APIs, anchored queries, and live workout sessions.
 - App Group entitlement is shared by the main app, widget extension, and intents extension. HealthKit entitlement is on the main app only.

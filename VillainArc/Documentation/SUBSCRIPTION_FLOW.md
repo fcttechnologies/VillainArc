@@ -86,7 +86,7 @@ call site
 
 ## App Group Cache
 
-Keys in `SharedModelContainer.sharedDefaults` (App Group `group.com.fcttechnologies.VillainArcCont`):
+Keys in `SharedModelContainer.sharedDefaults` (App Group `group.com.fcttechnologies.VillainArc1`):
 
 | Key | Type | Purpose |
 |---|---|---|
