@@ -88,7 +88,7 @@ final class VASyncFaultHarness {
     let container: ModelContainer
     let accountID = UUID()
 
-    private let storeURL: URL
+    let storeURL: URL
     private let directory: URL
 
     init() throws {
