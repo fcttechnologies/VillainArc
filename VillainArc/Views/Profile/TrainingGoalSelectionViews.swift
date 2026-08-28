@@ -19,6 +19,7 @@ struct TrainingGoalSelectionList: View {
                     .accessibilityHint(AccessibilityText.onboardingTrainingGoalOptionHint)
                     .accessibilityValue(AccessibilityText.onboardingTrainingGoalOptionValue(isSelected: true))
                         .accessibilityAddTraits(.isSelected)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.onboardingTrainingGoalOption(option))
                 } else {
                     Button {
                         selection = option
@@ -31,6 +32,7 @@ struct TrainingGoalSelectionList: View {
                     .buttonBorderShape(.roundedRectangle(radius: 16))
                     .accessibilityHint(AccessibilityText.onboardingTrainingGoalOptionHint)
                     .accessibilityValue(AccessibilityText.onboardingTrainingGoalOptionValue(isSelected: false))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingTrainingGoalOption(option))
                 }
             }
         }

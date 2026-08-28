@@ -202,6 +202,7 @@ struct OnboardingView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
                 .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingConnectHealthButton)
 
                 Button {
                     manager.skipAppleHealth()
@@ -213,6 +214,7 @@ struct OnboardingView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glass)
                 .accessibilityHint(AccessibilityText.onboardingSkipHealthHint)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingSkipHealthButton)
             }
         }
         .padding(.horizontal)
@@ -253,6 +255,7 @@ struct OnboardingView: View {
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
                 .accessibilityHint(AccessibilityText.onboardingRetryHint)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingRetryButton)
             }
 
         case .welcome, .account, .profile, .healthPermissions, .finishing, .ready:
@@ -320,6 +323,7 @@ private struct OnboardingHealthPermissionStepView: View {
                     }
                     .buttonSizing(.flexible)
                     .buttonStyle(.glassProminent)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHealthStepContinueButton)
                 } else {
                     Button {
                         isConnecting = true
@@ -338,6 +342,7 @@ private struct OnboardingHealthPermissionStepView: View {
                     .buttonStyle(.glassProminent)
                     .disabled(isConnecting)
                     .accessibilityHint(AccessibilityText.onboardingConnectHealthHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHealthStepConnectButton)
 
                     Button {
                         manager.skipAppleHealthDuringOnboarding()
@@ -351,6 +356,7 @@ private struct OnboardingHealthPermissionStepView: View {
                     .buttonStyle(.glass)
                     .disabled(isConnecting)
                     .accessibilityHint(AccessibilityText.onboardingSkipHealthHint)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHealthStepSkipButton)
                 }
             }
         }
@@ -404,6 +410,7 @@ private struct OnboardingLocationPermissionStepView: View {
                 }
                 .buttonSizing(.flexible)
                 .buttonStyle(.glassProminent)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingLocationContinueButton)
             }
         }
         .padding(.horizontal)
@@ -442,6 +449,7 @@ private struct ProfileNameStepView: View {
                 .font(.largeTitle)
                 .fontWeight(.semibold)
                 .textContentType(.name)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingNameField)
 
             Spacer()
         }
@@ -473,6 +481,7 @@ private struct ProfileNameStepView: View {
                 }
                 .fontWeight(.semibold)
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingNameContinueButton)
             }
         }
     }
@@ -497,6 +506,7 @@ private struct ProfileBirthdayStepView: View {
             DatePicker("Birthday", selection: $birthday, in: ...Date.now, displayedComponents: .date)
                 .datePickerStyle(.wheel)
                 .labelsHidden()
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingBirthdayPicker)
 
             Spacer()
         }
@@ -522,6 +532,7 @@ private struct ProfileBirthdayStepView: View {
                     }
                 }
                 .fontWeight(.semibold)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingBirthdayContinueButton)
             }
         }
     }
@@ -561,6 +572,7 @@ private struct ProfileGenderStepView: View {
                         .accessibilityHint(AccessibilityText.onboardingGenderOptionHint)
                         .accessibilityValue(AccessibilityText.onboardingGenderOptionValue(isSelected: true))
                         .accessibilityAddTraits(.isSelected)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.onboardingGenderOption(option))
                     } else {
                         Button {
                             gender = option
@@ -576,6 +588,7 @@ private struct ProfileGenderStepView: View {
                         .buttonStyle(.glass)
                         .accessibilityHint(AccessibilityText.onboardingGenderOptionHint)
                         .accessibilityValue(AccessibilityText.onboardingGenderOptionValue(isSelected: false))
+                        .accessibilityIdentifier(AccessibilityIdentifiers.onboardingGenderOption(option))
                     }
                 }
             }
@@ -607,6 +620,7 @@ private struct ProfileGenderStepView: View {
                 .fontWeight(.semibold)
                 .disabled(gender == .notSet)
                 .accessibilityHint(AccessibilityText.onboardingGenderContinueHint)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingGenderContinueButton)
             }
         }
     }
@@ -651,6 +665,7 @@ private struct ProfileHeightStepView: View {
                         }
                     }
                     .pickerStyle(.wheel)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHeightFeetPicker)
 
                     Picker("Inches", selection: $inches) {
                         ForEach(Self.inchOptions, id: \.self) { option in
@@ -658,6 +673,7 @@ private struct ProfileHeightStepView: View {
                         }
                     }
                     .pickerStyle(.wheel)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHeightInchesPicker)
                 }
                 .frame(maxWidth: .infinity)
             } else {
@@ -668,6 +684,7 @@ private struct ProfileHeightStepView: View {
                 }
                 .pickerStyle(.wheel)
                 .frame(maxWidth: .infinity)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHeightCentimetersPicker)
             }
 
             Spacer()
@@ -695,6 +712,7 @@ private struct ProfileHeightStepView: View {
                     }
                 }
                 .fontWeight(.semibold)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingHeightContinueButton)
             }
         }
     }
@@ -752,6 +770,7 @@ private struct ProfileFitnessLevelStepView: View {
                 .fontWeight(.semibold)
                 .disabled(selectedLevel == nil)
                 .accessibilityHint(AccessibilityText.onboardingFitnessLevelContinueHint)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingFitnessLevelContinueButton)
             }
         }
         .onAppear {
@@ -806,6 +825,7 @@ private struct ProfileTrainingGoalStepView: View {
                 .fontWeight(.semibold)
                 .disabled(selectedGoal == nil)
                 .accessibilityHint(AccessibilityText.onboardingTrainingGoalContinueHint)
+                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingTrainingGoalContinueButton)
             }
         }
         .onAppear {
@@ -829,6 +849,7 @@ private struct DebugSkipOnboardingToolbarItem: ToolbarContent {
                 }
             }
             .fontWeight(.semibold)
+            .accessibilityIdentifier(AccessibilityIdentifiers.debugSkipOnboardingButton)
         }
     }
 }

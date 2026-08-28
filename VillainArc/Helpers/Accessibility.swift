@@ -589,6 +589,33 @@ enum AccessibilityIdentifiers {
 
     static func muscleFilterChip(_ muscle: Muscle) -> String { "muscleFilterChip-\(slug(muscle.rawValue))" }
 
+    // MARK: - OnboardingView
+    static let onboardingConnectHealthButton = "onboardingConnectHealthButton"
+    static let onboardingSkipHealthButton = "onboardingSkipHealthButton"
+    static let onboardingRetryButton = "onboardingRetryButton"
+    static let onboardingHealthStepContinueButton = "onboardingHealthStepContinueButton"
+    static let onboardingHealthStepConnectButton = "onboardingHealthStepConnectButton"
+    static let onboardingHealthStepSkipButton = "onboardingHealthStepSkipButton"
+    static let onboardingLocationContinueButton = "onboardingLocationContinueButton"
+    static let onboardingNameField = "onboardingNameField"
+    static let onboardingNameContinueButton = "onboardingNameContinueButton"
+    static let onboardingBirthdayPicker = "onboardingBirthdayPicker"
+    static let onboardingBirthdayContinueButton = "onboardingBirthdayContinueButton"
+    static let onboardingGenderContinueButton = "onboardingGenderContinueButton"
+    static let onboardingHeightFeetPicker = "onboardingHeightFeetPicker"
+    static let onboardingHeightInchesPicker = "onboardingHeightInchesPicker"
+    static let onboardingHeightCentimetersPicker = "onboardingHeightCentimetersPicker"
+    static let onboardingHeightContinueButton = "onboardingHeightContinueButton"
+    static let onboardingFitnessLevelContinueButton = "onboardingFitnessLevelContinueButton"
+    static let onboardingTrainingGoalContinueButton = "onboardingTrainingGoalContinueButton"
+    static let debugSkipOnboardingButton = "debugSkipOnboardingButton"
+
+    static func onboardingGenderOption(_ gender: UserGender) -> String { "onboardingGenderOption-\(gender.rawValue)" }
+
+    static func onboardingFitnessLevelOption(_ level: FitnessLevel) -> String { "onboardingFitnessLevelOption-\(level.rawValue)" }
+
+    static func onboardingTrainingGoalOption(_ kind: TrainingGoalKind) -> String { "onboardingTrainingGoalOption-\(kind.rawValue)" }
+
     private static func slug(_ text: String) -> String {
         let lowercase = text.lowercased()
         var result = ""

@@ -20,6 +20,7 @@ struct FitnessLevelSelectionList: View {
                     .accessibilityHint(AccessibilityText.onboardingFitnessLevelOptionHint)
                     .accessibilityValue(AccessibilityText.onboardingFitnessLevelOptionValue(isSelected: true))
                     .accessibilityAddTraits(.isSelected)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingFitnessLevelOption(option))
                 } else {
                     Button {
                         selection = option
@@ -32,6 +33,7 @@ struct FitnessLevelSelectionList: View {
                     .buttonBorderShape(.roundedRectangle(radius: 16))
                     .accessibilityHint(AccessibilityText.onboardingFitnessLevelOptionHint)
                     .accessibilityValue(AccessibilityText.onboardingFitnessLevelOptionValue(isSelected: false))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.onboardingFitnessLevelOption(option))
                 }
             }
         }
