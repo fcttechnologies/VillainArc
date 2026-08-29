@@ -91,7 +91,17 @@ final class VASyncFaultHarness {
     let storeURL: URL
     private let directory: URL
 
-    init() throws {
+    /// - Parameters:
+    ///   - triggers: the change triggers the engine listens on. Empty by default:
+    ///     `LocalSaveTrigger` observes saves process-wide, which would wake this engine on another
+    ///     suite's writes, so every cycle here is normally asked for explicitly. A suite that is
+    ///     *about* the trigger path (the debounce) passes its own `ManualTrigger` instead.
+    ///   - transport: replaces the fault-injecting wire wholesale, for a suite whose subject is
+    ///     the wire's timing rather than the failures it can be made to raise.
+    init(
+        triggers: [any HistoryChangeTrigger] = [],
+        transport: (any SyncTransport)? = nil
+    ) throws {
         let made = try TestStoreFactory.onDisk(VillainArcSchemaV1.self)
         container = made.container
         storeURL = made.url
@@ -108,12 +118,10 @@ final class VASyncFaultHarness {
             blobStateFileURL: { directory.appendingPathComponent("blobstate.json") },
             blobCacheDirectory: { directory.appendingPathComponent("blob-cache") },
             makeTransport: { _ in
-                VAFaultTransport(inner: FakeTransport(server: server), injector: injector)
+                transport ?? VAFaultTransport(inner: FakeTransport(server: server), injector: injector)
             },
             makeBlobTransport: { _ in FakeBlobTransport(store: objects) },
-            // `LocalSaveTrigger` observes saves process-wide, which would wake this engine on
-            // another suite's writes. Every cycle here is asked for explicitly instead.
-            makeTriggers: { _ in [] }
+            makeTriggers: { _ in triggers }
         )
 
         sync = VASync(configuration: configuration)

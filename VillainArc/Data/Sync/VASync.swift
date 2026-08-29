@@ -584,12 +584,24 @@ final class VASync {
 
     /// Coalesce a burst of triggers into one cycle: live logging is a save per set completion,
     /// and each one would be a round trip if nothing gathered them.
+    ///
+    /// **What is cancelled is the WAIT, never a cycle already running.** The task is released
+    /// before it starts syncing, so the next trigger's `cancel()` finds nothing to tear down and
+    /// coalesces through `syncAgain` instead. Cancelling the task while it was inside `syncNow()`
+    /// would cancel the HTTP request underneath it — and the trigger that does this is the cycle's
+    /// *own* applier, because `LocalSaveTrigger` fires on the applied save. The account's first
+    /// pull after a sign-in is therefore the worst case: every page it lands schedules a debounce
+    /// that kills the restore that produced it, so the restore converges only by restarting, and
+    /// on a slower link or a larger account it can outlive `restoreAccountData`'s timeout and
+    /// report "couldn't reach your account" for an account that answered every time.
     private func scheduleDebouncedSync() {
         debounceTask?.cancel()
         debounceTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(250))
-            guard !Task.isCancelled else { return }
-            await self?.syncNow()
+            guard !Task.isCancelled, let self else { return }
+            // Past the wait this cycle is no longer cancellable by a later trigger.
+            self.debounceTask = nil
+            await self.syncNow()
         }
     }
 
