@@ -5,13 +5,19 @@ import SwiftData
 
 /// Villain Arc's wire: which models sync, to which tables, under which version.
 ///
-/// **What syncs is the app's own authored rows and nothing HealthKit-derived.** The whole
+/// **What syncs is the app's own authored rows; no HealthKit MIRROR row rides the wire.** The whole
 /// `Health*` mirror family, `WeightEntry`/`HydrationDay`/`HydrationEntry` (Apple Health is their
 /// canon — VA exports what it authors there and re-imports it), `ExerciseHistory`/
 /// `ProgressionPoint` (derived caches, rebuilt from source), `HealthSyncState` (per-device
 /// anchors), and `RestTimeHistory` (a per-device last-used stamp with no correct cross-device
 /// answer) all stay local. Named cost: weight and hydration history rides Apple Health's own
 /// continuity, not the FCT account.
+///
+/// The goals the user sets OVER that health data do sync, and one of them carries a health-sourced
+/// number: `NewWeightGoalView` prefills the start weight from the latest `WeightEntry`, which is
+/// itself imported from a HealthKit sample, so `va.weight_goal.start_weight` can hold a body weight
+/// that originated in Apple Health. "Health data stays on the device" is therefore true of the
+/// mirror and false as a blanket statement — say both facts, never just the first.
 ///
 /// Rows sync in **every** state, drafts included: an incomplete session or an editing plan copy is
 /// an ordinary row whose lifecycle LWW and tombstones already converge, and a per-state filter

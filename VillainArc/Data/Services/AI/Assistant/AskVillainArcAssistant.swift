@@ -11,7 +11,9 @@ import FoundationModels
 /// **Read-only, private-data boundary.** The only tool the session can call is the Spotlight search,
 /// scoped to `.coreSpotlight` (this app's own index) — it reads the user's data and never writes. No
 /// state-mutating tool is ever attached (enforced by `AIToolSafetyPolicy.vettedSpotlightTools`). The
-/// model runs entirely on-device; nothing leaves the phone.
+/// model runs entirely on-device: no prompt, index excerpt, or answer is sent anywhere. The training
+/// data it reads is a separate fact — those rows sync to the user's FCT account like every other
+/// authored row (`VASyncSchema`), which is what the user-facing copy has to say alongside this.
 ///
 /// **Gated with a graceful fallback.** Requires iOS 27 (the Spotlight tool) and an available system
 /// model; otherwise `availability` reports why so the caller can fall back to the normal History and

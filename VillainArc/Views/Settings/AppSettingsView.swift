@@ -451,7 +451,7 @@ private struct AppSettingsFormView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.settingsSupportPageButton)
             .appGroupedListRow(position: .bottom)
         } footer: {
-            Text("Send diagnostics, report issues, or request features. Diagnostics are stored on your device until you tap Send.")
+            Text("Report issues or request features. Anonymous diagnostics, keyed to a random install identifier and never to your account, are always on; the crash report here is sent only when you tap Send.")
         }
     }
 

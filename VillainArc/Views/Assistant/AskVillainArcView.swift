@@ -101,7 +101,7 @@ struct AskVillainArcView: View {
         } header: {
             Text("Ask about your training")
         } footer: {
-            Text("Answers come from your own workouts, plans, and splits, on-device. Nothing leaves your iPhone, and Villain Arc only reads your data here.")
+            Text("Answers are generated entirely on this device, from your own workouts, plans, and splits and nothing else. That training data is stored in your private FCT account so it reaches your other devices.")
         }
     }
 

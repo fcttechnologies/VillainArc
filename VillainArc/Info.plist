@@ -27,7 +27,7 @@
 		<string>com.villainarc.siri.endWorkout</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Villain Arc uses your location during outdoor cardio sessions to map routes and calculate distance when Apple Health is not available.</string>
+	<string>Villain Arc uses your location during outdoor cardio sessions to map routes and calculate distance when Apple Health is not available. The route it records is stored in your private FCT account so it reaches your other devices.</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>

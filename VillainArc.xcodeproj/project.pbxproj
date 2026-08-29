@@ -1090,10 +1090,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Villain Arc uses the camera so you can take a profile photo.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Villain Arc uses the camera so you can take a profile photo. The photo is stored in your private FCT account so it reaches your other devices.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc reads your workouts, body weight, sleep, steps, distance, energy, heart metrics, respiratory rate, wrist temperature, hydration, routes, and related workout metrics so it can show workout details and Health history inside the app.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc saves your completed workouts, body weight entries, and hydration entries to Apple Health so your workout history, progress, and water intake stay in sync.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Villain Arc uses your photo library so you can choose a profile photo.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Villain Arc uses your photo library so you can choose a profile photo. The photo is stored in your private FCT account so it reaches your other devices.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1139,10 +1139,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Villain Arc";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Villain Arc uses the camera so you can take a profile photo.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Villain Arc uses the camera so you can take a profile photo. The photo is stored in your private FCT account so it reaches your other devices.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Villain Arc reads your workouts, body weight, sleep, steps, distance, energy, heart metrics, respiratory rate, wrist temperature, hydration, routes, and related workout metrics so it can show workout details and Health history inside the app.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Villain Arc saves your completed workouts, body weight entries, and hydration entries to Apple Health so your workout history, progress, and water intake stay in sync.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Villain Arc uses your photo library so you can choose a profile photo.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Villain Arc uses your photo library so you can choose a profile photo. The photo is stored in your private FCT account so it reaches your other devices.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

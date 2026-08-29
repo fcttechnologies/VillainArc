@@ -52,7 +52,7 @@ struct GeneratePlanAIPromptView: View {
                 } header: {
                     Text("What kind of plan do you want?")
                 } footer: {
-                    Text("Generation happens on-device using Apple Intelligence. Nothing leaves your iPhone.")
+                    Text("Generation runs entirely on this device using Apple Intelligence. The plan it writes is stored in your private FCT account so it reaches your other devices.")
                 }
 
                 Section {

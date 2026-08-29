@@ -14601,60 +14601,67 @@
         }
       }
     },
-    "Answers come from your own workouts, plans, and splits, on-device. Nothing leaves your iPhone, and Villain Arc only reads your data here." : {
+    "Answers are generated entirely on this device, from your own workouts, plans, and splits and nothing else. That training data is stored in your private FCT account so it reaches your other devices." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Antworten stammen aus deinen eigenen Workouts, Plänen und Splits – direkt auf dem Gerät. Nichts verlässt dein iPhone, und Villain Arc liest hier nur deine Daten."
+            "value" : "Antworten entstehen vollständig auf diesem Gerät, allein aus deinen eigenen Workouts, Plänen und Splits. Diese Trainingsdaten liegen in deinem privaten FCT-Konto und erreichen so deine anderen Geräte."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answers are generated entirely on this device, from your own workouts, plans, and splits and nothing else. That training data is stored in your private FCT account so it reaches your other devices."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las respuestas provienen de tus propios entrenamientos, planes y splits, en el dispositivo. Nada sale de tu iPhone, y Villain Arc solo lee tus datos aquí."
+            "value" : "Las respuestas se generan por completo en este dispositivo, solo a partir de tus entrenamientos, planes y divisiones. Esos datos de entrenamiento se guardan en tu cuenta privada de FCT para que lleguen a tus otros dispositivos."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les réponses proviennent de tes propres séances, programmes et splits, sur l’appareil. Rien ne quitte ton iPhone, et Villain Arc se contente de lire tes données ici."
+            "value" : "Les réponses sont générées entièrement sur cet appareil, uniquement à partir de vos entraînements, plans et splits. Ces données d'entraînement sont conservées dans votre compte FCT privé afin d'atteindre vos autres appareils."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le risposte arrivano dai tuoi allenamenti, dalle tue schede e dai tuoi split, direttamente sul dispositivo. Niente esce dal tuo iPhone e Villain Arc qui si limita a leggere i tuoi dati."
+            "value" : "Le risposte vengono generate interamente su questo dispositivo, solo dai tuoi allenamenti, programmi e split. Quei dati di allenamento sono conservati nel tuo account FCT privato, così raggiungono i tuoi altri dispositivi."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "回答は、あなた自身のワークアウト、プラン、スプリットからオンデバイスで生成されます。データがiPhoneの外に出ることはなく、Villain Arcはここであなたのデータを読み取るだけです。"
+            "value" : "回答はこのデバイス上だけで生成され、参照するのはあなた自身のワークアウト、プラン、スプリットのみです。そのトレーニングデータは非公開のFCTアカウントに保存され、ほかのデバイスにも同期されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "답변은 기기 안에서 내 운동, 플랜, 스플릿을 바탕으로 만들어져요. iPhone 밖으로 나가는 데이터는 없고, Villain Arc는 여기서 데이터를 읽기만 해요."
+            "value" : "답변은 이 기기에서만 생성되며, 사용자의 운동, 플랜, 스플릿만을 참고합니다. 해당 트레이닝 데이터는 비공개 FCT 계정에 저장되어 다른 기기로도 전달됩니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "As respostas vêm dos seus próprios treinos, planos e splits, no dispositivo. Nada sai do seu iPhone, e o Villain Arc apenas lê os seus dados aqui."
+            "value" : "As respostas são geradas inteiramente neste dispositivo, apenas a partir dos seus treinos, planos e divisões. Esses dados de treino ficam na sua conta FCT privada para chegarem aos seus outros dispositivos."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ответы строятся по вашим тренировкам, планам и сплитам прямо на устройстве. Ничего не покидает iPhone, и Villain Arc здесь только читает ваши данные."
+            "value" : "Ответы формируются полностью на этом устройстве и только по вашим тренировкам, планам и сплитам. Эти тренировочные данные хранятся в вашей приватной учётной записи FCT и попадают на другие ваши устройства."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "答案来自你自己的训练、计划和分化，全部在设备端处理。没有任何内容离开你的 iPhone，Villain Arc 在这里只会读取你的数据。"
+            "value" : "回答完全在本设备上生成，且仅参考你自己的训练、计划和分化。这些训练数据保存在你的私人 FCT 账户中，因此可同步到你的其他设备。"
           }
         }
       }
@@ -40766,60 +40773,67 @@
         }
       }
     },
-    "Generation happens on-device using Apple Intelligence. Nothing leaves your iPhone." : {
+    "Generation runs entirely on this device using Apple Intelligence. The plan it writes is stored in your private FCT account so it reaches your other devices." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Generierung erfolgt auf dem Gerät mit Apple Intelligence. Nichts verlässt dein iPhone."
+            "value" : "Die Generierung läuft vollständig auf diesem Gerät mit Apple Intelligence. Der erzeugte Plan liegt in deinem privaten FCT-Konto und erreicht so deine anderen Geräte."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generation runs entirely on this device using Apple Intelligence. The plan it writes is stored in your private FCT account so it reaches your other devices."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La generación ocurre en el dispositivo con Apple Intelligence. Nada sale de tu iPhone."
+            "value" : "La generación se ejecuta por completo en este dispositivo con Apple Intelligence. El plan resultante se guarda en tu cuenta privada de FCT para que llegue a tus otros dispositivos."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La génération se fait sur l'appareil avec Apple Intelligence. Rien ne quitte votre iPhone."
+            "value" : "La génération s'exécute entièrement sur cet appareil avec Apple Intelligence. Le plan produit est conservé dans votre compte FCT privé afin d'atteindre vos autres appareils."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La generazione avviene sul dispositivo con Apple Intelligence. Niente esce dal tuo iPhone."
+            "value" : "La generazione avviene interamente su questo dispositivo con Apple Intelligence. Il programma creato è conservato nel tuo account FCT privato, così raggiunge i tuoi altri dispositivi."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "生成はApple Intelligenceを使ってオンデバイスで行われます。データがiPhoneの外に出ることはありません。"
+            "value" : "生成はApple Intelligenceによってこのデバイス上だけで実行されます。作成されたプランは非公開のFCTアカウントに保存され、ほかのデバイスにも同期されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "생성은 Apple Intelligence를 이용해 기기 안에서 이뤄져요. iPhone 밖으로 나가는 데이터는 없어요."
+            "value" : "생성은 Apple Intelligence를 통해 이 기기에서만 실행됩니다. 만들어진 플랜은 비공개 FCT 계정에 저장되어 다른 기기로도 전달됩니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A geração acontece no dispositivo com o Apple Intelligence. Nada sai do seu iPhone."
+            "value" : "A geração é executada inteiramente neste dispositivo com a Apple Intelligence. O plano criado fica na sua conta FCT privada para chegar aos seus outros dispositivos."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Генерация идёт на устройстве через Apple Intelligence. Ничего не покидает iPhone."
+            "value" : "Генерация выполняется полностью на этом устройстве средствами Apple Intelligence. Созданный план хранится в вашей приватной учётной записи FCT и попадает на другие ваши устройства."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "生成过程通过 Apple Intelligence 在设备端完成。没有任何内容离开你的 iPhone。"
+            "value" : "生成完全在本设备上通过 Apple Intelligence 运行。生成的计划保存在你的私人 FCT 账户中，因此可同步到你的其他设备。"
           }
         }
       }
@@ -89324,62 +89338,67 @@
         }
       }
     },
-    "Send diagnostics, report issues, or request features. Diagnostics are stored on your device until you tap Send." : {
-      "comment" : "A footer for the app settings form.",
-      "isCommentAutoGenerated" : true,
+    "Report issues or request features. Anonymous diagnostics, keyed to a random install identifier and never to your account, are always on; the crash report here is sent only when you tap Send." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sende Diagnosedaten, melde Probleme oder schlage Funktionen vor. Diagnosedaten werden auf deinem Gerät gespeichert, bis du auf „Senden“ tippst."
+            "value" : "Probleme melden oder Funktionen vorschlagen. Anonyme Diagnosedaten, die an eine zufällige Installations-ID und nie an dein Konto gebunden sind, laufen immer mit; der Absturzbericht hier wird nur gesendet, wenn du auf Senden tippst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report issues or request features. Anonymous diagnostics, keyed to a random install identifier and never to your account, are always on; the crash report here is sent only when you tap Send."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Envía diagnósticos, informa de problemas o solicita funciones. Los diagnósticos se almacenan en tu dispositivo hasta que tocas Enviar."
+            "value" : "Informa de problemas o solicita funciones. Los diagnósticos anónimos, vinculados a un identificador de instalación aleatorio y nunca a tu cuenta, están siempre activos; el informe de fallos de aquí solo se envía cuando tocas Enviar."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Envoyez des diagnostics, signalez des problèmes ou proposez des fonctionnalités. Les diagnostics sont stockés sur votre appareil jusqu'à ce que vous touchiez Envoyer."
+            "value" : "Signalez un problème ou demandez une fonctionnalité. Les diagnostics anonymes, liés à un identifiant d'installation aléatoire et jamais à votre compte, sont toujours actifs ; le rapport de plantage ci-dessus n'est envoyé que si vous touchez Envoyer."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invia diagnostica, segnala problemi o proponi funzioni. I dati diagnostici restano sul tuo dispositivo finché non tocchi Invia."
+            "value" : "Segnala problemi o richiedi funzioni. La diagnostica anonima, legata a un identificatore di installazione casuale e mai al tuo account, è sempre attiva; il rapporto di arresto anomalo qui viene inviato solo quando tocchi Invia."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "診断情報の送信、問題の報告、機能のリクエストができます。診断情報は「送信」をタップするまでデバイス内に保存されます。"
+            "value" : "問題の報告や機能のリクエストができます。匿名の診断情報は常に送信されますが、ランダムなインストール識別子にのみ紐づき、アカウントとは結び付きません。ここのクラッシュレポートは「送信」をタップしたときだけ送られます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "진단 정보를 보내거나 문제를 신고하고 기능을 제안하세요. 진단 정보는 보내기를 누르기 전까지 기기에만 저장돼요."
+            "value" : "문제를 신고하거나 기능을 요청하세요. 익명 진단 정보는 임의의 설치 식별자에만 연결되고 계정과는 연결되지 않으며 항상 수집됩니다. 여기의 충돌 보고서는 보내기를 탭할 때만 전송됩니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Envie diagnósticos, relate problemas ou solicite recursos. Os diagnósticos ficam armazenados no seu dispositivo até você tocar em Enviar."
+            "value" : "Relate problemas ou solicite recursos. O diagnóstico anônimo, vinculado a um identificador de instalação aleatório e nunca à sua conta, está sempre ativo; o relatório de falha daqui só é enviado quando você toca em Enviar."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Отправляйте диагностику, сообщайте о проблемах и предлагайте функции. Диагностика хранится на устройстве, пока вы не нажмёте «Отправить»."
+            "value" : "Сообщайте о проблемах или предлагайте функции. Анонимная диагностика привязана к случайному идентификатору установки, а не к вашей учётной записи, и работает всегда; отчёт о сбое отсюда отправляется, только когда вы нажимаете «Отправить»."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发送诊断信息、报告问题或提出功能建议。在你点按“发送”之前，诊断信息只保存在你的设备上。"
+            "value" : "报告问题或提出功能建议。匿名诊断始终开启，但仅关联随机安装标识符，绝不关联你的账户；此处的崩溃报告只有在你点按“发送”后才会发送。"
           }
         }
       }
