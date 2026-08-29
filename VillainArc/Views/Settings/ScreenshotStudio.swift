@@ -1,34 +1,13 @@
 #if DEBUG
+import FCTScreenshotStudio
 import SwiftData
 import SwiftUI
 
-// MARK: - Debug Pro override
-
-/// DEBUG-only toggle that forces `SubscriptionGate.isPro` to true. Defaults ON so debug builds
-/// (including on-device) unlock every Pro feature for testing and for the Screenshot Studio.
-/// Flip it off from Settings → Debug to exercise the free / paywall flows.
-enum DebugSubscriptionOverride {
-    private static let key = "debug.forceProEnabled"
-    static var forcePro: Bool {
-        get { UserDefaults.standard.object(forKey: key) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
-    }
-}
-
-// MARK: - Scene model
-
-/// One App-Store-screenshot scene: a real app screen, rendered against the seeded real store,
-/// presented full-screen for capture. DEBUG-only; never ships in release.
-struct ScreenshotStudioScene: Identifiable {
-    let id: String
-    let title: String
-    let detail: String
-    let symbol: String
-    let content: @MainActor () -> AnyView
-}
-
 // MARK: - Catalog
 
+/// Villain Arc's App-Store-screenshot scenes. The harness that presents them — the gallery, the
+/// seed affordance, the entitlement override, the driving identifiers — is `FCTScreenshotStudio`;
+/// what lives here is the part only this app can say: which screens sell it, and in what order.
 @MainActor
 enum ScreenshotStudioCatalog {
     /// Ranked by selling power. Every scene reuses the real view. Seed the demo data first.
@@ -80,7 +59,7 @@ private struct StudioSessionScene<Content: View>: View {
 
     var body: some View {
         Group {
-            if let session { content(session) } else { StudioEmptyState() }
+            if let session { content(session) } else { ScreenshotStudioUnseededView() }
         }
         .task {
             let raw = status.rawValue
@@ -97,7 +76,7 @@ private struct StudioPlanScene: View {
 
     var body: some View {
         Group {
-            if let plan { NavigationStack { WorkoutPlanDetailView(plan: plan) } } else { StudioEmptyState() }
+            if let plan { NavigationStack { WorkoutPlanDetailView(plan: plan) } } else { ScreenshotStudioUnseededView() }
         }
         .task {
             var descriptor = FetchDescriptor(predicate: WorkoutPlan.completedPredicate)
@@ -113,7 +92,7 @@ private struct StudioCardioScene: View {
 
     var body: some View {
         Group {
-            if let session { NavigationStack { CardioSessionDetailView(session: session, showsCloseButton: false) } } else { StudioEmptyState() }
+            if let session { NavigationStack { CardioSessionDetailView(session: session, showsCloseButton: false) } } else { ScreenshotStudioUnseededView() }
         }
         .task { session = (try? context.fetch(CardioSession.history))?.first }
     }
@@ -136,81 +115,6 @@ private struct StudioAIReplacementScene: View {
             }
             .navigationTitle("Replace Lateral Raise")
             .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-
-private struct StudioEmptyState: View {
-    var body: some View {
-        ContentUnavailableView("Seed the demo data first", systemImage: "tray.and.arrow.down", description: Text("Tap \"Seed Demo Data\" in the Screenshot Studio list, then reopen this scene."))
-    }
-}
-
-// MARK: - Gallery
-
-/// The DEBUG Screenshot Studio: seed the store, then present each scene full-screen with the
-/// app's `.zoom` transition (swipe-down to dismiss). Reached from Settings → Debug.
-struct ScreenshotStudioGalleryView: View {
-    @Namespace private var namespace
-    @State private var selectedScene: ScreenshotStudioScene?
-    @State private var isSeeding = false
-    @State private var statusMessage = "Seed the demo data, then tap a scene."
-
-    var body: some View {
-        List {
-            Section {
-                Button {
-                    seed()
-                } label: {
-                    Label(isSeeding ? "Seeding…" : "Seed Demo Data", systemImage: "tray.and.arrow.down.fill")
-                }
-                .disabled(isSeeding)
-                .accessibilityIdentifier(AccessibilityIdentifiers.debugScreenshotStudioSeedButton)
-            } footer: {
-                Text(statusMessage)
-            }
-
-            Section {
-                ForEach(ScreenshotStudioCatalog.scenes) { scene in
-                    Button {
-                        Haptics.selection()
-                        selectedScene = scene
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(scene.title).font(.body).foregroundStyle(.primary)
-                                Text(scene.detail).font(.caption).foregroundStyle(.secondary)
-                            }
-                        } icon: {
-                            Image(systemName: scene.symbol).foregroundStyle(.tint)
-                        }
-                    }
-                    .matchedTransitionSource(id: scene.id, in: namespace)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.debugScreenshotStudioScene(scene.id))
-                }
-            } footer: {
-                Text("Tap a scene to present it full-screen for capture. Swipe down to dismiss. Widgets and Live Activities are captured separately.")
-            }
-        }
-        .navigationTitle("Screenshot Studio")
-        .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $selectedScene) { scene in
-            scene.content()
-                .navigationTransition(.zoom(sourceID: scene.id, in: namespace))
-        }
-    }
-
-    private func seed() {
-        isSeeding = true
-        statusMessage = "Seeding demo data…"
-        Task { @MainActor in
-            do {
-                try ScreenshotStudioSeeder.seedAll()
-                statusMessage = "Demo data seeded. Tap any scene to capture."
-            } catch {
-                statusMessage = "Seed failed: \(error.localizedDescription)"
-            }
-            isSeeding = false
         }
     }
 }

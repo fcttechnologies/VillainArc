@@ -2,6 +2,9 @@ import FCTMetrics
 import Foundation
 import Observation
 import SwiftUI
+#if DEBUG
+import FCTScreenshotStudio
+#endif
 
 /// The five paywalled premium features in Villain Arc 1.3. Identifier for `SubscriptionGate.require`
 /// and for `PaywallPresenter.present(for:)` so the paywall can spotlight the triggering feature.

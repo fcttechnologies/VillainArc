@@ -20,6 +20,7 @@
 		DB9514D7555E43B23B1723BC /* FCTBlobSyncTesting in Frameworks */ = {isa = PBXBuildFile; productRef = AC256FCF36A769C079EE33D1 /* FCTBlobSyncTesting */; };
 		0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = D9589A0FAF7667BC425CCA9A /* FCTSync */; };
 		7B3C1A9E4D25F0816AC3E5D9 /* FCTOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 6E92D4C10FA37B58E2416D0A /* FCTOnboarding */; };
+		9C41E7A20B5D48F1A6E30001 /* FCTScreenshotStudio in Frameworks */ = {isa = PBXBuildFile; productRef = 9C41E7A20B5D48F1A6E30002 /* FCTScreenshotStudio */; };
 		354CA66B2F535701005622B1 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66A2F535701005622B1 /* README.md */; };
 		38F5B4EA9DF12A08A0B96B49 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = B4373FF459A151B3B305FDAA /* FCTEntities */; };
 		8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = C5EC413C794E0ED7DF5B6881 /* FCTSync */; };
@@ -388,6 +389,7 @@
 				38F5B4EA9DF12A08A0B96B49 /* FCTEntities in Frameworks */,
 				0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */,
 				7B3C1A9E4D25F0816AC3E5D9 /* FCTOnboarding in Frameworks */,
+				9C41E7A20B5D48F1A6E30001 /* FCTScreenshotStudio in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -548,6 +550,7 @@
 				B4373FF459A151B3B305FDAA /* FCTEntities */,
 				D9589A0FAF7667BC425CCA9A /* FCTSync */,
 				6E92D4C10FA37B58E2416D0A /* FCTOnboarding */,
+				9C41E7A20B5D48F1A6E30002 /* FCTScreenshotStudio */,
 			);
 			productName = VillainArc;
 			productReference = FDA193902F16D14500CA57C5 /* VillainArc.app */;
@@ -1410,6 +1413,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
 			productName = FCTOnboarding;
+		};
+		9C41E7A20B5D48F1A6E30002 /* FCTScreenshotStudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTScreenshotStudio;
 		};
 		FDAB6AF02FC769540085E0F0 /* MuscleMap */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -860,17 +860,16 @@ enum AccessibilityIdentifiers {
     static let settingsTemperatureUnitPicker = "settingsTemperatureUnitPicker"
     static let settingsSpeedUnitPicker = "settingsSpeedUnitPicker"
     static let settingsLegalWebCloseButton = "settingsLegalWebCloseButton"
-    static let debugScreenshotStudioLink = "debugScreenshotStudioLink"
+    // The Screenshot Studio's identifiers live in `FCTScreenshotStudio.ScreenshotStudioIdentifiers`:
+    // they are a fleet-wide contract one capture driver relies on, and the studio's own views
+    // apply them, so this app never spells them.
     static let debugShowOnboardingCarouselButton = "debugShowOnboardingCarouselButton"
     static let debugShowWhatsNewButton = "debugShowWhatsNewButton"
     static let debugResetAppDataCancelButton = "debugResetAppDataCancelButton"
     static let debugSeedExerciseHistoryButton = "debugSeedExerciseHistoryButton"
     static let debugSeedExerciseDetailHistoryButton = "debugSeedExerciseDetailHistoryButton"
-    static let debugScreenshotStudioSeedButton = "debugScreenshotStudioSeedButton"
 
     static func debugSeedHealthSamplesButton(_ scenarioTitle: String) -> String { "debugSeedHealthSamplesButton-\(slug(scenarioTitle))" }
-
-    static func debugScreenshotStudioScene(_ sceneID: String) -> String { "debugScreenshotStudioScene-\(slug(sceneID))" }
 
     private static func slug(_ text: String) -> String {
         let lowercase = text.lowercased()

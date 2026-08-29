@@ -1,6 +1,9 @@
 import FCTMetrics
 import FCTOnboarding
 import SwiftUI
+#if DEBUG
+import FCTScreenshotStudio
+#endif
 import SwiftData
 import UIKit
 import UserNotifications
@@ -1034,12 +1037,9 @@ private struct DebugSettingsView: View {
     var body: some View {
         Form {
             Section {
-                NavigationLink {
-                    ScreenshotStudioGalleryView()
-                } label: {
-                    Label("Screenshot Studio", systemImage: "camera.viewfinder")
+                ScreenshotStudioLink(scenes: ScreenshotStudioCatalog.scenes) {
+                    try ScreenshotStudioSeeder.seedAll()
                 }
-                .accessibilityIdentifier(AccessibilityIdentifiers.debugScreenshotStudioLink)
                 .appGroupedListRow(position: .single)
             }
 
