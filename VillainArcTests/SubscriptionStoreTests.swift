@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 import Testing
 
 @testable import VillainArc
@@ -98,6 +99,67 @@ struct SubscriptionStoreTests {
     func productIDs_useBundlePrefixConvention() {
         #expect(SubscriptionStore.monthlyProductID.hasPrefix("com.fcttechnologies.VillainArc."))
         #expect(SubscriptionStore.yearlyProductID.hasPrefix("com.fcttechnologies.VillainArc."))
+    }
+
+    // MARK: - Which status in the group decides entitlement
+    //
+    // `Product.SubscriptionInfo.status` returns one entry per transaction in the subscription
+    // group and Villain Arc Pro has Family Sharing enabled, so a member's own lapsed entry shares
+    // the array with the purchaser's active one in no defined order. These pin Apple's rule:
+    // highest level of service whose state is subscribed.
+
+    private typealias Candidate = (state: Product.SubscriptionInfo.RenewalState, groupLevel: Int)
+
+    @Test
+    func entitlementIndex_lapsedEntryFirst_picksTheSubscribedOne() {
+        // The Family Sharing shape: the member's expired entry sorted ahead of the purchaser's
+        // active one. Reading the array's first element reports a paying customer as unsubscribed.
+        let candidates: [Candidate] = [(.expired, 1), (.subscribed, 1)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) == 1)
+    }
+
+    @Test
+    func entitlementIndex_revokedAndBillingRetryBeforeSubscribed_picksTheSubscribedOne() {
+        let candidates: [Candidate] = [(.revoked, 1), (.inBillingRetryPeriod, 1), (.subscribed, 1)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) == 2)
+    }
+
+    @Test
+    func entitlementIndex_subscribedOutranksGracePeriod() {
+        let candidates: [Candidate] = [(.inGracePeriod, 1), (.subscribed, 1)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) == 1)
+    }
+
+    @Test
+    func entitlementIndex_gracePeriodOutranksExpired() {
+        // Grace period is still Pro in this app, so it must beat a lapsed entry.
+        let candidates: [Candidate] = [(.expired, 1), (.inGracePeriod, 1)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) == 1)
+    }
+
+    @Test
+    func entitlementIndex_amongSubscribed_picksHighestLevelOfService() {
+        // App Store Connect numbers level 1 as the top tier, so the lower number wins.
+        let candidates: [Candidate] = [(.subscribed, 3), (.subscribed, 1), (.subscribed, 2)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) == 1)
+    }
+
+    @Test
+    func entitlementIndex_nothingEntitled_stillReturnsAStatusToExplain() {
+        // Nothing is Pro, but the UI still has to say what expired.
+        let candidates: [Candidate] = [(.expired, 2), (.revoked, 1)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) != nil)
+    }
+
+    @Test
+    func entitlementIndex_emptyGroup_returnsNil() {
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: []) == nil)
+    }
+
+    @Test
+    func entitlementIndex_singleSubscribed_picksIt() {
+        let candidates: [Candidate] = [(.subscribed, 1)]
+        #expect(SubscriptionStore.entitlementDecidingIndex(among: candidates) == 0)
     }
 
     // MARK: - App Group cache keys

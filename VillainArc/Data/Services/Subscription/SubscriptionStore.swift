@@ -151,14 +151,23 @@ final class SubscriptionStore {
     }
 
     private func deriveStatus(from transaction: Transaction) async -> SubscriptionStatus {
-        let productID = transaction.productID
-        let expirationDate = transaction.expirationDate
-        let isInTrial = transaction.offer?.type == .introductory
+        var productID = transaction.productID
+        var expirationDate = transaction.expirationDate
+        var isInTrial = transaction.offer?.type == .introductory
 
         if let product = products.first(where: { $0.id == productID }),
            let subscription = product.subscription,
            let statuses = try? await subscription.status,
-           let info = statuses.first {
+           let info = entitlementDecidingStatus(among: statuses) {
+            // The chosen status may belong to a different transaction in the group than the one
+            // that got us here — a family-shared yearly where the entitlement loop found a
+            // monthly. Read the product, expiry, and trial flag off the status that decided, or
+            // the app reports one subscription's state under another's name and renewal date.
+            if case let .verified(deciding) = info.transaction {
+                productID = deciding.productID
+                expirationDate = deciding.expirationDate
+                isInTrial = deciding.offer?.type == .introductory
+            }
             switch info.state {
             case .subscribed:
                 if isInTrial, let end = expirationDate {
@@ -188,6 +197,58 @@ final class SubscriptionStore {
             return .expired(productID: productID, expirationDate: exp)
         }
         return .subscribed(productID: productID, expirationDate: expirationDate, willAutoRenew: true)
+    }
+
+    // MARK: - Which status in the group decides entitlement
+
+    /// `Product.SubscriptionInfo.status` returns one entry per transaction in the subscription
+    /// group, in no defined order. Villain Arc Pro has Family Sharing enabled on both products, so
+    /// a family member's own lapsed entry and the purchaser's active one sit in that array
+    /// together: reading `statuses.first` hands the verdict to whichever StoreKit returned first
+    /// and shows a paying customer as unsubscribed. Apple's rule is to serve the customer at the
+    /// highest level of service whose state is `subscribed`.
+    ///
+    /// Unverified entries are dropped rather than ranked — an unverified `subscribed` must never
+    /// out-rank a verified one. When nothing is left, the caller falls back to deriving status
+    /// from the transaction itself.
+    private func entitlementDecidingStatus(
+        among statuses: [Product.SubscriptionInfo.Status]
+    ) -> Product.SubscriptionInfo.Status? {
+        let verified = statuses.filter {
+            if case .verified = $0.transaction { return true }
+            return false
+        }
+        let candidates = verified.map { status -> (state: Product.SubscriptionInfo.RenewalState, groupLevel: Int) in
+            guard case let .verified(transaction) = status.transaction else { return (status.state, .max) }
+            let level = products
+                .first(where: { $0.id == transaction.productID })?
+                .subscription?
+                .groupLevel
+            return (status.state, level ?? .max)
+        }
+        guard let index = Self.entitlementDecidingIndex(among: candidates) else { return nil }
+        return verified[index]
+    }
+
+    /// The ranking half of ``entitlementDecidingStatus(among:)``, pure so it can be tested without
+    /// a live StoreKit session. Ranks an entitled state above a lapsed one and, among equals, the
+    /// lower `groupLevel` — App Store Connect numbers level 1 as the top tier. Grace period ranks
+    /// below `subscribed` and above everything else, which is what the app already treats as Pro.
+    static func entitlementDecidingIndex(
+        among candidates: [(state: Product.SubscriptionInfo.RenewalState, groupLevel: Int)]
+    ) -> Int? {
+        candidates.indices.min { lhs, rhs in
+            (serviceRank(candidates[lhs].state), candidates[lhs].groupLevel)
+                < (serviceRank(candidates[rhs].state), candidates[rhs].groupLevel)
+        }
+    }
+
+    private static func serviceRank(_ state: Product.SubscriptionInfo.RenewalState) -> Int {
+        switch state {
+        case .subscribed: return 0
+        case .inGracePeriod: return 1
+        default: return 2
+        }
     }
 
     // MARK: - Purchase + restore
