@@ -36,7 +36,7 @@ final class DataManager {
         return didChange
     }
 
-    private static func syncExercises(context: ModelContext) throws -> Bool {
+    @discardableResult static func syncExercises(context: ModelContext) throws -> Bool {
         let catalogExercises = try context.fetch(Exercise.catalogExercises)
         let exercisesByCatalogID = Dictionary(catalogExercises.map { ($0.catalogID, $0) }, uniquingKeysWith: { first, _ in first })
         var didChange = false
@@ -51,6 +51,9 @@ final class DataManager {
             } else {
                 let newExercise = Exercise(from: catalogItem)
                 context.insert(newExercise)
+                // A preference can arrive ahead of the exercise it names — a device on a newer
+                // bundled catalog authored it — and sits unapplied until this seed introduces it.
+                try context.fetch(ExercisePreference.withCatalogID(catalogItem.id)).first?.apply(to: newExercise)
                 didChange = true
             }
         }

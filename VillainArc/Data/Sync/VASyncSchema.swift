@@ -13,6 +13,13 @@ import SwiftData
 /// answer) all stay local. Named cost: weight and hydration history rides Apple Health's own
 /// continuity, not the FCT account.
 ///
+/// **`Exercise` stays local too, for a different reason**: it is reference data, not the user's.
+/// The catalog ships in the binary and is seeded on every install, so syncing it made each account
+/// store an identical copy of something nobody had personalised. Only `ExercisePreference` — the
+/// sparse per-account state about a catalog entry — rides the wire. Because the catalog is
+/// unsynced, the engine's `clearSyncedData` no longer reaches it, so a departing account's
+/// exercise rows are cleared by `VASync.locallyClearedModels` instead.
+///
 /// The goals the user sets OVER that health data do sync, and one of them carries a health-sourced
 /// number: `NewWeightGoalView` prefills the start weight from the latest `WeightEntry`, which is
 /// itself imported from a HealthKit sample, so `va.weight_goal.start_weight` can hold a body weight
@@ -44,7 +51,7 @@ enum VASyncSchema {
         tables: [
             .of(AppSettings.self),
             .of(UserProfile.self),
-            .of(Exercise.self),
+            .of(ExercisePreference.self),
             .of(TrainingGoal.self),
             .of(TrainingConditionPeriod.self),
             .of(WeightGoal.self),
@@ -226,54 +233,48 @@ extension UserProfile: SyncedModel {
     }
 }
 
-// MARK: - Exercise (catalog rows converge by deterministic id)
+// MARK: - ExercisePreference (the only part of a catalog exercise that syncs)
 
-extension Exercise: SyncedModel {
-    static var syncTableName: String { "va.exercise" }
-    static var syncIDKeyPath: KeyPath<Exercise, UUID> { \.id }
+/// The exercise catalog itself does not ride the wire: it ships in the app binary and is seeded
+/// locally on every install, so every account stored an identical copy of a catalog nobody had
+/// personalised. What syncs is the sparse per-account preference — a row per exercise the user
+/// actually touched — and the five catalog columns (`name`, `muscles_targeted`, `aliases`,
+/// `equipment_type`, and the catalog id itself as content) are derived from the bundle instead.
+extension ExercisePreference: SyncedModel {
+    static var syncTableName: String { "va.exercise_preference" }
+    static var syncIDKeyPath: KeyPath<ExercisePreference, UUID> { \.id }
 
-    static func descriptor(forSyncIDs ids: [UUID]) -> FetchDescriptor<Exercise> {
+    static func descriptor(forSyncIDs ids: [UUID]) -> FetchDescriptor<ExercisePreference> {
         FetchDescriptor(predicate: #Predicate { ids.contains($0.id) })
     }
 
-    static func descriptor(forPersistentIDs ids: [PersistentIdentifier]) -> FetchDescriptor<Exercise> {
+    static func descriptor(forPersistentIDs ids: [PersistentIdentifier]) -> FetchDescriptor<ExercisePreference> {
         FetchDescriptor(predicate: #Predicate { ids.contains($0.persistentModelID) })
     }
 
-    static var allRecordsDescriptor: FetchDescriptor<Exercise> { FetchDescriptor() }
+    static var allRecordsDescriptor: FetchDescriptor<ExercisePreference> { FetchDescriptor() }
 
     func syncRow() -> [String: JSONValue] {
         [
             "catalog_id": .string(catalogID),
-            "name": .string(name),
-            "muscles_targeted": .strings(musclesTargeted.map(\.rawValue)),
-            "aliases": .strings(aliases),
-            "last_added_at": lastAddedAt.map(JSONValue.date) ?? .null,
             "favorite": .bool(favorite),
-            "is_custom": .bool(isCustom),
-            "equipment_type": .string(equipmentType.rawValue),
+            "last_added_at": lastAddedAt.map(JSONValue.date) ?? .null,
             "suggestions_enabled": .bool(suggestionsEnabled),
             "preferred_weight_change": preferredWeightChange.map(JSONValue.double) ?? .null,
-            // `search_tokens` is deliberately absent: derived locale-shaped data, rebuilt below.
         ]
     }
 
     @discardableResult
     func apply(_ row: [String: JSONValue]) -> UUID? {
         if let value = row["catalog_id"]?.stringValue { catalogID = value }
-        if let value = row["name"]?.stringValue { name = value }
-        if let value = row["muscles_targeted"]?.stringArray {
-            musclesTargeted = value.compactMap(Muscle.init(rawValue:))
-        }
-        if let value = row["aliases"]?.stringArray { aliases = value }
-        if let value = row["last_added_at"] { lastAddedAt = value.dateValue }
         if let value = row["favorite"]?.boolValue { favorite = value }
-        if let value = row["is_custom"]?.boolValue { isCustom = value }
-        if let value = row["equipment_type"]?.stringValue,
-           let type = EquipmentType(rawValue: value) { equipmentType = type }
+        if let value = row["last_added_at"] { lastAddedAt = value.dateValue }
         if let value = row["suggestions_enabled"]?.boolValue { suggestionsEnabled = value }
         if let value = row["preferred_weight_change"] { preferredWeightChange = value.doubleValue }
-        rebuildSearchData()
+        // The app reads `Exercise`, never this row, so a pulled preference is only real once it
+        // reaches the exercise it names. An exercise this build's catalog lacks leaves the row
+        // stored and unapplied until the seed introduces it.
+        if let exercise = resolvedExercise() { apply(to: exercise) }
         return nil
     }
 }

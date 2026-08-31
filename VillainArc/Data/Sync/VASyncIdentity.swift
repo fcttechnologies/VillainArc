@@ -8,9 +8,10 @@ import Foundation
 /// - **Singletons** (`AppSettings`, `UserProfile`) carry a fixed uuid the client hard-codes, so two
 ///   devices that each create one converge as one row under LWW instead of two rows wearing the
 ///   same job (the platform's singleton convention).
-/// - **Catalog rows** (`Exercise`) are seeded from the bundled catalog on every install, so their
-///   uuid derives deterministically from the stable catalog id: every install mints the same uuid
-///   for "Bench Press" and LWW settles the copies as one record.
+/// - **Catalog-derived rows** (`ExercisePreference`) name a bundled catalog entry that every
+///   install already has, so their uuid derives deterministically from the stable catalog id:
+///   two devices that each favorite "Bench Press" mint the same uuid and LWW settles the copies
+///   as one record instead of two rows wearing the same job.
 /// - **Everything else** is minted `UUID()` at creation, exactly once, on the device that authored
 ///   it.
 ///
@@ -21,11 +22,25 @@ nonisolated enum VASyncIdentity {
     static let userProfileID = UUID(uuidString: "7A2E6F04-0002-4000-8000-56412D505246")!
 
     private static let exerciseNamespace = "com.fcttechnologies.VillainArc.exercise:"
+    private static let exercisePreferenceNamespace = "com.fcttechnologies.VillainArc.exercise-preference:"
 
-    /// A stable, RFC-4122-shaped uuid for a catalog exercise: SHA-256 over a namespaced name,
-    /// truncated to 16 bytes with the version (5) and variant bits set.
+    /// A stable, RFC-4122-shaped uuid for a catalog exercise. The catalog itself no longer syncs —
+    /// it ships in the binary — so this names the **local** row, and the store is rebuilt from the
+    /// bundle rather than pulled.
     static func exerciseID(catalogID: String) -> UUID {
-        let digest = SHA256.hash(data: Data((exerciseNamespace + catalogID).utf8))
+        derivedID(namespace: exerciseNamespace, catalogID: catalogID)
+    }
+
+    /// A stable, RFC-4122-shaped uuid for an exercise's per-account preference row. Its own
+    /// namespace, so a preference and the exercise it names never collide.
+    static func exercisePreferenceID(catalogID: String) -> UUID {
+        derivedID(namespace: exercisePreferenceNamespace, catalogID: catalogID)
+    }
+
+    /// SHA-256 over a namespaced name, truncated to 16 bytes with the version (5) and variant
+    /// bits set.
+    private static func derivedID(namespace: String, catalogID: String) -> UUID {
+        let digest = SHA256.hash(data: Data((namespace + catalogID).utf8))
         var bytes = Array(digest.prefix(16))
         bytes[6] = (bytes[6] & 0x0F) | 0x50
         bytes[8] = (bytes[8] & 0x3F) | 0x80

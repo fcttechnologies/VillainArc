@@ -201,6 +201,7 @@
 				Data/Models/Enums/Units/WeightUnit.swift,
 				Data/Models/Exercise/Exercise.swift,
 				Data/Models/Exercise/ExerciseCatalog.swift,
+				Data/Models/Exercise/ExercisePreference.swift,
 				Data/Models/Exercise/ExerciseHistory.swift,
 				Data/Models/Exercise/ProgressionPoint.swift,
 				Data/Models/Exercise/RepRangePolicy.swift,

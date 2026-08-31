@@ -66,9 +66,45 @@ import SwiftData
         return alternateNames
     }
     
-    func updateLastAddedAt(to time: Date = .now) { lastAddedAt = time }
-    
-    func toggleFavorite() { favorite.toggle() }
+    func updateLastAddedAt(to time: Date = .now) {
+        lastAddedAt = time
+        recordPreference()
+    }
+
+    func toggleFavorite() {
+        favorite.toggle()
+        recordPreference()
+    }
+
+    func setSuggestionPreferences(enabled: Bool, preferredWeightChange newValue: Double?) {
+        suggestionsEnabled = enabled
+        preferredWeightChange = newValue
+        recordPreference()
+    }
+
+    /// True while nothing here is the user's — the state a freshly seeded catalog row holds.
+    private var preferenceIsDefault: Bool {
+        !favorite && lastAddedAt == nil && suggestionsEnabled && preferredWeightChange == nil
+    }
+
+    /// Mirror this exercise's preference state onto its synced row, which is the only part of a
+    /// catalog exercise that rides the wire. **Every write to `favorite`, `lastAddedAt`,
+    /// `suggestionsEnabled` or `preferredWeightChange` goes through one of the three methods
+    /// above**, so this runs; a direct assignment elsewhere would change the exercise on this
+    /// device and nowhere else.
+    ///
+    /// Sparse by construction: a row is minted only once the state stops being the default one
+    /// every install starts from, or the change buys nothing.
+    private func recordPreference() {
+        guard let modelContext else { return }
+        if let existing = try? modelContext.fetch(ExercisePreference.withCatalogID(catalogID)).first {
+            existing.adopt(from: self)
+        } else if !preferenceIsDefault {
+            let preference = ExercisePreference(catalogID: catalogID)
+            preference.adopt(from: self)
+            modelContext.insert(preference)
+        }
+    }
 
     @discardableResult func rebuildSearchData() -> Bool {
         let tokens = exerciseSearchTokens(for: self)

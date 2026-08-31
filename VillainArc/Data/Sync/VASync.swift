@@ -487,32 +487,43 @@ final class VASync {
         blobPendingCount = 0
     }
 
-    /// The non-synced residue a departing account leaves behind: the Apple Health mirrors and
-    /// derived caches (all re-derivable — from HealthKit or from the synced rows — for whoever
-    /// signs in next), and the bootstrap markers, so the next launch runs a full first bootstrap.
+    /// The non-synced residue a departing account leaves behind, and the other half of the store's
+    /// teardown: `clearSyncedData` clears everything on the wire, this clears everything that is
+    /// not, and between them they cover every model in the schema. A model in neither list is data
+    /// that outlives the account that made it.
     ///
-    /// "Re-derivable from HealthKit" is a property of the anchors, not a hope: the mirror rows and
-    /// the anchors that produced them go together, or the next import resumes past history that no
-    /// longer exists locally and the user reads it as data loss.
+    /// All of it is re-derivable for whoever signs in next — the Apple Health mirrors from
+    /// HealthKit, the analytics caches from the synced rows, the exercise catalog from the app
+    /// bundle. "Re-derivable from HealthKit" is a property of the anchors, not a hope: the mirror
+    /// rows and the anchors that produced them go together, or the next import resumes past
+    /// history that no longer exists locally and the user reads it as data loss.
+    nonisolated static let locallyClearedModels: [any PersistentModel.Type] = [
+        HealthWorkout.self,
+        WeightEntry.self,
+        HealthStepsDistance.self,
+        HealthEnergy.self,
+        HealthSleepNight.self,
+        HealthSleepBlock.self,
+        HealthHeart.self,
+        HealthRespiratoryRate.self,
+        HealthWristTemperature.self,
+        HydrationDay.self,
+        HydrationEntry.self,
+        ExerciseHistory.self,
+        ProgressionPoint.self,
+        RestTimeHistory.self,
+        HealthSyncState.self,
+        // The bundled catalog. It stopped syncing when the per-account copy became the sparse
+        // `ExercisePreference`, which means the engine's clear no longer reaches it — and a
+        // catalog row carries the departing account's favorite and last-added stamp.
+        Exercise.self,
+    ]
+
     private func clearLocalCaches() {
         guard let container else { return }
         let context = container.mainContext
         do {
-            try context.delete(model: HealthWorkout.self)
-            try context.delete(model: WeightEntry.self)
-            try context.delete(model: HealthStepsDistance.self)
-            try context.delete(model: HealthEnergy.self)
-            try context.delete(model: HealthSleepNight.self)
-            try context.delete(model: HealthSleepBlock.self)
-            try context.delete(model: HealthHeart.self)
-            try context.delete(model: HealthRespiratoryRate.self)
-            try context.delete(model: HealthWristTemperature.self)
-            try context.delete(model: HydrationDay.self)
-            try context.delete(model: HydrationEntry.self)
-            try context.delete(model: ExerciseHistory.self)
-            try context.delete(model: ProgressionPoint.self)
-            try context.delete(model: RestTimeHistory.self)
-            try context.delete(model: HealthSyncState.self)
+            for model in Self.locallyClearedModels { try context.delete(model: model) }
             try context.save()
         } catch {
             AppLog.error("Sign-out cache clear failed", error: error)

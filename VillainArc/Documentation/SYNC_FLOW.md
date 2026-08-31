@@ -32,7 +32,9 @@ parent's completion):
   `WorkoutSplitDay`, `RepRangePolicy`
 - the coaching record: `SuggestionEvent`, `SuggestionEvaluation`, `PrescriptionChange`
 - goals and identity: the five goal models, `TrainingConditionPeriod`, `UserProfile` (singleton),
-  `AppSettings` (singleton), `Exercise`
+  `AppSettings` (singleton)
+- what the user has done to a catalog exercise: `ExercisePreference`, sparse — a row exists only
+  for an exercise they actually touched (favorited, added, or tuned)
 - one byte surface: the profile photo, through `FCTBlobSync` (`va.user_profile.photo`; bytes in
   the object store, preview riding the row, `profileImageData` as the local render cache)
 
@@ -46,6 +48,12 @@ parent's completion):
 - `ExerciseHistory` / `ProgressionPoint` — derived caches, rebuilt in full after any pull that
   lands rows (`ExerciseHistoryUpdater.rebuildAllHistories`)
 - `HealthSyncState` (per-device anchors), `RestTimeHistory` (a per-device last-used stamp)
+- `Exercise` — reference data, not the user's. The catalog ships in the app binary
+  (`ExerciseCatalog`) and is seeded locally on every install, so syncing it made every account
+  store an identical copy of a catalog nobody had personalised. Only `ExercisePreference` rides
+  the wire. Because the catalog is unsynced the engine's `clearSyncedData` no longer reaches it,
+  so a departing account's exercise rows are cleared by `VASync.locallyClearedModels` instead —
+  the two lists partition the schema, and a model in neither outlives the account that made it
 - live-session pointers (`activeExercise`, `activeInSession`, `activePerformance`) and the
   device-local `healthWorkout` mirror links
 
@@ -53,9 +61,10 @@ parent's completion):
 
 - `AppSettings` and `UserProfile` are singletons under fixed uuids (`VASyncIdentity`), so two
   devices that each create one converge as one row under LWW
-- catalog `Exercise` rows derive their uuid deterministically from the catalog id, so every
-  install mints the same uuid for the same exercise; safe because catalog exercises have no
-  user-facing delete, so a deterministic id never meets its own tombstone
+- `ExercisePreference` rows derive their uuid deterministically from the catalog id they name
+  (under their own namespace, distinct from the local catalog's), so two devices that each
+  favorite the same exercise converge as one row; safe because a preference is never deleted, so
+  a deterministic id never meets its own tombstone
 - everything else mints `UUID()` once, on the authoring device
 - every synced model's `id` carries `@Attribute(.preserveValueOnDeletion)` — without it a deletion
   cannot ride the history feed

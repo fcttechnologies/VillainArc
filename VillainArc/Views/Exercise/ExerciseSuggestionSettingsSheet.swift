@@ -222,15 +222,16 @@ struct ExerciseSuggestionSettingsSheet: View {
         guard canSave else { return }
 
         let wasSuggestionsEnabled = exercise.suggestionsEnabled
-        exercise.suggestionsEnabled = suggestionsEnabled
 
+        var newPreferredWeightChange = exercise.preferredWeightChange
         if suggestionsEnabled {
             if trimmedValueText.isEmpty {
-                exercise.preferredWeightChange = nil
+                newPreferredWeightChange = nil
             } else if let parsedValueKg, parsedValueKg > 0 {
-                exercise.preferredWeightChange = parsedValueKg
+                newPreferredWeightChange = parsedValueKg
             }
         }
+        exercise.setSuggestionPreferences(enabled: suggestionsEnabled, preferredWeightChange: newPreferredWeightChange)
 
         if wasSuggestionsEnabled && !suggestionsEnabled {
             deleteUnresolvedSuggestionEvents(forCatalogID: exercise.catalogID, context: context)
