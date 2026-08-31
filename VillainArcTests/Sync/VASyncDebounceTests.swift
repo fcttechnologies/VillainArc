@@ -45,8 +45,8 @@ private nonisolated final class SlowTransport: SyncTransport, @unchecked Sendabl
 /// The debounce's one hard rule.
 ///
 /// Coalescing a burst of triggers into one cycle is right; **cancelling a cycle that has already
-/// started is not**, and the two are one line apart. `scheduleDebouncedSync` cancels the previous
-/// debounce task, and if that task had already stopped sleeping and begun syncing, the
+/// started is not**, and the two are one line apart. Arming the debounce cancels the wait a
+/// previous trigger armed, and if that wait had already stopped sleeping and begun syncing, the
 /// cancellation tears down the HTTP request inside it.
 ///
 /// That matters most exactly where it is least visible: the account's first pull after a sign-in.

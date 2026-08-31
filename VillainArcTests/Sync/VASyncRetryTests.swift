@@ -109,10 +109,10 @@ private nonisolated final class RetryTransport: SyncTransport, @unchecked Sendab
 /// The backoff retry's one hard rule — the debounce's rule, one layer up.
 ///
 /// `scheduleRetry` is the last statement of `syncNow()`'s `repeat … while syncAgain` body, so when
-/// the task running that loop *is* the retry task, the `retryTask?.cancel()` at the top cancels
-/// the task currently executing. And it sits before the `.offline` guard, so it fires on every
-/// result, a success included. What then runs cancelled is the second pass: the staging sweep, the
-/// blob drain and `engine.sync()`, torn down mid-flight.
+/// the task running that loop *is* the backoff wait's own cycle, re-arming that wait would cancel
+/// the task currently executing. Disarming happens on every result, a success included. What then
+/// runs cancelled is the second pass: the staging sweep, the blob drain and `engine.sync()`, torn
+/// down mid-flight.
 ///
 /// That is the coming-back-into-signal path. A device that failed a cycle offline waits out the
 /// backoff, wakes, syncs — and the moment that recovering cycle needs a second pass (a pull that
@@ -127,7 +127,7 @@ struct VASyncRetryTests {
         let harness = try VASyncFaultHarness(triggers: [trigger], transport: transport)
 
         // Enrolling runs a cycle, and this one fails on the wire: the engine goes
-        // `.offline(retryingIn:)` and `scheduleRetry` arms the retry task. One failure is a 2⁰
+        // `.offline(retryingIn:)` and `scheduleRetry` arms the backoff wait. One failure is a 2⁰
         // backoff, so the retry wakes about a second later — with the wire healthy.
         await harness.enroll()
 
@@ -141,7 +141,7 @@ struct VASyncRetryTests {
             transport.pullsCancelled == 0,
             """
             \(transport.pullsCancelled) of \(transport.pullsStarted) pulls were cancelled \
-            mid-flight. The retry task must release its handle once past its wait, so the \
+            mid-flight. The backoff wait must release its handle once past it, so the \
             `scheduleRetry` at the end of its own cycle finds nothing to tear down.
             """
         )
