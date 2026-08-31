@@ -6,13 +6,14 @@ Paste into App Store Connect -> App Review Information -> Notes.
 
 Villain Arc is a strength-training and cardio tracker with on-device AI plan generation and exercise replacement, Apple Health integration, cross-device sync through an FCT account, Live Activities, widgets, and App Intents. A free FCT account is required to use the app; sync and account services are hosted by FCT on Supabase.
 
-This is release 1.4.0. Main additions over 1.3.0:
+This is release 2.0, a full rewrite of the app that shipped as 1.3. What changed at the level a reviewer will notice:
 
-- Share cards for completed workouts, cardio sessions, and workout plans.
-- Apple Health heart-rate zones on iOS 27, with the existing estimated zone fallback kept for older OS versions or workouts without zone data.
-- Cardio detail routing cleanup: outdoor route sessions open route-first details, while completed indoor Health-backed cardio opens directly in the Health workout detail.
-- Finished cardio sessions now appear in Home recent workouts.
-- Location permission education flow refined for outdoor cardio: the app explanation step now uses Continue and proceeds directly to the iOS Location permission sheet.
+- Minimum iOS raised to 27.0. The watchOS companion requires watchOS 26.0.
+- Sign-in is now mandatory and is the first thing after the intro carousel. 1.x was usable signed-out; 2.0 has no interface behind the front door until an FCT account session exists.
+- iCloud/CloudKit is gone. Cross-device sync is FCT's own backend under the signed-in account.
+- The local data store was replaced, so data saved in 1.x does not carry into 2.0. This is stated in the release notes. A 1.x install's old store lives in a different App Group container that 2.0 does not have access to, so the update does not read or migrate it.
+- An Apple Watch companion app is embedded in the iOS app: rest timer, live session mirror, and heart-rate stats.
+- The app ships fully localized in ten languages: en, de, es, fr, it, ja, ko, pt-BR, ru, zh-Hans.
 
 ## Demo Account
 
@@ -31,26 +32,23 @@ Reviewer credentials: [FILL IN BEFORE SUBMITTING — email + password for a seed
 
 No advertising identifiers, tracking permissions, or App Tracking Transparency prompts, and no third-party analytics or tracking SDKs. The privacy nutrition label and `PrivacyInfo.xcprivacy` declare two separate groups: account-scoped content the user syncs (name, email, user ID, fitness, health, precise location, photos, other user content — all linked to identity, app functionality only), and anonymous diagnostics (crash, performance, other diagnostic, product interaction — not linked to identity, keyed to a random install identifier).
 
-## How To Exercise The New 1.4 Features
+## How To Reach The Main Surfaces
 
-1. Share cards: finish any strength workout, cardio session, or open a saved workout plan, then tap Share in the summary/detail surface.
-2. Cardio detail routing: complete or import an indoor Health-backed treadmill workout, then open it from Home recent workouts. It should open directly in the Health workout detail without a second "View in Health" navigation step.
-3. Outdoor cardio detail: complete an outdoor run or walk, then open it from the Cardio tab. The route map/detail path remains available.
-4. Home recent workouts: finish a run, walk, or treadmill session and confirm it appears beside recent strength workouts.
-5. Apple Health zones: on iOS 27 with a Health workout that includes heart-rate zone data, open the Health workout detail. The Zones section uses Apple Health zones; older OS versions or workouts without zones keep estimated zones.
-6. Location permission fix: fresh install, start an outdoor cardio session, tap Continue on the app explanation step, then grant the iOS system Location permission.
-
-## Existing 1.3 Surfaces Still Available
-
-- AI plan generation: Home -> expanded plus -> Create Plan -> Generate with AI.
-- Plan templates: Create Plan -> Templates -> pick one -> Build Full Program.
-- AI exercise replacement: any plan -> tap an exercise -> Replace -> AI Suggestions.
-- Cardio tab: Outdoor Run, Outdoor Walk, Treadmill Run, Treadmill Walk.
-- Health Trends, Sleep Timing Insights, Correlation Insights, and Hydration.
+1. Sign in: launch a clean install, page through the intro carousel, then sign in with the reviewer credentials above. Onboarding asks for name, Apple Health, Location, birthday, gender, height, fitness level, and training goal.
+2. AI plan generation: Home -> expanded plus -> Create Plan -> Generate with AI.
+3. Plan templates: Create Plan -> Templates -> pick one -> Build Full Program.
+4. AI exercise replacement: any plan -> tap an exercise -> Replace -> AI Suggestions.
+5. Strength logging: Home -> Start Today's Workout, log sets, finish, and review the summary and its progression suggestions.
+6. Cardio: Cardio tab -> Outdoor Run, Outdoor Walk, Treadmill Run, or Treadmill Walk.
+7. Share cards: finish any strength workout or cardio session, or open a saved plan, then tap Share.
+8. Health: Trends, Sleep Timing Insights, Correlation Insights, and Hydration all live in the Health tab.
+9. Apple Watch: with a paired watch, start a rest timer or a workout on the phone and confirm the watch app mirrors it.
 
 ## App Intents / Siri Shortcuts
 
-App Shortcuts ship in `VillainArcShortcuts.swift` for starting workouts/cardio, viewing recent workout history, adding weight, showing Health trends, and opening active workout flows. Intents that accept input use typed `AppEnum` parameters; none accept free-text strings that reach storage or the on-device language model.
+Ten App Shortcuts ship in `VillainArcShortcuts.swift` — Apple's promoted-shortcut cap, so the set is exactly full: Start Today's Workout, Training Summary, Complete Set, Add Exercise, Start Timer, Stop Timer, Today's Summary, Last Night's Sleep, Today's Steps, and Today's Calories. Their spoken phrases are localized in `AppShortcuts.xcstrings` across all ten shipping languages. Intents that accept input use typed `AppEnum` parameters; none accept free-text strings that reach storage or the on-device language model.
+
+A separate SiriKit intents extension handles the system's own `INStartWorkoutIntent`, `INEndWorkoutIntent`, and `INCancelWorkoutIntent` so "start a workout" reaches the app through Apple's workout domain as well.
 
 ## Foundation Models / Apple Intelligence
 
