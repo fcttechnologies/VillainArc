@@ -197,6 +197,14 @@ check_loc_drift "${DD}/ios-release" --source-root "${PWD}/VillainArcWatchApp" \
 # already ran above (`LocalizationIntegrityTests`), straight from the catalog JSON: every declared
 # locale present, `translated`, not a copy of the English, and format-specifier-compatible.
 # `scripts/loc-check.sh` runs that suite alone when only a locale pass needs verifying.
+
+# The listing is the other half of what ships, and it fails at submission rather than at build:
+# a description over 4,000 characters is refused by App Store Connect, and nothing in an Xcode
+# build has an opinion about `metadata/`. Offline and instant, so it costs the gate nothing.
+echo "==> App Store metadata"
+command -v asc >/dev/null || fail "asc is not installed — the listing in metadata/ went unchecked."
+command -v asc >/dev/null && { asc metadata validate --dir ./metadata >"${LOGS}/metadata.log" 2>&1 \
+  || { cat "${LOGS}/metadata.log"; fail "App Store metadata is invalid (log: ${LOGS}/metadata.log)"; }; }
 mark "artifact checks (Debug)"
 
 # The provider is re-read from the Release artifact: metadata extraction is a per-configuration
