@@ -127,11 +127,15 @@ RELEASE_APP="${DD}/ios-release/Build/Products/Release-iphonesimulator/VillainArc
 # 10-slot cap: VA sits exactly at the cap, so a new shortcut has to displace one.
 #
 # `--catalog` is where phrase LOCALIZATION is checked, and it has to be here rather than in the
-# drift leg below: swiftc extracts only each shortcut's FIRST phrase and no shortTitle at all, so
-# the extraction set is blind to most of what the bundle registers. This compares the registered
-# set — every phrase template, its alternatives, and every shortTitle — against the one catalog App
-# Shortcut metadata can read. Only the fixed `AppShortcuts` table resolves: the same key sitting in
-# Localizable.xcstrings serves a phrase never, and ships English in every locale.
+# drift leg below: swiftc extracts only each shortcut's FIRST phrase, so the extraction set is
+# blind to most of what the bundle registers. This compares the registered set — every phrase
+# template and its alternatives — against the one catalog App Shortcut metadata can read. Only the
+# fixed `AppShortcuts` table resolves a phrase: the same key sitting in Localizable.xcstrings
+# serves it never, and ships English in every locale.
+#
+# A shortTitle is the mirror image and belongs in Localizable, where swiftc extracts it and the
+# drift leg already covers it. One added to AppShortcuts.xcstrings sits in a table nothing reads it
+# from, and `appintentsmetadataprocessor` says so once per title per non-source language.
 echo "==> App Shortcuts registered, counted, and phrase-covered"
 "${VERIFY_SHORTCUTS}" --expect "${SHORTCUT_COUNT}" --catalog "${PHRASE_CATALOG}" --quiet \
   "${DEBUG_APP}" \
