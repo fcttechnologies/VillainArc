@@ -126,22 +126,24 @@ import SwiftData
             try await liveWorkoutBuilder.addMetadata(HealthAuthorizationManager.metadata(for: session))
             try await liveWorkoutBuilder.endCollection(at: endDate)
 
-            guard let savedWorkout = try await liveWorkoutBuilder.finishWorkout() else {
-                AppLog.error("HealthKit finished cardio export for \(session.id), but the workout sample was unavailable.")
-                return
-            }
-
-            if let effortSample, HealthAuthorizationManager.canWriteWorkoutEffortScore {
-                do {
-                    _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(effortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
-                } catch {
-                    AppLog.error("Failed to relate cardio effort score for \(session.id)", error: error)
+            // A missing sample is logged, never returned on: the teardown below is what ends the
+            // HKWorkoutSession and clears `isFinishingWorkout`, and skipping it leaves a live
+            // session running and every later finish refused by the guard above until relaunch.
+            if let savedWorkout = try await liveWorkoutBuilder.finishWorkout() {
+                if let effortSample, HealthAuthorizationManager.canWriteWorkoutEffortScore {
+                    do {
+                        _ = try await HealthAuthorizationManager.healthStore.relateWorkoutEffortSample(effortSample, with: savedWorkout, activity: nil as HKWorkoutActivity?)
+                    } catch {
+                        AppLog.error("Failed to relate cardio effort score for \(session.id)", error: error)
+                    }
                 }
-            }
 
-            apply(savedWorkout: savedWorkout, to: session, context: context)
-            await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedCardioSessionID: session.id)
-            AppLog.info("Saved cardio session \(session.id) to Apple Health as \(savedWorkout.uuid).")
+                apply(savedWorkout: savedWorkout, to: session, context: context)
+                await HealthWorkoutMirrorImporter.shared.importWorkout(savedWorkout, linkedCardioSessionID: session.id)
+                AppLog.info("Saved cardio session \(session.id) to Apple Health as \(savedWorkout.uuid).")
+            } else {
+                AppLog.error("HealthKit finished cardio export for \(session.id), but the workout sample was unavailable.")
+            }
         } catch {
             AppLog.error("Failed to finish live cardio Health workout \(session.id)", error: error)
         }
