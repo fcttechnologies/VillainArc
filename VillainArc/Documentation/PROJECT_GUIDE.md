@@ -34,6 +34,21 @@ The main product areas are:
 - exercise analytics
 - health history, goals, and notifications
 
+## Platforms
+
+| Platform | Target | Build setting |
+|---|---|---|
+| iOS | `VillainArc`, plus the widget and intents extensions | `TARGETED_DEVICE_FAMILY = 1`, `IPHONEOS_DEPLOYMENT_TARGET = 27.0` |
+| watchOS | `VillainArcWatchApp`, embedded companion | `TARGETED_DEVICE_FAMILY = 4`, `WATCHOS_DEPLOYMENT_TARGET = 26.0` |
+| macOS | none | `SUPPORTS_MACCATALYST = NO`, `SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO` |
+
+**Villain Arc ships no Mac target, and it is the one FCT app that doesn't.** The fleet default is
+Mac-by-default; Villain Arc is its stated exception because training happens away from a desk. A
+lifter logs a set between rests with a phone in one hand or a watch on the wrist, so the surfaces
+that matter are the ones that travel. A Mac build would carry the whole app's weight to reach a
+context the product is never used in. This is a product decision, not an oversight or a backlog
+item — do not "fix" it by adding a Mac target.
+
 ## App Shell
 
 After onboarding is ready, `Views/AppShell/ContentView.swift` owns:
