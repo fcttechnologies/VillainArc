@@ -4,20 +4,33 @@ import SwiftData
 
 /// Seeds the real app store with curated, marketing-grade demo data for the Screenshot Studio.
 /// Reuses the same unit conventions the app uses (completed-set weights in kg → display as clean lbs;
-/// active-session weights in display units). Idempotent: clears its own seeded data first.
+/// active-session weights in display units).
+///
+/// **Converging: it inserts what is missing, re-anchors what it wrote before to the present, and
+/// deletes nothing.** The store is the signed-in account's own and every model here syncs, so a
+/// clear-first seed would push tombstones for the user's real training to every one of their
+/// devices.
 @MainActor
 enum ScreenshotStudioSeeder {
     /// Catalog IDs for the demo push plan.
     private static let planExerciseIDs = ["barbell_bench_press", "dumbbell_incline_bench_press", "cable_bench_chest_fly", "cable_bar_pushdown"]
 
-    static func seedAll() throws {
-        let context = SharedModelContainer.container.mainContext
+    /// The fixed identities of the demo rows: what makes a re-seed converge, and what each scene
+    /// fetches so it photographs the curated row rather than whatever else the account holds.
+    enum DemoID {
+        static let plan = VASyncIdentity.screenshotStudioID("plan")
+        static let activeSession = VASyncIdentity.screenshotStudioID("active-session")
+        static let summarySession = VASyncIdentity.screenshotStudioID("summary-session")
+        static let cardioSession = VASyncIdentity.screenshotStudioID("cardio-session")
+        static func historySession(_ index: Int) -> UUID { VASyncIdentity.screenshotStudioID("history-session-\(index)") }
+    }
 
-        clearWorkoutsAndCardio(in: context)
+    static func seedAll(in context: ModelContext = SharedModelContainer.container.mainContext) throws {
+        dedupeExercises(in: context)
         // Health caches (35 days of steps, energy, sleep, heart, hydration, weight + a goal).
-        try DebugOperations.seedHealthSamples(scenario: .daily)
+        try DebugOperations.seedHealthSamples(scenario: .daily, replacingExisting: false, in: context)
 
-        let plan = makeDemoPlan(in: context)
+        let plan = demoPlan(in: context)
         seedCompletedHistory(plan: plan, in: context)
         seedActiveSession(plan: plan, in: context)
         seedSummarySession(plan: plan, in: context)
@@ -40,8 +53,11 @@ enum ScreenshotStudioSeeder {
         return ex
     }
 
-    private static func makeDemoPlan(in context: ModelContext) -> WorkoutPlan {
+    private static func demoPlan(in context: ModelContext) -> WorkoutPlan {
+        if let existing = try? context.fetch(WorkoutPlan.byID(DemoID.plan)).first { return existing }
+
         let plan = WorkoutPlan(title: "Push Day", notes: "Chest, shoulders, triceps", favorite: true, completed: true, lastUsed: .now)
+        plan.id = DemoID.plan
         context.insert(plan)
 
         // Targets are stored in KG (the app converts display→kg on save); author via toKg so they show clean lbs.
@@ -86,7 +102,14 @@ enum ScreenshotStudioSeeder {
         for (index, dayOffset) in dayOffsets.enumerated() {
             guard let day = calendar.date(byAdding: .day, value: dayOffset, to: today) else { continue }
             let start = day.addingTimeInterval(18 * 3600)
+            if let existing = try? context.fetch(WorkoutSession.byID(DemoID.historySession(index))).first {
+                reanchor(existing, startingAt: start)
+                ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(existing, context: context)
+                continue
+            }
+
             let session = WorkoutSession(from: plan)
+            session.id = DemoID.historySession(index)
             session.startedAt = start
             session.endedAt = start.addingTimeInterval(4200)
             session.status = SessionStatus.done.rawValue
@@ -128,9 +151,16 @@ enum ScreenshotStudioSeeder {
     // MARK: - Active session (poster: live logging)
 
     private static func seedActiveSession(plan: WorkoutPlan, in context: ModelContext) {
+        let start = Date.now.addingTimeInterval(-22 * 60)
+        if let existing = try? context.fetch(WorkoutSession.byID(DemoID.activeSession)).first {
+            reanchor(existing, startingAt: start)
+            return
+        }
+
         let session = WorkoutSession(from: plan)
+        session.id = DemoID.activeSession
         session.title = "Push Day"
-        session.startedAt = .now.addingTimeInterval(-22 * 60)
+        session.startedAt = start
         session.status = SessionStatus.active.rawValue
         context.insert(session)
 
@@ -155,9 +185,16 @@ enum ScreenshotStudioSeeder {
 
     private static func seedSummarySession(plan: WorkoutPlan, in context: ModelContext) {
         let lbs = WeightUnit.lbs
+        let start = Date.now.addingTimeInterval(-65 * 60)
+        if let existing = try? context.fetch(WorkoutSession.byID(DemoID.summarySession)).first {
+            reanchor(existing, startingAt: start)
+            return
+        }
+
         let session = WorkoutSession(from: plan)
+        session.id = DemoID.summarySession
         session.title = "Push Day"
-        session.startedAt = .now.addingTimeInterval(-65 * 60)
+        session.startedAt = start
         session.endedAt = .now
         session.status = SessionStatus.summary.rawValue
         session.postEffort = 9
@@ -191,8 +228,15 @@ enum ScreenshotStudioSeeder {
     // MARK: - Cardio (outdoor run with route)
 
     private static func seedCardioSession(in context: ModelContext) {
+        let start = Date.now.addingTimeInterval(-32 * 60)
+        if let existing = try? context.fetch(CardioSession.byID(DemoID.cardioSession)).first {
+            reanchor(existing, startingAt: start)
+            return
+        }
+
         let session = CardioSession(activity: .run, environment: .outdoor)
-        session.startedAt = .now.addingTimeInterval(-32 * 60)
+        session.id = DemoID.cardioSession
+        session.startedAt = start
         session.endedAt = .now.addingTimeInterval(-2 * 60)
         context.insert(session)
 
@@ -224,35 +268,46 @@ enum ScreenshotStudioSeeder {
         ]
     }
 
-    // MARK: - Clearing
+    // MARK: - Re-anchoring
 
-    private static func clearWorkoutsAndCardio(in context: ModelContext) {
-        deleteAll(SetPerformance.self, in: context)
-        deleteAll(ExercisePerformance.self, in: context)
-        deleteAll(WorkoutSession.self, in: context)
-        deleteAll(SetPrescription.self, in: context)
-        deleteAll(ExercisePrescription.self, in: context)
-        deleteAll(WorkoutPlan.self, in: context)
-        deleteAll(ExerciseHistory.self, in: context)
-        deleteAll(CardioRoutePoint.self, in: context)
-        deleteAll(CardioMachineInterval.self, in: context)
-        deleteAll(CardioSession.self, in: context)
-        dedupeExercises(in: context)
+    /// Slides an already-seeded demo session, and everything hanging off it, to a new start time.
+    /// The scenes photograph elapsed time and recent history, so a re-seed has to leave the demo
+    /// data reading as current — and it does that by moving the rows it wrote rather than
+    /// replacing them.
+    private static func reanchor(_ session: WorkoutSession, startingAt start: Date) {
+        let delta = start.timeIntervalSince(session.startedAt)
+        guard delta != 0 else { return }
+        session.startedAt = start
+        session.endedAt = session.endedAt?.addingTimeInterval(delta)
+        for performance in session.sortedExercises {
+            performance.date = performance.date.addingTimeInterval(delta)
+            for set in performance.sortedSets {
+                set.completedAt = set.completedAt?.addingTimeInterval(delta)
+            }
+        }
     }
 
-    /// A prior crashed seed could leave duplicate `Exercise` rows for the same catalogID, which
-    /// crashes `ExerciseHistoryUpdater`'s `Dictionary(uniqueKeysWithValues:)`. Keep one per catalogID.
+    private static func reanchor(_ session: CardioSession, startingAt start: Date) {
+        guard let current = session.startedAt else { return }
+        let delta = start.timeIntervalSince(current)
+        guard delta != 0 else { return }
+        session.startedAt = start
+        session.endedAt = session.endedAt?.addingTimeInterval(delta)
+        for point in session.routePoints ?? [] {
+            point.timestamp = point.timestamp.addingTimeInterval(delta)
+        }
+    }
+
+    /// Duplicate `Exercise` rows for one catalogID crash `ExerciseHistoryUpdater`'s
+    /// `Dictionary(uniqueKeysWithValues:)`, which the seed runs. Keep one per catalogID; the rows
+    /// dropped here are local catalog copies (an exercise's synced part is its `ExercisePreference`)
+    /// and nothing references them — a plan or a session carries its own copy of the catalogID.
     private static func dedupeExercises(in context: ModelContext) {
         let all = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
         var seen = Set<String>()
         for ex in all {
             if seen.contains(ex.catalogID) { context.delete(ex) } else { seen.insert(ex.catalogID) }
         }
-    }
-
-    private static func deleteAll<T: PersistentModel>(_ type: T.Type, in context: ModelContext) {
-        let models = (try? context.fetch(FetchDescriptor<T>())) ?? []
-        for model in models { context.delete(model) }
     }
 }
 #endif

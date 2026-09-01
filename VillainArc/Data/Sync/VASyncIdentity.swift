@@ -37,6 +37,18 @@ nonisolated enum VASyncIdentity {
         derivedID(namespace: exercisePreferenceNamespace, catalogID: catalogID)
     }
 
+    #if DEBUG
+    private static let screenshotStudioNamespace = "com.fcttechnologies.VillainArc.screenshot-studio:"
+
+    /// A stable uuid for one of the Screenshot Studio's demo rows. The studio seeds into the
+    /// signed-in account's own store, so its rows need names it can find again: a re-seed
+    /// converges on the row it already wrote instead of duplicating it, and each scene fetches
+    /// its own curated row rather than whatever else the account holds.
+    static func screenshotStudioID(_ name: String) -> UUID {
+        derivedID(namespace: screenshotStudioNamespace, catalogID: name)
+    }
+    #endif
+
     /// SHA-256 over a namespaced name, truncated to 16 bytes with the version (5) and variant
     /// bits set.
     private static func derivedID(namespace: String, catalogID: String) -> UUID {

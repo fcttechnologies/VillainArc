@@ -13,10 +13,10 @@ enum ScreenshotStudioCatalog {
     /// Ranked by selling power. Every scene reuses the real view. Seed the demo data first.
     static let scenes: [ScreenshotStudioScene] = [
         ScreenshotStudioScene(id: "active", title: "Active Workout", detail: "Live logging · poster", symbol: "dumbbell.fill") {
-            AnyView(StudioSessionScene(status: .active) { WorkoutView(workout: $0) })
+            AnyView(StudioSessionScene(id: ScreenshotStudioSeeder.DemoID.activeSession) { WorkoutView(workout: $0) })
         },
         ScreenshotStudioScene(id: "summary", title: "Workout Summary + PRs", detail: "Payoff · recap & PR badges", symbol: "trophy.fill") {
-            AnyView(StudioSessionScene(status: .summary) { WorkoutSummaryView(workout: $0) })
+            AnyView(StudioSessionScene(id: ScreenshotStudioSeeder.DemoID.summarySession) { WorkoutSummaryView(workout: $0) })
         },
         ScreenshotStudioScene(id: "ai-prompt", title: "AI Plan · Prompt", detail: "Differentiator · describe it", symbol: "sparkles") {
             AnyView(GeneratePlanAIPromptView { _ in })
@@ -49,10 +49,14 @@ enum ScreenshotStudioCatalog {
 }
 
 // MARK: - Fetch-backed scenes
+//
+// Each scene fetches the seeder's own demo row by its fixed id. The seed converges into the
+// signed-in account's store rather than clearing it, so "any active session" or "the most recent
+// cardio" would photograph whatever the account happens to hold.
 
-/// Fetches a seeded `WorkoutSession` of a given status and hands it to the real view.
+/// Fetches one seeded `WorkoutSession` and hands it to the real view.
 private struct StudioSessionScene<Content: View>: View {
-    let status: SessionStatus
+    let id: UUID
     @ViewBuilder let content: (WorkoutSession) -> Content
     @Environment(\.modelContext) private var context
     @State private var session: WorkoutSession?
@@ -61,12 +65,7 @@ private struct StudioSessionScene<Content: View>: View {
         Group {
             if let session { content(session) } else { ScreenshotStudioUnseededView() }
         }
-        .task {
-            let raw = status.rawValue
-            var descriptor = FetchDescriptor<WorkoutSession>(predicate: #Predicate { $0.status == raw })
-            descriptor.fetchLimit = 1
-            session = (try? context.fetch(descriptor))?.first
-        }
+        .task { session = (try? context.fetch(WorkoutSession.byID(id)))?.first }
     }
 }
 
@@ -78,11 +77,7 @@ private struct StudioPlanScene: View {
         Group {
             if let plan { NavigationStack { WorkoutPlanDetailView(plan: plan) } } else { ScreenshotStudioUnseededView() }
         }
-        .task {
-            var descriptor = FetchDescriptor(predicate: WorkoutPlan.completedPredicate)
-            descriptor.fetchLimit = 1
-            plan = (try? context.fetch(descriptor))?.first
-        }
+        .task { plan = (try? context.fetch(WorkoutPlan.byID(ScreenshotStudioSeeder.DemoID.plan)))?.first }
     }
 }
 
@@ -94,7 +89,7 @@ private struct StudioCardioScene: View {
         Group {
             if let session { NavigationStack { CardioSessionDetailView(session: session, showsCloseButton: false) } } else { ScreenshotStudioUnseededView() }
         }
-        .task { session = (try? context.fetch(CardioSession.history))?.first }
+        .task { session = (try? context.fetch(CardioSession.byID(ScreenshotStudioSeeder.DemoID.cardioSession)))?.first }
     }
 }
 

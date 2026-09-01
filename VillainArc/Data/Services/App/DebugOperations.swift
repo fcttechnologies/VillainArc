@@ -90,26 +90,38 @@ enum DebugOperations {
         AppLog.info("Debug Spotlight reindex queued.")
     }
 
-    static func seedHealthSamples(scenario: HealthSampleScenario) throws {
-        let context = SharedModelContainer.container.mainContext
+    /// `replacingExisting` is the scenario buttons' contract: pick a scenario, get exactly that
+    /// scenario's 35 days. The Screenshot Studio passes `false` — it seeds into the signed-in
+    /// account's own store, where the replace tombstones the user's synced weight goal and wipes
+    /// their weigh-ins and hydration. Converging instead, it fills only the days the store has no
+    /// rows for, so what the user's own device recorded stays and stays theirs.
+    static func seedHealthSamples(scenario: HealthSampleScenario, replacingExisting: Bool = true, in context: ModelContext = SharedModelContainer.container.mainContext) throws {
         AppLog.info("Debug health sample seed started: \(scenario.rawValue)")
 
-        try deleteHealthSampleModels(in: context)
+        if replacingExisting {
+            try deleteHealthSampleModels(in: context)
+        }
         try ensureDebugReadyBaseline(in: context)
 
         let calendar = Calendar.autoupdatingCurrent
         let today = calendar.startOfDay(for: .now)
         let startDay = calendar.date(byAdding: .day, value: -34, to: today) ?? today
         let startWeight = startingWeight(for: scenario)
+        // Empty after a replace, so that path seeds exactly what it always did.
+        let alreadySeeded = try SeededHealthDays(calendar: calendar, in: context)
 
-        seedWeightGoal(for: scenario, startDay: startDay, startWeight: startWeight, context: context)
+        if !alreadySeeded.hasWeightGoal {
+            seedWeightGoal(for: scenario, startDay: startDay, startWeight: startWeight, context: context)
+        }
 
         for offset in 0..<35 {
             guard let day = calendar.date(byAdding: .day, value: offset, to: startDay) else { continue }
             let progress = Double(offset) / 34.0
-            seedDailyHealthRows(on: day, offset: offset, progress: progress, scenario: scenario, context: context)
+            if !alreadySeeded.metricDays.contains(day) {
+                seedDailyHealthRows(on: day, offset: offset, progress: progress, scenario: scenario, context: context)
+            }
 
-            if shouldLogWeight(onOffset: offset, scenario: scenario) {
+            if shouldLogWeight(onOffset: offset, scenario: scenario), !alreadySeeded.weighInDays.contains(day) {
                 let weight = sampleWeight(startWeight: startWeight, progress: progress, offset: offset, scenario: scenario)
                 context.insert(WeightEntry(date: day.addingTimeInterval(8 * 3600), weight: weight, hasBeenExportedToHealth: true, healthSampleUUID: UUID(), isAvailableInHealthKit: true))
             }
@@ -253,6 +265,21 @@ enum DebugOperations {
         }
 
         try context.save()
+    }
+
+    /// What the store already holds, so a converging health seed writes only into the gaps. The
+    /// day's rows are seeded as one batch, so they are guarded as one: a day whose steps row
+    /// exists keeps the rest of its metrics as they are too.
+    private struct SeededHealthDays {
+        let metricDays: Set<Date>
+        let weighInDays: Set<Date>
+        let hasWeightGoal: Bool
+
+        init(calendar: Calendar, in context: ModelContext) throws {
+            metricDays = Set(try context.fetch(FetchDescriptor<HealthStepsDistance>()).map { calendar.startOfDay(for: $0.date) })
+            weighInDays = Set(try context.fetch(FetchDescriptor<WeightEntry>()).map { calendar.startOfDay(for: $0.date) })
+            hasWeightGoal = try !context.fetch(FetchDescriptor<WeightGoal>()).isEmpty
+        }
     }
 
     private static func deleteHealthSampleModels(in context: ModelContext) throws {
