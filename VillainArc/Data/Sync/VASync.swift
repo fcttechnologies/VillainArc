@@ -41,7 +41,7 @@ struct VASyncConfiguration {
                 )
             },
             makeBlobTransport: { account in
-                SupabaseStorageTransport(
+                R2BlobTransport(
                     baseURL: AccountEnvironment.fct.baseURL,
                     publishableKey: AccountEnvironment.fct.publishableKey,
                     account: account
