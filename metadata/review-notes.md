@@ -37,7 +37,7 @@ The account is seeded with training history — three completed "Push Pull Legs"
 | User Notifications | Local notifications for rest timers, goals, hydration, and weekly health coaching recaps. No remote push or APNs. | After onboarding reaches the ready state. |
 | Camera / Photo Library | Optional profile photo. | Only when the user taps to change their profile photo. |
 
-No advertising identifiers, tracking permissions, or App Tracking Transparency prompts, and no third-party analytics or tracking SDKs. The privacy nutrition label and `PrivacyInfo.xcprivacy` declare two separate groups: account-scoped content the user syncs (name, email, user ID, fitness, health, precise location, photos, other user content — all linked to identity, app functionality only), and anonymous diagnostics (crash, performance, other diagnostic, product interaction — not linked to identity, keyed to a random install identifier).
+No advertising identifiers, tracking permissions, or App Tracking Transparency prompts, and no third-party analytics or tracking SDKs. The privacy nutrition label and `PrivacyInfo.xcprivacy` declare two separate groups: account-scoped content the user syncs (name, email address, user ID, fitness, health, precise location, photos or videos, other data types — all linked to identity, app functionality only), and anonymous diagnostics (crash, performance, other diagnostic, product interaction — not linked to identity, keyed to a random install identifier).
 
 ## How To Reach The Main Surfaces
 
