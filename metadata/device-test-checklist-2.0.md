@@ -1,8 +1,13 @@
 # Villain Arc 2.0 Device Test Checklist
 
 Run this on a real device before archiving and uploading 2.0. `scripts/install-ios.sh` builds Release
-and installs on the paired iPhone. Everything here is device-gated: it is the set the simulator and
-the gate cannot answer.
+and installs on the paired iPhone.
+
+Not every line here needs hardware. A simulator answers the front door, the permission scope, the
+onboarding path, the account restore, cross-device sync and force-quit resume;
+`device-test-2.0-simulator-results.md` records what a simulator pass proved and names the eleven
+lines that genuinely need a phone, a watch, real GPS, real speech, or a real App Store account.
+Read it first and run the short set rather than the whole list.
 
 ## First Run — The Front Door
 
