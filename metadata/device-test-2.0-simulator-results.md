@@ -48,14 +48,19 @@ menu out, which is why most of this ran on Release.
   than proving no *request*. The stronger version, on a device where location is still
   undetermined, was not run.
 
-**Sync across devices**
+**Sync across devices** — run on two simulators, A and B, both signed into the account.
 
-- *The account's rows arrive without a manual refresh.* A freshly installed, freshly signed-in
-  device pulled down the profile, the "Push Day" plan with its 4 exercises, a completed Outdoor Run
+- *Plans and completed sessions arrive without a manual refresh.* A freshly installed, freshly
+  signed-in device pulled down the "Push Day" plan with its 4 exercises, a completed Outdoor Run
   (Aug 29, 3.5 mi, 8:35/mi) with its **route drawn on the cardio map**, and per-exercise history
   (Bench Press, 14 times, 167.5 lbs). Nothing was tapped to make it happen.
-  This is one-directional restore onto a new device, which is most of what the first sync line
-  asks. The two-device A→B authoring and deletion lines were **not** run — see below.
+- *Author on device A, confirm it reaches device B.* **Proved.** The Treadmill Run finished on A at
+  14:08:22 was read back out of B's own store minutes later — `run` / `indoor`, started
+  `2026-09-01 14:08:22`, `59.8 m` — alongside the older Outdoor Run. B was a separate simulator,
+  installed and signed in independently.
+- *The profile does **not** arrive.* See Failed/suspicious #7. Splits were not tested (the account
+  holds none), and the deletion/tombstone line was not run, because it requires deleting a
+  sync-enrolled row.
 
 **Regression sweep**
 
@@ -76,8 +81,10 @@ menu out, which is why most of this ran on Release.
 
 Eleven lines. Each costs Fernando time with a phone, so each has its reason.
 
-- **Password AutoFill offers the saved credential.** Needs a credential in a real iCloud Keychain;
-  a simulator has none, and no AutoFill suggestion appeared for the email field.
+- **Password AutoFill offers the saved credential on return.** The *save* half already works in a
+  simulator: signing in on device B raised iOS's own **"Save Password?"** prompt for the app, which
+  only appears when the associated-domain claim resolves. What is left for a device is the offer on
+  a later sign-in against a real keychain.
   *Both halves of the association are verified, so a failure on device is not a config problem:* the
   app declares `webcredentials:fct-technologies.com`, and the site serves
   `X26SC78YDG.com.fcttechnologies.VillainArc` under `webcredentials` at
@@ -146,6 +153,21 @@ failing" line names plan generation and exercise replacement, not Ask AI, so thi
 reports Apple Intelligence as available**, so I cannot say the entry point is wrongly shown — the
 premise is unverified either way. Worth one look on a device without Apple Intelligence.
 
+**7. The profile does not reach a second device, though everything else does.**
+Device B — separate simulator, own install, signed into the same account — pulled down 1 workout
+plan, 14 workout sessions, 2 cardio sessions, 4 exercise histories and the app settings, but its
+`ZUSERPROFILE` row came back **empty**: no name, no height, no birthday, gender `notSet`. Onboarding
+on B duly asked for the name again, with an empty field, and still did after a force-quit and
+relaunch. `UserProfile` *is* sync-enrolled (`va.user_profile`, a singleton on a fixed UUID), so both
+devices author the same row id.
+**No data was lost:** A's profile was re-read after B signed in and after a full A relaunch and
+re-sync, and is intact (`Fernando` / 175 / intermediate). B's empty row did not clobber it.
+This may be the documented design rather than a defect — `ONBOARDING_FLOW.md` says "the profile
+typed during setup pushes as the current truth" while only "workout history, plans, splits, and
+settings pull down" — in which case **the checklist line expecting the profile to arrive is the
+thing that is wrong**. Worth settling deliberately, because a singleton on a fixed id where the
+newer empty row could win LWW is a shape that bites later.
+
 **5. The finish-effort dial reports an accessibility value of `nan`.**
 On the workout finish sheet, `workoutFinishEffortCard-1` exposes `Slider "Workout effort dial" =nan`
 before a rating is chosen. VoiceOver would read that. Minor, but it is a real value being published.
@@ -159,15 +181,21 @@ first carousel page.
 
 Additive only — nothing was deleted, no reset path was run.
 
-- The profile was completed during onboarding and **pushes as current truth**: name `Fernando`,
-  birthday 2001-09-01, gender male, height 175 cm, fitness level intermediate (the last two from
-  the Debug Skip's defaults), plus one active `generalTraining` `TrainingGoal` if none existed.
+- The profile was completed during onboarding and **pushes as current truth**, read back out of the
+  store: name `Fernando`, birthday 2001-09-01, height 175 cm, fitness level intermediate, gender
+  `other`, plus one active `generalTraining` `TrainingGoal` if none existed. Height, fitness level
+  and gender are the Debug Skip's defaults — *Male* was selected on the gender step but Skip
+  bypasses that step's own save, so the stored value is `other` rather than what was tapped.
+- One saved password in **simulator B's** keychain, from accepting iOS's "Save Password?" prompt.
+  Both simulators were deleted at the end of the run, which takes it with them.
 - One completed **Treadmill Run**, Sep 1 2026 2:08 PM, 0:00:27, 0.04 mi, one interval at 5.0 mph.
   It exists because cancelling an in-progress session would have deleted a sync-enrolled row and
   tombstoned it to every device; finishing it was the only close that adds rather than removes.
 
 ## Not attempted
 
-Named so the gaps are visible rather than implied: the two-device A→B authoring and deletion lines,
-the Health-mirror re-derivation line, the subscription paywall contents, the widgets on the Home
-Screen, and the mid-workout weight-unit migration.
+Named so the gaps are visible rather than implied: the tombstone/deletion line (it requires deleting
+a sync-enrolled row, which this run was barred from), the splits half of the sync line (the account
+holds no splits), the Health-mirror re-derivation line, the subscription paywall contents, the
+widgets on the Home Screen, and the mid-workout weight-unit migration. All of these look answerable
+in a simulator; they ran out of run, not out of capability.
