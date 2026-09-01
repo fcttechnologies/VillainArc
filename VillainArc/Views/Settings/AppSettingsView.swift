@@ -403,6 +403,8 @@ private struct AppSettingsFormView: View {
         }
     }
 
+    /// The support rows only this app can offer, below `SupportSettingsSection` — which carries
+    /// Contact Support, the reply commitment, and the app's whole telemetry statement.
     @ViewBuilder
     private var supportSection: some View {
         Section {
@@ -446,8 +448,6 @@ private struct AppSettingsFormView: View {
             .foregroundStyle(.primary)
             .accessibilityIdentifier(AccessibilityIdentifiers.settingsSupportPageButton)
             .appGroupedListRow(position: .bottom)
-        } footer: {
-            Text("The crash report here is sent only when you tap Send.")
         }
     }
 

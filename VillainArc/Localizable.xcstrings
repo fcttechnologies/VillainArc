@@ -108501,64 +108501,6 @@
         }
       }
     },
-    "The crash report here is sent only when you tap Send." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Absturzbericht hier wird nur gesendet, wenn du auf „Senden“ tippst."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El informe de fallos solo se envía cuando tocas Enviar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le rapport de plantage n’est envoyé que lorsque vous appuyez sur Envoyer."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il rapporto di arresto anomalo viene inviato solo quando tocchi Invia."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ここのクラッシュレポートは、「送信」をタップしたときにのみ送信されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "여기의 충돌 보고서는 보내기를 탭할 때만 전송됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O relatório de falha só é enviado quando você toca em Enviar."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Отчёт о сбое отправляется только после нажатия «Отправить»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此处的崩溃报告仅在你点按“发送”后才会发送。"
-          }
-        }
-      }
-    },
     "The model didn't return any exercises. Try a different prompt." : {
       "localizations" : {
         "de" : {
