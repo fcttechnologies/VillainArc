@@ -1,3 +1,4 @@
+import FCTComponentsUI
 import Foundation
 import SwiftData
 import UserNotifications
@@ -295,13 +296,13 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
         return AppSettingsSnapshot(settings: try? context.fetch(AppSettings.single).first)
     }
 
-    nonisolated private func presentToastIfPossible(_ toast: ToastManager.Toast) async {
+    nonisolated private func presentToastIfPossible(_ toast: FCTToast) async {
         await MainActor.run {
-            ToastManager.shared.show(toast)
+            ToastCenter.shared.show(toast)
         }
     }
 
-    private func toast(for userInfo: [AnyHashable: Any]) -> ToastManager.Toast? {
+    private func toast(for userInfo: [AnyHashable: Any]) -> FCTToast? {
         guard let rawValue = userInfo[NotificationUserInfoKey.type] as? String, let type = NotificationType(rawValue: rawValue) else {
             return nil
         }

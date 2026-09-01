@@ -1,9 +1,11 @@
+import FCTComponentsUI
 import SwiftUI
 import SwiftData
 
 struct WorkoutPlanPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.showToast) private var showToast
     @Query(WorkoutPlan.all) private var workoutPlans: [WorkoutPlan]
     @Binding var selectedPlan: WorkoutPlan?
     let showsClearButton: Bool
@@ -95,8 +97,8 @@ struct WorkoutPlanPickerView: View {
                     if let firstPlan = split.sortedDays.compactMap(\.workoutPlan).first {
                         selectedPlan = firstPlan
                     }
-                    ToastManager.shared.show(
-                        ToastManager.Toast(
+                    showToast(
+                        FCTToast(
                             title: String(localized: "Program ready"),
                             message: String(localized: "Created \(split.sortedDays.filter { !$0.isRestDay }.count) plans and activated the \(template.name) split."),
                             systemImage: "calendar.badge.checkmark",
@@ -118,8 +120,8 @@ struct WorkoutPlanPickerView: View {
                         if let firstPlan = split.sortedDays.compactMap(\.workoutPlan).first {
                             selectedPlan = firstPlan
                         }
-                        ToastManager.shared.show(
-                            ToastManager.Toast(
+                        showToast(
+                            FCTToast(
                                 title: String(localized: "AI plan ready"),
                                 message: String(localized: "Created \(split.sortedDays.count) plans and activated the \(result.name) split."),
                                 systemImage: "sparkles",

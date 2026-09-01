@@ -1,9 +1,11 @@
+import FCTComponentsUI
 import SwiftUI
 import SwiftData
 
 struct SplitBuilderView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.showToast) private var showToast
     @State private var config = SplitBuilderConfig()
     @State private var path: [BuilderNavStep] = []
     @State private var showScratchPicker = false
@@ -51,8 +53,8 @@ struct SplitBuilderView: View {
         let message = shouldActivate
             ? String(localized: "Created \(planCount) plans and activated the \(template.name) split.")
             : String(localized: "Created \(planCount) plans and added the \(template.name) split. Your active split is unchanged.")
-        ToastManager.shared.show(
-            ToastManager.Toast(
+        showToast(
+            FCTToast(
                 title: String(localized: "Program ready"),
                 message: message,
                 systemImage: "calendar.badge.checkmark",

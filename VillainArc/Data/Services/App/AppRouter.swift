@@ -1,3 +1,4 @@
+import FCTComponentsUI
 import FCTMetrics
 import CoreSpotlight
 import SwiftData
@@ -901,7 +902,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     }
 
     private func showQuickActionToast(title: String, message: String) {
-        ToastManager.shared.show(.init(title: title, message: message, systemImage: "exclamationmark.circle", tint: .orange, haptic: .warning))
+        ToastCenter.shared.show(FCTToast(title: title, message: message, systemImage: "exclamationmark.circle", tint: .orange, haptic: .warning))
     }
 
     private func startWorkoutRuntime(for workoutSession: WorkoutSession) {

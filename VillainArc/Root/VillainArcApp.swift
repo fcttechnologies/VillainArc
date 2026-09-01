@@ -1,3 +1,4 @@
+import FCTComponentsUI
 import FCTMetrics
 import CoreSpotlight
 import SwiftUI
@@ -58,6 +59,7 @@ struct VillainArcApp: App {
                 .onOpenURL { url in
                     AppRouter.shared.handleIncomingURL(url)
                 }
+                .withToast()
         }
         .modelContainer(SharedModelContainer.container)
         .backgroundTask(.appRefresh(WeeklyHealthCoachingCoordinator.taskIdentifier)) {

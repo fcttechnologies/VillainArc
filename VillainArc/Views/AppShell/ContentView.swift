@@ -1,8 +1,10 @@
+import FCTComponentsUI
 import SwiftUI
 import SwiftData
 import TipKit
 
 struct ContentView: View {
+    @Environment(\.showToast) private var showToast
     @State private var router = AppRouter.shared
     @State private var isMorphingTabBarExpanded = false
     @State private var paywallPresenter = PaywallPresenter.shared
@@ -156,9 +158,6 @@ struct ContentView: View {
         }
         .fullScreenCover(item: $paywallPresenter.trigger) { feature in
             PaywallView(triggeringFeature: feature)
-        }
-        .background {
-            ToastOverlaySceneInstaller()
         }
     }
     
@@ -486,8 +485,8 @@ struct ContentView: View {
         let context = SharedModelContainer.container.mainContext
         let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: true, context: context)
         saveContext(context: context)
-        ToastManager.shared.show(
-            ToastManager.Toast(
+        showToast(
+            FCTToast(
                 title: String(localized: "Program ready"),
                 message: String(localized: "Created \(split.sortedDays.filter { !$0.isRestDay }.count) plans and activated the \(template.name) split."),
                 systemImage: "calendar.badge.checkmark",
@@ -510,8 +509,8 @@ struct ContentView: View {
         } else {
             let split = PlanTemplateMaterializer.materializeProgram(aiResult: result, activate: true, context: context)
             saveContext(context: context)
-            ToastManager.shared.show(
-                ToastManager.Toast(
+            showToast(
+                FCTToast(
                     title: String(localized: "AI plan ready"),
                     message: String(localized: "Created \(split.sortedDays.count) plans and activated the \(result.name) split."),
                     systemImage: "sparkles",

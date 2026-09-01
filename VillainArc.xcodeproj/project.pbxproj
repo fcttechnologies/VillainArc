@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		0EFD2294144CA53AFC24080B /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = 57CA85F33D542E5A71727A42 /* FCTSync */; };
 		56CA555CA0317919EA0F84B9 /* FCTMetrics in Frameworks */ = {isa = PBXBuildFile; productRef = FEB01967AEAA81A937A68611 /* FCTMetrics */; };
+		A1C0FF11E0A57A5701000001 /* FCTComponentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000002 /* FCTComponentsUI */; };
+		A1C0FF11E0A57A5701000003 /* FCTComponentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000004 /* FCTComponentsUI */; };
 		D4BC24D8C1D1EFBDBE4C8357 /* FCTAccount in Frameworks */ = {isa = PBXBuildFile; productRef = D8FA06B6B7B5CF17A2DD9909 /* FCTAccount */; };
 		340B1AD4210BC5758E00EA38 /* FCTAccount in Frameworks */ = {isa = PBXBuildFile; productRef = EF85D33CF5A4BA9547AE5489 /* FCTAccount */; };
 		45585E5A258EBE227EEDE0AF /* FCTServerSync in Frameworks */ = {isa = PBXBuildFile; productRef = F9462B24032FEF4C537E2AA3 /* FCTServerSync */; };
@@ -284,8 +286,7 @@
 				Intents/WorkoutSplit/OpenWorkoutSplitIntent.swift,
 				Intents/WorkoutSplit/StartTodaysWorkoutIntent.swift,
 				Intents/WorkoutSplit/WorkoutSplitEntity.swift,
-				Views/Components/Overlays/ToastManager.swift,
-				Views/Components/Surface/VillainSurface.swift,
+				Views/Components/Overlays/ToastPresets.swift,
 				Views/MorphingTabBar.swift,
 			);
 			target = FD93E5E32F3051FD009569BB /* VillainArcWidgetExtensionExtension */;
@@ -374,6 +375,7 @@
 				FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */,
 				C61D188DE205EED2135DCDD6 /* FCTEntities in Frameworks */,
 				8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */,
+				A1C0FF11E0A57A5701000003 /* FCTComponentsUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -391,6 +393,7 @@
 				0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */,
 				7B3C1A9E4D25F0816AC3E5D9 /* FCTOnboarding in Frameworks */,
 				9C41E7A20B5D48F1A6E30001 /* FCTScreenshotStudio in Frameworks */,
+				A1C0FF11E0A57A5701000001 /* FCTComponentsUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -518,6 +521,7 @@
 			packageProductDependencies = (
 				EF47D003449BB9F5A885E3F4 /* FCTEntities */,
 				C5EC413C794E0ED7DF5B6881 /* FCTSync */,
+				A1C0FF11E0A57A5701000004 /* FCTComponentsUI */,
 			);
 			productName = VillainArcWidgetExtensionExtension;
 			productReference = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */;
@@ -552,6 +556,7 @@
 				D9589A0FAF7667BC425CCA9A /* FCTSync */,
 				6E92D4C10FA37B58E2416D0A /* FCTOnboarding */,
 				9C41E7A20B5D48F1A6E30002 /* FCTScreenshotStudio */,
+				A1C0FF11E0A57A5701000002 /* FCTComponentsUI */,
 			);
 			productName = VillainArc;
 			productReference = FDA193902F16D14500CA57C5 /* VillainArc.app */;
@@ -1329,6 +1334,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
 			productName = FCTMetrics;
+		};
+		A1C0FF11E0A57A5701000002 /* FCTComponentsUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTComponentsUI;
+		};
+		A1C0FF11E0A57A5701000004 /* FCTComponentsUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTComponentsUI;
 		};
 		D8FA06B6B7B5CF17A2DD9909 /* FCTAccount */ = {
 			isa = XCSwiftPackageProductDependency;
