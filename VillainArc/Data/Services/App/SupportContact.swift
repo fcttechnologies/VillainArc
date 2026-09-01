@@ -52,22 +52,6 @@ enum SupportContact {
 
     // MARK: - Mailto URLs
 
-    static func mailtoForBugReport() -> URL? {
-        let subject = "Villain Arc Issue — v\(appVersion)"
-        let body = """
-        Hi Fernando,
-
-        [Describe the issue here]
-
-        ---
-        Device: \(deviceModel)
-        iOS: \(iosVersion)
-        App version: \(appVersion) (build \(buildNumber))
-        Locale: \(localeIdentifier)
-        """
-        return mailtoURL(subject: subject, body: body)
-    }
-
     static func mailtoForFeatureRequest() -> URL? {
         let subject = "Villain Arc Feature Request — v\(appVersion)"
         let body = """

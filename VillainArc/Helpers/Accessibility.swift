@@ -846,7 +846,6 @@ enum AccessibilityIdentifiers {
     static let settingsCloseButton = "settingsCloseButton"
     static let settingsThemePicker = "settingsThemePicker"
     static let settingsSendDiagnosticButton = "settingsSendDiagnosticButton"
-    static let settingsReportIssueButton = "settingsReportIssueButton"
     static let settingsRequestFeatureButton = "settingsRequestFeatureButton"
     static let settingsSupportPageButton = "settingsSupportPageButton"
     static let settingsAppleHealthOpenSystemSettingsButton = "settingsAppleHealthOpenSystemSettingsButton"

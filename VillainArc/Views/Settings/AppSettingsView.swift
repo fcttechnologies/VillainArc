@@ -1,5 +1,6 @@
 import FCTMetrics
 import FCTOnboarding
+import FCTSupport
 import SwiftUI
 #if DEBUG
 import FCTScreenshotStudio
@@ -196,6 +197,8 @@ private struct AppSettingsFormView: View {
             }
 
             subscriptionSection
+
+            SupportSettingsSection(appName: "Villain Arc")
 
             supportSection
 
@@ -426,23 +429,13 @@ private struct AppSettingsFormView: View {
 
             Button {
                 Haptics.selection()
-                openMailto(SupportContact.mailtoForBugReport())
-            } label: {
-                Label("Report an Issue", systemImage: "ladybug.fill")
-            }
-            .foregroundStyle(.primary)
-            .accessibilityIdentifier(AccessibilityIdentifiers.settingsReportIssueButton)
-            .appGroupedListRow(position: latestDiagnostic == nil ? .top : .middle)
-
-            Button {
-                Haptics.selection()
                 openMailto(SupportContact.mailtoForFeatureRequest())
             } label: {
                 Label("Request a Feature", systemImage: "lightbulb.max.fill")
             }
             .foregroundStyle(.primary)
             .accessibilityIdentifier(AccessibilityIdentifiers.settingsRequestFeatureButton)
-            .appGroupedListRow(position: .middle)
+            .appGroupedListRow(position: latestDiagnostic == nil ? .top : .middle)
 
             Button {
                 Haptics.selection()
@@ -454,7 +447,7 @@ private struct AppSettingsFormView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.settingsSupportPageButton)
             .appGroupedListRow(position: .bottom)
         } footer: {
-            Text("Report issues or request features. Anonymous diagnostics, keyed to a random install identifier and never to your account, are always on; the crash report here is sent only when you tap Send.")
+            Text("The crash report here is sent only when you tap Send.")
         }
     }
 
