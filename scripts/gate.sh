@@ -43,16 +43,27 @@ VERIFY_ICONS="../FCTFoundation/scripts/verify-app-icons.py"
 # app. That event is LATER than first frame, and a budget set from a first-frame figure reads as
 # rigour while behaving as a flake generator.
 #
-# Derived, not chosen. The slowest of four measured cold launches was 3.165s, each taken with a
-# Release build compiling beside it (load average 7-228) — deliberately the worst realistic
-# condition, because a budget is a CEILING and one derived from an idle box flakes on a busy one.
-# 5.5 is 1.63x that: regression headroom on top of an already-worst-case reading, so a genuine
-# doubling of launch cost goes red instead of sitting just inside. The fleet's other factor — the
-# 1.66x an idle reading needs to reach this regime — is already spent in the number above, and
-# applying it again would buy a ceiling nothing could ever cross.
+# Derived, not chosen: 2.7x this app's own IDLE cold launch of 2.191s, measured with no compiler
+# running and the CPU genuinely idle (checked directly, not inferred from load average, which is a
+# lagging mean and reads ~15 on a box doing nothing).
 #
-# It still catches what this leg exists for: a 26-38s first-run stall fails by several times over.
-COLD_LAUNCH_BUDGET=5.5
+# The input is idle deliberately, because "loaded" is NOT a reproducible condition: this fleet's
+# sweep ran at 1.39x idle and Anchor's five-lane reading at 1.66x, and both were honestly called
+# loaded. A ceiling derived from one busy hour carries that hour's accident inside it. Idle is the
+# app's own cost, measurable the same way twice, so the load allowance is stated rather than
+# hidden in the measurement:
+#
+#     2.7 = 1.66 contention  x  1.63 headroom
+#
+#   1.66  what the busiest box this fleet really runs on costs — Anchor read 3.083s under five
+#         concurrent build lanes against 1.859s idle.
+#   1.63  regression headroom on top of that worst case, so a genuine doubling of real launch
+#         cost goes red instead of sitting just inside the ceiling.
+#
+# The same rule reproduces the fleet's only proven-in-production budget: 2.7 x Anchor's 1.859s
+# idle = 5.02, and Anchor ships 5.0. The slowest this app was ever observed under real build load
+# is 3.165s. A 26-38s first-run stall — the class this leg exists for — fails by four times over.
+COLD_LAUNCH_BUDGET=6.0
 DD="$(mktemp -d -t villainarc-gate)" || exit 1
 LOGS="/tmp/villainarc-gate-logs"
 rm -rf "${LOGS}" && mkdir -p "${LOGS}"
