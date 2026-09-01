@@ -156,9 +156,16 @@ struct ScreenshotStudioSeederTests {
         let catalogID: String
     }
 
-    /// A plan, a completed session on an exercise the demo set never touches (so its cached
-    /// history row is the user's alone), a cardio session, a weigh-in and a weight goal.
+    /// The profile the user filled in at onboarding, a plan, a completed session on an exercise
+    /// the demo set never touches (so its cached history row is the user's alone), a cardio
+    /// session, a weigh-in and a weight goal.
     private func seedUserAuthoredData(in context: ModelContext) throws -> UserAuthoredData {
+        let profile = UserProfile()
+        profile.name = "Fernando"
+        profile.heightCm = 170.18
+        profile.fitnessLevel = .advanced
+        context.insert(profile)
+
         let catalogID = "barbell_squat"
         let exercise = Exercise(from: ExerciseCatalog.byID[catalogID]!)
         context.insert(exercise)
@@ -208,6 +215,13 @@ struct ScreenshotStudioSeederTests {
     }
 
     private func assertUserAuthoredDataIntact(_ own: UserAuthoredData, in context: ModelContext, after moment: String) throws {
+        // The profile is a synced singleton, so a seed that rewrote it would rename the user on
+        // every device on the account — the one row here with no second copy to restore it from.
+        let profile = try context.fetch(UserProfile.single).first
+        #expect(profile?.name == "Fernando", "the user's name did not survive \(moment)")
+        #expect(profile?.heightCm == 170.18, "the user's height did not survive \(moment)")
+        #expect(profile?.fitnessLevel == .advanced, "the user's fitness level did not survive \(moment)")
+
         let plan = try context.fetch(WorkoutPlan.byID(own.planID)).first
         #expect(plan?.title == "My Own Plan", "the user's plan did not survive \(moment)")
 

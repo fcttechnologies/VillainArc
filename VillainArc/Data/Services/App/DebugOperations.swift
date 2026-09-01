@@ -248,17 +248,26 @@ enum DebugOperations {
         AppLog.info("Debug exercise history seed completed: \(exercise.catalogID)")
     }
 
+    /// The singletons a seeded store needs before anything else can be written into it, filled in
+    /// only where the store has none.
+    ///
+    /// The profile is the guarded one: it is a synced row with no second copy anywhere, so
+    /// stamping the debug identity over one the store already holds renames the signed-in user on
+    /// every device on their account. A profile this call had to create is the debug baseline's to
+    /// fill in; one that was already there is theirs.
     private static func ensureDebugReadyBaseline(in context: ModelContext) throws {
         _ = try SystemState.ensureAppSettings(context: context)
         _ = try SystemState.ensureHealthSyncState(context: context)
 
-        let profile = try SystemState.ensureUserProfile(context: context)
-        profile.name = "Debug User"
-        profile.birthday = Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
-        profile.gender = .other
-        profile.heightCm = 175
-        profile.fitnessLevel = .intermediate
-        profile.fitnessLevelSetAt = .now
+        if try SystemState.userProfile(context: context) == nil {
+            let profile = try SystemState.ensureUserProfile(context: context)
+            profile.name = "Debug User"
+            profile.birthday = Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
+            profile.gender = .other
+            profile.heightCm = 175
+            profile.fitnessLevel = .intermediate
+            profile.fitnessLevelSetAt = .now
+        }
 
         if try context.fetch(TrainingGoal.active).first == nil {
             context.insert(TrainingGoal(kind: .generalTraining))
