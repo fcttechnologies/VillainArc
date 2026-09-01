@@ -94,6 +94,23 @@ struct ScreenshotStudioSeederTests {
         try context.save()
     }
 
+    /// The Debug scenario buttons still replace: each one hands back exactly its own 35 days, and
+    /// switching scenarios switches the data rather than layering onto it.
+    @Test func aReplacingHealthSeedStillRewritesTheWholeWindow() throws {
+        let context = ModelContext(try TestModelContainer.make())
+
+        try DebugOperations.seedHealthSamples(scenario: .daily, in: context)
+        #expect(try context.fetch(FetchDescriptor<HealthStepsDistance>()).count == 35)
+        #expect(try context.fetch(FetchDescriptor<WeightEntry>()).count == 35)
+        #expect(try context.fetch(FetchDescriptor<WeightGoal>()).count == 1)
+
+        // `.rareFastCut` logs a weigh-in on four of the 35 days, so it replaced rather than merged.
+        try DebugOperations.seedHealthSamples(scenario: .rareFastCut, in: context)
+        #expect(try context.fetch(FetchDescriptor<HealthStepsDistance>()).count == 35)
+        #expect(try context.fetch(FetchDescriptor<WeightEntry>()).count == 4)
+        #expect(try context.fetch(FetchDescriptor<WeightGoal>()).count == 1)
+    }
+
     // MARK: - Store snapshot
 
     /// Every table the seed writes or used to clear, keyed by name. `PersistentIdentifier` is the
